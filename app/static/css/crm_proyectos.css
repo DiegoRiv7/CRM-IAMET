@@ -2813,3 +2813,785 @@ select.proy-info-input {
     overflow: hidden;
 }
 
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WARM MODERN — refactor visual módulo proyectos
+   ----------------------------------------------------------------------------
+   Look basado en "Warm Modern" stone/beige + acento azul corporativo.
+   Tipografía: Plus Jakarta Sans (cargada vía Google Fonts en crm_home.html).
+   Bloque autocontenido: variables con prefijo --proy-wm-* y selectores
+   limitados al módulo Proyectos (#proyectosSection, #widgetProyectoDetalle).
+   No renombra clases — solo override visual + componentes nuevos .proy-wm-*.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Backgrounds (paleta clara stone/beige) */
+  --proy-wm-bg:                #fafaf9;
+  --proy-wm-card:              #ffffff;
+  --proy-wm-sub-bg:            #f5f3f0;
+  --proy-wm-warning-bg:        #fffbe6;
+
+  /* Borders */
+  --proy-wm-border:            #f0ede8;
+  --proy-wm-border-strong:     #e7e5e4;
+
+  /* Text */
+  --proy-wm-text:              #1c1917;
+  --proy-wm-text-2:            #78716c;
+  --proy-wm-text-muted:        #a8a29e;
+  --proy-wm-placeholder:       #d6d3d1;
+
+  /* Acento azul corporativo */
+  --proy-wm-accent:            #2563eb;
+  --proy-wm-accent-hover:      #1d4ed8;
+  --proy-wm-accent-soft:       #eff6ff;
+  --proy-wm-accent-ring:       rgba(37, 99, 235, 0.18);
+
+  /* Semánticos */
+  --proy-wm-ok:                #16a34a;
+  --proy-wm-ok-bg:             #f0fdf4;
+  --proy-wm-ok-badge-bg:       #dcfce7;
+  --proy-wm-ok-badge-text:     #166534;
+
+  --proy-wm-warn:              #d97706;
+  --proy-wm-warn-bg:           #fffbeb;
+  --proy-wm-warn-badge-bg:     #fef3c7;
+  --proy-wm-warn-badge-text:   #92400e;
+
+  --proy-wm-danger:            #dc2626;
+  --proy-wm-danger-bg:         #fef2f2;
+  --proy-wm-danger-badge-bg:   #fee2e2;
+  --proy-wm-danger-badge-text: #991b1b;
+
+  --proy-wm-info:              #0891b2;
+  --proy-wm-info-alt:          #7c3aed;
+
+  /* Sombras y radios */
+  --proy-wm-shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.04);
+  --proy-wm-shadow-md:         0 2px 8px rgba(0, 0, 0, 0.05);
+  --proy-wm-radius-sm:         8px;
+  --proy-wm-radius:            12px;
+  --proy-wm-radius-lg:         14px;
+
+  /* Tipografía */
+  --proy-wm-font:              'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ----------------------------------------------------------------------------
+   Tipografía base — solo dentro del módulo Proyectos.
+   No global para no afectar otros módulos del CRM.
+   ---------------------------------------------------------------------------- */
+#proyectosSection,
+#proyectosSection input,
+#proyectosSection button,
+#proyectosSection select,
+#proyectosSection textarea,
+#widgetProyectoDetalle,
+#widgetProyectoDetalle input,
+#widgetProyectoDetalle button,
+#widgetProyectoDetalle select,
+#widgetProyectoDetalle textarea,
+.proy-page,
+.proyectos-section {
+  font-family: var(--proy-wm-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#proyectosSection {
+  background: var(--proy-wm-bg);
+  color: var(--proy-wm-text);
+}
+
+/* ============================================================================
+   LISTADO — Topbar (.proy-tabs-wrap, .proy-tabs, .proy-tab, .proy-facet-btn,
+   .proy-search). Override visual sin tocar la estructura.
+   ============================================================================ */
+
+#proyectosSection .proy-tabs-wrap {
+  padding: 14px 22px;
+  margin-bottom: 8px;
+  background: transparent;
+}
+
+/* Pills de tabs (Activos / Histórico / etc.) — fondo limpio sin glassmorphism */
+#proyectosSection .proy-tabs {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+  box-shadow: var(--proy-wm-shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+#proyectosSection .proy-tab {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-family: var(--proy-wm-font);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--proy-wm-text-2);
+  transition: background 0.15s ease, color 0.15s ease;
+  text-transform: none;
+}
+
+#proyectosSection .proy-tab:hover {
+  background: var(--proy-wm-sub-bg);
+  color: var(--proy-wm-text);
+}
+
+#proyectosSection .proy-tab.active {
+  background: var(--proy-wm-accent);
+  color: #ffffff;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+/* Botones facet (Filtro / Ordenar) */
+#proyectosSection .proy-facet-btn {
+  padding: 7px 13px;
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border-strong);
+  border-style: solid;
+  border-radius: var(--proy-wm-radius-sm);
+  font-family: var(--proy-wm-font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+#proyectosSection .proy-facet-btn:hover {
+  background: var(--proy-wm-sub-bg);
+  border-color: var(--proy-wm-text-muted);
+  color: var(--proy-wm-text);
+}
+
+#proyectosSection .proy-facet-btn.active {
+  background: var(--proy-wm-accent-soft);
+  border-color: var(--proy-wm-accent);
+  color: var(--proy-wm-accent-hover);
+}
+
+#proyectosSection .proy-facet-btn.active svg { color: var(--proy-wm-accent); }
+
+/* Input de búsqueda */
+#proyectosSection .proy-search,
+#proyectosSection .proy-topbar-right .proy-search {
+  padding: 8px 14px 8px 34px;
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border-strong);
+  border-radius: var(--proy-wm-radius-sm);
+  font-family: var(--proy-wm-font);
+  font-size: 13px;
+  color: var(--proy-wm-text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#proyectosSection .proy-search:focus,
+#proyectosSection .proy-topbar-right .proy-search:focus {
+  border-color: var(--proy-wm-accent);
+  box-shadow: 0 0 0 3px var(--proy-wm-accent-ring);
+}
+
+#proyectosSection .proy-search::placeholder {
+  color: var(--proy-wm-placeholder);
+}
+
+/* Botón "+ Nuevo proyecto" en topbar derecho */
+#proyectosSection .proy-topbar-right .proy-btn-new,
+#proyectosSection .proy-btn-new {
+  padding: 8px 16px;
+  background: var(--proy-wm-accent);
+  border: none;
+  border-radius: var(--proy-wm-radius-sm);
+  font-family: var(--proy-wm-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  box-shadow: none;
+  letter-spacing: 0;
+  transition: background 0.15s ease;
+}
+
+#proyectosSection .proy-topbar-right .proy-btn-new:hover,
+#proyectosSection .proy-btn-new:hover {
+  background: var(--proy-wm-accent-hover);
+}
+
+/* ============================================================================
+   LISTADO — Cards / filas de proyectos (.proy-card, .proy-card-row,
+   .proy-list-row). Si el HTML usa cards o filas, refrescamos look.
+   ============================================================================ */
+
+#proyectosSection .proy-card {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  padding: 18px 20px;
+  box-shadow: var(--proy-wm-shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+#proyectosSection .proy-card:hover {
+  border-color: var(--proy-wm-border-strong);
+  box-shadow: var(--proy-wm-shadow-md);
+}
+
+#proyectosSection .proy-card-title {
+  font-family: var(--proy-wm-font);
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  letter-spacing: -0.01em;
+}
+
+#proyectosSection .proy-card-client,
+#proyectosSection .proy-card-desc {
+  color: var(--proy-wm-text-2);
+}
+
+#proyectosSection .proy-card-row,
+#proyectosSection .proy-list-row {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#proyectosSection .proy-card-row:hover,
+#proyectosSection .proy-list-row:hover {
+  border-color: var(--proy-wm-border-strong);
+  box-shadow: var(--proy-wm-shadow-sm);
+}
+
+/* ============================================================================
+   DETALLE — Topbar v3 (.proy-v3-topbar, .proy-v3-topbar-tabs,
+   .proy-v3-topbar-tab, .proy-tab-btn).
+   ============================================================================ */
+
+#widgetProyectoDetalle .proy-v3-topbar {
+  background: transparent;
+}
+
+/* Pills de tabs del detalle: estilo limpio sobre fondo claro */
+#widgetProyectoDetalle .proy-v3-topbar-tabs {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  box-shadow: var(--proy-wm-shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 4px;
+  gap: 2px;
+}
+
+#widgetProyectoDetalle .proy-v3-topbar-tabs .proy-v3-topbar-tab,
+#widgetProyectoDetalle .proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn {
+  padding: 7px 13px;
+  font-family: var(--proy-wm-font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+  border-radius: 999px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#widgetProyectoDetalle .proy-v3-topbar-tabs .proy-v3-topbar-tab:hover,
+#widgetProyectoDetalle .proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn:hover {
+  background: var(--proy-wm-sub-bg);
+  color: var(--proy-wm-text);
+}
+
+#widgetProyectoDetalle .proy-v3-topbar-tabs .proy-v3-topbar-tab.active,
+#widgetProyectoDetalle .proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn.active {
+  background: var(--proy-wm-accent);
+  color: #ffffff;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+#widgetProyectoDetalle .proy-v3-topbar-tabs .proy-v3-topbar-tab.active:hover,
+#widgetProyectoDetalle .proy-v3-topbar-tabs.proy-tab-bar .proy-tab-btn.active:hover {
+  background: var(--proy-wm-accent-hover);
+  color: #ffffff;
+}
+
+/* Tab bar legacy (con border-bottom y subrayado) — refresh sutil
+   para los lugares donde aún se usa .proy-tab-bar fuera del topbar v3. */
+#widgetProyectoDetalle .proy-tab-bar {
+  border-bottom: 1px solid var(--proy-wm-border);
+}
+
+#widgetProyectoDetalle .proy-tab-bar .proy-tab-btn {
+  font-family: var(--proy-wm-font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 9px 12px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+#widgetProyectoDetalle .proy-tab-bar .proy-tab-btn:hover {
+  color: var(--proy-wm-text);
+}
+
+#widgetProyectoDetalle .proy-tab-bar .proy-tab-btn.active {
+  color: var(--proy-wm-accent);
+  border-bottom-color: var(--proy-wm-accent);
+}
+
+/* ============================================================================
+   DETALLE — KPI strip v3 (.proy-v3-kpi-strip, .proy-v3-kpi-cell, etc.)
+   ============================================================================ */
+
+#widgetProyectoDetalle .proy-v3-kpi-strip {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  box-shadow: var(--proy-wm-shadow-sm);
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-cell {
+  padding: 16px 20px;
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-cell + .proy-v3-kpi-cell {
+  border-left: 1px solid var(--proy-wm-border);
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-eyebrow {
+  font-family: var(--proy-wm-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--proy-wm-text-muted);
+  text-transform: uppercase;
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-value {
+  font-family: var(--proy-wm-font);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--proy-wm-text);
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-value.is-danger { color: var(--proy-wm-danger); }
+#widgetProyectoDetalle .proy-v3-kpi-value.is-warn   { color: var(--proy-wm-warn); }
+#widgetProyectoDetalle .proy-v3-kpi-value.is-good   { color: var(--proy-wm-ok); }
+
+#widgetProyectoDetalle .proy-v3-kpi-sub {
+  font-family: var(--proy-wm-font);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-sub.is-danger { color: var(--proy-wm-danger); }
+#widgetProyectoDetalle .proy-v3-kpi-sub.is-warn   { color: var(--proy-wm-warn); }
+
+#widgetProyectoDetalle .proy-v3-kpi-mini-bar {
+  background: var(--proy-wm-sub-bg);
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-mini-bar-fill {
+  background: var(--proy-wm-accent);
+}
+
+#widgetProyectoDetalle .proy-v3-kpi-mini-bar-fill.is-danger { background: var(--proy-wm-danger); }
+#widgetProyectoDetalle .proy-v3-kpi-mini-bar-fill.is-warn   { background: var(--proy-wm-warn); }
+#widgetProyectoDetalle .proy-v3-kpi-mini-bar-fill.is-good   { background: var(--proy-wm-ok); }
+
+/* Detail card shell — fondo neutro warm */
+#widgetProyectoDetalle .proy-detail-card {
+  background: var(--proy-wm-bg);
+}
+
+/* Tab pane interno (cards) */
+#widgetProyectoDetalle .proy-detail-card .proy-tab-pane {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  box-shadow: var(--proy-wm-shadow-sm);
+}
+
+/* ============================================================================
+   BADGES / PILLS legacy (.proy-badge, .proy-pill, .proy-status-*)
+   Refresh sutil para que respeten la paleta.
+   ============================================================================ */
+
+#proyectosSection .proy-badge,
+#widgetProyectoDetalle .proy-badge,
+#proyectosSection .proy-pill,
+#widgetProyectoDetalle .proy-pill,
+#proyectosSection .proy-status,
+#widgetProyectoDetalle .proy-status {
+  font-family: var(--proy-wm-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 2px 9px;
+  border-radius: 20px;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   BOTONES legacy (.proy-btn, .proy-btn-primary, .proy-btn-outline)
+   ============================================================================ */
+
+#proyectosSection .proy-btn,
+#widgetProyectoDetalle .proy-btn {
+  font-family: var(--proy-wm-font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--proy-wm-radius-sm);
+  letter-spacing: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+#proyectosSection .proy-btn-primary,
+#widgetProyectoDetalle .proy-btn-primary {
+  background: var(--proy-wm-accent);
+  color: #ffffff;
+  border: 1px solid var(--proy-wm-accent);
+  box-shadow: none;
+  border-radius: var(--proy-wm-radius-sm);
+  padding: 8px 16px;
+  font-family: var(--proy-wm-font);
+  font-weight: 600;
+}
+
+#proyectosSection .proy-btn-primary:hover,
+#widgetProyectoDetalle .proy-btn-primary:hover {
+  background: var(--proy-wm-accent-hover);
+  border-color: var(--proy-wm-accent-hover);
+}
+
+#proyectosSection .proy-btn-outline,
+#widgetProyectoDetalle .proy-btn-outline {
+  background: var(--proy-wm-card);
+  color: var(--proy-wm-text-2);
+  border: 1px solid var(--proy-wm-border-strong);
+  border-radius: var(--proy-wm-radius-sm);
+  padding: 8px 16px;
+  font-family: var(--proy-wm-font);
+  font-weight: 600;
+}
+
+#proyectosSection .proy-btn-outline:hover,
+#widgetProyectoDetalle .proy-btn-outline:hover {
+  background: var(--proy-wm-sub-bg);
+  border-color: var(--proy-wm-text-muted);
+  color: var(--proy-wm-text);
+}
+
+/* ============================================================================
+   TABLAS — .proy-partidas-table y .lev-list-table
+   ============================================================================ */
+
+#widgetProyectoDetalle .proy-partidas-table-wrap {
+  border: 1px solid var(--proy-wm-border) !important;
+  border-radius: var(--proy-wm-radius) !important;
+  background: var(--proy-wm-card) !important;
+  box-shadow: var(--proy-wm-shadow-sm);
+}
+
+#widgetProyectoDetalle .proy-partidas-table {
+  font-family: var(--proy-wm-font);
+  font-size: 12.5px;
+  color: var(--proy-wm-text);
+}
+
+#widgetProyectoDetalle .proy-partidas-table thead tr {
+  background: var(--proy-wm-sub-bg) !important;
+  color: var(--proy-wm-text-2) !important;
+  border-bottom: 1px solid var(--proy-wm-border) !important;
+}
+
+#widgetProyectoDetalle .proy-partidas-table thead th {
+  font-family: var(--proy-wm-font);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--proy-wm-text-2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#widgetProyectoDetalle .proy-partidas-table tbody tr {
+  border-bottom: 1px solid var(--proy-wm-border);
+  transition: background 0.12s ease;
+}
+
+#widgetProyectoDetalle .proy-partidas-table tbody tr:hover {
+  background: var(--proy-wm-sub-bg);
+}
+
+#widgetProyectoDetalle .lev-list-wrap {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  box-shadow: var(--proy-wm-shadow-sm);
+  font-family: var(--proy-wm-font);
+}
+
+#widgetProyectoDetalle .lev-list-table thead th {
+  font-family: var(--proy-wm-font);
+  background: var(--proy-wm-sub-bg);
+  color: var(--proy-wm-text-2);
+  border-bottom: 1px solid var(--proy-wm-border);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+#widgetProyectoDetalle .lev-list-table tbody td {
+  border-bottom: 1px solid var(--proy-wm-border);
+  font-family: var(--proy-wm-font);
+}
+
+#widgetProyectoDetalle .lev-list-table tbody .lev-row:hover {
+  background: var(--proy-wm-sub-bg);
+}
+
+#widgetProyectoDetalle .lev-row-name {
+  font-family: var(--proy-wm-font);
+  color: var(--proy-wm-text);
+  font-weight: 600;
+}
+
+#widgetProyectoDetalle .lev-row-fase {
+  background: var(--proy-wm-sub-bg);
+  color: var(--proy-wm-text-2);
+  font-family: var(--proy-wm-font);
+  font-weight: 600;
+}
+
+#widgetProyectoDetalle .lev-row-creador {
+  color: var(--proy-wm-text-muted);
+}
+
+/* ============================================================================
+   COMPONENTES NUEVOS — prefijo .proy-wm-*
+   ============================================================================ */
+
+/* KPI card moderno (estilo nuevo) */
+.proy-wm-kpi-card {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  padding: 18px 20px;
+  box-shadow: var(--proy-wm-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--proy-wm-font);
+}
+
+.proy-wm-kpi-card__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--proy-wm-text-muted);
+  text-transform: uppercase;
+}
+
+.proy-wm-kpi-card__value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.proy-wm-kpi-card__value.is-ok     { color: var(--proy-wm-ok); }
+.proy-wm-kpi-card__value.is-warn   { color: var(--proy-wm-warn); }
+.proy-wm-kpi-card__value.is-danger { color: var(--proy-wm-danger); }
+
+.proy-wm-kpi-card__sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+}
+
+/* Card genérico moderno */
+.proy-wm-card {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  padding: 20px 22px;
+  box-shadow: var(--proy-wm-shadow-sm);
+  font-family: var(--proy-wm-font);
+}
+
+.proy-wm-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+
+/* Progress ring (contenedor para SVG) */
+.proy-wm-progress-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+}
+
+.proy-wm-progress-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.proy-wm-progress-ring__track {
+  fill: none;
+  stroke: var(--proy-wm-sub-bg);
+  stroke-width: 8;
+}
+
+.proy-wm-progress-ring__fill {
+  fill: none;
+  stroke: var(--proy-wm-accent);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.proy-wm-progress-ring__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--proy-wm-font);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  letter-spacing: -0.02em;
+}
+
+/* Progress bar horizontal — usa custom property --proy-wm-progress (0-100) */
+.proy-wm-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: var(--proy-wm-sub-bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.proy-wm-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: calc(var(--proy-wm-progress, 0) * 1%);
+  background: var(--proy-wm-accent);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.proy-wm-progress-bar.is-ok::after     { background: var(--proy-wm-ok); }
+.proy-wm-progress-bar.is-warn::after   { background: var(--proy-wm-warn); }
+.proy-wm-progress-bar.is-danger::after { background: var(--proy-wm-danger); }
+
+/* Status pills nuevas */
+.proy-wm-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-family: var(--proy-wm-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.proy-wm-status-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.proy-wm-status-ok {
+  background: var(--proy-wm-ok-badge-bg);
+  color: var(--proy-wm-ok-badge-text);
+}
+
+.proy-wm-status-warn {
+  background: var(--proy-wm-warn-badge-bg);
+  color: var(--proy-wm-warn-badge-text);
+}
+
+.proy-wm-status-danger {
+  background: var(--proy-wm-danger-badge-bg);
+  color: var(--proy-wm-danger-badge-text);
+}
+
+.proy-wm-status-info {
+  background: var(--proy-wm-accent-soft);
+  color: var(--proy-wm-accent-hover);
+}
+
+/* Botones modernos (alternativa con prefijo .proy-wm-*) */
+.proy-wm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--proy-wm-radius-sm);
+  font-family: var(--proy-wm-font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.proy-wm-btn-primary {
+  background: var(--proy-wm-accent);
+  color: #ffffff;
+  border-color: var(--proy-wm-accent);
+}
+
+.proy-wm-btn-primary:hover {
+  background: var(--proy-wm-accent-hover);
+  border-color: var(--proy-wm-accent-hover);
+}
+
+.proy-wm-btn-outline {
+  background: var(--proy-wm-card);
+  color: var(--proy-wm-text-2);
+  border-color: var(--proy-wm-border-strong);
+}
+
+.proy-wm-btn-outline:hover {
+  background: var(--proy-wm-sub-bg);
+  border-color: var(--proy-wm-text-muted);
+  color: var(--proy-wm-text);
+}
+
+/* ============================================================================
+   FIN bloque WARM MODERN
+   ============================================================================ */

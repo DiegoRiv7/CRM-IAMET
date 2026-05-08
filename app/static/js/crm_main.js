@@ -1626,8 +1626,8 @@
 
             var _crmClientesMode = localStorage.getItem('crm_clientes_mode') || 'oportunidades';
 
-            // Immediately hide opp KPIs/charts if saved mode is prospeccion (prevents flash)
-            if (_crmClientesMode === 'prospeccion') {
+            // Immediately hide opp KPIs/charts if saved mode is not 'oportunidades' (prevents flash)
+            if (_crmClientesMode === 'prospeccion' || _crmClientesMode === 'proyectos') {
                 var _earlyKpi = document.getElementById('ckKpiRow');
                 var _earlyCharts = document.getElementById('ckChartsSection');
                 if (_earlyKpi) _earlyKpi.style.display = 'none';
@@ -1635,8 +1635,10 @@
                 // Update selector buttons immediately (toggle .active — los tabs dashboard usan .crm-tab)
                 var _eOpp = document.getElementById('crmModeOpp');
                 var _eProsp = document.getElementById('crmModeProsp');
+                var _eProy = document.getElementById('crmModeProyectos');
                 if (_eOpp) _eOpp.classList.remove('active');
-                if (_eProsp) _eProsp.classList.add('active');
+                if (_eProsp) _eProsp.classList.toggle('active', _crmClientesMode === 'prospeccion');
+                if (_eProy) _eProy.classList.toggle('active', _crmClientesMode === 'proyectos');
             }
 
             window._crmSetMode = function(mode) {
@@ -1644,6 +1646,7 @@
                 localStorage.setItem('crm_clientes_mode', mode);
                 var btnOpp = document.getElementById('crmModeOpp');
                 var btnProsp = document.getElementById('crmModeProsp');
+                var btnProy = document.getElementById('crmModeProyectos');
                 if (btnOpp && btnProsp) {
                     btnOpp.classList.toggle('active', mode === 'oportunidades');
                     btnOpp.classList.remove('active-prospectos');
@@ -1653,12 +1656,19 @@
                     btnOpp.style.background = ''; btnOpp.style.color = '';
                     btnProsp.style.background = ''; btnProsp.style.color = '';
                 }
+                if (btnProy) {
+                    btnProy.classList.toggle('active', mode === 'proyectos');
+                    btnProy.classList.toggle('active-proyectos', mode === 'proyectos');
+                    btnProy.style.background = ''; btnProy.style.color = '';
+                }
                 var kpiOpp = document.getElementById('ckKpiRow');
                 var kpiProsp = document.getElementById('ckKpiRowProsp');
+                var kpiProy = document.getElementById('ckKpiRowProy');
                 var charts = document.getElementById('ckChartsSection');
                 var detalle = document.getElementById('ckDetalleSection');
 
                 var chartsProsp = document.getElementById('ckChartsSectionProsp');
+                var chartsProy = document.getElementById('ckChartsSectionProy');
 
                 // Si hay un drill-down activo (detalle visible) NO lo escondas — esto
                 // se llama desde refreshes periódicos y borraría la tabla del usuario.
@@ -1667,9 +1677,11 @@
                 if (mode === 'oportunidades') {
                     if (kpiOpp) kpiOpp.style.display = 'grid';
                     if (kpiProsp) kpiProsp.style.display = 'none';
+                    if (kpiProy) kpiProy.style.display = 'none';
                     if (!detalleOpen) {
                         if (charts) { charts.style.display = ''; charts.style.opacity = '1'; }
                         if (chartsProsp) chartsProsp.style.display = 'none';
+                        if (chartsProy) chartsProy.style.display = 'none';
                         if (detalle) detalle.style.display = 'none';
                     }
                     // Restore footer from facturado data
@@ -1679,12 +1691,14 @@
                         if (footerLeft) footerLeft.textContent = (_clientesPanelData.facturado.footer || {}).left || '';
                         if (footerRight) footerRight.textContent = (_clientesPanelData.facturado.footer || {}).right || '';
                     }
-                } else {
+                } else if (mode === 'prospeccion') {
                     if (kpiOpp) kpiOpp.style.display = 'none';
                     if (kpiProsp) kpiProsp.style.display = 'grid';
+                    if (kpiProy) kpiProy.style.display = 'none';
                     if (!detalleOpen) {
                         if (charts) charts.style.display = 'none';
                         if (chartsProsp) chartsProsp.style.display = 'block';
+                        if (chartsProy) chartsProy.style.display = 'none';
                         if (detalle) detalle.style.display = 'none';
                         _renderProspKPIs();
                         _renderProspCharts();
@@ -1698,6 +1712,33 @@
                     var pData = _clientesPanelData.prospeccion || {};
                     if (footerLeft) footerLeft.textContent = (pData.footer || {}).left || '';
                     if (footerRight) footerRight.textContent = (pData.footer || {}).right || '';
+                } else if (mode === 'proyectos') {
+                    if (kpiOpp) kpiOpp.style.display = 'none';
+                    if (kpiProsp) kpiProsp.style.display = 'none';
+                    if (kpiProy) kpiProy.style.display = 'grid';
+                    if (!detalleOpen) {
+                        if (charts) charts.style.display = 'none';
+                        if (chartsProsp) chartsProsp.style.display = 'none';
+                        if (chartsProy) chartsProy.style.display = 'block';
+                        if (detalle) detalle.style.display = 'none';
+                    }
+                    // Cargar / re-render dashboard de proyectos
+                    if (typeof _loadProyectosDashboard === 'function') {
+                        _loadProyectosDashboard();
+                    }
+                    // Footer custom para proyectos
+                    var footerLeft = document.getElementById('footerLeft');
+                    var footerRight = document.getElementById('footerRight');
+                    var pyData = _proyectosDashState || {};
+                    if (footerLeft) {
+                        var totP = (pyData.kpis && pyData.kpis.total_proyectos) || 0;
+                        var actP = (pyData.kpis && pyData.kpis.proyectos_ejecucion) || 0;
+                        footerLeft.textContent = totP + ' proyectos / ' + actP + ' activos';
+                    }
+                    if (footerRight) {
+                        var ven = (pyData.kpis && pyData.kpis.venta_total) || 0;
+                        footerRight.textContent = 'Venta total: $' + Number(ven).toLocaleString('en-US', { maximumFractionDigits: 0 });
+                    }
                 }
             };
             var _CLIENTES_THEAD_MINI =
@@ -2397,6 +2438,399 @@
             }
         } // end _renderProspCharts
 
+        // ═══════════════════════════════════════════════════════════════
+        //   DASHBOARD DE PROYECTOS (3ra tab del dashboard)
+        //   - Fetch a /app/api/iamet/proyectos/dashboard/ y /app/api/iamet/proyectos/
+        //   - Render KPIs, gráfica de distribución por estado y lista de riesgo
+        // ═══════════════════════════════════════════════════════════════
+
+        var _proyectosDashState = { kpis: null, lista: null, loading: false, lastKey: null };
+        var _proyectosChartInstance = null;
+
+        function _proyFmtMoney(n) {
+            n = Number(n) || 0;
+            if (Math.abs(n) >= 1000000) return '$' + (n / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+            if (Math.abs(n) >= 1000)    return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+            return '$' + Math.round(n).toLocaleString('en-US');
+        }
+        function _proyFmtMoneyFull(n) {
+            return '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+        function _proyEsc(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Carga datos del dashboard de proyectos (KPIs + lista) y renderiza.
+        // Usa cache por (mes, anio) para no refetch si nada cambió.
+        function _loadProyectosDashboard() {
+            var mes = currentMes || '';
+            var anio = currentAnio || '';
+            var key = mes + '|' + anio;
+            // Si ya tenemos data fresca para este periodo, solo re-render
+            if (_proyectosDashState.lastKey === key && _proyectosDashState.kpis && _proyectosDashState.lista) {
+                _renderProyectosKPIs();
+                _renderProyectosCharts();
+                _renderProyectosRiesgo();
+                return;
+            }
+            if (_proyectosDashState.loading) return;
+            _proyectosDashState.loading = true;
+            _proyectosDashState.lastKey = key;
+
+            var qs = '?mes=' + encodeURIComponent(mes) + '&anio=' + encodeURIComponent(anio);
+
+            // Mostrar estado "Cargando..." en la lista de riesgo
+            var listEl = document.getElementById('ckProyRiesgoList');
+            if (listEl && !listEl.querySelector('.crm-dash-proyectos-riesgo-row')) {
+                listEl.innerHTML = '<div class="crm-dash-proyectos-riesgo-empty">Cargando…</div>';
+            }
+
+            var pKpis = fetch('/app/api/iamet/proyectos/dashboard/' + qs, { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(resp){
+                    if (resp && resp.success) _proyectosDashState.kpis = resp.data || {};
+                    else _proyectosDashState.kpis = {};
+                })
+                .catch(function(){ _proyectosDashState.kpis = {}; });
+
+            // La lista no soporta filtro mes/anio nativo en el endpoint;
+            // traemos todos y filtramos en cliente si hace falta.
+            var pLista = fetch('/app/api/iamet/proyectos/', { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(resp){
+                    var arr = (resp && (resp.ok || resp.success)) ? (resp.data || []) : [];
+                    // Filtrar cliente-side por mes/anio sobre created_at si tenemos esos filtros
+                    if (anio && anio !== 'todos') {
+                        arr = arr.filter(function(p){
+                            if (!p.created_at) return false;
+                            var d = new Date(p.created_at);
+                            if (isNaN(d.getTime())) return false;
+                            if (String(d.getFullYear()) !== String(anio)) return false;
+                            if (mes && mes !== 'todos') {
+                                var mm = String(d.getMonth() + 1).padStart(2, '0');
+                                if (mm !== String(mes).padStart(2, '0')) return false;
+                            }
+                            return true;
+                        });
+                    }
+                    _proyectosDashState.lista = arr;
+                })
+                .catch(function(){ _proyectosDashState.lista = []; });
+
+            Promise.all([pKpis, pLista]).then(function(){
+                _proyectosDashState.loading = false;
+                // Solo renderizar si seguimos en modo proyectos
+                if (_crmClientesMode !== 'proyectos') return;
+                _renderProyectosKPIs();
+                _renderProyectosCharts();
+                _renderProyectosRiesgo();
+                // Refrescar footer
+                var footerLeft = document.getElementById('footerLeft');
+                var footerRight = document.getElementById('footerRight');
+                var k = _proyectosDashState.kpis || {};
+                if (footerLeft) footerLeft.textContent = (k.total_proyectos || 0) + ' proyectos / ' + (k.proyectos_ejecucion || 0) + ' activos';
+                if (footerRight) footerRight.textContent = 'Venta total: ' + _proyFmtMoneyFull(k.venta_total || 0);
+            });
+        }
+        // Exponer para refrescos externos (ej. cambio de período)
+        window._loadProyectosDashboard = _loadProyectosDashboard;
+
+        function _renderProyectosKPIs() {
+            var k = _proyectosDashState.kpis || {};
+            var lista = _proyectosDashState.lista || [];
+
+            // KPI 1: Activos / Total
+            var activos = Number(k.proyectos_ejecucion || 0);
+            var total = Number(k.total_proyectos || 0);
+            var pctAct = total > 0 ? Math.round(activos / total * 100) : 0;
+            var elActiv = document.getElementById('ckKpiProyActivos');
+            if (elActiv) elActiv.textContent = activos + ' / ' + total;
+            var metaAct = document.getElementById('ckMetaProyActivos');
+            if (metaAct) metaAct.textContent = 'en ejecución del portafolio';
+            setTimeout(function(){
+                var fill = document.getElementById('ckProgProyActivos');
+                if (fill) fill.style.width = Math.min(100, pctAct) + '%';
+            }, 50);
+            var trAct = document.getElementById('ckTrendProyActivos');
+            if (trAct) {
+                var prog = Number(k.proyectos_programados || 0);
+                var compl = Number(k.proyectos_completados || 0);
+                trAct.innerHTML = '<span style="color:#9CA3AF;font-weight:600;">' + prog + ' programados · ' + compl + ' completados</span>';
+            }
+
+            // KPI 2: Presupuesto (venta_total) y costo ejecutado
+            var ventaTot = Number(k.venta_total || 0);
+            var costoTot = Number(k.costo_total || 0);
+            var pctEjec = ventaTot > 0 ? Math.round(costoTot / ventaTot * 100) : 0;
+            var elBud = document.getElementById('ckKpiProyBudget');
+            if (elBud) elBud.textContent = _proyFmtMoney(ventaTot);
+            var metaBud = document.getElementById('ckMetaProyBudget');
+            if (metaBud) metaBud.textContent = 'costo: ' + _proyFmtMoney(costoTot) + ' (' + pctEjec + '%)';
+            setTimeout(function(){
+                var fill2 = document.getElementById('ckProgProyBudget');
+                if (fill2) fill2.style.width = Math.min(100, pctEjec) + '%';
+            }, 50);
+            var trBud = document.getElementById('ckTrendProyBudget');
+            if (trBud) trBud.innerHTML = '';
+
+            // KPI 3: Avance promedio (calculado de la lista usando levantamiento_fase_max/5)
+            var avgPct = 0;
+            if (lista.length) {
+                var sum = 0, n = 0;
+                lista.forEach(function(p){
+                    if (p.status === 'completed') { sum += 100; n++; return; }
+                    var fase = Number(p.levantamiento_fase_max || 0);
+                    sum += Math.max(0, Math.min(100, Math.round(fase / 5 * 100)));
+                    n++;
+                });
+                avgPct = n > 0 ? Math.round(sum / n) : 0;
+            }
+            var elAvg = document.getElementById('ckKpiProyAvance');
+            if (elAvg) elAvg.textContent = avgPct + '%';
+            var metaAvg = document.getElementById('ckMetaProyAvance');
+            if (metaAvg) metaAvg.textContent = 'avance promedio del portafolio';
+            setTimeout(function(){
+                var fill3 = document.getElementById('ckProgProyAvance');
+                if (fill3) fill3.style.width = Math.min(100, avgPct) + '%';
+            }, 50);
+
+            // KPI 4: Margen / utilidad esperada
+            var util = Number(k.utilidad_total || 0);
+            var margenPct = ventaTot > 0 ? Math.round(util / ventaTot * 100) : 0;
+            var elMar = document.getElementById('ckKpiProyMargen');
+            if (elMar) elMar.textContent = _proyFmtMoney(util);
+            var metaMar = document.getElementById('ckMetaProyMargen');
+            if (metaMar) metaMar.textContent = (margenPct > 0 ? margenPct + '% margen sobre venta' : 'utilidad presupuestada');
+            setTimeout(function(){
+                var fill4 = document.getElementById('ckProgProyMargen');
+                if (fill4) fill4.style.width = Math.max(0, Math.min(100, margenPct)) + '%';
+            }, 50);
+        }
+
+        function _renderProyectosCharts() {
+            if (typeof Chart === 'undefined') return;
+            var lista = _proyectosDashState.lista || [];
+            // Contar por status
+            var counts = { planning: 0, active: 0, completed: 0, paused: 0 };
+            lista.forEach(function(p){
+                var s = p.status || 'planning';
+                if (counts[s] === undefined) counts.planning++;
+                else counts[s]++;
+            });
+            var labels = ['Planificación', 'En progreso', 'Completados', 'Pausados'];
+            var values = [counts.planning, counts.active, counts.completed, counts.paused];
+            var colors = ['#A855F7', '#2563EB', '#16A34A', '#9CA3AF'];
+            var totalCount = values.reduce(function(a,b){ return a+b; }, 0);
+
+            var canvas = document.getElementById('ckChartProyEstados');
+            if (!canvas) return;
+
+            // Destroy previous instance
+            if (_proyectosChartInstance) {
+                try { _proyectosChartInstance.destroy(); } catch(e) {}
+                _proyectosChartInstance = null;
+            }
+
+            // Empty state
+            var card = canvas.closest ? canvas.closest('.ck-chart-card') : null;
+            var emptyDiv = card ? card.querySelector('.ck-empty-state') : null;
+            if (totalCount === 0) {
+                canvas.style.display = 'none';
+                if (card && !emptyDiv) {
+                    var div = document.createElement('div');
+                    div.className = 'ck-empty-state';
+                    div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:200px;color:#86868B;font-size:0.78rem;font-weight:500;text-align:center;padding:20px;';
+                    div.textContent = 'Sin proyectos en el periodo';
+                    var wrap = card.querySelector('.crm-dash-proyectos-chart-wrap');
+                    if (wrap) wrap.appendChild(div); else card.appendChild(div);
+                }
+                var leg = document.getElementById('ckChartProyEstadosLegend');
+                if (leg) leg.innerHTML = '';
+                return;
+            } else {
+                canvas.style.display = '';
+                if (emptyDiv) emptyDiv.remove();
+            }
+
+            var centerPlugin = {
+                id: 'centerTextProy',
+                afterDraw: function(chart) {
+                    var cx = chart.ctx;
+                    var w = chart.width, h = chart.height / 2 + 8;
+                    cx.save();
+                    cx.font = '700 24px -apple-system, BlinkMacSystemFont, sans-serif';
+                    cx.fillStyle = '#1D1D1F'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+                    cx.fillText(String(totalCount), w/2, h - 6);
+                    cx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+                    cx.fillStyle = '#86868B';
+                    cx.fillText('proyectos', w/2, h + 14);
+                    cx.restore();
+                }
+            };
+
+            _proyectosChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                plugins: [centerPlugin],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        spacing: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(255,255,255,0.95)',
+                            titleColor: '#1D1D1F', bodyColor: '#3C3C43',
+                            titleFont: { size: 12, weight: '700' }, bodyFont: { size: 11, weight: '500' },
+                            padding: 12, cornerRadius: 12,
+                            borderColor: 'rgba(0,0,0,0.08)', borderWidth: 1,
+                            displayColors: true, boxPadding: 4
+                        }
+                    },
+                    animation: { duration: 900, easing: 'easeOutQuart' }
+                }
+            });
+
+            // Render legend custom debajo
+            var legend = document.getElementById('ckChartProyEstadosLegend');
+            if (legend) {
+                var html = '';
+                for (var i = 0; i < labels.length; i++) {
+                    var pct = totalCount > 0 ? Math.round(values[i] / totalCount * 100) : 0;
+                    html += '<div class="crm-dash-proyectos-legend-item">' +
+                        '<span class="crm-dash-proyectos-legend-dot" style="background:' + colors[i] + ';"></span>' +
+                        '<span class="crm-dash-proyectos-legend-label">' + labels[i] + '</span>' +
+                        '<span class="crm-dash-proyectos-legend-val">' + values[i] + ' <span style="color:#9CA3AF;font-weight:500;">(' + pct + '%)</span></span>' +
+                    '</div>';
+                }
+                legend.innerHTML = html;
+            }
+        }
+
+        function _renderProyectosRiesgo() {
+            var listEl = document.getElementById('ckProyRiesgoList');
+            var countEl = document.getElementById('ckProyRiesgoCount');
+            if (!listEl) return;
+
+            var lista = _proyectosDashState.lista || [];
+            // Solo proyectos no completados
+            var candidatos = lista.filter(function(p){ return p.status !== 'completed'; });
+
+            // Hoy (sin hora)
+            var today = new Date(); today.setHours(0,0,0,0);
+
+            // Score de riesgo: combinación de overrun (no tenemos costos por proyecto en lista)
+            // y atraso por fecha. Usamos:
+            //   - atrasado: fecha_fin < hoy && progreso < 100  → fuerte señal
+            //   - cerca de vencer: fecha_fin a 14 días && progreso < 70%
+            //   - status pausado
+            var scored = candidatos.map(function(p){
+                var fase = Number(p.levantamiento_fase_max || 0);
+                var prog = Math.max(0, Math.min(100, Math.round(fase / 5 * 100)));
+                var endStr = p.fecha_fin || '';
+                var endD = endStr ? new Date(endStr) : null;
+                if (endD && isNaN(endD.getTime())) endD = null;
+                if (endD) endD.setHours(0,0,0,0);
+
+                var diasAlFin = endD ? Math.round((endD - today) / 86400000) : null;
+                var atrasado = (endD && diasAlFin < 0 && prog < 100);
+                var pausado = (p.status === 'paused');
+                var inminente = (endD && diasAlFin !== null && diasAlFin >= 0 && diasAlFin <= 14 && prog < 70);
+
+                // Score: a mayor número, mayor riesgo
+                var score = 0;
+                if (atrasado) score += 100 + Math.min(60, Math.abs(diasAlFin)) + (100 - prog);
+                if (inminente) score += 60 + (70 - prog) + (15 - diasAlFin);
+                if (pausado) score += 40;
+                // Si el proyecto tiene alertas pendientes, sube prioridad
+                if (p.alertas_pendientes) score += Number(p.alertas_pendientes) * 10;
+
+                var motivo = '';
+                var motivoClass = 'crm-dash-proyectos-riesgo-tag--info';
+                if (atrasado) {
+                    motivo = Math.abs(diasAlFin) + 'd atrasado';
+                    motivoClass = 'crm-dash-proyectos-riesgo-tag--danger';
+                } else if (inminente) {
+                    motivo = 'Vence en ' + diasAlFin + 'd';
+                    motivoClass = 'crm-dash-proyectos-riesgo-tag--warn';
+                } else if (pausado) {
+                    motivo = 'Pausado';
+                    motivoClass = 'crm-dash-proyectos-riesgo-tag--warn';
+                } else if (p.alertas_pendientes) {
+                    motivo = p.alertas_pendientes + ' alertas';
+                    motivoClass = 'crm-dash-proyectos-riesgo-tag--warn';
+                }
+
+                return { p: p, prog: prog, score: score, motivo: motivo, motivoClass: motivoClass };
+            }).filter(function(x){ return x.score > 0; });
+
+            scored.sort(function(a, b){ return b.score - a.score; });
+            var top = scored.slice(0, 5);
+            if (countEl) countEl.textContent = scored.length;
+
+            if (!top.length) {
+                listEl.innerHTML = '<div class="crm-dash-proyectos-riesgo-empty">Sin proyectos en riesgo &mdash; el portafolio está al día</div>';
+                return;
+            }
+
+            var html = '';
+            top.forEach(function(item){
+                var p = item.p;
+                var nombre = _proyEsc(p.nombre || 'Sin nombre');
+                var cliente = _proyEsc(p.cliente_nombre || '— sin cliente —');
+                var prog = item.prog;
+                html += '<div class="crm-dash-proyectos-riesgo-row" data-proyecto-id="' + p.id + '" role="button" tabindex="0">' +
+                    '<div class="crm-dash-proyectos-riesgo-main">' +
+                        '<div class="crm-dash-proyectos-riesgo-name">' + nombre + '</div>' +
+                        '<div class="crm-dash-proyectos-riesgo-client">' + cliente + '</div>' +
+                    '</div>' +
+                    '<div class="crm-dash-proyectos-riesgo-progress">' +
+                        '<div class="crm-dash-proyectos-riesgo-progress-track"><div class="crm-dash-proyectos-riesgo-progress-fill" style="width:' + prog + '%"></div></div>' +
+                        '<span class="crm-dash-proyectos-riesgo-progress-pct">' + prog + '%</span>' +
+                    '</div>' +
+                    '<div class="crm-dash-proyectos-riesgo-tagwrap">' +
+                        '<span class="crm-dash-proyectos-riesgo-tag ' + item.motivoClass + '">' + _proyEsc(item.motivo || 'Riesgo') + '</span>' +
+                    '</div>' +
+                '</div>';
+            });
+            listEl.innerHTML = html;
+
+            // Click handlers (delegación simple)
+            var rows = listEl.querySelectorAll('.crm-dash-proyectos-riesgo-row');
+            rows.forEach(function(row){
+                var goDetalle = function(){
+                    var pid = parseInt(row.getAttribute('data-proyecto-id'), 10);
+                    if (!pid) return;
+                    // Navegar a vista proyectos primero (para que se monte el módulo)
+                    if (typeof switchCrmView === 'function') {
+                        switchCrmView('proyectos');
+                        if (typeof window.proyectosInit === 'function') {
+                            try { window.proyectosInit(); } catch(e){}
+                        }
+                    }
+                    // Luego abrir el detalle del proyecto
+                    setTimeout(function(){
+                        if (typeof window.proyectosVerDetalle === 'function') {
+                            window.proyectosVerDetalle(pid);
+                        }
+                    }, 50);
+                };
+                row.addEventListener('click', goDetalle);
+                row.addEventListener('keydown', function(e){
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goDetalle(); }
+                });
+            });
+        }
+
         // Dead code removed — all chart logic is above
         if (false) { // placeholder to keep indentation consistent
             var appleColors = [
@@ -2618,6 +3052,9 @@
         function loadAllClientesPanels() {
             _clientesCombinedLoading = _CLIENTES_VISTAS.length;
             _CLIENTES_VISTAS.forEach(function (v) { loadClientesPanel(v); });
+            // Invalidar cache del dashboard de proyectos para forzar refetch en
+            // el próximo render (refreshes periódicos, cambios de período, etc.).
+            if (typeof _proyectosDashState !== 'undefined') _proyectosDashState.lastKey = null;
             // Cargar total real de facturación del Excel para el KPI
             var params = new URLSearchParams(window.location.search);
             var _m = params.get('mes') || currentMes;
@@ -3177,6 +3614,12 @@
                 chartsProsp.style.opacity = '0';
                 setTimeout(function(){ chartsProsp.style.display = 'none'; }, 200);
             }
+            var chartsProy = document.getElementById('ckChartsSectionProy');
+            if (chartsProy) {
+                chartsProy.style.transition = 'opacity 0.2s';
+                chartsProy.style.opacity = '0';
+                setTimeout(function(){ chartsProy.style.display = 'none'; }, 200);
+            }
             // Fade in detail
             detalle.style.display = 'block';
             detalle.style.opacity = '0';
@@ -3414,6 +3857,13 @@
                     chartsProsp.style.display = 'block';
                     chartsProsp.style.opacity = '0';
                     setTimeout(function(){ chartsProsp.style.transition = 'opacity 0.2s'; chartsProsp.style.opacity = '1'; }, 50);
+                }
+            } else if (_crmClientesMode === 'proyectos') {
+                var chartsProy = document.getElementById('ckChartsSectionProy');
+                if (chartsProy) {
+                    chartsProy.style.display = 'block';
+                    chartsProy.style.opacity = '0';
+                    setTimeout(function(){ chartsProy.style.transition = 'opacity 0.2s'; chartsProy.style.opacity = '1'; }, 50);
                 }
             } else {
                 var charts = document.getElementById('ckChartsSection');

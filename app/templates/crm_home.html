@@ -1,7 +1,10 @@
 {% extends "base.html" %}{% load app_filters %}{% load static %}
 {% block title %}Sistema CRM{% endblock %}
 {% block extra_head %}{% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}?v=20260508-warm-modern">
 <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260506-vol-actions">
 <link rel="stylesheet" href="{% static 'css/crm_volumetria.css' %}?v=20260507-mxn-highlight">
 {% if es_ingeniero %}
@@ -115,7 +118,7 @@
 {% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
-<script src="{% static 'js/crm_proyectos.js' %}?v=20260507-oc-edit-delete"></script>
+<script src="{% static 'js/crm_proyectos.js' %}?v=20260506-nav-refactor"></script>
 <script src="{% static 'js/gantt_programa_obra.js' %}"></script>
 <script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss"></script>
 <script src="{% static 'js/crm_levantamiento.js' %}?v=20260507-vendor-compact"></script>

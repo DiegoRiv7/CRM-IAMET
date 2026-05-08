@@ -235,7 +235,17 @@
 
         // ---- TÍTULO ----
         var hName = el('proyDetailName');
-        if (hName) hName.textContent = (project && project.nombre) || (ov && ov.nombre) || '';
+        var projName = (project && project.nombre) || (ov && ov.nombre) || '';
+        if (hName) hName.textContent = projName;
+
+        // ---- BREADCRUMB en el topbar contextual: "Portafolio · [Nombre]" ----
+        // Mantiene el contexto del proyecto al lado del botón "← Portafolio"
+        // cuando los tabs ocupan el centro de la dynamic island.
+        var crumbName = el('proyV3CrumbName');
+        if (crumbName) {
+            crumbName.textContent = projName || 'Proyecto';
+            crumbName.title = projName ? ('Volver al portafolio · ' + projName) : 'Volver al portafolio';
+        }
 
         // ---- RAG PILL (status del header) ----
         // Antes mostraba el lifecycle (Planificación/Ejecución). Ahora muestra
@@ -285,6 +295,7 @@
         // el usuario sepa de inmediato de qué venta nació este proyecto.
         var oppChip = el('proyDetailOppChip');
         var oppText = el('proyDetailOppText');
+        var oppSep  = el('proyV3CrumbOppSep');
         if (oppChip) {
             var oppId   = ov && ov.oportunidad ? ov.oportunidad.id : (project ? project.oportunidad_id : null);
             var oppName = ov && ov.oportunidad ? (ov.oportunidad.nombre || '') : '';
@@ -296,8 +307,10 @@
                 oppChip.style.display = '';
                 oppChip.setAttribute('data-opp-id', oppId);
                 oppChip.setAttribute('title', oppCod ? (oppCod + ' — ' + label) : ('Oportunidad — ' + label));
+                if (oppSep) oppSep.style.display = '';
             } else {
                 oppChip.style.display = 'none';
+                if (oppSep) oppSep.style.display = 'none';
             }
         }
 
@@ -682,8 +695,11 @@
     }
 
     // Apertura automática del detalle al cargar la página si la URL trae
-    // ?open_proyecto=N. Espera a que el listado termine de cargar para
-    // que proyectosVerDetalle pueda hidratar el estado correctamente.
+    // ?open_proyecto=N (opcional &tab=foo). Espera a que el listado termine
+    // de cargar para que proyectosVerDetalle pueda hidratar el estado
+    // correctamente. proyectosVerDetalle se encarga de re-escribir la URL
+    // con replaceState (ahora coordinado vía _proySyncUrl), así que aquí
+    // sólo necesitamos leer y disparar.
     window.proyectosOpenFromUrl = function() {
         try {
             var qs = window.location.search;
@@ -691,19 +707,56 @@
             if (!m) return;
             var pid = parseInt(m[1], 10);
             if (!pid) return;
+            var tabM = qs.match(/[?&]tab=([a-zA-Z0-9_\-]+)/);
+            var initialTab = tabM ? decodeURIComponent(tabM[1]) : null;
             // Esperamos un tick para que el DOM del proyecto esté listo
             setTimeout(function () {
                 if (typeof window.proyectosVerDetalle === 'function') {
-                    window.proyectosVerDetalle(pid);
+                    window.proyectosVerDetalle(pid, initialTab);
                 }
-                // Limpiar el query param sin reload para no re-disparar
-                try {
-                    var newUrl = window.location.pathname + qs.replace(/[?&]open_proyecto=\d+/, '').replace(/^&/, '?');
-                    if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
-                    window.history.replaceState({}, '', newUrl);
-                } catch (e) {}
             }, 200);
         } catch (e) { /* noop */ }
+    };
+
+    // ── Dropdown "Más ▾" del topbar contextual del proyecto ──
+    // Aloja Equipo / Comunicación / Reportes / Info. Al elegir un item
+    // delega en proyectosSetTab.
+    function _proyMoreMenuOpen() {
+        var menu = el('proyMoreMenu');
+        var btn = el('proyMoreBtn');
+        if (!menu) return;
+        menu.style.display = '';
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+        setTimeout(function () {
+            document.addEventListener('mousedown', _proyMoreMenuOutside, true);
+            document.addEventListener('keydown', _proyMoreMenuEsc, true);
+        }, 10);
+    }
+    function _proyMoreMenuClose() {
+        var menu = el('proyMoreMenu');
+        var btn = el('proyMoreBtn');
+        if (menu) menu.style.display = 'none';
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('mousedown', _proyMoreMenuOutside, true);
+        document.removeEventListener('keydown', _proyMoreMenuEsc, true);
+    }
+    function _proyMoreMenuOutside(ev) {
+        var wrap = document.querySelector('.proy-v3-more-wrap');
+        if (wrap && !wrap.contains(ev.target)) _proyMoreMenuClose();
+    }
+    function _proyMoreMenuEsc(ev) {
+        if (ev.key === 'Escape') _proyMoreMenuClose();
+    }
+    window.proyMoreMenuToggle = function(ev) {
+        if (ev) { ev.preventDefault && ev.preventDefault(); ev.stopPropagation && ev.stopPropagation(); }
+        var menu = el('proyMoreMenu');
+        if (!menu) return;
+        var open = menu.style.display !== 'none';
+        if (open) _proyMoreMenuClose(); else _proyMoreMenuOpen();
+    };
+    window.proyMoreMenuPick = function(tab) {
+        _proyMoreMenuClose();
+        if (typeof window.proyectosSetTab === 'function') window.proyectosSetTab(tab);
     };
 
     // ── Agregar miembro: abre popover, busca usuarios, POST al endpoint ──
@@ -1165,14 +1218,59 @@
     //  DETAIL VIEW (opens overlay)
     // =========================================
 
-    window.proyectosVerDetalle = function(projectId) {
+    // Lista v\u00e1lida de tabs del detalle (incluye aliases nuevos +
+    // nombres legacy para no romper c\u00f3digo viejo / deep-links). Si llega
+    // algo distinto, caemos a 'resumen'.
+    var _DETAIL_TAB_VALID = {
+        resumen: 1, dashboard: 1,
+        tareas: 1, programa: 1,
+        partidasv4: 1, partidas: 1, levantamientos: 1,
+        drive: 1,
+        info: 1, equipo: 1, comunicacion: 1, reportes: 1,
+        financiero: 1,
+    };
+
+    function _proyDetailNormalizeTab(t) {
+        if (!t) return 'resumen';
+        return _DETAIL_TAB_VALID[t] ? t : 'resumen';
+    }
+
+    // Sincroniza la URL con el proyecto/tab activos. Se usa tambi\u00e9n desde
+    // proyectosSetTab para que un share-link refleje la secci\u00f3n actual.
+    function _proySyncUrl(projectId, tab) {
+        try {
+            var url = new URL(window.location.href);
+            if (projectId) {
+                url.searchParams.set('open_proyecto', String(projectId));
+                if (tab) url.searchParams.set('tab', tab);
+                else url.searchParams.delete('tab');
+            } else {
+                url.searchParams.delete('open_proyecto');
+                url.searchParams.delete('tab');
+            }
+            window.history.replaceState({}, '', url.pathname + (url.search || '') + (url.hash || ''));
+        } catch (e) { /* noop */ }
+    }
+
+    // proyectosVerDetalle(projectId, initialTab?)
+    //   initialTab opcional \u2192 permite deep-link a una secci\u00f3n espec\u00edfica
+    //   (?open_proyecto=N&tab=tareas). Si no se pasa, abrimos en "Resumen".
+    window.proyectosVerDetalle = function(projectId, initialTab) {
         currentProjectId = projectId;
-        currentTab = 'partidas';
+        var tab = _proyDetailNormalizeTab(initialTab);
+        currentTab = tab;
 
         // Open the detail overlay + lock body scroll
         var overlay = el('widgetProyectoDetalle');
         if (overlay) overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+
+        // Mutate dynamic island: oculta el topbar del listado mientras
+        // estamos dentro del detalle. El topbar contextual del proyecto
+        // (.proy-v3-topbar dentro del overlay) reemplaza visualmente al
+        // del listado. proyectosVolverLista lo restaura.
+        var listTop = el('proyListTopbar');
+        if (listTop) listTop.style.display = 'none';
 
         // Estado vac\u00edo inmediato (evita header con datos del proyecto previo)
         renderProjectOverview(null);
@@ -1197,7 +1295,8 @@
             console.error('Error de red cargando proyecto:', err);
         });
 
-        proyectosSetTab('partidas');
+        proyectosSetTab(tab);
+        _proySyncUrl(projectId, tab);
     };
 
     window.proyectosVolverLista = function() {
@@ -1206,6 +1305,17 @@
         var overlay = el('widgetProyectoDetalle');
         if (overlay) overlay.style.display = 'none';
         document.body.style.overflow = '';
+
+        // Restaurar topbar del listado (la dynamic island vuelve a su forma
+        // original con la c\u00e1psula de "Proyectos" + Filtro/Ordenar/Buscar/+Nuevo).
+        var listTop = el('proyListTopbar');
+        if (listTop) listTop.style.display = '';
+
+        // Cierra el dropdown "M\u00e1s \u25be" si qued\u00f3 abierto
+        if (typeof _proyMoreMenuClose === 'function') _proyMoreMenuClose();
+
+        // Limpia los query params del proyecto para no re-disparar la apertura
+        _proySyncUrl(null, null);
     };
 
 
@@ -1225,13 +1335,35 @@
     //  TABS
     // =========================================
 
+    // Mapeo de los nombres "públicos" (data-tab del topbar / argumento del
+    // deep-link) al ID del DOM <div id="proyPane_*">. Permite renombrar
+    // la UI sin tocar los IDs del HTML que están cableados con CSS / código
+    // legacy. Si el nombre no está aquí, asumimos que el ID es proyPane_<name>.
+    var _PANE_ALIAS = {
+        resumen: 'proyPane_dashboard',          // tab "Resumen" reusa el pane de dashboard
+        levantamientos: 'proyPane_partidas',    // tab "Levantamientos" reusa el pane partidas legacy
+        dashboard: 'proyPane_dashboard',        // legacy direct
+        partidas: 'proyPane_partidas',          // legacy direct
+    };
+
+    // Nombres de tabs visibles en la barra del detalle (lo que aparece como
+    // botón en .proy-v3-topbar-tabs). Sirve para resolver qué activar visual-
+    // mente cuando el tab activo es uno escondido bajo "Más ▾".
+    var _DETAIL_VISIBLE_TABS = ['resumen','tareas','programa','partidasv4','levantamientos','drive'];
+    var _DETAIL_MORE_TABS    = ['equipo','comunicacion','reportes','info'];
+
     window.proyectosSetTab = function(tabName) {
+        tabName = tabName || 'resumen';
         currentTab = tabName;
 
-        // Toggle tab buttons
+        // Toggle tab buttons. Si el tab está dentro del menú "Más ▾", marcamos
+        // como activo ese botón (en lugar del item del menú, que no está visible).
+        var underMore = _DETAIL_MORE_TABS.indexOf(tabName) !== -1;
         var tabs = document.querySelectorAll('.proy-tab-btn');
         tabs.forEach(function(t) {
-            t.classList.toggle('active', t.getAttribute('data-tab') === tabName);
+            var dt = t.getAttribute('data-tab');
+            var match = (dt === tabName) || (underMore && dt === 'more');
+            t.classList.toggle('active', !!match);
         });
 
         // Hide all panes
@@ -1240,24 +1372,38 @@
             pane.style.display = 'none';
         });
 
-        // Show the selected pane
-        var activePane = el('proyPane_' + tabName);
+        // Show the selected pane (resuelve alias si aplica)
+        var paneId = _PANE_ALIAS[tabName] || ('proyPane_' + tabName);
+        var activePane = el(paneId);
         if (activePane) activePane.style.display = '';
+
+        // Cierra el dropdown "Más ▾" cuando se navega
+        if (typeof _proyMoreMenuClose === 'function') _proyMoreMenuClose();
+
+        // Sincroniza URL para que la sección actual sea compartible.
+        if (currentProjectId) _proySyncUrl(currentProjectId, tabName);
 
         // Render data
         if (!currentProjectId) return;
         switch (tabName) {
-            case 'info':       renderInfo(); break;
-            case 'partidas':   renderLevantamientos(currentProjectId); break;
-            case 'partidasv4': renderPartidas(currentProjectId); break;
-            case 'financiero': renderFinanciero(currentProjectId); break;
-            case 'programa':   renderProgramaObra(currentProjectId); break;
-            case 'tareas':     renderTareas(currentProjectId); break;
-            case 'drive':      _renderDrive(currentProjectId); break;
+            case 'info':           renderInfo(); break;
+            case 'partidas':       // legacy alias
+            case 'levantamientos': renderLevantamientos(currentProjectId); break;
+            case 'partidasv4':     renderPartidas(currentProjectId); break;
+            case 'financiero':     renderFinanciero(currentProjectId); break;
+            case 'programa':       renderProgramaObra(currentProjectId); break;
+            case 'tareas':         renderTareas(currentProjectId); break;
+            case 'drive':          _renderDrive(currentProjectId); break;
+            case 'resumen':        // pane "dashboard" es estático (overview ya renderizado)
+            case 'dashboard':      break;
+            // equipo / comunicacion / reportes son placeholders ("Próximamente")
+            case 'equipo':
+            case 'comunicacion':
+            case 'reportes':       break;
         }
 
         // Update KPIs based on active tab
-        if (tabName === 'partidas' || tabName === 'partidasv4' || tabName === 'programa') {
+        if (tabName === 'partidas' || tabName === 'levantamientos' || tabName === 'partidasv4' || tabName === 'programa') {
             renderOperationalKPIs(currentProjectId);
         } else if (tabName === 'financiero') {
             renderFinancialKPIs(currentProjectId);
@@ -3709,33 +3855,19 @@
     //  MAIN TABS: Dashboard / Programa / Financiero
     // =========================================
 
+    // proySetMainTab quedó como shim de compatibilidad. Antes alternaba
+    // entre Dashboard/Programa/Financiero a nivel listado; esos modos
+    // se migraron al Dashboard global. Ahora siempre carga la lista de
+    // proyectos y deja el topbar del listado visible (sólo "Proyectos"
+    // como cápsula informativa). Se mantiene en window para no romper
+    // a quien la siga llamando externamente.
     window.proySetMainTab = function(tab) {
-        _currentMainTab = tab;
-        // Toggle tab buttons
-        document.querySelectorAll('.proy-main-tab').forEach(function(btn) {
-            var isActive = btn.getAttribute('data-tab') === tab;
-            btn.style.background = isActive ? '#fff' : '#f9fafb';
-            btn.style.color = isActive ? '#007AFF' : '#6B7280';
-            btn.style.fontWeight = isActive ? '600' : '500';
-            btn.style.borderBottom = isActive ? '2px solid #007AFF' : '2px solid transparent';
-            btn.classList.toggle('active', isActive);
-        });
-        // Toggle tab content
-        var tabs = ['Dashboard', 'Programa', 'Financiero'];
-        tabs.forEach(function(t) {
-            var panel = el('proyTab' + t);
-            if (panel) panel.style.display = t.toLowerCase() === tab ? '' : 'none';
-        });
-        // Topbar lateral (Filtro/Ordenar/Buscar/+Nuevo) solo aplica al tab "Proyectos".
-        var isPrograma = (tab === 'programa');
+        _currentMainTab = 'programa';
         var topLeft = el('proyTopbarLeft');
         var topRight = el('proyTopbarRight');
-        if (topLeft) topLeft.style.display = isPrograma ? '' : 'none';
-        if (topRight) topRight.style.display = isPrograma ? '' : 'none';
-        // Load data for the active tab
-        if (tab === 'dashboard') _loadDashboard();
-        else if (tab === 'programa') proyectosCargarLista();
-        else if (tab === 'financiero') _loadFinanciero('active');
+        if (topLeft) topLeft.style.display = '';
+        if (topRight) topRight.style.display = '';
+        proyectosCargarLista();
     };
 
     // ── Dashboard ──
