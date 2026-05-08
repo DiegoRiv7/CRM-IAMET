@@ -5330,6 +5330,27 @@
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
             if (proyectosSection) proyectosSection.classList.toggle('active', view === 'proyectos');
             if (widgetCompras) widgetCompras.classList.toggle('active', view === 'compras');
+
+            // Detalle de proyecto: vive fuera de #proyectosSection (es un
+            // template inline). Si cambias a otro módulo (CRM, Tareas,
+            // Compras), el detalle debe ocultarse — si no, queda flotando
+            // y se ve debajo del módulo activo. También restauramos
+            // #proyectosSection por si quedó con display:none de un
+            // proyectosVerDetalle previo.
+            var proyDetail = document.getElementById('widgetProyectoDetalle');
+            if (proyDetail && view !== 'proyectos') {
+                proyDetail.classList.remove('is-open');
+                if (proyectosSection) proyectosSection.style.display = '';
+                // Limpia la URL si quedó con ?open_proyecto=...
+                try {
+                    var url = new URL(window.location.href);
+                    if (url.searchParams.has('open_proyecto') || url.searchParams.has('tab')) {
+                        url.searchParams.delete('open_proyecto');
+                        url.searchParams.delete('tab');
+                        window.history.replaceState({}, '', url.toString());
+                    }
+                } catch (e) { /* defensivo */ }
+            }
             document.querySelectorAll('.island-nav-btn, .crm-sb-btn').forEach(function (b) { b.classList.remove('active'); });
             var activeBtn = document.getElementById(
                 view === 'crm' ? 'btnCRM' :

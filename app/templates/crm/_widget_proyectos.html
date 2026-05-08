@@ -173,34 +173,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Drive
         </button>
-        <!-- "Más ▾" dropdown wrapper. Mantengo posición relativa para que el
-             menú flotante se ancle. El menú es un sibling controlado por JS
-             (proyMoreMenuToggle / proyectosSetTab al click en items). -->
-        <div class="proy-v3-more-wrap" style="position:relative;display:inline-flex;">
-          <button class="proy-v3-topbar-tab proy-tab-btn" type="button" id="proyMoreBtn" data-tab="more" onclick="proyMoreMenuToggle(event)" aria-haspopup="true" aria-expanded="false">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-            Más
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div class="proy-v3-more-menu" id="proyMoreMenu" role="menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:180px;background:#fff;border:1px solid rgba(15,23,42,0.08);border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,0.12);padding:6px;z-index:50;">
-            <button type="button" role="menuitem" class="proy-v3-more-item" data-tab="equipo" onclick="proyMoreMenuPick('equipo')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:transparent;border-radius:8px;font-size:0.82rem;color:#1d1d1f;cursor:pointer;text-align:left;font-family:inherit;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Equipo
-            </button>
-            <button type="button" role="menuitem" class="proy-v3-more-item" data-tab="comunicacion" onclick="proyMoreMenuPick('comunicacion')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:transparent;border-radius:8px;font-size:0.82rem;color:#1d1d1f;cursor:pointer;text-align:left;font-family:inherit;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Comunicación
-            </button>
-            <button type="button" role="menuitem" class="proy-v3-more-item" data-tab="reportes" onclick="proyMoreMenuPick('reportes')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:transparent;border-radius:8px;font-size:0.82rem;color:#1d1d1f;cursor:pointer;text-align:left;font-family:inherit;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
-              Reportes
-            </button>
-            <button type="button" role="menuitem" class="proy-v3-more-item" data-tab="info" onclick="proyMoreMenuPick('info')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:transparent;border-radius:8px;font-size:0.82rem;color:#1d1d1f;cursor:pointer;text-align:left;font-family:inherit;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
-              Info
-            </button>
-          </div>
-        </div>
+        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Finanzas
+        </button>
       </div>
 
       <div class="proy-v3-topbar-right">

@@ -3598,6 +3598,67 @@ select.proy-info-input {
 
 
 /* ════════════════════════════════════════════════════════════════════════════
+   PARTIDAS — table-layout fijo + anchos por columna para evitar scroll-X
+   ──────────────────────────────────────────────────────────────────────────
+   La tabla tiene 14 columnas; sin width fijos la descripción larga estira
+   todo y obliga a scrollear horizontalmente. Con table-layout:fixed +
+   widths en % la tabla cabe en ~1280px y los textos largos se truncan
+   con ellipsis (tooltip nativo via title="" en el HTML).
+   ════════════════════════════════════════════════════════════════════════════ */
+#widgetProyectoDetalle .proy-partidas-table {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 12px;
+}
+
+#widgetProyectoDetalle .proy-partidas-table th,
+#widgetProyectoDetalle .proy-partidas-table td {
+  padding: 11px 10px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(1),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(1) { width: 9%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(2),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(2) { width: 19%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(3),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(3) { width: 8%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(4),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(4) { width: 9%; font-size: 11px; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(5),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(5) { width: 5%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(6),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(6) { width: 5%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(7),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(7) { width: 7%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(8),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(8) { width: 5%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(9),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(9) { width: 7%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(10),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(10) { width: 7%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(11),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(11) { width: 8%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(12),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(12) { width: 7%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(13),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(13) { width: 7%; }
+#widgetProyectoDetalle .proy-partidas-table thead th:nth-child(14),
+#widgetProyectoDetalle .proy-partidas-table tbody td:nth-child(14) { width: 4%; padding: 11px 6px !important; }
+
+/* La fila inline de OCs debajo de cada partida ocupa todo el ancho
+   con colspan=14. Permite envolver el contenido para que no quede
+   tapado por el truncate. */
+#widgetProyectoDetalle .proy-partidas-table tbody .proy-partida-oc-row > td {
+  white-space: normal;
+  overflow: visible;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
    DETALLE DE PROYECTO COMO TEMPLATE INLINE (no overlay)
    ──────────────────────────────────────────────────────────────────────────
    El detalle del proyecto vive en el flujo normal del DOM en lugar de un
