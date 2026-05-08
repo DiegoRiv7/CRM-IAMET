@@ -1392,13 +1392,7 @@
             case 'levantamientos': renderLevantamientos(currentProjectId); break;
             case 'partidasv4':     renderPartidas(currentProjectId); break;
             case 'financiero':     renderFinanciero(currentProjectId); break;
-            case 'programa':
-                if (window.initGanttProgramaObra) {
-                    window.initGanttProgramaObra('proyProgramaContainer', currentProjectId);
-                } else {
-                    renderProgramaObra(currentProjectId);
-                }
-                break;
+            case 'programa':       renderProgramaObra(currentProjectId); break;
             case 'tareas':         renderTareas(currentProjectId); break;
             case 'drive':          _renderDrive(currentProjectId); break;
             case 'resumen':        // pane "dashboard" es estático (overview ya renderizado)

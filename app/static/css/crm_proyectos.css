@@ -5632,27 +5632,10 @@ select.proy-info-input {
 /* =============================================================
    GANTT — Drawer / Fullscreen del Gantt / Fullscreen de actividad
    (Mejoras 1, 2 y 3 del cronograma)
+   Las variables --proy-wm-* se definen en el :root global del módulo
+   (líneas ~2827 y ~3710); aquí NO se redefinen para no pisar la
+   paleta warm-modern del proyecto.
    ============================================================= */
-
-:root {
-    --proy-wm-bg:        #FAF7F2;
-    --proy-wm-surface:   #FFFFFF;
-    --proy-wm-surface-2: #F5F1EA;
-    --proy-wm-border:    #E8E1D5;
-    --proy-wm-text:      #1F2937;
-    --proy-wm-text-2:    #4B5563;
-    --proy-wm-muted:     #94918A;
-    --proy-wm-accent:    #B45309;       /* warm modern accent */
-    --proy-wm-accent-fg: #FFFFFF;
-    --proy-wm-primary:   #3B82F6;       /* ties to existing Gantt blue */
-    --proy-wm-success:   #10B981;
-    --proy-wm-warning:   #F59E0B;
-    --proy-wm-danger:    #EF4444;
-    --proy-wm-shadow:    0 12px 40px rgba(20, 14, 4, 0.18);
-    --proy-wm-radius:    14px;
-    --proy-wm-font:      'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont,
-                         'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
 
 /* ─── Pantalla completa del Gantt (Mejora 1) ─── */
 body.proy-gantt-fullscreen-active,
