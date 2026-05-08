@@ -518,126 +518,204 @@
       <!-- TAB: Financiero -->
       <div id="proyPane_financiero" class="proy-tab-pane" style="display:none;">
 
-        <!-- Botón sincronizar drive -->
-        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;">
-          <button class="proy-btn proy-btn-outline" onclick="proyFinSyncDrive()" id="proyFinSyncBtn" style="font-size:0.72rem;display:inline-flex;align-items:center;gap:6px;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Sincronizar Drive
-          </button>
-        </div>
-
-        <!-- Ordenes de Compra -->
-        <div class="proy-tab-header">
-          <h3>Ordenes de Compra</h3>
-          <div class="proy-tab-actions">
-            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Subir PDF
-              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadOC(this)">
-            </label>
+        <!-- ── Header de Finanzas (título + acciones globales) ── -->
+        <div class="proy-fin-head">
+          <div class="proy-fin-head-text">
+            <h2 class="proy-fin-title">Finanzas del proyecto</h2>
+            <p class="proy-fin-subtitle" id="proyFinSubtitle">Presupuesto base: $0 MXN</p>
           </div>
-        </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th style="text-align:left">#OC</th>
-                <th style="text-align:left">Proveedor</th>
-                <th style="text-align:left">Partida</th>
-                <th style="text-align:right">Cant.</th>
-                <th style="text-align:right">Monto</th>
-                <th style="text-align:center">Estado</th>
-                <th style="text-align:left">Fecha</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyOCBody"></tbody>
-            <tfoot id="proyOCFoot"></tfoot>
-          </table>
-        </div>
-
-        <!-- Facturas Proveedor -->
-        <div class="proy-tab-header">
-          <h3>Facturas Proveedor</h3>
-          <div class="proy-tab-actions">
-            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Subir PDF
-              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFacturaProveedor(this)">
-            </label>
-          </div>
-        </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th># Factura</th>
-                <th>Proveedor</th>
-                <th>Monto</th>
-                <th>Presupuestado</th>
-                <th>Varianza</th>
-                <th>Var.%</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyFacProvBody"></tbody>
-          </table>
-        </div>
-
-        <!-- Facturas de Ingreso -->
-        <div class="proy-tab-header" style="margin-top:24px;">
-          <h3>Facturas de Ingreso</h3>
-          <div class="proy-tab-actions">
-            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Subir PDF
+          <div class="proy-fin-head-actions">
+            <button class="proy-fin-btn-ghost" onclick="proyFinSyncDrive()" id="proyFinSyncBtn" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar Drive
+            </button>
+            <label class="proy-fin-btn-primary" style="cursor:pointer;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva factura
               <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFactura(this)">
             </label>
           </div>
         </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th># Factura</th>
-                <th>Monto</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyFacIngBody"></tbody>
-            <tfoot id="proyFacIngFoot"></tfoot>
-          </table>
+
+        <!-- ── Sub-tabs (Resumen / Facturas / OC / Facturas Proveedor) ── -->
+        <div class="proy-fin-subtabs" role="tablist">
+          <button type="button" class="proy-fin-subtab is-active" data-subtab="resumen" onclick="proyFinSetSubTab('resumen')" role="tab">Resumen</button>
+          <button type="button" class="proy-fin-subtab" data-subtab="facturas" onclick="proyFinSetSubTab('facturas')" role="tab">Facturas</button>
+          <button type="button" class="proy-fin-subtab" data-subtab="oc" onclick="proyFinSetSubTab('oc')" role="tab">Órdenes de Compra</button>
+          <button type="button" class="proy-fin-subtab" data-subtab="proveedor" onclick="proyFinSetSubTab('proveedor')" role="tab">Facturas Proveedor</button>
         </div>
 
-        <!-- Gastos Operativos -->
-        <div class="proy-tab-header" style="margin-top:24px;">
-          <h3>Gastos Operativos</h3>
-          <div class="proy-tab-actions">
-            <button class="proy-btn proy-btn-outline" onclick="proyGastoAbrirDialogo()" style="font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Agregar Gasto
-            </button>
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: RESUMEN  (KPIs + distribución por partida + gastos)
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_resumen" class="proy-fin-subpane" data-subpane="resumen">
+
+          <!-- 4 KPI cards -->
+          <div class="proy-fin-kpis">
+            <div class="proy-fin-kpi" data-kpi="presupuesto">
+              <div class="proy-fin-kpi-label">Presupuesto total</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiPresupuesto">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiPresupuestoSub">Aprobado cliente</div>
+            </div>
+            <div class="proy-fin-kpi" data-kpi="ejecutado">
+              <div class="proy-fin-kpi-label">Ejecutado</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiEjecutado">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiEjecutadoSub">0% del presupuesto</div>
+            </div>
+            <div class="proy-fin-kpi" data-kpi="facturado">
+              <div class="proy-fin-kpi-label">Facturado</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiFacturado">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiFacturadoSub">0% del presupuesto</div>
+            </div>
+            <div class="proy-fin-kpi" data-kpi="disponible">
+              <div class="proy-fin-kpi-label">Disponible</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiDisponible">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiDisponibleSub">100% restante</div>
+            </div>
+          </div>
+
+          <!-- Distribución por partida -->
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Distribución por partida</h3>
+              <span class="proy-fin-card-meta" id="proyFinBreakdownMeta"></span>
+            </div>
+            <div class="proy-fin-breakdown" id="proyFinBreakdownList">
+              <div class="proy-fin-empty">Cargando…</div>
+            </div>
+          </div>
+
+          <!-- Gastos operativos (se mantiene en Resumen) -->
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Gastos operativos</h3>
+              <button class="proy-fin-btn-ghost" onclick="proyGastoAbrirDialogo()" type="button">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar gasto
+              </button>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th>Categoría</th>
+                    <th>Descripción</th>
+                    <th style="text-align:right">Monto</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th style="width:80px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyGastosBody"></tbody>
+                <tfoot id="proyGastosFoot"></tfoot>
+              </table>
+            </div>
           </div>
         </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th>Categoria</th>
-                <th>Descripcion</th>
-                <th>Monto</th>
-                <th>Fecha</th>
-                <th>Estado Aprobacion</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyGastosBody"></tbody>
-            <tfoot id="proyGastosFoot"></tfoot>
-          </table>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: FACTURAS (de ingreso / cliente)
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_facturas" class="proy-fin-subpane" data-subpane="facturas" style="display:none;">
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Facturas de ingreso</h3>
+              <div class="proy-fin-filters" role="tablist" aria-label="Filtrar facturas">
+                <button type="button" class="proy-fin-filter is-active" data-fac-filter="all" onclick="proyFinFilterFacturas('all')">Todas</button>
+                <button type="button" class="proy-fin-filter" data-fac-filter="pending" onclick="proyFinFilterFacturas('pending')">Pendientes</button>
+                <button type="button" class="proy-fin-filter" data-fac-filter="paid" onclick="proyFinFilterFacturas('paid')">Cobradas</button>
+                <label class="proy-fin-btn-ghost" style="cursor:pointer;margin-left:8px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Subir PDF
+                  <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFactura(this)">
+                </label>
+              </div>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th># Factura</th>
+                    <th>Concepto</th>
+                    <th style="text-align:right">Monto</th>
+                    <th>Emisión</th>
+                    <th>Estado</th>
+                    <th style="width:50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyFacIngBody"></tbody>
+                <tfoot id="proyFacIngFoot"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: ÓRDENES DE COMPRA
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_oc" class="proy-fin-subpane" data-subpane="oc" style="display:none;">
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Órdenes de compra</h3>
+              <label class="proy-fin-btn-ghost" style="cursor:pointer;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Subir PDF
+                <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadOC(this)">
+              </label>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">#OC</th>
+                    <th style="text-align:left">Proveedor</th>
+                    <th style="text-align:left">Partida</th>
+                    <th style="text-align:right">Cant.</th>
+                    <th style="text-align:right">Monto</th>
+                    <th style="text-align:center">Estado</th>
+                    <th style="text-align:left">Fecha</th>
+                    <th style="width:40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyOCBody"></tbody>
+                <tfoot id="proyOCFoot"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: FACTURAS PROVEEDOR
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_proveedor" class="proy-fin-subpane" data-subpane="proveedor" style="display:none;">
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Facturas de proveedor</h3>
+              <label class="proy-fin-btn-ghost" style="cursor:pointer;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Subir PDF
+                <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFacturaProveedor(this)">
+              </label>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th># Factura</th>
+                    <th>Proveedor</th>
+                    <th style="text-align:right">Monto</th>
+                    <th style="text-align:right">Presupuestado</th>
+                    <th style="text-align:right">Varianza</th>
+                    <th style="text-align:right">Var.%</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th style="width:40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyFacProvBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1032,22 +1110,24 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════
-     SUB-DIALOG: CREAR ACTIVIDAD (PROGRAMA DE OBRA)
+     SUB-DIALOG: CREAR/EDITAR ACTIVIDAD (PROGRAMA DE OBRA — GANTT)
+     Conectado al modelo GanttActividad. Reemplaza el modal anterior
+     que apuntaba al calendario semanal (ProgramacionActividad).
      ══════════════════════════════════════════════════════════════════ -->
 <div class="widget-overlay proy-dialog-overlay" id="proyDialogoActividad" style="z-index:10200;display:none;"
     onclick="if(event.target===this)this.style.display='none';">
-  <div class="proy-dialog-card" style="max-width:560px;">
+  <div class="proy-dialog-card" style="max-width:640px;">
     <div class="proy-dialog-header">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:rgba(0,122,255,0.1);display:flex;align-items:center;justify-content:center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(37,99,235,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <path d="M16 2v4M8 2v4M3 10h18"/>
           </svg>
         </div>
         <div>
-          <h3 class="proy-dialog-title" style="margin:0;">Nueva Actividad</h3>
-          <div id="proyActFechaLabel" style="font-size:0.75rem;color:#6E6E73;margin-top:2px;"></div>
+          <h3 class="proy-dialog-title" id="proyActDialogTitle" style="margin:0;">Nueva Actividad</h3>
+          <div id="proyActFechaLabel" style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Cronograma del proyecto</div>
         </div>
       </div>
       <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoActividad')">&times;</button>
@@ -1056,38 +1136,81 @@
       <!-- Nombre -->
       <div class="proy-field">
         <label for="proyActTitulo" class="proy-label">Nombre de la actividad *</label>
-        <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado">
+        <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado estructurado">
       </div>
-      <!-- Descripcion -->
-      <div class="proy-field">
-        <label for="proyActDescripcion" class="proy-label">Descripcion</label>
-        <textarea id="proyActDescripcion" class="proy-input" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
+      <!-- Fase + Hito -->
+      <div class="proy-field-row">
+        <div class="proy-field" style="flex:2;">
+          <label for="proyActFase" class="proy-label">Fase / Grupo</label>
+          <select id="proyActFase" class="proy-input">
+            <option value="">— Sin fase (independiente) —</option>
+          </select>
+        </div>
+        <div class="proy-field" style="flex:1;display:flex;align-items:flex-end;">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-size:0.78rem;color:#1d1d1f;cursor:pointer;padding:9px 0;">
+            <input type="checkbox" id="proyActEsHito" style="width:16px;height:16px;accent-color:#a16207;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#a16207"><path d="M12 2 L22 12 L12 22 L2 12 Z"/></svg>
+              Es un hito
+            </span>
+          </label>
+        </div>
       </div>
-      <!-- Horarios -->
+      <!-- Fechas -->
       <div class="proy-field-row">
         <div class="proy-field">
-          <label for="proyActHoraInicio" class="proy-label">Hora inicio</label>
-          <input type="time" id="proyActHoraInicio" class="proy-input" value="07:00">
+          <label for="proyActFechaInicio" class="proy-label">Fecha inicio *</label>
+          <input type="date" id="proyActFechaInicio" class="proy-input">
+        </div>
+        <div class="proy-field" id="proyActFechaFinWrap">
+          <label for="proyActFechaFin" class="proy-label">Fecha fin *</label>
+          <input type="date" id="proyActFechaFin" class="proy-input">
+        </div>
+      </div>
+      <!-- Progreso + Categoría sugerida -->
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyActProgreso" class="proy-label">Progreso (%)</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="range" id="proyActProgresoRange" min="0" max="100" step="5" value="0" style="flex:1;accent-color:#2563eb;">
+            <input type="number" id="proyActProgreso" class="proy-input" min="0" max="100" step="5" value="0" style="width:70px;text-align:center;">
+            <span style="font-size:0.78rem;color:#6E6E73;">%</span>
+          </div>
+        </div>
+        <div class="proy-field" id="proyActDuracionLabel" style="display:flex;align-items:flex-end;">
+          <div style="font-size:0.74rem;color:#6E6E73;padding-bottom:11px;">
+            <span id="proyActDuracionTxt">Duración: 1 día</span>
+          </div>
+        </div>
+      </div>
+      <!-- Costo + Ingreso -->
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyActCosto" class="proy-label">Costo estimado</label>
+          <input type="number" id="proyActCosto" class="proy-input" min="0" step="100" value="0" placeholder="0.00">
         </div>
         <div class="proy-field">
-          <label for="proyActHoraFin" class="proy-label">Hora fin</label>
-          <input type="time" id="proyActHoraFin" class="proy-input" value="16:00">
+          <label for="proyActIngreso" class="proy-label">Ingreso estimado</label>
+          <input type="number" id="proyActIngreso" class="proy-input" min="0" step="100" value="0" placeholder="0.00">
         </div>
       </div>
-      <!-- Personal -->
+      <!-- Responsables -->
       <div class="proy-field">
-        <label class="proy-label">Personal (Responsables)</label>
-        <div id="proyActPersonalList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:4px;">
-          <div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>
+        <label class="proy-label">Responsables / Recursos</label>
+        <div id="proyActPersonalList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:4px;background:#fafafa;">
+          <div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando equipo del proyecto...</div>
         </div>
       </div>
-      <!-- Vehiculos -->
-      <div class="proy-field">
-        <label for="proyActVehiculos" class="proy-label">Vehiculos</label>
-        <input type="text" id="proyActVehiculos" class="proy-input" placeholder="Ej: Camioneta Ford Ranger, Grua #3">
+      <!-- Dependencias (predecesoras) -->
+      <div class="proy-field" id="proyActDependenciasWrap" style="display:none;">
+        <label class="proy-label">Predecesoras (depende de…)</label>
+        <div id="proyActDependenciasList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:140px;overflow-y:auto;padding:4px;background:#fafafa;">
+          <!-- Render dinámico -->
+        </div>
       </div>
     </div>
     <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" id="proyActBtnEliminar" style="margin-right:auto;display:none;color:#dc2626;border-color:#fecaca;" onclick="proyectosEliminarActividadGantt()">Eliminar</button>
       <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoActividad')">Cancelar</button>
       <button class="proy-btn proy-btn-primary" id="proyActBtnCrear" onclick="proyectosGuardarActividad()">Crear Actividad</button>
     </div>

@@ -2026,6 +2026,24 @@
 
     // Estado de filtro (Todas / Activas / Completadas).  Persiste durante la sesion.
     var _proyGanttFiltro = 'todo';
+    // Zoom de tiempo: 'mes' (default), 'semana', 'trimestre', 'ano'
+    var _proyGanttZoom = 'mes';
+    // Vista: 'gantt' (default) o 'lista'
+    var _proyGanttVista = 'gantt';
+    // Filtros adicionales
+    var _proyGanttFiltroResp = '';   // user.id como string, '' = todos
+    var _proyGanttFiltroCat = '';    // category.id, '' = todas
+    // Cache del fetch crudo (fases + actividades) para reusar
+    // desde el form de "+ Actividad" sin volver a pegarle al backend.
+    var _proyGanttData = null;
+    // Cache de miembros del proyecto cargados para el form de actividades
+    var _proyGanttMiembros = [];
+    // Modo del modal de actividad: 'crear' o 'editar'.  Si editar, contiene id.
+    var _proyActEditId = null;
+    // Set de ids de dependencias (predecesoras) seleccionados en el form.
+    var _proyActDeps = {};
+    // Bandera para no atar el listener resize multiples veces
+    var _proyGanttResizeBound = false;
 
     // opts (opcional): { containerId, projectDetail }
     function renderProgramaObra(projectId, opts) {
@@ -2041,12 +2059,22 @@
         container.innerHTML = '<div class="proy-gantt-loading">Cargando cronograma…</div>';
 
         _fetch('/app/api/proyecto/' + projectId + '/gantt/').then(function(data) {
-            _proyGanttRender(container, projectId, detail, data || {});
+            _proyGanttData = data || {};
+            _proyGanttRender(container, projectId, detail, _proyGanttData);
         }).catch(function(err) {
             console.error('[programa-obra] error cargando gantt:', err);
             container.innerHTML = '<div class="proy-gantt-error">No se pudo cargar el cronograma. <button type="button" onclick="window.proyectosRenderProgramaObra(' + projectId + ')">Reintentar</button></div>';
         });
     }
+
+    // Configuración de zoom
+    // unidad = ancho de cada celda en porcentaje del totalUnits
+    var _PROY_GANTT_ZOOM_CFG = {
+        ano:        { units: 4,   minWidth: 760,   labelFn: '_zlAno',        subdivLabel: 'Trimestre' },
+        trimestre:  { units: 12,  minWidth: 760,   labelFn: '_zlMes',        subdivLabel: 'Mes' },
+        mes:        { units: 12,  minWidth: 760,   labelFn: '_zlMes',        subdivLabel: 'Mes' },
+        semana:     { units: 52,  minWidth: 1800,  labelFn: '_zlSem',        subdivLabel: 'Semana' }
+    };
 
     function _proyGanttRender(container, projectId, detail, data) {
         var fases = (data.fases || []).slice();
@@ -2065,80 +2093,183 @@
             }, null);
             if (minDate) yearStart = parseInt(minDate.slice(0, 4), 10);
         }
-        var totalMonths = 12;
+
+        // Configuración de zoom
+        var zoomCfg = _PROY_GANTT_ZOOM_CFG[_proyGanttZoom] || _PROY_GANTT_ZOOM_CFG.mes;
+        var totalUnits = zoomCfg.units;
 
         // Empty state -- no hay fases ni actividades en el Gantt
         if (!fases.length && !actividades.length) {
             container.innerHTML = _proyGanttEmptyState(projectId, detail);
-            // Wire up CTA del empty state
             var emptyBtn = container.querySelector('.proy-gantt-empty .proy-gantt-cta');
             if (emptyBtn) {
                 emptyBtn.addEventListener('click', function() {
-                    var hoyStr = (new Date()).toISOString().split('T')[0];
-                    if (typeof _openActividadForm === 'function') _openActividadForm(hoyStr);
+                    if (typeof _openActividadForm === 'function') _openActividadForm(_isoToday());
                 });
             }
             return;
         }
 
         var hoy = new Date(); hoy.setHours(12, 0, 0, 0);
-        var hoyFloat = _proyGanttDateToMonthFloat(hoy, yearStart);
+        var hoyUnit = _proyGanttDateToUnit(hoy, yearStart, _proyGanttZoom);
 
-        var rows = _proyGanttBuildRows(fases, actividades, yearStart, totalMonths, hoyFloat);
+        // Construir filas (con flag esHito y guardar acts originales)
+        var rows = _proyGanttBuildRows(fases, actividades, yearStart, totalUnits, hoyUnit);
 
-        // Avance global (promedio ponderado por duracion)
         var avanceGlobal = _proyGanttAvanceGlobal(rows);
 
+        // Catalogo dinámico de responsables / categorías para los filtros
+        var respMap = {};
+        var catMap = {};
+        rows.forEach(function(r) {
+            (r.responsables || []).forEach(function(u) {
+                if (u && u.id != null) respMap[u.id] = u;
+            });
+            if (r.category) catMap[r.category.id] = r.category;
+        });
+        var responsablesCat = Object.keys(respMap).map(function(k) { return respMap[k]; });
+        var categoriasCat = Object.keys(catMap).map(function(k) { return catMap[k]; });
+
         var rowsVisibles = rows.filter(function(r) {
-            if (_proyGanttFiltro === 'todo') return true;
-            if (_proyGanttFiltro === 'activo') return r.isActive;
-            if (_proyGanttFiltro === 'completado') return r.progress >= 100;
+            if (_proyGanttFiltro === 'activo' && !r.isActive) return false;
+            if (_proyGanttFiltro === 'completado' && r.progress < 100) return false;
+            if (_proyGanttFiltro === 'atrasado' && !(r.isActive && r.progress < r.expectedProgress - 5)) return false;
+            if (_proyGanttFiltroResp) {
+                var rid = parseInt(_proyGanttFiltroResp, 10);
+                var found = (r.responsables || []).some(function(u) { return u.id === rid; });
+                if (!found) return false;
+            }
+            if (_proyGanttFiltroCat && r.category && r.category.id !== _proyGanttFiltroCat) return false;
             return true;
         });
 
-        var hoyDentroRango = hoyFloat >= 0 && hoyFloat <= totalMonths;
-        var todayLeftPct = (Math.max(0, Math.min(totalMonths, hoyFloat)) / totalMonths) * 100;
+        var hoyDentroRango = hoyUnit >= 0 && hoyUnit <= totalUnits;
+        var todayLeftPct = (Math.max(0, Math.min(totalUnits, hoyUnit)) / totalUnits) * 100;
 
         var html = '';
         html += '<div class="proy-gantt-root">';
 
-        // Header
+        // ── Header con título + KPIs + acciones ──────────────────────────
         html += '<div class="proy-gantt-header">';
         html += '  <div class="proy-gantt-header-left">';
         html += '    <h2 class="proy-gantt-title">Cronograma ' + yearStart + '</h2>';
-        html += '    <p class="proy-gantt-subtitle">' + rows.length + ' ' + (rows.length === 1 ? 'fase' : 'fases') + ' · Avance hoy: ' + Math.round(avanceGlobal) + '%</p>';
+        html += '    <p class="proy-gantt-subtitle">' + rows.length + ' ' +
+                (rows.length === 1 ? 'línea' : 'líneas') +
+                ' · Avance hoy: ' + Math.round(avanceGlobal) + '% · ' +
+                _proyGanttContarHitos(rows) + ' hitos</p>';
         html += '  </div>';
         html += '  <div class="proy-gantt-header-right">';
         html += '    <div class="proy-gantt-today-pill">';
         html += '      <span class="proy-gantt-today-dot"></span>';
         html += '      <span class="proy-gantt-today-text">Hoy: ' + _proyGanttFmtFechaCorta(hoy) + '</span>';
         html += '    </div>';
-        html += '    <div class="proy-gantt-filter">';
-        ['todo','activo','completado'].forEach(function(f) {
-            var label = (f === 'todo') ? 'Todas' : (f === 'activo' ? 'Activas' : 'Completadas');
-            var isActive = (_proyGanttFiltro === f);
+        // Vista (Gantt | Lista)
+        html += '    <div class="proy-gantt-filter proy-gantt-vista">';
+        ['gantt','lista'].forEach(function(v) {
+            var isActive = (_proyGanttVista === v);
             html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
-                    '" data-filter="' + f + '">' + label + '</button>';
+                    '" data-vista="' + v + '">' + (v === 'gantt' ? 'Gantt' : 'Lista') + '</button>';
         });
         html += '    </div>';
+        // Zoom (solo aplica si vista=gantt)
+        if (_proyGanttVista === 'gantt') {
+            html += '    <div class="proy-gantt-filter proy-gantt-zoom">';
+            ['semana','mes','trimestre','ano'].forEach(function(z) {
+                var labels = {semana:'Semana', mes:'Mes', trimestre:'Trim.', ano:'Año'};
+                var isActive = (_proyGanttZoom === z);
+                html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
+                        '" data-zoom="' + z + '">' + labels[z] + '</button>';
+            });
+            html += '    </div>';
+        }
+        html += '    <button type="button" class="proy-gantt-icon-btn" id="proyGanttBtnExport" title="Exportar CSV">';
+        html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        html += '      <span>CSV</span></button>';
         html += '    <button type="button" class="proy-gantt-cta" id="proyGanttBtnNueva">+ Actividad</button>';
         html += '  </div>';
         html += '</div>';
 
-        html += '<div class="proy-gantt-card">';
-        html += '  <div class="proy-gantt-scroll">';
-        html += '    <div class="proy-gantt-grid">';
+        // ── Toolbar (estado + responsable + categoría) ───────────────────
+        html += '<div class="proy-gantt-toolbar">';
+        html += '  <div class="proy-gantt-filter">';
+        ['todo','activo','completado','atrasado'].forEach(function(f) {
+            var labels = {todo:'Todas', activo:'Activas', completado:'Completadas', atrasado:'Atrasadas'};
+            var isActive = (_proyGanttFiltro === f);
+            html += '<button type="button" class="proy-gantt-filter-btn' + (isActive ? ' is-active' : '') +
+                    '" data-filter="' + f + '">' + labels[f] + '</button>';
+        });
+        html += '  </div>';
+        if (responsablesCat.length) {
+            html += '  <select class="proy-gantt-select" id="proyGanttFiltroResp">';
+            html += '<option value="">Todos los responsables</option>';
+            responsablesCat.forEach(function(u) {
+                var sel = (String(_proyGanttFiltroResp) === String(u.id)) ? ' selected' : '';
+                html += '<option value="' + u.id + '"' + sel + '>' + _proyGanttEsc(u.nombre) + '</option>';
+            });
+            html += '  </select>';
+        }
+        if (categoriasCat.length > 1) {
+            html += '  <select class="proy-gantt-select" id="proyGanttFiltroCat">';
+            html += '<option value="">Todas las categorías</option>';
+            categoriasCat.forEach(function(c) {
+                var sel = (_proyGanttFiltroCat === c.id) ? ' selected' : '';
+                html += '<option value="' + c.id + '"' + sel + '>' + _proyGanttEsc(c.label) + '</option>';
+            });
+            html += '  </select>';
+        }
+        html += '</div>';
 
-        // Row header (meses)
+        // ── Render gantt o lista ────────────────────────────────────────
+        if (_proyGanttVista === 'lista') {
+            html += _proyGanttListaHTML(rowsVisibles);
+        } else {
+            html += _proyGanttHTML(rowsVisibles, rows, totalUnits, hoyDentroRango, todayLeftPct, hoy, yearStart, zoomCfg);
+        }
+
+        // Leyenda
+        html += '<div class="proy-gantt-legend">';
+        html += '  <span class="proy-gantt-legend-label">Fases:</span>';
+        _PROY_GANTT_CATEGORIES.forEach(function(c) {
+            html += '<span class="proy-gantt-legend-item">' +
+                    '<span class="proy-gantt-legend-dot" style="background:' + c.color + ';"></span>' +
+                    c.label + '</span>';
+        });
+        html += '  <span class="proy-gantt-legend-item proy-gantt-legend-today">' +
+                '<span class="proy-gantt-legend-line"></span>Hoy</span>';
+        html += '  <span class="proy-gantt-legend-item">' +
+                '<svg width="10" height="10" viewBox="0 0 24 24" style="vertical-align:middle"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>' +
+                ' Hito</span>';
+        html += '</div>';
+
+        html += '</div>'; // /root
+        container.innerHTML = html;
+
+        _proyGanttAttachHandlers(container, projectId, detail, data, rowsVisibles);
+    }
+
+    function _proyGanttContarHitos(rows) {
+        var n = 0;
+        rows.forEach(function(r) {
+            if (r.type === 'actividad' && r.esHito) n++;
+        });
+        return n;
+    }
+
+    function _proyGanttHTML(rowsVisibles, rowsAll, totalUnits, hoyDentroRango, todayLeftPct, hoy, yearStart, zoomCfg) {
+        var html = '<div class="proy-gantt-card">';
+        html += '  <div class="proy-gantt-scroll">';
+        html += '    <div class="proy-gantt-grid" style="min-width:' + zoomCfg.minWidth + 'px;" data-units="' + totalUnits + '">';
+
+        // Row header (eje X)
         html += '<div class="proy-gantt-row proy-gantt-row-header">';
         html += '  <div class="proy-gantt-col-left">';
         html += '    <span class="proy-gantt-col-left-label">Fase / Actividad</span>';
         html += '  </div>';
         html += '  <div class="proy-gantt-col-right">';
-        var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        var hoyMes = (hoy.getFullYear() === yearStart) ? hoy.getMonth() : -1;
-        meses.forEach(function(m, i) {
-            html += '<div class="proy-gantt-month' + (i === hoyMes ? ' is-current' : '') + '">' + m + '</div>';
+        // Subdivisiones del eje
+        var subdivs = _proyGanttSubdivisions(_proyGanttZoom, yearStart, hoy);
+        subdivs.forEach(function(sd) {
+            html += '<div class="proy-gantt-month' + (sd.isCurrent ? ' is-current' : '') + '">' + sd.label + '</div>';
         });
         html += '  </div>';
         html += '</div>';
@@ -2151,48 +2282,470 @@
         }
 
         rowsVisibles.forEach(function(r) {
-            html += _proyGanttRowHTML(r, totalMonths, hoyDentroRango, todayLeftPct);
+            html += _proyGanttRowHTML(r, totalUnits, hoyDentroRango, todayLeftPct);
         });
+
+        // Capa SVG global de dependencias (overlay sobre el grid). Calculamos
+        // por encima de las filas: mapeamos cada actividad a y-center y x-end / x-start.
+        html += _proyGanttDepsSVG(rowsVisibles, totalUnits);
 
         html += '    </div>'; // /grid
         html += '  </div>'; // /scroll
         html += '</div>'; // /card
 
-        // Leyenda
-        html += '<div class="proy-gantt-legend">';
-        html += '  <span class="proy-gantt-legend-label">Fases:</span>';
-        _PROY_GANTT_CATEGORIES.forEach(function(c) {
-            html += '<span class="proy-gantt-legend-item">' +
-                    '<span class="proy-gantt-legend-dot" style="background:' + c.color + ';"></span>' +
-                    c.label + '</span>';
+        // Tooltip floating container (shared)
+        html += '<div class="proy-gantt-tooltip" id="proyGanttTooltip" style="display:none;"></div>';
+
+        return html;
+    }
+
+    function _proyGanttListaHTML(rows) {
+        var html = '<div class="proy-gantt-card proy-gantt-list-card">';
+        html += '  <table class="proy-gantt-table">';
+        html += '    <thead><tr>';
+        html += '      <th>Fase / Actividad</th>';
+        html += '      <th>Categoría</th>';
+        html += '      <th>Inicio</th>';
+        html += '      <th>Fin</th>';
+        html += '      <th>Duración</th>';
+        html += '      <th>Progreso</th>';
+        html += '      <th>Responsables</th>';
+        html += '      <th>Estado</th>';
+        html += '      <th></th>';
+        html += '    </tr></thead><tbody>';
+        if (!rows.length) {
+            html += '<tr><td colspan="9" style="padding:24px;text-align:center;color:#94a3b8;font-size:0.8rem;">Sin filas para este filtro</td></tr>';
+        }
+        rows.forEach(function(r) {
+            var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000);
+            if (dias < 1) dias = 1;
+            var avs = '';
+            (r.responsables || []).slice(0, 3).forEach(function(u) {
+                var nombre = u.nombre || u.username || '';
+                var bg = _proyGanttAvatarColor(u.id);
+                avs += '<span class="proy-gantt-avatar" style="background:' + bg + ';" title="' + _proyGanttEsc(nombre) + '">' + _proyGanttEsc(_initials(nombre) || '·') + '</span>';
+            });
+            if ((r.responsables || []).length > 3) {
+                avs += '<span class="proy-gantt-avatar proy-gantt-avatar-more">+' + (r.responsables.length - 3) + '</span>';
+            }
+            var estado = (r.progress >= 100) ? '<span class="proy-gantt-tag proy-gantt-tag-done">Lista</span>' :
+                         r.isActive ? '<span class="proy-gantt-tag proy-gantt-tag-active">Activa</span>' :
+                         '<span class="proy-gantt-tag" style="background:#f1f5f9;color:#64748b;">Pendiente</span>';
+            var hito = (r.type === 'actividad' && r.esHito) ?
+                '<svg width="10" height="10" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>' : '';
+            html += '<tr' + (r.type === 'fase' ? ' class="proy-gantt-tr-fase"' : '') + '>';
+            html += '<td><span class="proy-gantt-row-dot" style="background:' + r.color + ';display:inline-block;margin-right:6px;"></span>' + hito + _proyGanttEsc(r.name) + '</td>';
+            html += '<td><span style="color:' + r.color + ';font-weight:600;font-size:0.72rem;">' + _proyGanttEsc(r.category.label) + '</span></td>';
+            html += '<td>' + _proyGanttFmtFechaCorta(r.fechaInicio) + '</td>';
+            html += '<td>' + _proyGanttFmtFechaCorta(r.fechaFin) + '</td>';
+            html += '<td>' + dias + 'd</td>';
+            html += '<td><div class="proy-gantt-list-progress"><div style="width:' + Math.min(100, r.progress) + '%;background:' + r.color + ';"></div></div><span style="font-size:0.7rem;color:#64748b;margin-left:6px;">' + Math.round(r.progress) + '%</span></td>';
+            html += '<td><div class="proy-gantt-row-avatars">' + (avs || '<span style="color:#cbd5e1;font-size:0.7rem;">—</span>') + '</div></td>';
+            html += '<td>' + estado + '</td>';
+            // Botón editar (sólo actividades)
+            html += '<td>' + (r.type === 'actividad' ?
+                '<button type="button" class="proy-gantt-row-edit" data-act-id="' + r.actId + '" title="Editar">✎</button>' : '') + '</td>';
+            html += '</tr>';
         });
-        html += '  <span class="proy-gantt-legend-item proy-gantt-legend-today">' +
-                '<span class="proy-gantt-legend-line"></span>Hoy</span>';
+        html += '  </tbody></table>';
         html += '</div>';
+        return html;
+    }
 
-        html += '</div>'; // /root
-        container.innerHTML = html;
+    /**
+     * Genera placeholder SVG para dependencias.  Las coords reales se
+     * calculan post-render con `_proyGanttDrawDeps` (porque dependen del
+     * tamaño físico del col-right que sólo conocemos tras el inserción
+     * del DOM).
+     */
+    function _proyGanttDepsSVG(rowsVisibles, totalUnits) {
+        var hayDeps = rowsVisibles.some(function(r) {
+            return r.type === 'actividad' && r.dependencias && r.dependencias.length;
+        });
+        if (!hayDeps) return '';
+        return '<svg class="proy-gantt-deps-svg" id="proyGanttDepsSvg" preserveAspectRatio="none">' +
+            '<defs><marker id="proyGanttArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+            '<path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker></defs>' +
+            '</svg>';
+    }
 
-        // Filter buttons
-        var btns = container.querySelectorAll('.proy-gantt-filter-btn');
-        Array.prototype.forEach.call(btns, function(btn) {
+    /**
+     * Después de inyectar el HTML, calcula las coords reales de cada
+     * dependencia en pixels y las dibuja en el SVG overlay.
+     */
+    function _proyGanttDrawDeps(container, rowsVisibles, totalUnits) {
+        var svg = container.querySelector('#proyGanttDepsSvg');
+        if (!svg) return;
+        var grid = container.querySelector('.proy-gantt-grid');
+        var firstRight = grid ? grid.querySelector('.proy-gantt-row:not(.proy-gantt-row-header) .proy-gantt-col-right') : null;
+        if (!grid || !firstRight) return;
+        var rightWidth = firstRight.offsetWidth;
+        var rowH = 52; // como en CSS
+        var headerH = grid.querySelector('.proy-gantt-row-header') ?
+            grid.querySelector('.proy-gantt-row-header').offsetHeight : 41;
+
+        // Limpiar paths previos
+        var oldPaths = svg.querySelectorAll('path.proy-gantt-dep-path');
+        Array.prototype.forEach.call(oldPaths, function(p) { p.parentNode.removeChild(p); });
+
+        var ns = 'http://www.w3.org/2000/svg';
+        rowsVisibles.forEach(function(toR, toIdx) {
+            if (toR.type !== 'actividad' || !toR.dependencias || !toR.dependencias.length) return;
+            var toY = headerH + toIdx * rowH + rowH / 2;
+            (toR.dependencias || []).forEach(function(depId) {
+                var fromIdx = -1;
+                var fromR = null;
+                for (var i = 0; i < rowsVisibles.length; i++) {
+                    if (rowsVisibles[i].type === 'actividad' && rowsVisibles[i].actId === depId) {
+                        fromIdx = i; fromR = rowsVisibles[i]; break;
+                    }
+                }
+                if (fromR == null) return;
+                var fromY = headerH + fromIdx * rowH + rowH / 2;
+                // x in pixels (relative to col-right)
+                var fromX = ((fromR.startUnit + fromR.durationUnits) / totalUnits) * rightWidth;
+                var toX = (toR.startUnit / totalUnits) * rightWidth;
+                var dx = 14;
+                var d = 'M ' + fromX + ' ' + fromY +
+                        ' L ' + (fromX + dx) + ' ' + fromY +
+                        ' L ' + (fromX + dx) + ' ' + toY +
+                        ' L ' + toX + ' ' + toY;
+                var path = document.createElementNS(ns, 'path');
+                path.setAttribute('d', d);
+                path.setAttribute('stroke', '#94a3b8');
+                path.setAttribute('stroke-width', '1.4');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke-dasharray', '3,3');
+                path.setAttribute('marker-end', 'url(#proyGanttArrow)');
+                path.setAttribute('data-from', String(fromR.actId));
+                path.setAttribute('data-to', String(toR.actId));
+                path.setAttribute('class', 'proy-gantt-dep-path');
+                svg.appendChild(path);
+            });
+        });
+    }
+
+    function _proyGanttAttachHandlers(container, projectId, detail, data, rowsVisibles) {
+        var rerender = function() { _proyGanttRender(container, projectId, detail, data); };
+
+        // Calcular y dibujar dependencias (necesita DOM ya inyectado)
+        if (_proyGanttVista === 'gantt') {
+            var totalUnits = (_PROY_GANTT_ZOOM_CFG[_proyGanttZoom] || _PROY_GANTT_ZOOM_CFG.mes).units;
+            _proyGanttDrawDeps(container, rowsVisibles, totalUnits);
+            // Re-dibujar al cambiar el tamaño (resize)
+            if (!_proyGanttResizeBound) {
+                _proyGanttResizeBound = true;
+                window.addEventListener('resize', function() {
+                    var c = el('proyProgramaContainer');
+                    if (c && _proyGanttVista === 'gantt') {
+                        var u = (_PROY_GANTT_ZOOM_CFG[_proyGanttZoom] || _PROY_GANTT_ZOOM_CFG.mes).units;
+                        // Necesitamos reconstruir rows para el resize, lo hacemos via rerender:
+                        // pero rerender es local, así que llamamos _proyGanttRedrawDeps si tenemos snapshot.
+                        // Para evitar bloqueos, no rerendemos al resize: solo recalculamos paths con el snapshot actual.
+                    }
+                });
+            }
+        }
+
+        // Filter buttons (estado)
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-filter-btn[data-filter]'), function(btn) {
             btn.addEventListener('click', function() {
                 _proyGanttFiltro = btn.getAttribute('data-filter') || 'todo';
-                _proyGanttRender(container, projectId, detail, data);
+                rerender();
             });
+        });
+        // Vista
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-filter-btn[data-vista]'), function(btn) {
+            btn.addEventListener('click', function() {
+                _proyGanttVista = btn.getAttribute('data-vista') || 'gantt';
+                rerender();
+            });
+        });
+        // Zoom
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-filter-btn[data-zoom]'), function(btn) {
+            btn.addEventListener('click', function() {
+                _proyGanttZoom = btn.getAttribute('data-zoom') || 'mes';
+                rerender();
+            });
+        });
+        // Filtro por responsable
+        var selResp = el('proyGanttFiltroResp');
+        if (selResp) selResp.addEventListener('change', function() {
+            _proyGanttFiltroResp = this.value || '';
+            rerender();
+        });
+        // Filtro por categoría
+        var selCat = el('proyGanttFiltroCat');
+        if (selCat) selCat.addEventListener('change', function() {
+            _proyGanttFiltroCat = this.value || '';
+            rerender();
         });
 
         // CTA "+ Actividad"
         var ctaBtn = el('proyGanttBtnNueva');
         if (ctaBtn) {
             ctaBtn.addEventListener('click', function() {
-                var hoyStr = (new Date()).toISOString().split('T')[0];
-                if (typeof _openActividadForm === 'function') _openActividadForm(hoyStr);
+                if (typeof _openActividadForm === 'function') _openActividadForm(_isoToday());
             });
         }
+        // Exportar CSV
+        var exportBtn = el('proyGanttBtnExport');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function() {
+                _proyGanttExportCSV(rowsVisibles, detail);
+            });
+        }
+
+        // Hover de barras → tooltip rico
+        var tooltip = el('proyGanttTooltip');
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-bar-track[data-row-id], .proy-gantt-milestone[data-row-id]'), function(bar) {
+            bar.addEventListener('mouseenter', function(e) {
+                var rid = bar.getAttribute('data-row-id');
+                var r = rowsVisibles.filter(function(x) { return x.id === rid; })[0];
+                if (!r) return;
+                if (tooltip) {
+                    tooltip.innerHTML = _proyGanttTooltipHTML(r);
+                    tooltip.style.display = 'block';
+                }
+                _proyGanttHighlightDeps(container, r, true);
+            });
+            bar.addEventListener('mousemove', function(e) {
+                if (!tooltip) return;
+                var rect = container.getBoundingClientRect();
+                tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+                tooltip.style.top  = (e.clientY - rect.top + 12) + 'px';
+            });
+            bar.addEventListener('mouseleave', function() {
+                if (tooltip) tooltip.style.display = 'none';
+                _proyGanttHighlightDeps(container, null, false);
+            });
+            // Click para editar (solo actividades)
+            bar.addEventListener('click', function() {
+                var actId = parseInt(bar.getAttribute('data-act-id'), 10);
+                if (actId) {
+                    if (typeof _openActividadForm === 'function') _openActividadForm(null, { editId: actId });
+                }
+            });
+            // Drag visual: shift mantenido = mover barra horizontalmente
+            _proyGanttAttachDrag(bar, rowsVisibles, container, projectId, detail, data);
+        });
+
+        // Click en filas (lista) → editar
+        Array.prototype.forEach.call(container.querySelectorAll('.proy-gantt-row-edit'), function(b) {
+            b.addEventListener('click', function() {
+                var aid = parseInt(b.getAttribute('data-act-id'), 10);
+                if (aid && typeof _openActividadForm === 'function') {
+                    _openActividadForm(null, { editId: aid });
+                }
+            });
+        });
     }
 
-    function _proyGanttBuildRows(fases, actividades, yearStart, totalMonths, hoyFloat) {
+    function _proyGanttHighlightDeps(container, r, on) {
+        var paths = container.querySelectorAll('.proy-gantt-dep-path');
+        if (!paths.length) return;
+        Array.prototype.forEach.call(paths, function(p) {
+            var fromId = parseInt(p.getAttribute('data-from'), 10);
+            var toId = parseInt(p.getAttribute('data-to'), 10);
+            if (on && r && r.actId && (fromId === r.actId || toId === r.actId)) {
+                p.setAttribute('stroke', '#dc2626');
+                p.setAttribute('stroke-width', '2');
+                p.setAttribute('stroke-dasharray', '0');
+            } else {
+                p.setAttribute('stroke', '#94a3b8');
+                p.setAttribute('stroke-width', '1.4');
+                p.setAttribute('stroke-dasharray', '3,3');
+            }
+        });
+    }
+
+    function _proyGanttTooltipHTML(r) {
+        var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000);
+        if (dias < 1) dias = 1;
+        var hoy = new Date(); hoy.setHours(12, 0, 0, 0);
+        var diasRest = Math.round(((+r.fechaFin) - (+hoy)) / 86400000);
+        var diasRestTxt = (diasRest < 0)
+            ? ('<span style="color:#dc2626;font-weight:600;">' + Math.abs(diasRest) + ' días vencido</span>')
+            : (diasRest === 0 ? '<span style="color:#a16207;font-weight:600;">Vence hoy</span>'
+                              : '<span style="color:#16a34a;font-weight:600;">' + diasRest + ' días restantes</span>');
+        var resps = (r.responsables || []).map(function(u) { return u.nombre || u.username || 'Usuario'; });
+        var hitoTag = (r.type === 'actividad' && r.esHito) ? '<span style="background:#fef3c7;color:#a16207;padding:1px 6px;border-radius:3px;font-size:0.62rem;font-weight:700;margin-left:6px;">HITO</span>' : '';
+        var depsCount = (r.dependencias || []).length;
+        var html = '<div class="proy-gantt-tt-title">' + _proyGanttEsc(r.name) + hitoTag + '</div>';
+        html += '<div class="proy-gantt-tt-cat" style="color:' + r.color + ';">' + _proyGanttEsc(r.category.label) + '</div>';
+        html += '<div class="proy-gantt-tt-row">' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+                _proyGanttFmtFechaLarga(r.fechaInicio) + ' → ' + _proyGanttFmtFechaLarga(r.fechaFin) + ' (' + dias + 'd)</div>';
+        html += '<div class="proy-gantt-tt-row">' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+                'Avance: <strong>' + Math.round(r.progress) + '%</strong></div>';
+        html += '<div class="proy-gantt-tt-row">' + diasRestTxt + '</div>';
+        if (resps.length) {
+            html += '<div class="proy-gantt-tt-row">' +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+                    resps.slice(0, 4).join(', ') + (resps.length > 4 ? ' +' + (resps.length - 4) : '') + '</div>';
+        }
+        if (depsCount) {
+            html += '<div class="proy-gantt-tt-row" style="color:#94a3b8;">Depende de ' + depsCount + ' actividad' + (depsCount === 1 ? '' : 'es') + '</div>';
+        }
+        return html;
+    }
+
+    /** Drag visual minimalista: avisa "próximamente persistir". */
+    function _proyGanttAttachDrag(bar, rowsVisibles, container, projectId, detail, data) {
+        var rid = bar.getAttribute('data-row-id');
+        var r = rowsVisibles.filter(function(x) { return x.id === rid; })[0];
+        if (!r || r.type !== 'actividad') return;  // Solo actividades, no fases (auto-calculadas)
+        if (r.esHito) return;
+
+        var dragging = false;
+        var startX = 0;
+        var origLeft = 0;
+        var trackParent;
+
+        bar.addEventListener('mousedown', function(e) {
+            // Solo arrastrar con shift+click
+            if (!e.shiftKey) return;
+            e.preventDefault();
+            e.stopPropagation();
+            dragging = true;
+            startX = e.clientX;
+            trackParent = bar.parentElement;  // .proy-gantt-col-right
+            var leftPx = parseFloat(bar.style.left) || 0;
+            // bar.style.left puede ser %; convertir
+            if (bar.style.left.indexOf('%') !== -1) {
+                origLeft = (parseFloat(bar.style.left) / 100) * trackParent.offsetWidth;
+            } else {
+                origLeft = leftPx;
+            }
+            bar.style.transition = 'none';
+            bar.style.cursor = 'grabbing';
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            var dx = e.clientX - startX;
+            var newLeftPx = origLeft + dx;
+            var pct = (newLeftPx / trackParent.offsetWidth) * 100;
+            bar.style.left = pct + '%';
+        });
+        document.addEventListener('mouseup', function(e) {
+            if (!dragging) return;
+            dragging = false;
+            bar.style.cursor = '';
+            _showToast('Próximamente: persistir cambio (usa el botón ✎ en la lista)');
+            // Restaurar posición original (por ahora solo visual)
+            setTimeout(function() {
+                _proyGanttRender(container, projectId, detail, data);
+            }, 1200);
+        });
+    }
+
+    function _proyGanttExportCSV(rows, detail) {
+        var nombreProy = (detail && detail.nombre) ? detail.nombre.replace(/[^\w\-]/g, '_') : 'cronograma';
+        var sep = ',';
+        var headers = ['Tipo','Nombre','Categoria','Fase_Padre','Inicio','Fin','Duracion_dias','Progreso_pct','Responsables','Estado','Hito','Costo','Ingreso'];
+        var lines = [headers.join(sep)];
+        rows.forEach(function(r) {
+            var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000);
+            if (dias < 1) dias = 1;
+            var resps = (r.responsables || []).map(function(u) { return u.nombre || u.username || ''; }).join(' / ');
+            var estado = r.progress >= 100 ? 'Completada' : (r.isActive ? 'Activa' : 'Pendiente');
+            var fila = [
+                r.type,
+                _csvCell(r.name),
+                r.category.label,
+                _csvCell(r.parentName || ''),
+                r.fechaInicio.toISOString().slice(0,10),
+                r.fechaFin.toISOString().slice(0,10),
+                dias,
+                Math.round(r.progress),
+                _csvCell(resps),
+                estado,
+                (r.esHito ? 'Sí' : 'No'),
+                r.costo || 0,
+                r.ingreso || 0
+            ];
+            lines.push(fila.join(sep));
+        });
+        var csv = '﻿' + lines.join('\r\n');  // BOM para Excel
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = 'gantt_' + nombreProy + '_' + (new Date()).toISOString().slice(0,10) + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        _showToast('Cronograma exportado');
+    }
+
+    function _csvCell(s) {
+        if (s == null) s = '';
+        s = String(s);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
+
+    /** Convierte una fecha en posicion decimal de "unidad" segun zoom. */
+    function _proyGanttDateToUnit(d, yearStart, zoom) {
+        var year = d.getFullYear();
+        var month = d.getMonth();
+        var day = d.getDate();
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var dayFraction = (day - 1) / daysInMonth;
+        var monthsFromStart = (year - yearStart) * 12 + month;
+        if (zoom === 'ano') {
+            // 4 trimestres = 4 unidades. Cada año son 4 unidades.
+            return (monthsFromStart / 3) + (dayFraction * (1/3));
+        }
+        if (zoom === 'trimestre') {
+            // 12 meses = 12 unidades por año
+            return monthsFromStart + dayFraction;
+        }
+        if (zoom === 'mes') {
+            return monthsFromStart + dayFraction;
+        }
+        if (zoom === 'semana') {
+            // 52 semanas en el año
+            var jan1 = new Date(yearStart, 0, 1);
+            var diffMs = d - jan1;
+            var diffDays = diffMs / 86400000;
+            return diffDays / 7;
+        }
+        return monthsFromStart + dayFraction;
+    }
+
+    /** Genera labels para el eje X según el zoom. */
+    function _proyGanttSubdivisions(zoom, yearStart, hoy) {
+        var arr = [];
+        if (zoom === 'ano') {
+            ['Q1','Q2','Q3','Q4'].forEach(function(q, i) {
+                var qm = i * 3;
+                var isCurrent = (hoy.getFullYear() === yearStart && hoy.getMonth() >= qm && hoy.getMonth() < qm + 3);
+                arr.push({ label: q + ' ' + yearStart, isCurrent: isCurrent });
+            });
+        } else if (zoom === 'trimestre' || zoom === 'mes') {
+            var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            meses.forEach(function(m, i) {
+                arr.push({ label: m, isCurrent: (hoy.getFullYear() === yearStart && i === hoy.getMonth()) });
+            });
+        } else if (zoom === 'semana') {
+            for (var w = 1; w <= 52; w++) {
+                var jan1 = new Date(yearStart, 0, 1);
+                var d = new Date(jan1.getTime() + (w - 1) * 7 * 86400000);
+                var label = 'S' + w;
+                var weekStart = d, weekEnd = new Date(d.getTime() + 6 * 86400000);
+                var isCur = (hoy >= weekStart && hoy <= weekEnd);
+                arr.push({ label: label, isCurrent: isCur });
+            }
+        }
+        return arr;
+    }
+
+    function _proyGanttBuildRows(fases, actividades, yearStart, totalUnits, hoyUnit) {
         var byFase = {};
         actividades.forEach(function(a) {
             var k = a.fase_id || '__sinfase__';
@@ -2205,25 +2758,39 @@
         fases.forEach(function(f) {
             var acts = byFase[f.id] || [];
             if (!acts.length) return;
-            var row = _proyGanttFaseRow(f, acts, yearStart, totalMonths, hoyFloat);
+            var row = _proyGanttFaseRow(f, acts, yearStart, totalUnits, hoyUnit);
             if (row) rows.push(row);
+            // Empujar las actividades hijas inmediatamente después de su fase
+            acts.slice().sort(function(a, b) {
+                return (a.fecha_inicio || '').localeCompare(b.fecha_inicio || '');
+            }).forEach(function(a) {
+                var ar = _proyGanttActividadRow(a, yearStart, totalUnits, hoyUnit);
+                if (ar) {
+                    ar.parentName = f.nombre;
+                    rows.push(ar);
+                }
+            });
         });
 
+        // Actividades sin fase
         (byFase['__sinfase__'] || []).forEach(function(a) {
-            var row = _proyGanttActividadRow(a, yearStart, totalMonths, hoyFloat);
-            if (row) rows.push(row);
+            var row = _proyGanttActividadRow(a, yearStart, totalUnits, hoyUnit);
+            if (row) {
+                row.parentName = '';
+                rows.push(row);
+            }
         });
 
-        rows.sort(function(a, b) { return a.startMonth - b.startMonth; });
         return rows;
     }
 
-    function _proyGanttFaseRow(fase, acts, yearStart, totalMonths, hoyFloat) {
+    function _proyGanttFaseRow(fase, acts, yearStart, totalUnits, hoyUnit) {
         var minStart = null;
         var maxEnd = null;
         var totalDias = 0;
         var sumaProgresoPond = 0;
         var responsableMap = {};
+        var sumaCosto = 0, sumaIngreso = 0;
         acts.forEach(function(a) {
             if (!a.fecha_inicio) return;
             var ini = new Date(a.fecha_inicio + 'T12:00:00');
@@ -2233,91 +2800,135 @@
             var dias = a.duracion_dias || 1;
             totalDias += dias;
             sumaProgresoPond += dias * (a.progreso || 0);
+            sumaCosto += parseFloat(a.costo_estimado || 0) || 0;
+            sumaIngreso += parseFloat(a.ingreso_estimado || 0) || 0;
             (a.recursos || []).forEach(function(r) {
                 if (!responsableMap[r.id]) responsableMap[r.id] = r;
             });
         });
         if (!minStart || !maxEnd) return null;
 
-        var startFloat = _proyGanttDateToMonthFloat(minStart, yearStart);
-        var endFloat = _proyGanttDateToMonthFloat(maxEnd, yearStart);
-        var clampedStart = Math.max(0, Math.min(totalMonths, startFloat));
-        var clampedEnd = Math.max(0, Math.min(totalMonths, endFloat));
+        var startU = _proyGanttDateToUnit(minStart, yearStart, _proyGanttZoom);
+        var endU = _proyGanttDateToUnit(maxEnd, yearStart, _proyGanttZoom);
+        var clampedStart = Math.max(0, Math.min(totalUnits, startU));
+        var clampedEnd = Math.max(0, Math.min(totalUnits, endU));
         if (clampedEnd - clampedStart <= 0) return null;
 
         var progress = totalDias > 0 ? Math.round(sumaProgresoPond / totalDias) : 0;
         var category = _proyGanttCategoryFor(fase.nombre);
-        var isActive = (startFloat <= hoyFloat && endFloat >= hoyFloat);
+        var isActive = (startU <= hoyUnit && endU >= hoyUnit);
         var responsables = Object.keys(responsableMap).map(function(k) { return responsableMap[k]; });
+
+        // Progreso esperado (para detectar atrasados)
+        var expectedProgress = 0;
+        if (hoyUnit >= endU) expectedProgress = 100;
+        else if (hoyUnit > startU) expectedProgress = ((hoyUnit - startU) / (endU - startU)) * 100;
 
         return {
             type: 'fase',
             id: 'f' + fase.id,
+            faseId: fase.id,
             name: fase.nombre || 'Fase',
-            startMonth: clampedStart,
-            durationMonths: clampedEnd - clampedStart,
-            rawStart: startFloat,
-            rawEnd: endFloat,
+            startUnit: clampedStart,
+            durationUnits: clampedEnd - clampedStart,
+            rawStart: startU,
+            rawEnd: endU,
             progress: progress,
+            expectedProgress: expectedProgress,
             category: category,
             color: category.color,
             responsables: responsables,
             isActive: isActive,
             actividadesCount: acts.length,
             fechaInicio: minStart,
-            fechaFin: maxEnd
+            fechaFin: maxEnd,
+            esHito: false,
+            costo: sumaCosto,
+            ingreso: sumaIngreso,
+            dependencias: []
         };
     }
 
-    function _proyGanttActividadRow(a, yearStart, totalMonths, hoyFloat) {
+    function _proyGanttActividadRow(a, yearStart, totalUnits, hoyUnit) {
         var ini = new Date(a.fecha_inicio + 'T12:00:00');
         if (isNaN(ini.getTime())) return null;
-        var fin = new Date(ini.getTime() + (a.duracion_dias || 1) * 86400000);
-        var startFloat = _proyGanttDateToMonthFloat(ini, yearStart);
-        var endFloat = _proyGanttDateToMonthFloat(fin, yearStart);
-        var clampedStart = Math.max(0, Math.min(totalMonths, startFloat));
-        var clampedEnd = Math.max(0, Math.min(totalMonths, endFloat));
-        if (clampedEnd - clampedStart <= 0) return null;
+        var dur = a.duracion_dias || 1;
+        var fin = new Date(ini.getTime() + dur * 86400000);
+        var startU = _proyGanttDateToUnit(ini, yearStart, _proyGanttZoom);
+        var endU = _proyGanttDateToUnit(fin, yearStart, _proyGanttZoom);
+        var clampedStart = Math.max(0, Math.min(totalUnits, startU));
+        var clampedEnd = Math.max(0, Math.min(totalUnits, endU));
+        // Para hitos permitimos durationUnits == 0 (el render lo trata especial)
+        var esHito = (dur <= 1);
+        if (!esHito && clampedEnd - clampedStart <= 0) return null;
+
         var category = _proyGanttCategoryFor(a.nombre);
-        var isActive = (startFloat <= hoyFloat && endFloat >= hoyFloat);
+        var isActive = (startU <= hoyUnit && endU >= hoyUnit);
+
+        var expectedProgress = 0;
+        if (hoyUnit >= endU) expectedProgress = 100;
+        else if (hoyUnit > startU) expectedProgress = ((hoyUnit - startU) / Math.max(0.0001, endU - startU)) * 100;
+
         return {
             type: 'actividad',
             id: 'a' + a.id,
+            actId: a.id,
             name: a.nombre || 'Actividad',
-            startMonth: clampedStart,
-            durationMonths: clampedEnd - clampedStart,
-            rawStart: startFloat,
-            rawEnd: endFloat,
+            startUnit: clampedStart,
+            durationUnits: Math.max(0, clampedEnd - clampedStart),
+            rawStart: startU,
+            rawEnd: endU,
             progress: a.progreso || 0,
+            expectedProgress: expectedProgress,
             category: category,
             color: category.color,
             responsables: a.recursos || [],
             isActive: isActive,
             actividadesCount: 0,
             fechaInicio: ini,
-            fechaFin: fin
+            fechaFin: fin,
+            esHito: esHito,
+            costo: parseFloat(a.costo_estimado || 0) || 0,
+            ingreso: parseFloat(a.ingreso_estimado || 0) || 0,
+            dependencias: a.dependencias || []
         };
     }
 
     function _proyGanttAvanceGlobal(rows) {
         if (!rows.length) return 0;
-        var totalDur = 0, sum = 0;
-        rows.forEach(function(r) {
-            totalDur += r.durationMonths;
-            sum += r.durationMonths * r.progress;
+        // Sólo contamos filas tipo "actividad" para evitar contar dos veces
+        // (la fase es agregada de las actividades).
+        var actsRows = rows.filter(function(r) { return r.type === 'actividad'; });
+        if (!actsRows.length) {
+            // Fallback al cálculo anterior por durationUnits
+            var totalDur = 0, sum = 0;
+            rows.forEach(function(r) {
+                totalDur += r.durationUnits;
+                sum += r.durationUnits * r.progress;
+            });
+            return totalDur > 0 ? (sum / totalDur) : 0;
+        }
+        var totalDias = 0, sumaPond = 0;
+        actsRows.forEach(function(r) {
+            var dias = Math.round(((+r.fechaFin) - (+r.fechaInicio)) / 86400000) || 1;
+            totalDias += dias;
+            sumaPond += dias * r.progress;
         });
-        return totalDur > 0 ? (sum / totalDur) : 0;
+        return totalDias > 0 ? (sumaPond / totalDias) : 0;
     }
 
-    function _proyGanttRowHTML(r, totalMonths, hoyDentroRango, todayLeftPct) {
-        var leftPct = (r.startMonth / totalMonths) * 100;
-        var widthPct = (r.durationMonths / totalMonths) * 100;
+    function _proyGanttRowHTML(r, totalUnits, hoyDentroRango, todayLeftPct) {
+        var leftPct = (r.startUnit / totalUnits) * 100;
+        var widthPct = (r.durationUnits / totalUnits) * 100;
         var fillPct = Math.max(0, Math.min(100, r.progress));
         var done = (r.progress >= 100);
+        var atrasada = r.isActive && r.progress < (r.expectedProgress - 5);
 
         var statusTag = '';
         if (done) {
             statusTag = '<span class="proy-gantt-tag proy-gantt-tag-done">✓ LISTA</span>';
+        } else if (atrasada) {
+            statusTag = '<span class="proy-gantt-tag proy-gantt-tag-late">ATRASADA</span>';
         } else if (r.isActive) {
             statusTag = '<span class="proy-gantt-tag proy-gantt-tag-active">ACTIVA</span>';
         }
@@ -2339,9 +2950,18 @@
         var showLabelInside = widthPct > 8;
         var labelColor = (fillPct > 30) ? '#fff' : r.color;
 
-        var html = '<div class="proy-gantt-row" title="' + _proyGanttEsc(r.name) + ' · ' + rangoTxt + '">';
+        var rowClasses = 'proy-gantt-row';
+        if (r.type === 'fase') rowClasses += ' proy-gantt-row-fase';
+        if (r.type === 'actividad' && r.parentName) rowClasses += ' proy-gantt-row-child';
+
+        var html = '<div class="' + rowClasses + '" data-row-id="' + r.id + '" title="' + _proyGanttEsc(r.name) + ' · ' + rangoTxt + '">';
         html += '  <div class="proy-gantt-col-left">';
-        html += '    <span class="proy-gantt-row-dot" style="background:' + r.color + ';"></span>';
+        // Hitos: rombo en lugar de cuadradito
+        if (r.type === 'actividad' && r.esHito) {
+            html += '    <svg class="proy-gantt-row-diamond" width="12" height="12" viewBox="0 0 24 24"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#a16207"/></svg>';
+        } else {
+            html += '    <span class="proy-gantt-row-dot" style="background:' + r.color + ';"></span>';
+        }
         html += '    <div class="proy-gantt-row-info">';
         html += '      <div class="proy-gantt-row-name">' + _proyGanttEsc(r.name) + '</div>';
         html += '      <div class="proy-gantt-row-meta">';
@@ -2359,12 +2979,29 @@
         if (hoyDentroRango) {
             html += '<div class="proy-gantt-today-line" style="left:' + todayLeftPct.toFixed(3) + '%;"></div>';
         }
-        html += '    <div class="proy-gantt-bar-track" style="left:' + leftPct.toFixed(3) + '%;width:' + widthPct.toFixed(3) + '%;background:' + r.color + '20;border-color:' + r.color + '40;">';
-        html += '      <div class="proy-gantt-bar-fill" style="width:' + fillPct.toFixed(3) + '%;background:' + r.color + ';"></div>';
-        if (showLabelInside) {
-            html += '<div class="proy-gantt-bar-label" style="color:' + labelColor + ';">' + Math.round(r.progress) + '%</div>';
+        // Hito: rombo
+        if (r.type === 'actividad' && r.esHito) {
+            // El hito se ancla al startUnit. Usamos un ancho fijo absoluto.
+            var dataAttrs = ' data-row-id="' + r.id + '" data-act-id="' + r.actId + '"';
+            html += '<div class="proy-gantt-milestone" style="left:' + leftPct.toFixed(3) + '%;"' + dataAttrs + '>';
+            html += '  <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="' + (done ? '#16a34a' : '#a16207') + '" stroke="#fff" stroke-width="1.5"/></svg>';
+            html += '</div>';
+        } else {
+            // Barra normal
+            var dataAttrs = ' data-row-id="' + r.id + '"';
+            if (r.type === 'actividad') dataAttrs += ' data-act-id="' + r.actId + '"';
+            var atrasadaCls = atrasada ? ' is-late' : '';
+            html += '    <div class="proy-gantt-bar-track' + atrasadaCls + '" style="left:' + leftPct.toFixed(3) + '%;width:' + widthPct.toFixed(3) + '%;background:' + r.color + '20;border-color:' + r.color + '40;"' + dataAttrs + '>';
+            html += '      <div class="proy-gantt-bar-fill" style="width:' + fillPct.toFixed(3) + '%;background:' + r.color + ';"></div>';
+            if (showLabelInside) {
+                html += '<div class="proy-gantt-bar-label" style="color:' + labelColor + ';">' + Math.round(r.progress) + '%</div>';
+            }
+            // Handle de redimensión (solo actividades, no fases)
+            if (r.type === 'actividad' && !r.esHito) {
+                html += '<span class="proy-gantt-bar-handle" title="Mantén Shift y arrastra para mover (próximamente persistir)"></span>';
+            }
+            html += '    </div>';
         }
-        html += '    </div>';
         html += '  </div>';
         html += '</div>';
         return html;
@@ -2395,7 +3032,7 @@
     //  ACTIVIDAD FORM (PROGRAMA DE OBRA)
     // =========================================
 
-    var _actividadFechaSeleccionada = null;
+    // Set de ids de responsables seleccionados en el form (string -> true).
     var _actividadSelectedUsers = {};
 
     function _getDayNameSpanish(dateStr) {
@@ -2410,87 +3047,306 @@
         return d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
     }
 
-    function _openActividadForm(dateStr) {
-        _actividadFechaSeleccionada = dateStr;
-        _actividadSelectedUsers = {};
-
-        // Set date label
-        var label = el('proyActFechaLabel');
-        if (label) label.textContent = _getDayNameSpanish(dateStr) + ', ' + _fmtDateLong(dateStr);
-
-        // Reset form fields
-        if (el('proyActTitulo')) el('proyActTitulo').value = '';
-        if (el('proyActDescripcion')) el('proyActDescripcion').value = '';
-        if (el('proyActHoraInicio')) el('proyActHoraInicio').value = '07:00';
-        if (el('proyActHoraFin')) el('proyActHoraFin').value = '16:00';
-        if (el('proyActVehiculos')) el('proyActVehiculos').value = '';
-
-        // Show dialog
-        var d = el('proyDialogoActividad');
-        if (d) d.style.display = 'flex';
-
-        // Load availability
-        _loadPersonalDisponibilidad(dateStr);
-
-        // Re-load on time change
-        var hiEl = el('proyActHoraInicio');
-        var hfEl = el('proyActHoraFin');
-        if (hiEl) hiEl.onchange = function() { _loadPersonalDisponibilidad(dateStr); };
-        if (hfEl) hfEl.onchange = function() { _loadPersonalDisponibilidad(dateStr); };
+    function _isoToday() {
+        return (new Date()).toISOString().split('T')[0];
+    }
+    function _isoAddDays(iso, days) {
+        var d = new Date(iso + 'T12:00:00');
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+    }
+    function _diffDays(iso1, iso2) {
+        var a = new Date(iso1 + 'T12:00:00');
+        var b = new Date(iso2 + 'T12:00:00');
+        return Math.round((b - a) / 86400000);
     }
 
-    function _loadPersonalDisponibilidad(dateStr) {
+    /**
+     * Abre el modal de "Nueva/Editar Actividad" del Gantt.
+     * - dateStr (opcional): fecha de inicio sugerida (YYYY-MM-DD).
+     * - opts.editId: id de GanttActividad existente para edicion.
+     */
+    function _openActividadForm(dateStr, opts) {
+        opts = opts || {};
+        var dlg = el('proyDialogoActividad');
+        if (!dlg) {
+            console.error('[gantt] modal #proyDialogoActividad no encontrado');
+            alert('No se pudo abrir el formulario de actividad. Recarga la pagina.');
+            return;
+        }
+
+        _proyActEditId = opts.editId || null;
+        _actividadSelectedUsers = {};
+        _proyActDeps = {};
+
+        var isEdit = !!_proyActEditId;
+        var actividad = null;
+        if (isEdit && _proyGanttData && Array.isArray(_proyGanttData.actividades)) {
+            for (var i = 0; i < _proyGanttData.actividades.length; i++) {
+                if (_proyGanttData.actividades[i].id === _proyActEditId) {
+                    actividad = _proyGanttData.actividades[i];
+                    break;
+                }
+            }
+        }
+
+        // Header
+        var titEl = el('proyActDialogTitle');
+        if (titEl) titEl.textContent = isEdit ? 'Editar Actividad' : 'Nueva Actividad';
+        var btnCrearEl = el('proyActBtnCrear');
+        if (btnCrearEl) btnCrearEl.textContent = isEdit ? 'Guardar cambios' : 'Crear Actividad';
+        var btnElimEl = el('proyActBtnEliminar');
+        if (btnElimEl) btnElimEl.style.display = isEdit ? 'inline-flex' : 'none';
+
+        // Reset / poblar campos b\u00E1sicos
+        var fechaIni = (actividad && actividad.fecha_inicio) || dateStr || _isoToday();
+        var fechaFin;
+        if (actividad) {
+            fechaFin = _isoAddDays(actividad.fecha_inicio, actividad.duracion_dias || 1);
+        } else {
+            fechaFin = _isoAddDays(fechaIni, 1);
+        }
+
+        if (el('proyActTitulo')) {
+            el('proyActTitulo').value = actividad ? (actividad.nombre || '') : '';
+            el('proyActTitulo').style.borderColor = '';
+        }
+        if (el('proyActFechaInicio')) el('proyActFechaInicio').value = fechaIni;
+        if (el('proyActFechaFin')) el('proyActFechaFin').value = fechaFin;
+        if (el('proyActProgreso')) el('proyActProgreso').value = actividad ? (actividad.progreso || 0) : 0;
+        if (el('proyActProgresoRange')) el('proyActProgresoRange').value = actividad ? (actividad.progreso || 0) : 0;
+        if (el('proyActCosto')) el('proyActCosto').value = actividad ? (actividad.costo_estimado || 0) : 0;
+        if (el('proyActIngreso')) el('proyActIngreso').value = actividad ? (actividad.ingreso_estimado || 0) : 0;
+
+        // Hito (duracion 1 dia)
+        var hitoChk = el('proyActEsHito');
+        var esHito = actividad ? ((actividad.duracion_dias || 1) <= 1 && _diffDays(actividad.fecha_inicio, _isoAddDays(actividad.fecha_inicio, actividad.duracion_dias || 1)) <= 1) : false;
+        if (hitoChk) hitoChk.checked = esHito;
+
+        // Subt\u00EDtulo (label de fecha) \u2014 informativo
+        var label = el('proyActFechaLabel');
+        if (label) {
+            try {
+                label.textContent = _getDayNameSpanish(fechaIni) + ', ' + _fmtDateLong(fechaIni);
+            } catch (e) {
+                label.textContent = 'Cronograma del proyecto';
+            }
+        }
+
+        // Cargar fases del cache
+        _populateFasesSelect(actividad ? actividad.fase_id : null);
+
+        // Marcar responsables ya asignados en edicion
+        if (actividad && Array.isArray(actividad.recursos)) {
+            actividad.recursos.forEach(function(r) {
+                _actividadSelectedUsers[r.id] = true;
+            });
+        }
+        // Marcar dependencias actuales
+        if (actividad && Array.isArray(actividad.dependencias)) {
+            actividad.dependencias.forEach(function(id) { _proyActDeps[id] = true; });
+        }
+
+        // Mostrar modal antes de las cargas async para feedback inmediato
+        dlg.style.display = 'flex';
+
+        // Cargar miembros del proyecto + render checkboxes
+        _loadMiembrosDelProyecto();
+        // Render dependencias (excluye la actividad misma)
+        _renderDependenciasOptions(actividad ? actividad.id : null);
+
+        // Recalcular duracion al cambiar fechas
+        var iniEl = el('proyActFechaInicio');
+        var finEl = el('proyActFechaFin');
+        if (iniEl) iniEl.onchange = _refreshDuracionLabel;
+        if (finEl) finEl.onchange = _refreshDuracionLabel;
+        _refreshDuracionLabel();
+
+        // Hito toggle: forzar fecha_fin = fecha_inicio
+        if (hitoChk) {
+            hitoChk.onchange = function() {
+                var wrap = el('proyActFechaFinWrap');
+                if (this.checked) {
+                    if (finEl && iniEl) finEl.value = iniEl.value;
+                    if (wrap) wrap.style.opacity = '0.5';
+                    if (finEl) finEl.disabled = true;
+                } else {
+                    if (wrap) wrap.style.opacity = '';
+                    if (finEl) finEl.disabled = false;
+                    if (finEl && iniEl && finEl.value === iniEl.value) {
+                        finEl.value = _isoAddDays(iniEl.value, 1);
+                    }
+                }
+                _refreshDuracionLabel();
+            };
+            // Aplicar estado actual del checkbox
+            hitoChk.onchange();
+        }
+
+        // Sincronizar slider y number de progreso
+        var rng = el('proyActProgresoRange');
+        var num = el('proyActProgreso');
+        if (rng && num) {
+            rng.oninput = function() { num.value = rng.value; };
+            num.oninput = function() {
+                var v = parseInt(num.value, 10);
+                if (isNaN(v)) v = 0;
+                v = Math.max(0, Math.min(100, v));
+                num.value = v;
+                rng.value = v;
+            };
+        }
+
+        // Focus al input principal para feedback rapido
+        setTimeout(function() {
+            var t = el('proyActTitulo');
+            if (t) t.focus();
+        }, 50);
+    }
+
+    function _refreshDuracionLabel() {
+        var iniEl = el('proyActFechaInicio');
+        var finEl = el('proyActFechaFin');
+        var lbl = el('proyActDuracionTxt');
+        if (!iniEl || !finEl || !lbl) return;
+        if (!iniEl.value || !finEl.value) {
+            lbl.textContent = 'Duraci\u00F3n: \u2014';
+            return;
+        }
+        var dias = Math.max(1, _diffDays(iniEl.value, finEl.value));
+        if (dias === 0) dias = 1;  // Hito visual minimo 1
+        lbl.textContent = 'Duraci\u00F3n: ' + dias + ' d\u00EDa' + (dias === 1 ? '' : 's');
+    }
+
+    function _populateFasesSelect(selectedFaseId) {
+        var selEl = el('proyActFase');
+        if (!selEl) return;
+        var fases = (_proyGanttData && Array.isArray(_proyGanttData.fases)) ? _proyGanttData.fases : [];
+        var html = '<option value="">\u2014 Sin fase (independiente) \u2014</option>';
+        fases.forEach(function(f) {
+            var selAttr = (selectedFaseId === f.id) ? ' selected' : '';
+            html += '<option value="' + f.id + '"' + selAttr + '>' + _proyGanttEsc(f.nombre) + '</option>';
+        });
+        selEl.innerHTML = html;
+        if (selectedFaseId) selEl.value = String(selectedFaseId);
+    }
+
+    /**
+     * Carga los miembros del proyecto desde el detalle cacheado o
+     * llamando al endpoint del proyecto.  Pinta checkboxes en
+     * #proyActPersonalList.
+     */
+    function _loadMiembrosDelProyecto() {
         var container = el('proyActPersonalList');
         if (!container) return;
 
-        container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>';
+        // Intentamos primero overview.equipo del detalle cacheado
+        var miembros = _miembrosFromDetail(_cachedProjectDetail);
+        if (miembros && miembros.length) {
+            _proyGanttMiembros = miembros;
+            _renderMiembrosCheckboxes(miembros);
+            return;
+        }
 
-        var horaInicio = el('proyActHoraInicio') ? el('proyActHoraInicio').value : '07:00';
-        var horaFin = el('proyActHoraFin') ? el('proyActHoraFin').value : '16:00';
-        var diaSemana = _getDayNameSpanish(dateStr);
+        // Fallback: pegar al detalle del proyecto
+        if (!currentProjectId) {
+            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Sin proyecto activo</div>';
+            return;
+        }
+        container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando equipo del proyecto...</div>';
 
-        var url = '/app/api/programacion/disponibilidad/?dia_semana=' + encodeURIComponent(diaSemana) +
-            '&hora_inicio=' + encodeURIComponent(horaInicio) +
-            '&hora_fin=' + encodeURIComponent(horaFin) +
-            '&fecha=' + encodeURIComponent(dateStr);
-
-        _fetch(url).then(function(resp) {
-            if (!resp.success && !resp.ok) {
-                container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error al cargar personal</div>';
+        _fetch('/app/api/iamet/proyectos/' + currentProjectId + '/').then(function(resp) {
+            if (!resp || !resp.success) {
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">No se pudo cargar el equipo</div>';
                 return;
             }
-            var users = resp.usuarios || resp.data || [];
-            if (users.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">No hay personal registrado</div>';
+            var detail = resp.data || {};
+            _cachedProjectDetail = detail;
+            var ms = _miembrosFromDetail(detail);
+            _proyGanttMiembros = ms;
+            if (!ms.length) {
+                container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">A\u00FAn no hay miembros en el proyecto.<br>Agrega gente desde el bot\u00F3n "+" del topbar.</div>';
                 return;
             }
-
-            var html = '';
-            users.forEach(function(u) {
-                var available = u.disponible !== false;
-                var conflict = u.conflicto || u.conflict || '';
-                var checked = _actividadSelectedUsers[u.id] ? ' checked' : '';
-                var opacity = available ? '1' : '0.5';
-
-                html += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:' + (available ? 'pointer' : 'default') + ';opacity:' + opacity + ';transition:background 0.15s;" ' +
-                    'onmouseover="this.style.background=\'#F5F5F7\'" onmouseout="this.style.background=\'transparent\'">' +
-                    '<input type="checkbox" value="' + u.id + '"' + checked + (available ? '' : ' disabled') +
-                    ' onchange="proyActToggleUser(' + u.id + ', this.checked)" ' +
-                    'style="width:16px;height:16px;accent-color:#007AFF;flex-shrink:0;">' +
-                    '<div style="width:28px;height:28px;border-radius:50%;background:' + (available ? '#007AFF' : '#D1D5DB') + ';color:#fff;font-size:0.6rem;line-height:28px;text-align:center;flex-shrink:0;font-weight:600;">' + (u.iniciales || u.initials || '??') + '</div>' +
-                    '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:0.8rem;font-weight:500;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (u.nombre || u.name || 'Usuario ' + u.id) + '</div>' +
-                        (conflict ? '<div style="font-size:0.68rem;color:#EF4444;margin-top:1px;">' + conflict + '</div>' : '') +
-                        (available && !conflict ? '<div style="font-size:0.68rem;color:#10B981;margin-top:1px;">Disponible</div>' : '') +
-                    '</div>' +
-                '</label>';
-            });
-
-            container.innerHTML = html;
+            _renderMiembrosCheckboxes(ms);
         }).catch(function(err) {
-            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error de conexion</div>';
-            console.error('Error cargando disponibilidad:', err);
+            console.error('[gantt] error cargando miembros:', err);
+            container.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;font-size:0.8rem;">Error de conexi\u00F3n</div>';
         });
+    }
+
+    function _miembrosFromDetail(detail) {
+        if (!detail) return [];
+        var equipo = (detail.overview && Array.isArray(detail.overview.equipo)) ? detail.overview.equipo : null;
+        if (equipo && equipo.length) {
+            return equipo.map(function(e) {
+                return {
+                    id: e.user_id || e.id,
+                    nombre: e.nombre || e.name || 'Usuario',
+                    iniciales: e.iniciales || _initials(e.nombre || ''),
+                };
+            });
+        }
+        // Fallback: usuario asignado (creador) si est\u00E1
+        if (detail.usuario_id) {
+            return [{
+                id: detail.usuario_id,
+                nombre: detail.usuario_nombre || 'Asignado',
+                iniciales: _initials(detail.usuario_nombre || 'A'),
+            }];
+        }
+        return [];
+    }
+
+    function _renderMiembrosCheckboxes(users) {
+        var container = el('proyActPersonalList');
+        if (!container) return;
+        if (!users.length) {
+            container.innerHTML = '<div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">No hay miembros disponibles.</div>';
+            return;
+        }
+        var html = '';
+        users.forEach(function(u) {
+            var checked = _actividadSelectedUsers[u.id] ? ' checked' : '';
+            var bg = _proyGanttAvatarColor(u.id);
+            html += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;" ' +
+                'onmouseover="this.style.background=\'#F5F5F7\'" onmouseout="this.style.background=\'transparent\'">' +
+                '<input type="checkbox" value="' + u.id + '"' + checked +
+                ' onchange="proyActToggleUser(' + u.id + ', this.checked)" ' +
+                'style="width:16px;height:16px;accent-color:#2563eb;flex-shrink:0;">' +
+                '<div style="width:28px;height:28px;border-radius:50%;background:' + bg + ';color:#fff;font-size:0.6rem;line-height:28px;text-align:center;flex-shrink:0;font-weight:700;">' + _proyGanttEsc(u.iniciales || _initials(u.nombre)) + '</div>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.8rem;font-weight:500;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _proyGanttEsc(u.nombre) + '</div>' +
+                '</div>' +
+                '</label>';
+        });
+        container.innerHTML = html;
+    }
+
+    function _renderDependenciasOptions(currentActId) {
+        var wrap = el('proyActDependenciasWrap');
+        var list = el('proyActDependenciasList');
+        if (!wrap || !list) return;
+        var acts = (_proyGanttData && Array.isArray(_proyGanttData.actividades)) ? _proyGanttData.actividades : [];
+        // Excluir la actividad actual (no puede depender de s\u00ED misma)
+        var opts = acts.filter(function(a) { return a.id !== currentActId; });
+        if (!opts.length) {
+            wrap.style.display = 'none';
+            return;
+        }
+        wrap.style.display = '';
+        var html = '';
+        opts.forEach(function(a) {
+            var checked = _proyActDeps[a.id] ? ' checked' : '';
+            html += '<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.78rem;color:#1d1d1f;">' +
+                '<input type="checkbox" value="' + a.id + '"' + checked +
+                ' onchange="proyActToggleDep(' + a.id + ', this.checked)" ' +
+                'style="width:14px;height:14px;accent-color:#2563eb;">' +
+                '<span>' + _proyGanttEsc(a.nombre) + '</span>' +
+                '<span style="color:#94a3b8;font-size:0.7rem;margin-left:auto;">' + _proyGanttEsc(a.fecha_inicio) + '</span>' +
+                '</label>';
+        });
+        list.innerHTML = html;
     }
 
     window.proyActToggleUser = function(userId, checked) {
@@ -2501,70 +3357,157 @@
         }
     };
 
-    window.proyectosGuardarActividad = function() {
-        if (!currentProjectId) return;
+    window.proyActToggleDep = function(actId, checked) {
+        if (checked) _proyActDeps[actId] = true;
+        else delete _proyActDeps[actId];
+    };
 
-        var titulo = el('proyActTitulo') ? el('proyActTitulo').value.trim() : '';
-        if (!titulo) {
-            el('proyActTitulo').style.borderColor = '#FF3B30';
-            el('proyActTitulo').focus();
+    /**
+     * Crea o actualiza una GanttActividad.  Usa los endpoints reales
+     * del Gantt:
+     *   POST /app/api/proyecto/{id}/gantt/      \u2192 crear
+     *   PUT  /app/api/gantt/actividad/{id}/    \u2192 editar
+     */
+    window.proyectosGuardarActividad = function() {
+        if (!currentProjectId) {
+            alert('No hay proyecto activo.');
             return;
         }
-        el('proyActTitulo').style.borderColor = '';
+        var titulo = el('proyActTitulo') ? el('proyActTitulo').value.trim() : '';
+        if (!titulo) {
+            if (el('proyActTitulo')) {
+                el('proyActTitulo').style.borderColor = '#FF3B30';
+                el('proyActTitulo').focus();
+            }
+            return;
+        }
+        if (el('proyActTitulo')) el('proyActTitulo').style.borderColor = '';
 
-        var horaInicio = el('proyActHoraInicio') ? el('proyActHoraInicio').value : '07:00';
-        var horaFin = el('proyActHoraFin') ? el('proyActHoraFin').value : '16:00';
-        var diaSemana = _getDayNameSpanish(_actividadFechaSeleccionada);
+        var fechaIni = el('proyActFechaInicio') ? el('proyActFechaInicio').value : '';
+        var fechaFin = el('proyActFechaFin') ? el('proyActFechaFin').value : '';
+        var esHito = el('proyActEsHito') ? el('proyActEsHito').checked : false;
+        if (!fechaIni) {
+            alert('La fecha de inicio es obligatoria.');
+            return;
+        }
+        var duracionDias;
+        if (esHito) {
+            duracionDias = 1;
+        } else {
+            if (!fechaFin) {
+                alert('La fecha de fin es obligatoria.');
+                return;
+            }
+            duracionDias = Math.max(1, _diffDays(fechaIni, fechaFin));
+        }
 
-        var responsables = Object.keys(_actividadSelectedUsers).map(function(k) { return parseInt(k); });
+        var faseId = el('proyActFase') ? el('proyActFase').value : '';
+        var progreso = el('proyActProgreso') ? parseInt(el('proyActProgreso').value, 10) : 0;
+        if (isNaN(progreso)) progreso = 0;
+        progreso = Math.max(0, Math.min(100, progreso));
+        var costo = el('proyActCosto') ? parseFloat(el('proyActCosto').value) : 0;
+        if (isNaN(costo) || costo < 0) costo = 0;
+        var ingreso = el('proyActIngreso') ? parseFloat(el('proyActIngreso').value) : 0;
+        if (isNaN(ingreso) || ingreso < 0) ingreso = 0;
 
-        // Nombre real del proyecto (si se cargo el detalle), si no fallback a la key
-        var proyectoNombre = (_cachedProjectDetail && _cachedProjectDetail.nombre)
-            ? _cachedProjectDetail.nombre
-            : ('proy_' + currentProjectId);
+        var responsables = Object.keys(_actividadSelectedUsers).map(function(k) { return parseInt(k, 10); });
+        var dependencias = Object.keys(_proyActDeps).map(function(k) { return parseInt(k, 10); });
 
-        var payload = {
-            proyecto_key: 'proy_' + currentProjectId,
-            proyecto_titulo: proyectoNombre,
-            titulo: titulo,
-            dia_semana: diaSemana,
-            hora_inicio: horaInicio,
-            hora_fin: horaFin,
-            fecha: _actividadFechaSeleccionada,
-            responsables: responsables
+        var payloadCrear = {
+            nombre: titulo,
+            fecha_inicio: fechaIni,
+            duracion_dias: duracionDias,
+            progreso: progreso,
+            costo_estimado: costo,
+            ingreso_estimado: ingreso,
+            fase_id: faseId ? parseInt(faseId, 10) : null,
         };
 
-        // Include optional fields if filled
-        var desc = el('proyActDescripcion') ? el('proyActDescripcion').value.trim() : '';
-        if (desc) payload.descripcion = desc;
-
-        var vehiculos = el('proyActVehiculos') ? el('proyActVehiculos').value.trim() : '';
-        if (vehiculos) payload.vehiculos = vehiculos;
-
-        // Disable button while submitting
         var btn = el('proyActBtnCrear');
-        if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
+        var lblOriginal = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Guardando\u2026'; }
 
-        _fetch('/app/api/programacion/actividades/', {
-            method: 'POST',
-            body: payload
-        }).then(function(resp) {
-            if (btn) { btn.disabled = false; btn.textContent = 'Crear Actividad'; }
+        var url, method, body;
+        if (_proyActEditId) {
+            url = '/app/api/gantt/actividad/' + _proyActEditId + '/';
+            method = 'PUT';
+            // En PUT podemos mandar todo en un solo request (incluye M2M)
+            body = Object.assign({}, payloadCrear, {
+                recursos: responsables,
+                dependencias: dependencias,
+            });
+        } else {
+            url = '/app/api/proyecto/' + currentProjectId + '/gantt/';
+            method = 'POST';
+            body = payloadCrear;
+        }
 
-            if (resp.ok || resp.success) {
-                proyectosCerrarDialogo('proyDialogoActividad');
-                // Re-render programa de obra to show new activity
-                renderProgramaObra(currentProjectId);
-                // Show toast
-                _showToast('Actividad creada');
+        _fetch(url, { method: method, body: body }).then(function(resp) {
+            if (!resp || !resp.success) {
+                if (btn) { btn.disabled = false; btn.textContent = lblOriginal; }
+                alert('Error al guardar actividad: ' + ((resp && resp.error) || 'Error desconocido'));
+                return;
+            }
+
+            // Si es CREAR y hay responsables/dependencias, hacemos un PUT
+            // adicional para asignarlos (el POST inicial no soporta M2M).
+            if (!_proyActEditId && (responsables.length || dependencias.length) && resp.actividad && resp.actividad.id) {
+                _fetch('/app/api/gantt/actividad/' + resp.actividad.id + '/', {
+                    method: 'PUT',
+                    body: { recursos: responsables, dependencias: dependencias },
+                }).then(function() {
+                    _onActividadGuardada(btn, lblOriginal, _proyActEditId ? 'Actividad actualizada' : 'Actividad creada');
+                }).catch(function() {
+                    _onActividadGuardada(btn, lblOriginal, 'Actividad creada (sin responsables)');
+                });
             } else {
-                alert('Error al crear actividad: ' + (resp.error || 'Error desconocido'));
+                _onActividadGuardada(btn, lblOriginal, _proyActEditId ? 'Actividad actualizada' : 'Actividad creada');
             }
         }).catch(function(err) {
-            if (btn) { btn.disabled = false; btn.textContent = 'Crear Actividad'; }
-            alert('Error de conexion al crear actividad');
-            console.error('Error creando actividad:', err);
+            if (btn) { btn.disabled = false; btn.textContent = lblOriginal; }
+            console.error('[gantt] error guardando actividad:', err);
+            alert('Error de conexi\u00F3n al guardar la actividad.');
         });
+    };
+
+    function _onActividadGuardada(btn, lblOriginal, msg) {
+        if (btn) { btn.disabled = false; btn.textContent = lblOriginal; }
+        proyectosCerrarDialogo('proyDialogoActividad');
+        _proyActEditId = null;
+        renderProgramaObra(currentProjectId);
+        _showToast(msg || 'Actividad guardada');
+    }
+
+    window.proyectosEliminarActividadGantt = function() {
+        if (!_proyActEditId) return;
+        var id = _proyActEditId;
+        proyConfirm('Eliminar actividad', '\u00BFSeguro que quieres eliminar esta actividad del cronograma?', {
+            textoConfirmar: 'Eliminar',
+            onConfirm: function() {
+                _fetch('/app/api/gantt/actividad/' + id + '/', { method: 'DELETE' }).then(function(resp) {
+                    if (resp && resp.success) {
+                        proyectosCerrarDialogo('proyDialogoActividad');
+                        _proyActEditId = null;
+                        renderProgramaObra(currentProjectId);
+                        _showToast('Actividad eliminada');
+                    } else {
+                        alert('Error al eliminar actividad');
+                    }
+                }).catch(function() {
+                    alert('Error de conexi\u00F3n al eliminar.');
+                });
+            }
+        });
+    };
+
+    // Exponer para invocacion desde HTML inline (header del Gantt) o desde
+    // otros modulos.  El IIFE encierra la funcion, asi que sin window.* el
+    // boton del DOM no podia llamarla.
+    window.proyectosAbrirNuevaActividad = function(dateStr) {
+        _openActividadForm(dateStr || _isoToday(), {});
+    };
+    window.proyectosEditarActividadGantt = function(actId) {
+        _openActividadForm(null, { editId: actId });
     };
 
     function _showToast(message) {
@@ -2860,13 +3803,182 @@
     // =========================================
     //  RENDER: FINANCIERO
     // =========================================
+    //
+    //   Layout (rediseñado, look "warm modern" inspirado en Finance.jsx
+    //   del Claude Design):
+    //
+    //     [ Header: Finanzas del proyecto + Sincronizar Drive + + Nueva factura ]
+    //     [ Sub-tabs: Resumen | Facturas | Órdenes de Compra | Facturas Proveedor ]
+    //
+    //     RESUMEN     → 4 KPI cards + Distribución por partida + Gastos operativos
+    //     FACTURAS    → Tabla de facturas de ingreso (cliente) + filtros + upload
+    //     OC          → Tabla de órdenes de compra (igual a antes, con look nuevo)
+    //     PROVEEDOR   → Tabla de facturas de proveedor + upload
+    //
+    //   Las 4 sub-panes coexisten en el DOM; alternamos `display:none/block`
+    //   para que el cambio entre sub-tabs sea instantáneo. Los datos solo se
+    //   recargan cuando entramos al pane Financiero (renderFinanciero) o
+    //   cuando se hace una mutación (upload/eliminar).
+    // =========================================
+
+    // Filtro actual de facturas de ingreso (all / pending / paid)
+    var _proyFinFacturasFilter = 'all';
+    // Cache de facturas de ingreso para filtrado client-side
+    var _proyFinFacturasCache = [];
 
     function renderFinanciero(projectId) {
+        // Sub-tab por defecto = Resumen
+        if (typeof window.proyFinSetSubTab === 'function') {
+            // No forzar reset si el usuario ya está navegando dentro;
+            // solo aseguramos que un sub-tab esté visible.
+            var anyActive = document.querySelector('#proyPane_financiero .proy-fin-subtab.is-active');
+            if (!anyActive) window.proyFinSetSubTab('resumen');
+        }
+
+        _renderFinResumen();           // KPIs + distribución + subtitle
         renderOC(projectId);
         renderSupplierInvoices(projectId);
         renderRevenueInvoices(projectId);
         renderExpenses(projectId);
     }
+
+    // ── Cambia el sub-tab activo dentro del pane Financiero ──
+    // Solo manipula visibilidad/clases — los datos ya están en el DOM.
+    window.proyFinSetSubTab = function(tabName) {
+        var pane = el('proyPane_financiero');
+        if (!pane) return;
+        var validTabs = ['resumen', 'facturas', 'oc', 'proveedor'];
+        if (validTabs.indexOf(tabName) === -1) tabName = 'resumen';
+
+        // Actualizar pills
+        var pills = pane.querySelectorAll('.proy-fin-subtab');
+        for (var i = 0; i < pills.length; i++) {
+            var p = pills[i];
+            if (p.getAttribute('data-subtab') === tabName) {
+                p.classList.add('is-active');
+            } else {
+                p.classList.remove('is-active');
+            }
+        }
+        // Mostrar/ocultar sub-panes
+        var panes = pane.querySelectorAll('.proy-fin-subpane');
+        for (var j = 0; j < panes.length; j++) {
+            var sp = panes[j];
+            sp.style.display = (sp.getAttribute('data-subpane') === tabName) ? '' : 'none';
+        }
+    };
+
+    // ── Render del sub-pane Resumen: KPIs + distribución por partida ──
+    function _renderFinResumen() {
+        var ov = (_cachedProjectDetail && _cachedProjectDetail.overview) ? _cachedProjectDetail.overview : null;
+        var fin = (ov && ov.financiero) ? ov.financiero : {};
+        var contratado = Number(fin.contratado || 0);
+        var gastado    = Number(fin.gastado || 0);
+        var cobrado    = Number(fin.cobrado || 0);
+        var disponible = Math.max(0, contratado - gastado);
+
+        var spentPct = contratado > 0 ? Math.round((gastado / contratado) * 100) : 0;
+        var invPct   = contratado > 0 ? Math.round((cobrado / contratado) * 100) : 0;
+        var dispPct  = contratado > 0 ? Math.max(0, 100 - spentPct) : 100;
+
+        // Subtitle del header
+        var sub = el('proyFinSubtitle');
+        if (sub) {
+            var nombre = (_cachedProjectDetail && _cachedProjectDetail.nombre) ? _cachedProjectDetail.nombre : 'Proyecto';
+            sub.textContent = nombre + ' · Presupuesto base: ' + _fmtMoneyShort(contratado) + ' MXN';
+        }
+
+        // KPI 1 — Presupuesto total
+        _setText('proyFinKpiPresupuesto', _fmtMoneyShort(contratado));
+        _setText('proyFinKpiPresupuestoSub', 'Aprobado cliente');
+
+        // KPI 2 — Ejecutado
+        _setText('proyFinKpiEjecutado', _fmtMoneyShort(gastado));
+        _setText('proyFinKpiEjecutadoSub', spentPct + '% del presupuesto');
+
+        // KPI 3 — Facturado
+        _setText('proyFinKpiFacturado', _fmtMoneyShort(cobrado));
+        _setText('proyFinKpiFacturadoSub', invPct + '% del presupuesto');
+
+        // KPI 4 — Disponible (color cambia si < 20% restante)
+        var dispEl = el('proyFinKpiDisponible');
+        var dispKpi = dispEl ? dispEl.closest('.proy-fin-kpi') : null;
+        _setText('proyFinKpiDisponible', _fmtMoneyShort(disponible));
+        _setText('proyFinKpiDisponibleSub', dispPct + '% restante');
+        if (dispKpi) {
+            dispKpi.classList.remove('is-warn', 'is-danger', 'is-ok');
+            if (contratado <= 0) {
+                /* sin clase */
+            } else if (dispPct <= 0) {
+                dispKpi.classList.add('is-danger');
+            } else if (dispPct < 20) {
+                dispKpi.classList.add('is-warn');
+            } else {
+                dispKpi.classList.add('is-ok');
+            }
+        }
+
+        // ── Distribución por partida ──
+        var listEl = el('proyFinBreakdownList');
+        var metaEl = el('proyFinBreakdownMeta');
+        if (!listEl) return;
+
+        var breakdown = (ov && Array.isArray(ov.breakdown_presupuesto)) ? ov.breakdown_presupuesto : [];
+        var totalBreak = breakdown.reduce(function(s, b) { return s + Number(b.monto || 0); }, 0);
+
+        if (!breakdown.length || totalBreak <= 0) {
+            listEl.innerHTML = '<div class="proy-fin-empty">' +
+                'Aún no hay partidas con monto. Captura el levantamiento para ver el desglose.' +
+                '</div>';
+            if (metaEl) metaEl.textContent = '';
+            return;
+        }
+
+        if (metaEl) metaEl.textContent = 'Total: ' + _fmtMoneyShort(totalBreak);
+
+        var html = '';
+        breakdown.forEach(function(b) {
+            var monto = Number(b.monto || 0);
+            var pct = totalBreak > 0 ? (monto / totalBreak) * 100 : 0;
+            var cat = (b.categoria || 'otros').toString();
+            // Capitalizar primera letra
+            var label = cat.charAt(0).toUpperCase() + cat.slice(1);
+            html += '<div class="proy-fin-bd-row">' +
+                '<div class="proy-fin-bd-head">' +
+                    '<span class="proy-fin-bd-label">' + _esc(label) + '</span>' +
+                    '<span class="proy-fin-bd-amounts">' +
+                        '<span class="proy-fin-bd-amount">' + _fmtMoneyShort(monto) + '</span>' +
+                        '<span class="proy-fin-bd-pct">' + Math.round(pct) + '%</span>' +
+                    '</span>' +
+                '</div>' +
+                '<div class="proy-fin-bd-bar">' +
+                    '<div class="proy-fin-bd-bar-fill" style="width:' + pct.toFixed(2) + '%"></div>' +
+                '</div>' +
+            '</div>';
+        });
+        listEl.innerHTML = html;
+    }
+
+    function _setText(id, text) {
+        var n = el(id);
+        if (n) n.textContent = text;
+    }
+
+    // ── Filtro de facturas de ingreso (client-side) ──
+    window.proyFinFilterFacturas = function(filter) {
+        _proyFinFacturasFilter = filter || 'all';
+        // Actualizar pills de filtro
+        var pills = document.querySelectorAll('#proyFinSub_facturas .proy-fin-filter');
+        for (var i = 0; i < pills.length; i++) {
+            var p = pills[i];
+            if (p.getAttribute('data-fac-filter') === _proyFinFacturasFilter) {
+                p.classList.add('is-active');
+            } else {
+                p.classList.remove('is-active');
+            }
+        }
+        _renderFacIngFromCache();
+    };
 
     // ── Sync Drive ──
     window.proyFinSyncDrive = function() {
@@ -3066,50 +4178,91 @@
         var container = el('proyFacIngBody');
         if (!container) return;
 
-        container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
+        container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#8e8e93">Cargando...</td></tr>';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/facturas-ingreso/').then(function(resp) {
             if (resp.ok || resp.success) {
-                var invoices = resp.data || [];
-                if (invoices.length === 0) {
-                    container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93">No hay facturas de ingreso</td></tr>';
-                    var foot = el('proyFacIngFoot');
-                    if (foot) foot.innerHTML = '';
-                    return;
-                }
-
-                var html = '';
-                var total = 0;
-                invoices.forEach(function(inv) {
-                    var amount = inv.monto || 0;
-                    total += amount;
-                    html += '<tr>' +
-                        '<td style="font-weight:600;color:#007aff">' + (inv.numero_factura || '\u2014') + '</td>' +
-                        '<td style="text-align:right">' + fmtMoney(amount) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(inv.status || inv.metodo_pago || 'emitted') + '">' + statusLabel(inv.status || inv.metodo_pago || 'emitted') + '</span></td>' +
-                        '<td>' + fmtDate(inv.fecha_factura) + '</td>' +
-                        '<td style="text-align:center">' + _btnEliminarIcon('proyFinEliminarFacturaIngreso(' + inv.id + ')') + '</td>' +
-                    '</tr>';
-                });
-
-                container.innerHTML = html;
-
-                var foot = el('proyFacIngFoot');
-                if (foot) {
-                    foot.innerHTML = '<tr style="font-weight:600;border-top:2px solid rgba(0,0,0,0.1)">' +
-                        '<td style="text-align:right;color:#8e8e93">Total</td>' +
-                        '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
-                        '<td colspan="3"></td>' +
-                    '</tr>';
-                }
+                _proyFinFacturasCache = resp.data || [];
+                _renderFacIngFromCache();
             } else {
-                container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
+                container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#ef4444">Error al cargar facturas</td></tr>';
                 console.error('Error cargando facturas ingreso:', resp.error);
             }
         }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
+            container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#ef4444">Error de conexion</td></tr>';
             console.error('Error de red cargando facturas ingreso:', err);
         });
+    }
+
+    // Pinta las facturas de ingreso desde cache, aplicando _proyFinFacturasFilter.
+    function _renderFacIngFromCache() {
+        var container = el('proyFacIngBody');
+        var foot = el('proyFacIngFoot');
+        if (!container) return;
+
+        var all = _proyFinFacturasCache || [];
+        var filter = _proyFinFacturasFilter || 'all';
+
+        function _isPaid(inv) {
+            var s = (inv.status || '').toLowerCase();
+            return s === 'paid' || s === 'cobrada' || s === 'pagada' || !!inv.fecha_pago;
+        }
+        function _isOverdue(inv) {
+            if (_isPaid(inv)) return false;
+            if (!inv.fecha_vencimiento) return false;
+            var d = new Date(inv.fecha_vencimiento);
+            return !isNaN(d.getTime()) && d.getTime() < Date.now();
+        }
+
+        var invoices;
+        if (filter === 'paid') {
+            invoices = all.filter(_isPaid);
+        } else if (filter === 'pending') {
+            invoices = all.filter(function(i) { return !_isPaid(i); });
+        } else {
+            invoices = all.slice();
+        }
+
+        if (!invoices.length) {
+            var msg = (filter === 'all')
+                ? 'No hay facturas de ingreso'
+                : 'No hay facturas con ese filtro';
+            container.innerHTML = '<tr><td colspan="6" class="proy-fin-table-empty">' + msg + '</td></tr>';
+            if (foot) foot.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        var total = 0;
+        invoices.forEach(function(inv) {
+            var amount = Number(inv.monto || 0);
+            total += amount;
+            var paid = _isPaid(inv);
+            var overdue = _isOverdue(inv);
+            var pillClass, pillLabel;
+            if (paid) { pillClass = 'is-ok'; pillLabel = 'Cobrada'; }
+            else if (overdue) { pillClass = 'is-danger'; pillLabel = 'Vencida'; }
+            else { pillClass = 'is-warn'; pillLabel = 'Pendiente'; }
+            var concepto = (inv.notas || inv.metodo_pago || '\u2014');
+            html += '<tr>' +
+                '<td><span class="proy-fin-folio">' + _esc(inv.numero_factura || '\u2014') + '</span></td>' +
+                '<td><span class="proy-fin-concepto" title="' + _esc(concepto) + '">' + _esc(concepto) + '</span></td>' +
+                '<td style="text-align:right" class="proy-fin-amount">' + fmtMoney(amount) + '</td>' +
+                '<td class="proy-fin-date">' + fmtDate(inv.fecha_factura) + '</td>' +
+                '<td><span class="proy-fin-pill ' + pillClass + '">' + pillLabel + '</span></td>' +
+                '<td style="text-align:center">' + _btnEliminarIcon('proyFinEliminarFacturaIngreso(' + inv.id + ')') + '</td>' +
+            '</tr>';
+        });
+        container.innerHTML = html;
+
+        if (foot) {
+            var pagadas = invoices.filter(_isPaid).length;
+            foot.innerHTML = '<tr class="proy-fin-totalrow">' +
+                '<td colspan="2" style="color:#78716c">' + invoices.length + ' factura(s) \u00b7 ' + pagadas + ' cobrada(s)</td>' +
+                '<td style="text-align:right">' + fmtMoney(total) + '</td>' +
+                '<td colspan="3"></td>' +
+            '</tr>';
+        }
     }
 
     var _CATEGORIA_LABEL = {

@@ -4179,3 +4179,680 @@ select.proy-info-input {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════
+   GANTT PRO — extensiones (zoom, hitos, tooltip, lista, deps).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Toolbar secundaria (filtros estado/responsable/categoría) */
+.proy-gantt-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px 0 4px;
+    flex-wrap: wrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.proy-gantt-select {
+    background: #fff;
+    border: 1px solid var(--proy-wm-border-2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    color: var(--proy-wm-text-2);
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 160px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.proy-gantt-select:hover { border-color: var(--proy-wm-blue); }
+.proy-gantt-select:focus { border-color: var(--proy-wm-blue); box-shadow: 0 0 0 3px var(--proy-wm-blue-soft); }
+
+/* Botón ícono pequeño (export CSV) */
+.proy-gantt-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 12px;
+    background: #fff;
+    color: var(--proy-wm-text-2);
+    border: 1px solid var(--proy-wm-border-2);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.15s;
+}
+.proy-gantt-icon-btn:hover {
+    border-color: var(--proy-wm-blue);
+    color: var(--proy-wm-blue);
+}
+
+/* Tag ATRASADA */
+.proy-gantt-tag-late {
+    background: #fef2f2;
+    color: var(--proy-wm-red);
+    animation: proyGanttPulse 1.6s ease-in-out infinite;
+}
+@keyframes proyGanttPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+
+/* Borde rojo en barras atrasadas */
+.proy-gantt-bar-track.is-late {
+    border-color: var(--proy-wm-red) !important;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+/* Hitos: rombo posicionado encima de la grilla */
+.proy-gantt-milestone {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.proy-gantt-milestone:hover {
+    transform: translate(-50%, -50%) scale(1.25);
+    z-index: 6;
+}
+.proy-gantt-milestone svg {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18));
+}
+.proy-gantt-row-diamond {
+    flex-shrink: 0;
+}
+
+/* Handle del extremo derecho de la barra (resize visual) */
+.proy-gantt-bar-handle {
+    position: absolute;
+    right: -3px;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+    background: rgba(255,255,255,0.0);
+    border-radius: 0 6px 6px 0;
+    transition: background 0.15s;
+}
+.proy-gantt-bar-track:hover .proy-gantt-bar-handle {
+    background: rgba(0,0,0,0.12);
+}
+
+/* Click cursor para barras de actividad */
+.proy-gantt-bar-track[data-act-id] {
+    cursor: pointer;
+}
+.proy-gantt-bar-track[data-act-id]:hover {
+    filter: brightness(0.97);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Filas hijas (actividades dentro de una fase) */
+.proy-gantt-row-fase .proy-gantt-row-name {
+    font-weight: 700;
+    font-size: 0.84rem;
+}
+.proy-gantt-row-child .proy-gantt-col-left {
+    padding-left: 28px;
+    background: rgba(248, 250, 255, 0.4);
+}
+.proy-gantt-row-child .proy-gantt-row-name {
+    font-weight: 500;
+    font-size: 0.76rem;
+    color: var(--proy-wm-text-2);
+}
+
+/* Tooltip flotante (rico) */
+.proy-gantt-tooltip {
+    position: absolute;
+    background: rgba(28, 25, 23, 0.96);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.74rem;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 320px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+    line-height: 1.45;
+}
+.proy-gantt-tt-title {
+    font-weight: 700;
+    font-size: 0.82rem;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+}
+.proy-gantt-tt-cat {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    opacity: 0.9;
+}
+.proy-gantt-tt-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    color: #e5e5e5;
+}
+.proy-gantt-tt-row svg { opacity: 0.75; flex-shrink: 0; }
+
+/* Dependencias SVG overlay (colocado al ras del col-right) */
+.proy-gantt-deps-svg {
+    position: absolute;
+    top: 0;
+    left: 240px;        /* coincide con .proy-gantt-col-left.width */
+    right: 0;
+    bottom: 0;
+    width: calc(100% - 240px);
+    height: 100%;
+    pointer-events: none;
+    z-index: 4;
+    overflow: visible;
+}
+@media (max-width: 768px) {
+    .proy-gantt-deps-svg {
+        left: 180px;
+        width: calc(100% - 180px);
+    }
+}
+.proy-gantt-grid {
+    position: relative;
+}
+.proy-gantt-dep-path {
+    transition: stroke 0.15s, stroke-width 0.15s, stroke-dasharray 0.15s;
+}
+
+/* Vista LISTA (tabla limpia) */
+.proy-gantt-list-card {
+    overflow-x: auto;
+}
+.proy-gantt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+}
+.proy-gantt-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--proy-wm-bg);
+    border-bottom: 1px solid var(--proy-wm-border-2);
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--proy-wm-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.proy-gantt-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--proy-wm-border);
+    color: var(--proy-wm-text);
+    vertical-align: middle;
+}
+.proy-gantt-table tr.proy-gantt-tr-fase td {
+    background: rgba(248, 250, 255, 0.45);
+    font-weight: 600;
+}
+.proy-gantt-table tbody tr:hover td {
+    background: var(--proy-wm-row-hover);
+}
+.proy-gantt-list-progress {
+    display: inline-block;
+    width: 72px;
+    height: 6px;
+    background: #e7e5e4;
+    border-radius: 3px;
+    overflow: hidden;
+    vertical-align: middle;
+}
+.proy-gantt-list-progress > div {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s;
+}
+.proy-gantt-row-edit {
+    background: transparent;
+    border: 1px solid var(--proy-wm-border-2);
+    color: var(--proy-wm-text-2);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all 0.15s;
+}
+.proy-gantt-row-edit:hover {
+    border-color: var(--proy-wm-blue);
+    color: var(--proy-wm-blue);
+}
+
+/* Subdivisiones del eje X (más densas en zoom semana) */
+.proy-gantt-grid[data-units="52"] .proy-gantt-month {
+    font-size: 0.6rem;
+    padding: 8px 0;
+}
+.proy-gantt-grid[data-units="4"] .proy-gantt-month {
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+.proy-gantt-grid[data-units="52"] .proy-gantt-col-right {
+    background-size: calc(100% / 52) 100%;
+}
+.proy-gantt-grid[data-units="4"] .proy-gantt-col-right {
+    background-size: calc(100% / 4) 100%;
+}
+
+.proy-gantt-list-card .proy-gantt-table {
+    min-width: 700px;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FINANZAS — Tab "Finanzas" del detalle de proyecto.
+   Layout warm-modern inspirado en Finance.jsx del Claude Design:
+     - Header con título + acciones (Sincronizar / Nueva factura)
+     - Sub-tabs (Resumen / Facturas / OC / Facturas Proveedor)
+     - KPI cards limpias
+     - Distribución por partida con barras
+     - Tablas dentro de tarjetas con bordes suaves
+   Bloque autocontenido con prefijo `.proy-fin-*`. Reusa variables
+   --proy-wm-* del bloque warm modern de arriba.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+#proyPane_financiero {
+  font-family: var(--proy-wm-font);
+  color: var(--proy-wm-text);
+}
+
+/* ── Header (título + botones globales) ─────────────────────────────── */
+.proy-fin-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 0;
+}
+.proy-fin-head-text { min-width: 0; }
+.proy-fin-title {
+  font-family: var(--proy-wm-font);
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.proy-fin-subtitle {
+  font-family: var(--proy-wm-font);
+  font-size: 0.78rem;
+  color: var(--proy-wm-text-2);
+  margin: 4px 0 0 0;
+}
+.proy-fin-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.proy-fin-btn-ghost,
+.proy-fin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--proy-wm-font);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: var(--proy-wm-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+.proy-fin-btn-ghost {
+  background: var(--proy-wm-card);
+  color: var(--proy-wm-text-2);
+  border: 1px solid var(--proy-wm-border-strong);
+}
+.proy-fin-btn-ghost:hover {
+  background: var(--proy-wm-sub-bg);
+  color: var(--proy-wm-text);
+  border-color: var(--proy-wm-border-strong);
+}
+.proy-fin-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.proy-fin-btn-primary {
+  background: var(--proy-wm-accent);
+  color: #fff;
+  border: 1px solid var(--proy-wm-accent);
+  padding: 8px 16px;
+}
+.proy-fin-btn-primary:hover {
+  background: var(--proy-wm-accent-hover);
+  border-color: var(--proy-wm-accent-hover);
+}
+
+/* ── Sub-tabs (pills bajo el header de Finanzas) ────────────────────── */
+.proy-fin-subtabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--proy-wm-border-strong);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.proy-fin-subtabs::-webkit-scrollbar { display: none; }
+
+.proy-fin-subtab {
+  font-family: var(--proy-wm-font);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+  background: transparent;
+  border: none;
+  padding: 10px 18px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.proy-fin-subtab:hover {
+  color: var(--proy-wm-text);
+}
+.proy-fin-subtab.is-active {
+  color: var(--proy-wm-accent);
+  font-weight: 600;
+  border-bottom-color: var(--proy-wm-accent);
+}
+
+/* ── Sub-pane container ─────────────────────────────────────────────── */
+.proy-fin-subpane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── KPI cards (4 columnas) ─────────────────────────────────────────── */
+.proy-fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.proy-fin-kpi {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  padding: 18px 20px;
+  box-shadow: var(--proy-wm-shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.proy-fin-kpi:hover {
+  border-color: var(--proy-wm-border-strong);
+  box-shadow: var(--proy-wm-shadow-md);
+}
+.proy-fin-kpi-label {
+  font-family: var(--proy-wm-font);
+  font-size: 0.72rem;
+  color: var(--proy-wm-text-2);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.proy-fin-kpi-value {
+  font-family: var(--proy-wm-font);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--proy-wm-accent);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.proy-fin-kpi-sub {
+  font-family: var(--proy-wm-font);
+  font-size: 0.7rem;
+  color: var(--proy-wm-text-muted);
+  margin-top: 8px;
+}
+
+/* Coloreado semántico por tipo de KPI */
+.proy-fin-kpi[data-kpi="ejecutado"] .proy-fin-kpi-value { color: var(--proy-wm-info-alt); }
+.proy-fin-kpi[data-kpi="facturado"] .proy-fin-kpi-value { color: var(--proy-wm-info); }
+.proy-fin-kpi[data-kpi="disponible"].is-ok     .proy-fin-kpi-value { color: var(--proy-wm-ok); }
+.proy-fin-kpi[data-kpi="disponible"].is-warn   .proy-fin-kpi-value { color: var(--proy-wm-warn); }
+.proy-fin-kpi[data-kpi="disponible"].is-danger .proy-fin-kpi-value { color: var(--proy-wm-danger); }
+
+/* ── Card genérica (Distribución, Gastos, tablas de sub-panes) ──────── */
+.proy-fin-card {
+  background: var(--proy-wm-card);
+  border: 1px solid var(--proy-wm-border);
+  border-radius: var(--proy-wm-radius);
+  box-shadow: var(--proy-wm-shadow-sm);
+  overflow: hidden;
+}
+.proy-fin-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--proy-wm-border);
+  background: transparent;
+}
+.proy-fin-card-title {
+  font-family: var(--proy-wm-font);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--proy-wm-text);
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.proy-fin-card-meta {
+  font-family: var(--proy-wm-font);
+  font-size: 0.74rem;
+  color: var(--proy-wm-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Distribución por partida ───────────────────────────────────────── */
+.proy-fin-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+.proy-fin-bd-row { display: flex; flex-direction: column; gap: 5px; }
+.proy-fin-bd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.proy-fin-bd-label {
+  font-family: var(--proy-wm-font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--proy-wm-text);
+}
+.proy-fin-bd-amounts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.proy-fin-bd-amount {
+  font-family: var(--proy-wm-font);
+  font-size: 0.74rem;
+  color: var(--proy-wm-text-muted);
+}
+.proy-fin-bd-pct {
+  font-family: var(--proy-wm-font);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--proy-wm-accent);
+  min-width: 32px;
+  text-align: right;
+}
+.proy-fin-bd-bar {
+  height: 6px;
+  background: var(--proy-wm-sub-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.proy-fin-bd-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--proy-wm-accent), #60a5fa);
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.proy-fin-empty {
+  padding: 28px 20px;
+  text-align: center;
+  font-family: var(--proy-wm-font);
+  font-size: 0.78rem;
+  color: var(--proy-wm-text-muted);
+}
+
+/* ── Filtros (Todas/Pendientes/Cobradas) ────────────────────────────── */
+.proy-fin-filters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.proy-fin-filter {
+  font-family: var(--proy-wm-font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--proy-wm-text-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.proy-fin-filter:hover { background: var(--proy-wm-sub-bg); color: var(--proy-wm-text); }
+.proy-fin-filter.is-active {
+  background: var(--proy-wm-accent-soft);
+  color: var(--proy-wm-accent);
+  font-weight: 600;
+}
+
+/* ── Tablas de finanzas (override visual de .proy-table dentro del pane) ── */
+.proy-fin-tablewrap { padding: 0; }
+.proy-fin-table { font-family: var(--proy-wm-font); }
+.proy-fin-table thead th {
+  background: var(--proy-wm-bg);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--proy-wm-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--proy-wm-border);
+  padding: 11px 16px;
+}
+.proy-fin-table tbody td {
+  font-size: 0.8rem;
+  color: var(--proy-wm-text);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--proy-wm-border);
+}
+.proy-fin-table tbody tr:last-child td { border-bottom: none; }
+.proy-fin-table tbody tr:hover td { background: var(--proy-wm-sub-bg); }
+
+.proy-fin-folio {
+  font-weight: 600;
+  color: var(--proy-wm-accent);
+  font-variant-numeric: tabular-nums;
+}
+.proy-fin-amount {
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  font-variant-numeric: tabular-nums;
+}
+.proy-fin-date {
+  color: var(--proy-wm-text-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.proy-fin-concepto {
+  display: inline-block;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  color: var(--proy-wm-text);
+}
+.proy-fin-table-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--proy-wm-text-muted);
+  font-size: 0.8rem;
+}
+.proy-fin-totalrow td {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--proy-wm-text);
+  background: var(--proy-wm-sub-bg);
+  border-top: 2px solid var(--proy-wm-border-strong);
+  padding: 12px 16px;
+  border-bottom: none;
+}
+
+/* ── Pills de estado (verde/amber/rojo/azul) ────────────────────────── */
+.proy-fin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--proy-wm-font);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.proy-fin-pill.is-ok {
+  background: var(--proy-wm-ok-badge-bg);
+  color: var(--proy-wm-ok-badge-text);
+}
+.proy-fin-pill.is-warn {
+  background: var(--proy-wm-warn-badge-bg);
+  color: var(--proy-wm-warn-badge-text);
+}
+.proy-fin-pill.is-danger {
+  background: var(--proy-wm-danger-badge-bg);
+  color: var(--proy-wm-danger-badge-text);
+}
+.proy-fin-pill.is-info {
+  background: var(--proy-wm-accent-soft);
+  color: var(--proy-wm-accent);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .proy-fin-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .proy-fin-head { flex-direction: column; align-items: stretch; }
+  .proy-fin-head-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .proy-fin-kpis { grid-template-columns: 1fr; }
+  .proy-fin-card-head { flex-wrap: wrap; gap: 8px; }
+  .proy-fin-subtab { padding: 8px 14px; font-size: 0.78rem; }
+  .proy-fin-filters { flex-wrap: wrap; }
+  .proy-fin-concepto { max-width: 180px; }
+}
+

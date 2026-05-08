@@ -4804,12 +4804,22 @@ def api_gantt_proyecto(request, proyecto_id):
             if not fase:
                 return JsonResponse({'error': 'Fase no encontrada en este proyecto'}, status=404)
 
+        # Progreso (opcional al crear)
+        progreso = data.get('progreso', 0)
+        try:
+            progreso = int(progreso)
+            if progreso < 0 or progreso > 100:
+                raise ValueError
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'progreso debe ser 0-100'}, status=400)
+
         act = GanttActividad.objects.create(
             proyecto=proyecto,
             fase=fase,
             nombre=nombre,
             fecha_inicio=fecha_inicio,
             duracion_dias=duracion_dias,
+            progreso=progreso,
             costo_estimado=costo_estimado,
             ingreso_estimado=ingreso_estimado,
             orden=data.get('orden', 0),
