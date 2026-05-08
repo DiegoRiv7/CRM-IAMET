@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from decimal import Decimal
 
-from .views_utils import is_supervisor
+from .views_utils import is_supervisor, is_administrador
 from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
@@ -299,11 +299,22 @@ def api_crear_prospecto(request):
         except Contacto.DoesNotExist:
             pass
 
+    # Asignación: por defecto el creador. Si viene `usuario_id` y el caller
+    # es supervisor o administrador, se respeta esa asignación.
+    asignar_a = request.user
+    usuario_id = data.get('usuario_id')
+    if usuario_id and (is_supervisor(request.user) or is_administrador(request.user)):
+        from django.contrib.auth.models import User
+        try:
+            asignar_a = User.objects.get(id=int(usuario_id))
+        except (User.DoesNotExist, ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Usuario asignado no encontrado'}, status=400)
+
     # Etapa inicial: si viene del kanban (ej. click en "+" de "Reunión"),
     # respetar esa etapa; si no, el modelo usa 'identificado' por default.
     etapas_validas = {e[0] for e in Prospecto.ETAPA_CHOICES}
     create_kwargs = dict(
-        usuario=request.user,
+        usuario=asignar_a,
         nombre=nombre,
         cliente=cliente,
         contacto=contacto,
