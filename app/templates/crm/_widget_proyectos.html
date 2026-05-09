@@ -3,10 +3,13 @@
      ═══════════════════════════════════════════════════════════════ -->
 <div class="proyectos-section" id="proyectosSection">
 
-  <!-- Topbar: [Filtro][Ordenar] · tabs · [Buscar][+ Nuevo] en una sola fila.
-       Los controles laterales solo aplican al tab "Proyectos" (se ocultan
-       desde JS en proySetMainTab cuando se cambia a Dashboard/Financiero). -->
-  <div class="proy-tabs-wrap">
+  <!-- Topbar del listado: [Filtro][Ordenar] · cápsula "Proyectos" · [Buscar][+ Nuevo].
+       Las antiguas tabs Dashboard/Financiero fueron migradas al Dashboard global
+       (otro módulo). Esta cápsula es informativa para mantener la consistencia
+       visual con el resto de los módulos. Cuando el usuario entra al detalle de
+       un proyecto, este topbar se OCULTA y el topbar contextual del proyecto
+       toma su lugar (ver proyectosVerDetalle / proyectosVolverLista en JS). -->
+  <div class="proy-tabs-wrap" id="proyListTopbar">
     <div class="proy-topbar-side proy-topbar-left" id="proyTopbarLeft">
       <!-- Filtro dropdown -->
       <div class="proy-facet-wrap" style="position:relative;">
@@ -52,9 +55,7 @@
     </div>
 
     <div class="proy-tabs">
-      <button class="proy-tab active" data-tab="programa" onclick="proySetMainTab('programa')">Proyectos</button>
-      <button class="proy-tab" data-tab="dashboard" onclick="proySetMainTab('dashboard')">Dashboard</button>
-      <button class="proy-tab" data-tab="financiero" onclick="proySetMainTab('financiero')">Financiero</button>
+      <button class="proy-tab active" data-tab="programa" type="button">Proyectos</button>
     </div>
 
     <div class="proy-topbar-side proy-topbar-right" id="proyTopbarRight">
@@ -69,21 +70,9 @@
     </div>
   </div>
 
-  <!-- TAB 1: Dashboard -->
-  <div id="proyTabDashboard" style="display:none;padding:0 24px 20px;">
-    <!-- KPIs row -->
-    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Indicadores Clave</h3>
-    <div id="proyDashKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
-      <!-- Rendered by JS -->
-    </div>
-    <!-- Active projects list -->
-    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Proyectos del Periodo</h3>
-    <div id="proyDashList">
-      <!-- Rendered by JS -->
-    </div>
-  </div>
-
-  <!-- TAB 2: Programa de Obra (existing content) -->
+  <!-- Panel del listado de proyectos. Antes había dos paneles más
+       (Dashboard / Financiero) controlados por proySetMainTab; se eliminaron
+       porque esos modos se viven ahora en el Dashboard global. -->
   <div id="proyTabPrograma" style="padding:0 24px 20px;">
     <!-- Lista de proyectos (estilo CRM list-row, sin color-logic) -->
     <div id="proyListView">
@@ -108,37 +97,41 @@
     </div>
   </div>
 
-  <!-- TAB 3: Financiero -->
-  <div id="proyTabFinanciero" style="display:none;padding:0 24px 20px;">
-    <h3 style="font-size:1rem;font-weight:700;margin:0 0 12px;">Proyectos por Estado</h3>
-    <!-- Sub-tabs -->
-    <div style="display:flex;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;overflow:hidden;">
-      <button class="proy-fin-tab active" data-status="active" onclick="proyFinFilter('active')" style="flex:1;padding:8px;border:none;background:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;color:#007AFF;border-bottom:2px solid #007AFF;">En Ejecucion</button>
-      <button class="proy-fin-tab" data-status="planning" onclick="proyFinFilter('planning')" style="flex:1;padding:8px;border:none;background:#f9fafb;font-size:0.8rem;font-weight:500;cursor:pointer;color:#6B7280;">Programados</button>
-      <button class="proy-fin-tab" data-status="completed" onclick="proyFinFilter('completed')" style="flex:1;padding:8px;border:none;background:#f9fafb;font-size:0.8rem;font-weight:500;cursor:pointer;color:#6B7280;">Cerrados</button>
-    </div>
-    <div id="proyFinList">
-      <!-- Rendered by JS -->
-    </div>
-  </div>
+  <!-- (Antes existían aquí los paneles proyTabFinanciero / proyTabDashboard;
+       eliminados al migrar el modo Dashboard/Financiero al módulo global). -->
 
 </div>
 
 
 <!-- ═══════════════════════════════════════════════════════════════
-     WIDGET: Detalle de Proyecto (overlay, z-index 10100)
+     PAGE: Detalle de Proyecto (inline, NO overlay)
+     ───────────────────────────────────────────────────────────────
+     Vive en el flujo normal del DOM (no es modal). Cuando se abre,
+     proyectosVerDetalle() oculta #proyectosSection y agrega .is-open
+     a este contenedor; al volver al listado, lo inverso.
      ═══════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay" id="widgetProyectoDetalle" style="z-index:10100;display:none;">
-  <div class="widget-card-lg proy-detail-card">
+<div class="proy-detail-page" id="widgetProyectoDetalle">
+  <div class="proy-detail-card">
 
-    <!-- ═══ TOP BAR: ← Portafolio · ID — tabs centrados (dynamic island) — avatares + Compartir ═══ -->
-    <div class="proy-v3-topbar">
+    <!-- ═══ TOP BAR contextual del proyecto. Reemplaza visualmente al topbar
+         del listado mientras el overlay está abierto. Estructura:
+           izquierda: ← Portafolio · [Nombre del proyecto] (breadcrumb)
+           centro:    cápsula con tabs (dynamic island) — Resumen, Tareas,
+                      Cronograma, Partidas, Levantamientos, Drive, Más ▾
+           derecha:   avatares + agregar miembro + COMPARTIR + cerrar
+         IDs y data-tabs antiguos (partidas, partidasv4, dashboard, financiero)
+         se conservan internamente en el JS para no romper paneles ya cableados. -->
+    <div class="proy-v3-topbar" id="proyDetailTopbar">
       <div class="proy-v3-topbar-left">
-        <button class="proy-v3-back" onclick="proyectosVolverLista()" aria-label="Volver al portafolio">
+        <button class="proy-v3-back" onclick="proyectosVolverLista()" aria-label="Volver al portafolio" title="Volver al portafolio">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           <span>Portafolio</span>
         </button>
         <span class="proy-v3-topbar-sep" aria-hidden="true">·</span>
+        <!-- Nombre del proyecto como breadcrumb clickable (también vuelve al
+             listado). Lo rellena renderProjectOverview / proyectosVerDetalle. -->
+        <button type="button" class="proy-v3-back proy-v3-crumb-name" id="proyV3CrumbName" onclick="proyectosVolverLista()" title="Volver al portafolio" style="background:transparent;border:none;cursor:pointer;font:inherit;color:inherit;padding:0;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Proyecto</button>
+        <span class="proy-v3-topbar-sep" aria-hidden="true" id="proyV3CrumbOppSep" style="display:none;">·</span>
         <a href="#" class="proy-v3-opp-link" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)" title="Abrir oportunidad ligada">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <span id="proyDetailOppText">—</span>
@@ -147,36 +140,42 @@
         <span id="proyV3ProjectId" style="display:none;"></span>
       </div>
 
-      <!-- Tabs centrados como dynamic island. Orden: Levantamientos (default) ·
-           Tareas · Drive · Cronograma · Finanzas · Dashboard · Info. -->
+      <!-- Tabs centrados como dynamic island. Orden:
+             Resumen · Tareas · Cronograma · Partidas · Levantamientos · Drive · Más ▾
+           Internamente:
+             - "Resumen"        → proyPane_dashboard
+             - "Levantamientos" → proyPane_partidas
+             - "Partidas"       → proyPane_partidasv4
+             - "Cronograma"     → proyPane_programa
+           "Más ▾" abre dropdown con: Equipo, Comunicación, Reportes, Info. -->
       <div class="proy-v3-topbar-tabs proy-tab-bar">
-        <button class="proy-v3-topbar-tab proy-tab-btn active" data-tab="partidas" onclick="proyectosSetTab('partidas')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-          Levantamientos
+        <button class="proy-v3-topbar-tab proy-tab-btn active" data-tab="resumen" onclick="proyectosSetTab('resumen')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          Resumen
         </button>
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="tareas" onclick="proyectosSetTab('tareas')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           Tareas
         </button>
-        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="drive" onclick="proyectosSetTab('drive')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          Drive
-        </button>
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="programa" onclick="proyectosSetTab('programa')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
           Cronograma
         </button>
+        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="partidasv4" onclick="proyectosSetTab('partidasv4')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 11h18v4H3z"/><path d="M3 19h18v2H3z"/></svg>
+          Partidas
+        </button>
+        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="levantamientos" onclick="proyectosSetTab('levantamientos')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          Levantamientos
+        </button>
+        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="drive" onclick="proyectosSetTab('drive')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Drive
+        </button>
         <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="financiero" onclick="proyectosSetTab('financiero')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Finanzas
-        </button>
-        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="dashboard" onclick="proyectosSetTab('dashboard')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-          Dashboard
-        </button>
-        <button class="proy-v3-topbar-tab proy-tab-btn" data-tab="info" onclick="proyectosSetTab('info')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
-          Info
         </button>
       </div>
 
@@ -195,16 +194,10 @@
             </div>
           </div>
         </div>
-        <button class="proy-v3-share" type="button" onclick="proyDetailCompartir(event)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
-          <span>COMPARTIR</span>
-        </button>
-        <button class="proy-v3-close" type="button" onclick="proyectosVolverLista()" aria-label="Cerrar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
+        <!-- "COMPARTIR" y la "X" de cerrar se removieron: el detalle es un
+             template inline, no un widget que se cierra. La navegación de
+             vuelta al portafolio vive en el breadcrumb a la izquierda. -->
+
       </div>
     </div>
 
@@ -464,129 +457,265 @@
         </div>
       </div>
 
+      <!-- TAB: Partidas (sincronizado con la última volumetría completada) -->
+      <div id="proyPane_partidasv4" class="proy-tab-pane" style="display:none;">
+        <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <h3 style="margin:0;">Partidas</h3>
+            <div id="proyPartidasOrigen" style="font-size:0.72rem;color:#86868B;margin-top:2px;"></div>
+          </div>
+          <div class="proy-tab-actions" style="display:flex;align-items:center;gap:8px;">
+            <button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasSync()" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:6px;" title="Resincronizar desde la última volumetría">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar
+            </button>
+            <button class="proy-btn proy-btn-outline" type="button" onclick="proyPartidasHistorialAbrir()" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+              Historial
+            </button>
+          </div>
+        </div>
+        <div class="proy-partidas-table-wrap" style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:12px;background:#fff;">
+          <table class="proy-partidas-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+            <thead>
+              <tr style="background:#F8F9FB;color:#48484A;text-align:left;border-bottom:1px solid rgba(0,0,0,0.06);">
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Categoría</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Descripción</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Marca</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">No. Parte</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:center;">Cant.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:center;">Pend.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">P. Lista</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:center;">Desc.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">Costo Un.</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">P. Venta</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;text-align:right;">Ganancia</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Proveedor</th>
+                <th style="padding:11px 14px;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Estado</th>
+                <th style="padding:11px 14px;width:36px;"></th>
+              </tr>
+            </thead>
+            <tbody id="proyPartidasBody"></tbody>
+            <tfoot id="proyPartidasFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Historial de Partidas -->
+      <div id="proyPartidasHistorialBackdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:11000;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;width:min(960px,92vw);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.25);">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(0,0,0,0.06);">
+            <div>
+              <h3 style="margin:0;font-size:1.05rem;">Historial de partidas</h3>
+              <div style="font-size:0.74rem;color:#86868B;margin-top:2px;">Cada vez que se importa una volumetría o se marca como completada, se guarda un snapshot.</div>
+            </div>
+            <button type="button" onclick="proyPartidasHistorialCerrar()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#86868B;line-height:1;padding:4px 8px;">×</button>
+          </div>
+          <div id="proyPartidasHistorialBody" style="overflow-y:auto;padding:18px 24px;"></div>
+        </div>
+      </div>
+
       <!-- TAB: Financiero -->
       <div id="proyPane_financiero" class="proy-tab-pane" style="display:none;">
 
-        <!-- Botón sincronizar drive -->
-        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;">
-          <button class="proy-btn proy-btn-outline" onclick="proyFinSyncDrive()" id="proyFinSyncBtn" style="font-size:0.72rem;display:inline-flex;align-items:center;gap:6px;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Sincronizar Drive
-          </button>
-        </div>
-
-        <!-- Ordenes de Compra -->
-        <div class="proy-tab-header">
-          <h3>Ordenes de Compra</h3>
-          <div class="proy-tab-actions">
-            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Subir PDF
-              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadOC(this)">
-            </label>
+        <!-- ── Header de Finanzas (título + acciones globales) ── -->
+        <div class="proy-fin-head">
+          <div class="proy-fin-head-text">
+            <h2 class="proy-fin-title">Finanzas del proyecto</h2>
+            <p class="proy-fin-subtitle" id="proyFinSubtitle">Presupuesto base: $0 MXN</p>
           </div>
-        </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th style="text-align:left">#OC</th>
-                <th style="text-align:left">Proveedor</th>
-                <th style="text-align:left">Partida</th>
-                <th style="text-align:right">Cant.</th>
-                <th style="text-align:right">Monto</th>
-                <th style="text-align:center">Estado</th>
-                <th style="text-align:left">Fecha</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyOCBody"></tbody>
-            <tfoot id="proyOCFoot"></tfoot>
-          </table>
-        </div>
-
-        <!-- Facturas Proveedor -->
-        <div class="proy-tab-header">
-          <h3>Facturas Proveedor</h3>
-          <div class="proy-tab-actions">
-            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Subir PDF
-              <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFacturaProveedor(this)">
-            </label>
-          </div>
-        </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th># Factura</th>
-                <th>Proveedor</th>
-                <th>Monto</th>
-                <th>Presupuestado</th>
-                <th>Varianza</th>
-                <th>Var.%</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyFacProvBody"></tbody>
-          </table>
-        </div>
-
-        <!-- Facturas de Ingreso -->
-        <div class="proy-tab-header" style="margin-top:24px;">
-          <h3>Facturas de Ingreso</h3>
-          <div class="proy-tab-actions">
-            <label class="proy-btn proy-btn-outline" style="cursor:pointer;font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Subir PDF
+          <div class="proy-fin-head-actions">
+            <button class="proy-fin-btn-ghost" onclick="proyFinSyncDrive()" id="proyFinSyncBtn" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar Drive
+            </button>
+            <label class="proy-fin-btn-primary" style="cursor:pointer;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva factura
               <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFactura(this)">
             </label>
           </div>
         </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th># Factura</th>
-                <th>Monto</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyFacIngBody"></tbody>
-            <tfoot id="proyFacIngFoot"></tfoot>
-          </table>
+
+        <!-- ── Sub-tabs (Resumen / Facturas / OC / Facturas Proveedor) ── -->
+        <div class="proy-fin-subtabs" role="tablist">
+          <button type="button" class="proy-fin-subtab is-active" data-subtab="resumen" onclick="proyFinSetSubTab('resumen')" role="tab">Resumen</button>
+          <button type="button" class="proy-fin-subtab" data-subtab="facturas" onclick="proyFinSetSubTab('facturas')" role="tab">Facturas</button>
+          <button type="button" class="proy-fin-subtab" data-subtab="oc" onclick="proyFinSetSubTab('oc')" role="tab">Órdenes de Compra</button>
+          <button type="button" class="proy-fin-subtab" data-subtab="proveedor" onclick="proyFinSetSubTab('proveedor')" role="tab">Facturas Proveedor</button>
         </div>
 
-        <!-- Gastos Operativos -->
-        <div class="proy-tab-header" style="margin-top:24px;">
-          <h3>Gastos Operativos</h3>
-          <div class="proy-tab-actions">
-            <button class="proy-btn proy-btn-outline" onclick="proyGastoAbrirDialogo()" style="font-size:0.72rem;display:inline-flex;align-items:center;gap:5px;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Agregar Gasto
-            </button>
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: RESUMEN  (KPIs + distribución por partida + gastos)
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_resumen" class="proy-fin-subpane" data-subpane="resumen">
+
+          <!-- 4 KPI cards -->
+          <div class="proy-fin-kpis">
+            <div class="proy-fin-kpi" data-kpi="presupuesto">
+              <div class="proy-fin-kpi-label">Presupuesto total</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiPresupuesto">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiPresupuestoSub">Aprobado cliente</div>
+            </div>
+            <div class="proy-fin-kpi" data-kpi="ejecutado">
+              <div class="proy-fin-kpi-label">Ejecutado</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiEjecutado">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiEjecutadoSub">0% del presupuesto</div>
+            </div>
+            <div class="proy-fin-kpi" data-kpi="facturado">
+              <div class="proy-fin-kpi-label">Facturado</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiFacturado">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiFacturadoSub">0% del presupuesto</div>
+            </div>
+            <div class="proy-fin-kpi" data-kpi="disponible">
+              <div class="proy-fin-kpi-label">Disponible</div>
+              <div class="proy-fin-kpi-value" id="proyFinKpiDisponible">$0</div>
+              <div class="proy-fin-kpi-sub" id="proyFinKpiDisponibleSub">100% restante</div>
+            </div>
+          </div>
+
+          <!-- Distribución por partida -->
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Distribución por partida</h3>
+              <span class="proy-fin-card-meta" id="proyFinBreakdownMeta"></span>
+            </div>
+            <div class="proy-fin-breakdown" id="proyFinBreakdownList">
+              <div class="proy-fin-empty">Cargando…</div>
+            </div>
+          </div>
+
+          <!-- Gastos operativos (se mantiene en Resumen) -->
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Gastos operativos</h3>
+              <button class="proy-fin-btn-ghost" onclick="proyGastoAbrirDialogo()" type="button">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar gasto
+              </button>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th>Categoría</th>
+                    <th>Descripción</th>
+                    <th style="text-align:right">Monto</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th style="width:80px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyGastosBody"></tbody>
+                <tfoot id="proyGastosFoot"></tfoot>
+              </table>
+            </div>
           </div>
         </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th>Categoria</th>
-                <th>Descripcion</th>
-                <th>Monto</th>
-                <th>Fecha</th>
-                <th>Estado Aprobacion</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="proyGastosBody"></tbody>
-            <tfoot id="proyGastosFoot"></tfoot>
-          </table>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: FACTURAS (de ingreso / cliente)
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_facturas" class="proy-fin-subpane" data-subpane="facturas" style="display:none;">
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Facturas de ingreso</h3>
+              <div class="proy-fin-filters" role="tablist" aria-label="Filtrar facturas">
+                <button type="button" class="proy-fin-filter is-active" data-fac-filter="all" onclick="proyFinFilterFacturas('all')">Todas</button>
+                <button type="button" class="proy-fin-filter" data-fac-filter="pending" onclick="proyFinFilterFacturas('pending')">Pendientes</button>
+                <button type="button" class="proy-fin-filter" data-fac-filter="paid" onclick="proyFinFilterFacturas('paid')">Cobradas</button>
+                <label class="proy-fin-btn-ghost" style="cursor:pointer;margin-left:8px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Subir PDF
+                  <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFactura(this)">
+                </label>
+              </div>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th># Factura</th>
+                    <th>Concepto</th>
+                    <th style="text-align:right">Monto</th>
+                    <th>Emisión</th>
+                    <th>Estado</th>
+                    <th style="width:50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyFacIngBody"></tbody>
+                <tfoot id="proyFacIngFoot"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: ÓRDENES DE COMPRA
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_oc" class="proy-fin-subpane" data-subpane="oc" style="display:none;">
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Órdenes de compra</h3>
+              <label class="proy-fin-btn-ghost" style="cursor:pointer;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Subir PDF
+                <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadOC(this)">
+              </label>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">#OC</th>
+                    <th style="text-align:left">Proveedor</th>
+                    <th style="text-align:left">Partida</th>
+                    <th style="text-align:right">Cant.</th>
+                    <th style="text-align:right">Monto</th>
+                    <th style="text-align:center">Estado</th>
+                    <th style="text-align:left">Fecha</th>
+                    <th style="width:40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyOCBody"></tbody>
+                <tfoot id="proyOCFoot"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SUB-PANE: FACTURAS PROVEEDOR
+             ════════════════════════════════════════════════════════════ -->
+        <div id="proyFinSub_proveedor" class="proy-fin-subpane" data-subpane="proveedor" style="display:none;">
+          <div class="proy-fin-card">
+            <div class="proy-fin-card-head">
+              <h3 class="proy-fin-card-title">Facturas de proveedor</h3>
+              <label class="proy-fin-btn-ghost" style="cursor:pointer;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Subir PDF
+                <input type="file" accept=".pdf" style="display:none;" onchange="proyFinUploadFacturaProveedor(this)">
+              </label>
+            </div>
+            <div class="proy-table-wrap proy-fin-tablewrap">
+              <table class="proy-table proy-fin-table">
+                <thead>
+                  <tr>
+                    <th># Factura</th>
+                    <th>Proveedor</th>
+                    <th style="text-align:right">Monto</th>
+                    <th style="text-align:right">Presupuestado</th>
+                    <th style="text-align:right">Varianza</th>
+                    <th style="text-align:right">Var.%</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th style="width:40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="proyFacProvBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -647,6 +776,44 @@
         </div>
         <div id="proyPane_info_body" style="padding:8px 0;">
           <!-- Rendered by JS renderInfo() -->
+        </div>
+      </div>
+
+      <!-- TAB: Equipo (placeholder, accesible desde "Más ▾") -->
+      <div id="proyPane_equipo" class="proy-tab-pane" style="display:none;">
+        <div class="proy-tab-header">
+          <h3>Equipo del proyecto</h3>
+        </div>
+        <div style="padding:48px 24px;text-align:center;color:#86868B;font-size:0.9rem;">
+          <div style="font-size:2.4rem;margin-bottom:8px;opacity:0.5;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block;opacity:0.5;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div style="font-weight:600;color:#1d1d1f;margin-bottom:4px;">Próximamente</div>
+          <div>Gestión avanzada de equipo del proyecto.</div>
+        </div>
+      </div>
+
+      <!-- TAB: Comunicación (placeholder, accesible desde "Más ▾") -->
+      <div id="proyPane_comunicacion" class="proy-tab-pane" style="display:none;">
+        <div class="proy-tab-header">
+          <h3>Comunicación</h3>
+        </div>
+        <div style="padding:48px 24px;text-align:center;color:#86868B;font-size:0.9rem;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px;display:block;opacity:0.5;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div style="font-weight:600;color:#1d1d1f;margin-bottom:4px;">Próximamente</div>
+          <div>Hilo de comunicación interno del proyecto.</div>
+        </div>
+      </div>
+
+      <!-- TAB: Reportes (placeholder, accesible desde "Más ▾") -->
+      <div id="proyPane_reportes" class="proy-tab-pane" style="display:none;">
+        <div class="proy-tab-header">
+          <h3>Reportes</h3>
+        </div>
+        <div style="padding:48px 24px;text-align:center;color:#86868B;font-size:0.9rem;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px;display:block;opacity:0.5;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+          <div style="font-weight:600;color:#1d1d1f;margin-bottom:4px;">Próximamente</div>
+          <div>Reportes de avance, costos y desviaciones del proyecto.</div>
         </div>
       </div>
 
@@ -943,22 +1110,24 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════
-     SUB-DIALOG: CREAR ACTIVIDAD (PROGRAMA DE OBRA)
+     SUB-DIALOG: CREAR/EDITAR ACTIVIDAD (PROGRAMA DE OBRA — GANTT)
+     Conectado al modelo GanttActividad. Reemplaza el modal anterior
+     que apuntaba al calendario semanal (ProgramacionActividad).
      ══════════════════════════════════════════════════════════════════ -->
 <div class="widget-overlay proy-dialog-overlay" id="proyDialogoActividad" style="z-index:10200;display:none;"
     onclick="if(event.target===this)this.style.display='none';">
-  <div class="proy-dialog-card" style="max-width:560px;">
+  <div class="proy-dialog-card" style="max-width:640px;">
     <div class="proy-dialog-header">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:rgba(0,122,255,0.1);display:flex;align-items:center;justify-content:center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(37,99,235,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <path d="M16 2v4M8 2v4M3 10h18"/>
           </svg>
         </div>
         <div>
-          <h3 class="proy-dialog-title" style="margin:0;">Nueva Actividad</h3>
-          <div id="proyActFechaLabel" style="font-size:0.75rem;color:#6E6E73;margin-top:2px;"></div>
+          <h3 class="proy-dialog-title" id="proyActDialogTitle" style="margin:0;">Nueva Actividad</h3>
+          <div id="proyActFechaLabel" style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Cronograma del proyecto</div>
         </div>
       </div>
       <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoActividad')">&times;</button>
@@ -967,40 +1136,197 @@
       <!-- Nombre -->
       <div class="proy-field">
         <label for="proyActTitulo" class="proy-label">Nombre de la actividad *</label>
-        <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado">
+        <input type="text" id="proyActTitulo" class="proy-input" placeholder="Ej: Instalacion de cableado estructurado">
       </div>
-      <!-- Descripcion -->
+      <!-- Descripción -->
       <div class="proy-field">
-        <label for="proyActDescripcion" class="proy-label">Descripcion</label>
-        <textarea id="proyActDescripcion" class="proy-input" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
+        <label for="proyActDescripcion" class="proy-label">Descripción</label>
+        <textarea id="proyActDescripcion" class="proy-input" rows="3"
+                  placeholder="Detalles, alcance, notas…"
+                  style="resize:vertical;min-height:64px;font-family:inherit;"></textarea>
       </div>
-      <!-- Horarios -->
+      <!-- Fase + Hito -->
+      <div class="proy-field-row">
+        <div class="proy-field" style="flex:2;">
+          <label for="proyActFase" class="proy-label">Fase / Grupo</label>
+          <select id="proyActFase" class="proy-input">
+            <option value="">— Sin fase (independiente) —</option>
+          </select>
+        </div>
+        <div class="proy-field" style="flex:1;display:flex;align-items:flex-end;">
+          <label style="display:inline-flex;align-items:center;gap:8px;font-size:0.78rem;color:#1d1d1f;cursor:pointer;padding:9px 0;">
+            <input type="checkbox" id="proyActEsHito" style="width:16px;height:16px;accent-color:#a16207;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#a16207"><path d="M12 2 L22 12 L12 22 L2 12 Z"/></svg>
+              Es un hito
+            </span>
+          </label>
+        </div>
+      </div>
+      <!-- Fechas -->
       <div class="proy-field-row">
         <div class="proy-field">
-          <label for="proyActHoraInicio" class="proy-label">Hora inicio</label>
-          <input type="time" id="proyActHoraInicio" class="proy-input" value="07:00">
+          <label for="proyActFechaInicio" class="proy-label">Fecha inicio *</label>
+          <input type="date" id="proyActFechaInicio" class="proy-input">
+        </div>
+        <div class="proy-field" id="proyActFechaFinWrap">
+          <label for="proyActFechaFin" class="proy-label">Fecha fin *</label>
+          <input type="date" id="proyActFechaFin" class="proy-input">
+        </div>
+      </div>
+      <!-- Progreso + Categoría sugerida -->
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyActProgreso" class="proy-label">Progreso (%)</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="range" id="proyActProgresoRange" min="0" max="100" step="5" value="0" style="flex:1;accent-color:#2563eb;">
+            <input type="number" id="proyActProgreso" class="proy-input" min="0" max="100" step="5" value="0" style="width:70px;text-align:center;">
+            <span style="font-size:0.78rem;color:#6E6E73;">%</span>
+          </div>
+        </div>
+        <div class="proy-field" id="proyActDuracionLabel" style="display:flex;align-items:flex-end;">
+          <div style="font-size:0.74rem;color:#6E6E73;padding-bottom:11px;">
+            <span id="proyActDuracionTxt">Duración: 1 día</span>
+          </div>
+        </div>
+      </div>
+      <!-- Costo + Ingreso -->
+      <div class="proy-field-row">
+        <div class="proy-field">
+          <label for="proyActCosto" class="proy-label">Costo estimado</label>
+          <input type="number" id="proyActCosto" class="proy-input" min="0" step="100" value="0" placeholder="0.00">
         </div>
         <div class="proy-field">
-          <label for="proyActHoraFin" class="proy-label">Hora fin</label>
-          <input type="time" id="proyActHoraFin" class="proy-input" value="16:00">
+          <label for="proyActIngreso" class="proy-label">Ingreso estimado</label>
+          <input type="number" id="proyActIngreso" class="proy-input" min="0" step="100" value="0" placeholder="0.00">
         </div>
       </div>
-      <!-- Personal -->
-      <div class="proy-field">
-        <label class="proy-label">Personal (Responsables)</label>
-        <div id="proyActPersonalList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:4px;">
-          <div style="text-align:center;padding:16px;color:#8e8e93;font-size:0.8rem;">Cargando disponibilidad...</div>
+      <!-- Responsables (users) + Recursos materiales (dos columnas) -->
+      <div class="proy-act-recursos-row">
+        <!-- Columna izquierda: Responsables -->
+        <div class="proy-act-recursos-col">
+          <label class="proy-label">Responsables</label>
+          <div class="proy-act-search-wrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-act-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="proyActUsuarioSearch" class="proy-input proy-act-search-input"
+                   placeholder="Buscar usuario…" autocomplete="off">
+            <div id="proyActUsuarioDropdown" class="proy-act-autocomplete-dropdown" style="display:none;"></div>
+          </div>
+          <div id="proyActUsuariosChips" class="proy-act-chips-wrap" data-empty-msg="Aún sin responsables">
+            <span class="proy-act-chips-empty">Aún sin responsables</span>
+          </div>
+        </div>
+        <!-- Columna derecha: Recursos materiales -->
+        <div class="proy-act-recursos-col">
+          <label class="proy-label">Recursos materiales</label>
+          <div class="proy-act-search-wrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-act-search-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <input type="text" id="proyActRecursoSearch" class="proy-input proy-act-search-input"
+                   placeholder="Buscar recurso (equipo, herramienta, material…)" autocomplete="off">
+            <div id="proyActRecursoDropdown" class="proy-act-autocomplete-dropdown" style="display:none;"></div>
+          </div>
+          <div id="proyActRecursosChips" class="proy-act-chips-wrap" data-empty-msg="Sin recursos asignados">
+            <span class="proy-act-chips-empty">Sin recursos asignados</span>
+          </div>
         </div>
       </div>
-      <!-- Vehiculos -->
-      <div class="proy-field">
-        <label for="proyActVehiculos" class="proy-label">Vehiculos</label>
-        <input type="text" id="proyActVehiculos" class="proy-input" placeholder="Ej: Camioneta Ford Ranger, Grua #3">
+      <!-- Dependencias (predecesoras) -->
+      <div class="proy-field" id="proyActDependenciasWrap" style="display:none;">
+        <label class="proy-label">Predecesoras (depende de…)</label>
+        <div id="proyActDependenciasList" style="border:1px solid #e5e7eb;border-radius:10px;max-height:140px;overflow-y:auto;padding:4px;background:#fafafa;">
+          <!-- Render dinámico -->
+        </div>
       </div>
     </div>
     <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" id="proyActBtnEliminar" style="margin-right:auto;display:none;color:#dc2626;border-color:#fecaca;" onclick="proyectosEliminarActividadGantt()">Eliminar</button>
       <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoActividad')">Cancelar</button>
       <button class="proy-btn proy-btn-primary" id="proyActBtnCrear" onclick="proyectosGuardarActividad()">Crear Actividad</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal de advertencia de conflicto de recurso -->
+<div class="widget-overlay" id="proyDialogoConflictoRecurso" style="z-index:10300;display:none;"
+     onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:520px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" style="margin:0;">Recurso ocupado</h3>
+          <div style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Conflicto detectado en el rango de fechas</div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoConflictoRecurso')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <p id="proyConflictoIntro" style="font-size:0.84rem;color:#1d1d1f;margin:0 0 12px;"></p>
+      <div id="proyConflictoLista" style="border:1px solid #fee2e2;border-radius:10px;padding:8px;background:#fff7f7;max-height:220px;overflow-y:auto;font-family:'Plus Jakarta Sans',sans-serif;"></div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoConflictoRecurso')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyConflictoConfirmBtn" style="background:#dc2626;border-color:#dc2626;">
+        Asignar de todos modos
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUB-DIALOG: CREAR / EDITAR FASE (PROGRAMA DE OBRA — GANTT)
+     Conectado al modelo GanttFase.
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoFase" style="z-index:10200;display:none;"
+    onclick="if(event.target===this)this.style.display='none';">
+  <div class="proy-dialog-card" style="max-width:520px;">
+    <div class="proy-dialog-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="proy-dialog-title" id="proyFaseDialogTitle" style="margin:0;color:#1d1d1f;">Nueva Fase</h3>
+          <div style="font-size:0.75rem;color:#6E6E73;margin-top:2px;">Agrupa actividades por etapa del proyecto</div>
+        </div>
+      </div>
+      <button class="proy-dialog-close" onclick="proyectosCerrarDialogo('proyDialogoFase')">&times;</button>
+    </div>
+    <div class="proy-dialog-body">
+      <div class="proy-field">
+        <label for="proyFaseNombre" class="proy-label">Nombre de la fase *</label>
+        <input type="text" id="proyFaseNombre" class="proy-input" placeholder="Ej: Cimentación, Estructura, Acabados…" maxlength="200">
+        <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">El color/categoría se infiere automáticamente del nombre.</div>
+      </div>
+      <div class="proy-field">
+        <label class="proy-label">Categoría sugerida</label>
+        <div id="proyFaseCategoriaPreview" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+          <span id="proyFaseCategoriaDot" style="width:12px;height:12px;border-radius:3px;background:#64748b;flex-shrink:0;"></span>
+          <span id="proyFaseCategoriaLabel" style="font-size:0.82rem;color:#1d1d1f;font-weight:600;">General</span>
+          <span style="font-size:0.7rem;color:#94a3b8;margin-left:auto;">Detectada por palabras clave</span>
+        </div>
+      </div>
+      <div class="proy-field" id="proyFaseSugWrap">
+        <label class="proy-label">Sugerencias rápidas</label>
+        <div id="proyFaseSugList" style="display:flex;flex-wrap:wrap;gap:6px;">
+          <!-- Render dinamico -->
+        </div>
+      </div>
+    </div>
+    <div class="proy-dialog-footer">
+      <button class="proy-btn proy-btn-outline" id="proyFaseBtnEliminar" style="margin-right:auto;display:none;color:#dc2626;border-color:#fecaca;" onclick="proyectosEliminarFase()">Eliminar fase</button>
+      <button class="proy-btn proy-btn-outline" onclick="proyectosCerrarDialogo('proyDialogoFase')">Cancelar</button>
+      <button class="proy-btn proy-btn-primary" id="proyFaseBtnCrear" onclick="proyectosGuardarFase()">Crear Fase</button>
     </div>
   </div>
 </div>
@@ -1219,4 +1545,257 @@
       <button id="proyConfirmBtnOk" class="proy-btn" style="background:#EF4444;color:#fff;border:1px solid #EF4444;" onclick="proyConfirmAceptar()">Eliminar</button>
     </div>
   </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     DRAWER: DETALLES DE ACTIVIDAD GANTT  (Mejora 2)
+     Slide-in desde la derecha. Single-click sobre una barra abre este
+     panel; el modal de edición sigue abriéndose con dblclick / botón.
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="ganttActDrawerOverlay" class="gantt-drawer-overlay" aria-hidden="true"
+     onclick="if(event.target===this) window.proyGanttCloseDrawer && window.proyGanttCloseDrawer();"></div>
+<aside id="ganttActDrawer" class="gantt-drawer" aria-hidden="true" role="dialog" aria-labelledby="ganttDrawerTitle">
+  <header class="gantt-drawer-header">
+    <div class="gantt-drawer-header-main">
+      <div id="ganttDrawerTags" class="gantt-drawer-tags">
+        <span id="ganttDrawerFaseTag" class="gantt-drawer-tag gantt-drawer-tag--fase">Fase</span>
+        <span id="ganttDrawerStatusTag" class="gantt-drawer-tag gantt-drawer-tag--status">LISTA</span>
+      </div>
+      <h3 id="ganttDrawerTitle" class="gantt-drawer-title">Actividad</h3>
+    </div>
+    <button type="button" class="gantt-drawer-close" aria-label="Cerrar"
+            onclick="window.proyGanttCloseDrawer && window.proyGanttCloseDrawer();">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </header>
+  <div class="gantt-drawer-body">
+    <!-- Resumen -->
+    <section class="gantt-drawer-section" data-section="resumen">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('resumen')">
+        <span>Resumen</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div class="gantt-drawer-grid">
+          <div><div class="gantt-drawer-label">Inicio</div><div id="ganttDrawerFechaInicio" class="gantt-drawer-value">—</div></div>
+          <div><div class="gantt-drawer-label">Fin</div><div id="ganttDrawerFechaFin" class="gantt-drawer-value">—</div></div>
+          <div><div class="gantt-drawer-label">Duración</div><div id="ganttDrawerDuracion" class="gantt-drawer-value">—</div></div>
+          <div><div class="gantt-drawer-label">Días restantes</div><div id="ganttDrawerDiasRestantes" class="gantt-drawer-value">—</div></div>
+        </div>
+        <div class="gantt-drawer-progress-wrap">
+          <div class="gantt-drawer-progress-row">
+            <span class="gantt-drawer-label">Avance</span>
+            <span id="ganttDrawerAvanceTxt" class="gantt-drawer-value">0%</span>
+          </div>
+          <div class="gantt-drawer-progress-bar"><div id="ganttDrawerAvanceFill" class="gantt-drawer-progress-fill"></div></div>
+        </div>
+      </div>
+    </section>
+    <!-- Descripción -->
+    <section class="gantt-drawer-section" data-section="descripcion">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('descripcion')">
+        <span>Descripción</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div id="ganttDrawerDescripcion" class="gantt-drawer-desc">Sin descripción</div>
+      </div>
+    </section>
+    <!-- Responsables -->
+    <section class="gantt-drawer-section" data-section="responsables">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('responsables')">
+        <span>Responsables</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div id="ganttDrawerResponsables" class="gantt-drawer-chips">Sin responsables</div>
+      </div>
+    </section>
+    <!-- Recursos materiales -->
+    <section class="gantt-drawer-section" data-section="materiales">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('materiales')">
+        <span>Recursos materiales</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div id="ganttDrawerMateriales" class="gantt-drawer-chips gantt-drawer-chips--placeholder">Próximamente</div>
+      </div>
+    </section>
+    <!-- Dependencias -->
+    <section class="gantt-drawer-section" data-section="dependencias">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('dependencias')">
+        <span>Dependencias</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div class="gantt-drawer-deps-block">
+          <div class="gantt-drawer-label">Predecesoras</div>
+          <div id="ganttDrawerDepsPrev" class="gantt-drawer-deplist">—</div>
+        </div>
+        <div class="gantt-drawer-deps-block">
+          <div class="gantt-drawer-label">Sucesoras</div>
+          <div id="ganttDrawerDepsNext" class="gantt-drawer-deplist">—</div>
+        </div>
+      </div>
+    </section>
+    <!-- Financiero -->
+    <section class="gantt-drawer-section" data-section="financiero">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('financiero')">
+        <span>Financiero</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <div class="gantt-drawer-grid">
+          <div><div class="gantt-drawer-label">Costo</div><div id="ganttDrawerCosto" class="gantt-drawer-value">$0</div></div>
+          <div><div class="gantt-drawer-label">Ingreso</div><div id="ganttDrawerIngreso" class="gantt-drawer-value">$0</div></div>
+          <div><div class="gantt-drawer-label">Margen</div><div id="ganttDrawerMargen" class="gantt-drawer-value">$0</div></div>
+        </div>
+      </div>
+    </section>
+    <!-- En el calendario -->
+    <section class="gantt-drawer-section" data-section="calendario" id="ganttDrawerCalSection" style="display:none;">
+      <button type="button" class="gantt-drawer-section-toggle" onclick="window.proyGanttDrawerToggleSection && window.proyGanttDrawerToggleSection('calendario')">
+        <span>En el calendario</span>
+        <svg class="gantt-drawer-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="gantt-drawer-section-body">
+        <a id="ganttDrawerCalLink" class="gantt-drawer-callink" href="#" onclick="event.preventDefault(); window.proyGanttDrawerOpenCalendar && window.proyGanttDrawerOpenCalendar();">Ver en calendario →</a>
+      </div>
+    </section>
+  </div>
+  <footer class="gantt-drawer-footer">
+    <button type="button" class="gantt-drawer-btn gantt-drawer-btn--danger"
+            onclick="window.proyGanttDrawerEliminar && window.proyGanttDrawerEliminar();">
+      Eliminar
+    </button>
+    <div class="gantt-drawer-footer-spacer"></div>
+    <button type="button" class="gantt-drawer-btn"
+            onclick="window.proyGanttDrawerFullscreen && window.proyGanttDrawerFullscreen();">
+      Pantalla completa
+    </button>
+    <button type="button" class="gantt-drawer-btn gantt-drawer-btn--primary"
+            onclick="window.proyGanttDrawerEditar && window.proyGanttDrawerEditar();">
+      Editar
+    </button>
+  </footer>
+</aside>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     VISTA FULLSCREEN DE ACTIVIDAD  (Mejora 3)
+     Sub-tabs: Detalles · Comentarios · Archivos · Historial
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="ganttActFullscreen" class="gantt-act-fullscreen" aria-hidden="true">
+  <header class="gantt-act-fs-header">
+    <div class="gantt-act-fs-breadcrumb">
+      <button type="button" class="gantt-act-fs-back" onclick="window.proyGanttActFullscreenClose && window.proyGanttActFullscreenClose();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al cronograma
+      </button>
+      <span class="gantt-act-fs-bc-sep">·</span>
+      <span class="gantt-act-fs-bc-fase" id="ganttActFsFase">Fase</span>
+      <span class="gantt-act-fs-bc-sep">·</span>
+      <span class="gantt-act-fs-bc-act" id="ganttActFsTitulo">Actividad</span>
+    </div>
+    <nav class="gantt-act-fs-tabs" role="tablist">
+      <button type="button" class="gantt-act-fs-tab active" data-fs-tab="detalles"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('detalles');">Detalles</button>
+      <button type="button" class="gantt-act-fs-tab" data-fs-tab="comentarios"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('comentarios');">Comentarios</button>
+      <button type="button" class="gantt-act-fs-tab" data-fs-tab="archivos"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('archivos');">Archivos</button>
+      <button type="button" class="gantt-act-fs-tab" data-fs-tab="historial"
+              onclick="window.proyGanttActFullscreenSetTab && window.proyGanttActFullscreenSetTab('historial');">Historial</button>
+    </nav>
+  </header>
+
+  <main class="gantt-act-fs-body">
+    <!-- ── Detalles ─────────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane active" data-fs-pane="detalles">
+      <div class="gantt-act-fs-hero">
+        <div class="gantt-act-fs-hero-tags">
+          <span id="ganttActFsHeroFase" class="gantt-drawer-tag gantt-drawer-tag--fase">Fase</span>
+          <span id="ganttActFsHeroStatus" class="gantt-drawer-tag gantt-drawer-tag--status">LISTA</span>
+        </div>
+        <h1 id="ganttActFsHeroTitulo" class="gantt-act-fs-hero-titulo">Actividad</h1>
+        <div class="gantt-act-fs-hero-progress">
+          <div class="gantt-act-fs-hero-progress-row">
+            <span class="gantt-drawer-label">Avance</span>
+            <span id="ganttActFsHeroAvanceTxt" class="gantt-drawer-value">0%</span>
+          </div>
+          <div class="gantt-drawer-progress-bar"><div id="ganttActFsHeroAvanceFill" class="gantt-drawer-progress-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Fechas</h2>
+        <div class="gantt-act-fs-cards">
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Inicio</div><div id="ganttActFsFechaInicio" class="gantt-act-fs-card-value">—</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Fin</div><div id="ganttActFsFechaFin" class="gantt-act-fs-card-value">—</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Duración</div><div id="ganttActFsDuracion" class="gantt-act-fs-card-value">—</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Días restantes</div><div id="ganttActFsDiasRestantes" class="gantt-act-fs-card-value">—</div></div>
+        </div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Equipo</h2>
+        <div id="ganttActFsResponsables" class="gantt-act-fs-team">Sin responsables</div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Recursos materiales</h2>
+        <div id="ganttActFsMateriales" class="gantt-act-fs-mat-grid gantt-drawer-chips--placeholder">Próximamente</div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Financiero</h2>
+        <div class="gantt-act-fs-cards">
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Costo</div><div id="ganttActFsCosto" class="gantt-act-fs-card-value">$0</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Ingreso</div><div id="ganttActFsIngreso" class="gantt-act-fs-card-value">$0</div></div>
+          <div class="gantt-act-fs-card"><div class="gantt-drawer-label">Margen</div><div id="ganttActFsMargen" class="gantt-act-fs-card-value">$0</div></div>
+        </div>
+      </div>
+
+      <div class="gantt-act-fs-section">
+        <h2 class="gantt-act-fs-section-title">Descripción</h2>
+        <div id="ganttActFsDescripcion" class="gantt-act-fs-descripcion">Sin descripción</div>
+      </div>
+    </section>
+
+    <!-- ── Comentarios ──────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane" data-fs-pane="comentarios">
+      <div class="gantt-act-fs-thread" id="ganttActFsComentariosThread">
+        <div class="gantt-act-fs-empty">Cargando comentarios…</div>
+      </div>
+      <form class="gantt-act-fs-form" onsubmit="event.preventDefault(); window.proyGanttActFullscreenEnviarComentario && window.proyGanttActFullscreenEnviarComentario();">
+        <textarea id="ganttActFsComentarioInput" rows="3" placeholder="Escribe un comentario…"></textarea>
+        <button type="submit" class="gantt-drawer-btn gantt-drawer-btn--primary">Comentar</button>
+      </form>
+    </section>
+
+    <!-- ── Archivos ─────────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane" data-fs-pane="archivos">
+      <div class="gantt-act-fs-archivos-actions">
+        <input type="file" id="ganttActFsArchivoInput" style="display:none;"
+               onchange="window.proyGanttActFullscreenSubirArchivo && window.proyGanttActFullscreenSubirArchivo(this.files[0]);">
+        <button type="button" class="gantt-drawer-btn gantt-drawer-btn--primary"
+                onclick="document.getElementById('ganttActFsArchivoInput').click();">
+          + Subir archivo
+        </button>
+      </div>
+      <div id="ganttActFsArchivosList" class="gantt-act-fs-archivos-list">
+        <div class="gantt-act-fs-empty">Cargando archivos…</div>
+      </div>
+    </section>
+
+    <!-- ── Historial ────────────────────────────────────────────────── -->
+    <section class="gantt-act-fs-pane" data-fs-pane="historial">
+      <div class="gantt-act-fs-empty gantt-act-fs-empty--placeholder">
+        <div style="font-size:1rem;font-weight:700;margin-bottom:6px;">Historial de cambios</div>
+        <div>Próximamente. Aquí verás cambios de progreso, fechas y asignaciones de la actividad.</div>
+      </div>
+    </section>
+  </main>
 </div>

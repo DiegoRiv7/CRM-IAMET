@@ -350,6 +350,7 @@ urlpatterns = [
     path('api/iamet/proyectos/<int:proyecto_id>/miembros/<int:user_id>/', views_iamet.api_proyecto_miembro_quitar, name='api_iamet_proyecto_miembro_quitar'),
     # Partidas
     path('api/iamet/proyectos/<int:proyecto_id>/partidas/', views_iamet.api_partidas_lista, name='api_iamet_partidas_lista'),
+    path('api/iamet/proyectos/<int:proyecto_id>/partidas/sync/', views_iamet.api_partidas_sync, name='api_iamet_partidas_sync'),
     path('api/iamet/partidas/crear/', views_iamet.api_partida_crear, name='api_iamet_partida_crear'),
     path('api/iamet/partidas/<int:partida_id>/actualizar/', views_iamet.api_partida_actualizar, name='api_iamet_partida_actualizar'),
     path('api/iamet/partidas/<int:partida_id>/eliminar/', views_iamet.api_partida_eliminar, name='api_iamet_partida_eliminar'),
@@ -385,6 +386,7 @@ urlpatterns = [
     path('api/iamet/volumetrias/<int:volumetria_id>/data/', views_iamet.api_volumetria_data, name='api_iamet_volumetria_data'),
     path('api/iamet/volumetrias/<int:volumetria_id>/eliminar/', views_iamet.api_volumetria_eliminar, name='api_iamet_volumetria_eliminar'),
     path('api/iamet/volumetrias/<int:volumetria_id>/importar-excel/', views_iamet.api_volumetria_importar_excel, name='api_iamet_volumetria_importar_excel'),
+    path('api/iamet/volumetrias/<int:volumetria_id>/generar-cotizacion/', views_iamet.api_volumetria_generar_cotizacion, name='api_iamet_volumetria_generar_cotizacion'),
 
     # Ordenes de Compra
     path('api/iamet/proyectos/<int:proyecto_id>/oc/', views_iamet.api_oc_lista, name='api_iamet_oc_lista'),
@@ -429,6 +431,16 @@ urlpatterns = [
     path('api/proyecto/<int:proyecto_id>/gantt/fase/', views_proyectos.api_gantt_fase_crear, name='api_gantt_fase_crear'),
     path('api/gantt/fase/<int:fase_id>/', views_proyectos.api_gantt_fase, name='api_gantt_fase'),
     path('api/gantt/actividad/<int:actividad_id>/cascada/', views_proyectos.api_gantt_cascada, name='api_gantt_cascada'),
+    # Autocomplete de usuarios y recursos materiales (Gantt)
+    path('api/iamet/usuarios/buscar/', views_iamet.api_gantt_usuarios_buscar, name='api_gantt_usuarios_buscar'),
+    path('api/iamet/recursos/buscar/', views_iamet.api_gantt_recursos, name='api_gantt_recursos_buscar'),
+    path('api/iamet/recursos/', views_iamet.api_gantt_recursos, name='api_gantt_recursos_crear'),
+    path('api/iamet/recursos/<int:recurso_id>/conflictos/', views_iamet.api_gantt_recurso_conflictos, name='api_gantt_recurso_conflictos'),
+    # Drawer de actividad: comentarios y archivos
+    path('api/gantt/actividad/<int:actividad_id>/comentarios/', views_proyectos.api_gantt_actividad_comentarios, name='api_gantt_actividad_comentarios'),
+    path('api/gantt/actividad/comentario/<int:comentario_id>/', views_proyectos.api_gantt_actividad_comentario_detalle, name='api_gantt_actividad_comentario_detalle'),
+    path('api/gantt/actividad/<int:actividad_id>/archivos/', views_proyectos.api_gantt_actividad_archivos, name='api_gantt_actividad_archivos'),
+    path('api/gantt/actividad/archivo/<int:archivo_id>/', views_proyectos.api_gantt_actividad_archivo_detalle, name='api_gantt_actividad_archivo_detalle'),
 
     # ── Compras (módulo administrador) ──────────────────────────────────
     path('api/compras/productos/', views_compras.productos_list_create, name='compras_productos_list'),

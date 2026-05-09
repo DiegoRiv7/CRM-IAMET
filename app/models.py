@@ -1588,6 +1588,7 @@ class Notificacion(models.Model):
         ('proyecto_agregado', 'Agregado a proyecto'),
         ('programacion_proyecto', 'Asignado a actividad de proyecto'),
         ('mensaje_grupo', 'Mensaje en grupo de trabajo'),
+        ('prospecto_asignado', 'Prospecto asignado por supervisor'),
     ]
     
     usuario_destinatario = models.ForeignKey(
@@ -3893,6 +3894,11 @@ class Prospecto(models.Model):
     ]
 
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prospectos')
+    asignado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='prospectos_asignados',
+        help_text='Usuario (supervisor/admin) que asignó este prospecto al vendedor.'
+    )
     nombre = models.CharField(max_length=200, verbose_name="Nombre del Prospecto")
     cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='prospectos')
     contacto = models.ForeignKey('Contacto', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospectos')
@@ -4320,9 +4326,12 @@ class ProspectoComentario(models.Model):
 
 class ProspectoActividad(models.Model):
     TIPO_CHOICES = [
+        ('visita', 'Visita'),
         ('llamada', 'Llamada'),
         ('correo', 'Correo'),
+        ('campana', 'Campaña'),
         ('reunion', 'Reunión'),
+        ('reunion_virtual', 'Reunión virtual'),
         ('tarea', 'Tarea'),
         ('otro', 'Otro'),
     ]
@@ -4633,6 +4642,33 @@ class GanttFase(models.Model):
         return f'{self.nombre} — {self.proyecto.nombre}'
 
 
+class RecursoMaterial(models.Model):
+    """Recurso material/equipo/herramienta que puede asignarse a una
+    o varias actividades del Gantt. Sirve para detectar conflictos
+    cuando el mismo recurso es asignado en proyectos paralelos.
+    """
+    TIPO_CHOICES = [
+        ('equipo', 'Equipo'),
+        ('herramienta', 'Herramienta'),
+        ('material', 'Material'),
+        ('vehiculo', 'Vehículo'),
+        ('otro', 'Otro'),
+    ]
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, default='')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = 'Recurso Material'
+        verbose_name_plural = 'Recursos Materiales'
+
+    def __str__(self):
+        return f'{self.nombre} ({self.get_tipo_display()})'
+
+
 class GanttActividad(models.Model):
     """Actividad/tarea dentro del diagrama de Gantt de un proyecto."""
     proyecto = models.ForeignKey(
@@ -4643,6 +4679,7 @@ class GanttActividad(models.Model):
         null=True, blank=True,
     )
     nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, default='')
     fecha_inicio = models.DateField()
     duracion_dias = models.PositiveIntegerField(default=1)
     progreso = models.IntegerField(
@@ -4660,6 +4697,9 @@ class GanttActividad(models.Model):
     )
     recursos = models.ManyToManyField(
         User, blank=True, related_name='gantt_actividades_asignadas',
+    )
+    recursos_materiales = models.ManyToManyField(
+        RecursoMaterial, blank=True, related_name='gantt_actividades',
     )
     actividad_calendario = models.ForeignKey(
         Actividad, null=True, blank=True, on_delete=models.SET_NULL,
@@ -4680,6 +4720,53 @@ class GanttActividad(models.Model):
 
     def __str__(self):
         return f'{self.nombre} — {self.proyecto.nombre}'
+
+
+class GanttActividadComentario(models.Model):
+    """Comentario simple sobre una actividad Gantt."""
+    actividad = models.ForeignKey(
+        GanttActividad, on_delete=models.CASCADE, related_name='comentarios',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='gantt_comentarios',
+    )
+    texto = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Comentario Gantt'
+        verbose_name_plural = 'Comentarios Gantt'
+
+    def __str__(self):
+        return f'Comentario {self.id} — {self.actividad.nombre}'
+
+
+def _gantt_archivo_upload_path(instance, filename):
+    return f'gantt_actividades/{instance.actividad_id}/{filename}'
+
+
+class GanttActividadArchivo(models.Model):
+    """Archivo asociado a una actividad Gantt."""
+    actividad = models.ForeignKey(
+        GanttActividad, on_delete=models.CASCADE, related_name='archivos',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='gantt_archivos',
+    )
+    archivo = models.FileField(upload_to=_gantt_archivo_upload_path)
+    nombre = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Archivo Gantt'
+        verbose_name_plural = 'Archivos Gantt'
+
+    def __str__(self):
+        return self.nombre or self.archivo.name
 
 
 # ============================================================

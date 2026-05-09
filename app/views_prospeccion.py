@@ -11,12 +11,12 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from decimal import Decimal
 
-from .views_utils import is_supervisor
+from .views_utils import is_supervisor, is_administrador
 from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
-    MensajeOportunidad, Actividad,
+    MensajeOportunidad, Actividad, Notificacion,
 )
 
 logger = logging.getLogger(__name__)
@@ -299,11 +299,46 @@ def api_crear_prospecto(request):
         except Contacto.DoesNotExist:
             pass
 
+    # Asignación: por defecto el creador. Si viene `usuario_id` y el caller
+    # es supervisor o administrador, se respeta esa asignación.
+    asignar_a = request.user
+    es_sup_o_admin = is_supervisor(request.user) or is_administrador(request.user)
+    usuario_id = data.get('usuario_id')
+    asignacion_externa = False  # supervisor/admin asigna a OTRO vendedor
+    if usuario_id and es_sup_o_admin:
+        from django.contrib.auth.models import User
+        try:
+            asignar_a = User.objects.get(id=int(usuario_id))
+        except (User.DoesNotExist, ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Usuario asignado no encontrado'}, status=400)
+        if asignar_a.id != request.user.id:
+            asignacion_externa = True
+
+    # Si supervisor/admin asigna a otro vendedor, EXIGIR actividad inicial.
+    # Solo requerimos TIPO + FECHA — el título usa el del prospecto y la
+    # descripción usa los comentarios iniciales del prospecto.
+    actividad_inicial = data.get('actividad_inicial') or {}
+    tipos_validos = {c[0] for c in ProspectoActividad.TIPO_CHOICES}
+    act_tipo = (actividad_inicial.get('tipo') or '').strip()
+    act_fecha_raw = (actividad_inicial.get('fecha_programada') or '').strip()
+    act_fecha_dt = None
+    if asignacion_externa:
+        if act_tipo not in tipos_validos:
+            return JsonResponse({'success': False, 'error': 'Tipo de actividad inicial inválido'}, status=400)
+        if not act_fecha_raw:
+            return JsonResponse({'success': False, 'error': 'Fecha de la actividad inicial requerida'}, status=400)
+        try:
+            act_fecha_dt = timezone.datetime.fromisoformat(act_fecha_raw)
+            if timezone.is_naive(act_fecha_dt):
+                act_fecha_dt = timezone.make_aware(act_fecha_dt)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Formato de fecha inválido (usa YYYY-MM-DDTHH:MM)'}, status=400)
+
     # Etapa inicial: si viene del kanban (ej. click en "+" de "Reunión"),
     # respetar esa etapa; si no, el modelo usa 'identificado' por default.
     etapas_validas = {e[0] for e in Prospecto.ETAPA_CHOICES}
     create_kwargs = dict(
-        usuario=request.user,
+        usuario=asignar_a,
         nombre=nombre,
         cliente=cliente,
         contacto=contacto,
@@ -312,9 +347,83 @@ def api_crear_prospecto(request):
         tipo_pipeline=tipo_pipeline,
         comentarios=comentarios,
     )
+    if asignacion_externa:
+        create_kwargs['asignado_por'] = request.user
     if etapa and etapa in etapas_validas:
         create_kwargs['etapa'] = etapa
     prospecto = Prospecto.objects.create(**create_kwargs)
+
+    # Si fue asignación externa, crear actividad inicial + evento de calendario
+    # para el vendedor asignado, con metadata para enlazar de vuelta al prospecto.
+    # Notificar también al vendedor para que lo vea al entrar al CRM.
+    if asignacion_externa and act_fecha_dt is not None:
+        # Descripción de la actividad: el título de la prospección + los
+        # comentarios iniciales si los hay. Evita duplicar campos en la UI.
+        act_titulo = prospecto.nombre
+        act_descripcion_calc = (prospecto.comentarios or '').strip()
+
+        ProspectoActividad.objects.create(
+            prospecto=prospecto,
+            usuario=asignar_a,
+            tipo=act_tipo,
+            descripcion=act_descripcion_calc or act_titulo,
+            fecha_programada=act_fecha_dt,
+        )
+        try:
+            from datetime import timedelta
+            tipo_cal_map = {
+                'llamada': 'llamada',
+                'reunion': 'reunion',
+                'reunion_virtual': 'reunion',
+                'correo': 'email',
+                'visita': 'tarea',
+                'campana': 'tarea',
+                'tarea': 'tarea',
+            }
+            cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+            sup_nombre = (request.user.get_full_name() or request.user.username).strip()
+            # Descripción visible: comentarios del prospecto + asignado_por + link.
+            desc_visible = act_descripcion_calc + ('\n\n' if act_descripcion_calc else '')
+            desc_cal = (
+                desc_visible
+                + f'Asignado por: {sup_nombre}'
+                + f'\n[asignado_por_id:{request.user.id}]'
+                + f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
+            )
+            evento = Actividad.objects.create(
+                titulo=act_titulo[:200],
+                tipo_actividad=tipo_cal_map.get(act_tipo, 'otro'),
+                descripcion=desc_cal,
+                fecha_inicio=act_fecha_dt,
+                fecha_fin=act_fecha_dt + timedelta(hours=1),
+                creado_por=asignar_a,
+                # #B45309 = café (warm-modern). Mantiene la convención visual
+                # de "actividad de prospecto" para que el calendario abra el
+                # modal específico (con sección Relacionado a → prospecto).
+                color='#B45309',
+            )
+            # Supervisor también ve la actividad en su calendario
+            evento.participantes.add(request.user)
+        except Exception as e:
+            logging.getLogger(__name__).warning('Prospecto: no se pudo crear actividad calendario asignada: %s', e)
+
+        # Notificación al vendedor: aparece en el icono de campana del CRM.
+        try:
+            tipo_legible = dict(ProspectoActividad.TIPO_CHOICES).get(act_tipo, act_tipo)
+            fecha_legible = act_fecha_dt.strftime('%d/%m/%Y a las %H:%M')
+            sup_nombre_n = (request.user.get_full_name() or request.user.username).strip()
+            Notificacion.objects.create(
+                usuario_destinatario=asignar_a,
+                usuario_remitente=request.user,
+                tipo='prospecto_asignado',
+                titulo=f'{sup_nombre_n} te asignó un prospecto',
+                mensaje=(
+                    f'"{prospecto.nombre}" — primera actividad: {tipo_legible} '
+                    f'el {fecha_legible}.'
+                ),
+            )
+        except Exception as e:
+            logging.getLogger(__name__).warning('Prospecto: no se pudo crear notificación de asignación: %s', e)
 
     return JsonResponse({
         'success': True,
@@ -327,9 +436,16 @@ def api_crear_prospecto(request):
 def api_prospecto_detalle(request, prospecto_id):
     """GET: devuelve toda la info del prospecto para el widget."""
     try:
-        p = Prospecto.objects.select_related('cliente', 'contacto', 'usuario', 'oportunidad_creada').get(id=prospecto_id)
+        p = Prospecto.objects.select_related(
+            'cliente', 'contacto', 'usuario', 'oportunidad_creada', 'asignado_por',
+        ).get(id=prospecto_id)
     except Prospecto.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    asig_por = p.asignado_por
+    asignado_por_nombre = None
+    if asig_por:
+        asignado_por_nombre = (asig_por.get_full_name() or asig_por.username).strip()
 
     return JsonResponse({
         'id': p.id,
@@ -345,6 +461,8 @@ def api_prospecto_detalle(request, prospecto_id):
         'etapa': p.etapa,
         'reunion_tipo': p.reunion_tipo,
         'oportunidad_creada_id': p.oportunidad_creada_id,
+        'asignado_por': asignado_por_nombre,
+        'asignado_por_id': asig_por.id if asig_por else None,
         'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M') if p.fecha_creacion else '',
         'fecha_actualizacion': p.fecha_actualizacion.strftime('%d/%m/%Y %H:%M') if p.fecha_actualizacion else '',
         'usuario': p.usuario.get_full_name() or p.usuario.username,

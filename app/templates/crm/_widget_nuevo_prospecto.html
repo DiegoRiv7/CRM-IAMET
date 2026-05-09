@@ -27,7 +27,7 @@
                     <!-- span oculto con label dinámico (usado por código externo para cambiar "Nombre del prospecto" ↔ "Titulo de la prospeccion") -->
                     <span id="wpfLblNombre" style="display:none;">Nombre del prospecto</span>
                     <span id="wpfLblCliente" style="display:none;">Cliente</span>
-                    <input type="text" class="wn-ctw-title" id="wpfNombre" placeholder="Nombre del prospecto…" autocomplete="off">
+                    <input type="text" class="wn-ctw-title" id="wpfNombre" placeholder="Título de la prospección…" autocomplete="off">
 
                     <!-- Para [Cliente] -->
                     <div class="wn-ctw-nl-row">
@@ -73,7 +73,92 @@
                                 </select>
                             </div>
                         </div>
+
+                        {% if es_supervisor or es_administrador %}
+                        <!-- Pill "Asignar a" — solo supervisores/administradores -->
+                        <div class="wn-ctw-popwrap">
+                            <button type="button" class="wn-ctw-pill-meta" id="wpAsignadoBtn" data-me-id="{{ user.id }}" onclick="wpOpenPop('asignado', event)" title="Asignar el prospecto a un vendedor">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span id="wpAsignadoLabel">Asignar a mí</span>
+                            </button>
+                            <div class="wn-ctw-pop wn-ctw-pop-wide" id="wpPopAsignado" style="display:none;">
+                                <div class="wn-ctw-pop-title">Asignar prospecto a</div>
+                                <input type="text" class="wn-ctw-pop-input" id="wpAsigSearch" placeholder="Buscar vendedor…" autocomplete="off">
+                                <input type="hidden" id="wpfAsignadoId" value="">
+                                <div id="wpAsigList" style="max-height:240px;overflow-y:auto;margin-top:8px;border-top:1px solid #F1F5F9;padding-top:8px;"></div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
+
+                    {% if es_supervisor or es_administrador %}
+                    <!-- Bloque "Actividad inicial" — visible cuando se asigna a OTRO vendedor -->
+                    <div class="wn-ctw-actinit" id="wpActInitBlock" style="display:none;margin-top:14px;padding:14px 16px;background:linear-gradient(180deg,#F7F9FF 0%,#FFFFFF 100%);border:1px solid #DBE4FF;border-radius:14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            </span>
+                            <div style="font-size:0.86rem;font-weight:700;color:#1d1d1f;">Actividad inicial</div>
+                            <span style="font-size:0.7rem;font-weight:600;color:#fff;background:#EF4444;padding:2px 8px;border-radius:999px;">Requerida</span>
+                        </div>
+                        <p style="margin:0 0 10px 0;font-size:0.78rem;color:#636366;line-height:1.5;">
+                            Para guiar al vendedor asignado, indícale qué hacer primero y cuándo.
+                            La actividad usará el título y las notas de la prospección.
+                        </p>
+
+                        <!-- Chips de tipo -->
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="wpActInitChips">
+                            <button type="button" class="wp-ai-chip" data-tipo="visita">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                Visita
+                            </button>
+                            <button type="button" class="wp-ai-chip" data-tipo="llamada">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                Llamada
+                            </button>
+                            <button type="button" class="wp-ai-chip" data-tipo="correo">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                Correo
+                            </button>
+                            <button type="button" class="wp-ai-chip" data-tipo="campana">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+                                Campaña
+                            </button>
+                            <button type="button" class="wp-ai-chip" data-tipo="reunion_virtual">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                Reunión virtual
+                            </button>
+                            <button type="button" class="wp-ai-chip" data-tipo="otro">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                Otro
+                            </button>
+                        </div>
+                        <input type="hidden" id="wpfActInitTipo" value="">
+
+                        <!-- Fecha y hora -->
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <label for="wpfActInitFecha" style="font-size:0.78rem;font-weight:600;color:#475569;flex-shrink:0;">Fecha y hora</label>
+                            <input type="datetime-local" id="wpfActInitFecha"
+                                   style="flex:1;padding:10px 12px;border:1px solid #DBE4FF;border-radius:10px;font-family:inherit;font-size:0.86rem;color:#1d1d1f;background:#fff;outline:none;">
+                        </div>
+                    </div>
+
+                    <style>
+                        .wp-ai-chip {
+                            display: inline-flex; align-items: center; gap: 6px;
+                            padding: 6px 12px; border-radius: 999px;
+                            border: 1px solid #DBE4FF; background: #fff;
+                            font-family: inherit; font-size: 0.78rem; font-weight: 600;
+                            color: #475569; cursor: pointer; transition: all 0.15s ease;
+                        }
+                        .wp-ai-chip:hover { background: #F1F5FF; border-color: #93C5FD; color: #1e40af; }
+                        .wp-ai-chip.active {
+                            background: #2563eb; border-color: #2563eb; color: #fff;
+                            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+                        }
+                        .wp-ai-chip.active svg { stroke: #fff; }
+                    </style>
+                    {% endif %}
 
                     <!-- Notas (opcional) -->
                     <textarea class="wn-ctw-desc" id="wpfComentarios" placeholder="Añade contexto de la prospección, siguientes pasos o notas…" rows="4"></textarea>
@@ -129,7 +214,7 @@
                                     <option value="AVIGILION">Avigilon</option>
                                     <option value="GENETEC">Genetec</option>
                                     <option value="AXIS">Axis</option>
-                                    <option value="SOFTWARE" selected>Software</option>
+                                    <option value="SOFTWARE">Software</option>
                                     <option value="RUNRATE">Runrate</option>
                                     <option value="POLIZA">Póliza</option>
                                     <option value="CISCO">Cisco</option>
@@ -147,7 +232,8 @@
                             <div class="wn-ctw-pop" id="wpPopArea" style="display:none;">
                                 <div class="wn-ctw-pop-title">Área</div>
                                 <select class="wn-ctw-pop-input" id="wpfArea">
-                                    <option value="SISTEMAS" selected>Sistemas</option>
+                                    <option value="" selected>Selecciona un área</option>
+                                    <option value="SISTEMAS">Sistemas</option>
                                     <option value="Recursos Humanos">Recursos Humanos</option>
                                     <option value="Compras">Compras</option>
                                     <option value="Seguridad">Seguridad</option>
@@ -180,8 +266,8 @@
         };
 
         // ── Popovers ──
-        var POP_IDS = { cli:'wpPopCli', pipeline:'wpPopPipeline', contacto:'wpPopContacto', prod:'wpPopProd', area:'wpPopArea' };
-        var BTN_IDS = { cli:'wpClienteBtn', pipeline:'wpPipelineBtn', contacto:'wpContactoBtn', prod:'wpProdBtn', area:'wpAreaBtn' };
+        var POP_IDS = { cli:'wpPopCli', pipeline:'wpPopPipeline', contacto:'wpPopContacto', prod:'wpPopProd', area:'wpPopArea', asignado:'wpPopAsignado' };
+        var BTN_IDS = { cli:'wpClienteBtn', pipeline:'wpPipelineBtn', contacto:'wpContactoBtn', prod:'wpProdBtn', area:'wpAreaBtn', asignado:'wpAsignadoBtn' };
 
         function _wpCloseAllPops() {
             Object.keys(POP_IDS).forEach(function(k) {
@@ -375,7 +461,56 @@
         if (btnSaveCli) btnSaveCli.addEventListener('click', function() {
             var nombre = document.getElementById('wpfNuevoClienteNombre').value.trim();
             if (!nombre) { document.getElementById('wpfNuevoClienteNombre').focus(); return; }
-            var btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
+            var btn = this;
+            var modoProsp = (typeof _wpCurrentMode !== 'undefined') && _wpCurrentMode === 'prospecto';
+
+            // ── MODO PROSPECTO: crear ClientePotencial (Panel admin → Prospectos)
+            // No requiere cliente real ni pasa por el flujo de Prospecto del kanban.
+            if (modoProsp) {
+                btn.disabled = true; btn.textContent = 'Guardando…';
+                // asignado_a: el seleccionado en el pill, o el supervisor mismo.
+                var asigEl = document.getElementById('wpfAsignadoId');
+                var asigBtnRef = document.getElementById('wpAsignadoBtn');
+                var meId = (asigBtnRef && asigBtnRef.getAttribute('data-me-id')) || '';
+                var asignadoId = (asigEl && asigEl.value) ? parseInt(asigEl.value) : (meId ? parseInt(meId) : null);
+                if (!asignadoId) {
+                    alert('Selecciona un vendedor en "Asignar a" antes de crear el prospecto.');
+                    btn.disabled = false; btn.textContent = 'Guardar prospecto';
+                    return;
+                }
+                fetch('/app/api/admin/prospectos/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        asignado_a_id: asignadoId,
+                        notas: ((document.getElementById('wpfComentarios') || {}).value || '').trim(),
+                    })
+                }).then(function(r){ return r.json(); }).then(function(res) {
+                    if (res && res.success) {
+                        // Cerrar todo el composer y notificar
+                        var w = document.getElementById('widgetNuevoProspecto');
+                        if (w) { w.classList.add('closing'); setTimeout(function(){ w.classList.remove('active','closing'); }, 220); }
+                        var toast = document.getElementById('widgetToast');
+                        if (toast) {
+                            toast.textContent = 'Prospecto "' + nombre + '" creado en Panel Admin → Prospectos';
+                            toast.classList.add('show');
+                            setTimeout(function() { toast.classList.remove('show'); }, 3500);
+                        }
+                        // Refrescar listado del panel admin si está visible
+                        if (typeof window.loadProspectos === 'function') {
+                            try { window.loadProspectos(); } catch(_){}
+                        }
+                    } else {
+                        alert((res && res.error) || 'Error al crear prospecto');
+                    }
+                    btn.disabled = false; btn.textContent = 'Guardar prospecto';
+                }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar prospecto'; });
+                return;
+            }
+
+            // ── MODO CLIENTE (default): crear Cliente y enlazarlo al composer ──
+            btn.disabled = true; btn.textContent = 'Guardando…';
             fetch('/app/api/quick-crear-cliente/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
@@ -501,11 +636,11 @@
             setEmpty('wpfContactoId');
             setEmpty('wpfTipoPipeline');
             setEmpty('wpfComentarios');
-            // Producto y Área: reset a defaults del HTML (SOFTWARE / SISTEMAS)
+            // Producto y Área: vacíos por default (no obligatorios)
             var prodSel = document.getElementById('wpfProducto');
-            if (prodSel) { prodSel.value = 'SOFTWARE'; prodSel.dispatchEvent(new Event('change')); }
+            if (prodSel) { prodSel.value = ''; prodSel.dispatchEvent(new Event('change')); }
             var areaSel = document.getElementById('wpfArea');
-            if (areaSel) { areaSel.value = 'SISTEMAS'; areaSel.dispatchEvent(new Event('change')); }
+            if (areaSel) { areaSel.value = ''; areaSel.dispatchEvent(new Event('change')); }
             _wpSelectedClienteId = null;
             // Limpiar estados visuales de error
             var tituloEl = document.getElementById('wpfNombre');
@@ -517,6 +652,17 @@
             // Ocultar mini-forms abiertos
             var mc = document.getElementById('wpnMiniCliente'); if (mc) mc.style.display = 'none';
             var mk = document.getElementById('wpnMiniContacto'); if (mk) mk.style.display = 'none';
+            // Reset asignación + bloque actividad inicial
+            setEmpty('wpfAsignadoId');
+            var asigLbl = document.getElementById('wpAsignadoLabel');
+            if (asigLbl) asigLbl.textContent = 'Asignar a mí';
+            var asigBtn = document.getElementById('wpAsignadoBtn');
+            if (asigBtn) asigBtn.classList.remove('active');
+            var actBlk = document.getElementById('wpActInitBlock');
+            if (actBlk) actBlk.style.display = 'none';
+            setEmpty('wpfActInitTipo');
+            setEmpty('wpfActInitFecha');
+            document.querySelectorAll('#wpActInitChips .wp-ai-chip.active').forEach(function(c){ c.classList.remove('active'); });
             // Refrescar labels y estado ready
             _updateClienteLabel();
             _updateContactoLabel();
@@ -530,6 +676,10 @@
             var modal = document.getElementById('widgetNuevoProspecto');
             if (modal && modal.classList.contains('active')) {
                 _wpResetFormEmpty();
+                // Cargar vendedores cada vez que se abre el modal (más confiable
+                // que carga eager: garantiza que el endpoint se invoca aunque la
+                // primera carga al montar haya fallado).
+                if (typeof _wpLoadVendedores === 'function') _wpLoadVendedores(true);
                 setTimeout(function() {
                     _wpRefreshReadyState();
                     var tituloEl = document.getElementById('wpfNombre');
@@ -551,6 +701,19 @@
             var contactoId = document.getElementById('wpfContactoId').value;
             var pipeline   = document.getElementById('wpfTipoPipeline').value;
 
+            // Validar bloque "Actividad inicial" ANTES de disable del botón.
+            // Solo requiere tipo + fecha; el título y descripción de la
+            // actividad se toman del prospecto (título y notas iniciales).
+            var actInicial = null;
+            var actBlock = document.getElementById('wpActInitBlock');
+            if (actBlock && actBlock.style.display !== 'none') {
+                var actTipo = (document.getElementById('wpfActInitTipo') || {}).value || '';
+                var actFecha = (document.getElementById('wpfActInitFecha') || {}).value || '';
+                if (!actTipo) { alert('Selecciona el tipo de actividad inicial (Visita, Llamada, …).'); return; }
+                if (!actFecha) { alert('Selecciona una fecha para la actividad inicial.'); return; }
+                actInicial = { tipo: actTipo, fecha_programada: actFecha };
+            }
+
             var submitBtn = document.getElementById('wpfSubmit');
             submitBtn.disabled = true;
             var _origSubmit = submitBtn.innerHTML;
@@ -560,13 +723,21 @@
                 nombre: nombre,
                 cliente_id: parseInt(clienteId),
                 contacto_id: contactoId ? parseInt(contactoId) : null,
-                producto: document.getElementById('wpfProducto').value,
-                area: document.getElementById('wpfArea').value,
                 tipo_pipeline: pipeline,
                 comentarios: document.getElementById('wpfComentarios').value.trim()
             };
+            // Producto/Área son opcionales — solo enviar si el creador eligió algo,
+            // así el backend usa los defaults del modelo si no se especifican.
+            var prodVal = (document.getElementById('wpfProducto') || {}).value || '';
+            if (prodVal) payload.producto = prodVal;
+            var areaVal = (document.getElementById('wpfArea') || {}).value || '';
+            if (areaVal) payload.area = areaVal;
             // Etapa pre-seleccionada desde el kanban (click en "+" de una columna)
             if (window._pkStageForNew) payload.etapa = window._pkStageForNew;
+            // Asignación a otro vendedor (solo supervisores/admin; el backend valida).
+            var asigEl = document.getElementById('wpfAsignadoId');
+            if (asigEl && asigEl.value) payload.usuario_id = parseInt(asigEl.value);
+            if (actInicial) payload.actividad_inicial = actInicial;
 
             fetch('/app/api/crear-prospecto/', {
                 method: 'POST',
@@ -585,6 +756,12 @@
                     _wpSelectedClienteId = null;
                     _updateClienteLabel();
                     _updateContactoLabel();
+                    var asigReset = document.getElementById('wpfAsignadoId');
+                    if (asigReset) asigReset.value = '';
+                    var asigLblReset = document.getElementById('wpAsignadoLabel');
+                    if (asigLblReset) asigLblReset.textContent = 'Asignar a mí';
+                    var asigBtnReset = document.getElementById('wpAsignadoBtn');
+                    if (asigBtnReset) asigBtnReset.classList.remove('active');
                     window._pkStageForNew = null;  // consumida
 
                     // Recargas
@@ -662,17 +839,181 @@
             var btnAdd = document.getElementById('wpnAddClienteBtn');
             if (btnAdd) {
                 // Reemplazar solo el nodo texto (conserva el SVG)
+                var replaced = false;
                 for (var i = 0; i < btnAdd.childNodes.length; i++) {
                     var node = btnAdd.childNodes[i];
                     if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
                         node.textContent = ' ' + txt.addNew;
-                        return;
+                        replaced = true;
+                        break;
                     }
                 }
-                // Fallback: si no hay nodo de texto, agregar uno
-                btnAdd.appendChild(document.createTextNode(' ' + txt.addNew));
+                if (!replaced) btnAdd.appendChild(document.createTextNode(' ' + txt.addNew));
             }
+            // Mini-form "+ Crear ..." (input placeholder + botón guardar)
+            var miniInput = document.getElementById('wpfNuevoClienteNombre');
+            if (miniInput) miniInput.placeholder = isProsp ? 'Nombre del prospecto' : 'Nombre de la empresa';
+            var miniSave = document.getElementById('wpfNuevoClienteGuardar');
+            if (miniSave) miniSave.textContent = isProsp ? 'Guardar prospecto' : 'Guardar cliente';
         };
+
+        // ── Asignación a otro vendedor (solo supervisores/admin) ──
+        // El pill #wpAsignadoBtn solo existe si Django renderizó el if.
+        // Carga lazy: la primera vez que se abre el popover.
+        var _wpVendedoresCache = null;
+        var _wpVendedoresLoading = false;
+        function _wpEscape(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function _wpInitials(u) {
+            var fn = (u.first_name || '').trim();
+            var ln = (u.last_name || '').trim();
+            var s = (fn[0] || u.username[0] || '?') + (ln[0] || '');
+            return s.toUpperCase();
+        }
+        function _wpRenderAsigList(filter) {
+            var list = document.getElementById('wpAsigList');
+            if (!list || !_wpVendedoresCache) return;
+            var q = (filter || '').toLowerCase().trim();
+            var items = _wpVendedoresCache.filter(function(u) {
+                if (!q) return true;
+                var full = ((u.first_name || '') + ' ' + (u.last_name || '') + ' ' + (u.username || '')).toLowerCase();
+                return full.indexOf(q) !== -1;
+            });
+            if (!items.length) {
+                list.innerHTML = '<div style="padding:14px;color:#86868B;font-size:0.78rem;text-align:center;">Sin coincidencias</div>';
+                return;
+            }
+            list.innerHTML = items.map(function(u) {
+                var nombre = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+                var rol = u.is_supervisor ? 'Supervisor' : (u.rol || 'Vendedor');
+                return '<div class="wf-ac-item" data-uid="' + u.id + '" data-uname="' + _wpEscape(nombre) + '" '
+                     + 'style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.12s;">'
+                     +     '<span style="width:28px;height:28px;border-radius:50%;background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:0.66rem;font-weight:700;flex-shrink:0;">' + _wpEscape(_wpInitials(u)) + '</span>'
+                     +     '<div style="flex:1;min-width:0;">'
+                     +         '<div style="font-size:0.84rem;font-weight:600;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _wpEscape(nombre) + '</div>'
+                     +         '<div style="font-size:0.7rem;color:#86868B;">' + _wpEscape(rol) + '</div>'
+                     +     '</div>'
+                     + '</div>';
+            }).join('');
+        }
+        function _wpLoadVendedores(force) {
+            if (_wpVendedoresLoading) return;
+            if (_wpVendedoresCache && !force) {
+                // ya cargada — solo re-renderizar al reabrir
+                _wpRenderAsigList('');
+                return;
+            }
+            var list = document.getElementById('wpAsigList');
+            if (list) list.innerHTML = '<div style="padding:14px;color:#86868B;font-size:0.78rem;text-align:center;">Cargando vendedores…</div>';
+            _wpVendedoresLoading = true;
+            console.log('[NuevoProspecto] Cargando vendedores desde /app/api/admin/usuarios/');
+            fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+                .then(function(r) {
+                    console.log('[NuevoProspecto] HTTP', r.status, r.statusText);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    _wpVendedoresLoading = false;
+                    var arr = (data && data.usuarios) || [];
+                    console.log('[NuevoProspecto] vendedores recibidos:', arr.length);
+                    arr.sort(function(a, b) {
+                        if (a.is_supervisor !== b.is_supervisor) return a.is_supervisor ? -1 : 1;
+                        var an = ((a.first_name || '') + ' ' + (a.last_name || '')).trim().toLowerCase();
+                        var bn = ((b.first_name || '') + ' ' + (b.last_name || '')).trim().toLowerCase();
+                        return an < bn ? -1 : (an > bn ? 1 : 0);
+                    });
+                    _wpVendedoresCache = arr.filter(function(u) { return u.is_active !== false; });
+                    _wpRenderAsigList('');
+                })
+                .catch(function(err) {
+                    _wpVendedoresLoading = false;
+                    console.error('[NuevoProspecto] Error cargando vendedores:', err);
+                    if (list) list.innerHTML = '<div style="padding:14px;color:#FF3B30;font-size:0.78rem;text-align:center;">Error al cargar vendedores<br><span style="font-size:0.7rem;color:#86868B;">Revisa la consola (' + (err && err.message || 'error') + ')</span></div>';
+                });
+        }
+        var asigBtnEl = document.getElementById('wpAsignadoBtn');
+        if (asigBtnEl) {
+            // Carga eager al montar el widget — más confiable que esperar al click.
+            // Si falla, reintenta on click. Una vez cargado, re-renderiza al abrir.
+            _wpLoadVendedores();
+            asigBtnEl.addEventListener('click', function() {
+                if (!_wpVendedoresCache && !_wpVendedoresLoading) _wpLoadVendedores();
+                else if (_wpVendedoresCache) _wpRenderAsigList(((document.getElementById('wpAsigSearch') || {}).value) || '');
+            });
+            // Búsqueda en vivo
+            var asigSearch = document.getElementById('wpAsigSearch');
+            if (asigSearch) {
+                asigSearch.addEventListener('input', function() { _wpRenderAsigList(this.value); });
+            }
+            // Click en un vendedor → seleccionar y cerrar popover
+            var asigList = document.getElementById('wpAsigList');
+            if (asigList) {
+                asigList.addEventListener('click', function(ev) {
+                    var item = ev.target.closest('[data-uid]');
+                    if (!item) return;
+                    var uid = item.getAttribute('data-uid');
+                    var uname = item.getAttribute('data-uname');
+                    document.getElementById('wpfAsignadoId').value = uid || '';
+                    var lbl = document.getElementById('wpAsignadoLabel');
+                    if (lbl) lbl.textContent = uname || 'Asignar a mí';
+                    asigBtnEl.classList.remove('empty');
+                    asigBtnEl.classList.add('active');
+                    // cerrar popover
+                    var pop = document.getElementById('wpPopAsignado');
+                    if (pop) pop.style.display = 'none';
+                    // Mostrar/ocultar bloque "Actividad inicial" según asignación
+                    _wpToggleActInit(uid);
+                });
+                // Hover effect inline (para no tocar CSS global)
+                asigList.addEventListener('mouseover', function(ev) {
+                    var it = ev.target.closest('[data-uid]'); if (it) it.style.background = '#F5F5F7';
+                });
+                asigList.addEventListener('mouseout', function(ev) {
+                    var it = ev.target.closest('[data-uid]'); if (it) it.style.background = '';
+                });
+            }
+        }
+
+        // ── Bloque "Actividad inicial" — visible cuando supervisor asigna a OTRO ──
+        function _wpToggleActInit(asignadoUid) {
+            var block = document.getElementById('wpActInitBlock');
+            if (!block) return;
+            var meId = (asigBtnEl && asigBtnEl.getAttribute('data-me-id')) || '';
+            var asigUid = String(asignadoUid || '');
+            var distinto = asigUid && meId && asigUid !== String(meId);
+            block.style.display = distinto ? 'block' : 'none';
+            if (!distinto) {
+                // Reset si vuelve a sí mismo
+                var t = document.getElementById('wpfActInitTipo'); if (t) t.value = '';
+                var f = document.getElementById('wpfActInitFecha'); if (f) f.value = '';
+                document.querySelectorAll('#wpActInitChips .wp-ai-chip.active').forEach(function(c){ c.classList.remove('active'); });
+            } else {
+                // Sugerir fecha por defecto: mañana 09:00 (si está vacío)
+                var f = document.getElementById('wpfActInitFecha');
+                if (f && !f.value) {
+                    var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
+                    var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
+                    f.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+                            + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                }
+            }
+        }
+        // Click en chips de tipo
+        var actInitChips = document.getElementById('wpActInitChips');
+        if (actInitChips) {
+            actInitChips.addEventListener('click', function(ev) {
+                var chip = ev.target.closest('.wp-ai-chip');
+                if (!chip) return;
+                actInitChips.querySelectorAll('.wp-ai-chip.active').forEach(function(c){ c.classList.remove('active'); });
+                chip.classList.add('active');
+                var tipo = chip.getAttribute('data-tipo') || '';
+                document.getElementById('wpfActInitTipo').value = tipo;
+            });
+        }
 
         // Atajo ⌘+↵ / Ctrl+↵ para enviar
         document.addEventListener('keydown', function(e) {

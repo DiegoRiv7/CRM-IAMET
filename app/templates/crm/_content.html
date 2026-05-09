@@ -244,10 +244,11 @@
             </div>
             {% endif %}
             {% if tab_activo == 'clientes' %}
-            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos -->
+            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos -->
             <div class="crm-tabs crm-tabs--dashboard">
                 <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
                 <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
+                <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
             </div>
             {% else %}
             <div class="crm-tabs">
@@ -933,6 +934,71 @@
                 <div class="ck-chart-card">
                     <div class="ck-chart-title">Facturado por Vendedor</div>
                     <canvas id="ckChartPorVendedor"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Dashboard Proyectos (KPIs + Charts + Lista en riesgo) ═══ -->
+        <div id="ckKpiRowProy" class="ck-kpi-row" style="display:none;">
+            <div class="ck-kpi-card ck-kpi--proy-act">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span class="ck-kpi-label">PROYECTOS ACTIVOS</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProyActivos">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyActivos">de — totales</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-act" id="ckProgProyActivos" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyActivos"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--proy-bud">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span class="ck-kpi-label">PRESUPUESTO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--proy-bud" id="ckKpiProyBudget">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyBudget">ejecutado de —</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-bud" id="ckProgProyBudget" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyBudget"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--proy-avg">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span class="ck-kpi-label">AVANCE PROMEDIO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--proy-avg" id="ckKpiProyAvance">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyAvance">del portafolio</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-avg" id="ckProgProyAvance" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyAvance"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--proy-mar">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span class="ck-kpi-label">MARGEN ESPERADO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--proy-mar" id="ckKpiProyMargen">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyMargen">utilidad presupuestada</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-mar" id="ckProgProyMargen" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyMargen"></div>
+            </div>
+        </div>
+
+        <div id="ckChartsSectionProy" style="display:none;padding:0 12px 40px;">
+            <div style="display:grid;grid-template-columns:1.05fr 1.4fr;gap:14px;margin-top:16px;">
+                <div class="ck-chart-card crm-dash-proyectos-chart">
+                    <div class="ck-chart-title">DISTRIBUCION POR ESTADO</div>
+                    <div class="crm-dash-proyectos-chart-wrap">
+                        <canvas id="ckChartProyEstados"></canvas>
+                    </div>
+                    <div class="crm-dash-proyectos-legend" id="ckChartProyEstadosLegend"></div>
+                </div>
+                <div class="ck-chart-card crm-dash-proyectos-riesgo">
+                    <div class="ck-chart-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                        <span>PROYECTOS EN RIESGO</span>
+                        <span class="crm-dash-proyectos-riesgo-count" id="ckProyRiesgoCount">0</span>
+                    </div>
+                    <div class="crm-dash-proyectos-riesgo-list" id="ckProyRiesgoList">
+                        <div class="crm-dash-proyectos-riesgo-empty">Cargando…</div>
+                    </div>
                 </div>
             </div>
         </div>

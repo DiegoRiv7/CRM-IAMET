@@ -1143,6 +1143,27 @@ def api_partidas_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
+    # Auto-sync on-demand: si el proyecto no tiene partidas pero hay
+    # alguna volumetría completada en sus levantamientos, sincronizamos
+    # al vuelo. Esto cubre proyectos que se completaron antes del
+    # despliegue del trigger automático y proyectos legacy.
+    if not proyecto.partidas.exists():
+        ultima_vol = ProyectoVolumetria.objects.filter(
+            levantamiento__proyecto=proyecto,
+            status='completada',
+        ).order_by('-fecha_actualizacion').first()
+        if ultima_vol and isinstance(ultima_vol.data, dict):
+            secs = ultima_vol.data.get('secciones')
+            if isinstance(secs, list) and any((s or {}).get('items') for s in secs):
+                try:
+                    _sync_partidas_proyecto_from_volumetria(
+                        proyecto, ultima_vol,
+                        subido_por=request.user,
+                        archivo_nombre=f"Auto-sync · {ultima_vol.nombre or ('Vol ' + str(ultima_vol.id))}",
+                    )
+                except Exception as _sync_err:
+                    print('[partidas-sync] auto-sync error:', _sync_err)
+
     partidas = list(proyecto.partidas.all())
     items = [_partida_to_dict(p) for p in partidas]
 
@@ -1262,6 +1283,276 @@ def api_partida_eliminar(request, partida_id):
     return JsonResponse({'success': True, 'data': {'deleted': partida_id}})
 
 
+@login_required
+@require_http_methods(["POST"])
+def api_partidas_sync(request, proyecto_id):
+    """Resincroniza las partidas del proyecto a partir de su última
+    volumetría (más recientemente actualizada). Útil cuando el ingeniero
+    editó la volumetría sin marcarla como completada y quiere reflejar
+    el cambio en el tab Partidas."""
+    try:
+        proyecto = Proyecto.objects.get(id=proyecto_id)
+    except Proyecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Proyecto no encontrado'}, status=404)
+    if not _check_access(request.user, proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Preferimos la última completada; si no hay, la última cualquiera
+    # (puede ser borrador). Esto da control al usuario para refrescar.
+    ultima_vol = (
+        ProyectoVolumetria.objects.filter(
+            levantamiento__proyecto=proyecto, status='completada',
+        ).order_by('-fecha_actualizacion').first()
+        or ProyectoVolumetria.objects.filter(
+            levantamiento__proyecto=proyecto,
+        ).order_by('-fecha_actualizacion').first()
+    )
+    if not ultima_vol:
+        return JsonResponse({
+            'success': False,
+            'error': 'El proyecto no tiene volumetrías capturadas en ningún levantamiento.',
+        }, status=400)
+
+    secs = (ultima_vol.data or {}).get('secciones') if isinstance(ultima_vol.data, dict) else None
+    if not isinstance(secs, list) or not any((s or {}).get('items') for s in secs):
+        return JsonResponse({
+            'success': False,
+            'error': 'La última volumetría está vacía. Pídele al ingeniero importarla o capturar items.',
+        }, status=400)
+
+    try:
+        resumen = _sync_partidas_proyecto_from_volumetria(
+            proyecto, ultima_vol,
+            subido_por=request.user,
+            archivo_nombre=f"Sync manual · {ultima_vol.nombre or ('Vol ' + str(ultima_vol.id))}",
+        )
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error sincronizando: {e}'}, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'resumen': resumen,
+        'volumetria': {
+            'id': ultima_vol.id,
+            'nombre': ultima_vol.nombre,
+            'status': ultima_vol.status,
+        },
+    })
+
+
+# ─── Sincronización Volumetría → ProyectoPartida ────────────────
+#
+# Cuando el ingeniero importa un Excel o marca una volumetría como
+# completada, las partidas del proyecto (sección "Partidas" del
+# widget) se actualizan automáticamente con los items de esa
+# volumetría. Equipamiento + Mano de Obra entran como partidas
+# (Costos Adicionales NO — son costos internos nuestros).
+#
+# La sincronización es un upsert por clave (numero_parte,
+# descripcion[:80]) para preservar las OCs ya capturadas:
+#   - Match → actualiza precios/cantidad/costos. Mantiene
+#     cantidad_pendiente y status (OCs de compra ya hechas).
+#   - No match → crea una partida nueva con cantidad_pendiente = cantidad.
+#   - Partidas viejas que ya no aparecen:
+#     · Si tienen OCs asociadas → se quedan (OCs no se pierden).
+#     · Si no → se eliminan.
+
+def _partida_key(numero_parte, descripcion):
+    """Clave de matching estable y barata para upsert."""
+    np = (numero_parte or '').strip().lower()
+    desc = (descripcion or '').strip().lower()[:80]
+    return (np, desc)
+
+
+def _snapshot_partidas_actual(proyecto, archivo_nombre='Actualización auto', subido_por=None):
+    """Crea un ProyectoVolumetriaVersion con el estado actual de las
+    partidas del proyecto. Se ejecuta ANTES de cualquier re-sync para
+    poder restaurar a este punto desde el historial."""
+    existing = list(proyecto.partidas.all())
+    if not existing:
+        return None
+    last_ver = ProyectoVolumetriaVersion.objects.filter(proyecto=proyecto).order_by('-version').first()
+    next_ver = (last_ver.version + 1) if last_ver else 1
+    snapshot = []
+    sc = Decimal('0')
+    sv = Decimal('0')
+    for p in existing:
+        cu = p.costo_unitario or Decimal('0')
+        vu = p.precio_venta_unitario or Decimal('0')
+        q = p.cantidad or Decimal('0')
+        sc += cu * q
+        sv += vu * q
+        snapshot.append({
+            'categoria': p.categoria, 'descripcion': p.descripcion, 'marca': p.marca,
+            'numero_parte': p.numero_parte, 'cantidad': float(q),
+            'cantidad_pendiente': float(p.cantidad_pendiente or 0),
+            'precio_lista': float(p.precio_lista or 0),
+            'descuento': float(p.descuento or 0),
+            'costo_unitario': float(cu), 'precio_venta_unitario': float(vu),
+            'ganancia': float((vu - cu) * q),
+            'proveedor': p.proveedor, 'status': p.status,
+        })
+    sg = sv - sc
+    return ProyectoVolumetriaVersion.objects.create(
+        proyecto=proyecto, version=next_ver,
+        archivo_nombre=archivo_nombre,
+        subido_por=subido_por,
+        total_costo=sc, total_venta=sv, ganancia=sg,
+        margen=(sg / sv * 100) if sv > 0 else Decimal('0'),
+        num_partidas=len(existing), partidas_json=snapshot,
+    )
+
+
+def _sync_partidas_proyecto_from_volumetria(proyecto, vol, subido_por=None,
+                                            archivo_nombre='Actualización desde volumetría'):
+    """Reemplaza las ProyectoPartida del proyecto con los items de la
+    volumetría v4. Preserva las partidas que ya tienen OCs (al menos
+    una unidad mandada a comprar) — esas se quedan permanentemente.
+
+    Reglas:
+      • Match por (numero_parte, descripcion):
+        - Sin OCs → actualiza todos los campos, cantidad_pendiente = nueva_cantidad.
+        - Con OCs → actualiza precios/cantidad pero `cantidad_pendiente`
+          se calcula como `nueva_cantidad - ya_comprada` (mínimo 0).
+          Status: pending si pendiente>0 sin OCs, ordered si pendiente>0
+          con OCs, closed si pendiente=0.
+      • Sin match (partidas viejas que ya no están en la volumetría):
+        - Sin OCs → se eliminan.
+        - Con OCs → se quedan (historial de compras intacto).
+
+    Antes del re-sync se crea un snapshot de versión para poder
+    restaurar el estado anterior desde el historial.
+    """
+    resumen = {'creadas': 0, 'actualizadas': 0, 'eliminadas': 0, 'preservadas': 0, 'snapshot_version': None}
+    if not proyecto or not vol:
+        return resumen
+
+    lev = vol.levantamiento
+    if not lev:
+        return resumen
+
+    # Snapshot ANTES de cualquier cambio
+    snap = _snapshot_partidas_actual(proyecto, archivo_nombre=archivo_nombre, subido_por=subido_por)
+    if snap:
+        resumen['snapshot_version'] = snap.version
+
+    ctx = _build_volumetria_ctx(
+        lev, sin_costos=False,
+        data_override=vol.data, volumetria_obj=vol,
+    )
+
+    # Construir lista plana de items destino con sus valores normalizados.
+    nuevos = []
+    for sec in (ctx.get('sections_eq') or []):
+        for r in (sec.get('rows') or []):
+            if r.get('is_header'):
+                continue
+            qty = Decimal(str(r.get('qty') or 0))
+            if qty <= 0:
+                continue
+            payload = {
+                'categoria': 'equipamiento',
+                'descripcion': (r.get('desc') or '')[:500] or 'Item sin descripción',
+                'marca': (r.get('marca') or '')[:255],
+                'numero_parte': (r.get('parte') or '')[:255],
+                'cantidad': qty,
+                'precio_lista': Decimal(str(r.get('precio_lista') or 0)),
+                'descuento': Decimal(str(r.get('desc_venta') or 0)),
+                'costo_unitario': Decimal(str(r.get('costo_unit') or 0)),
+                'precio_venta_unitario': Decimal(str(r.get('precio_unit') or 0)),
+                'proveedor': (r.get('proveedor') or '')[:255],
+            }
+            nuevos.append((_partida_key(payload['numero_parte'], payload['descripcion']), payload))
+
+    for sec in (ctx.get('sections_mo') or []):
+        for r in (sec.get('rows') or []):
+            qty = Decimal(str(r.get('qty') or 0))
+            if qty <= 0:
+                continue
+            payload = {
+                'categoria': 'mano_obra',
+                'descripcion': (r.get('desc') or '')[:500] or 'Servicio sin descripción',
+                'marca': (r.get('marca') or '')[:255],
+                'numero_parte': (r.get('parte') or '')[:255],
+                'cantidad': qty,
+                'precio_lista': Decimal(str(r.get('precio_lista') or 0)),
+                'descuento': Decimal('0'),
+                'costo_unitario': Decimal('0'),
+                'precio_venta_unitario': Decimal(str(r.get('precio_unit') or 0)),
+                'proveedor': '',
+            }
+            nuevos.append((_partida_key(payload['numero_parte'], payload['descripcion']), payload))
+
+    # Agregar por clave (suma cantidades si hay duplicados).
+    nuevos_por_key = {}
+    for k, p in nuevos:
+        if k in nuevos_por_key:
+            nuevos_por_key[k]['cantidad'] += p['cantidad']
+        else:
+            nuevos_por_key[k] = dict(p)
+
+    existentes = list(ProyectoPartida.objects.filter(proyecto=proyecto))
+    existentes_por_key = {}
+    for p in existentes:
+        existentes_por_key.setdefault(
+            _partida_key(p.numero_parte, p.descripcion), []
+        ).append(p)
+
+    creadas = actualizadas = eliminadas = preservadas = 0
+
+    # Upsert
+    for key, payload in nuevos_por_key.items():
+        if key in existentes_por_key and existentes_por_key[key]:
+            partida = existentes_por_key[key].pop(0)
+            # Cantidad ya comprada (suma de OCs) — para recalcular pendiente.
+            ya_comprada = sum(
+                (oc.cantidad or Decimal('0')) for oc in partida.ordenes_compra.all()
+            ) or Decimal('0')
+            # Aplica todos los campos del payload (precios, costos, etc).
+            for f, v in payload.items():
+                setattr(partida, f, v)
+            # Pendiente recalculado:
+            if ya_comprada > 0:
+                pendiente = payload['cantidad'] - ya_comprada
+                if pendiente < 0:
+                    pendiente = Decimal('0')
+                partida.cantidad_pendiente = pendiente
+                if pendiente == 0:
+                    partida.status = 'closed'
+                else:
+                    partida.status = 'ordered'  # ya hubo compras parciales
+            else:
+                partida.cantidad_pendiente = payload['cantidad']
+                partida.status = 'pending'
+            partida.save()
+            actualizadas += 1
+        else:
+            ProyectoPartida.objects.create(
+                proyecto=proyecto,
+                cantidad_pendiente=payload['cantidad'],
+                status='pending',
+                **payload,
+            )
+            creadas += 1
+
+    # Limpieza de partidas viejas que ya no aparecen.
+    for sobrantes in existentes_por_key.values():
+        for partida in sobrantes:
+            if partida.ordenes_compra.exists():
+                preservadas += 1  # mantener — historial de compras
+            else:
+                partida.delete()
+                eliminadas += 1
+
+    resumen.update({
+        'creadas': creadas,
+        'actualizadas': actualizadas,
+        'eliminadas': eliminadas,
+        'preservadas': preservadas,
+    })
+    return resumen
+
+
 # ═══════════════════════════════════════════════════════════════
 #  ORDENES DE COMPRA
 # ═══════════════════════════════════════════════════════════════
@@ -1366,8 +1657,33 @@ def api_oc_actualizar(request, oc_id):
 
     if 'precio_unitario' in data:
         oc.precio_unitario = _dec(data['precio_unitario'])
+
+    # Si cambia la cantidad, hay que ajustar partida.cantidad_pendiente
+    # con el delta. Validamos que el nuevo total comprado de esa partida
+    # no exceda la cantidad de la partida (mín 0 pendiente).
     if 'cantidad' in data:
-        oc.cantidad = _dec(data['cantidad'])
+        nueva_cantidad = _dec(data['cantidad'])
+        if nueva_cantidad <= 0:
+            return JsonResponse({'success': False, 'error': 'La cantidad debe ser mayor a 0'}, status=400)
+        delta = nueva_cantidad - (oc.cantidad or Decimal('0'))
+        if oc.partida:
+            partida = oc.partida
+            # Si delta > 0 (subir cantidad) → no debe exceder pendiente actual.
+            if delta > 0 and delta > partida.cantidad_pendiente:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'No alcanza el pendiente. Disponibles: {float(partida.cantidad_pendiente)} unidades.',
+                }, status=400)
+            partida.cantidad_pendiente = (partida.cantidad_pendiente or Decimal('0')) - delta
+            if partida.cantidad_pendiente < 0:
+                partida.cantidad_pendiente = Decimal('0')
+            # Recalc status
+            if partida.cantidad_pendiente == 0:
+                partida.status = 'closed'
+            else:
+                partida.status = 'ordered' if partida.ordenes_compra.exists() else 'pending'
+            partida.save()
+        oc.cantidad = nueva_cantidad
 
     date_fields = ['fecha_emision', 'fecha_entrega_esperada', 'fecha_entrega_real']
     for field in date_fields:
@@ -1383,12 +1699,29 @@ def api_oc_actualizar(request, oc_id):
 @require_http_methods(["DELETE"])
 def api_oc_eliminar(request, oc_id):
     try:
-        oc = ProyectoOrdenCompra.objects.select_related('proyecto').get(id=oc_id)
+        oc = ProyectoOrdenCompra.objects.select_related('proyecto', 'partida').get(id=oc_id)
     except ProyectoOrdenCompra.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'OC no encontrada'}, status=404)
     if not _check_access(request.user, oc.proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Devolver la cantidad de la OC al pendiente de la partida.
+    partida = oc.partida
+    cantidad_devuelta = oc.cantidad or Decimal('0')
     oc.delete()
+    if partida:
+        partida.cantidad_pendiente = (partida.cantidad_pendiente or Decimal('0')) + cantidad_devuelta
+        # Cap por la cantidad total de la partida (defensivo).
+        if partida.cantidad_pendiente > (partida.cantidad or Decimal('0')):
+            partida.cantidad_pendiente = partida.cantidad
+        # Recalc status: si quedan OCs → ordered; si no → pending.
+        if partida.cantidad_pendiente == 0:
+            partida.status = 'closed'
+        elif partida.ordenes_compra.exists():
+            partida.status = 'ordered'
+        else:
+            partida.status = 'pending'
+        partida.save()
     return JsonResponse({'success': True})
 
 
@@ -3163,9 +3496,18 @@ def api_volumetrias_lista(request, levantamiento_id):
     qs = lev.volumetrias.select_related('creado_por', 'actualizado_por').all()
     if _user_es_solo_lectura_levantamiento(request.user):
         qs = qs.filter(status='completada')
+    # Incluimos `data` en el listado para que el overlay del vendedor
+    # pueda renderizar el resumen de partidas sin pegarle un fetch
+    # adicional por cada volumetría (eran 0 partidas mostradas porque
+    # _vol_to_dict no traía data).
+    payload = []
+    for v in qs:
+        item = _vol_to_dict(v)
+        item['data'] = v.data or {}
+        payload.append(item)
     return JsonResponse({
         'ok': True,
-        'data': [_vol_to_dict(v) for v in qs],
+        'data': payload,
         'puede_editar': not _user_es_solo_lectura_levantamiento(request.user),
     })
 
@@ -3272,8 +3614,24 @@ def api_volumetria_actualizar(request, volumetria_id):
             return JsonResponse({'success': False, 'error': 'tipo_cambio fuera de rango (0.0001–100)'}, status=400)
         vol.tipo_cambio = tc
         update_fields.append('tipo_cambio')
+    status_anterior = vol.status
     vol.actualizado_por = request.user
     vol.save(update_fields=update_fields)
+
+    # Cuando una volumetría se marca como completada, sincronizamos
+    # las partidas del proyecto con sus items (es la fuente de verdad
+    # de la sección "Partidas" del widget de proyecto).
+    if (status_anterior != 'completada' and vol.status == 'completada'
+            and vol.levantamiento and vol.levantamiento.proyecto):
+        try:
+            _sync_partidas_proyecto_from_volumetria(
+                vol.levantamiento.proyecto, vol,
+                subido_por=request.user,
+                archivo_nombre=f"Completada · {vol.nombre or ('Vol ' + str(vol.id))}",
+            )
+        except Exception as _sync_err:
+            print('[partidas-sync] error en actualizar:', _sync_err)
+
     return JsonResponse({'success': True, 'data': _vol_to_dict(vol)})
 
 
@@ -3325,6 +3683,345 @@ def api_volumetria_eliminar(request, volumetria_id):
         }, status=400)
     vol.delete()
     return JsonResponse({'success': True})
+
+
+# ─── Generar Cotización a partir de la Volumetría ───────────────
+#
+# Endpoint llamado desde el menú "Exportar > Generar cotización" de la
+# vista de consulta del vendedor. Crea una `Cotizacion` + `DetalleCotizacion`
+# usando el equipamiento de la volumetría (sin costos internos), genera el
+# PDF con el template de cotizaciones existente y lo sube al Drive de la
+# oportunidad para que quede disponible junto a las demás cotizaciones.
+#
+# Reglas de inclusión:
+#   • Equipamiento → SÍ se incluye como partidas.
+#   • Mano de Obra → NO se incluye (decisión actual).
+#   • Costos Adicionales → NO se incluye (son costos internos nuestros).
+#
+# Marca del documento (Bajanet / Iamet): por ahora hardcoded a Bajanet,
+# pero leemos `lev.fase1_data['marca_documento']` o `lev.fase2_data
+# ['marca_documento']` si en el futuro el ingeniero la captura al
+# arrancar el levantamiento. Cuando exista el campo se usa, sino fallback.
+
+@login_required
+@require_http_methods(['POST'])
+def api_volumetria_generar_cotizacion(request, volumetria_id):
+    from .models import Cotizacion, DetalleCotizacion, ArchivoOportunidad
+    from .views_cotizaciones import _build_cotizacion_pdf_payload
+    from django.core.files.base import ContentFile
+    from django.db import transaction
+    from decimal import Decimal as _D
+
+    try:
+        body = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        body = {}
+    nombre_override = (body.get('nombre') or '').strip()
+
+    try:
+        vol = ProyectoVolumetria.objects.select_related(
+            'levantamiento__proyecto'
+        ).get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+
+    lev = vol.levantamiento
+    if not lev or not lev.proyecto:
+        return JsonResponse({'success': False, 'error': 'Volumetría sin levantamiento o proyecto asociado'}, status=400)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    # Vendedor: solo puede generar cotizaciones de volumetrías completadas.
+    if _user_es_solo_lectura_levantamiento(request.user) and vol.status != 'completada':
+        return JsonResponse({
+            'success': False,
+            'error': 'Solo se pueden generar cotizaciones de volumetrías completadas',
+        }, status=403)
+
+    proyecto = lev.proyecto
+    oportunidad = getattr(proyecto, 'oportunidad', None)
+    if not oportunidad:
+        return JsonResponse({
+            'success': False,
+            'error': 'El proyecto no tiene oportunidad vinculada — la cotización no tiene a dónde ir.',
+        }, status=400)
+
+    cliente = getattr(oportunidad, 'cliente', None)
+    if not cliente:
+        return JsonResponse({
+            'success': False,
+            'error': 'La oportunidad no tiene cliente asociado.',
+        }, status=400)
+
+    # Construir contexto v4 sin costos (precios al cliente).
+    ctx = _build_volumetria_ctx(
+        lev, sin_costos=True,
+        data_override=vol.data, volumetria_obj=vol,
+    )
+    sections_eq = ctx.get('sections_eq') or []
+    sections_mo_pre = ctx.get('sections_mo') or []
+    has_eq_rows = any((s.get('rows') or []) for s in sections_eq)
+    has_mo_rows = any((s.get('rows') or []) for s in sections_mo_pre)
+    if not has_eq_rows and not has_mo_rows:
+        return JsonResponse({
+            'success': False,
+            'error': 'La volumetría no tiene equipamiento ni mano de obra para cotizar.',
+        }, status=400)
+
+    # Marca del documento — preparado para configuración futura.
+    f1 = lev.fase1_data or {}
+    f2 = lev.fase2_data or {}
+    marca_doc = (
+        (f1.get('marca_documento') or '').strip()
+        or (f2.get('marca_documento') or '').strip()
+        or 'Bajanet'
+    )
+    tipo_cot = 'Iamet' if marca_doc.lower() == 'iamet' else 'Bajanet'
+
+    # IVA: snapshot de la volumetría (se guarda como porcentaje, ej 8 → 0.08).
+    try:
+        iva_pct_dec = _D(str(vol.iva_pct or 8))
+    except Exception:
+        iva_pct_dec = _D('8')
+    iva_rate = (iva_pct_dec / _D('100')).quantize(_D('0.01'))
+
+    # Nombre legible para el PDF / título de la cotización. Si el
+    # frontend envió `nombre`, lo usamos; si no, default a "lev - vol".
+    if nombre_override:
+        nombre_cot = nombre_override[:255]
+    else:
+        nombre_cot = (
+            (lev.nombre or 'Cotización').strip()
+            + (' - ' + vol.nombre.strip() if vol.nombre else '')
+        )[:255]
+
+    marcas_validas = {m for m, _ in DetalleCotizacion.MARCA_CHOICES}
+
+    with transaction.atomic():
+        cotizacion = Cotizacion.objects.create(
+            titulo=nombre_cot,
+            cliente=cliente,
+            usuario_final='',
+            oportunidad=oportunidad,
+            # `descripcion` se queda vacía: el template del PDF lo imprime
+            # como "Notas:" en Términos y Condiciones, y para cotizaciones
+            # generadas auto no aporta valor — solo metadata interna que
+            # no debe ir al cliente. Si el ingeniero/vendedor quiere notas,
+            # las agrega editando la cotización.
+            nombre_cotizacion=nombre_cot,
+            iva_rate=iva_rate,
+            moneda='USD',
+            tipo_cotizacion=tipo_cot,
+            created_by=request.user,
+        )
+
+        # ── Recolectar filas (títulos + items) en una lista plana ──
+        # Lo construimos primero en memoria para poder filtrar títulos
+        # que no tienen ningún item real debajo (sub-rótulos vacíos del
+        # Excel, ej. "1 1/2\" STEEL CONNECTOR" sin productos).
+        pending = []  # [{tipo: 'titulo'|'producto', ...}]
+
+        def _push_titulo(texto):
+            t = (texto or '').strip()
+            if t:
+                pending.append({'tipo': 'titulo', 'texto': t})
+
+        def _push_producto_eq(r):
+            try:
+                qty_raw = float(r.get('qty') or 0)
+            except (TypeError, ValueError):
+                qty_raw = 0
+            if qty_raw <= 0:
+                return
+            qty = max(1, int(round(qty_raw)))
+            try:
+                precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+            except Exception:
+                precio_unit = _D('0.00')
+            total_row = (precio_unit * qty).quantize(_D('0.01'))
+            marca_raw = (r.get('marca') or '').strip()
+            marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+            parte_raw = (r.get('parte') or '').strip()
+            desc_raw = (r.get('desc') or '').strip()
+            nombre = parte_raw or marca_raw or (desc_raw[:80] if desc_raw else 'Producto')
+            if not marca_db and marca_raw:
+                nombre = (marca_raw + ' ' + nombre).strip()
+            pending.append({
+                'tipo': 'producto',
+                'nombre': nombre[:255],
+                'desc': desc_raw,
+                'cantidad': qty,
+                'precio_unit': precio_unit,
+                'total': total_row,
+                'marca_db': marca_db,
+                'parte': parte_raw[:100],
+            })
+
+        def _push_producto_mo(r):
+            try:
+                qty_raw = float(r.get('qty') or 0)
+            except (TypeError, ValueError):
+                qty_raw = 0
+            if qty_raw <= 0:
+                return
+            qty = max(1, int(round(qty_raw)))
+            try:
+                precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+            except Exception:
+                precio_unit = _D('0.00')
+            total_row = (precio_unit * qty).quantize(_D('0.01'))
+            desc_raw = (r.get('desc') or '').strip()
+            parte_raw = (r.get('parte') or '').strip() or 'SERVICIOS PROFESIONALES'
+            marca_raw = (r.get('marca') or '').strip() or 'BAJANET'
+            marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+            nombre = parte_raw or desc_raw[:80] or 'Servicio'
+            if not marca_db:
+                nombre = (marca_raw + ' ' + nombre).strip() if marca_raw else nombre
+            pending.append({
+                'tipo': 'producto',
+                'nombre': nombre[:255],
+                'desc': desc_raw,
+                'cantidad': qty,
+                'precio_unit': precio_unit,
+                'total': total_row,
+                'marca_db': marca_db,
+                'parte': parte_raw[:100],
+            })
+
+        # Equipamiento + Mano de Obra (mano de obra cuenta como partida
+        # cobrada al cliente, así que sí va al subtotal del PDF).
+        sections_mo = ctx.get('sections_mo') or []
+
+        if sections_eq:
+            _push_titulo('EQUIPAMIENTO / MATERIALES')
+            for sec in sections_eq:
+                _push_titulo(sec.get('titulo'))
+                for r in (sec.get('rows') or []):
+                    if r.get('is_header'):
+                        _push_titulo(r.get('texto'))
+                    else:
+                        _push_producto_eq(r)
+
+        if sections_mo:
+            _push_titulo('MANO DE OBRA / SERVICIOS')
+            for sec in sections_mo:
+                _push_titulo(sec.get('titulo'))
+                for r in (sec.get('rows') or []):
+                    _push_producto_mo(r)
+
+        # ── Filtrar títulos sin items reales debajo ────────────────
+        # Pasada hacia atrás: solo conservamos un título si entre él y el
+        # siguiente título hay al menos UN producto. Resultado: limpia
+        # los rótulos vacíos del Excel.
+        filtered = []
+        i = 0
+        n = len(pending)
+        while i < n:
+            row = pending[i]
+            if row['tipo'] == 'titulo':
+                # ¿Hay un producto antes del próximo título?
+                tiene_items = False
+                j = i + 1
+                while j < n and pending[j]['tipo'] != 'titulo':
+                    if pending[j]['tipo'] == 'producto':
+                        tiene_items = True
+                        break
+                    j += 1
+                if tiene_items:
+                    filtered.append(row)
+            else:
+                filtered.append(row)
+            i += 1
+
+        # También colapsamos títulos consecutivos: si dos títulos quedan
+        # uno tras otro (porque un sub-rótulo se eliminó), nos quedamos
+        # solo con el último (es el más cercano a los productos reales).
+        compact = []
+        for row in filtered:
+            if (row['tipo'] == 'titulo' and compact
+                    and compact[-1]['tipo'] == 'titulo'):
+                compact[-1] = row
+            else:
+                compact.append(row)
+
+        # ── Persistir partidas ────────────────────────────────────
+        orden = 0
+        subtotal = _D('0.00')
+        for row in compact:
+            if row['tipo'] == 'titulo':
+                DetalleCotizacion.objects.create(
+                    cotizacion=cotizacion,
+                    nombre_producto=row['texto'][:255],
+                    descripcion='',
+                    cantidad=0,
+                    precio_unitario=_D('0.00'),
+                    descuento_porcentaje=_D('0.00'),
+                    precio_con_descuento=_D('0.00'),
+                    total=_D('0.00'),
+                    marca=None,
+                    no_parte='',
+                    orden=orden,
+                    tipo='titulo',
+                )
+            else:
+                DetalleCotizacion.objects.create(
+                    cotizacion=cotizacion,
+                    nombre_producto=row['nombre'],
+                    descripcion=row['desc'],
+                    cantidad=row['cantidad'],
+                    precio_unitario=row['precio_unit'],
+                    descuento_porcentaje=_D('0.00'),
+                    precio_con_descuento=row['precio_unit'],
+                    total=row['total'],
+                    marca=row['marca_db'],
+                    no_parte=row['parte'],
+                    orden=orden,
+                    tipo='producto',
+                )
+                subtotal += row['total']
+            orden += 1
+
+        iva_amount = (subtotal * iva_rate).quantize(_D('0.01'))
+        cotizacion.subtotal = subtotal.quantize(_D('0.01'))
+        cotizacion.iva_amount = iva_amount
+        cotizacion.total = (cotizacion.subtotal + iva_amount).quantize(_D('0.01'))
+        cotizacion.save()
+
+    # ── PDF + subida al Drive de la oportunidad ──────────────────
+    try:
+        pdf_bytes, pdf_name = _build_cotizacion_pdf_payload(cotizacion, request_user=request.user)
+    except Exception as e:
+        # No abortamos la cotización si el PDF falla — queda creada y
+        # editable desde el flujo manual; pero avisamos al cliente.
+        return JsonResponse({
+            'success': False,
+            'cotizacion_id': cotizacion.id,
+            'error': f'La cotización se creó pero el PDF falló: {e}',
+        }, status=500)
+
+    archivo_filename = f"{pdf_name}.pdf"
+    archivo = ArchivoOportunidad.objects.create(
+        nombre_original=archivo_filename,
+        archivo=ContentFile(pdf_bytes, name=archivo_filename),
+        tipo_archivo='pdf',
+        tamaño=len(pdf_bytes),
+        oportunidad=oportunidad,
+        carpeta=None,  # raíz del Drive
+        subido_por=request.user,
+        extension='pdf',
+        mime_type='application/pdf',
+    )
+
+    return JsonResponse({
+        'success': True,
+        'cotizacion_id': cotizacion.id,
+        'pdf_url': f'/app/cotizacion/view/{cotizacion.id}/',
+        'archivo_id': archivo.id,
+        'oportunidad_id': oportunidad.id,
+        'tipo_cotizacion': tipo_cot,
+        'total': float(cotizacion.total),
+        'moneda': cotizacion.moneda,
+    })
 
 
 # ─── Importar Excel legacy → schema v4 ──────────────────────────
@@ -3407,244 +4104,49 @@ def api_volumetria_importar_excel(request, volumetria_id):
 
     try:
         import openpyxl
+        from .volumetria_importers import detect_and_parse
+        # Abrir DOS veces: una con valores, otra con fórmulas. Algunos
+        # perfiles (v2) leen fórmulas para filtrar items excluidos del
+        # subtotal global y para detectar el % de IVA.
         wb = openpyxl.load_workbook(archivo, data_only=True)
         ws = wb.active
-
-        # ── PASS 1: pre-scan de filas-marcador ─────────────────
-        total_mo_row = None        # row de "TOTAL MANO DE OBRA:"
-        costo_mo_row = None        # row de "COSTO MANO DE OBRA:"
-        cmo_header_row = None      # row con "Cantidad/Descripcion/Costo unit"
-        mo_header_row = None       # row con encabezado de MO ("Marca|No.Parte|...")
-        mo_section_start_row = None  # row de "MANO DE OBRA"
-        analisis_row = None        # row de "Análisis de Costos"
-        for r in range(1, ws.max_row + 1):
-            ca = str(ws.cell(r, 1).value or '').strip().lower()
-            cd = str(ws.cell(r, 4).value or '').strip().lower()
-            ce = str(ws.cell(r, 5).value or '').strip().lower()
-            if 'total mano de obra' in ca or 'total mano de obra' in cd:
-                total_mo_row = r
-            if 'costo mano de obra' in ca or 'costo mano de obra' in cd:
-                costo_mo_row = r
-            if cd in ('descripcion', 'descripción') and ce in ('costo unit', 'costo unitario'):
-                cmo_header_row = r
-            if ca == 'mano de obra' and mo_section_start_row is None:
-                mo_section_start_row = r
-            if ca == 'marca' and cd in ('descripcion', 'descripción') and mo_header_row is None and mo_section_start_row:
-                if r > mo_section_start_row:
-                    mo_header_row = r
-            if 'analisis de costos' in ca or 'análisis de costos' in ca:
-                analisis_row = r
-
-        # ── Tipo de cambio: prioridad celda L3, fallback I4 ────
-        tipo_cambio = Decimal('0')
         try:
-            v_l3 = ws.cell(3, 12).value
-            if v_l3 is not None and v_l3 != '':
-                tc_try = _dec(v_l3)
-                if tc_try > Decimal('0.0001') and tc_try < Decimal('100'):
-                    tipo_cambio = tc_try
+            archivo.seek(0)
+            wb_f = openpyxl.load_workbook(archivo, data_only=False)
+            ws_formulas = wb_f.active
         except Exception:
-            pass
-        if tipo_cambio == 0:
-            try:
-                cell_i4 = str(ws.cell(4, 9).value or '')
-                if 'dolar' in cell_i4.lower():
-                    m = re.search(r'\d+\.?\d*', cell_i4.replace('Dolares', '').replace('dolares', ''))
-                    if m:
-                        tc_try = _dec(m.group())
-                        if tc_try > Decimal('0.0001') and tc_try < Decimal('100'):
-                            tipo_cambio = tc_try
-            except Exception:
-                pass
+            ws_formulas = None
 
-        # ── Header → meta v4 ───────────────────────────────────
-        meta = {
-            'cliente': str(ws.cell(1, 3).value or '').strip(),
-            'contacto': str(ws.cell(1, 6).value or '').strip(),
-            'elaboro': str(ws.cell(2, 6).value or '').strip(),
-            'fecha': _excel_iso_date(ws.cell(2, 12).value),
+        # ── Detección de formato + parseo (registry) ───────────
+        # El registry prueba todos los perfiles registrados (v1 con
+        # marcadores, v2 resumido tipo Jacuzzi, futuros) y elige el de
+        # mayor score. Si nadie pasa el umbral, devolvemos error claro.
+        parsed = detect_and_parse(ws, ws_formulas=ws_formulas)
+        if not parsed.get('profile_id'):
+            return JsonResponse({
+                'success': False,
+                'error': parsed.get('error') or 'No se reconoció el formato del Excel.',
+                'all_scores': parsed.get('all_scores', []),
+            }, status=400)
+
+        meta = parsed['meta']
+        # Tipo de cambio e IVA vienen en meta — los sacamos para
+        # persistirlos en columnas del modelo, no dentro del JSON.
+        tipo_cambio = meta.get('tipo_cambio') or Decimal('0')
+        if not isinstance(tipo_cambio, Decimal):
+            tipo_cambio = _dec(tipo_cambio)
+        iva_pct_excel = meta.get('iva_pct')  # float | None
+        meta = {k: v for k, v in meta.items() if k not in ('tipo_cambio', 'iva_pct')}
+
+        eq_items = parsed['eq_items']
+        mo_items = parsed['mo_items']
+        cmo_items = parsed['cmo_items']
+        formato_detectado = {
+            'id': parsed['profile_id'],
+            'name': parsed['profile_name'],
+            'confidence': parsed['confidence'],
+            'all_scores': parsed['all_scores'],
         }
-
-        # ── PASS 2: parseo de items ────────────────────────────
-        eq_items = []      # equipamiento
-        mo_items = []      # mano_obra
-        cmo_items = []     # costo_mo
-
-        # Heuristica de sub-rótulos en EQUIPAMIENTO:
-        #   1. col A en mayúsculas, sin numero_parte/cantidad/descripcion en col D
-        #      (ej. "EQUIPAMIENTO", "ACCESORIOS", "EQUIPO ELEVACION")
-        #   2. col D con texto y sin marca / sin numero_parte / sin cantidad
-        #      (ej. "ESCALERILLA DE 100 MM PARA IDF3", "INCLUYE:")
-        eq_summary_kw = ('total materiales', 'total de materiales')
-
-        # Bloque EQUIPAMIENTO: filas anteriores a "MANO DE OBRA"
-        eq_end = mo_section_start_row or total_mo_row or cmo_header_row or analisis_row or (ws.max_row + 1)
-        for r in range(6, eq_end):
-            col_a = ws.cell(r, 1).value
-            col_b = ws.cell(r, 2).value
-            col_c = ws.cell(r, 3).value
-            col_d = ws.cell(r, 4).value
-            col_e = ws.cell(r, 5).value   # Precio Lista
-            col_f = ws.cell(r, 6).value   # Desc venta (decimal 0-1)
-            col_i = ws.cell(r, 9).value   # Desc costo (decimal 0-1)
-            col_j = ws.cell(r, 10).value  # Costo Unitario
-            col_l = ws.cell(r, 12).value  # Proveedor
-            col_m = ws.cell(r, 13).value  # Entrega
-
-            ca_str = str(col_a or '').strip()
-            cd_str = str(col_d or '').strip()
-            ca_low = ca_str.lower()
-            cd_low = cd_str.lower()
-
-            # Skip totales / fila completamente vacía
-            if not ca_str and not cd_str and not col_b and not col_c:
-                continue
-            if any(kw in ca_low for kw in eq_summary_kw):
-                continue
-            if any(kw in cd_low for kw in eq_summary_kw):
-                continue
-
-            # Sub-rótulo tipo 1: col A en mayúsculas (sin marca de producto)
-            # — heurística: col A no vacío, col B/C/E vacíos, no es "Marca" (header de tabla).
-            is_table_header = (
-                ca_low == 'marca'
-                and cd_low in ('descripcion', 'descripción', '')
-            )
-            if is_table_header:
-                continue
-            is_subrotulo_a = (
-                ca_str and not col_b and not col_c
-                and (col_e is None or col_e == '')
-            )
-            if is_subrotulo_a:
-                eq_items.append({
-                    'id': _vol_uuid(),
-                    'row_type': 'header',
-                    'texto': ca_str,
-                })
-                continue
-
-            # Sub-rótulo tipo 2: col D con texto descriptivo,
-            # sin marca/parte/cantidad cuantificable.
-            is_subrotulo_d = (
-                cd_str and not col_a and not col_b
-                and (col_c is None or col_c == '' or _dec(col_c) == 0
-                     and (col_e is None or col_e == ''))
-            )
-            # Refinamiento: si la descripción está en col D pero hay marca, es item normal.
-            # Si la cantidad es 0 y todo lo demás está vacío, lo tratamos como rótulo.
-            if is_subrotulo_d:
-                eq_items.append({
-                    'id': _vol_uuid(),
-                    'row_type': 'header',
-                    'texto': cd_str,
-                })
-                continue
-
-            # Item normal: requiere descripción
-            if not cd_str:
-                continue
-
-            cantidad = _dec(col_c)
-            precio_lista = _dec(col_e)
-            desc_venta_dec = _dec(col_f)  # 0-1
-            desc_costo_dec = _dec(col_i)  # 0-1
-            costo_unit = _dec(col_j)
-
-            # Permitimos cantidad=0 (productos opcionales del catálogo).
-            # Si TODO está en cero (incluyendo sin marca), saltamos para
-            # no inundar de filas vacías.
-            if cantidad == 0 and precio_lista == 0 and costo_unit == 0 and not ca_str and not col_b:
-                continue
-
-            # `costoUnitario`:
-            #   - Si Excel trae costo > 0 → lo usamos tal cual (override).
-            #   - Si costo == 0 PERO descuentoCosto > 0 → None para que el
-            #     frontend lo derive de `precioLista * (1 - descCosto/100)`.
-            #   - Si AMBOS son 0 → 0 explícito (item de pura ganancia,
-            #     ej. MISCELANEOS donde se cobra 150 y no cuesta nada). Si
-            #     pusiéramos None aquí, el frontend derivaría 150 (= precioLista)
-            #     y el costo total se infla, dañando el resumen financiero.
-            if costo_unit > 0:
-                costo_v4 = float(costo_unit)
-            elif desc_costo_dec > 0:
-                costo_v4 = None
-            else:
-                costo_v4 = 0.0
-            eq_items.append({
-                'id': _vol_uuid(),
-                'row_type': 'item',
-                'marca': ca_str,
-                'parte': str(col_b or '').strip(),
-                'cantidad': float(cantidad),
-                'descripcion': cd_str,
-                'precioLista': float(precio_lista),
-                'descuentoVenta': float((desc_venta_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                'descuentoCosto': float((desc_costo_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                'costoUnitario': costo_v4,
-                'proveedor': str(col_l or '').strip(),
-                'entrega': str(col_m or '').strip(),
-                'notas': '',
-            })
-
-        # Bloque MANO DE OBRA: entre mo_header_row (excl.) y total_mo_row (excl.)
-        if mo_header_row and total_mo_row and total_mo_row > mo_header_row:
-            for r in range(mo_header_row + 1, total_mo_row):
-                col_a = ws.cell(r, 1).value
-                col_b = ws.cell(r, 2).value
-                col_c = ws.cell(r, 3).value
-                col_d = ws.cell(r, 4).value
-                col_e = ws.cell(r, 5).value
-                col_f = ws.cell(r, 6).value
-                col_i = ws.cell(r, 9).value  # Notas (texto largo)
-
-                ca_str = str(col_a or '').strip()
-                cd_str = str(col_d or '').strip()
-                if not cd_str:
-                    continue
-                # No intentamos detectar sub-rótulos aquí; la mano_obra es
-                # plana en el Excel actual.
-
-                cantidad = _dec(col_c)
-                precio_lista = _dec(col_e)
-                desc_venta_dec = _dec(col_f)
-                # Si todo está en cero y sin marca, saltamos
-                if cantidad == 0 and precio_lista == 0 and not ca_str:
-                    continue
-
-                mo_items.append({
-                    'id': _vol_uuid(),
-                    'marca': ca_str or 'BAJANET',
-                    'parte': str(col_b or '').strip() or 'SERVICIOS PROFESIONALES',
-                    'cantidad': float(cantidad),
-                    'descripcion': cd_str,
-                    'precioLista': float(precio_lista),
-                    'descuentoVenta': float((desc_venta_dec * Decimal('100')).quantize(Decimal('0.01'))),
-                    'notas': str(col_i or '').strip(),
-                })
-
-        # Bloque COSTO MO INTERNO: entre cmo_header_row (excl.) y costo_mo_row (excl.)
-        if cmo_header_row and costo_mo_row and costo_mo_row > cmo_header_row:
-            for r in range(cmo_header_row + 1, costo_mo_row):
-                col_c = ws.cell(r, 3).value   # Cantidad
-                col_d = ws.cell(r, 4).value   # Descripción
-                col_e = ws.cell(r, 5).value   # Costo unit
-                col_i = ws.cell(r, 9).value   # Días
-                cd_str = str(col_d or '').strip()
-                if not cd_str:
-                    continue
-                cantidad = _dec(col_c)
-                costo_unit = _dec(col_e)
-                dias = _dec(col_i, default=Decimal('1'))
-                if cantidad == 0 and costo_unit == 0:
-                    continue
-                cmo_items.append({
-                    'id': _vol_uuid(),
-                    'descripcion': cd_str,
-                    'cantidad': float(cantidad),
-                    'costoUnitario': float(costo_unit),
-                    'dias': float(dias) if dias > 0 else 1.0,
-                })
 
         # ── Snapshot defensivo de la data anterior ─────────────
         old_data = vol.data if isinstance(vol.data, dict) else {}
@@ -3674,13 +4176,15 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 pass
 
         # ── Construir secciones v4 ─────────────────────────────
+        # Importadas COLAPSADAS por default — el ingeniero ve los
+        # subtotales de un vistazo y abre la que necesita revisar.
         secciones = []
         if eq_items:
             secciones.append({
                 'id': _vol_uuid(),
                 'tipo': 'equipamiento',
                 'titulo': 'Equipamiento',
-                'expanded': True,
+                'expanded': False,
                 'items': eq_items,
             })
         if mo_items:
@@ -3688,15 +4192,15 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 'id': _vol_uuid(),
                 'tipo': 'mano_obra',
                 'titulo': 'Mano de Obra',
-                'expanded': True,
+                'expanded': False,
                 'items': mo_items,
             })
         if cmo_items:
             secciones.append({
                 'id': _vol_uuid(),
                 'tipo': 'costo_mo',
-                'titulo': 'Costo MO Interno',
-                'expanded': True,
+                'titulo': 'Costos Adicionales',
+                'expanded': False,
                 'items': cmo_items,
             })
 
@@ -3723,7 +4227,27 @@ def api_volumetria_importar_excel(request, volumetria_id):
         if tipo_cambio > 0:
             vol.tipo_cambio = tipo_cambio
             update_fields.append('tipo_cambio')
+        if iva_pct_excel is not None:
+            try:
+                vol.iva_pct = Decimal(str(iva_pct_excel))
+                update_fields.append('iva_pct')
+            except (InvalidOperation, ValueError):
+                pass
         vol.save(update_fields=update_fields)
+
+        # Sincronizar las partidas del proyecto con esta volumetría.
+        # La volumetría recién importada se vuelve la fuente de verdad
+        # del tab "Partidas" del widget de proyecto.
+        sync_resumen = None
+        try:
+            if vol.levantamiento and vol.levantamiento.proyecto:
+                sync_resumen = _sync_partidas_proyecto_from_volumetria(
+                    vol.levantamiento.proyecto, vol,
+                    subido_por=request.user,
+                    archivo_nombre=f"Importación Excel · {(getattr(archivo, 'name', '') or 'archivo')[:60]}",
+                )
+        except Exception as _sync_err:
+            print('[partidas-sync] error en import:', _sync_err)
 
         payload = _vol_to_dict(vol)
         payload['data'] = vol.data
@@ -3737,6 +4261,8 @@ def api_volumetria_importar_excel(request, volumetria_id):
                 'costo_mo_items': len(cmo_items),
                 'tipo_cambio_detectado': float(tipo_cambio) if tipo_cambio > 0 else None,
                 'meta': meta,
+                'formato_detectado': formato_detectado,
+                'partidas_sync': sync_resumen,
             },
         })
     except Exception as e:
@@ -4110,94 +4636,200 @@ def _fmt_qty(val):
     return '{:,.2f}'.format(n)
 
 
-def _build_volumetria_ctx(lev, sin_costos=False, data_override=None):
-    """Construye el contexto de volumetría (usado por PDF y XLSX).
+def _build_volumetria_ctx(lev, sin_costos=False, data_override=None, volumetria_obj=None):
+    """Construye el contexto de volumetría v4 (usado por PDF, XLSX y fragmento).
 
-    Retorna un dict con materiales/mano_obra/gastos (filas formateadas) y totales.
-
-    Si `data_override` se provee (dict), se usa como fuente de la
-    volumetría en lugar de `lev.fase3_data`. Esto permite generar
-    PDF/XLSX de una volumetría específica (ProyectoVolumetria.data)
-    sin tener que mover los datos al levantamiento.
+    Consume el shape v4 del wizard: `{version:4, meta:{}, secciones:[
+        {tipo:'equipamiento'|'mano_obra'|'costo_mo', titulo, items:[…]}
+    ]}`. Migra v1/v2/v3 al vuelo a v4 plano para que exports antiguos
+    sigan funcionando.
     """
     f1 = lev.fase1_data or {}
     f2 = lev.fase2_data or {}
-    f3 = data_override if isinstance(data_override, dict) else (lev.fase3_data or {})
+    raw = data_override if isinstance(data_override, dict) else (lev.fase3_data or {})
 
-    def _num(x):
+    secs_v4, meta_v4 = _normalize_volumetria_v4(raw)
+
+    def _num(x, default=0.0):
         try:
-            return float(x or 0)
+            return float(x)
         except (TypeError, ValueError):
-            return 0.0
+            return default
 
-    # ── Materiales ──
-    materiales = []
-    tot_mat_venta = 0.0
-    tot_mat_costo = 0.0
-    for r in (f3.get('materiales') or []):
-        qty = _num(r.get('qty'))
-        costo_u = _num(r.get('costoUnit'))
-        precio_l = _num(r.get('precioLista'))
-        desc_c = _num(r.get('descCompra'))
-        desc_v = _num(r.get('descVenta'))
-        costo_real = costo_u * (1 - desc_c / 100)
-        precio_real = precio_l * (1 - desc_v / 100)
-        costo_total = costo_real * qty
-        precio_venta = precio_real * qty
-        tot_mat_venta += precio_venta
-        tot_mat_costo += costo_total
-        materiales.append({
-            'qty': qty, 'qty_fmt': _fmt_qty(qty),
-            'unid': r.get('unid') or 'PZA',
-            'desc': r.get('desc') or '',
-            'marca': r.get('marca') or '',
-            'modelo': r.get('modelo') or '',
-            'proveedor': r.get('proveedor') or '',
-            'entrega': r.get('entrega') or '',
-            'precio_lista': precio_l, 'precio_lista_fmt': _fmt_money(precio_l),
-            'desc_venta': desc_v, 'desc_venta_fmt': ('{:.1f}%'.format(desc_v) if desc_v else '—'),
-            'precio_unit': precio_real, 'precio_unit_fmt': _fmt_money(precio_real),
-            'precio_venta': precio_venta, 'precio_venta_fmt': _fmt_money(precio_venta),
-            'costo_unit': costo_real, 'costo_unit_fmt': _fmt_money(costo_real),
-            'costo_total': costo_total, 'costo_total_fmt': _fmt_money(costo_total),
-        })
+    # ── IVA y tipo de cambio: priorizamos snapshot del modelo cuando
+    #    venimos de una ProyectoVolumetria; fallback a la data, fallback
+    #    a defaults razonables (8% Tijuana frontera, 19.5 TC).
+    iva_pct = None
+    tc = None
+    if volumetria_obj is not None:
+        try:
+            iva_pct = float(volumetria_obj.iva_pct)
+        except (TypeError, ValueError, AttributeError):
+            iva_pct = None
+        try:
+            tc = float(volumetria_obj.tipo_cambio)
+        except (TypeError, ValueError, AttributeError):
+            tc = None
+    if iva_pct is None:
+        iva_pct = _num(raw.get('iva_pct') if isinstance(raw, dict) else None, 8.0)
+    if tc is None or tc <= 0:
+        tc = _num(raw.get('tipo_cambio') if isinstance(raw, dict) else None, 0.0)
+    if not tc or tc <= 0:
+        tc = 19.5
 
-    # ── Mano de obra ──
-    mano_obra = []
-    tot_mo = 0.0
-    for r in (f3.get('manoObra') or []):
-        qty = _num(r.get('qty'))
-        p_unit = _num(r.get('precioUnit'))
-        total = qty * p_unit
-        tot_mo += total
-        mano_obra.append({
-            'qty': qty, 'qty_fmt': _fmt_qty(qty),
-            'unid': r.get('unid') or 'SERV',
-            'desc': r.get('desc') or '',
-            'precio_unit': p_unit, 'precio_unit_fmt': _fmt_money(p_unit),
-            'total': total, 'total_fmt': _fmt_money(total),
-        })
+    # ── Procesar secciones por tipo ─────────────────────────────────
+    sections_eq = []
+    sections_mo = []
+    sections_cmo = []
+    tot_eq_venta = 0.0
+    tot_eq_costo = 0.0
+    tot_mo_venta = 0.0
+    tot_cmo_costo = 0.0
 
-    # ── Gastos ──
-    gastos = []
-    tot_gas = 0.0
-    for r in (f3.get('gastos') or []):
-        qty = _num(r.get('qty'))
-        c_unit = _num(r.get('costoUnit'))
-        total = qty * c_unit
-        tot_gas += total
-        gastos.append({
-            'qty': qty, 'qty_fmt': _fmt_qty(qty),
-            'unid': r.get('unid') or 'GLOB',
-            'desc': r.get('desc') or '',
-            'costo_unit': c_unit, 'costo_unit_fmt': _fmt_money(c_unit),
-            'total': total, 'total_fmt': _fmt_money(total),
-        })
+    for sec in secs_v4:
+        tipo = sec.get('tipo') or 'equipamiento'
+        titulo = sec.get('titulo') or ''
+        items = sec.get('items') or []
+        if tipo == 'equipamiento':
+            rows = []
+            sec_venta = 0.0
+            sec_costo = 0.0
+            n_items = 0
+            for it in items:
+                if (it or {}).get('row_type') == 'header':
+                    rows.append({
+                        'is_header': True,
+                        'texto': (it.get('texto') or it.get('descripcion') or '').strip(),
+                    })
+                    continue
+                # idx solo cuenta items (no headers/rótulos), así el #
+                # del PDF refleja el item N de la sección, no el N de
+                # la lista completa de filas.
+                qty = _num((it or {}).get('cantidad'))
+                p_lista = _num((it or {}).get('precioLista'))
+                desc_v = _num((it or {}).get('descuentoVenta'))
+                desc_c = _num((it or {}).get('descuentoCosto'))
+                # costoUnitario: número explícito (incluso 0) → preserva.
+                # null/'' → deriva precioLista × (1 − descCosto/100), o 0
+                # si descCosto = 0 (ítems de pura ganancia, ej. MISCELANEOS).
+                cu_raw = (it or {}).get('costoUnitario')
+                if cu_raw is not None and cu_raw != '':
+                    costo_unit = _num(cu_raw)
+                elif desc_c > 0:
+                    costo_unit = p_lista * (1 - desc_c / 100)
+                else:
+                    costo_unit = 0.0
+                pventa_unit = p_lista * (1 - desc_v / 100)
+                costo_total = qty * costo_unit
+                venta_total = qty * pventa_unit
+                sec_venta += venta_total
+                sec_costo += costo_total
+                n_items += 1
+                rows.append({
+                    'is_header': False,
+                    'idx': n_items,
+                    'qty': qty, 'qty_fmt': _fmt_qty(qty),
+                    'marca': (it or {}).get('marca') or '',
+                    'parte': (it or {}).get('parte') or '',
+                    'desc':  (it or {}).get('descripcion') or '',
+                    'proveedor': (it or {}).get('proveedor') or '',
+                    'entrega':   (it or {}).get('entrega') or '',
+                    'notas':     (it or {}).get('notas') or '',
+                    'precio_lista': p_lista,
+                    'precio_lista_fmt': _fmt_money(p_lista),
+                    'desc_venta': desc_v,
+                    'desc_venta_fmt': ('{:.1f}%'.format(desc_v) if desc_v else '—'),
+                    'desc_costo': desc_c,
+                    'desc_costo_fmt': ('{:.1f}%'.format(desc_c) if desc_c else '—'),
+                    'precio_unit': pventa_unit,
+                    'precio_unit_fmt': _fmt_money(pventa_unit),
+                    'precio_venta': venta_total,
+                    'precio_venta_fmt': _fmt_money(venta_total),
+                    'costo_unit': costo_unit,
+                    'costo_unit_fmt': _fmt_money(costo_unit),
+                    'costo_total': costo_total,
+                    'costo_total_fmt': _fmt_money(costo_total),
+                })
+            sections_eq.append({
+                'titulo': titulo, 'rows': rows,
+                'sec_venta': sec_venta, 'sec_costo': sec_costo,
+                'sec_venta_fmt': _fmt_money(sec_venta),
+                'sec_costo_fmt': _fmt_money(sec_costo),
+                'n_items': n_items,
+            })
+            tot_eq_venta += sec_venta
+            tot_eq_costo += sec_costo
+        elif tipo == 'mano_obra':
+            rows = []
+            sec_venta = 0.0
+            for it in items:
+                qty = _num((it or {}).get('cantidad'))
+                p_lista = _num((it or {}).get('precioLista'))
+                desc_v = _num((it or {}).get('descuentoVenta'))
+                pventa_unit = p_lista * (1 - desc_v / 100)
+                total = qty * pventa_unit
+                sec_venta += total
+                rows.append({
+                    'qty': qty, 'qty_fmt': _fmt_qty(qty),
+                    'marca': (it or {}).get('marca') or '',
+                    'parte': (it or {}).get('parte') or '',
+                    'desc':  (it or {}).get('descripcion') or '',
+                    'notas': (it or {}).get('notas') or '',
+                    'precio_lista': p_lista,
+                    'precio_lista_fmt': _fmt_money(p_lista),
+                    'desc_venta_fmt': ('{:.1f}%'.format(desc_v) if desc_v else '—'),
+                    'precio_unit': pventa_unit,
+                    'precio_unit_fmt': _fmt_money(pventa_unit),
+                    'total': total,
+                    'total_fmt': _fmt_money(total),
+                })
+            sections_mo.append({
+                'titulo': titulo, 'rows': rows,
+                'sec_venta': sec_venta,
+                'sec_venta_fmt': _fmt_money(sec_venta),
+                'n_items': len(rows),
+            })
+            tot_mo_venta += sec_venta
+        elif tipo == 'costo_mo':
+            rows = []
+            sec_costo = 0.0
+            for it in items:
+                qty = _num((it or {}).get('cantidad'))
+                cu = _num((it or {}).get('costoUnitario'))
+                dias_raw = (it or {}).get('dias')
+                dias = _num(dias_raw, 1.0) if dias_raw not in (None, '') else 1.0
+                concentrado = qty * cu
+                total = concentrado * dias
+                sec_costo += total
+                rows.append({
+                    'desc': (it or {}).get('descripcion') or (it or {}).get('recurso') or '',
+                    'qty': qty, 'qty_fmt': _fmt_qty(qty),
+                    'costo_unit': cu, 'costo_unit_fmt': _fmt_money(cu),
+                    'dias': dias, 'dias_fmt': _fmt_qty(dias),
+                    'concentrado': concentrado, 'concentrado_fmt': _fmt_money(concentrado),
+                    'total': total, 'total_fmt': _fmt_money(total),
+                })
+            sections_cmo.append({
+                'titulo': titulo, 'rows': rows,
+                'sec_costo': sec_costo,
+                'sec_costo_fmt': _fmt_money(sec_costo),
+                'n_items': len(rows),
+            })
+            tot_cmo_costo += sec_costo
 
-    total_venta = tot_mat_venta + tot_mo + tot_gas
-    total_costo = tot_mat_costo + tot_gas
-    utilidad = total_venta - total_costo
-    margen = (utilidad / total_venta * 100) if total_venta > 0 else 0.0
+    # ── Totales globales (mismas fórmulas que el wizard) ────────────
+    subtotal_venta = tot_eq_venta + tot_mo_venta  # costo_mo NO suma a venta
+    total_costo = tot_eq_costo + tot_cmo_costo    # mano_obra NO suma a costo
+    ganancia = subtotal_venta - total_costo
+    margen = (ganancia / subtotal_venta * 100) if subtotal_venta > 0 else 0.0
+    iva = subtotal_venta * (iva_pct / 100) if iva_pct > 0 else 0.0
+    total_con_iva = subtotal_venta + iva
+    ganancia_mxn = ganancia * tc if tc > 0 else 0.0
+    total_con_iva_mxn = total_con_iva * tc if tc > 0 else 0.0
+
+    # Análisis de Ganancia (cuadro inferior izq.) — replica del wizard.
+    mat_ganancia = tot_eq_venta - tot_eq_costo
+    mo_ganancia = tot_mo_venta - tot_cmo_costo
 
     import datetime as _dt
     def _fmt_fecha(iso):
@@ -4207,50 +4839,391 @@ def _build_volumetria_ctx(lev, sin_costos=False, data_override=None):
             dt = _dt.datetime.strptime(str(iso)[:10], '%Y-%m-%d')
         except Exception:
             return iso
-        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-        return f'{dt.day:02d} / {meses[dt.month - 1]} / {dt.year}'
+        meses_l = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        return f'{dt.day:02d} / {meses_l[dt.month - 1]} / {dt.year}'
 
-    # Tipo de cambio — USD → MXN (se captura en Fase 3)
-    tc_raw = f3.get('tipo_cambio')
-    try:
-        tc = float(tc_raw) if tc_raw else 0.0
-    except (TypeError, ValueError):
-        tc = 0.0
-    if not tc or tc <= 0:
-        tc = 19.5  # fallback razonable
-    tc_fecha = f3.get('tipo_cambio_fecha') or ''
+    cliente_nombre = (
+        (meta_v4.get('cliente') if meta_v4 else '')
+        or f1.get('cliente')
+        or (lev.proyecto.cliente_nombre if lev.proyecto else '')
+        or ''
+    )
+    solicitante = (
+        f2.get('solicitante')
+        or (meta_v4.get('contacto') if meta_v4 else '')
+        or f1.get('contacto')
+        or ''
+    )
+    elaboro = (
+        f2.get('elaboro')
+        or (meta_v4.get('elaboro') if meta_v4 else '')
+        or (lev.creado_por.get_full_name() if lev.creado_por else '')
+        or ''
+    )
+    doc_fecha = (
+        f2.get('doc_fecha')
+        or (meta_v4.get('fecha') if meta_v4 else None)
+        or timezone.localdate().isoformat()
+    )
 
     return {
         'lev': lev,
         'sin_costos': sin_costos,
-        'cliente_nombre': f1.get('cliente') or (lev.proyecto.cliente_nombre if lev.proyecto else ''),
-        'elaboro': f2.get('elaboro') or (lev.creado_por.get_full_name() if lev.creado_por else ''),
-        'doc_fecha_fmt': _fmt_fecha(f2.get('doc_fecha') or timezone.localdate().isoformat()),
-        'solicitante': f2.get('solicitante') or f1.get('contacto') or '',
+        # Header
+        'cliente_nombre': cliente_nombre,
+        'solicitante': solicitante,
+        'elaboro': elaboro,
+        'doc_fecha_fmt': _fmt_fecha(doc_fecha),
         'planta': f2.get('planta') or f1.get('cliente') or '',
         'areas': f2.get('areas') or f1.get('area') or '',
-        'materiales': materiales,
-        'mano_obra': mano_obra,
-        'gastos': gastos,
-        'tot_mat_venta': tot_mat_venta, 'tot_mat_venta_fmt': _fmt_money(tot_mat_venta),
-        'tot_mat_costo': tot_mat_costo, 'tot_mat_costo_fmt': _fmt_money(tot_mat_costo),
-        'tot_mo': tot_mo, 'tot_mo_fmt': _fmt_money(tot_mo),
-        'tot_gas': tot_gas, 'tot_gas_fmt': _fmt_money(tot_gas),
-        'total_venta': total_venta, 'total_venta_fmt': _fmt_money(total_venta),
+        'volumetria_nombre': (volumetria_obj.nombre if volumetria_obj else ''),
+
+        # Secciones v4
+        'sections_eq':  sections_eq,
+        'sections_mo':  sections_mo,
+        'sections_cmo': sections_cmo,
+        'has_eq':  bool(sections_eq),
+        'has_mo':  bool(sections_mo),
+        'has_cmo': bool(sections_cmo),
+
+        # Totales por tipo
+        'tot_eq_venta': tot_eq_venta, 'tot_eq_venta_fmt': _fmt_money(tot_eq_venta),
+        'tot_eq_costo': tot_eq_costo, 'tot_eq_costo_fmt': _fmt_money(tot_eq_costo),
+        'tot_mo_venta': tot_mo_venta, 'tot_mo_venta_fmt': _fmt_money(tot_mo_venta),
+        'tot_cmo_costo': tot_cmo_costo, 'tot_cmo_costo_fmt': _fmt_money(tot_cmo_costo),
+
+        # Análisis de Ganancia (col izq. del resumen)
+        'mat_ganancia': mat_ganancia,
+        'mat_ganancia_fmt': _fmt_money(mat_ganancia),
+        'mo_ganancia': mo_ganancia,
+        'mo_ganancia_fmt': _fmt_money(mo_ganancia),
+
+        # Total Cotización (col der. del resumen)
+        'subtotal_venta': subtotal_venta, 'subtotal_venta_fmt': _fmt_money(subtotal_venta),
         'total_costo': total_costo, 'total_costo_fmt': _fmt_money(total_costo),
-        'utilidad': utilidad, 'utilidad_fmt': _fmt_money(utilidad),
+        'ganancia': ganancia, 'ganancia_fmt': _fmt_money(ganancia),
         'margen_pct': '{:.1f}'.format(margen),
-        # Conversión MXN con TC
+        'iva_pct': iva_pct, 'iva_pct_fmt': '{:.0f}'.format(iva_pct),
+        'iva': iva, 'iva_fmt': _fmt_money(iva),
+        'total_con_iva': total_con_iva, 'total_con_iva_fmt': _fmt_money(total_con_iva),
+        'ganancia_mxn': ganancia_mxn, 'ganancia_mxn_fmt': _fmt_money(ganancia_mxn),
+        'total_con_iva_mxn': total_con_iva_mxn, 'total_con_iva_mxn_fmt': _fmt_money(total_con_iva_mxn),
+
+        # Tipo de cambio
         'tipo_cambio': tc,
         'tipo_cambio_fmt': '{:,.2f}'.format(tc),
-        'tipo_cambio_fecha': tc_fecha,
-        'tot_mat_venta_mxn_fmt': _fmt_money(tot_mat_venta * tc),
-        'tot_mo_mxn_fmt': _fmt_money(tot_mo * tc),
-        'tot_gas_mxn_fmt': _fmt_money(tot_gas * tc),
-        'total_venta_mxn_fmt': _fmt_money(total_venta * tc),
-        'total_costo_mxn_fmt': _fmt_money(total_costo * tc),
-        'utilidad_mxn_fmt': _fmt_money(utilidad * tc),
+
+        # ── Aliases legacy para fragmentos / código viejo ─────
+        'materiales': _flatten_eq_for_legacy(sections_eq),
+        'mano_obra':  _flatten_mo_for_legacy(sections_mo),
+        'gastos':     _flatten_cmo_for_legacy(sections_cmo),
+        'tot_mat_venta': tot_eq_venta, 'tot_mat_venta_fmt': _fmt_money(tot_eq_venta),
+        'tot_mat_costo': tot_eq_costo, 'tot_mat_costo_fmt': _fmt_money(tot_eq_costo),
+        'tot_mo': tot_mo_venta, 'tot_mo_fmt': _fmt_money(tot_mo_venta),
+        'tot_gas': tot_cmo_costo, 'tot_gas_fmt': _fmt_money(tot_cmo_costo),
+        'total_venta': subtotal_venta, 'total_venta_fmt': _fmt_money(subtotal_venta),
+        'utilidad': ganancia, 'utilidad_fmt': _fmt_money(ganancia),
     }
+
+
+# ── Normalización v1/v2/v3 → v4 (Python, mirror de crm_volumetria.js)
+def _normalize_volumetria_v4(raw):
+    """Devuelve (secciones_v4, meta_v4) para cualquier shape histórico."""
+    raw = raw if isinstance(raw, dict) else {}
+    meta = dict(raw.get('meta') or {})
+
+    # v4 (con secciones tipadas)
+    if raw.get('version') == 4 and isinstance(raw.get('secciones'), list):
+        return ([_normalize_v4_section(s) for s in raw['secciones']], meta)
+
+    # v3 (con meta + secciones, sin tipo o version=3)
+    if raw.get('version') == 3 or (raw.get('meta') and isinstance(raw.get('secciones'), list)):
+        secs = []
+        for s in (raw.get('secciones') or []):
+            if not s.get('tipo'):
+                s = dict(s)
+                s['tipo'] = _infer_tipo_v3(s)
+            secs.append(_normalize_v4_section(s))
+        return (secs, meta)
+
+    # v2 (raíz con equipamiento/mano_obra/costo_mo/gastos como dicts)
+    if (isinstance(raw.get('equipamiento'), dict) or isinstance(raw.get('mano_obra'), dict)
+            or isinstance(raw.get('costo_mo'), dict)
+            or (isinstance(raw.get('gastos'), dict) and 'items' in raw.get('gastos'))):
+        return (_migrate_v2_to_v4(raw), meta)
+
+    # v1 (legacy materiales/manoObra/gastos como listas planas)
+    if (isinstance(raw.get('materiales'), list) or isinstance(raw.get('manoObra'), list)
+            or isinstance(raw.get('gastos'), list)):
+        return (_migrate_v1_to_v4(raw), meta)
+
+    return ([], meta)
+
+
+def _normalize_v4_section(sec):
+    """Sanea una sección al shape v4 estricto. Mantiene `tipo:'gastos'`
+    legado mapeándolo a `costo_mo` (con la unidad anexada a la descripción)."""
+    sec = sec or {}
+    tipo = sec.get('tipo') or 'equipamiento'
+    was_gastos = (tipo == 'gastos')
+    if was_gastos:
+        tipo = 'costo_mo'
+    if tipo not in ('equipamiento', 'mano_obra', 'costo_mo'):
+        tipo = 'equipamiento'
+
+    titulo = sec.get('titulo') or ''
+    if tipo == 'costo_mo' and titulo == 'Costo MO Interno':
+        titulo = 'Costos Adicionales'
+
+    items_in = sec.get('items') or []
+    items = []
+    for it in items_in:
+        it = it or {}
+        if tipo == 'equipamiento':
+            if it.get('row_type') == 'header':
+                items.append({
+                    'row_type': 'header',
+                    'texto': it.get('texto') or it.get('descripcion') or '',
+                })
+                continue
+            cu = it.get('costoUnitario')
+            items.append({
+                'row_type': 'item',
+                'marca': it.get('marca') or '',
+                'parte': it.get('parte') or '',
+                'cantidad': it.get('cantidad') or 0,
+                'descripcion': it.get('descripcion') or '',
+                'precioLista': it.get('precioLista') or 0,
+                'descuentoVenta': it.get('descuentoVenta') or 0,
+                'descuentoCosto': it.get('descuentoCosto') if it.get('descuentoCosto') is not None else 0,
+                'costoUnitario': cu if (cu is not None and cu != '') else None,
+                'proveedor': it.get('proveedor') or '',
+                'entrega': it.get('entrega') or '',
+                'notas': it.get('notas') or '',
+            })
+        elif tipo == 'mano_obra':
+            items.append({
+                'marca': it.get('marca') or '',
+                'parte': it.get('parte') or '',
+                'cantidad': it.get('cantidad') or 0,
+                'descripcion': it.get('descripcion') or '',
+                'precioLista': it.get('precioLista') or 0,
+                'descuentoVenta': it.get('descuentoVenta') or 0,
+                'notas': it.get('notas') or '',
+            })
+        else:  # costo_mo
+            if was_gastos:
+                desc = it.get('descripcion') or it.get('recurso') or ''
+                unidad = (it.get('unidad') or '').strip()
+                if unidad and unidad.upper() != 'PZA':
+                    desc = (desc + ' · ' + unidad) if desc else unidad
+                items.append({
+                    'descripcion': desc,
+                    'cantidad': it.get('cantidad') or 0,
+                    'costoUnitario': it.get('costoUnitario') or 0,
+                    'dias': it.get('dias') if it.get('dias') is not None else 1,
+                })
+            else:
+                items.append({
+                    'descripcion': it.get('descripcion') or it.get('recurso') or '',
+                    'cantidad': it.get('cantidad') or 0,
+                    'costoUnitario': it.get('costoUnitario') or 0,
+                    'dias': it.get('dias') if it.get('dias') is not None else 1,
+                })
+    return {'tipo': tipo, 'titulo': titulo, 'items': items}
+
+
+def _infer_tipo_v3(sec):
+    items = sec.get('items') or []
+    sample = next((i for i in items if (i or {}).get('row_type') != 'header'), None) or (items[0] if items else {})
+    if sample.get('recurso') is not None or sample.get('dias') is not None:
+        if not sample.get('parte'):
+            return 'costo_mo'
+    if sample.get('unidad') and not sample.get('parte') and not sample.get('precioLista'):
+        return 'costo_mo'
+    has_costo = sample.get('costoUnitario') is not None and float(sample.get('costoUnitario') or 0) > 0
+    has_parte = bool(sample.get('parte'))
+    has_precio = sample.get('precioLista') is not None and float(sample.get('precioLista') or 0) > 0
+    if has_parte and has_precio and not has_costo and sample.get('descuentoCosto') is None:
+        t = (sec.get('titulo') or '').upper()
+        if 'OBRA' in t or ' MO ' in (' ' + t + ' '):
+            return 'mano_obra'
+    return 'equipamiento'
+
+
+def _migrate_v2_to_v4(raw):
+    secs = []
+    eq = (raw.get('equipamiento') or {}).get('secciones') or []
+    for sub in eq:
+        cur = {'tipo': 'equipamiento', 'titulo': (sub or {}).get('nombre') or 'Equipamiento', 'items': []}
+        for it in ((sub or {}).get('items') or []):
+            if (it or {}).get('row_type') == 'header':
+                cur['items'].append({'row_type': 'header', 'texto': it.get('texto') or it.get('descripcion') or ''})
+                continue
+            cur['items'].append({
+                'row_type': 'item',
+                'marca': (it or {}).get('marca') or '',
+                'parte': (it or {}).get('no_parte') or '',
+                'cantidad': (it or {}).get('cant') or 0,
+                'descripcion': (it or {}).get('descripcion') or '',
+                'precioLista': (it or {}).get('p_lista') or 0,
+                'descuentoVenta': (it or {}).get('desc_v_pct') or 0,
+                'descuentoCosto': (it or {}).get('desc_c_pct') or 0,
+                'costoUnitario': (it or {}).get('c_unit') if (it or {}).get('c_unit') is not None else None,
+                'proveedor': (it or {}).get('proveedor') or '',
+                'entrega': (it or {}).get('entrega') or '',
+                'notas': (it or {}).get('notas') or '',
+            })
+        secs.append(cur)
+    mo_items = ((raw.get('mano_obra') or {}).get('items') or [])
+    if mo_items:
+        cur = {'tipo': 'mano_obra', 'titulo': 'Mano de Obra', 'items': []}
+        for it in mo_items:
+            cur['items'].append({
+                'marca': (it or {}).get('marca') or '',
+                'parte': (it or {}).get('no_parte') or '',
+                'cantidad': (it or {}).get('cant') or 0,
+                'descripcion': (it or {}).get('descripcion') or '',
+                'precioLista': (it or {}).get('p_unit') or (it or {}).get('p_lista') or 0,
+                'descuentoVenta': (it or {}).get('desc_v_pct') or 0,
+                'notas': (it or {}).get('notas') or '',
+            })
+        secs.append(cur)
+    cmo_items = ((raw.get('costo_mo') or {}).get('items') or [])
+    if cmo_items:
+        cur = {'tipo': 'costo_mo', 'titulo': 'Costos Adicionales', 'items': []}
+        for it in cmo_items:
+            cur['items'].append({
+                'descripcion': (it or {}).get('recurso') or (it or {}).get('descripcion') or '',
+                'cantidad': (it or {}).get('cant') or 0,
+                'costoUnitario': (it or {}).get('costo_unit') or 0,
+                'dias': (it or {}).get('dias') or 1,
+            })
+        secs.append(cur)
+    gastos = ((raw.get('gastos') or {}).get('items') or [])
+    if gastos:
+        target = next((s for s in secs if s['tipo'] == 'costo_mo'), None)
+        if not target:
+            target = {'tipo': 'costo_mo', 'titulo': 'Costos Adicionales', 'items': []}
+            secs.append(target)
+        for it in gastos:
+            desc = (it or {}).get('descripcion') or ''
+            unidad = ((it or {}).get('unidad') or '').strip()
+            if unidad and unidad.upper() != 'PZA':
+                desc = (desc + ' · ' + unidad) if desc else unidad
+            target['items'].append({
+                'descripcion': desc,
+                'cantidad': (it or {}).get('cant') or 0,
+                'costoUnitario': (it or {}).get('costo_unit') or 0,
+                'dias': 1,
+            })
+    return secs
+
+
+def _migrate_v1_to_v4(raw):
+    secs = []
+    if raw.get('materiales'):
+        cur = {'tipo': 'equipamiento', 'titulo': 'Materiales', 'items': []}
+        for r in raw['materiales']:
+            cur['items'].append({
+                'row_type': 'item',
+                'marca': (r or {}).get('marca') or '',
+                'parte': (r or {}).get('modelo') or '',
+                'cantidad': (r or {}).get('qty') or 0,
+                'descripcion': (r or {}).get('desc') or '',
+                'precioLista': (r or {}).get('precio') or 0,
+                'descuentoVenta': (r or {}).get('desc_pct') or 0,
+                'descuentoCosto': 0,
+                'costoUnitario': (r or {}).get('costo') if (r or {}).get('costo') is not None else None,
+                'proveedor': (r or {}).get('proveedor') or '',
+                'entrega': '',
+                'notas': '',
+            })
+        secs.append(cur)
+    if raw.get('manoObra'):
+        cur = {'tipo': 'mano_obra', 'titulo': 'Mano de Obra', 'items': []}
+        for r in raw['manoObra']:
+            cur['items'].append({
+                'marca': '', 'parte': '',
+                'cantidad': (r or {}).get('qty') or 0,
+                'descripcion': (r or {}).get('desc') or '',
+                'precioLista': (r or {}).get('precio') or 0,
+                'descuentoVenta': 0,
+                'notas': '',
+            })
+        secs.append(cur)
+    if raw.get('gastos'):
+        cur = {'tipo': 'costo_mo', 'titulo': 'Costos Adicionales', 'items': []}
+        for r in raw['gastos']:
+            desc = (r or {}).get('desc') or ''
+            unidad = ((r or {}).get('unidad') or '').strip()
+            if unidad and unidad.upper() != 'PZA':
+                desc = (desc + ' · ' + unidad) if desc else unidad
+            cur['items'].append({
+                'descripcion': desc,
+                'cantidad': (r or {}).get('qty') or 0,
+                'costoUnitario': (r or {}).get('costo') or 0,
+                'dias': 1,
+            })
+        secs.append(cur)
+    return secs
+
+
+def _flatten_eq_for_legacy(sections_eq):
+    """Lista plana estilo v1 `materiales[]` para fragmentos viejos."""
+    out = []
+    for s in sections_eq:
+        for r in s.get('rows', []):
+            if r.get('is_header'):
+                continue
+            out.append({
+                'qty': r.get('qty'), 'qty_fmt': r.get('qty_fmt'),
+                'unid': 'PZA',
+                'desc': r.get('desc'),
+                'marca': r.get('marca'),
+                'modelo': r.get('parte'),
+                'proveedor': r.get('proveedor'),
+                'entrega': r.get('entrega'),
+                'precio_lista_fmt': r.get('precio_lista_fmt'),
+                'desc_venta_fmt': r.get('desc_venta_fmt'),
+                'precio_unit_fmt': r.get('precio_unit_fmt'),
+                'precio_venta_fmt': r.get('precio_venta_fmt'),
+                'precio_venta': r.get('precio_venta'),
+                'costo_unit_fmt': r.get('costo_unit_fmt'),
+                'costo_total_fmt': r.get('costo_total_fmt'),
+                'costo_total': r.get('costo_total'),
+            })
+    return out
+
+
+def _flatten_mo_for_legacy(sections_mo):
+    out = []
+    for s in sections_mo:
+        for r in s.get('rows', []):
+            out.append({
+                'qty': r.get('qty'), 'qty_fmt': r.get('qty_fmt'),
+                'unid': 'SERV',
+                'desc': r.get('desc'),
+                'precio_unit_fmt': r.get('precio_unit_fmt'),
+                'total_fmt': r.get('total_fmt'),
+                'total': r.get('total'),
+            })
+    return out
+
+
+def _flatten_cmo_for_legacy(sections_cmo):
+    out = []
+    for s in sections_cmo:
+        for r in s.get('rows', []):
+            out.append({
+                'qty': r.get('qty'), 'qty_fmt': r.get('qty_fmt'),
+                'unid': 'GLOB',
+                'desc': r.get('desc'),
+                'costo_unit_fmt': r.get('costo_unit_fmt'),
+                'total_fmt': r.get('total_fmt'),
+                'total': r.get('total'),
+            })
+    return out
 
 
 @login_required
@@ -4304,7 +5277,11 @@ def api_levantamiento_volumetria_pdf(request, levantamiento_id):
         return ''
 
     sin_costos = bool(request.GET.get('sin_costos'))
-    ctx = _build_volumetria_ctx(lev, sin_costos=sin_costos, data_override=volumetria_data_override)
+    ctx = _build_volumetria_ctx(
+        lev, sin_costos=sin_costos,
+        data_override=volumetria_data_override,
+        volumetria_obj=volumetria_obj,
+    )
     ctx.update({
         'bajanet_hero_url': _static_file_url('images/propuesta/bajanet_hero.jpeg'),
         'footer_logos_url': _static_file_url('images/propuesta/footer_logos.png'),
@@ -4372,181 +5349,281 @@ def api_levantamiento_volumetria_xlsx(request, levantamiento_id):
         volumetria_data_override = volumetria_obj.data or {}
 
     sin_costos = bool(request.GET.get('sin_costos'))
-    ctx = _build_volumetria_ctx(lev, sin_costos=sin_costos, data_override=volumetria_data_override)
+    ctx = _build_volumetria_ctx(
+        lev, sin_costos=sin_costos,
+        data_override=volumetria_data_override,
+        volumetria_obj=volumetria_obj,
+    )
 
     wb = Workbook()
     ws = wb.active
     ws.title = 'Volumetria'
 
-    # Estilos
+    # ── Estilos ────────────────────────────────────────────────────
     blue_fill = PatternFill('solid', fgColor='2563EB')
-    band_fill = PatternFill('solid', fgColor='E8F1FB')
-    section_fill = PatternFill('solid', fgColor='FFF7ED')
+    band_fill = PatternFill('solid', fgColor='1D4ED8')           # Tipo (Equipamiento, …) — azul fuerte
+    sub_fill = PatternFill('solid', fgColor='E8F1FB')            # Sección (titulo de tabla) — azul claro
     header_fill = PatternFill('solid', fgColor='F1F5F9')
     total_fill = PatternFill('solid', fgColor='EFF6FF')
-    white = Font(color='FFFFFF', bold=True, name='Calibri', size=11)
-    band_font = Font(color='1D4ED8', bold=True, name='Calibri', size=10)
+    group_fill = PatternFill('solid', fgColor='FFF7ED')          # Header inline (rótulo) en equipamiento
+    grand_fill = PatternFill('solid', fgColor='2563EB')
+    mxn_fill = PatternFill('solid', fgColor='ECFDF5')
+    margen_fill = PatternFill('solid', fgColor='FEF3C7')
+
+    white_band = Font(color='FFFFFF', bold=True, name='Calibri', size=11)
+    sub_font = Font(color='1D4ED8', bold=True, name='Calibri', size=10)
     header_font = Font(color='475569', bold=True, name='Calibri', size=10)
+    group_font = Font(color='9A3412', bold=True, name='Calibri', size=10)
     bold = Font(bold=True)
+    label_font = Font(color='475569', bold=False, name='Calibri', size=10)
     thin = Side(style='thin', color='DBE6F3')
     border = Border(top=thin, bottom=thin, left=thin, right=thin)
     money_fmt = '"$"#,##0.00'
 
+    NUM_COLS = 12  # ancho fijo del documento — todas las merges van A..L
+
+    def _set_borders(row_num, cols):
+        for col in cols:
+            ws.cell(row=row_num, column=col).border = border
+
     # ── Header: Cliente / Proyecto / Fecha / Contacto / Elaboró ──
-    ws['A1'] = 'Cliente'; ws['A1'].font = band_font; ws['A1'].fill = band_fill
+    ws['A1'] = 'Cliente'; ws['A1'].font = sub_font; ws['A1'].fill = sub_fill
     ws['B1'] = ctx['cliente_nombre']; ws['B1'].font = bold
-    ws['D1'] = 'Contacto:'; ws['D1'].font = band_font; ws['D1'].fill = band_fill
+    ws['D1'] = 'Contacto:'; ws['D1'].font = sub_font; ws['D1'].fill = sub_fill
     ws['E1'] = ctx['solicitante']
-    ws['K1'] = 'Fecha:'; ws['K1'].font = band_font; ws['K1'].fill = band_fill
+    ws['K1'] = 'Fecha:'; ws['K1'].font = sub_font; ws['K1'].fill = sub_fill
     ws['L1'] = ctx['doc_fecha_fmt']
 
-    ws['A2'] = 'Proyecto'; ws['A2'].font = band_font; ws['A2'].fill = band_fill
+    ws['A2'] = 'Proyecto'; ws['A2'].font = sub_font; ws['A2'].fill = sub_fill
     ws['B2'] = lev.nombre or ''; ws['B2'].font = bold
-    ws['D2'] = 'Elaboró:'; ws['D2'].font = band_font; ws['D2'].fill = band_fill
+    ws['D2'] = 'Elaboró:'; ws['D2'].font = sub_font; ws['D2'].fill = sub_fill
     ws['E2'] = ctx['elaboro']
-    ws['K2'] = 'Planta:'; ws['K2'].font = band_font; ws['K2'].fill = band_fill
+    ws['K2'] = 'Planta:'; ws['K2'].font = sub_font; ws['K2'].fill = sub_fill
     ws['L2'] = ctx['planta']
 
-    # ── Equipamiento / Materiales ──
-    # Fila 4: grupo título
-    ws.cell(row=4, column=1, value='EQUIPAMIENTO / MATERIALES').font = Font(bold=True, color='9A3412', size=11)
-    ws.cell(row=4, column=1).fill = section_fill
-    ws.merge_cells(start_row=4, start_column=1, end_row=4, end_column=12)
+    r = 4
 
-    # Fila 5: encabezados
-    headers = ['Marca', 'No. Parte', 'Cantidad', 'Unid', 'Descripción',
-               'Precio Lista', 'Desc V%', 'Precio Venta', 'Costo Unit', 'Costo Total',
-               'Proveedor', 'Entrega']
-    for i, h in enumerate(headers, start=1):
-        c = ws.cell(row=5, column=i, value=h)
-        c.font = header_font; c.fill = header_fill; c.border = border
+    def _write_tipo_row(label):
+        nonlocal r
+        c = ws.cell(row=r, column=1, value=label)
+        c.font = white_band; c.fill = band_fill
         c.alignment = Alignment(horizontal='center', vertical='center')
-
-    r = 6
-    for m in ctx['materiales']:
-        ws.cell(row=r, column=1, value=m['marca'])
-        ws.cell(row=r, column=2, value=m['modelo'])
-        ws.cell(row=r, column=3, value=m['qty'])
-        ws.cell(row=r, column=4, value=m['unid'])
-        ws.cell(row=r, column=5, value=m['desc'])
-        c_pl = ws.cell(row=r, column=6, value=m['precio_lista']); c_pl.number_format = money_fmt
-        ws.cell(row=r, column=7, value=m['desc_venta']).number_format = '0.0"%"'
-        c_pv = ws.cell(row=r, column=8, value=m['precio_venta']); c_pv.number_format = money_fmt; c_pv.font = bold
-        c_cu = ws.cell(row=r, column=9, value=m['costo_unit']); c_cu.number_format = money_fmt
-        c_ct = ws.cell(row=r, column=10, value=m['costo_total']); c_ct.number_format = money_fmt
-        ws.cell(row=r, column=11, value=m['proveedor'])
-        ws.cell(row=r, column=12, value=m.get('entrega') or '')
-        for col in range(1, 13):
-            ws.cell(row=r, column=col).border = border
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=NUM_COLS)
+        ws.row_dimensions[r].height = 22
         r += 1
 
-    # Total materiales
-    if ctx['materiales']:
-        ws.cell(row=r, column=1, value='Subtotal Materiales').font = bold
-        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
-        c_tv = ws.cell(row=r, column=8, value=ctx['tot_mat_venta'])
-        c_tv.number_format = money_fmt; c_tv.font = bold; c_tv.fill = total_fill
-        c_tc = ws.cell(row=r, column=10, value=ctx['tot_mat_costo'])
-        c_tc.number_format = money_fmt; c_tc.font = bold; c_tc.fill = total_fill
-        r += 2
-    else:
+    def _write_sub_row(label):
+        nonlocal r
+        c = ws.cell(row=r, column=1, value=label)
+        c.font = sub_font; c.fill = sub_fill
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=NUM_COLS)
         r += 1
 
-    # ── Mano de obra ──
-    ws.cell(row=r, column=1, value='MANO DE OBRA').font = Font(bold=True, color='9A3412', size=11)
-    ws.cell(row=r, column=1).fill = section_fill
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=12)
-    r += 1
-    mo_headers = ['', '', 'Cantidad', 'Unid', 'Descripción', 'Precio Unit', '', 'Total']
-    for i, h in enumerate(mo_headers, start=1):
-        c = ws.cell(row=r, column=i, value=h)
-        if h:
-            c.font = header_font; c.fill = header_fill; c.border = border
-            c.alignment = Alignment(horizontal='center', vertical='center')
-    r += 1
-    for mo in ctx['mano_obra']:
-        ws.cell(row=r, column=3, value=mo['qty'])
-        ws.cell(row=r, column=4, value=mo['unid'])
-        ws.cell(row=r, column=5, value=mo['desc'])
-        ws.cell(row=r, column=6, value=mo['precio_unit']).number_format = money_fmt
-        c_t = ws.cell(row=r, column=8, value=mo['total'])
-        c_t.number_format = money_fmt; c_t.font = bold
-        for col in range(3, 9):
-            ws.cell(row=r, column=col).border = border
-        r += 1
-    if ctx['mano_obra']:
-        ws.cell(row=r, column=1, value='Subtotal Mano de Obra').font = bold
-        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
-        c_tmo = ws.cell(row=r, column=8, value=ctx['tot_mo'])
-        c_tmo.number_format = money_fmt; c_tmo.font = bold; c_tmo.fill = total_fill
-        r += 2
-    else:
-        r += 1
-
-    # ── Gastos ──
-    if ctx['gastos']:
-        ws.cell(row=r, column=1, value='GASTOS / VIÁTICOS').font = Font(bold=True, color='9A3412', size=11)
-        ws.cell(row=r, column=1).fill = section_fill
-        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=12)
-        r += 1
-        for i, h in enumerate(mo_headers, start=1):
+    def _write_header_row(headers, alignments=None):
+        nonlocal r
+        for i, h in enumerate(headers, start=1):
             c = ws.cell(row=r, column=i, value=h)
-            if h:
-                c.font = header_font; c.fill = header_fill; c.border = border
-                c.alignment = Alignment(horizontal='center', vertical='center')
+            c.font = header_font; c.fill = header_fill; c.border = border
+            ali = (alignments or {}).get(i, 'left')
+            c.alignment = Alignment(horizontal='center' if ali == 'center' else ali, vertical='center')
         r += 1
-        for g in ctx['gastos']:
-            ws.cell(row=r, column=3, value=g['qty'])
-            ws.cell(row=r, column=4, value=g['unid'])
-            ws.cell(row=r, column=5, value=g['desc'])
-            ws.cell(row=r, column=6, value=g['costo_unit']).number_format = money_fmt
-            c_t = ws.cell(row=r, column=8, value=g['total'])
-            c_t.number_format = money_fmt; c_t.font = bold
-            for col in range(3, 9):
-                ws.cell(row=r, column=col).border = border
+
+    # ── BLOQUE EQUIPAMIENTO ────────────────────────────────────────
+    if ctx['has_eq']:
+        _write_tipo_row('EQUIPAMIENTO')
+        eq_headers = ['#', 'Cant', 'Descripción', 'Marca', 'No. Parte',
+                      'P. Lista', 'Desc V%', 'P. Venta', 'C. Unit', 'C. Total',
+                      'Proveedor', 'Entrega']
+        for sec in ctx['sections_eq']:
+            if sec.get('titulo'):
+                _write_sub_row(sec['titulo'])
+            _write_header_row(eq_headers)
+            row_idx = 0
+            for r_data in sec['rows']:
+                if r_data.get('is_header'):
+                    c = ws.cell(row=r, column=1, value=r_data['texto'])
+                    c.font = group_font; c.fill = group_fill
+                    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=NUM_COLS)
+                    _set_borders(r, range(1, NUM_COLS + 1))
+                    r += 1
+                    continue
+                row_idx += 1
+                ws.cell(row=r, column=1, value=row_idx).alignment = Alignment(horizontal='center')
+                ws.cell(row=r, column=2, value=r_data['qty']).alignment = Alignment(horizontal='right')
+                ws.cell(row=r, column=3, value=r_data['desc'])
+                ws.cell(row=r, column=4, value=r_data['marca'])
+                ws.cell(row=r, column=5, value=r_data['parte'])
+                if not sin_costos:
+                    ws.cell(row=r, column=6, value=r_data['precio_lista']).number_format = money_fmt
+                    ws.cell(row=r, column=7, value=r_data['desc_venta']).number_format = '0.0"%"'
+                    cv = ws.cell(row=r, column=8, value=r_data['precio_venta'])
+                    cv.number_format = money_fmt; cv.font = bold
+                    ws.cell(row=r, column=9, value=r_data['costo_unit']).number_format = money_fmt
+                    ws.cell(row=r, column=10, value=r_data['costo_total']).number_format = money_fmt
+                ws.cell(row=r, column=11, value=r_data['proveedor'])
+                ws.cell(row=r, column=12, value=r_data['entrega'])
+                _set_borders(r, range(1, NUM_COLS + 1))
+                r += 1
+            # Subtotal por sección
+            if not sin_costos:
+                lbl = ws.cell(row=r, column=1, value=f"Subtotal {sec.get('titulo') or 'Equipamiento'}")
+                lbl.font = bold; lbl.fill = total_fill
+                ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+                cv = ws.cell(row=r, column=8, value=sec['sec_venta'])
+                cv.number_format = money_fmt; cv.font = bold; cv.fill = total_fill
+                ws.cell(row=r, column=9).fill = total_fill
+                cc = ws.cell(row=r, column=10, value=sec['sec_costo'])
+                cc.number_format = money_fmt; cc.font = bold; cc.fill = total_fill
+                ws.cell(row=r, column=11).fill = total_fill
+                ws.cell(row=r, column=12).fill = total_fill
+                r += 1
+            r += 1  # espacio entre secciones
+
+    # ── BLOQUE MANO DE OBRA ────────────────────────────────────────
+    if ctx['has_mo']:
+        _write_tipo_row('MANO DE OBRA')
+        mo_headers = ['#', 'Cant', 'Descripción', 'Marca', 'Parte',
+                      'P. Lista', 'Desc V%', 'P. Unit', '', '', '', 'Total']
+        for sec in ctx['sections_mo']:
+            if sec.get('titulo'):
+                _write_sub_row(sec['titulo'])
+            _write_header_row(mo_headers)
+            for idx, r_data in enumerate(sec['rows'], start=1):
+                ws.cell(row=r, column=1, value=idx).alignment = Alignment(horizontal='center')
+                ws.cell(row=r, column=2, value=r_data['qty']).alignment = Alignment(horizontal='right')
+                desc_full = r_data['desc']
+                if r_data.get('notas'):
+                    desc_full = f"{desc_full}\n{r_data['notas']}" if desc_full else r_data['notas']
+                dc = ws.cell(row=r, column=3, value=desc_full)
+                dc.alignment = Alignment(wrap_text=True, vertical='top')
+                ws.cell(row=r, column=4, value=r_data['marca'])
+                ws.cell(row=r, column=5, value=r_data['parte'])
+                if not sin_costos:
+                    ws.cell(row=r, column=6, value=r_data['precio_lista']).number_format = money_fmt
+                    ws.cell(row=r, column=7, value=r_data['desc_venta_fmt'])
+                    ws.cell(row=r, column=8, value=r_data['precio_unit']).number_format = money_fmt
+                    ct = ws.cell(row=r, column=12, value=r_data['total'])
+                    ct.number_format = money_fmt; ct.font = bold
+                _set_borders(r, range(1, NUM_COLS + 1))
+                r += 1
+            if not sin_costos:
+                lbl = ws.cell(row=r, column=1, value=f"Subtotal {sec.get('titulo') or 'Mano de Obra'}")
+                lbl.font = bold; lbl.fill = total_fill
+                ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=11)
+                cv = ws.cell(row=r, column=12, value=sec['sec_venta'])
+                cv.number_format = money_fmt; cv.font = bold; cv.fill = total_fill
+                r += 1
             r += 1
-        ws.cell(row=r, column=1, value='Subtotal Gastos').font = bold
-        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
-        c_tg = ws.cell(row=r, column=8, value=ctx['tot_gas'])
-        c_tg.number_format = money_fmt; c_tg.font = bold; c_tg.fill = total_fill
+
+    # ── BLOQUE COSTOS ADICIONALES ─────────────────────────────────
+    # Solo en modo completo (vendedor no debe ver costos)
+    if ctx['has_cmo'] and not sin_costos:
+        _write_tipo_row('COSTOS ADICIONALES')
+        cmo_headers = ['#', 'Descripción', '', '', '', 'Cantidad',
+                       'Costo Unit', 'Días', '', '', '', 'Total']
+        for sec in ctx['sections_cmo']:
+            if sec.get('titulo'):
+                _write_sub_row(sec['titulo'])
+            _write_header_row(cmo_headers)
+            for idx, r_data in enumerate(sec['rows'], start=1):
+                ws.cell(row=r, column=1, value=idx).alignment = Alignment(horizontal='center')
+                dc = ws.cell(row=r, column=2, value=r_data['desc'])
+                ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=5)
+                dc.alignment = Alignment(wrap_text=True, vertical='top')
+                ws.cell(row=r, column=6, value=r_data['qty']).alignment = Alignment(horizontal='right')
+                ws.cell(row=r, column=7, value=r_data['costo_unit']).number_format = money_fmt
+                ws.cell(row=r, column=8, value=r_data['dias']).alignment = Alignment(horizontal='right')
+                ct = ws.cell(row=r, column=12, value=r_data['total'])
+                ct.number_format = money_fmt; ct.font = bold
+                _set_borders(r, range(1, NUM_COLS + 1))
+                r += 1
+            lbl = ws.cell(row=r, column=1, value=f"Subtotal {sec.get('titulo') or 'Costos Adicionales'}")
+            lbl.font = bold; lbl.fill = total_fill
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=11)
+            cv = ws.cell(row=r, column=12, value=sec['sec_costo'])
+            cv.number_format = money_fmt; cv.font = bold; cv.fill = total_fill
+            r += 1
+            r += 1
+
+    # Mensaje si la volumetría está vacía
+    if not (ctx['has_eq'] or ctx['has_mo'] or ctx['has_cmo']):
+        c = ws.cell(row=r, column=1, value='Esta volumetría aún no tiene tablas capturadas.')
+        c.font = Font(italic=True, color='94A3B8')
+        c.alignment = Alignment(horizontal='center')
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=NUM_COLS)
         r += 2
 
-    # ── Análisis de costos ──
-    ws.cell(row=r, column=1, value='ANÁLISIS DE COSTOS').font = Font(bold=True, color='FFFFFF', size=11)
-    ws.cell(row=r, column=1).fill = blue_fill
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=12)
-    r += 1
-    summary_rows = [
-        ('Subtotal Materiales (Venta)', ctx['tot_mat_venta']),
-        ('Subtotal Mano de Obra', ctx['tot_mo']),
-        ('Subtotal Gastos', ctx['tot_gas']),
-        ('TOTAL VENTA', ctx['total_venta']),
-        ('Total Costos', ctx['total_costo']),
-        ('Utilidad Bruta', ctx['utilidad']),
-    ]
-    for lbl, val in summary_rows:
-        ws.cell(row=r, column=1, value=lbl).font = bold
-        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
-        c_v = ws.cell(row=r, column=8, value=val)
-        c_v.number_format = money_fmt; c_v.font = bold
-        if lbl == 'TOTAL VENTA':
-            c_v.fill = blue_fill; c_v.font = white
-            ws.cell(row=r, column=1).fill = blue_fill; ws.cell(row=r, column=1).font = white
-        elif lbl == 'Utilidad Bruta':
-            c_v.fill = PatternFill('solid', fgColor='ECFDF5')
+    # ── RESUMEN (solo modo completo) ──────────────────────────────
+    if not sin_costos:
         r += 1
-    ws.cell(row=r, column=1, value=f"Margen Bruto: {ctx['margen_pct']}%").font = Font(bold=True, color='047857', size=11)
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+        # Cabecera del resumen — dos columnas pareadas (A..F = Análisis, G..L = Total)
+        c1 = ws.cell(row=r, column=1, value='ANÁLISIS DE GANANCIA')
+        c1.font = Font(color='475569', bold=True); c1.fill = header_fill
+        c1.alignment = Alignment(horizontal='center', vertical='center')
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+        c2 = ws.cell(row=r, column=7, value='TOTAL COTIZACIÓN')
+        c2.font = Font(color='475569', bold=True); c2.fill = header_fill
+        c2.alignment = Alignment(horizontal='center', vertical='center')
+        ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=NUM_COLS)
+        r += 1
 
-    # Anchos de columna
-    widths = {1: 14, 2: 16, 3: 10, 4: 8, 5: 46, 6: 14, 7: 9, 8: 14, 9: 13, 10: 14, 11: 14, 12: 12}
+        analisis_rows = [
+            ('Precio de Lista',   ctx['tot_eq_venta'],  None),
+            ('Precio Costo',      ctx['tot_eq_costo'],  None),
+            ('Ganancia Material', ctx['mat_ganancia'],  None),
+            ('Mano de Obra',      ctx['mo_ganancia'],   None),
+            ('Total de Ganancia', ctx['ganancia'],      'grand'),
+        ]
+        total_rows = [
+            ('Sub-Total',                                        ctx['subtotal_venta'],       None),
+            (f"IVA ({ctx['iva_pct_fmt']}%)",                     ctx['iva'],                  None),
+            ('Ganancia en pesos',                                ctx['ganancia_mxn'],         'mxn'),
+            ('Total con IVA',                                    ctx['total_con_iva'],        'grand'),
+            ('Margen',                                           None,                        'margen'),  # margen va como string %
+            (f"En MXN @ {ctx['tipo_cambio_fmt']}",               ctx['total_con_iva_mxn'],    'mxn'),
+        ]
+
+        rows_n = max(len(analisis_rows), len(total_rows))
+        for i in range(rows_n):
+            # Análisis (col A label, col F valor)
+            if i < len(analisis_rows):
+                lbl, val, kind = analisis_rows[i]
+                lc = ws.cell(row=r, column=1, value=lbl); lc.font = label_font
+                ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+                vc = ws.cell(row=r, column=5, value=val)
+                vc.number_format = money_fmt; vc.font = bold
+                vc.alignment = Alignment(horizontal='right')
+                ws.merge_cells(start_row=r, start_column=5, end_row=r, end_column=6)
+                if kind == 'grand':
+                    lc.fill = grand_fill; vc.fill = grand_fill
+                    lc.font = white_band; vc.font = Font(color='FFFFFF', bold=True, size=11)
+            # Total Cotización (col G label, col L valor)
+            if i < len(total_rows):
+                lbl, val, kind = total_rows[i]
+                lc = ws.cell(row=r, column=7, value=lbl); lc.font = label_font
+                ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=10)
+                if kind == 'margen':
+                    vc = ws.cell(row=r, column=11, value=f"{ctx['margen_pct']}%")
+                    vc.font = bold; vc.alignment = Alignment(horizontal='right')
+                    lc.fill = margen_fill; vc.fill = margen_fill
+                else:
+                    vc = ws.cell(row=r, column=11, value=val)
+                    vc.number_format = money_fmt; vc.font = bold
+                    vc.alignment = Alignment(horizontal='right')
+                ws.merge_cells(start_row=r, start_column=11, end_row=r, end_column=NUM_COLS)
+                if kind == 'grand':
+                    lc.fill = grand_fill; vc.fill = grand_fill
+                    lc.font = white_band; vc.font = Font(color='FFFFFF', bold=True, size=11)
+                elif kind == 'mxn':
+                    lc.fill = mxn_fill; vc.fill = mxn_fill
+                    lc.font = Font(color='047857', bold=False); vc.font = Font(color='047857', bold=True)
+            _set_borders(r, range(1, NUM_COLS + 1))
+            r += 1
+
+    # ── Anchos de columna ──────────────────────────────────────────
+    widths = {1: 6, 2: 8, 3: 38, 4: 12, 5: 14, 6: 12, 7: 8, 8: 13, 9: 11, 10: 13, 11: 14, 12: 14}
     for col, w in widths.items():
         ws.column_dimensions[get_column_letter(col)].width = w
-    # Wrap en descripciones
-    for row in ws.iter_rows(min_row=6, max_col=5):
-        for cell in row:
-            if cell.column == 5:
-                cell.alignment = Alignment(wrap_text=True, vertical='top')
 
     # Response
     from io import BytesIO
@@ -5243,4 +6320,249 @@ def api_levantamiento_offline_sync(request):
         'created': lev_created,
         'levantamiento_id': lev.id,
         'evidencias': resultado_evidencias,
+    })
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Programa de Obra (Gantt) — autocomplete de usuarios y recursos
+# ═══════════════════════════════════════════════════════════════
+
+def _gantt_user_color(seed):
+    """Color determinístico para avatar (mismo set que el frontend)."""
+    palette = ['#6366f1', '#0891b2', '#16a34a', '#d97706', '#dc2626',
+               '#2563eb', '#8b5cf6', '#ec4899', '#0d9488']
+    n = 0
+    try:
+        n = int(seed)
+    except (TypeError, ValueError):
+        for ch in str(seed or ''):
+            n += ord(ch)
+    return palette[abs(n) % len(palette)]
+
+
+def _gantt_user_initials(nombre):
+    parts = (nombre or '').strip().split()
+    if not parts:
+        return '·'
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return (parts[0][:1] + parts[1][:1]).upper()
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_gantt_usuarios_buscar(request):
+    """GET /api/iamet/usuarios/buscar/?q=texto&limit=10
+    Autocomplete genérico de usuarios para el modal de actividad Gantt.
+
+    Resp 200: {success, results: [{id, nombre, initials, color, rol}]}
+    """
+    from django.contrib.auth.models import User
+    from .models import UserProfile
+
+    q = (request.GET.get('q') or '').strip()
+    try:
+        limit = min(max(int(request.GET.get('limit') or 10), 1), 25)
+    except (TypeError, ValueError):
+        limit = 10
+
+    qs = User.objects.filter(is_active=True)
+    if q:
+        qs = qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(username__icontains=q) |
+            Q(email__icontains=q)
+        )
+    qs = qs.select_related('userprofile').order_by('first_name', 'last_name', 'username')[:limit]
+
+    results = []
+    for u in qs:
+        nombre = (u.get_full_name() or u.username).strip()
+        rol = ''
+        try:
+            if hasattr(u, 'userprofile') and u.userprofile:
+                rol = u.userprofile.get_rol_display() if u.userprofile.rol else ''
+        except UserProfile.DoesNotExist:
+            rol = ''
+        results.append({
+            'id': u.id,
+            'nombre': nombre,
+            'username': u.username,
+            'initials': _gantt_user_initials(nombre),
+            'color': _gantt_user_color(u.id),
+            'rol': rol,
+        })
+
+    return JsonResponse({'success': True, 'results': results})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def api_gantt_recursos(request):
+    """
+    GET  /api/iamet/recursos/buscar/?q=texto&limit=10  → busca recursos materiales
+    POST /api/iamet/recursos/                          → crea un recurso
+
+    Mantenido como una sola vista para compartir validación; el ruteo del
+    autocomplete usa GET y el de creación usa POST.
+
+    POST body JSON: { nombre, tipo?, descripcion? }
+    """
+    from .models import RecursoMaterial
+
+    if request.method == 'GET':
+        q = (request.GET.get('q') or '').strip()
+        try:
+            limit = min(max(int(request.GET.get('limit') or 10), 1), 25)
+        except (TypeError, ValueError):
+            limit = 10
+
+        qs = RecursoMaterial.objects.all()
+        if q:
+            qs = qs.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q)
+            )
+        qs = qs.order_by('nombre')[:limit]
+
+        results = [
+            {
+                'id': r.id,
+                'nombre': r.nombre,
+                'descripcion': r.descripcion or '',
+                'tipo': r.tipo,
+                'tipo_label': r.get_tipo_display(),
+            }
+            for r in qs
+        ]
+        return JsonResponse({'success': True, 'results': results})
+
+    # POST → crear
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON invalido'}, status=400)
+
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        return JsonResponse({'success': False, 'error': 'El nombre es obligatorio'}, status=400)
+
+    tipo = (data.get('tipo') or 'otro').strip()
+    valid_tipos = {t for t, _ in RecursoMaterial.TIPO_CHOICES}
+    if tipo not in valid_tipos:
+        tipo = 'otro'
+
+    descripcion = (data.get('descripcion') or '').strip()
+
+    # Idempotencia razonable: si existe uno con el mismo nombre+tipo, devolverlo.
+    existente = RecursoMaterial.objects.filter(
+        nombre__iexact=nombre, tipo=tipo
+    ).first()
+    if existente:
+        return JsonResponse({
+            'success': True,
+            'created': False,
+            'recurso': {
+                'id': existente.id,
+                'nombre': existente.nombre,
+                'descripcion': existente.descripcion or '',
+                'tipo': existente.tipo,
+                'tipo_label': existente.get_tipo_display(),
+            },
+        })
+
+    recurso = RecursoMaterial.objects.create(
+        nombre=nombre, tipo=tipo, descripcion=descripcion
+    )
+    return JsonResponse({
+        'success': True,
+        'created': True,
+        'recurso': {
+            'id': recurso.id,
+            'nombre': recurso.nombre,
+            'descripcion': recurso.descripcion or '',
+            'tipo': recurso.tipo,
+            'tipo_label': recurso.get_tipo_display(),
+        },
+    }, status=201)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_gantt_recurso_conflictos(request, recurso_id):
+    """
+    GET /api/iamet/recursos/<id>/conflictos/?fecha_inicio=YYYY-MM-DD
+                                            &fecha_fin=YYYY-MM-DD
+                                            &exclude_actividad=<id>
+
+    Devuelve actividades Gantt en cualquier proyecto donde el recurso está
+    asignado y se traslapa con [fecha_inicio, fecha_fin].
+
+    Resp 200: { success, conflictos: [
+        { actividad_id, actividad_nombre, proyecto_id, proyecto_nombre,
+          fecha_inicio, fecha_fin } ] }
+    """
+    from datetime import date as _date, timedelta
+    from .models import RecursoMaterial, GanttActividad
+
+    recurso = RecursoMaterial.objects.filter(id=recurso_id).first()
+    if not recurso:
+        return JsonResponse({'success': False, 'error': 'Recurso no encontrado'}, status=404)
+
+    fi_str = (request.GET.get('fecha_inicio') or '').strip()
+    ff_str = (request.GET.get('fecha_fin') or '').strip()
+    if not fi_str or not ff_str:
+        return JsonResponse({'success': False,
+                             'error': 'fecha_inicio y fecha_fin son obligatorios'},
+                            status=400)
+    try:
+        fi = _date.fromisoformat(fi_str)
+        ff = _date.fromisoformat(ff_str)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'fechas invalidas (YYYY-MM-DD)'},
+                            status=400)
+    if ff < fi:
+        return JsonResponse({'success': False,
+                             'error': 'fecha_fin debe ser >= fecha_inicio'},
+                            status=400)
+
+    exclude_id = request.GET.get('exclude_actividad')
+    try:
+        exclude_id = int(exclude_id) if exclude_id else None
+    except (TypeError, ValueError):
+        exclude_id = None
+
+    qs = (
+        recurso.gantt_actividades
+        .select_related('proyecto')
+        .all()
+    )
+    if exclude_id:
+        qs = qs.exclude(id=exclude_id)
+
+    conflictos = []
+    for a in qs:
+        a_ini = a.fecha_inicio
+        a_fin = a_ini + timedelta(days=a.duracion_dias or 1)
+        # Solapamiento [a_ini, a_fin] vs [fi, ff]
+        if a_fin < fi or a_ini > ff:
+            continue
+        conflictos.append({
+            'actividad_id': a.id,
+            'actividad_nombre': a.nombre,
+            'proyecto_id': a.proyecto_id,
+            'proyecto_nombre': getattr(a.proyecto, 'nombre', '') or '',
+            'fecha_inicio': a_ini.isoformat(),
+            'fecha_fin': a_fin.isoformat(),
+        })
+
+    return JsonResponse({
+        'success': True,
+        'recurso': {
+            'id': recurso.id,
+            'nombre': recurso.nombre,
+            'tipo': recurso.tipo,
+        },
+        'conflictos': conflictos,
     })

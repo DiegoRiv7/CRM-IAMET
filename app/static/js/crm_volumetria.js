@@ -273,9 +273,9 @@
             defaultTitle: 'Mano de Obra',
         },
         costo_mo: {
-            label: 'Costo MO Interno',
+            label: 'Costos Adicionales',
             icon: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-            defaultTitle: 'Costo MO Interno',
+            defaultTitle: 'Costos Adicionales',
         },
     };
 
@@ -360,7 +360,9 @@
         return {
             version: 4,
             meta: meta,
-            secciones: [newSection('equipamiento')],
+            // Vacío por default: ni tabla ni fila preconfigurada. El
+            // usuario decide qué tipos de tablas crear desde "Agregar tabla".
+            secciones: [],
         };
     }
 
@@ -408,10 +410,18 @@
         if (wasGastos) tipo = 'costo_mo';
         if (SECTION_TYPES.indexOf(tipo) < 0) tipo = inferTipoFromV3Section(sec);
 
+        // Auto-rename: secciones viejas con titulo "Costo MO Interno"
+        // (heredado de versiones anteriores) ahora se llaman "Costos
+        // Adicionales". Solo aplica si el usuario no lo renombró ya
+        // a algo distinto.
+        var titulo = sec.titulo || TYPE_INFO[tipo].defaultTitle;
+        if (tipo === 'costo_mo' && titulo === 'Costo MO Interno') {
+            titulo = 'Costos Adicionales';
+        }
         var out = {
             id: sec.id || uuid(),
             tipo: tipo,
-            titulo: sec.titulo || TYPE_INFO[tipo].defaultTitle,
+            titulo: titulo,
             expanded: sec.expanded !== false,
             items: [],
         };
@@ -438,10 +448,14 @@
                     precioLista: num(it.precioLista),
                     descuentoVenta: num(it.descuentoVenta),
                     descuentoCosto: it.descuentoCosto != null ? num(it.descuentoCosto) : 0,
-                    // En v3, costoUnitario era 0 por defecto; preservamos
-                    // como override solo si > 0, sino dejamos null para que
-                    // el cálculo derivado use descuentoCosto.
-                    costoUnitario: (it.costoUnitario != null && Number(it.costoUnitario) > 0)
+                    // costoUnitario:
+                    //   - número (incluido 0 explícito) → preserva tal cual.
+                    //     0 ES un valor válido para items de pura ganancia
+                    //     (ej. MISCELANEOS del Excel real: cobramos 150 y
+                    //     no nos cuesta nada). Lavar 0 a null y luego
+                    //     derivar inflaba el costo total por el monto de venta.
+                    //   - null/'' → null (frontend deriva desde descCosto).
+                    costoUnitario: (it.costoUnitario != null && it.costoUnitario !== '')
                         ? num(it.costoUnitario) : null,
                     proveedor: it.proveedor || '',
                     entrega: it.entrega || '',
@@ -745,7 +759,12 @@
         if (it.costoUnitario != null && it.costoUnitario !== '' && Number(it.costoUnitario) >= 0) {
             cUnit = num(it.costoUnitario);
         } else {
-            cUnit = num(it.precioLista) * (1 - num(it.descuentoCosto) / 100);
+            // costoUnitario null/vacío → derivar de precioLista × (1 - descCosto/100).
+            // PERO si descCosto también es 0, el ítem es pura ganancia (cobramos
+            // sin costo real — ej. MISCELANEOS). Devolver 0 en vez de precioLista,
+            // que era el bug que inflaba el costo total por el monto de venta.
+            var dc = num(it.descuentoCosto);
+            cUnit = dc > 0 ? num(it.precioLista) * (1 - dc / 100) : 0;
         }
         var totalCosto = num(it.cantidad) * cUnit;
         return {
@@ -878,28 +897,28 @@
         var html = '<div class="cv-root' + (S.readonly ? ' cv-readonly' : '') + '">';
         
         // Header
-        html += '<header class="cv-app-header border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">';
-        html += '  <div>';
+        html += '<header class="cv-app-header">';
+        html += '  <div class="cv-app-header-info">';
         var cliName = esc((S.data && S.data.meta && S.data.meta.cliente) || "Proyecto");
         var levDate = esc((S.data && S.data.meta && S.data.meta.fecha) || "Reciente");
-        
+
         var status = (S.volumetria && S.volumetria.status) || 'borrador';
         var statusLabel = status === 'completada' ? 'Completada' : 'Borrador';
         var statusCls = 'cv-status cv-status-' + status;
         var statusEl = '';
         if (!S.readonly) {
-            statusEl = '<button type="button" class="' + statusCls + '" data-action="toggle-status" style="margin-left:12px; height:22px; padding:2px 10px; font-size:10px; line-height:1;">' +
-                       '<span class="cv-status-dot" style="width:6px; height:6px;"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></button>';
+            statusEl = '<button type="button" class="' + statusCls + '" data-action="toggle-status">' +
+                       '<span class="cv-status-dot"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></button>';
         } else {
-            statusEl = '<div class="' + statusCls + '" style="margin-left:12px; height:22px; padding:2px 10px; font-size:10px; line-height:1;">' +
-                       '<span class="cv-status-dot" style="width:6px; height:6px;"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></div>';
+            statusEl = '<div class="' + statusCls + '">' +
+                       '<span class="cv-status-dot"></span><span class="cv-status-label">' + esc(statusLabel) + '</span></div>';
         }
 
-        html += '    <h1 class="text-xl font-semibold text-gray-900">Proyecto: ' + cliName + '</h1>';
-        html += '    <div style="display:flex; align-items:center;">';
-        html += '      <p class="text-xs text-gray-500 mt-0.5" style="margin:0;">Última edición: ' + levDate + '</p>';
+        html += '    <h1>' + cliName + '</h1>';
+        html += '    <p>Última edición · ' + levDate + '</p>';
+        html += '  </div>';
+        html += '  <div class="cv-app-header-actions">';
         html += statusEl;
-        html += '    </div>';
         html += '  </div>';
         html += '</header>';
 
@@ -907,17 +926,17 @@
         // OJO: NO ponemos `overflow-y:auto` ni `flex:1` aquí — el host
         // (#lwP3CvMount) ya hospeda el scroll. Dejar el main con su
         // propio scroll recortaba las tablas inferiores cuando había
-        // muchas filas. Sólo `padding-bottom` para respirar al final.
-        html += '<main class="cv-app-main flex-col p-4 gap-4" style="display:flex; flex-direction:column; padding-bottom:48px;">';
-        
-        // Table Box
-        html += '  <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="background:#fff; border:1px solid var(--cv-border); border-radius:14px; overflow:visible; flex-shrink:0;">';
-        
-        // Toolbar (Search + Agregar Tabla)
-        html += '    <div class="px-4 py-3 border-b flex items-center justify-between bg-white z-20" style="padding:12px 16px; border-bottom:1px solid var(--cv-border); display:flex; justify-content:space-between; align-items:center; border-top-left-radius:14px; border-top-right-radius:14px;">';
-        html += '      <div class="relative" style="position:relative;">';
-        html += '        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
-        html += '        <input type="text" placeholder="Buscar partida..." class="cv-input" style="width:250px; background:var(--cv-bg-zinc-100); padding-left:34px;">';
+        // muchas filas.
+        html += '<main class="cv-app-main">';
+
+        // Table Box (workspace blanco — todas las secciones viven aquí)
+        html += '  <div class="cv-app-left">';
+
+        // Toolbar (Search + Subir + Agregar Tabla)
+        html += '    <div class="cv-toolbar">';
+        html += '      <div class="cv-search">';
+        html += '        <svg class="cv-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+        html += '        <input type="text" placeholder="Buscar" class="cv-search-input">';
         html += '      </div>';
         if (!S.readonly) {
             html += '<div class="cv-toolbar-actions">';
@@ -932,13 +951,13 @@
             html += renderSection(sec, idx);
         });
         html += '    </div></div>'; // end scroller
-        html += '  </div>'; // end Table Box
-        
-        // Bottom / Sidebar summary card
-        html += '  <div class="cv-app-bottom-summary" style="margin-top:24px;">';
+        html += '  </div>'; // end cv-app-left
+
+        // Bottom / Resumen Financiero
+        html += '  <div class="cv-app-bottom-summary">';
         html += renderBottom();
         html += '  </div>';
-        
+
         html += '</main>';
         html += '</div>';
 
@@ -1472,23 +1491,27 @@
             }
             // Actualizar volumetria en memoria con la respuesta y re-renderizar.
             var v = j.data;
-            // El endpoint devuelve la volumetría con `data` adentro; el
-            // crmVolumetria.render espera `volumetria.data`.
-            var newVol = {
-                id: v.id || S.volumetria.id,
-                nombre: v.nombre != null ? v.nombre : S.volumetria.nombre,
-                status: v.status || S.volumetria.status,
-                iva_pct: v.iva_pct != null ? v.iva_pct : S.volumetria.iva_pct,
-                tipo_cambio: v.tipo_cambio != null ? v.tipo_cambio : S.volumetria.tipo_cambio,
-                data: v.data || {},
-            };
-            // Re-render limpio (destroy + render con la data nueva).
+            // CRÍTICO: mutamos S.volumetria IN-PLACE en lugar de crear un
+            // objeto nuevo. El wizard host mantiene su propia referencia
+            // (state.volumetriaActiva) al MISMO objeto. Si reemplazáramos
+            // por uno nuevo, el wizard quedaría apuntando a un objeto sin
+            // la data importada, y el siguiente re-render (ej. al marcar
+            // como completada) volvería a mostrar la volumetría vacía y
+            // dispararía un autosave que la borraría en BD.
+            var hostVol = S.volumetria;
+            if (v.nombre != null)      hostVol.nombre = v.nombre;
+            if (v.status != null)      hostVol.status = v.status;
+            if (v.status_label != null) hostVol.status_label = v.status_label;
+            if (v.iva_pct != null)     hostVol.iva_pct = v.iva_pct;
+            if (v.tipo_cambio != null) hostVol.tipo_cambio = v.tipo_cambio;
+            hostVol.data = v.data || {};
+            // Re-render limpio (destroy + render) sobre la MISMA referencia.
             var container = S.container;
             var levantamiento = S.levantamiento;
             var readonly = S.readonly;
             var onSaved = S.onSaved;
             window.crmVolumetria.render(container, {
-                volumetria: newVol,
+                volumetria: hostVol,
                 levantamiento: levantamiento,
                 readonly: readonly,
                 onSaved: onSaved,
@@ -1500,11 +1523,19 @@
             var tcMsg = resumen.tipo_cambio_detectado
                 ? ' · TC ' + Number(resumen.tipo_cambio_detectado).toFixed(2)
                 : '';
-            // Notificación discreta — el host puede definir lwToast.
+            // Formato detectado por el registry — útil para que el ingeniero
+            // sepa qué perfil "ganó" (y reportar si detectó mal).
+            var fmt = resumen.formato_detectado || {};
+            var fmtMsg = fmt.name
+                ? ' · formato: ' + fmt.name + ' (' + (fmt.confidence || 0) + '%)'
+                : '';
             if (typeof window.lwToast === 'function') {
-                window.lwToast('Volumetría importada · ' + nEq + ' eq · ' + nMo + ' MO · ' + nCmo + ' CMO' + tcMsg, 'success');
+                window.lwToast(
+                    'Volumetría importada · ' + nEq + ' eq · ' + nMo + ' MO · ' + nCmo + ' CMO' + tcMsg + fmtMsg,
+                    'success'
+                );
             } else {
-                console.log('[crmVolumetria] Importado: eq=' + nEq + ' mo=' + nMo + ' cmo=' + nCmo + tcMsg);
+                console.log('[crmVolumetria] Importado: eq=' + nEq + ' mo=' + nMo + ' cmo=' + nCmo + tcMsg + fmtMsg);
             }
         }).catch(function (err) {
             log('importar-excel failed', err);
@@ -1550,51 +1581,121 @@
                     'value="' + esc(ivaVal) + '" placeholder="16" ' + disabled + ' />' +
                  '<span class="cv-fin-config-suffix">%</span>' +
              '</label>';
+        // Card destacado: Ganancia en pesos. Se actualiza en vivo desde
+        // updateFinValuesAndStats() — el contenido se inyecta via render
+        // por separado para no perder el foco de los inputs de TC/IVA.
+        h += '<div class="cv-fin-highlight" data-role="fin-highlight">' +
+             renderFinHighlight() +
+             '</div>';
         h += '</div>';
+        return h;
+    }
+
+    /** Card destacado de "Ganancia en pesos" — debajo del IVA en la
+     *  columna de configuración. Calculado a partir de la ganancia
+     *  total × tipo de cambio. Si no hay TC, muestra placeholder. */
+    function renderFinHighlight() {
+        var t = calcTotals();
+        var tc = num(S.volumetria && S.volumetria.tipo_cambio);
+        var gananciaMxn = tc > 0 ? t.ganancia * tc : 0;
+        var h = '';
+        h += '<div class="cv-fin-highlight-label">Ganancia en pesos</div>';
+        if (tc > 0) {
+            h += '<div class="cv-fin-highlight-value cv-mono">' +
+                    esc(fmtMoney(gananciaMxn)) +
+                    ' <span class="cv-fin-highlight-currency">MXN</span>' +
+                 '</div>';
+            h += '<div class="cv-fin-highlight-hint">' +
+                    'Ganancia ' + esc(fmtMoney(t.ganancia)) +
+                    ' × TC ' + esc(tc.toFixed(2)) +
+                 '</div>';
+        } else {
+            h += '<div class="cv-fin-highlight-value cv-fin-highlight-empty">— MXN</div>';
+            h += '<div class="cv-fin-highlight-hint">Captura el TC para ver el monto</div>';
+        }
         return h;
     }
 
     function renderFinValues() {
         var t = calcTotals();
         var tc = num(S.volumetria && S.volumetria.tipo_cambio);
-        var marginCls = 'cv-fin-row cv-fin-row-margin' + (t.margen < 20 ? ' cv-fin-row-margin-low' : '');
 
-        var h = '';
-        h += finRow('Subtotal venta', fmtMoney(t.subtotalVenta), 'cv-fin-row');
-        h += finRow('Costo total',    fmtMoney(t.totalCosto),    'cv-fin-row cv-fin-row-cost');
-        h += finRow('Ganancia',       fmtMoney(t.ganancia),      'cv-fin-row cv-fin-row-gain');
-        h += finRow('Margen',         fmtPct(t.margen),          marginCls);
+        // Desglose por tipo de sección para la columna izquierda
+        // (Análisis de Ganancia, equivalente al cuadro inferior izquierdo
+        // del Excel "Análisis de Costos").
+        var bd = { matVenta: 0, matCosto: 0, moVenta: 0, cmoCosto: 0 };
+        (S.data.secciones || []).forEach(function (sec) {
+            var st = calcSection(sec);
+            if (sec.tipo === 'equipamiento') {
+                bd.matVenta  += st.totalCli;
+                bd.matCosto  += st.totalCosto;
+            } else if (sec.tipo === 'mano_obra') {
+                bd.moVenta   += st.totalCli;
+            } else if (sec.tipo === 'costo_mo') {
+                bd.cmoCosto  += st.totalCosto;
+            }
+        });
+        var matGanancia = bd.matVenta - bd.matCosto;
+        var moGanancia  = bd.moVenta  - bd.cmoCosto;
+        var totalMxn    = tc > 0 ? t.totalConIva * tc : 0;
 
-        h += '<div class="cv-fin-sep"></div>';
+        var h = '<div class="cv-fin-table">';
 
-        if (t.iva_pct > 0) {
-            h += finRow('IVA (' + fmtPct(t.iva_pct) + ')', fmtMoney(t.iva), 'cv-fin-row cv-fin-row-iva');
-            h += finRow('Total con IVA', fmtMoney(t.totalConIva), 'cv-fin-row cv-fin-row-total');
-        } else {
-            h += finRow('Total cotización', fmtMoney(t.subtotalVenta), 'cv-fin-row cv-fin-row-total');
-        }
+        // Ganancia convertida a MXN (= total ganancia × tipo de cambio).
+        var gananciaMxn = tc > 0 ? t.ganancia * tc : 0;
 
+        // ── Columna izquierda: Análisis de Ganancia ───────────────
+        h += '<div class="cv-fin-col">';
+        h += '<div class="cv-fin-col-title">Análisis de Ganancia</div>';
+        h += '<div class="cv-fin-col-body">';
+        h += finCell('Precio de Lista',    fmtMoney(bd.matVenta));
+        h += finCell('Precio Costo',       fmtMoney(bd.matCosto));
+        h += finCell('Ganancia Material',  fmtMoney(matGanancia));
+        h += finCell('Mano de Obra',       fmtMoney(moGanancia));
+        h += finCell('Total de Ganancia',  fmtMoney(t.ganancia), 'cv-fin-grand');
+        h += '</div></div>';
+
+        // ── Columna derecha: Total Cotización ─────────────────────
+        // Nota: "Ganancia en pesos" se muestra en un card destacado
+        // aparte (debajo del IVA en la columna de configuración).
+        h += '<div class="cv-fin-col">';
+        h += '<div class="cv-fin-col-title">Total Cotización</div>';
+        h += '<div class="cv-fin-col-body">';
+        h += finCell('Sub-Total',                            fmtMoney(t.subtotalVenta));
+        h += finCell('IVA (' + fmtPct(t.iva_pct) + ')',      fmtMoney(t.iva));
+        h += finCell('Total con IVA',                        fmtMoney(t.totalConIva), 'cv-fin-grand');
+        h += finCell('Margen',                               fmtPct(t.margen), (t.margen < 20 ? 'cv-fin-pct cv-fin-pct-low' : 'cv-fin-pct'));
         if (tc > 0) {
-            var usdSubtotal = t.subtotalVenta / tc;
-            var usdTotal = t.totalConIva / tc;
-            h += '<div class="cv-fin-foot">';
-            h += '<span class="cv-fin-label">En USD @ ' + esc(tc.toFixed(2)) + '</span>';
-            h += '<span class="cv-fin-value cv-mono">$' + esc(usdSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
-                 (t.iva_pct > 0 ? ' &middot; c/IVA $' + esc(usdTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : '') +
+            h += '<div class="cv-fin-cell-row cv-fin-mxn">';
+            h += '<span class="cv-fin-cell-label">En MXN @ ' + esc(tc.toFixed(2)) + '</span>';
+            h += '<span class="cv-fin-cell-value cv-mono">$' +
+                 esc(totalMxn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
                  '</span>';
             h += '</div>';
         }
+        h += '</div></div>';
 
+        h += '</div>'; // /.cv-fin-table
         return h;
+    }
+
+    function finCell(label, value, extraCls) {
+        return '<div class="cv-fin-cell-row ' + (extraCls || '') + '">' +
+                   '<span class="cv-fin-cell-label">' + esc(label) + '</span>' +
+                   '<span class="cv-fin-cell-value cv-mono">' + esc(value) + '</span>' +
+               '</div>';
     }
 
     /** Actualiza solo los renglones de valores del card financiero,
      *  preservando el foco de los inputs de TC/IVA mientras el usuario
-     *  los está editando. También refresca el card de stats (tablas/items). */
+     *  los está editando. También refresca el card destacado de
+     *  "Ganancia en pesos" (que vive en la columna de configuración). */
     function updateFinValuesAndStats() {
         if (!S.container) return;
         var valuesEl = S.container.querySelector('.cv-fin-values');
         if (valuesEl) valuesEl.innerHTML = renderFinValues();
+        var highlightEl = S.container.querySelector('[data-role="fin-highlight"]');
+        if (highlightEl) highlightEl.innerHTML = renderFinHighlight();
     }
 
     function finRow(label, value, cls) {
@@ -2301,7 +2402,14 @@
             S.data = normalizeData(rawIn, S.levantamiento);
             S.volumetria.data = S.data;
 
-            var migrated = (rawIn && rawIn.version !== 4);
+            // `migrated` arranca un autosave inmediato para persistir el
+            // shape v4 cuando viene de un schema viejo. PERO si la entrada
+            // es un dict vacío `{}`, no hay nada que migrar y disparar
+            // autosave aquí sobreescribiría una data legítima en BD con
+            // vacío (regresión observada al marcar volumetrías como
+            // completadas tras importar Excel — bug de referencia).
+            var hasItems = !!(rawIn && Array.isArray(rawIn.secciones) && rawIn.secciones.length);
+            var migrated = (rawIn && rawIn.version !== 4 && hasItems);
             log('render volumetría', S.volumetria.id, 'readonly=' + S.readonly,
                 'tipos=' + (S.data.secciones || []).map(function (s) { return s.tipo; }).join(','),
                 'migrated=' + !!migrated);

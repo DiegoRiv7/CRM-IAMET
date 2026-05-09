@@ -10966,3 +10966,231 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
    su strip rojo. No sobrescribir — queremos que se vea idéntico al heat-map
    de Oportunidades para alertar igual de fuerte. */
 
+/* ═══════════════════════════════════════════════════════════════
+   Dashboard de Proyectos — 3ra tab del dashboard global del CRM
+   Reutiliza .ck-kpi-card / .ck-chart-card. Esto agrega:
+     - Colores de íconos / barras de progreso / valores para los 4 KPIs.
+     - Layout del chart de distribución por estado + leyenda lateral.
+     - Lista de "proyectos en riesgo" con barra de avance + tag de motivo.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* KPI iconos / labels / values con tonos púrpura-azulados para diferenciar
+   visualmente del dashboard de oportunidades (azul) y prospección (morado). */
+.ck-kpi--proy-act .ck-kpi-icon  { color: #2563EB; }
+.ck-kpi--proy-bud .ck-kpi-icon  { color: #16A34A; }
+.ck-kpi--proy-avg .ck-kpi-icon  { color: #A855F7; }
+.ck-kpi--proy-mar .ck-kpi-icon  { color: #D97706; }
+.ck-kpi--proy-act .ck-kpi-label { color: #2563EB; }
+.ck-kpi--proy-bud .ck-kpi-label { color: #16A34A; }
+.ck-kpi--proy-avg .ck-kpi-label { color: #A855F7; }
+.ck-kpi--proy-mar .ck-kpi-label { color: #D97706; }
+.ck-kpi-value--proy-bud { color: #16A34A; }
+.ck-kpi-value--proy-avg { color: #A855F7; }
+.ck-kpi-value--proy-mar { color: #D97706; }
+.ck-prog--proy-act { background: linear-gradient(to right, #60A5FA, #2563EB); }
+.ck-prog--proy-bud { background: linear-gradient(to right, #4ADE80, #16A34A); }
+.ck-prog--proy-avg { background: linear-gradient(to right, #C084FC, #A855F7); }
+.ck-prog--proy-mar { background: linear-gradient(to right, #FCD34D, #D97706); }
+
+/* Tab Proyectos activo: variante azul-purpura. Reusa .crm-tab.active pero
+   permitimos sobrescribir background si el JS añade .active-proyectos. */
+.crm-tab.active.active-proyectos {
+    background: #5856D6;
+    color: #fff;
+}
+.crm-page-sidebar .crm-tab.active.active-proyectos {
+    background: #5856D6;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(88,86,214,0.28);
+}
+
+/* Charts del dashboard de proyectos: un poco más bajos que los de prospección
+   porque la card derecha (lista de riesgo) crece con scroll interno. */
+#ckChartsSectionProy .ck-chart-card {
+    height: clamp(320px, 40vh, 460px);
+}
+
+/* Wrap del canvas para que la doughnut no se salga del card y deje espacio
+   para la leyenda inferior. */
+.crm-dash-proyectos-chart-wrap {
+    position: relative;
+    height: calc(100% - 110px);
+    min-height: 180px;
+    margin-top: 6px;
+}
+.crm-dash-proyectos-chart-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Leyenda compacta debajo del donut */
+.crm-dash-proyectos-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    margin-top: 14px;
+    padding: 0 4px;
+}
+.crm-dash-proyectos-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: #3C3C43;
+}
+.crm-dash-proyectos-legend-dot {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.7);
+}
+.crm-dash-proyectos-legend-label {
+    flex: 1;
+    color: #6B7280;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.crm-dash-proyectos-legend-val {
+    color: #1D1D1F;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Card de "Proyectos en riesgo" — lista vertical scrolleable */
+.crm-dash-proyectos-riesgo {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.crm-dash-proyectos-riesgo-count {
+    background: rgba(239,68,68,0.10);
+    color: #DC2626;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    min-width: 22px;
+    text-align: center;
+}
+.crm-dash-proyectos-riesgo-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.crm-dash-proyectos-riesgo-empty {
+    color: #86868B;
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 30px 16px;
+    font-weight: 500;
+}
+.crm-dash-proyectos-riesgo-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1.2fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    outline: none;
+}
+.crm-dash-proyectos-riesgo-row:hover,
+.crm-dash-proyectos-riesgo-row:focus-visible {
+    background: rgba(0,122,255,0.06);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.crm-dash-proyectos-riesgo-main { min-width: 0; }
+.crm-dash-proyectos-riesgo-name {
+    font-size: 0.80rem;
+    font-weight: 700;
+    color: #1D1D1F;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.crm-dash-proyectos-riesgo-client {
+    font-size: 0.68rem;
+    color: #86868B;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.crm-dash-proyectos-riesgo-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.crm-dash-proyectos-riesgo-progress-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 999px;
+    overflow: hidden;
+    min-width: 40px;
+}
+.crm-dash-proyectos-riesgo-progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, #C084FC, #5856D6);
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.crm-dash-proyectos-riesgo-progress-pct {
+    font-size: 0.70rem;
+    font-weight: 700;
+    color: #3C3C43;
+    font-variant-numeric: tabular-nums;
+    min-width: 32px;
+    text-align: right;
+}
+.crm-dash-proyectos-riesgo-tagwrap { flex-shrink: 0; }
+.crm-dash-proyectos-riesgo-tag {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+.crm-dash-proyectos-riesgo-tag--danger {
+    background: rgba(239,68,68,0.12);
+    color: #DC2626;
+}
+.crm-dash-proyectos-riesgo-tag--warn {
+    background: rgba(245,158,11,0.14);
+    color: #D97706;
+}
+.crm-dash-proyectos-riesgo-tag--info {
+    background: rgba(99,102,241,0.12);
+    color: #4F46E5;
+}
+
+/* En anchos chicos colapsamos las columnas a un layout vertical para no
+   romper la card. */
+@media (max-width: 920px) {
+    #ckChartsSectionProy > div {
+        grid-template-columns: 1fr !important;
+    }
+    .crm-dash-proyectos-riesgo-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    .crm-dash-proyectos-riesgo-progress { width: 100%; }
+}

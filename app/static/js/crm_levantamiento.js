@@ -486,6 +486,11 @@
         else if (n === 4) renderPhase4();
         else if (n === 5) renderPhase5();
 
+        // El botón Exportar de la toolbar puede deshabilitarse en Fase 3
+        // según la cantidad de volumetrías (ver _lwP3SyncTopExportBtn).
+        // En el resto de fases siempre se habilita.
+        try { _lwP3SyncTopExportBtn(); } catch (e) { /* defensivo */ }
+
         // Reaplicar readonly tras cada renderPhase: las renderPhaseN crean
         // inputs dinámicamente (productos, evidencias, etc.) y necesitan que
         // el estado readonly se propague a esos elementos recién insertados.
@@ -548,36 +553,35 @@
 
     window.lwSave = function (showFlash) {
         if (!state.lev) return Promise.resolve(null);
+
+        // ── Fase 3: el módulo `crmVolumetria` tiene su propio autosave
+        // que escribe S.data v4 al endpoint /data/ de la volumetría
+        // activa. El wizard NO debe tocar vol.data: state.lev.fase3_data
+        // es un alias legacy que puede contener un shape v1 viejo
+        // (`materiales: [{...}]`). Si lo mandáramos, sobreescribiría
+        // los 135 items v4 con basura. Solo delegamos el flush.
+        if (state.phase === 3) {
+            try {
+                if (window.crmVolumetria && typeof window.crmVolumetria.flushSave === 'function') {
+                    window.crmVolumetria.flushSave();
+                }
+            } catch (e) { /* defensivo */ }
+            return Promise.resolve({ success: true, data: null });
+        }
+
         var mySeq = ++_saveSeq;
         var data = collectPhaseData(state.phase);
         state.lev['fase' + state.phase + '_data'] = data;
         _saveInFlight++;
         _saveStatusSet('saving');
 
-        // Caso especial Fase 3: si hay volumetría activa, el save no
-        // va al endpoint genérico de fase del levantamiento sino al
-        // endpoint específico de la volumetría. Esto evita pisar
-        // accidentalmente fase3_data del levantamiento (legacy).
-        // Si NO hay volumetría activa estamos en el panel — no hay
-        // nada que guardar; retornamos sin tocar la red.
         var url, body;
-        if (state.phase === 3) {
-            if (!state.volumetriaActiva || !state.volumetriaActiva.id) {
-                // Estamos en el panel de volumetrías; no hay editor abierto.
-                _saveInFlight--;
-                _saveStatusSet('');
-                return Promise.resolve({ success: true, data: null });
-            }
-            url = '/app/api/iamet/volumetrias/' + state.volumetriaActiva.id + '/data/';
-            body = JSON.stringify({ data: data });
-        } else {
-            url = '/app/api/iamet/levantamientos/' + state.lev.id + '/fase/';
-            body = JSON.stringify({
-                fase: state.phase,
-                data: data,
-                fase_actual: state.lev.fase_actual,
-            });
-        }
+        url = '/app/api/iamet/levantamientos/' + state.lev.id + '/fase/';
+        body = JSON.stringify({
+            fase: state.phase,
+            data: data,
+            fase_actual: state.lev.fase_actual,
+        });
 
         function onDone(r) {
             _saveInFlight--;
@@ -2406,6 +2410,11 @@
     // ── Dropdown PDF ───────────────────────────────────────
     window.lwPdfMenuToggle = function (e) {
         if (e) e.stopPropagation();
+        var btn = $('lwPdfBtn');
+        if (btn && (btn.disabled || btn.classList.contains('is-disabled'))) {
+            // El botón está gris: el hover ya muestra la razón en el title.
+            return;
+        }
         var m = $('lwPdfMenu');
         if (!m) return;
         m.style.display = m.style.display === 'block' ? 'none' : 'block';
@@ -2428,14 +2437,28 @@
         var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/';
         var url;
         if (state.phase === 3) {
+            // Pasamos volumetria_id para que el endpoint lea ProyectoVolumetria.data
+            // (v4) en lugar del legacy lev.fase3_data. Sin esto el export sale vacío.
+            // Si estamos en el listado con UNA sola volumetría, la usamos
+            // por default. Con 2+ obligamos a usar las acciones de fila.
+            var volId = state.volumetriaActiva && state.volumetriaActiva.id;
+            if (!volId) {
+                var lst = state.volumetrias || [];
+                if (lst.length === 1) volId = lst[0].id;
+            }
+            if (!volId) {
+                alert('Abrí una volumetría antes de exportar (o usa el botón de la columna Acciones cuando hay varias).');
+                return;
+            }
+            var qsVol = 'volumetria_id=' + encodeURIComponent(volId);
             if (mode === 'dl-vol-xlsx') {
-                url = base + 'volumetria-xlsx/';
+                url = base + 'volumetria-xlsx/?' + qsVol;
             } else if (mode === 'view-vol-full') {
-                url = base + 'volumetria-pdf/';
+                url = base + 'volumetria-pdf/?' + qsVol;
             } else if (mode === 'dl-vol-full') {
-                url = base + 'volumetria-pdf/?download=1';
+                url = base + 'volumetria-pdf/?download=1&' + qsVol;
             } else if (mode === 'dl-vol-nocost') {
-                url = base + 'volumetria-pdf/?download=1&sin_costos=1';
+                url = base + 'volumetria-pdf/?download=1&sin_costos=1&' + qsVol;
             } else {
                 return;
             }
@@ -2561,30 +2584,115 @@
             h += '<div class="lw-p3-table-wrap">';
             h += '<table class="lw-p3-list-table"><thead><tr>';
             h += '<th>Volumetría</th><th>Estado</th><th>Creado por</th><th>Editado por</th><th>Última edición</th>';
-            if (puedeEditar) h += '<th></th>';
+            h += '<th class="lw-p3-list-actions-th">Acciones</th>';
             h += '</tr></thead><tbody>';
             list.forEach(function (v) {
                 var pillCls = v.status === 'completada' ? 'lw-p3-pill-ok' : 'lw-p3-pill-draft';
+                var nombreSafe = esc(v.nombre || '').replace(/'/g, '&#39;');
                 h += '<tr onclick="lwP3OpenVolumetria(' + v.id + ')">';
                 h += '<td class="lw-p3-list-name">' + esc(v.nombre || ('Volumetría ' + v.id)) + '</td>';
                 h += '<td><span class="lw-p3-pill ' + pillCls + '">' + esc(v.status_label || v.status) + '</span></td>';
                 h += '<td>' + esc(v.creado_por_nombre || '—') + '</td>';
                 h += '<td>' + esc(v.actualizado_por_nombre || '—') + '</td>';
                 h += '<td class="lw-p3-list-date">' + _lwP3FmtFecha(v.fecha_actualizacion) + '</td>';
-                if (puedeEditar) {
-                    h += '<td class="lw-p3-list-actions" onclick="event.stopPropagation();">';
-                    if (v.status !== 'completada') {
-                        h += '<button type="button" class="lw-p3-list-del" title="Eliminar borrador" onclick="lwP3DeleteVolumetria(' + v.id + ', \'' + esc(v.nombre || '') + '\')">';
-                        h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
-                        h += '</button>';
-                    }
-                    h += '</td>';
+                h += '<td class="lw-p3-list-actions" onclick="event.stopPropagation();">';
+                // Botón Exportar (todos los usuarios)
+                h += '<div class="lw-p3-row-actions">';
+                h += '<div class="lw-p3-export-wrap">';
+                h += '<button type="button" class="lw-p3-row-btn" title="Exportar" onclick="lwP3RowExportToggle(event, ' + v.id + ')">';
+                h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+                h += '</button>';
+                h += '<div class="lw-p3-export-menu" id="lwP3ExportMenu_' + v.id + '">';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'view-vol-full\')">Ver PDF (con costos)</div>';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-full\')">Descargar PDF completo</div>';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-nocost\')">Descargar PDF sin costos</div>';
+                h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-xlsx\')">Descargar Excel</div>';
+                h += '</div>';
+                h += '</div>';
+                // Botón Eliminar — solo ingeniero y solo borradores
+                if (puedeEditar && v.status !== 'completada') {
+                    h += '<button type="button" class="lw-p3-row-btn lw-p3-row-btn-danger" title="Eliminar borrador" onclick="lwP3DeleteVolumetria(' + v.id + ', \'' + nombreSafe + '\')">';
+                    h += '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
+                    h += '</button>';
                 }
+                h += '</div>';
+                h += '</td>';
                 h += '</tr>';
             });
             h += '</tbody></table></div>';
         }
         panel.innerHTML = h;
+        // Sincroniza el estado del botón Exportar de la toolbar
+        // (se deshabilita si no hay exactamente 1 volumetría en el listado).
+        _lwP3SyncTopExportBtn();
+    }
+
+    // Toggle del menú de export por fila. Cierra los demás abiertos.
+    window.lwP3RowExportToggle = function (e, volId) {
+        if (e) e.stopPropagation();
+        var openMenu = document.getElementById('lwP3ExportMenu_' + volId);
+        // Cierra todos los menús abiertos primero
+        document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+            if (el !== openMenu) el.classList.remove('is-open');
+        });
+        if (openMenu) openMenu.classList.toggle('is-open');
+    };
+
+    // Disparador del export para una volumetría específica desde la fila.
+    window.lwP3RowExport = function (volId, mode) {
+        // Cierra menú abierto
+        document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+            el.classList.remove('is-open');
+        });
+        var base = '/app/api/iamet/levantamientos/' + state.lev.id + '/';
+        var qs = 'volumetria_id=' + encodeURIComponent(volId);
+        var url;
+        if (mode === 'dl-vol-xlsx')        url = base + 'volumetria-xlsx/?' + qs;
+        else if (mode === 'view-vol-full') url = base + 'volumetria-pdf/?' + qs;
+        else if (mode === 'dl-vol-full')   url = base + 'volumetria-pdf/?download=1&' + qs;
+        else if (mode === 'dl-vol-nocost') url = base + 'volumetria-pdf/?download=1&sin_costos=1&' + qs;
+        else return;
+        window.open(url, '_blank');
+    };
+
+    // Cierra los menús de export al hacer click fuera.
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest || !e.target.closest('.lw-p3-export-wrap')) {
+            document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+                el.classList.remove('is-open');
+            });
+        }
+    });
+
+    // Habilita/deshabilita el botón Exportar de la toolbar según el contexto:
+    //  - Editor de volumetría (state.volumetriaActiva) → habilitado.
+    //  - Listado con 1 volumetría → habilitado (la usa por default).
+    //  - Listado con 0 o ≥2 volumetrías → deshabilitado (el usuario debe
+    //    exportar desde la columna Acciones de cada fila).
+    function _lwP3SyncTopExportBtn() {
+        var btn = $('lwPdfBtn');
+        if (!btn) return;
+        // Solo aplica en Fase 3
+        if (state.phase !== 3) {
+            btn.disabled = false;
+            btn.classList.remove('is-disabled');
+            btn.title = 'Exportar documento';
+            return;
+        }
+        var nVol = (state.volumetrias || []).length;
+        var enListado = !state.volumetriaActiva;
+        var disable = false;
+        var reason = '';
+        if (enListado && nVol === 0) {
+            disable = true;
+            reason = 'No hay volumetrías para exportar';
+        } else if (enListado && nVol > 1) {
+            disable = true;
+            reason = 'Hay varias volumetrías — usa el botón de la columna Acciones';
+        }
+        btn.disabled = disable;
+        btn.classList.toggle('is-disabled', disable);
+        btn.title = reason || 'Exportar documento';
     }
 
     function _lwP3FmtFecha(iso) {
@@ -2940,6 +3048,10 @@
         // tope y la página no scrolleaba abajo.
         if (wrap)  wrap.style.display  = 'flex';
         if (!state.volumetriaActiva) return;
+
+        // El editor sí tiene una volumetría activa: habilita el botón
+        // Exportar de la toolbar (en el listado se deshabilita en >1 vols).
+        try { _lwP3SyncTopExportBtn(); } catch (e) { /* defensivo */ }
 
         // Delegamos la mesa de trabajo al módulo crm_volumetria (v3).
         // El head viejo ("Volver al listado · nombre · status · toggle")
@@ -3865,51 +3977,115 @@
     }
 
     // Para Fase 3 (Volumetría) — vendedor sólo ve cantidades, NO precios.
+    // Resumen v4 → cuenta items (sin headers/rótulos) por tipo de sección.
+    function _v4Counts(d) {
+        d = d || {};
+        var secs = Array.isArray(d.secciones) ? d.secciones : [];
+        var n = { eq: 0, mo: 0, cmo: 0 };
+        secs.forEach(function (sec) {
+            var tipo = sec.tipo || 'equipamiento';
+            (sec.items || []).forEach(function (it) {
+                if ((it || {}).row_type === 'header') return;
+                if (tipo === 'equipamiento') n.eq++;
+                else if (tipo === 'mano_obra') n.mo++;
+                else if (tipo === 'costo_mo') n.cmo++;
+            });
+        });
+        return n;
+    }
+
     function _detail3(d) {
         d = d || {};
-        var html = '';
+        // ── Schema v4: lee `secciones[]` con items tipados ───────────
+        var secs = Array.isArray(d.secciones) ? d.secciones : null;
+        if (secs && secs.length) {
+            var html = '';
+            // Agrupar por tipo para mostrar bloques claros
+            var byTipo = { equipamiento: [], mano_obra: [], costo_mo: [] };
+            secs.forEach(function (sec) {
+                var tipo = sec.tipo || 'equipamiento';
+                if (!byTipo[tipo]) byTipo[tipo] = [];
+                byTipo[tipo].push(sec);
+            });
+            var blocks = [
+                { tipo: 'equipamiento', label: 'Equipamiento / Materiales' },
+                { tipo: 'mano_obra',    label: 'Mano de obra / servicios' },
+                { tipo: 'costo_mo',     label: 'Costos adicionales' },
+            ];
+            var totalItems = 0;
+            blocks.forEach(function (b) {
+                var lst = byTipo[b.tipo] || [];
+                var items = [];
+                lst.forEach(function (sec) {
+                    (sec.items || []).forEach(function (it) {
+                        if ((it || {}).row_type === 'header') return;
+                        items.push(it);
+                    });
+                });
+                if (!items.length) return;
+                totalItems += items.length;
+                html += '<div class="lvc-detail-block-title">' + _esc(b.label) +
+                        ' (' + items.length + ')</div>';
+                html += '<ul class="lvc-detail-list">';
+                items.forEach(function (it) {
+                    var qty = it.cantidad != null ? it.cantidad : '?';
+                    var desc = it.descripcion || '—';
+                    var marca = it.marca ? _esc(it.marca) + ' · ' : '';
+                    var parte = it.parte ? ' (' + _esc(it.parte) + ')' : '';
+                    html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + '</b> · ' +
+                            marca + _esc(desc) + parte + '</li>';
+                });
+                html += '</ul>';
+            });
+            if (!totalItems) {
+                return '<div class="lvc-detail-value is-muted">Sin partidas capturadas.</div>';
+            }
+            return html + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">' +
+                   'ⓘ Aquí solo se listan cantidades y descripciones. Para ver costos y precios, descarga el PDF.' +
+                   '</div>';
+        }
+        // ── Fallback: schema v1 legacy ───────────────────────────────
+        var html2 = '';
         var mat = d.materiales || [];
         if (mat.length) {
-            html += '<div class="lvc-detail-block-title">Materiales / equipos (' + mat.length + ')</div>';
-            html += '<ul class="lvc-detail-list">';
+            html2 += '<div class="lvc-detail-block-title">Materiales / equipos (' + mat.length + ')</div>';
+            html2 += '<ul class="lvc-detail-list">';
             mat.forEach(function(r) {
                 var qty = r.qty || r.cantidad || '?';
                 var unidad = r.unidad || 'PZA';
                 var desc = r.desc || r.descripcion || '—';
-                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+                html2 += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
             });
-            html += '</ul>';
+            html2 += '</ul>';
         }
         var mo = d.manoObra || [];
         if (mo.length) {
-            html += '<div class="lvc-detail-block-title">Mano de obra / servicios (' + mo.length + ')</div>';
-            html += '<ul class="lvc-detail-list">';
+            html2 += '<div class="lvc-detail-block-title">Mano de obra / servicios (' + mo.length + ')</div>';
+            html2 += '<ul class="lvc-detail-list">';
             mo.forEach(function(r) {
                 var qty = r.qty || r.cantidad || '?';
                 var unidad = r.unidad || 'JOR';
                 var desc = r.desc || r.descripcion || '—';
-                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+                html2 += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
             });
-            html += '</ul>';
+            html2 += '</ul>';
         }
         var gas = d.gastos || [];
         if (gas.length) {
-            html += '<div class="lvc-detail-block-title">Gastos operativos (' + gas.length + ')</div>';
-            html += '<ul class="lvc-detail-list">';
+            html2 += '<div class="lvc-detail-block-title">Gastos operativos (' + gas.length + ')</div>';
+            html2 += '<ul class="lvc-detail-list">';
             gas.forEach(function(r) {
                 var qty = r.qty || r.cantidad || '?';
                 var unidad = r.unidad || '';
                 var desc = r.desc || r.descripcion || '—';
-                html += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
+                html2 += '<li class="lvc-detail-list-item"><b>' + _esc(qty) + ' ' + _esc(unidad) + '</b> · ' + _esc(desc) + '</li>';
             });
-            html += '</ul>';
+            html2 += '</ul>';
         }
         if (!mat.length && !mo.length && !gas.length) {
             return '<div class="lvc-detail-value is-muted">Sin partidas capturadas.</div>';
         }
-        // Nota: por privacidad financiera, ocultamos costos/precios al vendedor.
-        // El PDF "sin costos" cubre la entrega externa.
-        return html + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">ⓘ Los costos y precios no se muestran. Descarga el PDF de presupuesto para verlos.</div>';
+        return html2 + '<div class="lvc-detail-value is-muted" style="margin-top:14px;font-size:11.5px;">ⓘ Los costos y precios no se muestran. Descarga el PDF de presupuesto para verlos.</div>';
     }
 
     function _detail4(d) {
@@ -4074,15 +4250,26 @@
         if (!vols.length) return '<div class="lvc-detail-empty">No hay volumetrías completadas aún.</div>';
         return vols.map(function (vol) {
             var d = vol.data || {};
+            // Resumen de partidas: schema v4 (secciones) con fallback a v1.
             var partidasResumen = '';
-            var nM = (d.materiales || []).length;
-            var nMO = (d.manoObra || []).length;
-            var nG = (d.gastos || []).length;
-            var bits = [];
-            if (nM)  bits.push(nM  + ' material'  + (nM  === 1 ? '' : 'es'));
-            if (nMO) bits.push(nMO + ' mano de obra');
-            if (nG)  bits.push(nG  + ' gasto' + (nG === 1 ? '' : 's'));
-            partidasResumen = bits.length ? bits.join(' · ') : 'Sin partidas';
+            var hasV4 = Array.isArray(d.secciones) && d.secciones.length;
+            if (hasV4) {
+                var c = _v4Counts(d);
+                var bits = [];
+                if (c.eq)  bits.push(c.eq  + ' equipamiento');
+                if (c.mo)  bits.push(c.mo  + ' mano de obra');
+                if (c.cmo) bits.push(c.cmo + ' costo' + (c.cmo === 1 ? '' : 's'));
+                partidasResumen = bits.length ? bits.join(' · ') : 'Sin partidas';
+            } else {
+                var nM = (d.materiales || []).length;
+                var nMO = (d.manoObra || []).length;
+                var nG = (d.gastos || []).length;
+                var bits1 = [];
+                if (nM)  bits1.push(nM  + ' material'  + (nM  === 1 ? '' : 'es'));
+                if (nMO) bits1.push(nMO + ' mano de obra');
+                if (nG)  bits1.push(nG  + ' gasto' + (nG === 1 ? '' : 's'));
+                partidasResumen = bits1.length ? bits1.join(' · ') : 'Sin partidas';
+            }
 
             var html = '';
             html += '<div class="lvc-vol-card" data-vol-id="' + vol.id + '">';
@@ -4101,22 +4288,26 @@
             html += '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
             html += '</button>';
             html += '<div class="lvc-export-menu" id="lvcExportMenu' + vol.id + '">';
-            // Vendedor sólo opciones SIN COSTOS — coherente con la regla
-            // existente del overlay (vendedor nunca ve precios).
-            var base = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-pdf/?volumetria_id=' + vol.id + '&sin_costos=1';
-            var baseDl = base + '&download=1';
-            var xlsx = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id + '&sin_costos=1';
-            html += '<a href="' + base + '" target="_blank" class="lvc-export-item">';
+            // "Ver en pestaña": versión COMPLETA (con costos) — para que
+            // el vendedor revise costos y precios antes de mandarle al
+            // cliente. Las descargas (PDF / Excel) van sin costos —
+            // listas para enviar como propuesta externa al cliente.
+            var volBase = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-pdf/?volumetria_id=' + vol.id;
+            var viewUrl = volBase;                                  // ver = completa con costos
+            var dlPdf   = volBase + '&download=1&sin_costos=1';     // descarga PDF = sin costos (cliente)
+            // Excel: completo con costos (uso interno del vendedor)
+            var xlsx    = '/app/api/iamet/levantamientos/' + lev.id + '/volumetria-xlsx/?volumetria_id=' + vol.id;
+            html += '<a href="' + viewUrl + '" target="_blank" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Ver en pestaña</div><div class="lvc-export-item-sub">Previsualizar (sin costos)</div></div>';
+            html += '<div><div class="lvc-export-item-title">Ver en pestaña</div><div class="lvc-export-item-sub">Versión completa (con costos)</div></div>';
             html += '</a>';
-            html += '<a href="' + baseDl + '" class="lvc-export-item">';
+            html += '<a href="' + dlPdf + '" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Descargar PDF</div><div class="lvc-export-item-sub">Cantidades y descripciones</div></div>';
+            html += '<div><div class="lvc-export-item-title">Descargar PDF para cliente</div><div class="lvc-export-item-sub">Sin costos — solo cantidades y descripciones</div></div>';
             html += '</a>';
             html += '<a href="' + xlsx + '" class="lvc-export-item">';
             html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>';
-            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Formato .xlsx</div></div>';
+            html += '<div><div class="lvc-export-item-title">Descargar en Excel</div><div class="lvc-export-item-sub">Versión completa con costos — formato .xlsx</div></div>';
             html += '</a>';
             // Separador + opción "Generar cotización" — placeholder visual
             // por ahora; la lógica se conecta cuando el usuario indique.
@@ -4128,8 +4319,9 @@
             html += '</div>';
             html += '</div>';
             html += '</div>';
-            // Resumen de partidas (sin costos — vendedor nunca los ve)
-            html += '<div class="lvc-vol-body">' + _detail3(d) + '</div>';
+            // Card compacto: solo título + resumen ("134 equipamiento · 24
+            // mano de obra · 5 costos") + botón Exportar. Para ver el
+            // detalle de partidas el vendedor abre el PDF/Excel.
             html += '</div>';
             return html;
         }).join('');
@@ -4146,17 +4338,78 @@
         if (menu) menu.classList.toggle('is-open');
     };
 
-    // Stub: el usuario definirá el flujo de cotización después.
-    // Por ahora cierra el dropdown y avisa que está pendiente.
+    // Genera una cotización a partir de la volumetría completada.
+    // Llama al endpoint, abre el PDF en pestaña nueva y refresca la lista
+    // de cotizaciones de la oportunidad si está visible.
     window.lvcGenerarCotizacion = function (volId, levId) {
+        // Cierra cualquier menú abierto
         var menus = document.querySelectorAll('.lvc-export-menu.is-open');
         menus.forEach(function (m) { m.classList.remove('is-open'); });
-        try { console.log('[cotizacion] (TODO) volId=' + volId + ' levId=' + levId); } catch (e) {}
-        if (typeof lwToast === 'function') {
-            lwToast('Generar cotización — próximamente', 'info');
-        } else {
-            alert('Generar cotización — próximamente');
-        }
+
+        // Default de nombre: "<Levantamiento> - <Volumetría>", igual al
+        // que arma el backend si no le mandamos uno. Lo pre-llenamos en
+        // el prompt para que sea un click si quiere usarlo tal cual.
+        var lev = _currentLev || {};
+        var vol = (_currentVolumetrias || []).filter(function (v) { return v.id === volId; })[0] || {};
+        var nombreDefault = (lev.nombre || 'Cotización').trim();
+        if (vol.nombre) nombreDefault += ' - ' + vol.nombre.trim();
+
+        var promptPromise = (typeof lwPrompt === 'function')
+            ? lwPrompt({
+                title: 'Generar cotización',
+                message: 'Confirma el nombre de la cotización antes de generarla. Aparece como título del PDF y en el listado de cotizaciones de la oportunidad.',
+                placeholder: nombreDefault,
+                defaultValue: nombreDefault,
+                confirmLabel: 'Generar',
+                cancelLabel: 'Cancelar',
+                required: false,
+              })
+            : Promise.resolve(window.prompt('Nombre de la cotización:', nombreDefault));
+
+        promptPromise.then(function (nombreInput) {
+            if (nombreInput === null) return;  // canceló
+            var nombre = (nombreInput || '').trim() || nombreDefault;
+
+            if (typeof lwToast === 'function') {
+                lwToast('Generando cotización…', 'info');
+            }
+
+            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+
+            fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ nombre: nombre }),
+            }).then(function (r) {
+                return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+            }).then(function (res) {
+                if (!res.ok || !res.data || res.data.success !== true) {
+                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                    if (typeof lwToast === 'function') lwToast(msg, 'error');
+                    else alert(msg);
+                    return;
+                }
+                try {
+                    window.open(res.data.pdf_url, '_blank');
+                } catch (e) {
+                    location.href = res.data.pdf_url;
+                }
+                if (typeof lwToast === 'function') {
+                    lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+                }
+                try {
+                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                    }
+                } catch (e) { /* defensivo */ }
+            }).catch(function (err) {
+                var msg = 'Error de red al generar cotización';
+                if (typeof lwToast === 'function') lwToast(msg, 'error');
+                else alert(msg);
+                try { console.error('[cotizacion]', err); } catch (e) {}
+            });
+        });
     };
 
     // Click fuera de cualquier menú abierto → cerrarlo.

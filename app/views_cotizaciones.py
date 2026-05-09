@@ -949,81 +949,51 @@ def download_and_redirect_cotizacion(request, cotizacion_id, oportunidad_id):
     return render(request, 'download_and_redirect.html', context)
 
 
-def generate_cotizacion_pdf(request, cotizacion_id):
-    """
-    View to generate the PDF of a specific quote.
-    """
-    print(f"DEBUG: Starting generate_cotizacion_pdf for quote ID: {cotizacion_id}")
-    cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    print(f"DEBUG: Quote found: {cotizacion.id} - Quote Type: {cotizacion.tipo_cotizacion}")
-    
-    # Ensure that the user has permission to view this quote
-    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
-        print(f"DEBUG: Access denied for user {request.user.username} to quote {cotizacion.id}")
-        return HttpResponse("Acceso denegado.", status=403)
+def _build_cotizacion_pdf_payload(cotizacion, request_user=None):
+    """Construye (pdf_bytes, pdf_filename) para una cotización dada.
 
+    Refactor del helper: separa la generación del PDF del envoltorio HTTP
+    para que otros endpoints (p.ej. "Generar cotización" desde la
+    volumetría) puedan obtener los bytes sin pasar por el response.
+    """
     detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('orden')
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
-    
-    # DEBUG: Mostrar todos los detalles antes de procesar
-    print(f"DEBUG: Total detalles encontrados: {len(detalles_cotizacion)}")
-    for detalle in detalles_cotizacion:
-        tipo_actual = getattr(detalle, 'tipo', 'NO_DEFINIDO')
-        print(f"DEBUG: Detalle ID={detalle.id}, nombre='{detalle.nombre_producto}', tipo='{tipo_actual}'")
-    
+
     # Organizar productos en secciones basadas en títulos
     secciones = []
     seccion_actual = None
-
     for detalle in detalles_cotizacion:
         tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
-
         if tipo_detalle == 'titulo':
             if seccion_actual:
                 secciones.append(seccion_actual)
             seccion_actual = {'titulo': detalle.nombre_producto, 'productos': []}
-        else:  # Es un producto
+        else:
             if not seccion_actual:
-                # Si hay productos antes del primer título, se agrupan en una sección sin título.
                 seccion_actual = {'titulo': None, 'productos': []}
             seccion_actual['productos'].append(detalle)
-
-    # Agregar la última sección si existe
     if seccion_actual:
         secciones.append(seccion_actual)
-
-    # Si después de todo no hay secciones pero sí detalles, se crea una sección por defecto.
     if not secciones and detalles_cotizacion:
-        secciones.append({'titulo': None, 'productos': [d for d in detalles_cotizacion if getattr(d, 'tipo', 'producto') == 'producto']})
-    
-    print(f"DEBUG: ===== RESUMEN FINAL =====")
-    print(f"DEBUG: Secciones organizadas: {len(secciones)} secciones encontradas")
-    for i, seccion in enumerate(secciones):
-        print(f"DEBUG: 📋 Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
-        for j, producto in enumerate(seccion['productos']):
-            print(f"     📦 Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
-    print(f"DEBUG: =========================")
+        secciones.append({
+            'titulo': None,
+            'productos': [d for d in detalles_cotizacion if getattr(d, 'tipo', 'producto') == 'producto'],
+        })
 
     pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
     pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
     if not pdf_name:
         pdf_name = f"Cotizacion_{cotizacion.id}"
 
-    tipo_cotizacion = cotizacion.tipo_cotizacion
+    tipo_cotizacion = (cotizacion.tipo_cotizacion or '').lower()
     logo_base64 = ""
-    company_name = ""
-    company_address = ""
-    company_phone = ""
-    company_email = ""
-    template_name = 'cotizacion_pdf_template.html' # Default template
-
-    if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
+    if tipo_cotizacion == 'iamet':
         template_name = 'iamet_cotizacion_pdf_template.html'
         company_name = 'IAMET S.A. de C.V.'
         company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
         company_phone = '+52 33 9876 5432'
         company_email = 'contacto@iamet.com'
-    elif tipo_cotizacion and tipo_cotizacion.lower() == 'bajanet':
+    else:  # 'bajanet' o cualquier otro → fallback Bajanet
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
         company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
@@ -1031,33 +1001,18 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_email = 'ventas@bajanet.com'
         try:
             logo_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRV1xCutWCicl-yXCjMjH5P5jTZA0R993cG9g&s"
-            response = requests.get(logo_url)
-            response.raise_for_status() # Raise an exception for HTTP errors
+            response = requests.get(logo_url, timeout=5)
+            response.raise_for_status()
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
         except requests.exceptions.RequestException as e:
             print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
-            logo_base64 = "" # Fallback to empty string if fetching fails
-    else: # Fallback to Bajanet if type is not recognized or None
-        template_name = 'cotizacion_pdf_template.html'
-        company_name = 'BAJANET S.A. de C.V.'
-        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
-        company_phone = '+52 55 1234 5678'
-        company_email = 'ventas@bajanet.com'
-        try:
-            logo_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRV1xCutWCicl-yXCjMjH5P5jTZA0R993cG9g&s"
-            response = requests.get(logo_url)
-            response.raise_for_status() # Raise an exception for HTTP errors
-            logo_base64 = base64.b64encode(response.content).decode('utf-8')
-        except requests.exceptions.RequestException as e:
-            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
-            logo_base64 = "" # Fallback to empty string if fetching fails
-
+            logo_base64 = ""
 
     context = {
         'cotizacion': cotizacion,
         'detalles_cotizacion': detalles_cotizacion,
         'secciones': secciones,
-        'request_user': request.user,
+        'request_user': request_user,
         'current_date': date.today(),
         'company_name': company_name,
         'company_address': company_address,
@@ -1067,25 +1022,27 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         'iva_rate_percentage': iva_rate_percentage,
     }
 
-    try:
-        print(f"DEBUG: Attempting to render template: {template_name}")
-        html_string = render_to_string(template_name, context)
-        print("DEBUG: Template rendered to HTML string.")
-    except Exception as e:
-        print(f"ERROR: Error rendering template '{template_name}': {e}")
-        return HttpResponse(f"Internal server error rendering PDF: {e}", status=500)
+    html_string = render_to_string(template_name, context)
+    pdf_bytes = HTML(string=html_string).write_pdf()
+    return pdf_bytes, pdf_name
 
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{pdf_name}.pdf"'
+
+def generate_cotizacion_pdf(request, cotizacion_id):
+    """
+    View to generate the PDF of a specific quote.
+    """
+    cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
+    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
+        return HttpResponse("Acceso denegado.", status=403)
 
     try:
-        print("DEBUG: Attempting to generate PDF with WeasyPrint.")
-        HTML(string=html_string).write_pdf(response)
-        print("DEBUG: PDF generated successfully.")
+        pdf_bytes, pdf_name = _build_cotizacion_pdf_payload(cotizacion, request_user=request.user)
     except Exception as e:
-        print(f"ERROR: Error generating PDF with WeasyPrint: {e}")
+        print(f"ERROR: Error generating cotización PDF: {e}")
         return HttpResponse(f"Internal server error generating PDF: {e}", status=500)
-        
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{pdf_name}.pdf"'
     return response
 
 

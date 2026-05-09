@@ -7,7 +7,6 @@
     @page {
         size: Letter landscape;
         margin: 1.2cm 1.0cm 1.8cm;
-
         @bottom-center {
             content: "Volumetría · {{ lev.nombre|escape }} · Página " counter(page) " de " counter(pages);
             font-family: 'Inter', Arial, sans-serif;
@@ -70,18 +69,30 @@
         padding: 10px 14px; width: 38%;
     }
 
-    /* Bloque de sección (título + tabla) — se mantiene junto si cabe en la página */
-    .vol-section-block {
-        page-break-inside: avoid;
-        break-inside: avoid;
-        margin-top: 10px;
+    /* Bloque tipo (banda + tablas hijas) — SE PUEDE PARTIR entre páginas:
+       una sección de Equipamiento puede tener 30+ items que no caben
+       en una página. La banda azul de tipo evita romper junto con la
+       fila siguiente para no quedar huérfana al final de página. */
+    .vol-tipo-block { margin-top: 12px; }
+    .vol-tipo-row {
+        background: #2563EB; color: #fff;
+        font-size: 9.5pt; font-weight: 800;
+        padding: 7px 12px; letter-spacing: 0.06em; text-transform: uppercase;
+        border-radius: 6px 6px 0 0;
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
-    /* Sección (banda azul clara) */
+    /* Una sección concreta (titulo de tabla + tabla). Tampoco forzamos
+       que no se parta — para tablas grandes preferimos partir y que
+       el thead se repita en la siguiente página. */
+    .vol-section-block { margin-top: 6px; }
     .vol-section-row {
-        background: #E8F1FB; color: #1D4ED8; font-size: 9pt; font-weight: 800;
-        padding: 6px 10px; letter-spacing: 0.05em; text-transform: uppercase;
-        border: 1px solid #DBE6F3; border-bottom: none; border-radius: 6px 6px 0 0;
+        background: #E8F1FB; color: #1D4ED8; font-size: 8.5pt; font-weight: 700;
+        padding: 5px 10px; letter-spacing: 0.04em; text-transform: uppercase;
+        border: 1px solid #DBE6F3; border-bottom: none;
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
     /* Tabla de volumetría */
@@ -89,10 +100,8 @@
         width: 100%; border-collapse: collapse; table-layout: auto;
         margin-bottom: 2px; border: 1px solid #DBE6F3;
     }
-    /* thead se repite en cada página si la tabla sí se parte (caso extremo) */
     .vol-tbl thead { display: table-header-group; }
     .vol-tbl tfoot { display: table-footer-group; }
-    /* evitar romper filas individuales por la mitad */
     .vol-tbl tr { page-break-inside: avoid; break-inside: avoid; }
     .vol-tbl th {
         background: #F1F5F9; color: #475569;
@@ -119,23 +128,48 @@
     }
     .vol-tbl tfoot td.num { font-weight: 800; }
 
-    /* Resumen se mantiene junto y empieza en página nueva si la de materiales
-       quedó larga (evita que el resumen se separe de su tabla de gastos) */
-    .vol-summary { page-break-inside: avoid; break-inside: avoid; }
-
-    /* Resumen financiero */
-    .vol-summary {
-        margin-top: 14px; width: 60%; margin-left: auto;
-        border-collapse: collapse; border: 1px solid #DBE6F3; border-radius: 8px; overflow: hidden;
+    /* Resumen — dos columnas estilo wizard (Análisis + Total Cotización) */
+    .vol-resumen {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-top: 14px;
+        display: flex;
+        gap: 12px;
     }
-    .vol-summary td {
-        padding: 6px 14px; border-bottom: 1px solid #E2E8F0;
-        font-size: 9.5pt; vertical-align: middle;
+    .vol-resumen-col {
+        flex: 1; border: 1px solid #DBE6F3; border-radius: 8px;
+        overflow: hidden; background: #fff;
     }
-    .vol-summary td.lbl { color: #475569; font-weight: 600; background: #F8FAFC; width: 55%; }
-    .vol-summary td.val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
-    .vol-summary tr.total td { background: linear-gradient(180deg, #2563EB, #1D4ED8); color: #fff; font-size: 11pt; font-weight: 800; }
-    .vol-summary tr.margen td { background: #ECFDF5; color: #047857; font-weight: 800; }
+    .vol-resumen-col-title {
+        background: #F1F5F9; color: #475569;
+        font-size: 8.5pt; font-weight: 700;
+        padding: 6px 12px; letter-spacing: 0.06em; text-transform: uppercase;
+        text-align: center; border-bottom: 1px solid #DBE6F3;
+    }
+    .vol-resumen-tbl { width: 100%; border-collapse: collapse; }
+    .vol-resumen-tbl td {
+        padding: 6px 14px; border-bottom: 1px solid #F1F5F9;
+        font-size: 9pt; vertical-align: middle;
+    }
+    .vol-resumen-tbl td.lbl { color: #475569; font-weight: 600; width: 60%; }
+    .vol-resumen-tbl td.val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .vol-resumen-tbl tr.grand td {
+        background: linear-gradient(180deg, #2563EB, #1D4ED8); color: #fff;
+        font-size: 10.5pt; font-weight: 800;
+    }
+    .vol-resumen-tbl tr.grand td.lbl { color: #fff; }
+    .vol-resumen-tbl tr.mxn td {
+        background: #ECFDF5; color: #047857; font-weight: 700;
+    }
+    .vol-resumen-tbl tr.mxn td.lbl { color: #047857; }
+    .vol-resumen-tbl tr.margen td {
+        background: #FEF3C7; color: #92400E; font-weight: 700;
+    }
+    .vol-resumen-tbl tr.margen td.lbl { color: #92400E; }
+    .vol-resumen-tbl tr.margen-low td {
+        background: #FEE2E2; color: #B91C1C; font-weight: 700;
+    }
+    .vol-resumen-tbl tr.margen-low td.lbl { color: #B91C1C; }
 
     .vol-empty {
         padding: 14px; text-align: center; color: #94A3B8;
@@ -164,7 +198,7 @@
     {% if sin_costos %}<span class="pt-title-mode">Sin costos</span>{% endif %}
 </div>
 
-<!-- ═══ HEADER BAND ═══ -->
+{# ═══ HEADER BAND ═══ #}
 <table class="vol-band">
     <tr>
         <td class="vol-cliente" rowspan="3">{{ cliente_nombre|default:"Cliente" }}</td>
@@ -187,16 +221,19 @@
     </tr>
 </table>
 
-<!-- ═══ TABLA 1 — EQUIPAMIENTO / MATERIALES ═══ -->
+{# ═══ BLOQUE EQUIPAMIENTO ═══ #}
+{% if has_eq %}
+<div class="vol-tipo-block">
+<div class="vol-tipo-row">Equipamiento</div>
+{% for sec in sections_eq %}
 <div class="vol-section-block">
-<div class="vol-section-row">Equipamiento &amp; Materiales</div>
-{% if materiales %}
+{% if sec.titulo %}<div class="vol-section-row">{{ sec.titulo }}</div>{% endif %}
+{% if sec.rows %}
 <table class="vol-tbl">
     <thead>
         <tr>
             <th style="width:2.5%;">#</th>
             <th style="width:4%;">Cant</th>
-            <th style="width:4%;">Unid</th>
             <th>Descripción</th>
             <th style="width:8%;">Marca</th>
             <th style="width:10%;">No. Parte</th>
@@ -211,14 +248,16 @@
         </tr>
     </thead>
     <tbody>
-    {% for r in materiales %}
+    {% for r in sec.rows %}
+        {% if r.is_header %}
+        <tr class="vol-group-row"><td colspan="{% if sin_costos %}6{% else %}11{% endif %}">{{ r.texto }}</td></tr>
+        {% else %}
         <tr>
-            <td class="ctr">{{ forloop.counter }}</td>
+            <td class="ctr">{{ r.idx }}</td>
             <td class="num">{{ r.qty_fmt }}</td>
-            <td class="ctr">{{ r.unid }}</td>
             <td>{{ r.desc }}</td>
             <td>{{ r.marca }}</td>
-            <td>{{ r.modelo }}</td>
+            <td>{{ r.parte }}</td>
             {% if not sin_costos %}
             <td class="num">{{ r.precio_lista_fmt }}</td>
             <td class="num">{{ r.desc_venta_fmt }}</td>
@@ -228,50 +267,67 @@
             {% endif %}
             <td>{{ r.proveedor }}</td>
         </tr>
+        {% endif %}
     {% endfor %}
     </tbody>
     {% if not sin_costos %}
     <tfoot>
         <tr>
-            <td colspan="8">Subtotal Materiales</td>
-            <td class="num">{{ tot_mat_venta_fmt }}</td>
+            <td colspan="7">Subtotal {{ sec.titulo|default:"Equipamiento" }}</td>
+            <td class="num">{{ sec.sec_venta_fmt }}</td>
             <td></td>
-            <td class="num">{{ tot_mat_costo_fmt }}</td>
+            <td class="num">{{ sec.sec_costo_fmt }}</td>
             <td></td>
         </tr>
     </tfoot>
     {% endif %}
 </table>
 {% else %}
-<div class="vol-empty">Sin materiales capturados.</div>
+<div class="vol-empty">Sin items capturados.</div>
 {% endif %}
-</div><!-- /.vol-section-block materiales -->
+</div>
+{% endfor %}
+</div>
+{% endif %}
 
-<!-- ═══ TABLA 2 — MANO DE OBRA ═══ -->
+{# ═══ BLOQUE MANO DE OBRA ═══ #}
+{% if has_mo %}
+<div class="vol-tipo-block">
+<div class="vol-tipo-row">Mano de Obra</div>
+{% for sec in sections_mo %}
 <div class="vol-section-block">
-<div class="vol-section-row">Mano de Obra &amp; Servicios</div>
-{% if mano_obra %}
+{% if sec.titulo %}<div class="vol-section-row">{{ sec.titulo }}</div>{% endif %}
+{% if sec.rows %}
 <table class="vol-tbl">
     <thead>
         <tr>
             <th style="width:3%;">#</th>
             <th style="width:5%;">Cant</th>
-            <th style="width:5%;">Unid</th>
             <th>Descripción</th>
+            <th style="width:10%;">Marca</th>
+            <th style="width:10%;">Parte</th>
             {% if not sin_costos %}
-            <th style="width:12%;" class="num">Precio Unit</th>
-            <th style="width:12%;" class="num">Total</th>
+            <th style="width:9%;" class="num">P. Lista</th>
+            <th style="width:5%;" class="num">Desc V%</th>
+            <th style="width:11%;" class="num">Precio Unit</th>
+            <th style="width:11%;" class="num">Total</th>
             {% endif %}
         </tr>
     </thead>
     <tbody>
-    {% for r in mano_obra %}
+    {% for r in sec.rows %}
         <tr>
             <td class="ctr">{{ forloop.counter }}</td>
             <td class="num">{{ r.qty_fmt }}</td>
-            <td class="ctr">{{ r.unid }}</td>
-            <td>{{ r.desc }}</td>
+            <td>
+                {{ r.desc }}
+                {% if r.notas %}<div style="color:#64748B;font-size:7.5pt;margin-top:1px;">{{ r.notas }}</div>{% endif %}
+            </td>
+            <td>{{ r.marca }}</td>
+            <td>{{ r.parte }}</td>
             {% if not sin_costos %}
+            <td class="num">{{ r.precio_lista_fmt }}</td>
+            <td class="num">{{ r.desc_venta_fmt }}</td>
             <td class="num">{{ r.precio_unit_fmt }}</td>
             <td class="num"><b>{{ r.total_fmt }}</b></td>
             {% endif %}
@@ -281,90 +337,102 @@
     {% if not sin_costos %}
     <tfoot>
         <tr>
-            <td colspan="5">Subtotal Mano de Obra</td>
-            <td class="num">{{ tot_mo_fmt }}</td>
+            <td colspan="8">Subtotal {{ sec.titulo|default:"Mano de Obra" }}</td>
+            <td class="num">{{ sec.sec_venta_fmt }}</td>
         </tr>
     </tfoot>
     {% endif %}
 </table>
 {% else %}
-<div class="vol-empty">Sin mano de obra capturada.</div>
+<div class="vol-empty">Sin items capturados.</div>
 {% endif %}
-</div><!-- /.vol-section-block mano obra -->
+</div>
+{% endfor %}
+</div>
+{% endif %}
 
-<!-- ═══ TABLA 3 — GASTOS ═══ -->
-{% if gastos %}
+{# ═══ BLOQUE COSTOS ADICIONALES ═══ #}
+{# Solo se imprime en modo completo: el vendedor no debe ver costos. #}
+{% if has_cmo and not sin_costos %}
+<div class="vol-tipo-block">
+<div class="vol-tipo-row">Costos Adicionales</div>
+{% for sec in sections_cmo %}
 <div class="vol-section-block">
-<div class="vol-section-row">Gastos Operativos &amp; Viáticos</div>
+{% if sec.titulo %}<div class="vol-section-row">{{ sec.titulo }}</div>{% endif %}
+{% if sec.rows %}
 <table class="vol-tbl">
     <thead>
         <tr>
             <th style="width:3%;">#</th>
-            <th style="width:5%;">Cant</th>
-            <th style="width:5%;">Unid</th>
             <th>Descripción</th>
-            {% if not sin_costos %}
-            <th style="width:12%;" class="num">Costo Unit</th>
-            <th style="width:12%;" class="num">Total</th>
-            {% endif %}
+            <th style="width:7%;" class="num">Cantidad</th>
+            <th style="width:11%;" class="num">Costo Unit</th>
+            <th style="width:7%;" class="num">Días</th>
+            <th style="width:13%;" class="num">Total</th>
         </tr>
     </thead>
     <tbody>
-    {% for r in gastos %}
+    {% for r in sec.rows %}
         <tr>
             <td class="ctr">{{ forloop.counter }}</td>
-            <td class="num">{{ r.qty_fmt }}</td>
-            <td class="ctr">{{ r.unid }}</td>
             <td>{{ r.desc }}</td>
-            {% if not sin_costos %}
+            <td class="num">{{ r.qty_fmt }}</td>
             <td class="num">{{ r.costo_unit_fmt }}</td>
+            <td class="num">{{ r.dias_fmt }}</td>
             <td class="num"><b>{{ r.total_fmt }}</b></td>
-            {% endif %}
         </tr>
     {% endfor %}
     </tbody>
-    {% if not sin_costos %}
     <tfoot>
         <tr>
-            <td colspan="5">Subtotal Gastos</td>
-            <td class="num">{{ tot_gas_fmt }}</td>
+            <td colspan="5">Subtotal {{ sec.titulo|default:"Costos Adicionales" }}</td>
+            <td class="num">{{ sec.sec_costo_fmt }}</td>
         </tr>
     </tfoot>
-    {% endif %}
 </table>
-</div><!-- /.vol-section-block gastos -->
+{% else %}
+<div class="vol-empty">Sin items capturados.</div>
 {% endif %}
-
-<!-- ═══ RESUMEN FINANCIERO (solo modo completo) ═══ -->
-{% if not sin_costos %}
-<div style="display:flex;gap:10px;margin-top:14px;">
-    <!-- USD -->
-    <table class="vol-summary" style="width:50%;margin:0;">
-        <tr><td colspan="2" style="background:#F1F5F9;color:#475569;font-size:9pt;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;text-align:center;padding:5px;">USD</td></tr>
-        <tr><td class="lbl">Subtotal Materiales (Venta)</td><td class="val">{{ tot_mat_venta_fmt }}</td></tr>
-        <tr><td class="lbl">Subtotal Mano de Obra</td><td class="val">{{ tot_mo_fmt }}</td></tr>
-        <tr><td class="lbl">Subtotal Gastos</td><td class="val">{{ tot_gas_fmt }}</td></tr>
-        <tr class="total"><td class="lbl" style="color:#fff;background:transparent;">TOTAL VENTA</td><td class="val">{{ total_venta_fmt }}</td></tr>
-        <tr><td class="lbl">Total Costos</td><td class="val">{{ total_costo_fmt }}</td></tr>
-        <tr class="margen"><td class="lbl" style="color:#047857;background:transparent;">Utilidad Bruta ({{ margen_pct }}%)</td><td class="val">{{ utilidad_fmt }}</td></tr>
-    </table>
-
-    <!-- MXN -->
-    <table class="vol-summary" style="width:50%;margin:0;">
-        <tr><td colspan="2" style="background:#ECFDF5;color:#047857;font-size:9pt;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;text-align:center;padding:5px;">
-            MXN · TC {{ tipo_cambio_fmt }}{% if tipo_cambio_fecha %} ({{ tipo_cambio_fecha }}){% endif %}
-        </td></tr>
-        <tr><td class="lbl">Subtotal Materiales</td><td class="val">{{ tot_mat_venta_mxn_fmt }}</td></tr>
-        <tr><td class="lbl">Subtotal Mano de Obra</td><td class="val">{{ tot_mo_mxn_fmt }}</td></tr>
-        <tr><td class="lbl">Subtotal Gastos</td><td class="val">{{ tot_gas_mxn_fmt }}</td></tr>
-        <tr class="total" style="background:#047857;"><td class="lbl" style="color:#fff;background:transparent;">TOTAL VENTA MXN</td><td class="val">{{ total_venta_mxn_fmt }}</td></tr>
-        <tr><td class="lbl">Total Costos</td><td class="val">{{ total_costo_mxn_fmt }}</td></tr>
-        <tr class="margen"><td class="lbl" style="color:#047857;background:transparent;">Utilidad Bruta</td><td class="val">{{ utilidad_mxn_fmt }}</td></tr>
-    </table>
+</div>
+{% endfor %}
 </div>
 {% endif %}
 
-<!-- ═══ Footer ═══ -->
+{% if not has_eq and not has_mo and not has_cmo %}
+<div class="vol-empty">Esta volumetría aún no tiene tablas capturadas.</div>
+{% endif %}
+
+{# ═══ RESUMEN FINANCIERO (solo modo completo) ═══ #}
+{% if not sin_costos %}
+<div class="vol-resumen">
+    {# Análisis de Ganancia #}
+    <div class="vol-resumen-col">
+        <div class="vol-resumen-col-title">Análisis de Ganancia</div>
+        <table class="vol-resumen-tbl">
+            <tr><td class="lbl">Precio de Lista</td><td class="val">{{ tot_eq_venta_fmt }}</td></tr>
+            <tr><td class="lbl">Precio Costo</td><td class="val">{{ tot_eq_costo_fmt }}</td></tr>
+            <tr><td class="lbl">Ganancia Material</td><td class="val">{{ mat_ganancia_fmt }}</td></tr>
+            <tr><td class="lbl">Mano de Obra</td><td class="val">{{ mo_ganancia_fmt }}</td></tr>
+            <tr class="grand"><td class="lbl">Total de Ganancia</td><td class="val">{{ ganancia_fmt }}</td></tr>
+        </table>
+    </div>
+
+    {# Total Cotización #}
+    <div class="vol-resumen-col">
+        <div class="vol-resumen-col-title">Total Cotización</div>
+        <table class="vol-resumen-tbl">
+            <tr><td class="lbl">Sub-Total</td><td class="val">{{ subtotal_venta_fmt }}</td></tr>
+            <tr><td class="lbl">IVA ({{ iva_pct_fmt }}%)</td><td class="val">{{ iva_fmt }}</td></tr>
+            <tr class="mxn"><td class="lbl">Ganancia en pesos</td><td class="val">{{ ganancia_mxn_fmt }} MXN</td></tr>
+            <tr class="grand"><td class="lbl">Total con IVA</td><td class="val">{{ total_con_iva_fmt }}</td></tr>
+            <tr class="margen"><td class="lbl">Margen</td><td class="val">{{ margen_pct }}%</td></tr>
+            <tr class="mxn"><td class="lbl">En MXN @ {{ tipo_cambio_fmt }}</td><td class="val">{{ total_con_iva_mxn_fmt }}</td></tr>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# ═══ Footer ═══ #}
 <div class="pt-footer">
     {% if footer_logos_url %}<img class="pt-footer-brands" src="{{ footer_logos_url }}" alt="Marcas">{% endif %}
     <div class="pt-footer-contact">
