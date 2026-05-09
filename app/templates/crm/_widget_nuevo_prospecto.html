@@ -27,7 +27,7 @@
                     <!-- span oculto con label dinámico (usado por código externo para cambiar "Nombre del prospecto" ↔ "Titulo de la prospeccion") -->
                     <span id="wpfLblNombre" style="display:none;">Nombre del prospecto</span>
                     <span id="wpfLblCliente" style="display:none;">Cliente</span>
-                    <input type="text" class="wn-ctw-title" id="wpfNombre" placeholder="Nombre del prospecto…" autocomplete="off">
+                    <input type="text" class="wn-ctw-title" id="wpfNombre" placeholder="Título de la prospección…" autocomplete="off">
 
                     <!-- Para [Cliente] -->
                     <div class="wn-ctw-nl-row">
@@ -214,7 +214,7 @@
                                     <option value="AVIGILION">Avigilon</option>
                                     <option value="GENETEC">Genetec</option>
                                     <option value="AXIS">Axis</option>
-                                    <option value="SOFTWARE" selected>Software</option>
+                                    <option value="SOFTWARE">Software</option>
                                     <option value="RUNRATE">Runrate</option>
                                     <option value="POLIZA">Póliza</option>
                                     <option value="CISCO">Cisco</option>
@@ -232,7 +232,8 @@
                             <div class="wn-ctw-pop" id="wpPopArea" style="display:none;">
                                 <div class="wn-ctw-pop-title">Área</div>
                                 <select class="wn-ctw-pop-input" id="wpfArea">
-                                    <option value="SISTEMAS" selected>Sistemas</option>
+                                    <option value="" selected>Selecciona un área</option>
+                                    <option value="SISTEMAS">Sistemas</option>
                                     <option value="Recursos Humanos">Recursos Humanos</option>
                                     <option value="Compras">Compras</option>
                                     <option value="Seguridad">Seguridad</option>
@@ -635,11 +636,11 @@
             setEmpty('wpfContactoId');
             setEmpty('wpfTipoPipeline');
             setEmpty('wpfComentarios');
-            // Producto y Área: reset a defaults del HTML (SOFTWARE / SISTEMAS)
+            // Producto y Área: vacíos por default (no obligatorios)
             var prodSel = document.getElementById('wpfProducto');
-            if (prodSel) { prodSel.value = 'SOFTWARE'; prodSel.dispatchEvent(new Event('change')); }
+            if (prodSel) { prodSel.value = ''; prodSel.dispatchEvent(new Event('change')); }
             var areaSel = document.getElementById('wpfArea');
-            if (areaSel) { areaSel.value = 'SISTEMAS'; areaSel.dispatchEvent(new Event('change')); }
+            if (areaSel) { areaSel.value = ''; areaSel.dispatchEvent(new Event('change')); }
             _wpSelectedClienteId = null;
             // Limpiar estados visuales de error
             var tituloEl = document.getElementById('wpfNombre');
@@ -723,11 +724,15 @@
                 nombre: nombre,
                 cliente_id: parseInt(clienteId),
                 contacto_id: contactoId ? parseInt(contactoId) : null,
-                producto: document.getElementById('wpfProducto').value,
-                area: document.getElementById('wpfArea').value,
                 tipo_pipeline: pipeline,
                 comentarios: document.getElementById('wpfComentarios').value.trim()
             };
+            // Producto/Área son opcionales — solo enviar si el creador eligió algo,
+            // así el backend usa los defaults del modelo si no se especifican.
+            var prodVal = (document.getElementById('wpfProducto') || {}).value || '';
+            if (prodVal) payload.producto = prodVal;
+            var areaVal = (document.getElementById('wpfArea') || {}).value || '';
+            if (areaVal) payload.area = areaVal;
             // Etapa pre-seleccionada desde el kanban (click en "+" de una columna)
             if (window._pkStageForNew) payload.etapa = window._pkStageForNew;
             // Asignación a otro vendedor (solo supervisores/admin; el backend valida).
