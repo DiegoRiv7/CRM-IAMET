@@ -391,7 +391,10 @@ def api_crear_prospecto(request):
                 fecha_inicio=act_fecha_dt,
                 fecha_fin=act_fecha_dt + timedelta(hours=1),
                 creado_por=asignar_a,
-                color='#5856D6',  # índigo: distingue tareas asignadas por supervisor
+                # #B45309 = café (warm-modern). Mantiene la convención visual
+                # de "actividad de prospecto" para que el calendario abra el
+                # modal específico (con sección Relacionado a → prospecto).
+                color='#B45309',
             )
             # Supervisor también ve la actividad en su calendario
             evento.participantes.add(request.user)

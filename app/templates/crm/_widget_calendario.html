@@ -1170,7 +1170,7 @@
         var isNow = now>=startD && now<=endD;
         var isOverdue = now>endD;
 
-        var esProspecto = (evt.color === '#8B5CF6' || evt.color === '#B45309');
+        var esProspecto = (evt.color === '#8B5CF6' || evt.color === '#B45309' || evt.color === '#5856D6');
         document.getElementById('calDetailType').textContent = esTarea ? 'Tarea' : esProspecto ? 'Prospecto' : hasOpp ? 'Oportunidad' : 'Actividad';
         document.getElementById('calDetailTitle').textContent = evt.title || '—';
         document.getElementById('calDetailTime').textContent = startFmt + ' – ' + endFmt;
@@ -1205,6 +1205,7 @@
         // Limpiar TODA metadata de prospecto y de programa de obra
         var descClean = rawDesc;
         descClean = descClean.replace(/\[programacion_actividad_id:\d+\]/g, '');
+        descClean = descClean.replace(/\[asignado_por_id:\d+\]/g, '');
         var cut = descClean.indexOf('prospecto_id:');
         if (cut > 0) { descClean = descClean.substring(0, cut); }
         else if (cut === 0) { descClean = ''; }
@@ -1369,7 +1370,7 @@
                     var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(id); });
                     if (evt) {
                         var ep = evt.extendedProps || {};
-                        if (evt.color === '#8B5CF6' || evt.color === '#B45309') {
+                        if (evt.color === '#8B5CF6' || evt.color === '#B45309' || evt.color === '#5856D6') {
                             // Prospecto: extraer prospecto_id y abrir widget
                             var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
                             if (pMatch && typeof abrirWidgetProspecto === 'function') {
@@ -2370,6 +2371,9 @@
             prospectoNombre = parts[1] || '';
             desc = '';
         }
+        // Limpiar token interno [asignado_por_id:N] que se usa para
+        // referenciar al supervisor pero no debe mostrarse al usuario.
+        desc = desc.replace(/\n?\[asignado_por_id:\d+\]/g, '').trim();
 
         var prospectoLinkHtml = prospectoId
             ? '<div onclick="document.getElementById(\'calProspectoInfoOverlay\').remove();if(typeof abrirWidgetProspecto===\'function\')abrirWidgetProspecto('+prospectoId+');" style="display:inline-flex;align-items:center;gap:6px;background:#FAF0E0;color:#78350F;padding:8px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'#FAF6F0\'" onmouseout="this.style.background=\'#FAF0E0\'">' +
