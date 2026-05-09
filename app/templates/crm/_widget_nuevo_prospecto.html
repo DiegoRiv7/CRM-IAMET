@@ -102,7 +102,8 @@
                             <span style="font-size:0.7rem;font-weight:600;color:#fff;background:#EF4444;padding:2px 8px;border-radius:999px;">Requerida</span>
                         </div>
                         <p style="margin:0 0 10px 0;font-size:0.78rem;color:#636366;line-height:1.5;">
-                            Para guiar al vendedor asignado, dile qué hacer primero. Esta actividad aparecerá en su calendario.
+                            Para guiar al vendedor asignado, indícale qué hacer primero y cuándo.
+                            La actividad usará el título y las notas de la prospección.
                         </p>
 
                         <!-- Chips de tipo -->
@@ -134,12 +135,11 @@
                         </div>
                         <input type="hidden" id="wpfActInitTipo" value="">
 
-                        <!-- Descripción + Fecha -->
-                        <div style="display:grid;grid-template-columns:1fr 220px;gap:10px;">
-                            <textarea id="wpfActInitDescripcion" rows="2" placeholder="¿Qué tiene que hacer? Ej: Visitar planta y levantar requerimiento de cámaras"
-                                      style="width:100%;padding:10px 12px;border:1px solid #DBE4FF;border-radius:10px;font-family:inherit;font-size:0.86rem;color:#1d1d1f;background:#fff;resize:vertical;outline:none;"></textarea>
+                        <!-- Fecha y hora -->
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <label for="wpfActInitFecha" style="font-size:0.78rem;font-weight:600;color:#475569;flex-shrink:0;">Fecha y hora</label>
                             <input type="datetime-local" id="wpfActInitFecha"
-                                   style="padding:10px 12px;border:1px solid #DBE4FF;border-radius:10px;font-family:inherit;font-size:0.86rem;color:#1d1d1f;background:#fff;outline:none;">
+                                   style="flex:1;padding:10px 12px;border:1px solid #DBE4FF;border-radius:10px;font-family:inherit;font-size:0.86rem;color:#1d1d1f;background:#fff;outline:none;">
                         </div>
                     </div>
 
@@ -661,7 +661,6 @@
             var actBlk = document.getElementById('wpActInitBlock');
             if (actBlk) actBlk.style.display = 'none';
             setEmpty('wpfActInitTipo');
-            setEmpty('wpfActInitDescripcion');
             setEmpty('wpfActInitFecha');
             document.querySelectorAll('#wpActInitChips .wp-ai-chip.active').forEach(function(c){ c.classList.remove('active'); });
             // Refrescar labels y estado ready
@@ -702,17 +701,17 @@
             var contactoId = document.getElementById('wpfContactoId').value;
             var pipeline   = document.getElementById('wpfTipoPipeline').value;
 
-            // Validar bloque "Actividad inicial" ANTES de disable del botón
+            // Validar bloque "Actividad inicial" ANTES de disable del botón.
+            // Solo requiere tipo + fecha; el título y descripción de la
+            // actividad se toman del prospecto (título y notas iniciales).
             var actInicial = null;
             var actBlock = document.getElementById('wpActInitBlock');
             if (actBlock && actBlock.style.display !== 'none') {
                 var actTipo = (document.getElementById('wpfActInitTipo') || {}).value || '';
-                var actDesc = ((document.getElementById('wpfActInitDescripcion') || {}).value || '').trim();
                 var actFecha = (document.getElementById('wpfActInitFecha') || {}).value || '';
                 if (!actTipo) { alert('Selecciona el tipo de actividad inicial (Visita, Llamada, …).'); return; }
-                if (!actDesc) { alert('Escribe qué tiene que hacer el vendedor en la actividad inicial.'); return; }
                 if (!actFecha) { alert('Selecciona una fecha para la actividad inicial.'); return; }
-                actInicial = { tipo: actTipo, descripcion: actDesc, fecha_programada: actFecha };
+                actInicial = { tipo: actTipo, fecha_programada: actFecha };
             }
 
             var submitBtn = document.getElementById('wpfSubmit');
@@ -990,7 +989,6 @@
             if (!distinto) {
                 // Reset si vuelve a sí mismo
                 var t = document.getElementById('wpfActInitTipo'); if (t) t.value = '';
-                var d = document.getElementById('wpfActInitDescripcion'); if (d) d.value = '';
                 var f = document.getElementById('wpfActInitFecha'); if (f) f.value = '';
                 document.querySelectorAll('#wpActInitChips .wp-ai-chip.active').forEach(function(c){ c.classList.remove('active'); });
             } else {

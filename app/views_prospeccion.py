@@ -16,7 +16,7 @@ from .views_grupos import get_usuarios_visibles_ids
 from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
-    MensajeOportunidad, Actividad,
+    MensajeOportunidad, Actividad, Notificacion,
 )
 
 logger = logging.getLogger(__name__)
@@ -315,17 +315,16 @@ def api_crear_prospecto(request):
             asignacion_externa = True
 
     # Si supervisor/admin asigna a otro vendedor, EXIGIR actividad inicial.
+    # Solo requerimos TIPO + FECHA — el título usa el del prospecto y la
+    # descripción usa los comentarios iniciales del prospecto.
     actividad_inicial = data.get('actividad_inicial') or {}
     tipos_validos = {c[0] for c in ProspectoActividad.TIPO_CHOICES}
     act_tipo = (actividad_inicial.get('tipo') or '').strip()
-    act_descripcion = (actividad_inicial.get('descripcion') or '').strip()
     act_fecha_raw = (actividad_inicial.get('fecha_programada') or '').strip()
     act_fecha_dt = None
     if asignacion_externa:
         if act_tipo not in tipos_validos:
             return JsonResponse({'success': False, 'error': 'Tipo de actividad inicial inválido'}, status=400)
-        if not act_descripcion:
-            return JsonResponse({'success': False, 'error': 'Descripción de la actividad inicial requerida'}, status=400)
         if not act_fecha_raw:
             return JsonResponse({'success': False, 'error': 'Fecha de la actividad inicial requerida'}, status=400)
         try:
@@ -356,12 +355,18 @@ def api_crear_prospecto(request):
 
     # Si fue asignación externa, crear actividad inicial + evento de calendario
     # para el vendedor asignado, con metadata para enlazar de vuelta al prospecto.
+    # Notificar también al vendedor para que lo vea al entrar al CRM.
     if asignacion_externa and act_fecha_dt is not None:
+        # Descripción de la actividad: el título de la prospección + los
+        # comentarios iniciales si los hay. Evita duplicar campos en la UI.
+        act_titulo = prospecto.nombre
+        act_descripcion_calc = (prospecto.comentarios or '').strip()
+
         ProspectoActividad.objects.create(
             prospecto=prospecto,
             usuario=asignar_a,
             tipo=act_tipo,
-            descripcion=act_descripcion,
+            descripcion=act_descripcion_calc or act_titulo,
             fecha_programada=act_fecha_dt,
         )
         try:
@@ -377,15 +382,16 @@ def api_crear_prospecto(request):
             }
             cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
             sup_nombre = (request.user.get_full_name() or request.user.username).strip()
-            # Descripción visible + metadata: asignado_por + link al prospecto
+            # Descripción visible: comentarios del prospecto + asignado_por + link.
+            desc_visible = act_descripcion_calc + ('\n\n' if act_descripcion_calc else '')
             desc_cal = (
-                act_descripcion
-                + f'\n\nAsignado por: {sup_nombre}'
+                desc_visible
+                + f'Asignado por: {sup_nombre}'
                 + f'\n[asignado_por_id:{request.user.id}]'
                 + f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
             )
             evento = Actividad.objects.create(
-                titulo=act_descripcion[:200],
+                titulo=act_titulo[:200],
                 tipo_actividad=tipo_cal_map.get(act_tipo, 'otro'),
                 descripcion=desc_cal,
                 fecha_inicio=act_fecha_dt,
@@ -400,6 +406,24 @@ def api_crear_prospecto(request):
             evento.participantes.add(request.user)
         except Exception as e:
             logging.getLogger(__name__).warning('Prospecto: no se pudo crear actividad calendario asignada: %s', e)
+
+        # Notificación al vendedor: aparece en el icono de campana del CRM.
+        try:
+            tipo_legible = dict(ProspectoActividad.TIPO_CHOICES).get(act_tipo, act_tipo)
+            fecha_legible = act_fecha_dt.strftime('%d/%m/%Y a las %H:%M')
+            sup_nombre_n = (request.user.get_full_name() or request.user.username).strip()
+            Notificacion.objects.create(
+                usuario_destinatario=asignar_a,
+                usuario_remitente=request.user,
+                tipo='prospecto_asignado',
+                titulo=f'{sup_nombre_n} te asignó un prospecto',
+                mensaje=(
+                    f'"{prospecto.nombre}" — primera actividad: {tipo_legible} '
+                    f'el {fecha_legible}.'
+                ),
+            )
+        except Exception as e:
+            logging.getLogger(__name__).warning('Prospecto: no se pudo crear notificación de asignación: %s', e)
 
     return JsonResponse({
         'success': True,
