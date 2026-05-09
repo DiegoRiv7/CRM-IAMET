@@ -460,7 +460,56 @@
         if (btnSaveCli) btnSaveCli.addEventListener('click', function() {
             var nombre = document.getElementById('wpfNuevoClienteNombre').value.trim();
             if (!nombre) { document.getElementById('wpfNuevoClienteNombre').focus(); return; }
-            var btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
+            var btn = this;
+            var modoProsp = (typeof _wpCurrentMode !== 'undefined') && _wpCurrentMode === 'prospecto';
+
+            // ── MODO PROSPECTO: crear ClientePotencial (Panel admin → Prospectos)
+            // No requiere cliente real ni pasa por el flujo de Prospecto del kanban.
+            if (modoProsp) {
+                btn.disabled = true; btn.textContent = 'Guardando…';
+                // asignado_a: el seleccionado en el pill, o el supervisor mismo.
+                var asigEl = document.getElementById('wpfAsignadoId');
+                var asigBtnRef = document.getElementById('wpAsignadoBtn');
+                var meId = (asigBtnRef && asigBtnRef.getAttribute('data-me-id')) || '';
+                var asignadoId = (asigEl && asigEl.value) ? parseInt(asigEl.value) : (meId ? parseInt(meId) : null);
+                if (!asignadoId) {
+                    alert('Selecciona un vendedor en "Asignar a" antes de crear el prospecto.');
+                    btn.disabled = false; btn.textContent = 'Guardar prospecto';
+                    return;
+                }
+                fetch('/app/api/admin/prospectos/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        asignado_a_id: asignadoId,
+                        notas: ((document.getElementById('wpfComentarios') || {}).value || '').trim(),
+                    })
+                }).then(function(r){ return r.json(); }).then(function(res) {
+                    if (res && res.success) {
+                        // Cerrar todo el composer y notificar
+                        var w = document.getElementById('widgetNuevoProspecto');
+                        if (w) { w.classList.add('closing'); setTimeout(function(){ w.classList.remove('active','closing'); }, 220); }
+                        var toast = document.getElementById('widgetToast');
+                        if (toast) {
+                            toast.textContent = 'Prospecto "' + nombre + '" creado en Panel Admin → Prospectos';
+                            toast.classList.add('show');
+                            setTimeout(function() { toast.classList.remove('show'); }, 3500);
+                        }
+                        // Refrescar listado del panel admin si está visible
+                        if (typeof window.loadProspectos === 'function') {
+                            try { window.loadProspectos(); } catch(_){}
+                        }
+                    } else {
+                        alert((res && res.error) || 'Error al crear prospecto');
+                    }
+                    btn.disabled = false; btn.textContent = 'Guardar prospecto';
+                }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar prospecto'; });
+                return;
+            }
+
+            // ── MODO CLIENTE (default): crear Cliente y enlazarlo al composer ──
+            btn.disabled = true; btn.textContent = 'Guardando…';
             fetch('/app/api/quick-crear-cliente/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
@@ -786,16 +835,22 @@
             var btnAdd = document.getElementById('wpnAddClienteBtn');
             if (btnAdd) {
                 // Reemplazar solo el nodo texto (conserva el SVG)
+                var replaced = false;
                 for (var i = 0; i < btnAdd.childNodes.length; i++) {
                     var node = btnAdd.childNodes[i];
                     if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
                         node.textContent = ' ' + txt.addNew;
-                        return;
+                        replaced = true;
+                        break;
                     }
                 }
-                // Fallback: si no hay nodo de texto, agregar uno
-                btnAdd.appendChild(document.createTextNode(' ' + txt.addNew));
+                if (!replaced) btnAdd.appendChild(document.createTextNode(' ' + txt.addNew));
             }
+            // Mini-form "+ Crear ..." (input placeholder + botón guardar)
+            var miniInput = document.getElementById('wpfNuevoClienteNombre');
+            if (miniInput) miniInput.placeholder = isProsp ? 'Nombre del prospecto' : 'Nombre de la empresa';
+            var miniSave = document.getElementById('wpfNuevoClienteGuardar');
+            if (miniSave) miniSave.textContent = isProsp ? 'Guardar prospecto' : 'Guardar cliente';
         };
 
         // ── Asignación a otro vendedor (solo supervisores/admin) ──
