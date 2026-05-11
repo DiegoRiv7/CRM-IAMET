@@ -2497,6 +2497,17 @@ class Actividad(models.Model):
         verbose_name="Oportunidad Relacionada"
     )
 
+    # Enlace opcional a un Evento de Marketing — cuando un Evento se crea,
+    # se replica una Actividad espejo aquí para que aparezca en el calendario.
+    evento = models.ForeignKey(
+        'Evento',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='actividades_calendario',
+        verbose_name="Evento de Marketing Relacionado"
+    )
+
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
     # Agrupador opcional para actividades creadas como serie recurrente.
@@ -3909,6 +3920,13 @@ class Prospecto(models.Model):
     etapa = models.CharField(max_length=20, choices=ETAPA_CHOICES, default='identificado')
     reunion_tipo = models.CharField(max_length=15, choices=REUNION_TIPO_CHOICES, blank=True, default='')
     oportunidad_creada = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospecto_origen')
+    # Si este prospecto se generó al invitar a un cliente a un Evento de Marketing,
+    # guardamos la referencia para mostrar el badge "viene de Evento X" en el kanban.
+    evento_origen = models.ForeignKey(
+        'Evento', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='prospectos_generados',
+        help_text='Evento de marketing del que se generó este prospecto.'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 

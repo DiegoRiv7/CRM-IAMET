@@ -3,19 +3,75 @@
 CRUD JSON sobre Evento y EventoAsistente. La lista se renderiza server-side
 desde `views_crm.crm_home` (cuando tab=prospeccion + vista=eventos); este
 módulo expone las APIs para crear/editar/eliminar/listar y para manejar
-asistentes.
+asistentes. Incluye sync bidireccional con Calendario (Actividad) y con
+Prospección (Prospecto.evento_origen).
 """
 import json
+from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods
 
-from .models import Cliente, Evento, EventoAsistente, Prospecto
+from .models import Actividad, Cliente, Evento, EventoAsistente, Prospecto
 from .views_utils import is_ingeniero
+
+
+# Color violeta para distinguir los eventos en el calendario
+EVENTO_CALENDAR_COLOR = '#AF52DE'
+
+
+def _sync_calendario(evento, fallback_user=None):
+    """Crea o actualiza la Actividad del calendario que espeja un Evento.
+    Si el evento se marca como cancelado, se elimina del calendario.
+    """
+    if evento.estado == 'cancelado':
+        Actividad.objects.filter(evento=evento).delete()
+        return None
+
+    fecha_fin = evento.fecha_evento + timedelta(minutes=evento.duracion_minutos or 60)
+    desc_parts = []
+    if evento.ubicacion:
+        desc_parts.append(f'📍 {evento.ubicacion}')
+    if evento.marcas:
+        desc_parts.append(f'Marcas: {", ".join(evento.marcas)}')
+    if evento.descripcion:
+        desc_parts.append(evento.descripcion)
+    descripcion = '\n\n'.join(desc_parts)
+
+    titulo = f'📅 {evento.nombre}'
+    completada = (evento.estado == 'realizado')
+    creador = evento.organizador or fallback_user or evento.creado_por
+
+    actividad = Actividad.objects.filter(evento=evento).first()
+    if actividad:
+        actividad.titulo = titulo
+        actividad.descripcion = descripcion
+        actividad.fecha_inicio = evento.fecha_evento
+        actividad.fecha_fin = fecha_fin
+        actividad.completada = completada
+        actividad.color = EVENTO_CALENDAR_COLOR
+        actividad.tipo_actividad = 'reunion'
+        actividad.save()
+    else:
+        actividad = Actividad.objects.create(
+            evento=evento,
+            titulo=titulo,
+            tipo_actividad='reunion',
+            descripcion=descripcion,
+            fecha_inicio=evento.fecha_evento,
+            fecha_fin=fecha_fin,
+            creado_por=creador,
+            color=EVENTO_CALENDAR_COLOR,
+            completada=completada,
+        )
+    if evento.organizador and not actividad.participantes.filter(id=evento.organizador.id).exists():
+        actividad.participantes.add(evento.organizador)
+    return actividad
 
 
 def _access_ok(user):
@@ -153,6 +209,11 @@ def api_evento_crear(request):
         organizador=organizador,
         creado_por=request.user,
     )
+    try:
+        _sync_calendario(e, fallback_user=request.user)
+    except Exception as exc:
+        # No fallar la creación del evento si la sync del calendario falla.
+        print(f'[Eventos] sync calendario falló al crear: {exc}')
     return JsonResponse({'ok': True, 'evento': _evento_to_dict(e)})
 
 
@@ -202,6 +263,10 @@ def api_evento_editar(request, evento_id):
         if org:
             e.organizador = org
     e.save()
+    try:
+        _sync_calendario(e, fallback_user=request.user)
+    except Exception as exc:
+        print(f'[Eventos] sync calendario falló al editar: {exc}')
     return JsonResponse({'ok': True, 'evento': _evento_to_dict(e)})
 
 
@@ -230,17 +295,65 @@ def api_evento_asistente_agregar(request, evento_id):
     prospecto_id = data.get('prospecto_id')
     contacto_nombre = (data.get('contacto_nombre') or '').strip()
     contacto_email = (data.get('contacto_email') or '').strip()
+    generar_prospecto = bool(data.get('generar_prospecto'))
     if not (cliente_id or prospecto_id or contacto_nombre):
         return JsonResponse({'error': 'Indica un cliente, un prospecto o un nombre de contacto'}, status=400)
 
+    cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
+    prospecto = Prospecto.objects.filter(id=prospecto_id).first() if prospecto_id else None
+
+    # Si invitamos a un Cliente y se pidió generar Prospecto, créalo y vincúlalo
+    # al evento. Default: pipeline runrate, marca = primera del evento o ZEBRA.
+    prospecto_generado = None
+    if cliente and generar_prospecto and not prospecto:
+        marca_default = (e.marcas[0] if e.marcas else 'ZEBRA')
+        prospecto = Prospecto.objects.create(
+            usuario=request.user,
+            nombre=f'{cliente.nombre_empresa} — Seguimiento {e.nombre}',
+            cliente=cliente,
+            producto=marca_default,
+            area='SISTEMAS',
+            comentarios=(
+                f'Generado automáticamente desde el evento "{e.nombre}" del '
+                f'{e.fecha_evento:%d %b %Y}. Da seguimiento aquí.'
+            ),
+            evento_origen=e,
+        )
+        prospecto_generado = prospecto
+
     a = EventoAsistente.objects.create(
         evento=e,
-        cliente=Cliente.objects.filter(id=cliente_id).first() if cliente_id else None,
-        prospecto=Prospecto.objects.filter(id=prospecto_id).first() if prospecto_id else None,
+        cliente=cliente,
+        prospecto=prospecto,
         contacto_nombre=contacto_nombre,
         contacto_email=contacto_email,
     )
-    return JsonResponse({'ok': True, 'asistente': _asistente_to_dict(a)})
+    return JsonResponse({
+        'ok': True,
+        'asistente': _asistente_to_dict(a),
+        'prospecto_generado_id': prospecto_generado.id if prospecto_generado else None,
+    })
+
+
+# ── Autocomplete de prospectos (para el modal de Eventos) ───────────
+@login_required
+@require_http_methods(['GET'])
+def api_buscar_prospectos(request):
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    query = (request.GET.get('q') or '').strip()
+    if len(query) < 2:
+        return JsonResponse({'prospectos': []})
+    qs = Prospecto.objects.select_related('cliente').filter(
+        Q(nombre__icontains=query) | Q(cliente__nombre_empresa__icontains=query)
+    ).order_by('-fecha_actualizacion')[:10]
+    out = [{
+        'id': p.id,
+        'nombre': p.nombre,
+        'cliente_nombre': p.cliente.nombre_empresa if p.cliente else '',
+        'etapa': p.get_etapa_display(),
+    } for p in qs]
+    return JsonResponse({'prospectos': out})
 
 
 @login_required

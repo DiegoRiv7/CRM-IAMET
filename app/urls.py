@@ -297,6 +297,7 @@ urlpatterns = [
     path('api/evento/<int:evento_id>/eliminar/', views.api_evento_eliminar, name='api_evento_eliminar'),
     path('api/evento/<int:evento_id>/asistente/', views.api_evento_asistente_agregar, name='api_evento_asistente_agregar'),
     path('api/evento/<int:evento_id>/asistente/<int:asistente_id>/eliminar/', views.api_evento_asistente_quitar, name='api_evento_asistente_quitar'),
+    path('api/buscar-prospectos/', views.api_buscar_prospectos, name='api_buscar_prospectos'),
 
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),

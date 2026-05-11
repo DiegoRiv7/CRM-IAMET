@@ -122,10 +122,43 @@
                         <span class="evt-asist-count" id="evtAsistCount">0</span>
                     </div>
                     <div class="evt-asist-list" id="evtAsistList"></div>
-                    <div class="evt-asist-add">
-                        <input type="text" id="evtAsistNombre" placeholder="Nombre del invitado" maxlength="200">
-                        <input type="email" id="evtAsistEmail" placeholder="email (opcional)">
-                        <button type="button" id="evtAsistAddBtn">+ Agregar</button>
+
+                    {# Tabs de modo: Cliente / Prospecto / Contacto suelto #}
+                    <div class="evt-asist-tabs">
+                        <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente</button>
+                        <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto</button>
+                        <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto suelto</button>
+                    </div>
+
+                    {# Modo Cliente: autocomplete + checkbox "crear prospecto" #}
+                    <div class="evt-asist-mode" data-mode="cliente">
+                        <div class="evt-asist-search-wrap">
+                            <input type="text" id="evtAsistClienteQ" class="evt-asist-search" placeholder="Buscar cliente por nombre…" autocomplete="off">
+                            <div class="evt-asist-ac" id="evtAsistClienteAC" style="display:none;"></div>
+                        </div>
+                        <label class="evt-asist-checkbox">
+                            <input type="checkbox" id="evtAsistGenerarProspecto" checked>
+                            <span>Crear prospecto en pipeline para seguimiento</span>
+                        </label>
+                        <button type="button" id="evtAsistAddClienteBtn" disabled>+ Invitar cliente</button>
+                    </div>
+
+                    {# Modo Prospecto: autocomplete #}
+                    <div class="evt-asist-mode" data-mode="prospecto" style="display:none;">
+                        <div class="evt-asist-search-wrap">
+                            <input type="text" id="evtAsistProspectoQ" class="evt-asist-search" placeholder="Buscar prospecto…" autocomplete="off">
+                            <div class="evt-asist-ac" id="evtAsistProspectoAC" style="display:none;"></div>
+                        </div>
+                        <button type="button" id="evtAsistAddProspectoBtn" disabled>+ Invitar prospecto</button>
+                    </div>
+
+                    {# Modo Contacto suelto: nombre + email libres #}
+                    <div class="evt-asist-mode" data-mode="contacto" style="display:none;">
+                        <div class="evt-asist-add">
+                            <input type="text" id="evtAsistNombre" placeholder="Nombre del invitado" maxlength="200">
+                            <input type="email" id="evtAsistEmail" placeholder="email (opcional)">
+                            <button type="button" id="evtAsistAddBtn">+ Agregar</button>
+                        </div>
                     </div>
                 </div>
 
@@ -185,6 +218,19 @@
     var asistNombre = document.getElementById('evtAsistNombre');
     var asistEmail = document.getElementById('evtAsistEmail');
     var asistAddBtn = document.getElementById('evtAsistAddBtn');
+
+    // Tabs y modos de invitación
+    var asistTabs = asistBlock.querySelectorAll('.evt-asist-tab');
+    var asistModes = asistBlock.querySelectorAll('.evt-asist-mode');
+    var clienteQ = document.getElementById('evtAsistClienteQ');
+    var clienteAC = document.getElementById('evtAsistClienteAC');
+    var clienteGenProsp = document.getElementById('evtAsistGenerarProspecto');
+    var btnAddCliente = document.getElementById('evtAsistAddClienteBtn');
+    var prospectoQ = document.getElementById('evtAsistProspectoQ');
+    var prospectoAC = document.getElementById('evtAsistProspectoAC');
+    var btnAddProspecto = document.getElementById('evtAsistAddProspectoBtn');
+    var _selectedCliente = null;   // {id, nombre}
+    var _selectedProspecto = null; // {id, nombre}
     var btnSave = document.getElementById('evtFormSave');
     var btnSaveLbl = document.getElementById('evtFormSaveLbl');
     var btnDelete = document.getElementById('evtFormDelete');
@@ -330,10 +376,15 @@
         }
         asistCount.textContent = items.length;
         asistList.innerHTML = items.map(function(a){
-            var sub = a.contacto_email || (a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : ''));
+            var kindLabel = a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : 'Contacto');
+            var kindClass = 'evt-kind-' + a.kind;
+            var sub = a.contacto_email || '';
             return '<div class="evt-asist-row">'
                 +   '<div class="evt-asist-info">'
-                +     '<div class="evt-asist-name">' + _esc(a.nombre_display) + '</div>'
+                +     '<div class="evt-asist-name">'
+                +       '<span class="evt-asist-kind ' + kindClass + '">' + kindLabel + '</span>'
+                +       _esc(a.nombre_display)
+                +     '</div>'
                 +     (sub ? '<div class="evt-asist-sub">' + _esc(sub) + '</div>' : '')
                 +   '</div>'
                 +   '<button type="button" class="evt-asist-del" data-asist-id="' + a.id + '" title="Quitar">&times;</button>'
@@ -341,6 +392,147 @@
         }).join('');
         asistList.querySelectorAll('.evt-asist-del').forEach(function(b){
             b.addEventListener('click', function(){ quitarAsistente(b.dataset.asistId); });
+        });
+    }
+
+    // ── Tabs de modo (Cliente / Prospecto / Contacto) ──
+    asistTabs.forEach(function(t){
+        t.addEventListener('click', function(){
+            var mode = t.dataset.mode;
+            asistTabs.forEach(function(x){ x.classList.toggle('active', x === t); });
+            asistModes.forEach(function(m){ m.style.display = (m.dataset.mode === mode) ? '' : 'none'; });
+            setError('');
+        });
+    });
+
+    // ── Autocomplete genérico ──
+    function _debounce(fn, ms){
+        var t = null;
+        return function(){
+            var args = arguments;
+            clearTimeout(t);
+            t = setTimeout(function(){ fn.apply(null, args); }, ms);
+        };
+    }
+    function renderAC(box, items, kind){
+        if (!items.length){
+            box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>';
+            box.style.display = 'block';
+            return;
+        }
+        box.innerHTML = items.map(function(it){
+            var sub = kind === 'cliente'
+                ? (it.contacto_principal || it.email || '')
+                : ((it.cliente_nombre || '') + (it.etapa ? ' · ' + it.etapa : ''));
+            return '<div class="evt-asist-ac-item" data-id="' + it.id + '" data-nombre="' + _esc(it.nombre) + '">'
+                +    '<div class="evt-asist-ac-name">' + _esc(it.nombre) + '</div>'
+                +    (sub ? '<div class="evt-asist-ac-sub">' + _esc(sub) + '</div>' : '')
+                +  '</div>';
+        }).join('');
+        box.style.display = 'block';
+    }
+    function bindACSelect(box, onSelect){
+        box.addEventListener('click', function(e){
+            var item = e.target.closest('.evt-asist-ac-item');
+            if (!item) return;
+            onSelect({id: parseInt(item.dataset.id, 10), nombre: item.dataset.nombre});
+        });
+    }
+    // Cerrar autocomplete al click fuera
+    document.addEventListener('click', function(e){
+        if (clienteAC && !clienteAC.contains(e.target) && e.target !== clienteQ) clienteAC.style.display = 'none';
+        if (prospectoAC && !prospectoAC.contains(e.target) && e.target !== prospectoQ) prospectoAC.style.display = 'none';
+    });
+
+    // Cliente search
+    var doClienteSearch = _debounce(function(){
+        var q = clienteQ.value.trim();
+        if (q.length < 2){ clienteAC.style.display = 'none'; _selectedCliente = null; btnAddCliente.disabled = true; return; }
+        fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q))
+            .then(function(r){ return r.json(); })
+            .then(function(d){ renderAC(clienteAC, d.clientes || [], 'cliente'); });
+    }, 220);
+    if (clienteQ){
+        clienteQ.addEventListener('input', function(){
+            _selectedCliente = null; btnAddCliente.disabled = true;
+            doClienteSearch();
+        });
+        bindACSelect(clienteAC, function(sel){
+            _selectedCliente = sel;
+            clienteQ.value = sel.nombre;
+            clienteAC.style.display = 'none';
+            btnAddCliente.disabled = false;
+        });
+    }
+
+    // Prospecto search
+    var doProspectoSearch = _debounce(function(){
+        var q = prospectoQ.value.trim();
+        if (q.length < 2){ prospectoAC.style.display = 'none'; _selectedProspecto = null; btnAddProspecto.disabled = true; return; }
+        fetch('/app/api/buscar-prospectos/?q=' + encodeURIComponent(q))
+            .then(function(r){ return r.json(); })
+            .then(function(d){ renderAC(prospectoAC, d.prospectos || [], 'prospecto'); });
+    }, 220);
+    if (prospectoQ){
+        prospectoQ.addEventListener('input', function(){
+            _selectedProspecto = null; btnAddProspecto.disabled = true;
+            doProspectoSearch();
+        });
+        bindACSelect(prospectoAC, function(sel){
+            _selectedProspecto = sel;
+            prospectoQ.value = sel.nombre;
+            prospectoAC.style.display = 'none';
+            btnAddProspecto.disabled = false;
+        });
+    }
+
+    function _refrescarListaAsistentes(){
+        var id = idEl.value;
+        if (!id) return;
+        return fetch('/app/api/evento/' + id + '/').then(function(r){ return r.json(); }).then(function(d2){
+            renderAsistentes(d2.asistentes || []);
+        });
+    }
+
+    if (btnAddCliente){
+        btnAddCliente.addEventListener('click', function(){
+            var id = idEl.value;
+            if (!id || !_selectedCliente){ setError('Selecciona un cliente'); return; }
+            setError('');
+            fetch('/app/api/evento/' + id + '/asistente/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
+                body: JSON.stringify({
+                    cliente_id: _selectedCliente.id,
+                    generar_prospecto: !!clienteGenProsp.checked,
+                }),
+            }).then(function(r){ return r.json(); }).then(function(d){
+                if (d && d.ok){
+                    clienteQ.value = ''; _selectedCliente = null; btnAddCliente.disabled = true;
+                    _refrescarListaAsistentes();
+                } else {
+                    setError((d && d.error) || 'No se pudo invitar al cliente');
+                }
+            });
+        });
+    }
+    if (btnAddProspecto){
+        btnAddProspecto.addEventListener('click', function(){
+            var id = idEl.value;
+            if (!id || !_selectedProspecto){ setError('Selecciona un prospecto'); return; }
+            setError('');
+            fetch('/app/api/evento/' + id + '/asistente/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
+                body: JSON.stringify({ prospecto_id: _selectedProspecto.id }),
+            }).then(function(r){ return r.json(); }).then(function(d){
+                if (d && d.ok){
+                    prospectoQ.value = ''; _selectedProspecto = null; btnAddProspecto.disabled = true;
+                    _refrescarListaAsistentes();
+                } else {
+                    setError((d && d.error) || 'No se pudo invitar al prospecto');
+                }
+            });
         });
     }
 
@@ -358,6 +550,19 @@
         setMarcas([]);
         asistList.innerHTML = '';
         asistCount.textContent = '0';
+        // Reset autocomplete + modo
+        if (clienteQ) clienteQ.value = '';
+        if (prospectoQ) prospectoQ.value = '';
+        if (asistNombre) asistNombre.value = '';
+        if (asistEmail) asistEmail.value = '';
+        _selectedCliente = null; _selectedProspecto = null;
+        if (btnAddCliente) btnAddCliente.disabled = true;
+        if (btnAddProspecto) btnAddProspecto.disabled = true;
+        if (clienteAC) clienteAC.style.display = 'none';
+        if (prospectoAC) prospectoAC.style.display = 'none';
+        if (clienteGenProsp) clienteGenProsp.checked = true;
+        asistTabs.forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
+        asistModes.forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
         setError('');
         refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshUbicPill(); refreshCostoPill();
     }
