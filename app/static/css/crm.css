@@ -11214,7 +11214,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     --mkt-radius: 22px;
 
     position: relative;
-    padding: 8px 4px 28px;
+    padding: 2px 4px 28px;
     animation: mktDashIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -11236,29 +11236,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 @keyframes mktDashIn {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
-}
-
-.mkt-header {
-    margin: 4px 6px 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.mkt-title {
-    margin: 0;
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: var(--mkt-t1);
-    letter-spacing: -0.028em;
-    line-height: 1.05;
-}
-
-.mkt-subtitle {
-    margin: 0;
-    font-size: 0.88rem;
-    color: var(--mkt-t3);
-    font-weight: 500;
 }
 
 /* ── Bento grid ─────────────────────────────────────────────────── */

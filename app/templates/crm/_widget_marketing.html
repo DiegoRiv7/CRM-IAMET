@@ -1,10 +1,5 @@
 {# ═══ DASHBOARD MARKETING — Bento grid liquid glass ═══ #}
 <div class="mkt-dashboard" id="mktDashboard">
-    <div class="mkt-header">
-        <h1 class="mkt-title">Marketing</h1>
-        <p class="mkt-subtitle">Centraliza campañas, eventos y todas las acciones que impulsan la marca.</p>
-    </div>
-
     <div class="mkt-bento">
 
         {# ═══ HERO 2×2 — Campañas (ACTIVO) ═══ #}
@@ -74,16 +69,16 @@
 
                 <div class="mkt-hero-stats">
                     <div class="mkt-stat">
-                        <div class="mkt-stat-v">12</div>
+                        <div class="mkt-stat-v">{{ marketing_kpis.activas|default:"0" }}</div>
                         <div class="mkt-stat-l">Activas</div>
                     </div>
                     <div class="mkt-stat">
-                        <div class="mkt-stat-v">847</div>
-                        <div class="mkt-stat-l">Enviados</div>
+                        <div class="mkt-stat-v">{{ marketing_kpis.enviadas|default:"0" }}</div>
+                        <div class="mkt-stat-l">Enviadas</div>
                     </div>
                     <div class="mkt-stat">
-                        <div class="mkt-stat-v">24%</div>
-                        <div class="mkt-stat-l">Apertura</div>
+                        <div class="mkt-stat-v">{{ marketing_kpis.tasa_contacto|default:"—" }}</div>
+                        <div class="mkt-stat-l">Tasa de contacto</div>
                     </div>
                 </div>
             </div>

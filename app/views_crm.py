@@ -700,10 +700,50 @@ def crm_home(request):
                 'count': len(items),
             })
 
+    # ── Marketing KPIs (solo para pestaña Marketing) ─────────────────
+    # Filtrado por el mismo mes/año o rango de fechas que rige la pestaña.
+    marketing_kpis = None
+    if tab_activo == 'prospeccion':
+        from .models import Campana, CampanaEnvio
+        envios_qs = CampanaEnvio.objects.all()
+        camps_qs = Campana.objects.exclude(estado='cancelada').filter(fecha_envio__isnull=False)
+        if desde_date or hasta_date:
+            if desde_date:
+                envios_qs = envios_qs.filter(fecha_envio__date__gte=desde_date)
+                camps_qs = camps_qs.filter(fecha_envio__date__gte=desde_date)
+            if hasta_date:
+                envios_qs = envios_qs.filter(fecha_envio__date__lte=hasta_date)
+                camps_qs = camps_qs.filter(fecha_envio__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                envios_qs = envios_qs.filter(fecha_envio__year__in=anios_list)
+                camps_qs = camps_qs.filter(fecha_envio__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    envios_qs = envios_qs.filter(fecha_envio__month__in=meses_int)
+                    camps_qs = camps_qs.filter(fecha_envio__month__in=meses_int)
+        total_enviadas = envios_qs.count()
+        total_activas = camps_qs.count()
+        total_respondidas = envios_qs.filter(respondido=True).count()
+        if total_enviadas > 0:
+            tasa_str = f'{round(total_respondidas / total_enviadas * 100)}%'
+        else:
+            tasa_str = '—'
+        marketing_kpis = {
+            'activas': total_activas,
+            'enviadas': total_enviadas,
+            'tasa_contacto': tasa_str,
+        }
+
     context = {
         'widget_label': widget_label,
         'widget_metric': widget_metric,
         'tab_activo': tab_activo,
+        'marketing_kpis': marketing_kpis,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,
