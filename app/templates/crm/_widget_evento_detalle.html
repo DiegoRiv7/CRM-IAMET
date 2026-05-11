@@ -79,56 +79,16 @@
                     </div>
                 </div>
 
-                {# Card: Asistentes invitados + Crear prospección #}
+                {# Card: Prospectos vinculados + botón Crear prospección #}
                 <div class="wo-card">
                     <div class="wo-section-header">
-                        <h3 class="wo-section-title">Asistentes invitados <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
-                        <button type="button" class="evt-det-primary-btn" id="evtDetTogglePanel">
+                        <h3 class="wo-section-title">Prospectos del evento <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
+                        <button type="button" class="evt-det-primary-btn" id="evtDetCrearProsp">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                             Crear prospección
                         </button>
                     </div>
-
                     <div id="evtDetAsistList" class="evt-det-asist-list" style="margin-top:8px;"></div>
-
-                    {# Panel desplegable: Crear prospección (default) + otras formas #}
-                    <div class="evt-det-panel" id="evtDetPanel" style="display:none;">
-                        <div class="evt-asist-tabs" style="margin-top:12px;">
-                            <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente · Crear prospección</button>
-                            <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto existente</button>
-                            <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto suelto</button>
-                        </div>
-
-                        <div class="evt-asist-mode" data-mode="cliente">
-                            <div class="evt-asist-search-wrap">
-                                <input type="text" id="evtDetAsistClienteQ" class="evt-asist-search" placeholder="Buscar cliente…" autocomplete="off">
-                                <div class="evt-asist-ac" id="evtDetAsistClienteAC" style="display:none;"></div>
-                            </div>
-                            <label class="evt-asist-checkbox">
-                                <input type="checkbox" id="evtDetAsistGenerarProspecto" checked>
-                                <span>Crear prospecto en pipeline para seguimiento</span>
-                            </label>
-                            <button type="button" id="evtDetAsistAddCliente" disabled>+ Invitar cliente</button>
-                        </div>
-
-                        <div class="evt-asist-mode" data-mode="prospecto" style="display:none;">
-                            <div class="evt-asist-search-wrap">
-                                <input type="text" id="evtDetAsistProspectoQ" class="evt-asist-search" placeholder="Buscar prospecto…" autocomplete="off">
-                                <div class="evt-asist-ac" id="evtDetAsistProspectoAC" style="display:none;"></div>
-                            </div>
-                            <button type="button" id="evtDetAsistAddProspecto" disabled>+ Invitar prospecto</button>
-                        </div>
-
-                        <div class="evt-asist-mode" data-mode="contacto" style="display:none;">
-                            <div class="evt-asist-add">
-                                <input type="text" id="evtDetAsistNombre" placeholder="Nombre del invitado" maxlength="200">
-                                <input type="email" id="evtDetAsistEmail" placeholder="email (opcional)">
-                                <button type="button" id="evtDetAsistAddContacto">+ Agregar</button>
-                            </div>
-                        </div>
-
-                        <div class="evt-error" id="evtDetError" style="display:none;margin-top:8px;"></div>
-                    </div>
                 </div>
 
                 {# Card: Organizador + Participantes #}
@@ -155,26 +115,35 @@
     </div>
 </div>
 
+{# ─── Mini-widget de confirmación de eliminación ─── #}
+<div class="widget-overlay" id="widgetEventoConfirmDelete" style="z-index:10550;">
+    <div class="evt-del-confirm-card">
+        <div class="evt-del-confirm-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <h3 class="evt-del-confirm-title">¿Eliminar este evento?</h3>
+        <p class="evt-del-confirm-desc">Se eliminará también la entrada del calendario de todos los participantes. Esta acción no se puede deshacer.</p>
+        <div class="evt-del-confirm-actions">
+            <button type="button" class="evt-del-confirm-cancel" id="evtDelConfirmCancel">Cancelar</button>
+            <button type="button" class="evt-del-confirm-ok" id="evtDelConfirmOk">Sí, eliminar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function(){
     var overlay = document.getElementById('widgetEventoDetalle');
     if (!overlay) return;
+    var confirmOverlay = document.getElementById('widgetEventoConfirmDelete');
 
     var loadingEl = document.getElementById('evtDetLoading');
     var contentEl = document.getElementById('evtDetContent');
 
     var _eventoId = null;
-    var _selectedCliente = null;
-    var _selectedProspecto = null;
+    var _eventoEstado = null;
 
     function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
     function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    function _debounce(fn, ms){ var t = null; return function(){ var a = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null, a); }, ms); }; }
-    function setError(msg){
-        var el = document.getElementById('evtDetError');
-        if (msg){ el.textContent = msg; el.style.display = 'block'; }
-        else { el.textContent = ''; el.style.display = 'none'; }
-    }
     function _iniciales(nombre){
         var parts = (nombre || '').trim().split(/\s+/);
         if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -184,17 +153,16 @@
 
     function render(d){
         var e = d.evento;
+        _eventoEstado = e.estado;
         document.getElementById('evtDetTitle').textContent = e.nombre;
         document.getElementById('evtDetTipo').textContent = e.tipo_display || '—';
         document.getElementById('evtDetFecha').textContent = (e.fecha_evento_display || '—') + (e.duracion_minutos ? ' · ' + e.duracion_minutos + ' min' : '');
         document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
 
-        // Estado badge
         var estadoEl = document.getElementById('evtDetEstado');
         estadoEl.textContent = e.estado_display;
         estadoEl.className = 'evt-det-estado-badge evt-det-estado--' + e.estado;
 
-        // Target
         var tgt = document.getElementById('evtDetTarget');
         if (e.cliente_id){
             tgt.innerHTML = '<span class="evt-asist-kind evt-kind-cliente">Cliente</span>' + _esc(e.cliente_nombre);
@@ -204,7 +172,6 @@
             tgt.innerHTML = '<span style="color:#AEAEB2;font-style:italic;">— sin asignar —</span>';
         }
 
-        // Marcas
         var marcas = document.getElementById('evtDetMarcas');
         if (e.marcas && e.marcas.length){
             marcas.innerHTML = e.marcas.map(function(m){ var nm = String(m).toLowerCase().replace(/^./, function(c){return c.toUpperCase();}); return '<span class="mkt-event-marca-pill">' + _esc(nm) + '</span>'; }).join(' ');
@@ -212,7 +179,6 @@
             marcas.innerHTML = '<span style="color:#AEAEB2;">—</span>';
         }
 
-        // Descripción / Notas post
         if (e.descripcion){
             document.getElementById('evtDetDescBlock').style.display = '';
             document.getElementById('evtDetDescripcion').textContent = e.descripcion;
@@ -226,11 +192,9 @@
             document.getElementById('evtDetNotasBlock').style.display = 'none';
         }
 
-        // Organizador
         document.getElementById('evtDetOrgName').textContent = e.organizador_nombre || '—';
         document.getElementById('evtDetOrgAvatar').textContent = _iniciales(e.organizador_nombre);
 
-        // Participantes
         var partWrap = document.getElementById('evtDetParticipantes');
         if (e.participantes && e.participantes.length){
             partWrap.innerHTML = e.participantes.map(function(p){
@@ -252,7 +216,7 @@
         var list = document.getElementById('evtDetAsistList');
         var count = document.getElementById('evtDetAsistCount');
         if (!items.length){
-            list.innerHTML = '<div class="evt-det-empty">Aún no hay invitados. Usa "Crear prospección" para invitar al primer cliente.</div>';
+            list.innerHTML = '<div class="evt-det-empty">Aún no hay prospección vinculada a este evento. Da clic en <strong>"+ Crear prospección"</strong> para empezar.</div>';
             count.textContent = '0';
             return;
         }
@@ -269,12 +233,8 @@
                 +     '</div>'
                 +     (sub ? '<div class="evt-asist-sub">' + _esc(sub) + '</div>' : '')
                 +   '</div>'
-                +   '<button type="button" class="evt-asist-del" data-asist-id="' + a.id + '" title="Quitar">&times;</button>'
                 + '</div>';
         }).join('');
-        list.querySelectorAll('.evt-asist-del').forEach(function(b){
-            b.addEventListener('click', function(){ quitarAsistente(b.dataset.asistId); });
-        });
     }
 
     function recargar(){
@@ -284,18 +244,8 @@
 
     function abrir(eventoId){
         _eventoId = eventoId;
-        _selectedCliente = null; _selectedProspecto = null;
-        setError('');
         loadingEl.style.display = '';
         contentEl.style.display = 'none';
-        // Reset panel
-        document.getElementById('evtDetPanel').style.display = 'none';
-        document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
-        document.querySelectorAll('#widgetEventoDetalle .evt-asist-mode').forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
-        ['evtDetAsistClienteQ','evtDetAsistProspectoQ','evtDetAsistNombre','evtDetAsistEmail'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
-        document.getElementById('evtDetAsistAddCliente').disabled = true;
-        document.getElementById('evtDetAsistAddProspecto').disabled = true;
-        var chk = document.getElementById('evtDetAsistGenerarProspecto'); if (chk) chk.checked = true;
         overlay.classList.add('active');
         recargar();
     }
@@ -311,138 +261,51 @@
         cerrar();
         if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(_eventoId);
     });
-    document.getElementById('evtDetDelete').addEventListener('click', function(){
-        if (!_eventoId) return;
-        if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
-        fetch('/app/api/evento/' + _eventoId + '/eliminar/', {method:'POST', headers:{'X-CSRFToken': _csrf()}})
-            .then(function(r){ return r.json(); }).then(function(d){
-                if (d && d.ok) window.location.reload();
-                else setError((d && d.error) || 'No se pudo eliminar');
-            });
-    });
 
-    // Toggle del panel "Crear prospección"
-    document.getElementById('evtDetTogglePanel').addEventListener('click', function(){
-        var p = document.getElementById('evtDetPanel');
-        p.style.display = (p.style.display === 'none') ? 'block' : 'none';
-        if (p.style.display === 'block'){
-            setTimeout(function(){
-                var i = document.getElementById('evtDetAsistClienteQ');
-                if (i) i.focus();
-            }, 50);
+    // ── Crear prospección: abre el form global de Nuevo Prospecto con el ──
+    //    evento_origen marcado para que el prospecto quede vinculado.
+    document.getElementById('evtDetCrearProsp').addEventListener('click', function(){
+        if (!_eventoId) return;
+        window._eventoOrigenForProspecto = _eventoId;
+        if (typeof window._setNuevoProspectoMode === 'function') window._setNuevoProspectoMode('cliente');
+        var modalProsp = document.getElementById('widgetNuevoProspecto');
+        cerrar();
+        if (modalProsp){
+            setTimeout(function(){ modalProsp.classList.add('active'); }, 240);
         }
     });
 
-    // Tabs dentro del panel
-    document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){
-        t.addEventListener('click', function(){
-            var mode = t.dataset.mode;
-            document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(x){ x.classList.toggle('active', x === t); });
-            document.querySelectorAll('#widgetEventoDetalle .evt-asist-mode').forEach(function(m){ m.style.display = (m.dataset.mode === mode) ? '' : 'none'; });
-            setError('');
-        });
+    // ── Eliminar evento: abrir mini-widget de confirmación (no confirm nativo) ──
+    document.getElementById('evtDetDelete').addEventListener('click', function(){
+        if (!_eventoId || !confirmOverlay) return;
+        confirmOverlay.classList.add('active');
     });
-
-    function renderAC(box, items, kind){
-        if (!items.length){ box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>'; box.style.display = 'block'; return; }
-        box.innerHTML = items.map(function(it){
-            var sub = kind === 'cliente'
-                ? (it.contacto_principal || it.email || '')
-                : ((it.cliente_nombre || '') + (it.etapa ? ' · ' + it.etapa : ''));
-            return '<div class="evt-asist-ac-item" data-id="' + it.id + '" data-nombre="' + _esc(it.nombre) + '">'
-                +    '<div class="evt-asist-ac-name">' + _esc(it.nombre) + '</div>'
-                +    (sub ? '<div class="evt-asist-ac-sub">' + _esc(sub) + '</div>' : '')
-                +  '</div>';
-        }).join('');
-        box.style.display = 'block';
-    }
-    var clienteQ = document.getElementById('evtDetAsistClienteQ');
-    var clienteAC = document.getElementById('evtDetAsistClienteAC');
-    var btnAddCli = document.getElementById('evtDetAsistAddCliente');
-    var doClienteSearch = _debounce(function(){
-        var q = clienteQ.value.trim();
-        if (q.length < 2){ clienteAC.style.display = 'none'; _selectedCliente = null; btnAddCli.disabled = true; return; }
-        fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q)).then(function(r){ return r.json(); }).then(function(d){ renderAC(clienteAC, d.clientes || [], 'cliente'); });
-    }, 220);
-    clienteQ.addEventListener('input', function(){ _selectedCliente = null; btnAddCli.disabled = true; doClienteSearch(); });
-    clienteAC.addEventListener('click', function(e){
-        var it = e.target.closest('.evt-asist-ac-item');
-        if (!it) return;
-        _selectedCliente = {id: parseInt(it.dataset.id, 10), nombre: it.dataset.nombre};
-        clienteQ.value = _selectedCliente.nombre;
-        clienteAC.style.display = 'none';
-        btnAddCli.disabled = false;
+    document.getElementById('evtDelConfirmCancel').addEventListener('click', function(){
+        confirmOverlay.classList.remove('active');
     });
-
-    var prospectoQ = document.getElementById('evtDetAsistProspectoQ');
-    var prospectoAC = document.getElementById('evtDetAsistProspectoAC');
-    var btnAddPros = document.getElementById('evtDetAsistAddProspecto');
-    var doProspectoSearch = _debounce(function(){
-        var q = prospectoQ.value.trim();
-        if (q.length < 2){ prospectoAC.style.display = 'none'; _selectedProspecto = null; btnAddPros.disabled = true; return; }
-        fetch('/app/api/buscar-prospectos/?q=' + encodeURIComponent(q)).then(function(r){ return r.json(); }).then(function(d){ renderAC(prospectoAC, d.prospectos || [], 'prospecto'); });
-    }, 220);
-    prospectoQ.addEventListener('input', function(){ _selectedProspecto = null; btnAddPros.disabled = true; doProspectoSearch(); });
-    prospectoAC.addEventListener('click', function(e){
-        var it = e.target.closest('.evt-asist-ac-item');
-        if (!it) return;
-        _selectedProspecto = {id: parseInt(it.dataset.id, 10), nombre: it.dataset.nombre};
-        prospectoQ.value = _selectedProspecto.nombre;
-        prospectoAC.style.display = 'none';
-        btnAddPros.disabled = false;
+    confirmOverlay.addEventListener('click', function(e){
+        if (e.target === confirmOverlay) confirmOverlay.classList.remove('active');
     });
-
-    overlay.addEventListener('click', function(e){
-        if (clienteAC && !clienteAC.contains(e.target) && e.target !== clienteQ) clienteAC.style.display = 'none';
-        if (prospectoAC && !prospectoAC.contains(e.target) && e.target !== prospectoQ) prospectoAC.style.display = 'none';
-    });
-
-    function _agregarAsistente(payload){
+    document.getElementById('evtDelConfirmOk').addEventListener('click', function(){
         if (!_eventoId) return;
-        setError('');
-        fetch('/app/api/evento/' + _eventoId + '/asistente/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
-            body: JSON.stringify(payload),
-        }).then(function(r){ return r.json(); }).then(function(d){
-            if (d && d.ok){
-                ['evtDetAsistClienteQ','evtDetAsistProspectoQ','evtDetAsistNombre','evtDetAsistEmail'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
-                _selectedCliente = null; _selectedProspecto = null;
-                btnAddCli.disabled = true; btnAddPros.disabled = true;
-                recargar();
-            } else {
-                setError((d && d.error) || 'No se pudo agregar');
-            }
-        });
-    }
-    btnAddCli.addEventListener('click', function(){
-        if (!_selectedCliente){ setError('Selecciona un cliente'); return; }
-        var gen = document.getElementById('evtDetAsistGenerarProspecto').checked;
-        _agregarAsistente({cliente_id: _selectedCliente.id, generar_prospecto: gen});
-    });
-    btnAddPros.addEventListener('click', function(){
-        if (!_selectedProspecto){ setError('Selecciona un prospecto'); return; }
-        _agregarAsistente({prospecto_id: _selectedProspecto.id});
-    });
-    document.getElementById('evtDetAsistAddContacto').addEventListener('click', function(){
-        var n = document.getElementById('evtDetAsistNombre').value.trim();
-        var em = document.getElementById('evtDetAsistEmail').value.trim();
-        if (!n){ setError('Captura el nombre del invitado'); return; }
-        _agregarAsistente({contacto_nombre: n, contacto_email: em});
+        var btn = document.getElementById('evtDelConfirmOk');
+        btn.disabled = true; btn.textContent = 'Eliminando…';
+        fetch('/app/api/evento/' + _eventoId + '/eliminar/', {method:'POST', headers:{'X-CSRFToken': _csrf()}})
+            .then(function(r){ return r.json(); }).then(function(d){
+                if (d && d.ok) window.location.reload();
+                else {
+                    btn.disabled = false; btn.textContent = 'Sí, eliminar';
+                    alert((d && d.error) || 'No se pudo eliminar');
+                }
+            });
     });
 
-    function quitarAsistente(asistenteId){
-        if (!_eventoId || !asistenteId) return;
-        if (!confirm('¿Quitar este asistente?')) return;
-        fetch('/app/api/evento/' + _eventoId + '/asistente/' + asistenteId + '/eliminar/', {
-            method: 'POST', headers: {'X-CSRFToken': _csrf()},
-        }).then(function(r){ return r.json(); }).then(function(d){ if (d && d.ok) recargar(); });
-    }
-
-    // Cerrar al click fuera
     overlay.addEventListener('click', function(e){ if (e.target === overlay) cerrar(); });
     document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape' && overlay.classList.contains('active')) cerrar();
+        if (e.key === 'Escape'){
+            if (confirmOverlay.classList.contains('active')) confirmOverlay.classList.remove('active');
+            else if (overlay.classList.contains('active')) cerrar();
+        }
     });
 })();
 </script>

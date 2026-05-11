@@ -351,7 +351,20 @@ def api_crear_prospecto(request):
         create_kwargs['asignado_por'] = request.user
     if etapa and etapa in etapas_validas:
         create_kwargs['etapa'] = etapa
+    # Vínculo opcional con un Evento de Marketing — cuando el prospecto se crea
+    # desde el detalle de un Evento, se marca evento_origen y se agrega como
+    # asistente del evento de forma automática.
+    evento_origen_obj = None
+    evento_origen_id = data.get('evento_origen_id')
+    if evento_origen_id:
+        from .models import Evento
+        evento_origen_obj = Evento.objects.filter(id=evento_origen_id).first()
+        if evento_origen_obj:
+            create_kwargs['evento_origen'] = evento_origen_obj
     prospecto = Prospecto.objects.create(**create_kwargs)
+    if evento_origen_obj:
+        from .models import EventoAsistente
+        EventoAsistente.objects.create(evento=evento_origen_obj, prospecto=prospecto)
 
     # Si fue asignación externa, crear actividad inicial + evento de calendario
     # para el vendedor asignado, con metadata para enlazar de vuelta al prospecto.
