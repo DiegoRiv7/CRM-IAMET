@@ -77,24 +77,30 @@
 
 <script>
 (function(){
-    function abrir(eventoId){
-        if (typeof window.eventoFormAbrir === 'function') {
-            window.eventoFormAbrir(eventoId || null);
-        }
+    function abrirNuevo(){
+        if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(null);
+    }
+    function abrirDetalle(eventoId){
+        if (typeof window.eventoDetalleAbrir === 'function') window.eventoDetalleAbrir(eventoId);
+    }
+    function abrirEditar(eventoId){
+        if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(eventoId);
     }
     var btnNuevo = document.getElementById('btnEventoNuevo');
-    if (btnNuevo) btnNuevo.addEventListener('click', function(){ abrir(null); });
+    if (btnNuevo) btnNuevo.addEventListener('click', abrirNuevo);
     var btnNuevoE = document.getElementById('btnEventoNuevoEmpty');
-    if (btnNuevoE) btnNuevoE.addEventListener('click', function(){ abrir(null); });
+    if (btnNuevoE) btnNuevoE.addEventListener('click', abrirNuevo);
+    // Ícono lápiz → modo edición
     document.querySelectorAll('.mkt-event-edit').forEach(function(btn){
         btn.addEventListener('click', function(e){
             e.stopPropagation();
-            abrir(btn.dataset.eventoId);
+            abrirEditar(btn.dataset.eventoId);
         });
     });
+    // Click en la fila → detalle (read-only con acciones)
     document.querySelectorAll('.mkt-event-row').forEach(function(row){
         row.addEventListener('click', function(){
-            abrir(row.dataset.eventoId);
+            abrirDetalle(row.dataset.eventoId);
         });
     });
 })();

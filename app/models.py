@@ -4984,6 +4984,19 @@ class Evento(models.Model):
                               help_text="Marcas participantes, e.g. ['PANDUIT','AVIGILON']")
     costo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     notas_post = models.TextField(blank=True, default='', verbose_name='Notas post-evento')
+    # Cliente o prospecto principal al que se dirige el evento. Es para qué/quién
+    # se monta el evento. EventoAsistente lista los invitados adicionales.
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='eventos_principales',
+                                verbose_name='Cliente principal del evento')
+    prospecto = models.ForeignKey('Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='eventos_principales',
+                                  verbose_name='Prospecto principal del evento')
+    # Participantes internos: otros usuarios de IAMET que acompañarán al
+    # vendedor (gerentes, técnicos, etc.). El evento aparece en su calendario.
+    participantes = models.ManyToManyField(User, blank=True,
+                                           related_name='eventos_participando',
+                                           verbose_name='Participantes internos')
     organizador = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
                                     related_name='eventos_organizados')
     creado_por = models.ForeignKey(User, on_delete=models.CASCADE,

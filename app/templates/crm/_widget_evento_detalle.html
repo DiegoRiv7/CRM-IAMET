@@ -1,0 +1,384 @@
+{# ═══ WIDGET: EVENTO — Detalle (read-only + acciones) ═══ #}
+<div class="widget-overlay wn-overlay" id="widgetEventoDetalle" style="z-index:10450;"
+     onclick="if(event.target===this){var w=this;w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);}">
+    <div class="wn-card evt-det-card">
+
+        {# Header con acciones #}
+        <header class="evt-det-head">
+            <div class="evt-det-head-l">
+                <div class="evt-det-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div class="evt-det-titles">
+                    <h2 class="evt-det-title" id="evtDetTitle">…</h2>
+                    <div class="evt-det-meta">
+                        <span class="evt-det-badge" id="evtDetTipo">—</span>
+                        <span class="evt-det-badge evt-det-estado" id="evtDetEstado">—</span>
+                        <span class="evt-det-fecha" id="evtDetFecha">—</span>
+                    </div>
+                </div>
+            </div>
+            <div class="evt-det-head-r">
+                <button type="button" class="evt-det-btn-ghost" id="evtDetEdit" title="Editar">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                    Editar
+                </button>
+                <button type="button" class="evt-det-btn-ghost evt-det-btn-danger" id="evtDetDelete" title="Eliminar">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+                <button type="button" class="wn-ctw-close" id="evtDetClose">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </header>
+
+        {# Body: info + asistentes #}
+        <div class="evt-det-body">
+
+            {# Bloque info principal #}
+            <section class="evt-det-section">
+                <div class="evt-det-grid">
+                    <div class="evt-det-field">
+                        <label>Para</label>
+                        <div id="evtDetTarget" class="evt-det-target">—</div>
+                    </div>
+                    <div class="evt-det-field">
+                        <label>Marcas</label>
+                        <div class="evt-det-marcas" id="evtDetMarcas"></div>
+                    </div>
+                    <div class="evt-det-field">
+                        <label>Organizador</label>
+                        <div id="evtDetOrganizador" class="evt-det-org">—</div>
+                    </div>
+                    <div class="evt-det-field">
+                        <label>Costo estimado</label>
+                        <div id="evtDetCosto" class="evt-det-org">—</div>
+                    </div>
+                    <div class="evt-det-field evt-det-field--wide">
+                        <label>Participantes IAMET</label>
+                        <div class="evt-det-participantes" id="evtDetParticipantes"></div>
+                    </div>
+                    <div class="evt-det-field evt-det-field--wide" id="evtDetDescBlock" style="display:none;">
+                        <label>Agenda / descripción</label>
+                        <div class="evt-det-desc" id="evtDetDescripcion"></div>
+                    </div>
+                    <div class="evt-det-field evt-det-field--wide" id="evtDetNotasBlock" style="display:none;">
+                        <label>Notas post-evento</label>
+                        <div class="evt-det-desc" id="evtDetNotasPost"></div>
+                    </div>
+                </div>
+            </section>
+
+            {# Bloque asistentes #}
+            <section class="evt-det-section">
+                <div class="evt-det-section-head">
+                    <h3>Asistentes invitados <span class="evt-asist-count" id="evtDetAsistCount">0</span></h3>
+                </div>
+                <div class="evt-asist-list" id="evtDetAsistList"></div>
+
+                {# Tabs para agregar asistente #}
+                <div class="evt-asist-tabs" style="margin-top:10px;">
+                    <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente</button>
+                    <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto</button>
+                    <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto suelto</button>
+                </div>
+
+                <div class="evt-asist-mode" data-mode="cliente">
+                    <div class="evt-asist-search-wrap">
+                        <input type="text" id="evtDetAsistClienteQ" class="evt-asist-search" placeholder="Buscar cliente…" autocomplete="off">
+                        <div class="evt-asist-ac" id="evtDetAsistClienteAC" style="display:none;"></div>
+                    </div>
+                    <label class="evt-asist-checkbox">
+                        <input type="checkbox" id="evtDetAsistGenerarProspecto" checked>
+                        <span>Crear prospecto en pipeline para seguimiento</span>
+                    </label>
+                    <button type="button" id="evtDetAsistAddCliente" disabled>+ Invitar cliente</button>
+                </div>
+
+                <div class="evt-asist-mode" data-mode="prospecto" style="display:none;">
+                    <div class="evt-asist-search-wrap">
+                        <input type="text" id="evtDetAsistProspectoQ" class="evt-asist-search" placeholder="Buscar prospecto…" autocomplete="off">
+                        <div class="evt-asist-ac" id="evtDetAsistProspectoAC" style="display:none;"></div>
+                    </div>
+                    <button type="button" id="evtDetAsistAddProspecto" disabled>+ Invitar prospecto</button>
+                </div>
+
+                <div class="evt-asist-mode" data-mode="contacto" style="display:none;">
+                    <div class="evt-asist-add">
+                        <input type="text" id="evtDetAsistNombre" placeholder="Nombre del invitado" maxlength="200">
+                        <input type="email" id="evtDetAsistEmail" placeholder="email (opcional)">
+                        <button type="button" id="evtDetAsistAddContacto">+ Agregar</button>
+                    </div>
+                </div>
+
+                <div class="evt-error" id="evtDetError" style="display:none;"></div>
+            </section>
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    var overlay = document.getElementById('widgetEventoDetalle');
+    if (!overlay) return;
+
+    var _eventoId = null;
+    var _target = null;
+    var _selectedCliente = null;
+    var _selectedProspecto = null;
+
+    function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
+    function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function _debounce(fn, ms){ var t = null; return function(){ var a = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null, a); }, ms); }; }
+    function setError(msg){
+        var el = document.getElementById('evtDetError');
+        if (msg){ el.textContent = msg; el.style.display = 'block'; }
+        else { el.textContent = ''; el.style.display = 'none'; }
+    }
+
+    function render(d){
+        var e = d.evento;
+        document.getElementById('evtDetTitle').textContent = e.nombre;
+        document.getElementById('evtDetTipo').textContent = e.tipo_display || '—';
+        var estadoEl = document.getElementById('evtDetEstado');
+        estadoEl.textContent = e.estado_display;
+        estadoEl.className = 'evt-det-badge evt-det-estado evt-det-estado--' + e.estado;
+        document.getElementById('evtDetFecha').textContent = e.fecha_evento_display || '—';
+
+        // Target
+        var tgt = document.getElementById('evtDetTarget');
+        if (e.cliente_id){
+            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-cliente">Cliente</span>' + _esc(e.cliente_nombre);
+        } else if (e.prospecto_id){
+            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-prospecto">Prospecto</span>' + _esc(e.prospecto_nombre);
+        } else {
+            tgt.innerHTML = '<span class="evt-det-muted">— sin asignar —</span>';
+        }
+
+        // Marcas
+        var marcas = document.getElementById('evtDetMarcas');
+        if (e.marcas && e.marcas.length){
+            marcas.innerHTML = e.marcas.map(function(m){ return '<span class="mkt-event-marca-pill">' + _esc(m).toLowerCase().replace(/^./, function(c){return c.toUpperCase();}) + '</span>'; }).join('');
+        } else {
+            marcas.innerHTML = '<span class="evt-det-muted">—</span>';
+        }
+
+        // Organizador y costo
+        document.getElementById('evtDetOrganizador').textContent = e.organizador_nombre || '—';
+        document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
+
+        // Participantes
+        var partWrap = document.getElementById('evtDetParticipantes');
+        if (e.participantes && e.participantes.length){
+            partWrap.innerHTML = e.participantes.map(function(p){
+                return '<span class="evt-part-chip evt-part-chip--ro">'
+                    + '<span class="evt-part-avatar">' + _esc(p.iniciales || '?') + '</span>'
+                    + _esc(p.nombre) + '</span>';
+            }).join('');
+        } else {
+            partWrap.innerHTML = '<span class="evt-det-muted">Solo organizador</span>';
+        }
+
+        // Descripción
+        if (e.descripcion){
+            document.getElementById('evtDetDescBlock').style.display = '';
+            document.getElementById('evtDetDescripcion').textContent = e.descripcion;
+        } else {
+            document.getElementById('evtDetDescBlock').style.display = 'none';
+        }
+
+        // Notas post (si realizado)
+        if (e.estado === 'realizado' && e.notas_post){
+            document.getElementById('evtDetNotasBlock').style.display = '';
+            document.getElementById('evtDetNotasPost').textContent = e.notas_post;
+        } else {
+            document.getElementById('evtDetNotasBlock').style.display = 'none';
+        }
+
+        // Asistentes
+        renderAsistentes(d.asistentes || []);
+    }
+
+    function renderAsistentes(items){
+        var list = document.getElementById('evtDetAsistList');
+        var count = document.getElementById('evtDetAsistCount');
+        if (!items.length){
+            list.innerHTML = '<div class="evt-asist-empty">Aún no hay invitados.</div>';
+            count.textContent = '0';
+            return;
+        }
+        count.textContent = items.length;
+        list.innerHTML = items.map(function(a){
+            var kindLabel = a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : 'Contacto');
+            var kindClass = 'evt-kind-' + a.kind;
+            var sub = a.contacto_email || '';
+            return '<div class="evt-asist-row">'
+                +   '<div class="evt-asist-info">'
+                +     '<div class="evt-asist-name">'
+                +       '<span class="evt-asist-kind ' + kindClass + '">' + kindLabel + '</span>'
+                +       _esc(a.nombre_display)
+                +     '</div>'
+                +     (sub ? '<div class="evt-asist-sub">' + _esc(sub) + '</div>' : '')
+                +   '</div>'
+                +   '<button type="button" class="evt-asist-del" data-asist-id="' + a.id + '" title="Quitar">&times;</button>'
+                + '</div>';
+        }).join('');
+        list.querySelectorAll('.evt-asist-del').forEach(function(b){
+            b.addEventListener('click', function(){ quitarAsistente(b.dataset.asistId); });
+        });
+    }
+
+    function recargar(){
+        if (!_eventoId) return Promise.resolve();
+        return fetch('/app/api/evento/' + _eventoId + '/').then(function(r){ return r.json(); }).then(render);
+    }
+    function abrir(eventoId){
+        _eventoId = eventoId;
+        _selectedCliente = null; _selectedProspecto = null;
+        setError('');
+        document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
+        document.querySelectorAll('#widgetEventoDetalle .evt-asist-mode').forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
+        ['evtDetAsistClienteQ','evtDetAsistProspectoQ','evtDetAsistNombre','evtDetAsistEmail'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('evtDetAsistAddCliente').disabled = true;
+        document.getElementById('evtDetAsistAddProspecto').disabled = true;
+        var chk = document.getElementById('evtDetAsistGenerarProspecto'); if (chk) chk.checked = true;
+        overlay.classList.add('active');
+        recargar();
+    }
+    function cerrar(){
+        overlay.classList.add('closing');
+        setTimeout(function(){ overlay.classList.remove('active','closing'); }, 220);
+    }
+    window.eventoDetalleAbrir = abrir;
+    window.eventoDetalleCerrar = cerrar;
+
+    document.getElementById('evtDetClose').addEventListener('click', cerrar);
+    document.getElementById('evtDetEdit').addEventListener('click', function(){
+        cerrar();
+        if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(_eventoId);
+    });
+    document.getElementById('evtDetDelete').addEventListener('click', function(){
+        if (!_eventoId) return;
+        if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
+        fetch('/app/api/evento/' + _eventoId + '/eliminar/', {method:'POST', headers:{'X-CSRFToken': _csrf()}})
+            .then(function(r){ return r.json(); }).then(function(d){
+                if (d && d.ok) window.location.reload();
+                else setError((d && d.error) || 'No se pudo eliminar');
+            });
+    });
+
+    // Tabs
+    document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){
+        t.addEventListener('click', function(){
+            var mode = t.dataset.mode;
+            document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(x){ x.classList.toggle('active', x === t); });
+            document.querySelectorAll('#widgetEventoDetalle .evt-asist-mode').forEach(function(m){ m.style.display = (m.dataset.mode === mode) ? '' : 'none'; });
+            setError('');
+        });
+    });
+
+    // Autocomplete genérico para cliente / prospecto
+    function renderAC(box, items, kind){
+        if (!items.length){ box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>'; box.style.display = 'block'; return; }
+        box.innerHTML = items.map(function(it){
+            var sub = kind === 'cliente'
+                ? (it.contacto_principal || it.email || '')
+                : ((it.cliente_nombre || '') + (it.etapa ? ' · ' + it.etapa : ''));
+            return '<div class="evt-asist-ac-item" data-id="' + it.id + '" data-nombre="' + _esc(it.nombre) + '">'
+                +    '<div class="evt-asist-ac-name">' + _esc(it.nombre) + '</div>'
+                +    (sub ? '<div class="evt-asist-ac-sub">' + _esc(sub) + '</div>' : '')
+                +  '</div>';
+        }).join('');
+        box.style.display = 'block';
+    }
+    var clienteQ = document.getElementById('evtDetAsistClienteQ');
+    var clienteAC = document.getElementById('evtDetAsistClienteAC');
+    var btnAddCli = document.getElementById('evtDetAsistAddCliente');
+    var doClienteSearch = _debounce(function(){
+        var q = clienteQ.value.trim();
+        if (q.length < 2){ clienteAC.style.display = 'none'; _selectedCliente = null; btnAddCli.disabled = true; return; }
+        fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q)).then(function(r){ return r.json(); }).then(function(d){ renderAC(clienteAC, d.clientes || [], 'cliente'); });
+    }, 220);
+    clienteQ.addEventListener('input', function(){ _selectedCliente = null; btnAddCli.disabled = true; doClienteSearch(); });
+    clienteAC.addEventListener('click', function(e){
+        var it = e.target.closest('.evt-asist-ac-item');
+        if (!it) return;
+        _selectedCliente = {id: parseInt(it.dataset.id, 10), nombre: it.dataset.nombre};
+        clienteQ.value = _selectedCliente.nombre;
+        clienteAC.style.display = 'none';
+        btnAddCli.disabled = false;
+    });
+
+    var prospectoQ = document.getElementById('evtDetAsistProspectoQ');
+    var prospectoAC = document.getElementById('evtDetAsistProspectoAC');
+    var btnAddPros = document.getElementById('evtDetAsistAddProspecto');
+    var doProspectoSearch = _debounce(function(){
+        var q = prospectoQ.value.trim();
+        if (q.length < 2){ prospectoAC.style.display = 'none'; _selectedProspecto = null; btnAddPros.disabled = true; return; }
+        fetch('/app/api/buscar-prospectos/?q=' + encodeURIComponent(q)).then(function(r){ return r.json(); }).then(function(d){ renderAC(prospectoAC, d.prospectos || [], 'prospecto'); });
+    }, 220);
+    prospectoQ.addEventListener('input', function(){ _selectedProspecto = null; btnAddPros.disabled = true; doProspectoSearch(); });
+    prospectoAC.addEventListener('click', function(e){
+        var it = e.target.closest('.evt-asist-ac-item');
+        if (!it) return;
+        _selectedProspecto = {id: parseInt(it.dataset.id, 10), nombre: it.dataset.nombre};
+        prospectoQ.value = _selectedProspecto.nombre;
+        prospectoAC.style.display = 'none';
+        btnAddPros.disabled = false;
+    });
+
+    // Cerrar AC al click fuera (dentro del detalle)
+    overlay.addEventListener('click', function(e){
+        if (clienteAC && !clienteAC.contains(e.target) && e.target !== clienteQ) clienteAC.style.display = 'none';
+        if (prospectoAC && !prospectoAC.contains(e.target) && e.target !== prospectoQ) prospectoAC.style.display = 'none';
+    });
+
+    function _agregarAsistente(payload){
+        if (!_eventoId) return;
+        setError('');
+        fetch('/app/api/evento/' + _eventoId + '/asistente/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
+            body: JSON.stringify(payload),
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.ok){
+                ['evtDetAsistClienteQ','evtDetAsistProspectoQ','evtDetAsistNombre','evtDetAsistEmail'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+                _selectedCliente = null; _selectedProspecto = null;
+                btnAddCli.disabled = true; btnAddPros.disabled = true;
+                recargar();
+            } else {
+                setError((d && d.error) || 'No se pudo agregar');
+            }
+        });
+    }
+    btnAddCli.addEventListener('click', function(){
+        if (!_selectedCliente){ setError('Selecciona un cliente'); return; }
+        var gen = document.getElementById('evtDetAsistGenerarProspecto').checked;
+        _agregarAsistente({cliente_id: _selectedCliente.id, generar_prospecto: gen});
+    });
+    btnAddPros.addEventListener('click', function(){
+        if (!_selectedProspecto){ setError('Selecciona un prospecto'); return; }
+        _agregarAsistente({prospecto_id: _selectedProspecto.id});
+    });
+    document.getElementById('evtDetAsistAddContacto').addEventListener('click', function(){
+        var n = document.getElementById('evtDetAsistNombre').value.trim();
+        var em = document.getElementById('evtDetAsistEmail').value.trim();
+        if (!n){ setError('Captura el nombre del invitado'); return; }
+        _agregarAsistente({contacto_nombre: n, contacto_email: em});
+    });
+
+    function quitarAsistente(asistenteId){
+        if (!_eventoId || !asistenteId) return;
+        if (!confirm('¿Quitar este asistente?')) return;
+        fetch('/app/api/evento/' + _eventoId + '/asistente/' + asistenteId + '/eliminar/', {
+            method: 'POST', headers: {'X-CSRFToken': _csrf()},
+        }).then(function(r){ return r.json(); }).then(function(d){ if (d && d.ok) recargar(); });
+    }
+
+    // ESC para cerrar
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape' && overlay.classList.contains('active')) cerrar();
+    });
+})();
+</script>

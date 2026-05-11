@@ -1,11 +1,11 @@
-{# ═══ WIDGET: EVENTO — Crear / Editar (estilo composer wn-ctw) ═══ #}
+{# ═══ WIDGET: EVENTO — Crear / Editar (composer wn-ctw) ═══ #}
 <div class="widget-overlay wn-overlay" id="widgetEventoForm" style="z-index:10500;"
      onclick="if(event.target===this){var w=this;w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);}">
     <div class="wn-card wn-composer">
         <form id="formEvento" autocomplete="off" novalidate style="display:contents;">
             {% csrf_token %}
 
-            {# ─── Header: breadcrumb + cerrar ─── #}
+            {# Header: breadcrumb + cerrar #}
             <header class="wn-ctw-header">
                 <div class="wn-ctw-breadcrumb">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -18,7 +18,6 @@
                 </button>
             </header>
 
-            {# ─── Canvas: título + pills + descripción ─── #}
             <main class="wn-ctw-canvas">
                 <input type="hidden" id="evtFormId" value="">
 
@@ -26,13 +25,37 @@
                 <input type="text" class="wn-ctw-title" id="evtFormNombre"
                        placeholder="Nombre del evento…" autocomplete="off" maxlength="200">
 
-                {# Fila "Cuándo [fecha]" #}
+                {# Fila "Para [cliente o prospecto]" — reemplaza al pill Ubicación #}
                 <div class="wn-ctw-nl-row">
-                    <span class="wn-ctw-nl-label">Cuándo</span>
+                    <span class="wn-ctw-nl-label">Para</span>
                     <div class="wn-ctw-popwrap">
-                        <button type="button" class="wn-ctw-pill-large empty" id="evtFechaBtn" onclick="evtOpenPop('fecha', event)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            <span id="evtFechaLabel">Selecciona fecha y hora (requerido)</span>
+                        <button type="button" class="wn-ctw-pill-large empty" id="evtTargetBtn" onclick="evtOpenPop('target', event)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span id="evtTargetLabel">Selecciona cliente o prospecto (requerido)</span>
+                        </button>
+                        <div class="wn-ctw-pop wn-ctw-pop-wide" id="evtPopTarget" style="display:none;">
+                            <div class="evt-tgt-tabs">
+                                <button type="button" class="evt-tgt-tab active" data-mode="cliente">Cliente</button>
+                                <button type="button" class="evt-tgt-tab" data-mode="prospecto">Prospecto</button>
+                            </div>
+                            <div class="evt-tgt-mode" data-mode="cliente">
+                                <input type="text" id="evtTargetClienteQ" class="wn-ctw-pop-input" placeholder="Buscar cliente por nombre…" autocomplete="off">
+                                <div class="evt-asist-ac" id="evtTargetClienteAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
+                            </div>
+                            <div class="evt-tgt-mode" data-mode="prospecto" style="display:none;">
+                                <input type="text" id="evtTargetProspectoQ" class="wn-ctw-pop-input" placeholder="Buscar prospecto…" autocomplete="off">
+                                <div class="evt-asist-ac" id="evtTargetProspectoAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Pills meta: Cuándo + Tipo #}
+                <div class="wn-ctw-meta-row">
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta empty" id="evtFechaBtn" onclick="evtOpenPop('fecha', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span id="evtFechaLabel">Cuándo (requerido)</span>
                         </button>
                         <div class="wn-ctw-pop" id="evtPopFecha" style="display:none;">
                             <div class="wn-ctw-pop-title">Fecha y hora</div>
@@ -41,10 +64,7 @@
                             <input type="number" id="evtFormDuracion" class="wn-ctw-pop-input" min="15" step="15" value="60">
                         </div>
                     </div>
-                </div>
 
-                {# Pills meta: Tipo + Estado + Ubicación #}
-                <div class="wn-ctw-meta-row">
                     <div class="wn-ctw-popwrap">
                         <button type="button" class="wn-ctw-pill-meta filled" id="evtTipoBtn" onclick="evtOpenPop('tipo', event)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -61,10 +81,50 @@
                             </select>
                         </div>
                     </div>
+                </div>
 
+                {# Marcas (multi-chip) — requerido #}
+                <div class="evt-marcas-row">
+                    <span class="wn-ctw-nl-label">Marcas <span style="color:#FF3B30;">*</span></span>
+                    <div class="evt-marcas-chips" id="evtMarcasChips">
+                        <label class="evt-marca-chip"><input type="checkbox" value="PANDUIT"><span>Panduit</span></label>
+                        <label class="evt-marca-chip"><input type="checkbox" value="ZEBRA"><span>Zebra</span></label>
+                        <label class="evt-marca-chip"><input type="checkbox" value="APC"><span>APC</span></label>
+                        <label class="evt-marca-chip"><input type="checkbox" value="AVIGILON"><span>Avigilon</span></label>
+                        <label class="evt-marca-chip"><input type="checkbox" value="GENETEC"><span>Genetec</span></label>
+                        <label class="evt-marca-chip"><input type="checkbox" value="AXIS"><span>Axis</span></label>
+                        <label class="evt-marca-chip"><input type="checkbox" value="CISCO"><span>Cisco</span></label>
+                    </div>
+                </div>
+
+                <textarea class="wn-ctw-desc" id="evtFormDescripcion"
+                          placeholder="Agenda del evento, soluciones a presentar, contexto…" rows="3"></textarea>
+
+                <textarea class="wn-ctw-desc" id="evtFormNotasPost"
+                          placeholder="Resultado del evento, oportunidades surgidas…" rows="2"
+                          style="display:none;"></textarea>
+
+                <div class="evt-error" id="evtFormError" style="display:none;"></div>
+            </main>
+
+            {# Toolbar: Costo + Estado + Participantes + acciones #}
+            <footer class="wn-ctw-toolbar">
+                <div class="wn-ctw-tools">
+                    {# Costo #}
                     <div class="wn-ctw-popwrap">
-                        <button type="button" class="wn-ctw-pill-meta filled" id="evtEstadoBtn" onclick="evtOpenPop('estado', event)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                        <button type="button" class="wn-ctw-tool-ghost" id="evtCostoBtn" onclick="evtOpenPop('costo', event)" title="Costo estimado">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            <span id="evtCostoLabel">Costo</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="evtPopCosto" style="display:none;">
+                            <div class="wn-ctw-pop-title">Costo estimado (MXN)</div>
+                            <input type="number" id="evtFormCosto" class="wn-ctw-pop-input" min="0" step="100" placeholder="0">
+                        </div>
+                    </div>
+                    {# Estado #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-tool-ghost" id="evtEstadoBtn" onclick="evtOpenPop('estado', event)" title="Estado del evento">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
                             <span id="evtEstadoLabel">Programado</span>
                         </button>
                         <div class="wn-ctw-pop" id="evtPopEstado" style="display:none;">
@@ -78,104 +138,17 @@
                             </select>
                         </div>
                     </div>
-
+                    {# Participantes internos #}
                     <div class="wn-ctw-popwrap">
-                        <button type="button" class="wn-ctw-pill-meta empty" id="evtUbicBtn" onclick="evtOpenPop('ubic', event)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            <span id="evtUbicLabel">Ubicación</span>
+                        <button type="button" class="wn-ctw-tool-ghost" id="evtPartBtn" onclick="evtOpenPop('participantes', event)" title="Participantes IAMET">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <span id="evtPartLabel">Participantes</span>
                         </button>
-                        <div class="wn-ctw-pop wn-ctw-pop-wide" id="evtPopUbic" style="display:none;">
-                            <div class="wn-ctw-pop-title">Ubicación</div>
-                            <input type="text" id="evtFormUbicacion" class="wn-ctw-pop-input"
-                                   placeholder="Oficinas del cliente, hotel, Zoom…" maxlength="300">
-                        </div>
-                    </div>
-                </div>
-
-                {# Marcas (multi-chip) — fila propia #}
-                <div class="evt-marcas-row">
-                    <span class="wn-ctw-nl-label">Marcas</span>
-                    <div class="evt-marcas-chips" id="evtMarcasChips">
-                        <label class="evt-marca-chip"><input type="checkbox" value="PANDUIT"><span>Panduit</span></label>
-                        <label class="evt-marca-chip"><input type="checkbox" value="ZEBRA"><span>Zebra</span></label>
-                        <label class="evt-marca-chip"><input type="checkbox" value="APC"><span>APC</span></label>
-                        <label class="evt-marca-chip"><input type="checkbox" value="AVIGILON"><span>Avigilon</span></label>
-                        <label class="evt-marca-chip"><input type="checkbox" value="GENETEC"><span>Genetec</span></label>
-                        <label class="evt-marca-chip"><input type="checkbox" value="AXIS"><span>Axis</span></label>
-                        <label class="evt-marca-chip"><input type="checkbox" value="CISCO"><span>Cisco</span></label>
-                    </div>
-                </div>
-
-                {# Descripción / agenda #}
-                <textarea class="wn-ctw-desc" id="evtFormDescripcion"
-                          placeholder="Agenda del evento, soluciones a presentar, contexto…" rows="3"></textarea>
-
-                {# Notas post-evento (visible solo si estado=realizado) #}
-                <textarea class="wn-ctw-desc" id="evtFormNotasPost"
-                          placeholder="Resultado del evento, oportunidades surgidas…" rows="2"
-                          style="display:none;"></textarea>
-
-                {# Asistentes (visible en modo edición) #}
-                <div class="evt-asist-block" id="evtAsistBlock" style="display:none;">
-                    <div class="evt-asist-headline">
-                        <span class="wn-ctw-nl-label">Asistentes</span>
-                        <span class="evt-asist-count" id="evtAsistCount">0</span>
-                    </div>
-                    <div class="evt-asist-list" id="evtAsistList"></div>
-
-                    {# Tabs de modo: Cliente / Prospecto / Contacto suelto #}
-                    <div class="evt-asist-tabs">
-                        <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente</button>
-                        <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto</button>
-                        <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto suelto</button>
-                    </div>
-
-                    {# Modo Cliente: autocomplete + checkbox "crear prospecto" #}
-                    <div class="evt-asist-mode" data-mode="cliente">
-                        <div class="evt-asist-search-wrap">
-                            <input type="text" id="evtAsistClienteQ" class="evt-asist-search" placeholder="Buscar cliente por nombre…" autocomplete="off">
-                            <div class="evt-asist-ac" id="evtAsistClienteAC" style="display:none;"></div>
-                        </div>
-                        <label class="evt-asist-checkbox">
-                            <input type="checkbox" id="evtAsistGenerarProspecto" checked>
-                            <span>Crear prospecto en pipeline para seguimiento</span>
-                        </label>
-                        <button type="button" id="evtAsistAddClienteBtn" disabled>+ Invitar cliente</button>
-                    </div>
-
-                    {# Modo Prospecto: autocomplete #}
-                    <div class="evt-asist-mode" data-mode="prospecto" style="display:none;">
-                        <div class="evt-asist-search-wrap">
-                            <input type="text" id="evtAsistProspectoQ" class="evt-asist-search" placeholder="Buscar prospecto…" autocomplete="off">
-                            <div class="evt-asist-ac" id="evtAsistProspectoAC" style="display:none;"></div>
-                        </div>
-                        <button type="button" id="evtAsistAddProspectoBtn" disabled>+ Invitar prospecto</button>
-                    </div>
-
-                    {# Modo Contacto suelto: nombre + email libres #}
-                    <div class="evt-asist-mode" data-mode="contacto" style="display:none;">
-                        <div class="evt-asist-add">
-                            <input type="text" id="evtAsistNombre" placeholder="Nombre del invitado" maxlength="200">
-                            <input type="email" id="evtAsistEmail" placeholder="email (opcional)">
-                            <button type="button" id="evtAsistAddBtn">+ Agregar</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="evt-error" id="evtFormError" style="display:none;"></div>
-            </main>
-
-            {# ─── Toolbar: Costo a la izquierda, acciones a la derecha ─── #}
-            <footer class="wn-ctw-toolbar">
-                <div class="wn-ctw-tools">
-                    <div class="wn-ctw-popwrap">
-                        <button type="button" class="wn-ctw-tool-ghost" id="evtCostoBtn" onclick="evtOpenPop('costo', event)" title="Costo estimado">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                            <span id="evtCostoLabel">Costo</span>
-                        </button>
-                        <div class="wn-ctw-pop" id="evtPopCosto" style="display:none;">
-                            <div class="wn-ctw-pop-title">Costo estimado (MXN)</div>
-                            <input type="number" id="evtFormCosto" class="wn-ctw-pop-input" min="0" step="100" placeholder="0">
+                        <div class="wn-ctw-pop wn-ctw-pop-wide" id="evtPopParticipantes" style="display:none;">
+                            <div class="wn-ctw-pop-title">Participantes IAMET</div>
+                            <input type="text" id="evtPartQ" class="wn-ctw-pop-input" placeholder="Buscar compañero…" autocomplete="off">
+                            <div class="evt-asist-ac" id="evtPartAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
+                            <div class="evt-part-chips" id="evtPartChips" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;"></div>
                         </div>
                     </div>
                 </div>
@@ -183,7 +156,7 @@
                 <div class="wn-ctw-actions">
                     <button type="button" class="wn-ctw-cancel evt-ctw-delete" id="evtFormDelete" style="display:none;">Eliminar</button>
                     <button type="button" class="wn-ctw-cancel" id="evtFormCancel">Cancelar</button>
-                    <button type="button" class="wn-ctw-submit" id="evtFormSave">
+                    <button type="button" class="wn-ctw-submit" id="evtFormSave" disabled>
                         <span id="evtFormSaveLbl">Crear evento</span>
                         <span class="wn-ctw-kbd">⌘ ↵</span>
                     </button>
@@ -206,49 +179,44 @@
     var duracionEl = document.getElementById('evtFormDuracion');
     var tipoEl = document.getElementById('evtFormTipo');
     var estadoEl = document.getElementById('evtFormEstado');
-    var ubicEl = document.getElementById('evtFormUbicacion');
     var marcasWrap = document.getElementById('evtMarcasChips');
     var descEl = document.getElementById('evtFormDescripcion');
     var notasEl = document.getElementById('evtFormNotasPost');
     var costoEl = document.getElementById('evtFormCosto');
     var errEl = document.getElementById('evtFormError');
-    var asistBlock = document.getElementById('evtAsistBlock');
-    var asistList = document.getElementById('evtAsistList');
-    var asistCount = document.getElementById('evtAsistCount');
-    var asistNombre = document.getElementById('evtAsistNombre');
-    var asistEmail = document.getElementById('evtAsistEmail');
-    var asistAddBtn = document.getElementById('evtAsistAddBtn');
-
-    // Tabs y modos de invitación
-    var asistTabs = asistBlock.querySelectorAll('.evt-asist-tab');
-    var asistModes = asistBlock.querySelectorAll('.evt-asist-mode');
-    var clienteQ = document.getElementById('evtAsistClienteQ');
-    var clienteAC = document.getElementById('evtAsistClienteAC');
-    var clienteGenProsp = document.getElementById('evtAsistGenerarProspecto');
-    var btnAddCliente = document.getElementById('evtAsistAddClienteBtn');
-    var prospectoQ = document.getElementById('evtAsistProspectoQ');
-    var prospectoAC = document.getElementById('evtAsistProspectoAC');
-    var btnAddProspecto = document.getElementById('evtAsistAddProspectoBtn');
-    var _selectedCliente = null;   // {id, nombre}
-    var _selectedProspecto = null; // {id, nombre}
     var btnSave = document.getElementById('evtFormSave');
     var btnSaveLbl = document.getElementById('evtFormSaveLbl');
     var btnDelete = document.getElementById('evtFormDelete');
 
-    // Pill labels
+    // Pill labels y buttons
+    var targetBtn = document.getElementById('evtTargetBtn');
+    var targetLbl = document.getElementById('evtTargetLabel');
+    var fechaBtn = document.getElementById('evtFechaBtn');
     var fechaLbl = document.getElementById('evtFechaLabel');
     var tipoLbl = document.getElementById('evtTipoLabel');
     var estadoLbl = document.getElementById('evtEstadoLabel');
-    var ubicLbl = document.getElementById('evtUbicLabel');
-    var costoLbl = document.getElementById('evtCostoLabel');
-
-    // Pill buttons (para toggle empty/filled)
-    var fechaBtn = document.getElementById('evtFechaBtn');
-    var ubicBtn = document.getElementById('evtUbicBtn');
     var costoBtn = document.getElementById('evtCostoBtn');
+    var costoLbl = document.getElementById('evtCostoLabel');
+    var partBtn = document.getElementById('evtPartBtn');
+    var partLbl = document.getElementById('evtPartLabel');
 
-    var POP_IDS = { fecha:'evtPopFecha', tipo:'evtPopTipo', estado:'evtPopEstado', ubic:'evtPopUbic', costo:'evtPopCosto' };
-    var BTN_IDS = { fecha:'evtFechaBtn', tipo:'evtTipoBtn', estado:'evtEstadoBtn', ubic:'evtUbicBtn', costo:'evtCostoBtn' };
+    // Target (cliente/prospecto principal)
+    var tgtTabs = overlay.querySelectorAll('.evt-tgt-tab');
+    var tgtModes = overlay.querySelectorAll('.evt-tgt-mode');
+    var tgtClienteQ = document.getElementById('evtTargetClienteQ');
+    var tgtClienteAC = document.getElementById('evtTargetClienteAC');
+    var tgtProspectoQ = document.getElementById('evtTargetProspectoQ');
+    var tgtProspectoAC = document.getElementById('evtTargetProspectoAC');
+    var _target = null; // {kind: 'cliente'|'prospecto', id, nombre}
+
+    // Participantes
+    var partQ = document.getElementById('evtPartQ');
+    var partAC = document.getElementById('evtPartAC');
+    var partChipsWrap = document.getElementById('evtPartChips');
+    var _participantes = []; // [{id, nombre, iniciales}]
+
+    var POP_IDS = { fecha:'evtPopFecha', tipo:'evtPopTipo', estado:'evtPopEstado', costo:'evtPopCosto', target:'evtPopTarget', participantes:'evtPopParticipantes' };
+    var BTN_IDS = { fecha:'evtFechaBtn', tipo:'evtTipoBtn', estado:'evtEstadoBtn', costo:'evtCostoBtn', target:'evtTargetBtn', participantes:'evtPartBtn' };
 
     function _csrf(){
         var el = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -279,7 +247,6 @@
         }
     };
 
-    // Cerrar popovers al click fuera
     document.addEventListener('click', function(e){
         if (!overlay.classList.contains('active')) return;
         var wraps = overlay.querySelectorAll('.wn-ctw-popwrap');
@@ -289,16 +256,10 @@
         _closeAllPops();
     });
 
-    // ESC para cerrar modal
     document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape' && overlay.classList.contains('active')){
-            cerrar();
-        }
-        // ⌘+Enter o Ctrl+Enter → submit
-        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && overlay.classList.contains('active')){
-            e.preventDefault();
-            submitForm();
-        }
+        if (!overlay.classList.contains('active')) return;
+        if (e.key === 'Escape') cerrar();
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); submitForm(); }
     });
 
     function setError(msg){
@@ -306,9 +267,9 @@
         else { errEl.textContent = ''; errEl.style.display = 'none'; }
     }
 
+    // ── Pills refresh + validación ─────────────────────────────────
     function _fmtFechaPill(isoLocal){
-        // input datetime-local devuelve "YYYY-MM-DDTHH:MM"
-        if (!isoLocal) return 'Selecciona fecha y hora (requerido)';
+        if (!isoLocal) return 'Cuándo (requerido)';
         var parts = isoLocal.split('T');
         if (parts.length !== 2) return isoLocal;
         var d = parts[0].split('-'); var t = parts[1];
@@ -321,6 +282,7 @@
         fechaLbl.textContent = _fmtFechaPill(v);
         fechaBtn.classList.toggle('empty', !v);
         fechaBtn.classList.toggle('filled', !!v);
+        validate();
     }
     function refreshTipoPill(){
         var opt = tipoEl.options[tipoEl.selectedIndex];
@@ -329,14 +291,7 @@
     function refreshEstadoPill(){
         var opt = estadoEl.options[estadoEl.selectedIndex];
         estadoLbl.textContent = opt ? opt.text : 'Programado';
-        // Mostrar campo notas post solo si realizado
         notasEl.style.display = (estadoEl.value === 'realizado') ? 'block' : 'none';
-    }
-    function refreshUbicPill(){
-        var v = (ubicEl.value || '').trim();
-        ubicLbl.textContent = v || 'Ubicación';
-        ubicBtn.classList.toggle('empty', !v);
-        ubicBtn.classList.toggle('filled', !!v);
     }
     function refreshCostoPill(){
         var v = costoEl.value;
@@ -348,14 +303,46 @@
             costoBtn.classList.remove('filled');
         }
     }
-
-    // Listeners para refrescar pills
-    fechaEl.addEventListener('change', refreshFechaPill);
-    fechaEl.addEventListener('input', refreshFechaPill);
-    tipoEl.addEventListener('change', refreshTipoPill);
-    estadoEl.addEventListener('change', refreshEstadoPill);
-    ubicEl.addEventListener('input', refreshUbicPill);
-    costoEl.addEventListener('input', refreshCostoPill);
+    function refreshTargetPill(){
+        if (_target){
+            var kind = _target.kind === 'prospecto' ? 'Prospecto' : 'Cliente';
+            targetLbl.innerHTML = '<span style="font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#0052D4;margin-right:6px;">' + kind + '</span>' + _esc(_target.nombre);
+            targetBtn.classList.remove('empty');
+            targetBtn.classList.add('filled');
+        } else {
+            targetLbl.textContent = 'Selecciona cliente o prospecto (requerido)';
+            targetBtn.classList.add('empty');
+            targetBtn.classList.remove('filled');
+        }
+        validate();
+    }
+    function refreshPartPill(){
+        if (_participantes.length){
+            partLbl.textContent = _participantes.length + ' participante' + (_participantes.length === 1 ? '' : 's');
+            partBtn.classList.add('filled');
+        } else {
+            partLbl.textContent = 'Participantes';
+            partBtn.classList.remove('filled');
+        }
+        renderPartChips();
+    }
+    function renderPartChips(){
+        partChipsWrap.innerHTML = _participantes.map(function(p){
+            return '<span class="evt-part-chip" data-id="' + p.id + '">'
+                +    '<span class="evt-part-avatar">' + _esc(p.iniciales || '?') + '</span>'
+                +    _esc(p.nombre)
+                +    '<button type="button" class="evt-part-chip-x" data-id="' + p.id + '">&times;</button>'
+                +  '</span>';
+        }).join('');
+        partChipsWrap.querySelectorAll('.evt-part-chip-x').forEach(function(b){
+            b.addEventListener('click', function(e){
+                e.stopPropagation();
+                var id = parseInt(b.dataset.id, 10);
+                _participantes = _participantes.filter(function(p){ return p.id !== id; });
+                refreshPartPill();
+            });
+        });
+    }
 
     function getMarcas(){
         var out = [];
@@ -368,174 +355,111 @@
         marcasWrap.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked = !!set[c.value]; });
     }
 
-    function renderAsistentes(items){
-        if (!items || !items.length){
-            asistList.innerHTML = '<div class="evt-asist-empty">Aún no hay invitados.</div>';
-            asistCount.textContent = '0';
-            return;
-        }
-        asistCount.textContent = items.length;
-        asistList.innerHTML = items.map(function(a){
-            var kindLabel = a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : 'Contacto');
-            var kindClass = 'evt-kind-' + a.kind;
-            var sub = a.contacto_email || '';
-            return '<div class="evt-asist-row">'
-                +   '<div class="evt-asist-info">'
-                +     '<div class="evt-asist-name">'
-                +       '<span class="evt-asist-kind ' + kindClass + '">' + kindLabel + '</span>'
-                +       _esc(a.nombre_display)
-                +     '</div>'
-                +     (sub ? '<div class="evt-asist-sub">' + _esc(sub) + '</div>' : '')
-                +   '</div>'
-                +   '<button type="button" class="evt-asist-del" data-asist-id="' + a.id + '" title="Quitar">&times;</button>'
-                + '</div>';
-        }).join('');
-        asistList.querySelectorAll('.evt-asist-del').forEach(function(b){
-            b.addEventListener('click', function(){ quitarAsistente(b.dataset.asistId); });
-        });
+    // ── Validación: botón gris hasta nombre + fecha + cliente/prospecto + marca ──
+    function validate(){
+        var ok = !!nombreEl.value.trim()
+              && !!fechaEl.value.trim()
+              && !!_target
+              && getMarcas().length > 0;
+        btnSave.disabled = !ok;
+        return ok;
     }
+    nombreEl.addEventListener('input', validate);
+    fechaEl.addEventListener('change', refreshFechaPill);
+    fechaEl.addEventListener('input', refreshFechaPill);
+    tipoEl.addEventListener('change', refreshTipoPill);
+    estadoEl.addEventListener('change', refreshEstadoPill);
+    costoEl.addEventListener('input', refreshCostoPill);
+    marcasWrap.addEventListener('change', validate);
 
-    // ── Tabs de modo (Cliente / Prospecto / Contacto) ──
-    asistTabs.forEach(function(t){
-        t.addEventListener('click', function(){
-            var mode = t.dataset.mode;
-            asistTabs.forEach(function(x){ x.classList.toggle('active', x === t); });
-            asistModes.forEach(function(m){ m.style.display = (m.dataset.mode === mode) ? '' : 'none'; });
-            setError('');
-        });
-    });
-
-    // ── Autocomplete genérico ──
+    // ── Autocomplete helpers ───────────────────────────────────────
     function _debounce(fn, ms){
         var t = null;
-        return function(){
-            var args = arguments;
-            clearTimeout(t);
-            t = setTimeout(function(){ fn.apply(null, args); }, ms);
-        };
+        return function(){ var args = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null, args); }, ms); };
     }
-    function renderAC(box, items, kind){
-        if (!items.length){
-            box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>';
-            box.style.display = 'block';
-            return;
-        }
+    function renderACItems(box, items, fmt){
+        if (!items.length){ box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>'; box.style.display = 'block'; return; }
         box.innerHTML = items.map(function(it){
-            var sub = kind === 'cliente'
-                ? (it.contacto_principal || it.email || '')
-                : ((it.cliente_nombre || '') + (it.etapa ? ' · ' + it.etapa : ''));
-            return '<div class="evt-asist-ac-item" data-id="' + it.id + '" data-nombre="' + _esc(it.nombre) + '">'
-                +    '<div class="evt-asist-ac-name">' + _esc(it.nombre) + '</div>'
-                +    (sub ? '<div class="evt-asist-ac-sub">' + _esc(sub) + '</div>' : '')
+            var f = fmt(it);
+            return '<div class="evt-asist-ac-item" data-id="' + f.id + '" data-nombre="' + _esc(f.nombre) + '" data-extra="' + _esc(f.extra || '') + '">'
+                +    '<div class="evt-asist-ac-name">' + _esc(f.nombre) + '</div>'
+                +    (f.sub ? '<div class="evt-asist-ac-sub">' + _esc(f.sub) + '</div>' : '')
                 +  '</div>';
         }).join('');
         box.style.display = 'block';
     }
-    function bindACSelect(box, onSelect){
+    function bindACClick(box, onSelect){
         box.addEventListener('click', function(e){
             var item = e.target.closest('.evt-asist-ac-item');
             if (!item) return;
-            onSelect({id: parseInt(item.dataset.id, 10), nombre: item.dataset.nombre});
+            onSelect({id: parseInt(item.dataset.id, 10), nombre: item.dataset.nombre, extra: item.dataset.extra});
         });
     }
-    // Cerrar autocomplete al click fuera
-    document.addEventListener('click', function(e){
-        if (clienteAC && !clienteAC.contains(e.target) && e.target !== clienteQ) clienteAC.style.display = 'none';
-        if (prospectoAC && !prospectoAC.contains(e.target) && e.target !== prospectoQ) prospectoAC.style.display = 'none';
-    });
 
-    // Cliente search
-    var doClienteSearch = _debounce(function(){
-        var q = clienteQ.value.trim();
-        if (q.length < 2){ clienteAC.style.display = 'none'; _selectedCliente = null; btnAddCliente.disabled = true; return; }
+    // ── Target: tabs cliente/prospecto ─────────────────────────────
+    tgtTabs.forEach(function(t){
+        t.addEventListener('click', function(){
+            var mode = t.dataset.mode;
+            tgtTabs.forEach(function(x){ x.classList.toggle('active', x === t); });
+            tgtModes.forEach(function(m){ m.style.display = (m.dataset.mode === mode) ? '' : 'none'; });
+        });
+    });
+    var doTgtCliente = _debounce(function(){
+        var q = tgtClienteQ.value.trim();
+        if (q.length < 2){ tgtClienteAC.style.display = 'none'; return; }
         fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q))
             .then(function(r){ return r.json(); })
-            .then(function(d){ renderAC(clienteAC, d.clientes || [], 'cliente'); });
+            .then(function(d){ renderACItems(tgtClienteAC, d.clientes || [], function(c){ return {id: c.id, nombre: c.nombre, sub: c.contacto_principal || c.email}; }); });
     }, 220);
-    if (clienteQ){
-        clienteQ.addEventListener('input', function(){
-            _selectedCliente = null; btnAddCliente.disabled = true;
-            doClienteSearch();
-        });
-        bindACSelect(clienteAC, function(sel){
-            _selectedCliente = sel;
-            clienteQ.value = sel.nombre;
-            clienteAC.style.display = 'none';
-            btnAddCliente.disabled = false;
-        });
-    }
-
-    // Prospecto search
-    var doProspectoSearch = _debounce(function(){
-        var q = prospectoQ.value.trim();
-        if (q.length < 2){ prospectoAC.style.display = 'none'; _selectedProspecto = null; btnAddProspecto.disabled = true; return; }
+    tgtClienteQ.addEventListener('input', doTgtCliente);
+    bindACClick(tgtClienteAC, function(sel){
+        _target = {kind: 'cliente', id: sel.id, nombre: sel.nombre};
+        tgtClienteAC.style.display = 'none';
+        tgtClienteQ.value = '';
+        _closeAllPops();
+        refreshTargetPill();
+    });
+    var doTgtProsp = _debounce(function(){
+        var q = tgtProspectoQ.value.trim();
+        if (q.length < 2){ tgtProspectoAC.style.display = 'none'; return; }
         fetch('/app/api/buscar-prospectos/?q=' + encodeURIComponent(q))
             .then(function(r){ return r.json(); })
-            .then(function(d){ renderAC(prospectoAC, d.prospectos || [], 'prospecto'); });
+            .then(function(d){ renderACItems(tgtProspectoAC, d.prospectos || [], function(p){ return {id: p.id, nombre: p.nombre, sub: p.cliente_nombre + (p.etapa ? ' · ' + p.etapa : '')}; }); });
     }, 220);
-    if (prospectoQ){
-        prospectoQ.addEventListener('input', function(){
-            _selectedProspecto = null; btnAddProspecto.disabled = true;
-            doProspectoSearch();
-        });
-        bindACSelect(prospectoAC, function(sel){
-            _selectedProspecto = sel;
-            prospectoQ.value = sel.nombre;
-            prospectoAC.style.display = 'none';
-            btnAddProspecto.disabled = false;
-        });
-    }
+    tgtProspectoQ.addEventListener('input', doTgtProsp);
+    bindACClick(tgtProspectoAC, function(sel){
+        _target = {kind: 'prospecto', id: sel.id, nombre: sel.nombre};
+        tgtProspectoAC.style.display = 'none';
+        tgtProspectoQ.value = '';
+        _closeAllPops();
+        refreshTargetPill();
+    });
 
-    function _refrescarListaAsistentes(){
-        var id = idEl.value;
-        if (!id) return;
-        return fetch('/app/api/evento/' + id + '/').then(function(r){ return r.json(); }).then(function(d2){
-            renderAsistentes(d2.asistentes || []);
-        });
-    }
-
-    if (btnAddCliente){
-        btnAddCliente.addEventListener('click', function(){
-            var id = idEl.value;
-            if (!id || !_selectedCliente){ setError('Selecciona un cliente'); return; }
-            setError('');
-            fetch('/app/api/evento/' + id + '/asistente/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
-                body: JSON.stringify({
-                    cliente_id: _selectedCliente.id,
-                    generar_prospecto: !!clienteGenProsp.checked,
-                }),
-            }).then(function(r){ return r.json(); }).then(function(d){
-                if (d && d.ok){
-                    clienteQ.value = ''; _selectedCliente = null; btnAddCliente.disabled = true;
-                    _refrescarListaAsistentes();
-                } else {
-                    setError((d && d.error) || 'No se pudo invitar al cliente');
-                }
+    // ── Participantes ─────────────────────────────────────────────
+    var doPartSearch = _debounce(function(){
+        var q = partQ.value.trim();
+        if (q.length < 2){ partAC.style.display = 'none'; return; }
+        fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                var lista = (d.usuarios || []).filter(function(u){
+                    return !_participantes.some(function(p){ return p.id === u.id; });
+                });
+                renderACItems(partAC, lista, function(u){
+                    return {id: u.id, nombre: u.nombre_completo || u.username, sub: u.email || u.username, extra: u.iniciales};
+                });
             });
-        });
-    }
-    if (btnAddProspecto){
-        btnAddProspecto.addEventListener('click', function(){
-            var id = idEl.value;
-            if (!id || !_selectedProspecto){ setError('Selecciona un prospecto'); return; }
-            setError('');
-            fetch('/app/api/evento/' + id + '/asistente/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
-                body: JSON.stringify({ prospecto_id: _selectedProspecto.id }),
-            }).then(function(r){ return r.json(); }).then(function(d){
-                if (d && d.ok){
-                    prospectoQ.value = ''; _selectedProspecto = null; btnAddProspecto.disabled = true;
-                    _refrescarListaAsistentes();
-                } else {
-                    setError((d && d.error) || 'No se pudo invitar al prospecto');
-                }
-            });
-        });
-    }
+    }, 220);
+    partQ.addEventListener('input', doPartSearch);
+    bindACClick(partAC, function(sel){
+        _participantes.push({id: sel.id, nombre: sel.nombre, iniciales: sel.extra});
+        partAC.style.display = 'none';
+        partQ.value = '';
+        refreshPartPill();
+        partQ.focus();
+    });
 
+    // ── Reset / abrir / cerrar ─────────────────────────────────────
     function resetForm(){
         idEl.value = '';
         nombreEl.value = '';
@@ -543,28 +467,19 @@
         duracionEl.value = 60;
         tipoEl.value = 'presencial';
         estadoEl.value = 'programado';
-        ubicEl.value = '';
         descEl.value = '';
         notasEl.value = '';
         costoEl.value = '';
         setMarcas([]);
-        asistList.innerHTML = '';
-        asistCount.textContent = '0';
-        // Reset autocomplete + modo
-        if (clienteQ) clienteQ.value = '';
-        if (prospectoQ) prospectoQ.value = '';
-        if (asistNombre) asistNombre.value = '';
-        if (asistEmail) asistEmail.value = '';
-        _selectedCliente = null; _selectedProspecto = null;
-        if (btnAddCliente) btnAddCliente.disabled = true;
-        if (btnAddProspecto) btnAddProspecto.disabled = true;
-        if (clienteAC) clienteAC.style.display = 'none';
-        if (prospectoAC) prospectoAC.style.display = 'none';
-        if (clienteGenProsp) clienteGenProsp.checked = true;
-        asistTabs.forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
-        asistModes.forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
+        _target = null;
+        _participantes = [];
+        tgtClienteQ.value = ''; tgtProspectoQ.value = '';
+        tgtClienteAC.style.display = 'none'; tgtProspectoAC.style.display = 'none';
+        partQ.value = ''; partAC.style.display = 'none';
+        tgtTabs.forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
+        tgtModes.forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
         setError('');
-        refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshUbicPill(); refreshCostoPill();
+        refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshCostoPill(); refreshTargetPill(); refreshPartPill();
     }
 
     function abrir(eventoId){
@@ -576,7 +491,6 @@
             crumb.textContent = 'Editar evento';
             btnSaveLbl.textContent = 'Guardar cambios';
             btnDelete.style.display = 'inline-flex';
-            asistBlock.style.display = 'block';
             fetch('/app/api/evento/' + eventoId + '/').then(function(r){ return r.json(); }).then(function(d){
                 if (!d || !d.evento){ setError('No se pudo cargar el evento'); return; }
                 var e = d.evento;
@@ -586,19 +500,21 @@
                 estadoEl.value = e.estado || 'programado';
                 if (e.fecha_evento) fechaEl.value = e.fecha_evento.slice(0, 16);
                 duracionEl.value = e.duracion_minutos || 60;
-                ubicEl.value = e.ubicacion || '';
                 descEl.value = e.descripcion || '';
                 costoEl.value = e.costo || '';
                 notasEl.value = e.notas_post || '';
                 setMarcas(e.marcas);
-                renderAsistentes(d.asistentes || []);
-                refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshUbicPill(); refreshCostoPill();
+                if (e.cliente_id) _target = {kind: 'cliente', id: e.cliente_id, nombre: e.cliente_nombre};
+                else if (e.prospecto_id) _target = {kind: 'prospecto', id: e.prospecto_id, nombre: e.prospecto_nombre};
+                _participantes = (e.participantes || []).slice();
+                refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshCostoPill();
+                refreshTargetPill(); refreshPartPill();
+                validate();
             }).catch(function(){ setError('Error de red'); });
         } else {
             crumb.textContent = 'Nuevo evento';
             btnSaveLbl.textContent = 'Crear evento';
             btnDelete.style.display = 'none';
-            asistBlock.style.display = 'none';
         }
     }
     function cerrar(){
@@ -612,22 +528,21 @@
     document.getElementById('evtFormCancel').addEventListener('click', cerrar);
 
     function submitForm(){
+        if (!validate()) return;
         setError('');
-        var nombre = nombreEl.value.trim();
-        var fecha = fechaEl.value.trim();
-        if (!nombre){ setError('El nombre del evento es requerido'); nombreEl.focus(); return; }
-        if (!fecha){ setError('La fecha y hora son requeridas'); evtOpenPop('fecha'); return; }
         var payload = {
-            nombre: nombre,
+            nombre: nombreEl.value.trim(),
             tipo: tipoEl.value,
             estado: estadoEl.value,
-            fecha_evento: fecha,
+            fecha_evento: fechaEl.value.trim(),
             duracion_minutos: parseInt(duracionEl.value, 10) || 60,
-            ubicacion: ubicEl.value.trim(),
             descripcion: descEl.value.trim(),
             marcas: getMarcas(),
             costo: parseFloat(costoEl.value) || 0,
             notas_post: notasEl.value.trim(),
+            cliente_id: (_target && _target.kind === 'cliente') ? _target.id : null,
+            prospecto_id: (_target && _target.kind === 'prospecto') ? _target.id : null,
+            participantes_ids: _participantes.map(function(p){ return p.id; }),
         };
         var id = idEl.value;
         var url = id ? ('/app/api/evento/' + id + '/editar/') : '/app/api/evento/crear/';
@@ -638,11 +553,11 @@
             body: JSON.stringify(payload),
         }).then(function(r){ return r.json().then(function(d){ return {status: r.status, body: d}; }); })
           .then(function(res){
-              btnSave.disabled = false;
-              btnSaveLbl.textContent = id ? 'Guardar cambios' : 'Crear evento';
               if (res.status >= 200 && res.status < 300 && res.body && res.body.ok){
                   window.location.reload();
               } else {
+                  btnSave.disabled = false;
+                  btnSaveLbl.textContent = id ? 'Guardar cambios' : 'Crear evento';
                   setError((res.body && res.body.error) || 'No se pudo guardar');
               }
           })
@@ -667,43 +582,7 @@
         });
     });
 
-    asistAddBtn.addEventListener('click', function(){
-        var id = idEl.value;
-        if (!id){ setError('Guarda el evento antes de agregar asistentes'); return; }
-        var n = asistNombre.value.trim();
-        var em = asistEmail.value.trim();
-        if (!n){ setError('Captura el nombre del invitado'); asistNombre.focus(); return; }
-        setError('');
-        fetch('/app/api/evento/' + id + '/asistente/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
-            body: JSON.stringify({contacto_nombre: n, contacto_email: em}),
-        }).then(function(r){ return r.json(); }).then(function(d){
-            if (d && d.ok){
-                asistNombre.value = ''; asistEmail.value = '';
-                return fetch('/app/api/evento/' + id + '/').then(function(r){ return r.json(); }).then(function(d2){
-                    renderAsistentes(d2.asistentes || []);
-                });
-            } else {
-                setError((d && d.error) || 'No se pudo agregar');
-            }
-        });
-    });
-
-    function quitarAsistente(asistenteId){
-        var id = idEl.value;
-        if (!id || !asistenteId) return;
-        if (!confirm('¿Quitar este asistente?')) return;
-        fetch('/app/api/evento/' + id + '/asistente/' + asistenteId + '/eliminar/', {
-            method: 'POST',
-            headers: {'X-CSRFToken': _csrf()},
-        }).then(function(r){ return r.json(); }).then(function(d){
-            if (d && d.ok){
-                fetch('/app/api/evento/' + id + '/').then(function(r){ return r.json(); }).then(function(d2){
-                    renderAsistentes(d2.asistentes || []);
-                });
-            }
-        });
-    }
+    // Inicial
+    resetForm();
 })();
 </script>

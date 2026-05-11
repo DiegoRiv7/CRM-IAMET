@@ -69,8 +69,14 @@ def _sync_calendario(evento, fallback_user=None):
             color=EVENTO_CALENDAR_COLOR,
             completada=completada,
         )
-    if evento.organizador and not actividad.participantes.filter(id=evento.organizador.id).exists():
-        actividad.participantes.add(evento.organizador)
+    # Garantizar que el organizador + todos los participantes internos del
+    # evento queden como participantes del calendario.
+    user_ids = set()
+    if evento.organizador_id:
+        user_ids.add(evento.organizador_id)
+    user_ids.update(evento.participantes.values_list('id', flat=True))
+    if user_ids:
+        actividad.participantes.set(list(user_ids))
     return actividad
 
 
@@ -80,6 +86,13 @@ def _access_ok(user):
 
 
 def _evento_to_dict(e):
+    participantes = []
+    for u in e.participantes.all():
+        participantes.append({
+            'id': u.id,
+            'nombre': u.get_full_name() or u.username,
+            'iniciales': _iniciales(u),
+        })
     return {
         'id': e.id,
         'nombre': e.nombre,
@@ -98,7 +111,20 @@ def _evento_to_dict(e):
         'organizador_id': e.organizador_id,
         'organizador_nombre': (e.organizador.get_full_name() or e.organizador.username) if e.organizador else '',
         'asistentes_count': e.asistentes.count(),
+        'cliente_id': e.cliente_id,
+        'cliente_nombre': e.cliente.nombre_empresa if e.cliente_id else '',
+        'prospecto_id': e.prospecto_id,
+        'prospecto_nombre': e.prospecto.nombre if e.prospecto_id else '',
+        'participantes': participantes,
     }
+
+
+def _iniciales(u):
+    if u.first_name and u.last_name:
+        return (u.first_name[0] + u.last_name[0]).upper()
+    if u.first_name:
+        return u.first_name[0].upper()
+    return (u.username[0].upper() if u.username else '?')
 
 
 def _asistente_to_dict(a):
@@ -196,6 +222,11 @@ def api_evento_crear(request):
     except Exception:
         costo = 0
 
+    cliente_id = data.get('cliente_id')
+    prospecto_id = data.get('prospecto_id')
+    cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
+    prospecto = Prospecto.objects.filter(id=prospecto_id).first() if prospecto_id else None
+
     e = Evento.objects.create(
         nombre=nombre,
         tipo=data.get('tipo') or 'presencial',
@@ -206,9 +237,15 @@ def api_evento_crear(request):
         descripcion=(data.get('descripcion') or '').strip(),
         marcas=data.get('marcas') or [],
         costo=costo,
+        cliente=cliente,
+        prospecto=prospecto,
         organizador=organizador,
         creado_por=request.user,
     )
+    # Participantes internos (M2M) — IDs de usuarios IAMET
+    participantes_ids = data.get('participantes_ids') or []
+    if participantes_ids:
+        e.participantes.set(User.objects.filter(id__in=participantes_ids))
     try:
         _sync_calendario(e, fallback_user=request.user)
     except Exception as exc:
@@ -262,7 +299,16 @@ def api_evento_editar(request, evento_id):
         org = User.objects.filter(id=data['organizador_id']).first()
         if org:
             e.organizador = org
+    # Cliente / Prospecto principal — null limpia el vínculo
+    if 'cliente_id' in data:
+        e.cliente = Cliente.objects.filter(id=data['cliente_id']).first() if data['cliente_id'] else None
+    if 'prospecto_id' in data:
+        e.prospecto = Prospecto.objects.filter(id=data['prospecto_id']).first() if data['prospecto_id'] else None
     e.save()
+    # Participantes (M2M) — sólo se modifica si viene en el payload
+    if 'participantes_ids' in data:
+        ids = data.get('participantes_ids') or []
+        e.participantes.set(User.objects.filter(id__in=ids))
     try:
         _sync_calendario(e, fallback_user=request.user)
     except Exception as exc:

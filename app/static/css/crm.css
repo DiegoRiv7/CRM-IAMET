@@ -12337,6 +12337,235 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .evt-kind-prospecto { background: rgba(255, 149, 0, 0.12); color: #B25600; }
 .evt-kind-contacto  { background: rgba(110, 110, 115, 0.1); color: #6E6E73; }
 
+/* Tabs Cliente/Prospecto en el pop del target */
+.evt-tgt-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+.evt-tgt-tab {
+    flex: 1;
+    padding: 5px 10px;
+    border: none;
+    background: transparent;
+    color: #6E6E73;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.evt-tgt-tab.active {
+    background: #fff;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Chips de participantes en el toolbar */
+.evt-part-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px 3px 3px;
+    background: rgba(0, 82, 212, 0.07);
+    border: 1px solid rgba(0, 82, 212, 0.14);
+    color: #0052D4;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+.evt-part-chip--ro { padding: 3px 10px 3px 3px; }
+.evt-part-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0052D4;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+}
+.evt-part-chip-x {
+    background: transparent;
+    border: none;
+    color: #0052D4;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0 0 2px;
+    opacity: 0.7;
+}
+.evt-part-chip-x:hover { opacity: 1; }
+
+/* ─── Widget DETALLE de evento (read-only + acciones) ──────────── */
+.evt-det-card {
+    width: 92vw;
+    max-width: 700px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+}
+.evt-det-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid #E5E5EA;
+    flex-shrink: 0;
+    gap: 12px;
+}
+.evt-det-head-l {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    min-width: 0;
+    flex: 1;
+}
+.evt-det-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(124, 58, 237, 0.1);
+    color: #7C3AED;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.evt-det-titles { min-width: 0; flex: 1; }
+.evt-det-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1C1C1E;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.evt-det-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+.evt-det-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #6E6E73;
+}
+.evt-det-estado--borrador    { background: rgba(0,0,0,0.05);            color: #6E6E73; }
+.evt-det-estado--programado  { background: rgba(0, 82, 212, 0.1);       color: #0052D4; }
+.evt-det-estado--confirmado  { background: rgba(52, 199, 89, 0.12);     color: #248A3D; }
+.evt-det-estado--realizado   { background: rgba(124, 58, 237, 0.12);    color: #6B21A8; }
+.evt-det-estado--cancelado   { background: rgba(255, 59, 48, 0.1);      color: #C9302E; }
+.evt-det-fecha {
+    font-size: 0.78rem;
+    color: #6E6E73;
+    font-weight: 600;
+}
+
+.evt-det-head-r {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.evt-det-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border: none;
+    background: rgba(0, 82, 212, 0.06);
+    color: #0052D4;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.evt-det-btn-ghost:hover { background: rgba(0, 82, 212, 0.14); }
+.evt-det-btn-danger {
+    background: rgba(255, 59, 48, 0.08);
+    color: #FF3B30;
+    padding: 7px 9px;
+}
+.evt-det-btn-danger:hover { background: rgba(255, 59, 48, 0.18); }
+
+.evt-det-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.evt-det-section { display: flex; flex-direction: column; gap: 10px; }
+.evt-det-section-head h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1C1C1E;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.evt-det-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+}
+.evt-det-field { display: flex; flex-direction: column; gap: 4px; }
+.evt-det-field--wide { grid-column: 1 / -1; }
+.evt-det-field label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #86868B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.evt-det-target,
+.evt-det-org {
+    font-size: 0.88rem;
+    color: #1C1C1E;
+    font-weight: 600;
+}
+.evt-det-marcas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.evt-det-participantes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.evt-det-desc {
+    font-size: 0.85rem;
+    color: #1C1C1E;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.evt-det-muted { color: #AEAEB2; font-weight: 500; font-style: italic; }
+
+@media (max-width: 620px) {
+    .evt-det-grid { grid-template-columns: 1fr; }
+    .evt-det-head { flex-direction: column; }
+    .evt-det-head-r { width: 100%; justify-content: flex-end; }
+}
+
 /* Mensaje de error inline */
 .evt-error {
     padding: 10px 14px;
