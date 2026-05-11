@@ -762,7 +762,6 @@ def crm_home(request):
     eventos_kpis = None
     eventos_lista = None
     if tab_activo == 'prospeccion':
-        from django.utils import timezone
         from .models import Evento
         evt_qs = Evento.objects.exclude(estado='cancelado').filter(fecha_evento__isnull=False)
         if desde_date or hasta_date:
