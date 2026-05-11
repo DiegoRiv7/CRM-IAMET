@@ -263,11 +263,13 @@
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
                     Prospección
                 </a>
+                {% if not es_ingeniero %}
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
-                    Campañas
+                    Marketing
                 </a>
+                {% endif %}
             </div>
             {% endif %}
             <div class="crm-bar-right">
@@ -693,6 +695,20 @@
         {% include "crm/_content_prospectos_kanban.html" %}
 
         {% elif tab_activo == 'prospeccion' %}
+        {% if request.GET.vista != 'campanas' %}
+        {% include "crm/_widget_marketing.html" %}
+        {% else %}
+        <!-- Breadcrumb de regreso al dashboard de Marketing -->
+        <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
+            <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
+               style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#0052D4;text-decoration:none;padding:6px 12px;border-radius:18px;background:#0052D40D;transition:background 0.18s;"
+               onmouseover="this.style.background='#0052D418'" onmouseout="this.style.background='#0052D40D'">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Marketing
+            </a>
+            <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
+            <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Campañas</span>
+        </div>
         <!-- Period pills (botón "Nuevo Prospecto" removido — la prospección
              ahora se inicia desde el kanban, no desde aquí) -->
         <div class="crm-facet-bar crm-facet-bar--minimal" style="padding-bottom:6px;">
@@ -793,6 +809,7 @@
             <tbody id="prospeccionTbody"></tbody>
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
+        {% endif %}
         {% elif tab_activo == 'clientes' %}
         <!-- KPI Cards (dashboard: toggle modo y period pills ya están arriba en crm-bar) -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">

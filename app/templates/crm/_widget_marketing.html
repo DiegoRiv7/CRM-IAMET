@@ -1,0 +1,124 @@
+{# ═══ DASHBOARD MARKETING — 8 secciones ═══ #}
+<div class="mkt-dashboard" id="mktDashboard">
+    <div class="mkt-header">
+        <h1 class="mkt-title">Marketing</h1>
+        <p class="mkt-subtitle">Centraliza campañas, eventos y todas las acciones que impulsan la marca.</p>
+    </div>
+
+    <div class="mkt-grid">
+
+        {# 1. Campañas — único activo, lleva a la tabla actual de clientes × marcas #}
+        <a class="mkt-card mkt-card--ready" data-section="campanas"
+           href="?tab=prospeccion&vista=campanas&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           style="--mkt-color:#FF9500;--mkt-bg:#FF950018;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8v18l-18-8z"/><path d="M11 11.5v6"/><path d="M7 14h.01"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Campañas</h3>
+            <p class="mkt-card-desc">Landing pages y emails por marcas: Panduit, Zebra, APC…</p>
+            <span class="mkt-card-arrow" aria-hidden="true">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>
+            </span>
+        </a>
+
+        {# 2. Eventos #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="eventos" data-section-name="Eventos"
+                style="--mkt-color:#AF52DE;--mkt-bg:#AF52DE18;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Eventos</h3>
+            <p class="mkt-card-desc">Convocatorias hacia clientes con marcas y mayoristas.</p>
+        </button>
+
+        {# 3. Techday #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="techday" data-section-name="Techday"
+                style="--mkt-color:#0052D4;--mkt-bg:#0052D418;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Techday</h3>
+            <p class="mkt-card-desc">Sesiones técnicas con marcas para clientes y prospectos.</p>
+        </button>
+
+        {# 4. Demos #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="demos" data-section-name="Demos"
+                style="--mkt-color:#5AC8FA;--mkt-bg:#5AC8FA20;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><polygon points="10,8 15,10.5 10,13" fill="currentColor" stroke="none"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Demos</h3>
+            <p class="mkt-card-desc">Demostraciones con marcas e ingeniería en sitio o remoto.</p>
+        </button>
+
+        {# 5. Certificaciones #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="certificaciones" data-section-name="Certificaciones"
+                style="--mkt-color:#FFCC00;--mkt-bg:#FFCC0022;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 13.5l-2 7 5-3 5 3-2-7"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Certificaciones</h3>
+            <p class="mkt-card-desc">Programas comerciales y técnicos avalados por las marcas.</p>
+        </button>
+
+        {# 6. Cursos #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="cursos" data-section-name="Cursos"
+                style="--mkt-color:#34C759;--mkt-bg:#34C75918;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 4 2 10l10 6 10-6z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Cursos</h3>
+            <p class="mkt-card-desc">Capacitación comercial y de ventas para el equipo.</p>
+        </button>
+
+        {# 7. Asociaciones #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="asociaciones" data-section-name="Asociaciones"
+                style="--mkt-color:#FF3B30;--mkt-bg:#FF3B3018;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Asociaciones</h3>
+            <p class="mkt-card-desc">Index, Dimbc, Coparmex y demás cámaras del sector.</p>
+        </button>
+
+        {# 8. Redes Sociales #}
+        <button type="button" class="mkt-card mkt-card--soon" data-section="redes" data-section-name="Redes Sociales"
+                style="--mkt-color:#FF2D55;--mkt-bg:#FF2D5518;">
+            <div class="mkt-card-icon" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </div>
+            <h3 class="mkt-card-title">Redes Sociales</h3>
+            <p class="mkt-card-desc">LinkedIn, YouTube y Facebook: contenido y presencia.</p>
+        </button>
+
+    </div>
+</div>
+
+{# Toast "Próximamente" — un único nodo reutilizable #}
+<div class="mkt-toast" id="mktToast" role="status" aria-live="polite">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    <span class="mkt-toast-text">Próximamente</span>
+</div>
+
+<script>
+(function(){
+    var dash = document.getElementById('mktDashboard');
+    if (!dash) return;
+    var toast = document.getElementById('mktToast');
+    var toastTimer = null;
+    function showToast(msg){
+        if (!toast) return;
+        var t = toast.querySelector('.mkt-toast-text');
+        if (t) t.textContent = msg;
+        toast.classList.add('mkt-toast--on');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function(){ toast.classList.remove('mkt-toast--on'); }, 2400);
+    }
+    dash.querySelectorAll('.mkt-card--soon').forEach(function(card){
+        card.addEventListener('click', function(){
+            var name = card.dataset.sectionName || 'Esta sección';
+            showToast(name + ' — próximamente');
+        });
+    });
+})();
+</script>
