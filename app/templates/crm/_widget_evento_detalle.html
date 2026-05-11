@@ -1,119 +1,163 @@
-{# ═══ WIDGET: EVENTO — Detalle (read-only + acciones) ═══ #}
-<div class="widget-overlay wn-overlay" id="widgetEventoDetalle" style="z-index:10450;"
-     onclick="if(event.target===this){var w=this;w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);}">
-    <div class="wn-card evt-det-card">
+{# ═══ WIDGET: EVENTO — Detalle (patrón wo-* del CRM) ═══ #}
+<div class="widget-overlay" id="widgetEventoDetalle" style="z-index:10450;">
+    <div class="widget-card widget-card-lg">
+        <div id="evtDetLoading" style="text-align:center;padding:4rem;color:#86868B;">
+            <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2">
+                <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+            </svg>
+            Cargando evento...
+        </div>
 
-        {# Header con acciones #}
-        <header class="evt-det-head">
-            <div class="evt-det-head-l">
-                <div class="evt-det-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                </div>
-                <div class="evt-det-titles">
-                    <h2 class="evt-det-title" id="evtDetTitle">…</h2>
-                    <div class="evt-det-meta">
-                        <span class="evt-det-badge" id="evtDetTipo">—</span>
-                        <span class="evt-det-badge evt-det-estado" id="evtDetEstado">—</span>
-                        <span class="evt-det-fecha" id="evtDetFecha">—</span>
+        <div id="evtDetContent" style="display:none;flex-direction:column;height:100%;">
+
+            {# ─── Header ─── #}
+            <div class="wo-header">
+                <div class="wo-header-top">
+                    <div>
+                        <div class="wo-type-badge" style="background:#AF52DE22;color:#7C3AED;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <span>EVENTO</span>
+                        </div>
+                        <h1 class="wo-title" id="evtDetTitle"></h1>
+                    </div>
+                    <div class="evt-det-head-actions">
+                        <button type="button" class="evt-det-action-btn" id="evtDetEdit" title="Editar evento">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                            Editar
+                        </button>
+                        <button type="button" class="evt-det-action-btn evt-det-action-btn--danger" id="evtDetDelete" title="Eliminar evento">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                        <button type="button" class="widget-close" id="evtDetClose">&times;</button>
                     </div>
                 </div>
             </div>
-            <div class="evt-det-head-r">
-                <button type="button" class="evt-det-btn-ghost" id="evtDetEdit" title="Editar">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
-                    Editar
-                </button>
-                <button type="button" class="evt-det-btn-ghost evt-det-btn-danger" id="evtDetDelete" title="Eliminar">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-                <button type="button" class="wn-ctw-close" id="evtDetClose">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+
+            {# ─── Stepper de estado ─── #}
+            <div class="wo-pipeline">
+                <div class="wo-pipeline-container">
+                    <div class="wo-pipeline-scroll" style="display:flex;justify-content:center;">
+                        <div class="wo-pipeline-stages" id="evtDetStages" style="gap:8px;"></div>
+                    </div>
+                </div>
             </div>
-        </header>
 
-        {# Body: info + asistentes #}
-        <div class="evt-det-body">
+            {# ─── Content Grid ─── #}
+            <div class="wo-content">
+                <div class="wo-grid">
 
-            {# Bloque info principal #}
-            <section class="evt-det-section">
-                <div class="evt-det-grid">
-                    <div class="evt-det-field">
-                        <label>Para</label>
-                        <div id="evtDetTarget" class="evt-det-target">—</div>
+                    {# Row 1, Col 1: Info principal #}
+                    <div class="wo-card" style="display:flex;flex-direction:column;">
+                        <div class="wo-info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Para</span>
+                                <span class="wo-info-value" id="evtDetTarget">—</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Tipo</span>
+                                <span class="wo-info-value medium" id="evtDetTipo">—</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Fecha</span>
+                                <span class="wo-info-value medium" id="evtDetFecha">—</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Marcas</span>
+                                <span class="wo-info-value medium" id="evtDetMarcas">—</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Duración</span>
+                                <span class="wo-info-value medium" id="evtDetDuracion">—</span>
+                            </div>
+                            <div class="wo-info-item">
+                                <span class="wo-info-label">Costo estimado</span>
+                                <span class="wo-info-value medium" id="evtDetCosto">—</span>
+                            </div>
+                            <div class="wo-info-item" style="grid-column:1 / -1;" id="evtDetDescBlock">
+                                <span class="wo-info-label">Agenda / Descripción</span>
+                                <span class="wo-info-value" id="evtDetDescripcion" style="font-size:0.82rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
+                            </div>
+                            <div class="wo-info-item" id="evtDetNotasBlock" style="grid-column:1 / -1; display:none;">
+                                <span class="wo-info-label">Notas post-evento</span>
+                                <span class="wo-info-value" id="evtDetNotasPost" style="font-size:0.82rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="evt-det-field">
-                        <label>Marcas</label>
-                        <div class="evt-det-marcas" id="evtDetMarcas"></div>
+
+                    {# Row 1, Col 2: Asistentes invitados (con tabs) #}
+                    <div class="wo-card" style="display:flex;flex-direction:column;">
+                        <div class="wo-section-header">
+                            <h3 class="wo-section-title">Asistentes invitados <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
+                        </div>
+                        <div class="wo-quote-list" id="evtDetAsistList" style="flex:1;max-height:200px;overflow-y:auto;">
+                            <div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Aún no hay invitados.</div>
+                        </div>
+
+                        <div class="evt-asist-tabs" style="margin-top:10px;">
+                            <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente</button>
+                            <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto</button>
+                            <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto</button>
+                        </div>
+
+                        <div class="evt-asist-mode" data-mode="cliente">
+                            <div class="evt-asist-search-wrap">
+                                <input type="text" id="evtDetAsistClienteQ" class="evt-asist-search" placeholder="Buscar cliente…" autocomplete="off">
+                                <div class="evt-asist-ac" id="evtDetAsistClienteAC" style="display:none;"></div>
+                            </div>
+                            <label class="evt-asist-checkbox">
+                                <input type="checkbox" id="evtDetAsistGenerarProspecto" checked>
+                                <span>Crear prospecto en pipeline para seguimiento</span>
+                            </label>
+                            <button type="button" id="evtDetAsistAddCliente" disabled>+ Invitar cliente</button>
+                        </div>
+
+                        <div class="evt-asist-mode" data-mode="prospecto" style="display:none;">
+                            <div class="evt-asist-search-wrap">
+                                <input type="text" id="evtDetAsistProspectoQ" class="evt-asist-search" placeholder="Buscar prospecto…" autocomplete="off">
+                                <div class="evt-asist-ac" id="evtDetAsistProspectoAC" style="display:none;"></div>
+                            </div>
+                            <button type="button" id="evtDetAsistAddProspecto" disabled>+ Invitar prospecto</button>
+                        </div>
+
+                        <div class="evt-asist-mode" data-mode="contacto" style="display:none;">
+                            <div class="evt-asist-add">
+                                <input type="text" id="evtDetAsistNombre" placeholder="Nombre del invitado" maxlength="200">
+                                <input type="email" id="evtDetAsistEmail" placeholder="email (opcional)">
+                                <button type="button" id="evtDetAsistAddContacto">+ Agregar</button>
+                            </div>
+                        </div>
+
+                        <div class="evt-error" id="evtDetError" style="display:none;margin-top:8px;"></div>
                     </div>
-                    <div class="evt-det-field">
-                        <label>Organizador</label>
-                        <div id="evtDetOrganizador" class="evt-det-org">—</div>
+
+                    {# Row 2, Col 1: vacío (lo absorbe el grid en mobile) o información extra #}
+                    {# Row 2, Col 2: Organizador + Participantes IAMET #}
+                    <div class="wo-card" style="grid-column:1 / -1;">
+                        <div class="wo-stakeholder">
+                            <div class="wo-stakeholder-label">Organizador</div>
+                            <div class="wo-stakeholder-info">
+                                <div class="wo-avatar blue" id="evtDetOrgAvatar">?</div>
+                                <div>
+                                    <div class="wo-stakeholder-name" id="evtDetOrgName">—</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wo-divider"></div>
+                        <div class="wo-stakeholder">
+                            <div class="wo-stakeholder-label">Participantes IAMET</div>
+                            <div id="evtDetParticipantes" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;">
+                                <span class="wo-info-value" style="color:#AEAEB2;font-style:italic;">Solo el organizador</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="evt-det-field">
-                        <label>Costo estimado</label>
-                        <div id="evtDetCosto" class="evt-det-org">—</div>
-                    </div>
-                    <div class="evt-det-field evt-det-field--wide">
-                        <label>Participantes IAMET</label>
-                        <div class="evt-det-participantes" id="evtDetParticipantes"></div>
-                    </div>
-                    <div class="evt-det-field evt-det-field--wide" id="evtDetDescBlock" style="display:none;">
-                        <label>Agenda / descripción</label>
-                        <div class="evt-det-desc" id="evtDetDescripcion"></div>
-                    </div>
-                    <div class="evt-det-field evt-det-field--wide" id="evtDetNotasBlock" style="display:none;">
-                        <label>Notas post-evento</label>
-                        <div class="evt-det-desc" id="evtDetNotasPost"></div>
-                    </div>
+
                 </div>
-            </section>
-
-            {# Bloque asistentes #}
-            <section class="evt-det-section">
-                <div class="evt-det-section-head">
-                    <h3>Asistentes invitados <span class="evt-asist-count" id="evtDetAsistCount">0</span></h3>
-                </div>
-                <div class="evt-asist-list" id="evtDetAsistList"></div>
-
-                {# Tabs para agregar asistente #}
-                <div class="evt-asist-tabs" style="margin-top:10px;">
-                    <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente</button>
-                    <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto</button>
-                    <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto suelto</button>
-                </div>
-
-                <div class="evt-asist-mode" data-mode="cliente">
-                    <div class="evt-asist-search-wrap">
-                        <input type="text" id="evtDetAsistClienteQ" class="evt-asist-search" placeholder="Buscar cliente…" autocomplete="off">
-                        <div class="evt-asist-ac" id="evtDetAsistClienteAC" style="display:none;"></div>
-                    </div>
-                    <label class="evt-asist-checkbox">
-                        <input type="checkbox" id="evtDetAsistGenerarProspecto" checked>
-                        <span>Crear prospecto en pipeline para seguimiento</span>
-                    </label>
-                    <button type="button" id="evtDetAsistAddCliente" disabled>+ Invitar cliente</button>
-                </div>
-
-                <div class="evt-asist-mode" data-mode="prospecto" style="display:none;">
-                    <div class="evt-asist-search-wrap">
-                        <input type="text" id="evtDetAsistProspectoQ" class="evt-asist-search" placeholder="Buscar prospecto…" autocomplete="off">
-                        <div class="evt-asist-ac" id="evtDetAsistProspectoAC" style="display:none;"></div>
-                    </div>
-                    <button type="button" id="evtDetAsistAddProspecto" disabled>+ Invitar prospecto</button>
-                </div>
-
-                <div class="evt-asist-mode" data-mode="contacto" style="display:none;">
-                    <div class="evt-asist-add">
-                        <input type="text" id="evtDetAsistNombre" placeholder="Nombre del invitado" maxlength="200">
-                        <input type="email" id="evtDetAsistEmail" placeholder="email (opcional)">
-                        <button type="button" id="evtDetAsistAddContacto">+ Agregar</button>
-                    </div>
-                </div>
-
-                <div class="evt-error" id="evtDetError" style="display:none;"></div>
-            </section>
-
+            </div>
         </div>
     </div>
 </div>
@@ -123,10 +167,19 @@
     var overlay = document.getElementById('widgetEventoDetalle');
     if (!overlay) return;
 
+    var loadingEl = document.getElementById('evtDetLoading');
+    var contentEl = document.getElementById('evtDetContent');
+
     var _eventoId = null;
-    var _target = null;
     var _selectedCliente = null;
     var _selectedProspecto = null;
+
+    var STATES_FLOW = [
+        {key:'borrador',   label:'Borrador'},
+        {key:'programado', label:'Programado'},
+        {key:'confirmado', label:'Confirmado'},
+        {key:'realizado',  label:'Realizado'},
+    ];
 
     function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
     function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -137,55 +190,85 @@
         else { el.textContent = ''; el.style.display = 'none'; }
     }
 
+    function _iniciales(nombre){
+        var parts = (nombre || '').trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        if (parts[0]) return parts[0][0].toUpperCase();
+        return '?';
+    }
+
+    function renderStepper(estado){
+        var container = document.getElementById('evtDetStages');
+        var flow = STATES_FLOW.slice();
+        if (estado === 'cancelado'){
+            flow.push({key:'cancelado', label:'Cancelado'});
+        }
+        var currentIdx = flow.findIndex(function(s){ return s.key === estado; });
+        if (currentIdx < 0) currentIdx = 1; // programado por default
+
+        var html = '';
+        flow.forEach(function(s, i){
+            var cls = 'wo-stage-btn';
+            if (i < currentIdx) cls += ' completed';
+            if (i === currentIdx) cls += ' active';
+            if (s.key === 'cancelado') cls += ' wo-stage-cancelado';
+            html += '<button type="button" class="' + cls + '" data-stage="' + s.key + '">' + _esc(s.label) + '</button>';
+            if (i < flow.length - 1){
+                html += '<span class="wo-stage-connector' + (i < currentIdx ? ' completed' : '') + '"></span>';
+            }
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('.wo-stage-btn').forEach(function(b){
+            b.addEventListener('click', function(){
+                cambiarEstado(b.dataset.stage);
+            });
+        });
+    }
+
+    function cambiarEstado(nuevoEstado){
+        if (!_eventoId) return;
+        fetch('/app/api/evento/' + _eventoId + '/editar/', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json', 'X-CSRFToken': _csrf()},
+            body: JSON.stringify({estado: nuevoEstado}),
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.ok) recargar();
+        });
+    }
+
     function render(d){
         var e = d.evento;
         document.getElementById('evtDetTitle').textContent = e.nombre;
         document.getElementById('evtDetTipo').textContent = e.tipo_display || '—';
-        var estadoEl = document.getElementById('evtDetEstado');
-        estadoEl.textContent = e.estado_display;
-        estadoEl.className = 'evt-det-badge evt-det-estado evt-det-estado--' + e.estado;
         document.getElementById('evtDetFecha').textContent = e.fecha_evento_display || '—';
+        document.getElementById('evtDetDuracion').textContent = (e.duracion_minutos || 0) + ' min';
+        document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
 
-        // Target
+        // Target (Cliente o Prospecto)
         var tgt = document.getElementById('evtDetTarget');
         if (e.cliente_id){
             tgt.innerHTML = '<span class="evt-asist-kind evt-kind-cliente">Cliente</span>' + _esc(e.cliente_nombre);
         } else if (e.prospecto_id){
             tgt.innerHTML = '<span class="evt-asist-kind evt-kind-prospecto">Prospecto</span>' + _esc(e.prospecto_nombre);
         } else {
-            tgt.innerHTML = '<span class="evt-det-muted">— sin asignar —</span>';
+            tgt.innerHTML = '<span style="color:#AEAEB2;font-style:italic;">— sin asignar —</span>';
         }
 
         // Marcas
         var marcas = document.getElementById('evtDetMarcas');
         if (e.marcas && e.marcas.length){
-            marcas.innerHTML = e.marcas.map(function(m){ return '<span class="mkt-event-marca-pill">' + _esc(m).toLowerCase().replace(/^./, function(c){return c.toUpperCase();}) + '</span>'; }).join('');
+            marcas.innerHTML = e.marcas.map(function(m){ var nm = String(m).toLowerCase().replace(/^./, function(c){return c.toUpperCase();}); return '<span class="mkt-event-marca-pill">' + _esc(nm) + '</span>'; }).join(' ');
         } else {
-            marcas.innerHTML = '<span class="evt-det-muted">—</span>';
-        }
-
-        // Organizador y costo
-        document.getElementById('evtDetOrganizador').textContent = e.organizador_nombre || '—';
-        document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
-
-        // Participantes
-        var partWrap = document.getElementById('evtDetParticipantes');
-        if (e.participantes && e.participantes.length){
-            partWrap.innerHTML = e.participantes.map(function(p){
-                return '<span class="evt-part-chip evt-part-chip--ro">'
-                    + '<span class="evt-part-avatar">' + _esc(p.iniciales || '?') + '</span>'
-                    + _esc(p.nombre) + '</span>';
-            }).join('');
-        } else {
-            partWrap.innerHTML = '<span class="evt-det-muted">Solo organizador</span>';
+            marcas.innerHTML = '—';
         }
 
         // Descripción
+        var descBlock = document.getElementById('evtDetDescBlock');
         if (e.descripcion){
-            document.getElementById('evtDetDescBlock').style.display = '';
+            descBlock.style.display = '';
             document.getElementById('evtDetDescripcion').textContent = e.descripcion;
         } else {
-            document.getElementById('evtDetDescBlock').style.display = 'none';
+            descBlock.style.display = 'none';
         }
 
         // Notas post (si realizado)
@@ -196,15 +279,40 @@
             document.getElementById('evtDetNotasBlock').style.display = 'none';
         }
 
+        // Organizador
+        var orgName = document.getElementById('evtDetOrgName');
+        var orgAvatar = document.getElementById('evtDetOrgAvatar');
+        orgName.textContent = e.organizador_nombre || '—';
+        orgAvatar.textContent = _iniciales(e.organizador_nombre);
+
+        // Participantes IAMET
+        var partWrap = document.getElementById('evtDetParticipantes');
+        if (e.participantes && e.participantes.length){
+            partWrap.innerHTML = e.participantes.map(function(p){
+                return '<span class="evt-part-chip evt-part-chip--ro">'
+                    + '<span class="evt-part-avatar">' + _esc(p.iniciales || _iniciales(p.nombre)) + '</span>'
+                    + _esc(p.nombre) + '</span>';
+            }).join('');
+        } else {
+            partWrap.innerHTML = '<span class="wo-info-value" style="color:#AEAEB2;font-style:italic;">Solo el organizador</span>';
+        }
+
+        // Stepper de estado
+        renderStepper(e.estado);
+
         // Asistentes
         renderAsistentes(d.asistentes || []);
+
+        // Mostrar contenido (terminó loading)
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'flex';
     }
 
     function renderAsistentes(items){
         var list = document.getElementById('evtDetAsistList');
         var count = document.getElementById('evtDetAsistCount');
         if (!items.length){
-            list.innerHTML = '<div class="evt-asist-empty">Aún no hay invitados.</div>';
+            list.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Aún no hay invitados.</div>';
             count.textContent = '0';
             return;
         }
@@ -237,6 +345,9 @@
         _eventoId = eventoId;
         _selectedCliente = null; _selectedProspecto = null;
         setError('');
+        loadingEl.style.display = '';
+        contentEl.style.display = 'none';
+        // Reset tabs
         document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
         document.querySelectorAll('#widgetEventoDetalle .evt-asist-mode').forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
         ['evtDetAsistClienteQ','evtDetAsistProspectoQ','evtDetAsistNombre','evtDetAsistEmail'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
@@ -268,7 +379,7 @@
             });
     });
 
-    // Tabs
+    // Tabs asistentes
     document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){
         t.addEventListener('click', function(){
             var mode = t.dataset.mode;
@@ -278,7 +389,7 @@
         });
     });
 
-    // Autocomplete genérico para cliente / prospecto
+    // Autocomplete (cliente y prospecto) — usa el helper del form
     function renderAC(box, items, kind){
         if (!items.length){ box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>'; box.style.display = 'block'; return; }
         box.innerHTML = items.map(function(it){
@@ -328,7 +439,6 @@
         btnAddPros.disabled = false;
     });
 
-    // Cerrar AC al click fuera (dentro del detalle)
     overlay.addEventListener('click', function(e){
         if (clienteAC && !clienteAC.contains(e.target) && e.target !== clienteQ) clienteAC.style.display = 'none';
         if (prospectoAC && !prospectoAC.contains(e.target) && e.target !== prospectoQ) prospectoAC.style.display = 'none';
@@ -375,6 +485,11 @@
             method: 'POST', headers: {'X-CSRFToken': _csrf()},
         }).then(function(r){ return r.json(); }).then(function(d){ if (d && d.ok) recargar(); });
     }
+
+    // Cerrar al click en el overlay vacío
+    overlay.addEventListener('click', function(e){
+        if (e.target === overlay) cerrar();
+    });
 
     // ESC para cerrar
     document.addEventListener('keydown', function(e){
