@@ -11448,6 +11448,20 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
 }
 
+/* Badge "Sin envíos" cuando no hay actividad en el período */
+.mkt-hero-badge--idle {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: var(--mkt-t3);
+}
+.mkt-dot-idle {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--mkt-t3);
+    opacity: 0.65;
+}
+
 .mkt-hero-pills {
     display: flex;
     gap: 6px;
@@ -11465,10 +11479,41 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 
 .mkt-hero-cards {
+    position: relative;
     display: flex;
     gap: 8px;
     flex: 1;
     min-height: 0;
+}
+
+/* Skeleton placeholder cuando hay menos de 3 campañas reales */
+.mkt-mini-card--placeholder {
+    opacity: 0.62;
+}
+
+/* Overlay "Sin campañas en este período" — cubre toda la zona de mini-cards */
+.mkt-hero-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(4px) saturate(160%);
+    -webkit-backdrop-filter: blur(4px) saturate(160%);
+    border-radius: 10px;
+    color: var(--mkt-t2);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-align: center;
+    z-index: 2;
+}
+.mkt-hero-empty svg {
+    color: var(--mkt-t3);
+    opacity: 0.85;
 }
 
 .mkt-mini-card {

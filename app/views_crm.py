@@ -733,10 +733,29 @@ def crm_home(request):
             tasa_str = f'{round(total_respondidas / total_enviadas * 100)}%'
         else:
             tasa_str = '—'
+        # Top 3 campañas del periodo (por enviados) — para las mini-cards del hero
+        top_campanas = []
+        for c in camps_qs.order_by('-total_enviados', '-fecha_envio')[:3]:
+            enviados = c.total_enviados or 0
+            if enviados:
+                pct = round((c.total_abiertos or 0) / enviados * 100)
+                pct_label = f'{pct}% apert.'
+            else:
+                pct = 0
+                pct_label = '—'
+            top_campanas.append({
+                'nombre': c.nombre,
+                'enviados': enviados,
+                'pct': pct,
+                'pct_label': pct_label,
+            })
         marketing_kpis = {
             'activas': total_activas,
             'enviadas': total_enviadas,
             'tasa_contacto': tasa_str,
+            'top_campanas': top_campanas,
+            'empty_slots': list(range(max(0, 3 - len(top_campanas)))),
+            'hay_actividad': total_enviadas > 0 or total_activas > 0,
         }
 
     context = {
