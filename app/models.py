@@ -4927,3 +4927,83 @@ class ProveedorSnapshot(models.Model):
     cuenta_contable = models.CharField(max_length=50)
     captured_at = models.DateTimeField(auto_now_add=True)
 
+
+# ──────────────────────────────────────────────
+# Marketing — Eventos
+# ──────────────────────────────────────────────
+
+class Evento(models.Model):
+    """Evento de marketing organizado por un vendedor con una o más marcas
+    (Panduit, Zebra, Genetec, etc.) para acercar soluciones a clientes y
+    prospectos. Lleva fecha, lugar, tipo, asistentes y notas post-evento.
+    """
+    TIPO_CHOICES = [
+        ('presencial', 'Presencial'),
+        ('webinar', 'Webinar'),
+        ('demo_sitio', 'Demo en sitio'),
+        ('breakfast', 'Breakfast Brief'),
+        ('techday', 'Techday'),
+    ]
+    ESTADO_CHOICES = [
+        ('borrador', 'Borrador'),
+        ('programado', 'Programado'),
+        ('confirmado', 'Confirmado'),
+        ('realizado', 'Realizado'),
+        ('cancelado', 'Cancelado'),
+    ]
+
+    nombre = models.CharField(max_length=200, verbose_name='Nombre del evento')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='presencial')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='borrador')
+    fecha_evento = models.DateTimeField(verbose_name='Fecha y hora del evento')
+    duracion_minutos = models.IntegerField(default=60)
+    ubicacion = models.CharField(max_length=300, blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    # Lista de marcas participantes (strings tipo 'PANDUIT', 'ZEBRA', ...).
+    # JSONField evita una tabla M2M aparte mientras el catálogo de marcas
+    # siga viviendo como CharField/choices en el resto del proyecto.
+    marcas = models.JSONField(default=list, blank=True,
+                              help_text="Marcas participantes, e.g. ['PANDUIT','AVIGILON']")
+    costo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    notas_post = models.TextField(blank=True, default='', verbose_name='Notas post-evento')
+    organizador = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                    related_name='eventos_organizados')
+    creado_por = models.ForeignKey(User, on_delete=models.CASCADE,
+                                   related_name='eventos_creados')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Evento'
+        verbose_name_plural = 'Eventos'
+        ordering = ['-fecha_evento']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.fecha_evento:%Y-%m-%d})'
+
+
+class EventoAsistente(models.Model):
+    """Asistente invitado a un evento. Puede ser un Cliente existente,
+    un Prospecto, o un contacto suelto identificado solo por nombre+email."""
+    evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name='asistentes')
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='eventos_invitado')
+    prospecto = models.ForeignKey('Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='eventos_invitado')
+    contacto_nombre = models.CharField(max_length=200, blank=True, default='')
+    contacto_email = models.EmailField(blank=True, default='')
+    confirmado = models.BooleanField(default=False)
+    asistio = models.BooleanField(null=True, blank=True)  # null = aún no se sabe (pre-evento)
+    notas = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Asistente al evento'
+        verbose_name_plural = 'Asistentes al evento'
+        ordering = ['fecha_creacion']
+
+    def __str__(self):
+        if self.cliente_id: return f'{self.cliente.nombre_empresa} → {self.evento.nombre}'
+        if self.prospecto_id: return f'{self.prospecto.nombre} → {self.evento.nombre}'
+        return f'{self.contacto_nombre} → {self.evento.nombre}'
+

@@ -695,7 +695,9 @@
         {% include "crm/_content_prospectos_kanban.html" %}
 
         {% elif tab_activo == 'prospeccion' %}
-        {% if request.GET.vista != 'campanas' %}
+        {% if request.GET.vista == 'eventos' %}
+        {% include "crm/_marketing_eventos.html" %}
+        {% elif request.GET.vista != 'campanas' %}
         {% include "crm/_widget_marketing.html" %}
         {% else %}
         <!-- Breadcrumb de regreso al dashboard de Marketing -->

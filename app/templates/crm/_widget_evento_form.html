@@ -1,0 +1,357 @@
+{# ═══ WIDGET: EVENTO — Crear / Editar ═══ #}
+<div class="widget-overlay" id="widgetEventoForm" style="z-index:10500;">
+    <div class="widget-card mkt-evt-card">
+
+        {# Header #}
+        <div class="mkt-evt-head">
+            <div class="mkt-evt-head-left">
+                <div class="mkt-evt-head-icon">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div>
+                    <h2 id="evtFormTitle">Nuevo evento</h2>
+                    <p id="evtFormSubtitle">Registra un evento con una o más marcas para acercar a clientes/prospectos.</p>
+                </div>
+            </div>
+            <button type="button" class="widget-close" id="evtFormClose">&times;</button>
+        </div>
+
+        {# Body — formulario #}
+        <div class="mkt-evt-body">
+            <input type="hidden" id="evtFormId" value="">
+
+            {# Nombre #}
+            <div class="mkt-evt-field">
+                <label>Nombre del evento <span class="req">*</span></label>
+                <input type="text" id="evtFormNombre" placeholder="Techday Panduit + Avigilon · Mexicali" maxlength="200">
+            </div>
+
+            {# Row: tipo + estado #}
+            <div class="mkt-evt-row-2">
+                <div class="mkt-evt-field">
+                    <label>Tipo</label>
+                    <select id="evtFormTipo">
+                        <option value="presencial">Presencial</option>
+                        <option value="webinar">Webinar</option>
+                        <option value="demo_sitio">Demo en sitio</option>
+                        <option value="breakfast">Breakfast Brief</option>
+                        <option value="techday">Techday</option>
+                    </select>
+                </div>
+                <div class="mkt-evt-field">
+                    <label>Estado</label>
+                    <select id="evtFormEstado">
+                        <option value="borrador">Borrador</option>
+                        <option value="programado" selected>Programado</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="realizado">Realizado</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+
+            {# Row: fecha + duración #}
+            <div class="mkt-evt-row-2">
+                <div class="mkt-evt-field">
+                    <label>Fecha y hora <span class="req">*</span></label>
+                    <input type="datetime-local" id="evtFormFecha">
+                </div>
+                <div class="mkt-evt-field">
+                    <label>Duración (min)</label>
+                    <input type="number" id="evtFormDuracion" min="15" step="15" value="60">
+                </div>
+            </div>
+
+            {# Ubicación #}
+            <div class="mkt-evt-field">
+                <label>Ubicación</label>
+                <input type="text" id="evtFormUbicacion" placeholder="Oficinas del cliente, hotel, webinar Zoom, etc." maxlength="300">
+            </div>
+
+            {# Marcas (multi) #}
+            <div class="mkt-evt-field">
+                <label>Marcas participantes</label>
+                <div class="mkt-evt-marcas" id="evtFormMarcas">
+                    {% for m in 'PANDUIT,ZEBRA,APC,AVIGILON,GENETEC,AXIS,CISCO'|cut:' '|stringformat:'s'|cut:' ' %}{% endfor %}
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="PANDUIT"><span>Panduit</span></label>
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="ZEBRA"><span>Zebra</span></label>
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="APC"><span>APC</span></label>
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="AVIGILON"><span>Avigilon</span></label>
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="GENETEC"><span>Genetec</span></label>
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="AXIS"><span>Axis</span></label>
+                    <label class="mkt-evt-marca-chk"><input type="checkbox" value="CISCO"><span>Cisco</span></label>
+                </div>
+            </div>
+
+            {# Descripción #}
+            <div class="mkt-evt-field">
+                <label>Descripción / agenda</label>
+                <textarea id="evtFormDescripcion" rows="3" placeholder="¿Qué se va a presentar? ¿Qué soluciones se mostrarán?"></textarea>
+            </div>
+
+            {# Costo (opcional) #}
+            <div class="mkt-evt-field mkt-evt-field--narrow">
+                <label>Costo estimado (MXN)</label>
+                <input type="number" id="evtFormCosto" min="0" step="100" placeholder="0">
+            </div>
+
+            {# Asistentes (solo visible en modo edición) #}
+            <div class="mkt-evt-field mkt-evt-asist-block" id="evtFormAsistBlock" style="display:none;">
+                <label>Asistentes invitados <span class="mkt-evt-asist-count" id="evtFormAsistCount">0</span></label>
+                <div class="mkt-evt-asist-list" id="evtFormAsistList"></div>
+                <div class="mkt-evt-asist-add">
+                    <input type="text" id="evtFormAsistNombre" placeholder="Nombre del invitado" maxlength="200">
+                    <input type="email" id="evtFormAsistEmail" placeholder="email (opcional)">
+                    <button type="button" id="evtFormAsistAddBtn">+ Agregar</button>
+                </div>
+            </div>
+
+            {# Notas post-evento (solo visible si estado = realizado) #}
+            <div class="mkt-evt-field" id="evtFormNotasBlock" style="display:none;">
+                <label>Notas post-evento</label>
+                <textarea id="evtFormNotasPost" rows="3" placeholder="¿Cómo salió? ¿Qué oportunidades surgieron?"></textarea>
+            </div>
+
+            <div class="mkt-evt-error" id="evtFormError" style="display:none;"></div>
+        </div>
+
+        {# Footer #}
+        <div class="mkt-evt-foot">
+            <button type="button" class="mkt-evt-btn-delete" id="evtFormDelete" style="display:none;">Eliminar</button>
+            <div style="flex:1;"></div>
+            <button type="button" class="mkt-evt-btn-cancel" id="evtFormCancel">Cancelar</button>
+            <button type="button" class="mkt-evt-btn-save" id="evtFormSave">Guardar evento</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    var overlay = document.getElementById('widgetEventoForm');
+    if (!overlay) return;
+
+    var titleEl = document.getElementById('evtFormTitle');
+    var subEl = document.getElementById('evtFormSubtitle');
+    var idEl = document.getElementById('evtFormId');
+    var nombreEl = document.getElementById('evtFormNombre');
+    var tipoEl = document.getElementById('evtFormTipo');
+    var estadoEl = document.getElementById('evtFormEstado');
+    var fechaEl = document.getElementById('evtFormFecha');
+    var duracionEl = document.getElementById('evtFormDuracion');
+    var ubicEl = document.getElementById('evtFormUbicacion');
+    var marcasWrap = document.getElementById('evtFormMarcas');
+    var descEl = document.getElementById('evtFormDescripcion');
+    var costoEl = document.getElementById('evtFormCosto');
+    var asistBlock = document.getElementById('evtFormAsistBlock');
+    var asistList = document.getElementById('evtFormAsistList');
+    var asistCount = document.getElementById('evtFormAsistCount');
+    var asistNombre = document.getElementById('evtFormAsistNombre');
+    var asistEmail = document.getElementById('evtFormAsistEmail');
+    var asistAddBtn = document.getElementById('evtFormAsistAddBtn');
+    var notasBlock = document.getElementById('evtFormNotasBlock');
+    var notasEl = document.getElementById('evtFormNotasPost');
+    var errEl = document.getElementById('evtFormError');
+    var btnSave = document.getElementById('evtFormSave');
+    var btnDelete = document.getElementById('evtFormDelete');
+
+    function _csrf(){
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+    function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function setError(msg){
+        if (msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        else { errEl.textContent = ''; errEl.style.display = 'none'; }
+    }
+    function resetForm(){
+        idEl.value = '';
+        nombreEl.value = '';
+        tipoEl.value = 'presencial';
+        estadoEl.value = 'programado';
+        fechaEl.value = '';
+        duracionEl.value = 60;
+        ubicEl.value = '';
+        marcasWrap.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked = false; });
+        descEl.value = '';
+        costoEl.value = '';
+        notasEl.value = '';
+        asistList.innerHTML = '';
+        asistCount.textContent = '0';
+        setError('');
+        toggleEstadoUI();
+    }
+    function toggleEstadoUI(){
+        notasBlock.style.display = (estadoEl.value === 'realizado') ? 'block' : 'none';
+    }
+    function getMarcas(){
+        var out = [];
+        marcasWrap.querySelectorAll('input[type=checkbox]:checked').forEach(function(c){ out.push(c.value); });
+        return out;
+    }
+    function setMarcas(arr){
+        var set = {};
+        (arr || []).forEach(function(m){ set[String(m).toUpperCase()] = true; });
+        marcasWrap.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked = !!set[c.value]; });
+    }
+    function renderAsistentes(items){
+        if (!items || !items.length){
+            asistList.innerHTML = '<div class="mkt-evt-asist-empty">Aún no hay invitados.</div>';
+            asistCount.textContent = '0';
+            return;
+        }
+        asistCount.textContent = items.length;
+        asistList.innerHTML = items.map(function(a){
+            var sub = a.contacto_email || (a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : ''));
+            return '<div class="mkt-evt-asist-row" data-asist-id="' + a.id + '">'
+                + '<div class="mkt-evt-asist-info">'
+                +   '<div class="mkt-evt-asist-name">' + _esc(a.nombre_display) + '</div>'
+                +   (sub ? '<div class="mkt-evt-asist-sub">' + _esc(sub) + '</div>' : '')
+                + '</div>'
+                + '<button type="button" class="mkt-evt-asist-del" data-asist-id="' + a.id + '" title="Quitar">&times;</button>'
+                + '</div>';
+        }).join('');
+        asistList.querySelectorAll('.mkt-evt-asist-del').forEach(function(b){
+            b.addEventListener('click', function(){ quitarAsistente(b.dataset.asistId); });
+        });
+    }
+
+    function abrir(eventoId){
+        resetForm();
+        overlay.classList.add('active');
+        if (eventoId){
+            titleEl.textContent = 'Editar evento';
+            subEl.textContent = 'Actualiza la información o registra el resultado del evento.';
+            btnDelete.style.display = 'inline-flex';
+            asistBlock.style.display = 'block';
+            fetch('/app/api/evento/' + eventoId + '/').then(function(r){ return r.json(); }).then(function(d){
+                if (!d || !d.evento) { setError('No se pudo cargar el evento'); return; }
+                var e = d.evento;
+                idEl.value = e.id;
+                nombreEl.value = e.nombre || '';
+                tipoEl.value = e.tipo || 'presencial';
+                estadoEl.value = e.estado || 'programado';
+                if (e.fecha_evento){
+                    // input datetime-local NO acepta el TZ; cortamos a "YYYY-MM-DDTHH:MM"
+                    fechaEl.value = e.fecha_evento.slice(0, 16);
+                }
+                duracionEl.value = e.duracion_minutos || 60;
+                ubicEl.value = e.ubicacion || '';
+                descEl.value = e.descripcion || '';
+                costoEl.value = e.costo || '';
+                notasEl.value = e.notas_post || '';
+                setMarcas(e.marcas);
+                renderAsistentes(d.asistentes || []);
+                toggleEstadoUI();
+            }).catch(function(){ setError('Error de red al cargar el evento'); });
+        } else {
+            titleEl.textContent = 'Nuevo evento';
+            subEl.textContent = 'Registra un evento con una o más marcas para acercar a clientes/prospectos.';
+            btnDelete.style.display = 'none';
+            asistBlock.style.display = 'none'; // primero crear, luego agregar invitados
+        }
+    }
+    function cerrar(){
+        overlay.classList.remove('active');
+    }
+
+    window.eventoFormAbrir = abrir;
+    window.eventoFormCerrar = cerrar;
+
+    document.getElementById('evtFormClose').addEventListener('click', cerrar);
+    document.getElementById('evtFormCancel').addEventListener('click', cerrar);
+    estadoEl.addEventListener('change', toggleEstadoUI);
+
+    btnSave.addEventListener('click', function(){
+        setError('');
+        var nombre = nombreEl.value.trim();
+        var fecha = fechaEl.value.trim();
+        if (!nombre){ setError('El nombre es requerido'); return; }
+        if (!fecha){ setError('La fecha y hora son requeridas'); return; }
+        var payload = {
+            nombre: nombre,
+            tipo: tipoEl.value,
+            estado: estadoEl.value,
+            fecha_evento: fecha, // datetime-local "YYYY-MM-DDTHH:MM"
+            duracion_minutos: parseInt(duracionEl.value, 10) || 60,
+            ubicacion: ubicEl.value.trim(),
+            descripcion: descEl.value.trim(),
+            marcas: getMarcas(),
+            costo: parseFloat(costoEl.value) || 0,
+            notas_post: notasEl.value.trim(),
+        };
+        var id = idEl.value;
+        var url = id ? ('/app/api/evento/' + id + '/editar/') : '/app/api/evento/crear/';
+        btnSave.disabled = true; btnSave.textContent = 'Guardando…';
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
+            body: JSON.stringify(payload),
+        }).then(function(r){ return r.json().then(function(d){ return {status: r.status, body: d}; }); })
+          .then(function(res){
+              btnSave.disabled = false; btnSave.textContent = 'Guardar evento';
+              if (res.status >= 200 && res.status < 300 && res.body && res.body.ok){
+                  window.location.reload();
+              } else {
+                  setError((res.body && res.body.error) || 'No se pudo guardar');
+              }
+          })
+          .catch(function(){
+              btnSave.disabled = false; btnSave.textContent = 'Guardar evento';
+              setError('Error de red');
+          });
+    });
+
+    btnDelete.addEventListener('click', function(){
+        var id = idEl.value;
+        if (!id) return;
+        if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
+        fetch('/app/api/evento/' + id + '/eliminar/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': _csrf()},
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.ok) window.location.reload();
+            else setError((d && d.error) || 'No se pudo eliminar');
+        });
+    });
+
+    asistAddBtn.addEventListener('click', function(){
+        var id = idEl.value;
+        if (!id) { setError('Guarda el evento antes de agregar asistentes'); return; }
+        var n = asistNombre.value.trim();
+        var em = asistEmail.value.trim();
+        if (!n) { setError('Captura el nombre del invitado'); return; }
+        setError('');
+        fetch('/app/api/evento/' + id + '/asistente/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
+            body: JSON.stringify({contacto_nombre: n, contacto_email: em}),
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.ok){
+                asistNombre.value = ''; asistEmail.value = '';
+                // recargar lista
+                return fetch('/app/api/evento/' + id + '/').then(function(r){ return r.json(); }).then(function(d2){
+                    renderAsistentes(d2.asistentes || []);
+                });
+            } else {
+                setError((d && d.error) || 'No se pudo agregar');
+            }
+        });
+    });
+
+    function quitarAsistente(asistenteId){
+        var id = idEl.value;
+        if (!id || !asistenteId) return;
+        if (!confirm('¿Quitar este asistente?')) return;
+        fetch('/app/api/evento/' + id + '/asistente/' + asistenteId + '/eliminar/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': _csrf()},
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.ok){
+                fetch('/app/api/evento/' + id + '/').then(function(r){ return r.json(); }).then(function(d2){
+                    renderAsistentes(d2.asistentes || []);
+                });
+            }
+        });
+    }
+})();
+</script>

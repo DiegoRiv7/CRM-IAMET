@@ -758,11 +758,56 @@ def crm_home(request):
             'hay_actividad': total_enviadas > 0 or total_activas > 0,
         }
 
+    # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
+    eventos_kpis = None
+    eventos_lista = None
+    if tab_activo == 'prospeccion':
+        from django.utils import timezone
+        from .models import Evento
+        evt_qs = Evento.objects.exclude(estado='cancelado').filter(fecha_evento__isnull=False)
+        if desde_date or hasta_date:
+            if desde_date: evt_qs = evt_qs.filter(fecha_evento__date__gte=desde_date)
+            if hasta_date: evt_qs = evt_qs.filter(fecha_evento__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                evt_qs = evt_qs.filter(fecha_evento__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    evt_qs = evt_qs.filter(fecha_evento__month__in=meses_int)
+        eventos_periodo = list(
+            evt_qs.select_related('organizador').prefetch_related('asistentes')
+                  .order_by('fecha_evento')
+        )
+        dias_con_eventos = sorted({e.fecha_evento.day for e in eventos_periodo if e.fecha_evento})
+        ahora = timezone.now()
+        proximo = next((e for e in eventos_periodo if e.fecha_evento and e.fecha_evento >= ahora), None)
+        # Días 1..31 con flag has_event — para iterar limpio en el template
+        dias_set = set(dias_con_eventos)
+        dias_calendar = [{'num': i, 'has_event': i in dias_set} for i in range(1, 32)]
+        eventos_kpis = {
+            'total': len(eventos_periodo),
+            'dias_con_eventos': dias_con_eventos,
+            'dias_calendar': dias_calendar,
+            'proximo': {
+                'id': proximo.id,
+                'nombre': proximo.nombre,
+                'fecha_display': proximo.fecha_evento.strftime('%d %b · %H:%M'),
+                'marcas': proximo.marcas or [],
+            } if proximo else None,
+        }
+        eventos_lista = eventos_periodo
+
     context = {
         'widget_label': widget_label,
         'widget_metric': widget_metric,
         'tab_activo': tab_activo,
         'marketing_kpis': marketing_kpis,
+        'eventos_kpis': eventos_kpis,
+        'eventos_lista': eventos_lista,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,

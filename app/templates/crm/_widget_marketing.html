@@ -92,28 +92,35 @@
             </div>
         </a>
 
-        {# ═══ 1×1 — Eventos ═══ #}
-        <button type="button" class="mkt-widget mkt-widget--soon" data-area="evt"
-                data-section-name="Eventos" style="--mkt-accent:#7C3AED;--mkt-accent-bg:rgba(124,58,237,0.08);">
+        {# ═══ 1×1 — Eventos (activo) ═══ #}
+        <a class="mkt-widget mkt-widget--ready" data-area="evt"
+           href="?tab=prospeccion&vista=eventos&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           style="--mkt-accent:#7C3AED;--mkt-accent-bg:rgba(124,58,237,0.08);">
             <span class="mkt-specular"></span>
             <div class="mkt-w-head">
                 <div class="mkt-w-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
                 <span class="mkt-w-title">Eventos</span>
+                {% if eventos_kpis.total %}<span class="mkt-w-count">{{ eventos_kpis.total }}</span>{% endif %}
             </div>
             <div class="mkt-w-body">
                 <div class="mkt-cal">
                     <div class="mkt-cal-dow">L</div><div class="mkt-cal-dow">M</div><div class="mkt-cal-dow">X</div><div class="mkt-cal-dow">J</div><div class="mkt-cal-dow">V</div><div class="mkt-cal-dow">S</div><div class="mkt-cal-dow">D</div>
-                    <div class="mkt-cal-day">1</div><div class="mkt-cal-day">2</div><div class="mkt-cal-day">3</div><div class="mkt-cal-day">4</div><div class="mkt-cal-day">5</div><div class="mkt-cal-day">6</div><div class="mkt-cal-day">7</div>
-                    <div class="mkt-cal-day">8</div><div class="mkt-cal-day">9</div><div class="mkt-cal-day">10</div><div class="mkt-cal-day mkt-cal-day--soft">11</div><div class="mkt-cal-day">12</div><div class="mkt-cal-day">13</div><div class="mkt-cal-day mkt-cal-day--ev">14</div>
-                    <div class="mkt-cal-day">15</div><div class="mkt-cal-day">16</div><div class="mkt-cal-day">17</div><div class="mkt-cal-day">18</div><div class="mkt-cal-day">19</div><div class="mkt-cal-day">20</div><div class="mkt-cal-day">21</div>
-                    <div class="mkt-cal-day mkt-cal-day--ev">22</div><div class="mkt-cal-day">23</div><div class="mkt-cal-day">24</div><div class="mkt-cal-day">25</div><div class="mkt-cal-day">26</div><div class="mkt-cal-day">27</div><div class="mkt-cal-day mkt-cal-day--ev">28</div>
-                    <div class="mkt-cal-day">29</div><div class="mkt-cal-day">30</div>
+                    {% for d in eventos_kpis.dias_calendar %}
+                    <div class="mkt-cal-day{% if d.has_event %} mkt-cal-day--ev{% endif %}">{{ d.num }}</div>
+                    {% endfor %}
                 </div>
+                {% if eventos_kpis.proximo %}
+                <div class="mkt-inner-card mkt-evt-next">
+                    <div class="mkt-inner-label">Próximo evento</div>
+                    <div class="mkt-inner-value">{{ eventos_kpis.proximo.nombre }} · {{ eventos_kpis.proximo.fecha_display }}</div>
+                </div>
+                {% elif not eventos_kpis.total %}
+                <div class="mkt-evt-hint">Aún no hay eventos en este período</div>
+                {% endif %}
             </div>
-            <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
-        </button>
+        </a>
 
         {# ═══ 1×1 — Techday ═══ #}
         <button type="button" class="mkt-widget mkt-widget--soon" data-area="tech"

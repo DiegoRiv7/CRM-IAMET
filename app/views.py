@@ -37,3 +37,4 @@ from .views_tarea_comentarios import (
 
 from .views_prospeccion import *
 from .views_campanas import *
+from .views_eventos import *
