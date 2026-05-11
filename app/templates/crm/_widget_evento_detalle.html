@@ -1,4 +1,4 @@
-{# ═══ WIDGET: EVENTO — Detalle (patrón wo-* del CRM) ═══ #}
+{# ═══ WIDGET: EVENTO — Detalle (simple) ═══ #}
 <div class="widget-overlay" id="widgetEventoDetalle" style="z-index:10450;">
     <div class="widget-card widget-card-lg">
         <div id="evtDetLoading" style="text-align:center;padding:4rem;color:#86868B;">
@@ -10,7 +10,7 @@
 
         <div id="evtDetContent" style="display:none;flex-direction:column;height:100%;">
 
-            {# ─── Header ─── #}
+            {# Header #}
             <div class="wo-header">
                 <div class="wo-header-top">
                     <div>
@@ -38,70 +38,65 @@
                 </div>
             </div>
 
-            {# ─── Stepper de estado ─── #}
-            <div class="wo-pipeline">
-                <div class="wo-pipeline-container">
-                    <div class="wo-pipeline-scroll" style="display:flex;justify-content:center;">
-                        <div class="wo-pipeline-stages" id="evtDetStages" style="gap:8px;"></div>
+            {# Contenido #}
+            <div class="wo-content" style="display:flex;flex-direction:column;gap:1rem;">
+
+                {# Card: Información del evento #}
+                <div class="wo-card">
+                    <div class="wo-info-grid" style="grid-template-columns:repeat(3, 1fr);gap:1rem 1.5rem;">
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Para</span>
+                            <span class="wo-info-value" id="evtDetTarget">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Tipo</span>
+                            <span class="wo-info-value medium" id="evtDetTipo">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Fecha</span>
+                            <span class="wo-info-value medium" id="evtDetFecha">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Estado</span>
+                            <span class="wo-info-value medium"><span class="evt-det-estado-badge" id="evtDetEstado">—</span></span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Marcas</span>
+                            <span class="wo-info-value" id="evtDetMarcas">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Costo</span>
+                            <span class="wo-info-value medium" id="evtDetCosto">—</span>
+                        </div>
+                        <div class="wo-info-item" style="grid-column:1 / -1;" id="evtDetDescBlock">
+                            <span class="wo-info-label">Agenda / Descripción</span>
+                            <span class="wo-info-value" id="evtDetDescripcion" style="font-size:0.85rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
+                        </div>
+                        <div class="wo-info-item" style="grid-column:1 / -1; display:none;" id="evtDetNotasBlock">
+                            <span class="wo-info-label">Notas post-evento</span>
+                            <span class="wo-info-value" id="evtDetNotasPost" style="font-size:0.85rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {# ─── Content Grid ─── #}
-            <div class="wo-content">
-                <div class="wo-grid">
-
-                    {# Row 1, Col 1: Info principal #}
-                    <div class="wo-card" style="display:flex;flex-direction:column;">
-                        <div class="wo-info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
-                            <div class="wo-info-item">
-                                <span class="wo-info-label">Para</span>
-                                <span class="wo-info-value" id="evtDetTarget">—</span>
-                            </div>
-                            <div class="wo-info-item">
-                                <span class="wo-info-label">Tipo</span>
-                                <span class="wo-info-value medium" id="evtDetTipo">—</span>
-                            </div>
-                            <div class="wo-info-item">
-                                <span class="wo-info-label">Fecha</span>
-                                <span class="wo-info-value medium" id="evtDetFecha">—</span>
-                            </div>
-                            <div class="wo-info-item">
-                                <span class="wo-info-label">Marcas</span>
-                                <span class="wo-info-value medium" id="evtDetMarcas">—</span>
-                            </div>
-                            <div class="wo-info-item">
-                                <span class="wo-info-label">Duración</span>
-                                <span class="wo-info-value medium" id="evtDetDuracion">—</span>
-                            </div>
-                            <div class="wo-info-item">
-                                <span class="wo-info-label">Costo estimado</span>
-                                <span class="wo-info-value medium" id="evtDetCosto">—</span>
-                            </div>
-                            <div class="wo-info-item" style="grid-column:1 / -1;" id="evtDetDescBlock">
-                                <span class="wo-info-label">Agenda / Descripción</span>
-                                <span class="wo-info-value" id="evtDetDescripcion" style="font-size:0.82rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
-                            </div>
-                            <div class="wo-info-item" id="evtDetNotasBlock" style="grid-column:1 / -1; display:none;">
-                                <span class="wo-info-label">Notas post-evento</span>
-                                <span class="wo-info-value" id="evtDetNotasPost" style="font-size:0.82rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
-                            </div>
-                        </div>
+                {# Card: Asistentes invitados + Crear prospección #}
+                <div class="wo-card">
+                    <div class="wo-section-header">
+                        <h3 class="wo-section-title">Asistentes invitados <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
+                        <button type="button" class="evt-det-primary-btn" id="evtDetTogglePanel">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Crear prospección
+                        </button>
                     </div>
 
-                    {# Row 1, Col 2: Asistentes invitados (con tabs) #}
-                    <div class="wo-card" style="display:flex;flex-direction:column;">
-                        <div class="wo-section-header">
-                            <h3 class="wo-section-title">Asistentes invitados <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
-                        </div>
-                        <div class="wo-quote-list" id="evtDetAsistList" style="flex:1;max-height:200px;overflow-y:auto;">
-                            <div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Aún no hay invitados.</div>
-                        </div>
+                    <div id="evtDetAsistList" class="evt-det-asist-list" style="margin-top:8px;"></div>
 
-                        <div class="evt-asist-tabs" style="margin-top:10px;">
-                            <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente</button>
-                            <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto</button>
-                            <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto</button>
+                    {# Panel desplegable: Crear prospección (default) + otras formas #}
+                    <div class="evt-det-panel" id="evtDetPanel" style="display:none;">
+                        <div class="evt-asist-tabs" style="margin-top:12px;">
+                            <button type="button" class="evt-asist-tab active" data-mode="cliente">Cliente · Crear prospección</button>
+                            <button type="button" class="evt-asist-tab" data-mode="prospecto">Prospecto existente</button>
+                            <button type="button" class="evt-asist-tab" data-mode="contacto">Contacto suelto</button>
                         </div>
 
                         <div class="evt-asist-mode" data-mode="cliente">
@@ -134,29 +129,27 @@
 
                         <div class="evt-error" id="evtDetError" style="display:none;margin-top:8px;"></div>
                     </div>
+                </div>
 
-                    {# Row 2, Col 1: vacío (lo absorbe el grid en mobile) o información extra #}
-                    {# Row 2, Col 2: Organizador + Participantes IAMET #}
-                    <div class="wo-card" style="grid-column:1 / -1;">
-                        <div class="wo-stakeholder">
-                            <div class="wo-stakeholder-label">Organizador</div>
-                            <div class="wo-stakeholder-info">
+                {# Card: Organizador + Participantes #}
+                <div class="wo-card">
+                    <div class="wo-info-grid" style="grid-template-columns:1fr 2fr;gap:0.6rem 1.5rem;">
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Organizador</span>
+                            <div class="evt-det-people-row">
                                 <div class="wo-avatar blue" id="evtDetOrgAvatar">?</div>
-                                <div>
-                                    <div class="wo-stakeholder-name" id="evtDetOrgName">—</div>
-                                </div>
+                                <span id="evtDetOrgName" style="font-weight:600;color:#1D1D1F;">—</span>
                             </div>
                         </div>
-                        <div class="wo-divider"></div>
-                        <div class="wo-stakeholder">
-                            <div class="wo-stakeholder-label">Participantes IAMET</div>
-                            <div id="evtDetParticipantes" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;">
-                                <span class="wo-info-value" style="color:#AEAEB2;font-style:italic;">Solo el organizador</span>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Participantes IAMET</span>
+                            <div id="evtDetParticipantes" class="evt-det-people-row" style="flex-wrap:wrap;gap:6px;">
+                                <span style="color:#AEAEB2;font-style:italic;font-size:0.85rem;">Solo el organizador</span>
                             </div>
                         </div>
                     </div>
-
                 </div>
+
             </div>
         </div>
     </div>
@@ -174,13 +167,6 @@
     var _selectedCliente = null;
     var _selectedProspecto = null;
 
-    var STATES_FLOW = [
-        {key:'borrador',   label:'Borrador'},
-        {key:'programado', label:'Programado'},
-        {key:'confirmado', label:'Confirmado'},
-        {key:'realizado',  label:'Realizado'},
-    ];
-
     function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
     function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function _debounce(fn, ms){ var t = null; return function(){ var a = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null, a); }, ms); }; }
@@ -189,7 +175,6 @@
         if (msg){ el.textContent = msg; el.style.display = 'block'; }
         else { el.textContent = ''; el.style.display = 'none'; }
     }
-
     function _iniciales(nombre){
         var parts = (nombre || '').trim().split(/\s+/);
         if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -197,54 +182,19 @@
         return '?';
     }
 
-    function renderStepper(estado){
-        var container = document.getElementById('evtDetStages');
-        var flow = STATES_FLOW.slice();
-        if (estado === 'cancelado'){
-            flow.push({key:'cancelado', label:'Cancelado'});
-        }
-        var currentIdx = flow.findIndex(function(s){ return s.key === estado; });
-        if (currentIdx < 0) currentIdx = 1; // programado por default
-
-        var html = '';
-        flow.forEach(function(s, i){
-            var cls = 'wo-stage-btn';
-            if (i < currentIdx) cls += ' completed';
-            if (i === currentIdx) cls += ' active';
-            if (s.key === 'cancelado') cls += ' wo-stage-cancelado';
-            html += '<button type="button" class="' + cls + '" data-stage="' + s.key + '">' + _esc(s.label) + '</button>';
-            if (i < flow.length - 1){
-                html += '<span class="wo-stage-connector' + (i < currentIdx ? ' completed' : '') + '"></span>';
-            }
-        });
-        container.innerHTML = html;
-        container.querySelectorAll('.wo-stage-btn').forEach(function(b){
-            b.addEventListener('click', function(){
-                cambiarEstado(b.dataset.stage);
-            });
-        });
-    }
-
-    function cambiarEstado(nuevoEstado){
-        if (!_eventoId) return;
-        fetch('/app/api/evento/' + _eventoId + '/editar/', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json', 'X-CSRFToken': _csrf()},
-            body: JSON.stringify({estado: nuevoEstado}),
-        }).then(function(r){ return r.json(); }).then(function(d){
-            if (d && d.ok) recargar();
-        });
-    }
-
     function render(d){
         var e = d.evento;
         document.getElementById('evtDetTitle').textContent = e.nombre;
         document.getElementById('evtDetTipo').textContent = e.tipo_display || '—';
-        document.getElementById('evtDetFecha').textContent = e.fecha_evento_display || '—';
-        document.getElementById('evtDetDuracion').textContent = (e.duracion_minutos || 0) + ' min';
+        document.getElementById('evtDetFecha').textContent = (e.fecha_evento_display || '—') + (e.duracion_minutos ? ' · ' + e.duracion_minutos + ' min' : '');
         document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
 
-        // Target (Cliente o Prospecto)
+        // Estado badge
+        var estadoEl = document.getElementById('evtDetEstado');
+        estadoEl.textContent = e.estado_display;
+        estadoEl.className = 'evt-det-estado-badge evt-det-estado--' + e.estado;
+
+        // Target
         var tgt = document.getElementById('evtDetTarget');
         if (e.cliente_id){
             tgt.innerHTML = '<span class="evt-asist-kind evt-kind-cliente">Cliente</span>' + _esc(e.cliente_nombre);
@@ -259,19 +209,16 @@
         if (e.marcas && e.marcas.length){
             marcas.innerHTML = e.marcas.map(function(m){ var nm = String(m).toLowerCase().replace(/^./, function(c){return c.toUpperCase();}); return '<span class="mkt-event-marca-pill">' + _esc(nm) + '</span>'; }).join(' ');
         } else {
-            marcas.innerHTML = '—';
+            marcas.innerHTML = '<span style="color:#AEAEB2;">—</span>';
         }
 
-        // Descripción
-        var descBlock = document.getElementById('evtDetDescBlock');
+        // Descripción / Notas post
         if (e.descripcion){
-            descBlock.style.display = '';
+            document.getElementById('evtDetDescBlock').style.display = '';
             document.getElementById('evtDetDescripcion').textContent = e.descripcion;
         } else {
-            descBlock.style.display = 'none';
+            document.getElementById('evtDetDescBlock').style.display = 'none';
         }
-
-        // Notas post (si realizado)
         if (e.estado === 'realizado' && e.notas_post){
             document.getElementById('evtDetNotasBlock').style.display = '';
             document.getElementById('evtDetNotasPost').textContent = e.notas_post;
@@ -280,12 +227,10 @@
         }
 
         // Organizador
-        var orgName = document.getElementById('evtDetOrgName');
-        var orgAvatar = document.getElementById('evtDetOrgAvatar');
-        orgName.textContent = e.organizador_nombre || '—';
-        orgAvatar.textContent = _iniciales(e.organizador_nombre);
+        document.getElementById('evtDetOrgName').textContent = e.organizador_nombre || '—';
+        document.getElementById('evtDetOrgAvatar').textContent = _iniciales(e.organizador_nombre);
 
-        // Participantes IAMET
+        // Participantes
         var partWrap = document.getElementById('evtDetParticipantes');
         if (e.participantes && e.participantes.length){
             partWrap.innerHTML = e.participantes.map(function(p){
@@ -294,16 +239,11 @@
                     + _esc(p.nombre) + '</span>';
             }).join('');
         } else {
-            partWrap.innerHTML = '<span class="wo-info-value" style="color:#AEAEB2;font-style:italic;">Solo el organizador</span>';
+            partWrap.innerHTML = '<span style="color:#AEAEB2;font-style:italic;font-size:0.85rem;">Solo el organizador</span>';
         }
 
-        // Stepper de estado
-        renderStepper(e.estado);
-
-        // Asistentes
         renderAsistentes(d.asistentes || []);
 
-        // Mostrar contenido (terminó loading)
         loadingEl.style.display = 'none';
         contentEl.style.display = 'flex';
     }
@@ -312,7 +252,7 @@
         var list = document.getElementById('evtDetAsistList');
         var count = document.getElementById('evtDetAsistCount');
         if (!items.length){
-            list.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Aún no hay invitados.</div>';
+            list.innerHTML = '<div class="evt-det-empty">Aún no hay invitados. Usa "Crear prospección" para invitar al primer cliente.</div>';
             count.textContent = '0';
             return;
         }
@@ -341,13 +281,15 @@
         if (!_eventoId) return Promise.resolve();
         return fetch('/app/api/evento/' + _eventoId + '/').then(function(r){ return r.json(); }).then(render);
     }
+
     function abrir(eventoId){
         _eventoId = eventoId;
         _selectedCliente = null; _selectedProspecto = null;
         setError('');
         loadingEl.style.display = '';
         contentEl.style.display = 'none';
-        // Reset tabs
+        // Reset panel
+        document.getElementById('evtDetPanel').style.display = 'none';
         document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode === 'cliente'); });
         document.querySelectorAll('#widgetEventoDetalle .evt-asist-mode').forEach(function(m){ m.style.display = (m.dataset.mode === 'cliente') ? '' : 'none'; });
         ['evtDetAsistClienteQ','evtDetAsistProspectoQ','evtDetAsistNombre','evtDetAsistEmail'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
@@ -379,7 +321,19 @@
             });
     });
 
-    // Tabs asistentes
+    // Toggle del panel "Crear prospección"
+    document.getElementById('evtDetTogglePanel').addEventListener('click', function(){
+        var p = document.getElementById('evtDetPanel');
+        p.style.display = (p.style.display === 'none') ? 'block' : 'none';
+        if (p.style.display === 'block'){
+            setTimeout(function(){
+                var i = document.getElementById('evtDetAsistClienteQ');
+                if (i) i.focus();
+            }, 50);
+        }
+    });
+
+    // Tabs dentro del panel
     document.querySelectorAll('#widgetEventoDetalle .evt-asist-tab').forEach(function(t){
         t.addEventListener('click', function(){
             var mode = t.dataset.mode;
@@ -389,7 +343,6 @@
         });
     });
 
-    // Autocomplete (cliente y prospecto) — usa el helper del form
     function renderAC(box, items, kind){
         if (!items.length){ box.innerHTML = '<div class="evt-asist-ac-empty">Sin resultados</div>'; box.style.display = 'block'; return; }
         box.innerHTML = items.map(function(it){
@@ -486,12 +439,8 @@
         }).then(function(r){ return r.json(); }).then(function(d){ if (d && d.ok) recargar(); });
     }
 
-    // Cerrar al click en el overlay vacío
-    overlay.addEventListener('click', function(e){
-        if (e.target === overlay) cerrar();
-    });
-
-    // ESC para cerrar
+    // Cerrar al click fuera
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) cerrar(); });
     document.addEventListener('keydown', function(e){
         if (e.key === 'Escape' && overlay.classList.contains('active')) cerrar();
     });

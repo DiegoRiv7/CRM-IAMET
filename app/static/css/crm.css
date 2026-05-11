@@ -12434,19 +12434,68 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 .evt-det-action-btn--danger:hover { background: rgba(255, 59, 48, 0.18); }
 
-/* Estado cancelado en el stepper: variante roja */
-.wo-stage-btn.wo-stage-cancelado {
-    background: rgba(255, 59, 48, 0.1);
-    color: #C9302E;
-    border-color: rgba(255, 59, 48, 0.3);
-}
-.wo-stage-btn.wo-stage-cancelado.active {
-    background: #FF3B30;
+/* Botón primary "Crear prospección" en el header de la card asistentes */
+.evt-det-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: none;
+    background: #0052D4;
     color: #fff;
-    border-color: #FF3B30;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+.evt-det-primary-btn:hover { background: #003fa6; }
+
+/* Badge pequeño de estado en el grid de info */
+.evt-det-estado-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #6E6E73;
+}
+.evt-det-estado--borrador    { background: rgba(0, 0, 0, 0.05);         color: #6E6E73; }
+.evt-det-estado--programado  { background: rgba(0, 82, 212, 0.1);       color: #0052D4; }
+.evt-det-estado--confirmado  { background: rgba(52, 199, 89, 0.12);     color: #248A3D; }
+.evt-det-estado--realizado   { background: rgba(124, 58, 237, 0.12);    color: #6B21A8; }
+.evt-det-estado--cancelado   { background: rgba(255, 59, 48, 0.1);      color: #C9302E; }
+
+/* Lista de asistentes y empty state del detalle */
+.evt-det-asist-list { display: flex; flex-direction: column; gap: 6px; }
+.evt-det-empty {
+    padding: 14px 16px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px dashed rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    color: #86868B;
+    font-size: 0.82rem;
 }
 
-/* ─── (BLOQUE LEGACY ELIMINADO) ─────────────────────────────────── */
+/* Panel desplegable de "Crear prospección" */
+.evt-det-panel {
+    margin-top: 12px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Row organizador / chips de participantes */
+.evt-det-people-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
 
 /* Mensaje de error inline */
 .evt-error {

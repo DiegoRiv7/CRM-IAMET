@@ -1157,6 +1157,12 @@
         var evt = _globalEvents.find(function(ev){ return String(ev.id)===String(id); });
         if (!evt) return;
         var ep = evt.extendedProps || {};
+        // Si esta actividad es un espejo de un Evento de Marketing, abrir el
+        // widget de detalle del Evento en lugar del modal genérico.
+        if (ep.evento && ep.evento.id && typeof window.eventoDetalleAbrir === 'function') {
+            window.eventoDetalleAbrir(ep.evento.id);
+            return;
+        }
         // Solo es "tarea real" (Tarea model) si el id tiene formato 'tarea-X'
         // Las actividades con tipo_actividad='tarea' son actividades normales sin tarea_id
         var esTarea = String(evt.id).indexOf('tarea-') === 0;
