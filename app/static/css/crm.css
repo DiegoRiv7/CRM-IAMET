@@ -12562,6 +12562,71 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .evt-del-confirm-ok:hover { background: #D7281F; }
 .evt-del-confirm-ok:disabled { opacity: 0.65; cursor: wait; }
 
+/* ─── Banner "Generado desde evento" en el widget de Prospecto ─── */
+.wp-evento-origen {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    margin: 0 0 12px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(124, 58, 237, 0.04) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 10px;
+    color: #6B21A8;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.wp-evento-origen:hover {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.14) 0%, rgba(124, 58, 237, 0.07) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -4px rgba(124, 58, 237, 0.3);
+}
+.wp-evento-origen-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(124, 58, 237, 0.18);
+    color: #7C3AED;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.wp-evento-origen-body { flex: 1; min-width: 0; }
+.wp-evento-origen-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #7C3AED;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+}
+.wp-evento-origen-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1C1C1E;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Fila de prospecto clickeable dentro del detalle del evento */
+.evt-asist-row--clickable {
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+}
+.evt-asist-row--clickable:hover {
+    background: rgba(0, 82, 212, 0.06) !important;
+    transform: translateX(2px);
+}
+.evt-asist-row-arrow {
+    color: #AEAEB2;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.evt-asist-row--clickable:hover .evt-asist-row-arrow { color: #0052D4; }
+
 /* Mensaje de error inline */
 .evt-error {
     padding: 10px 14px;

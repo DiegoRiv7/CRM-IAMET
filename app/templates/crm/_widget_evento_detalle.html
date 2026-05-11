@@ -225,7 +225,10 @@
             var kindLabel = a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : 'Contacto');
             var kindClass = 'evt-kind-' + a.kind;
             var sub = a.contacto_email || '';
-            return '<div class="evt-asist-row">'
+            var clickable = a.kind === 'prospecto' && a.prospecto_id;
+            var rowClass = 'evt-asist-row' + (clickable ? ' evt-asist-row--clickable' : '');
+            var dataAttrs = clickable ? (' data-prospecto-id="' + a.prospecto_id + '"') : '';
+            return '<div class="' + rowClass + '"' + dataAttrs + '>'
                 +   '<div class="evt-asist-info">'
                 +     '<div class="evt-asist-name">'
                 +       '<span class="evt-asist-kind ' + kindClass + '">' + kindLabel + '</span>'
@@ -233,8 +236,18 @@
                 +     '</div>'
                 +     (sub ? '<div class="evt-asist-sub">' + _esc(sub) + '</div>' : '')
                 +   '</div>'
+                +   (clickable ? '<svg class="evt-asist-row-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' : '')
                 + '</div>';
         }).join('');
+        // Click en una fila de prospecto → abrir su widget de detalle
+        list.querySelectorAll('.evt-asist-row--clickable').forEach(function(row){
+            row.addEventListener('click', function(){
+                var pid = row.dataset.prospectoId;
+                if (!pid || typeof window.abrirWidgetProspecto !== 'function') return;
+                cerrar();
+                setTimeout(function(){ window.abrirWidgetProspecto(parseInt(pid, 10)); }, 240);
+            });
+        });
     }
 
     function recargar(){

@@ -460,6 +460,31 @@ document.addEventListener('click', function(ev) {
         document.getElementById('wpProducto').textContent = data.producto || '-';
         document.getElementById('wpArea').textContent = data.area || '-';
 
+        // Banner "Generado desde evento" — visible solo si el prospecto tiene evento_origen
+        var evtBanner = document.getElementById('wpEventoOrigen');
+        var evtNombre = document.getElementById('wpEventoOrigenNombre');
+        if (evtBanner && evtNombre) {
+            if (data.evento_origen_id) {
+                evtNombre.textContent = data.evento_origen_nombre || ('Evento #' + data.evento_origen_id);
+                evtBanner.style.display = '';
+                evtBanner.onclick = function(e) {
+                    e.preventDefault();
+                    if (typeof window.eventoDetalleAbrir === 'function') {
+                        // Cerrar el widget del prospecto y abrir el del evento
+                        var wp = document.getElementById('widgetProspecto');
+                        if (wp) {
+                            wp.classList.add('closing');
+                            setTimeout(function(){ wp.classList.remove('active','closing'); }, 220);
+                        }
+                        setTimeout(function(){ window.eventoDetalleAbrir(data.evento_origen_id); }, 240);
+                    }
+                };
+            } else {
+                evtBanner.style.display = 'none';
+                evtBanner.onclick = null;
+            }
+        }
+
         // Si el prospecto está cerrado (ganado/perdido), ocultar CTA de nueva
         // actividad — no debe pedirse crear actividades en prospectos cerrados.
         var btnNuevaAct = document.getElementById('wpBtnNuevaActividad');

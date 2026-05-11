@@ -476,6 +476,8 @@ def api_prospecto_detalle(request, prospecto_id):
         'oportunidad_creada_id': p.oportunidad_creada_id,
         'asignado_por': asignado_por_nombre,
         'asignado_por_id': asig_por.id if asig_por else None,
+        'evento_origen_id': p.evento_origen_id,
+        'evento_origen_nombre': p.evento_origen.nombre if p.evento_origen_id else None,
         'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M') if p.fecha_creacion else '',
         'fecha_actualizacion': p.fecha_actualizacion.strftime('%d/%m/%Y %H:%M') if p.fecha_actualizacion else '',
         'usuario': p.usuario.get_full_name() or p.usuario.username,
