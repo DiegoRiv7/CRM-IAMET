@@ -784,11 +784,33 @@ def crm_home(request):
         dias_con_eventos = sorted({e.fecha_evento.day for e in eventos_periodo if e.fecha_evento})
         ahora = timezone.now()
         proximo = next((e for e in eventos_periodo if e.fecha_evento and e.fecha_evento >= ahora), None)
-        # Días 1..31 con flag has_event — para iterar limpio en el template
+        # Etiqueta del mes para el header del calendario + día de hoy si aplica
+        MES_NAMES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+        mes_label = None
+        dia_hoy = None
+        today = timezone.now().date()
+        if meses_list and len(meses_list) == 1 and anios_list and len(anios_list) == 1:
+            try:
+                mes_idx = int(meses_list[0])
+                if 1 <= mes_idx <= 12:
+                    mes_label = f'{MES_NAMES_FULL[mes_idx-1]} {anios_list[0]}'
+                    if anios_list[0] == today.year and mes_idx == today.month:
+                        dia_hoy = today.day
+            except (ValueError, IndexError, TypeError):
+                pass
+        elif anios_list and len(anios_list) == 1:
+            mes_label = f'Año {anios_list[0]}'
+        # Días 1..31 con flags para el grid del calendario
         dias_set = set(dias_con_eventos)
-        dias_calendar = [{'num': i, 'has_event': i in dias_set} for i in range(1, 32)]
+        dias_calendar = [
+            {'num': i, 'has_event': i in dias_set, 'is_today': dia_hoy == i}
+            for i in range(1, 32)
+        ]
         eventos_kpis = {
             'total': len(eventos_periodo),
+            'mes_label': mes_label,
+            'dia_hoy': dia_hoy,
             'dias_con_eventos': dias_con_eventos,
             'dias_calendar': dias_calendar,
             'proximo': {

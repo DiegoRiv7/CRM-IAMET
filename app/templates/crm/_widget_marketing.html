@@ -105,16 +105,20 @@
                 {% if eventos_kpis.total %}<span class="mkt-w-count">{{ eventos_kpis.total }}</span>{% endif %}
             </div>
             <div class="mkt-w-body">
+                {% if eventos_kpis.mes_label %}
+                <div class="mkt-cal-header">{{ eventos_kpis.mes_label }}</div>
+                {% endif %}
                 <div class="mkt-cal">
                     <div class="mkt-cal-dow">L</div><div class="mkt-cal-dow">M</div><div class="mkt-cal-dow">X</div><div class="mkt-cal-dow">J</div><div class="mkt-cal-dow">V</div><div class="mkt-cal-dow">S</div><div class="mkt-cal-dow">D</div>
                     {% for d in eventos_kpis.dias_calendar %}
-                    <div class="mkt-cal-day{% if d.has_event %} mkt-cal-day--ev{% endif %}">{{ d.num }}</div>
+                    <div class="mkt-cal-day{% if d.has_event %} mkt-cal-day--ev{% endif %}{% if d.is_today %} mkt-cal-day--today{% endif %}">{{ d.num }}</div>
                     {% endfor %}
                 </div>
                 {% if eventos_kpis.proximo %}
                 <div class="mkt-inner-card mkt-evt-next">
                     <div class="mkt-inner-label">Próximo evento</div>
-                    <div class="mkt-inner-value">{{ eventos_kpis.proximo.nombre }} · {{ eventos_kpis.proximo.fecha_display }}</div>
+                    <div class="mkt-inner-value">{{ eventos_kpis.proximo.nombre }}</div>
+                    <div class="mkt-inner-meta">{{ eventos_kpis.proximo.fecha_display }}</div>
                 </div>
                 {% elif not eventos_kpis.total %}
                 <div class="mkt-evt-hint">Aún no hay eventos en este período</div>
