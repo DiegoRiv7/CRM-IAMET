@@ -7,10 +7,9 @@
     <title>{{ tarea.titulo }} — Vista previa</title>
     <link rel="icon" type="image/png" href="{% static 'images/favicon-16x16.png' %}">
 
-    {# Open Graph + Twitter cards — preview en WhatsApp/Slack al pegar el link.
-       Forzamos https:// en og:url / og:image porque request.scheme detrás del
-       proxy nginx puede devolver http y los crawlers descartan imágenes
-       inseguras. #}
+    <!-- Open Graph + Twitter cards — preview en WhatsApp/Slack al pegar el link.
+         Forzamos https:// en og:url / og:image porque request.scheme detrás del
+         proxy nginx puede devolver http y los crawlers descartan imágenes inseguras. -->
     <meta property="og:title" content="{{ tarea.titulo }}">
     <meta property="og:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% if responsable_nombre %} · Asignada a {{ responsable_nombre }}{% endif %}{% if tarea.fecha_limite %} · Vence {{ tarea.fecha_limite|date:'d M, H:i' }}{% endif %}{% endif %}">
     <meta property="og:type" content="article">
@@ -23,12 +22,7 @@
     <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
     <meta name="twitter:image" content="https://{{ request.get_host }}{% static 'images/iamet-logo.png' %}">
 
-    {# Redirect rápido al widget: usamos meta refresh con delay 0 SOLO
-       cuando hay sesión. Los crawlers de OG normalmente ignoran meta
-       refresh y leen los OG tags. Si el crawler los respetara,
-       igualmente seguiría el link, llegaría al /app/home/ que requiere
-       login y eventualmente el crawler abandonaría el preview, pero
-       sin embargo SÍ habría tenido tiempo de leer los OG tags antes. #}
+    <!-- Redirect rápido al widget si hay sesión activa (client-side para no romper OG) -->
     {% if autenticado %}
     <script>
         // Pequeño delay para dejar que cualquier scrapper "ejecute JS"
