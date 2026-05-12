@@ -704,12 +704,13 @@ def crm_home(request):
     # Filtrado por el mismo mes/año o rango de fechas que rige la pestaña.
     marketing_kpis = None
     if tab_activo == 'prospeccion':
-        from .models import Campana, CampanaEnvio
+        from .models import CampanaTemplate, CampanaEnvio
         envios_qs = CampanaEnvio.objects.all()
-        # Activas = campañas creadas en el periodo (excepto canceladas).
-        # Antes filtrábamos por fecha_envio, pero eso dejaba fuera campañas
-        # recién creadas que aún no se envían — el usuario veía 0 al crear.
-        camps_qs = Campana.objects.exclude(estado='cancelada')
+        # Activas = templates de campaña activos creados en el periodo. El
+        # usuario considera "una campaña activa" cuando sube el material
+        # (la plantilla HTML), incluso si aún no se envía a nadie. La cuenta
+        # de envíos efectivos vive aparte en "Enviadas".
+        camps_qs = CampanaTemplate.objects.filter(activa=True)
         if desde_date or hasta_date:
             if desde_date:
                 envios_qs = envios_qs.filter(fecha_envio__date__gte=desde_date)
