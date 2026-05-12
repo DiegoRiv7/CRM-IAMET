@@ -4707,12 +4707,11 @@ def ver_tarea_compartida(request, token):
 
 
 def og_image_tarea(request, token):
-    """Genera dinámicamente un PNG estilo "screenshot del widget" con el
-    contenido de la tarea, para que WhatsApp/Slack muestren preview rico
-    al pegar el link. Tamaño 1200×630 (estándar OG).
-
-    No requiere login — los bots de OG no están autenticados. El token
-    firmado limita a tareas explícitamente compartidas.
+    """Genera un PNG 1200×630 estilo card de tarea para preview en
+    WhatsApp/Slack. Layout vertical single-column (sin sidebar):
+    pill + título + descripción + separador + meta rows (responsable,
+    oportunidad, fecha, prioridad). Más simple y robusto que el
+    layout previo 2-cols donde el título se desbordaba al sidebar.
     """
     from django.core import signing
     from django.http import HttpResponse, Http404
@@ -4729,44 +4728,41 @@ def og_image_tarea(request, token):
     tarea = get_object_or_404(Tarea, id=data.get('t'))
 
     W, H = 1200, 630
-    bg = '#F4F6F8'
-    img = Image.new('RGB', (W, H), color=bg)
+    img = Image.new('RGB', (W, H), color='#F4F6F8')
     draw = ImageDraw.Draw(img)
 
-    # Fonts: DejaVu Sans está en el Docker (fonts-dejavu-core)
     def _load(size, bold=False):
         path = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         try:
             return ImageFont.truetype(path, size)
         except (IOError, OSError):
             return ImageFont.load_default()
+    f_pill = _load(13, bold=True)
     f_title = _load(38, bold=True)
     f_body = _load(20)
-    f_label = _load(13, bold=True)
-    f_value = _load(19, bold=True)
-    f_footer = _load(15)
+    f_meta_label = _load(16)
+    f_meta_value = _load(18, bold=True)
+    f_avatar = _load(14, bold=True)
+    f_footer = _load(14)
 
-    # Card blanca con borde redondeado
+    # Card blanca redondeada
     M = 40
-    card_box = [M, M, W - M, H - M]
-    draw.rounded_rectangle(card_box, radius=22, fill='#FFFFFF', outline='#E2E8F0', width=1)
+    draw.rounded_rectangle([M, M, W - M, H - M], radius=22, fill='#FFFFFF', outline='#E2E8F0', width=1)
 
-    # Sidebar derecho (estado/responsable/fecha)
-    SB_W = 360
-    sb_x0 = W - M - SB_W
-    draw.line([(sb_x0, M + 30), (sb_x0, H - M - 30)], fill='#E2E8F0', width=1)
+    # Padding interno
+    PAD_L = 60
+    x0 = M + PAD_L
+    x_right = W - M - PAD_L
+    y = M + 40
 
-    # ── Lado izquierdo: título + descripción ───────────────────────
-    pad_l = 60
-    y = M + 60
-
-    # Pill "Tarea"
+    # ── Pill "TAREA · CRM IAMET" ───────────────────────────────────
     pill_text = 'TAREA · CRM IAMET'
-    draw.rounded_rectangle([M + pad_l, y, M + pad_l + 200, y + 28], radius=14, fill='#EFF6FF')
-    draw.text((M + pad_l + 12, y + 6), pill_text, fill='#2563EB', font=f_label)
-    y += 50
+    pill_w = 200
+    draw.rounded_rectangle([x0, y, x0 + pill_w, y + 28], radius=14, fill='#EFF6FF')
+    draw.text((x0 + 14, y + 6), pill_text, fill='#2563EB', font=f_pill)
+    y += 48
 
-    # Título (envuelve a 2 líneas máximo)
+    # ── Wrap helper ────────────────────────────────────────────────
     def _wrap(text, max_chars):
         words = text.split()
         lines, cur = [], ''
@@ -4781,123 +4777,128 @@ def og_image_tarea(request, token):
             lines.append(cur)
         return lines
 
-    # Wrap más agresivo (24 chars) para que el título no invada el
-    # sidebar derecho que empieza en x ≈ 800. A 38pt bold cada char
-    # mide ~22px → 24 chars * 22 ≈ 530px, cabe holgadamente.
-    titulo_lines = _wrap(tarea.titulo or 'Tarea', 24)[:3]
+    # ── Título (2 líneas máx, ahora ancho completo del card) ──────
+    # Ancho disponible ≈ 1020px. A 38pt bold ≈ 22px/char → 46 chars cabe.
+    titulo_lines = _wrap(tarea.titulo or 'Tarea', 42)[:2]
     for line in titulo_lines:
-        draw.text((M + pad_l, y), line, fill='#0F172A', font=f_title)
-        y += 48
-    y += 14
+        draw.text((x0, y), line, fill='#0F172A', font=f_title)
+        y += 46
+    y += 8
 
-    # Descripción (~5 líneas). 44 chars × ~12px (20pt) ≈ 528px, también
-    # cabe sin invadir el sidebar.
+    # ── Descripción (3 líneas máx) ────────────────────────────────
     desc = (tarea.descripcion or '').strip()
     if desc:
         import re as _re
-        desc = _re.sub(r'[*_`#>\[\]]', '', desc)
-        desc_lines = _wrap(desc, 44)[:5]
+        desc = _re.sub(r'[*_`#>\[\]]+', '', desc)
+        desc = desc.replace('\n', ' ').strip()
+        # Ancho ≈ 1020 / 12 ≈ 85 chars/line a 20pt
+        desc_lines = _wrap(desc, 80)[:3]
         for line in desc_lines:
-            draw.text((M + pad_l, y), line, fill='#475569', font=f_body)
-            y += 30
+            draw.text((x0, y), line, fill='#475569', font=f_body)
+            y += 28
+        y += 6
 
-    # Footer
-    draw.text((M + pad_l, H - M - 55), 'Abre el link para ver la tarea completa →', fill='#94A3B8', font=f_footer)
+    # ── Separador horizontal ──────────────────────────────────────
+    y += 8
+    draw.line([(x0, y), (x_right, y)], fill='#E2E8F0', width=1)
+    y += 18
 
-    # ── Sidebar derecho: estado / responsable / fecha ──────────────
-    sb_pad = 30
-    sx = sb_x0 + sb_pad
-    sy = M + 60
+    # ── Meta rows: icono · label · valor ──────────────────────────
+    # Iconos: shapes simples (sin emoji para evitar problemas de fuente)
+    ICON_W = 22
+    ICON_GAP = 12
+    LABEL_W = 180   # ancho fijo para que valores se alineen
+    LABEL_X = x0 + ICON_W + ICON_GAP
+    VALUE_X = LABEL_X + LABEL_W
+    ROW_H = 38
 
-    # Estado
-    estado_map = {
-        'pendiente':    ('Pendiente',   '#F59E0B'),
-        'iniciada':     ('Iniciada',    '#8B5CF6'),
-        'en_progreso':  ('En progreso', '#3B82F6'),
-        'completada':   ('Completada',  '#10B981'),
-        'cancelada':    ('Cancelada',   '#94A3B8'),
-    }
-    estado_label, estado_color = estado_map.get(tarea.estado, ('Pendiente', '#F59E0B'))
-    draw.text((sx, sy), 'ESTADO', fill='#94A3B8', font=f_label)
-    sy += 22
-    # Dot + label
-    draw.ellipse([sx, sy + 7, sx + 10, sy + 17], fill=estado_color)
-    draw.text((sx + 18, sy), estado_label, fill='#1E293B', font=f_value)
-    sy += 50
+    def _icon_user(cx, cy):
+        # Círculo cabeza + arco hombros
+        draw.ellipse([cx + 6, cy + 2, cx + 16, cy + 12], outline='#94A3B8', width=2)
+        draw.arc([cx + 2, cy + 10, cx + 20, cy + 26], start=180, end=360, fill='#94A3B8', width=2)
 
-    # Responsable
+    def _icon_opp(cx, cy):
+        # Maletín: rectángulo cuerpo + handle arriba
+        draw.rounded_rectangle([cx + 2, cy + 7, cx + 20, cy + 20], radius=2, outline='#94A3B8', width=2)
+        draw.rounded_rectangle([cx + 7, cy + 3, cx + 15, cy + 9], radius=1, outline='#94A3B8', width=2)
+
+    def _icon_cal(cx, cy):
+        # Calendario: rectángulo + 2 patitas arriba
+        draw.rounded_rectangle([cx + 2, cy + 5, cx + 20, cy + 21], radius=2, outline='#94A3B8', width=2)
+        draw.line([(cx + 7, cy + 2), (cx + 7, cy + 7)], fill='#94A3B8', width=2)
+        draw.line([(cx + 15, cy + 2), (cx + 15, cy + 7)], fill='#94A3B8', width=2)
+        draw.line([(cx + 2, cy + 10), (cx + 20, cy + 10)], fill='#94A3B8', width=1)
+
+    def _icon_flag(cx, cy):
+        # Bandera: línea poste + triángulo
+        draw.line([(cx + 4, cy + 2), (cx + 4, cy + 22)], fill='#94A3B8', width=2)
+        draw.polygon([(cx + 4, cy + 3), (cx + 18, cy + 8), (cx + 4, cy + 13)], outline='#94A3B8', fill='#94A3B8')
+
+    # ROW 1: Responsable
+    _icon_user(x0, y)
+    draw.text((LABEL_X, y + 3), 'Responsable', fill='#64748B', font=f_meta_label)
     if tarea.asignado_a_id:
         resp = tarea.asignado_a
         resp_name = (resp.get_full_name() or resp.username) if resp else '—'
     else:
         resp_name = 'Sin asignar'
-    draw.text((sx, sy), 'RESPONSABLE', fill='#94A3B8', font=f_label)
-    sy += 22
-    # Avatar circular con iniciales
     initials = ''.join([p[0].upper() for p in (resp_name.split() or ['?'])[:2]])
-    draw.ellipse([sx, sy, sx + 32, sy + 32], fill='#3B82F6')
-    bbox = draw.textbbox((0, 0), initials, font=f_label)
+    # Avatar circular junto al nombre
+    av_x = VALUE_X
+    av_y = y - 2
+    draw.ellipse([av_x, av_y, av_x + 28, av_y + 28], fill='#3B82F6')
+    bbox = draw.textbbox((0, 0), initials, font=f_avatar)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    draw.text((sx + 16 - tw / 2, sy + 16 - th / 2 - 2), initials, fill='#FFFFFF', font=f_label)
-    draw.text((sx + 44, sy + 6), resp_name[:24], fill='#1E293B', font=f_value)
-    sy += 50
+    draw.text((av_x + 14 - tw / 2, av_y + 14 - th / 2 - 2), initials, fill='#FFFFFF', font=f_avatar)
+    draw.text((av_x + 38, y + 2), resp_name[:42], fill='#0F172A', font=f_meta_value)
+    y += ROW_H
 
-    # Fecha límite
+    # ROW 2: Oportunidad (solo si existe)
+    if tarea.oportunidad_id:
+        _icon_opp(x0, y)
+        draw.text((LABEL_X, y + 3), 'Oportunidad', fill='#64748B', font=f_meta_label)
+        opp = tarea.oportunidad
+        opp_text = (opp.titulo if hasattr(opp, 'titulo') and opp.titulo else (opp.tipo_negociacion if hasattr(opp, 'tipo_negociacion') else 'Oportunidad'))
+        draw.text((VALUE_X, y + 2), str(opp_text)[:55], fill='#2563EB', font=f_meta_value)
+        y += ROW_H
+
+    # ROW 3: Fecha límite (solo si existe)
     if tarea.fecha_limite:
-        draw.text((sx, sy), 'FECHA LÍMITE', fill='#94A3B8', font=f_label)
-        sy += 22
         from django.utils import timezone as _tz
+        _icon_cal(x0, y)
+        draw.text((LABEL_X, y + 3), 'Fecha límite', fill='#64748B', font=f_meta_label)
         fl = tarea.fecha_limite
-        # Formato dd MMM, HH:MM
-        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-        fecha_str = f'{fl.day:02d} {meses[fl.month - 1]}, {fl.hour:02d}:{fl.minute:02d}'
+        meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+        fecha_str = f'{fl.day} {meses[fl.month - 1]}, {fl.hour:02d}:{fl.minute:02d}'
         vencida = fl < _tz.now() and tarea.estado not in ('completada', 'cancelada')
-        draw.text((sx, sy), fecha_str, fill=('#DC2626' if vencida else '#1E293B'), font=f_value)
-        sy += 30
         if vencida:
-            draw.text((sx, sy), 'Vencida', fill='#DC2626', font=f_footer)
-        sy += 30
+            # Pill rojo claro tipo "vencida"
+            pill_text2 = f'⏰ {fecha_str}'
+            tb = draw.textbbox((0, 0), pill_text2, font=f_meta_value)
+            pw = tb[2] - tb[0] + 26
+            draw.rounded_rectangle([VALUE_X, y - 1, VALUE_X + pw, y + 30], radius=15, fill='#FEE2E2')
+            draw.text((VALUE_X + 13, y + 2), pill_text2, fill='#B91C1C', font=f_meta_value)
+        else:
+            draw.text((VALUE_X, y + 2), fecha_str, fill='#0F172A', font=f_meta_value)
+        y += ROW_H
 
-    # Prioridad
-    sy += 10
+    # ROW 4: Prioridad
+    _icon_flag(x0, y)
+    draw.text((LABEL_X, y + 3), 'Prioridad', fill='#64748B', font=f_meta_label)
     prio_map = {'alta': ('Alta', '#DC2626'), 'media': ('Media', '#F59E0B'), 'baja': ('Baja', '#94A3B8')}
     prio_label, prio_color = prio_map.get(tarea.prioridad, ('Media', '#F59E0B'))
-    draw.text((sx, sy), 'PRIORIDAD', fill='#94A3B8', font=f_label)
-    sy += 22
-    draw.rounded_rectangle([sx, sy, sx + 80, sy + 26], radius=13, fill='#FFFFFF', outline=prio_color, width=1)
-    draw.text((sx + 12, sy + 4), prio_label, fill=prio_color, font=f_label)
+    draw.text((VALUE_X, y + 2), prio_label, fill=prio_color, font=f_meta_value)
+    y += ROW_H
 
-    # Serialize a PNG
+    # ── Footer hint ────────────────────────────────────────────────
+    draw.text((x0, H - M - 40), 'Abre el link para ver la tarea completa →', fill='#94A3B8', font=f_footer)
+
+    # Serialize PNG
     buf = BytesIO()
     img.save(buf, format='PNG', optimize=True)
     response = HttpResponse(buf.getvalue(), content_type='image/png')
-    # Cache 1 hora — el contenido de la tarea puede cambiar
     response['Cache-Control'] = 'public, max-age=3600'
     return response
-
-    # Preparar datos seguros (sin exponer info sensible innecesaria)
-    creador_nombre = (tarea.creado_por.get_full_name() or tarea.creado_por.username) if tarea.creado_por else '—'
-    responsable_nombre = None
-    if tarea.asignado_a:
-        responsable_nombre = tarea.asignado_a.get_full_name() or tarea.asignado_a.username
-
-    subtareas = [{
-        'id': st.id,
-        'titulo': st.titulo,
-        'estado': st.estado,
-    } for st in tarea.subtareas.all()] if hasattr(tarea, 'subtareas') else []
-
-    ctx = {
-        'tarea': tarea,
-        'creador_nombre': creador_nombre,
-        'responsable_nombre': responsable_nombre,
-        'subtareas': subtareas,
-        'total_subtareas': len(subtareas),
-        'subtareas_done': sum(1 for s in subtareas if s['estado'] == 'completada'),
-        'autenticado': request.user.is_authenticated,
-        'preview_token': token,
-    }
-    return render(request, 'crm/tarea_compartida.html', ctx)
 
 
 @login_required
