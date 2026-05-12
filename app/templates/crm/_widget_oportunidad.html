@@ -2226,6 +2226,43 @@
             });
         })();
 
+        // ── Pegar imágenes / capturas con Cmd+V en el textarea de la conversación ──
+        // Cuando el clipboard contiene una o más imágenes (típicamente capturas de
+        // pantalla), las extraemos como Files y las enviamos como mensajes con
+        // imagen. Si el clipboard solo tiene texto, dejamos el paste nativo.
+        (function () {
+            var textarea = document.getElementById('woConvInputText');
+            if (!textarea) return;
+            textarea.addEventListener('paste', function (e) {
+                if (!_woCurrentOppId) return;
+                var data = e.clipboardData || window.clipboardData;
+                if (!data) return;
+                var items = data.items || [];
+                var imageFiles = [];
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i];
+                    if (item.kind === 'file' && item.type && item.type.indexOf('image/') === 0) {
+                        var blob = item.getAsFile();
+                        if (blob) {
+                            // Renombrar las "image.png" anónimas a algo descriptivo.
+                            var ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                            var ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                            try {
+                                imageFiles.push(new File([blob], 'captura-' + ts + '.' + ext, { type: blob.type }));
+                            } catch (_) {
+                                imageFiles.push(blob);
+                            }
+                        }
+                    }
+                }
+                if (imageFiles.length) {
+                    // Evitar que la imagen también se pegue como base64 en el textarea.
+                    e.preventDefault();
+                    woConvSendMessage(imageFiles);
+                }
+            });
+        })();
+
         // ── Actividad más reciente ──
         var _woActividadRecienteId = null;
 
