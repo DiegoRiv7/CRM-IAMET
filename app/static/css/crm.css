@@ -11913,8 +11913,34 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     font-weight: 600;
 }
 
+/* Techday ahora es wide (2c × 1r). Reorganiza con grid para que
+   stats vayan arriba a todo lo ancho y marcas/última queden lado a
+   lado abajo. Sin tocar el template. */
 .mkt-tech-body {
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr 180px;
+    grid-template-rows: auto 1fr;
+    gap: 12px 14px;
+}
+.mkt-tech-body .mkt-tech-stats {
+    grid-column: 1 / -1;
+    grid-row: 1;
+}
+.mkt-tech-body .mkt-tech-marcas {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+}
+.mkt-tech-body .mkt-tech-ultima {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    margin-top: 0;
+}
+/* Empty state ocupa toda el área */
+.mkt-tech-body .mkt-tech-empty {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
 }
 .mkt-tech-stats {
     display: flex;
