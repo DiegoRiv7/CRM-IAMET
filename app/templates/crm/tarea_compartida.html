@@ -6,6 +6,20 @@
     <meta name="robots" content="noindex,nofollow">
     <title>{{ tarea.titulo }} — Vista previa</title>
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+
+    {# ─── Open Graph + Twitter cards para que WhatsApp / Slack / etc.
+         muestren preview con título, descripción y logo cuando se pegue
+         el link copiado desde el botón de compartir. ────────────────── #}
+    <meta property="og:title" content="{{ tarea.titulo }}">
+    <meta property="og:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% if responsable_nombre %} · Asignada a {{ responsable_nombre }}{% endif %}{% if tarea.fecha_limite %} · Vence {{ tarea.fecha_limite|date:'d M, H:i' }}{% endif %}{% endif %}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="CRM IAMET">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/iamet-logo.png' %}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ tarea.titulo }}">
+    <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
+    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/iamet-logo.png' %}">
     <style>
         :root {
             --slate-50:#F8FAFC; --slate-100:#F1F5F9; --slate-200:#E2E8F0;

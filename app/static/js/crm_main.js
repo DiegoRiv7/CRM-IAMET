@@ -8353,12 +8353,30 @@
             if (!_crmCurrentTaskId) return;
             var menu = document.getElementById('crmTaskMenu');
             if (menu) menu.style.display = 'none';
+            // Mini-toast verde de confirmación debajo del botón share
+            function showShareToast() {
+                var t = document.getElementById('crmTaskShareToast');
+                if (!t) return;
+                t.classList.add('is-on');
+                setTimeout(function () { t.classList.remove('is-on'); }, 1800);
+            }
             fetch('/app/api/tarea/' + _crmCurrentTaskId + '/share-link/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data && data.url) {
                         var full = data.url.indexOf('http') === 0 ? data.url : (window.location.origin + data.url);
-                        crmTaskCopyToClipboard(full, 'Enlace de vista previa copiado');
+                        // Copia silenciosa al portapapeles (sin global toast) y
+                        // muestra el chip verde debajo del botón.
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(full).then(showShareToast, function () {
+                                // fallback al método legacy si clipboard API falla
+                                crmTaskCopyToClipboard(full, '');
+                                showShareToast();
+                            });
+                        } else {
+                            crmTaskCopyToClipboard(full, '');
+                            showShareToast();
+                        }
                     } else {
                         showToast(data.error || 'No se pudo generar el enlace', 'error');
                     }
@@ -9122,10 +9140,17 @@
             crmCreateCloseAllPops();
         });
 
-        // Actualiza los labels de las pills según selecciones actuales
+        // Actualiza los labels de las pills según selecciones actuales,
+        // marca las pills required como "filled" o "missing" y habilita
+        // el botón de crear solo si título + responsable + fecha están OK.
         function crmCreateRefreshLabels() {
             var rl = document.getElementById('crmCreateRespLabel');
-            if (rl) rl.textContent = _crmTaskSelectedResp ? (_crmTaskSelectedResp.nombre || _crmTaskSelectedResp.username || 'Responsable') : 'Responsable';
+            var respBtn = document.getElementById('crmCreateRespBtn');
+            if (rl) rl.textContent = _crmTaskSelectedResp ? (_crmTaskSelectedResp.nombre || _crmTaskSelectedResp.username || 'Responsable') : 'Selecciona responsable (requerido)';
+            if (respBtn) {
+                respBtn.classList.toggle('is-filled', !!_crmTaskSelectedResp);
+                respBtn.classList.remove('is-missing');
+            }
             var pl = document.getElementById('crmCreatePartsLabel');
             if (pl) pl.textContent = (_crmTaskSelectedParts && _crmTaskSelectedParts.length) ? ('Participantes · ' + _crmTaskSelectedParts.length) : 'Participantes';
             var ol = document.getElementById('crmCreateObsLabel');
@@ -9147,6 +9172,8 @@
             if (fLabel && fBtn) {
                 if (dd && dd.value) {
                     fBtn.classList.add('active');
+                    fBtn.classList.add('is-filled');
+                    fBtn.classList.remove('is-missing');
                     try {
                         var d = new Date(dd.value);
                         var opts = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
@@ -9154,10 +9181,30 @@
                     } catch (_) { fLabel.textContent = dd.value; }
                 } else {
                     fBtn.classList.remove('active');
-                    fLabel.textContent = 'Fecha';
+                    fBtn.classList.remove('is-filled');
+                    fLabel.textContent = 'Fecha (requerido)';
                 }
             }
+
+            // Habilita/deshabilita el botón Crear según campos requeridos
+            crmCreateUpdateSubmitState();
         }
+
+        // Verifica si título, responsable y fecha están llenos para habilitar
+        // el botón de Crear tarea.
+        function crmCreateUpdateSubmitState() {
+            var titleEl = document.getElementById('crmTaskTitleInput');
+            var ddEl = document.getElementById('crmTaskDueDate');
+            var btn = document.getElementById('crmTaskSubmitBtn');
+            if (!btn) return;
+            var titleOk = titleEl && titleEl.value.trim().length > 0;
+            var respOk = !!_crmTaskSelectedResp;
+            var fechaOk = ddEl && ddEl.value;
+            var allOk = titleOk && respOk && fechaOk;
+            btn.disabled = !allOk;
+            btn.classList.toggle('is-disabled', !allOk);
+        }
+        window.crmCreateUpdateSubmitState = crmCreateUpdateSubmitState;
         window.crmCreateTogglePriority = function () {
             var hp = document.getElementById('crmTaskHighPriority');
             if (!hp) return;
@@ -9409,9 +9456,42 @@
             });
         }
 
+        // Listener en el title input: revalida al escribir
+        (function attachTitleListener() {
+            document.addEventListener('input', function (e) {
+                if (e.target && e.target.id === 'crmTaskTitleInput') {
+                    if (typeof crmCreateUpdateSubmitState === 'function') crmCreateUpdateSubmitState();
+                }
+            });
+            // El input datetime-local también debe refrescar al cambiar
+            document.addEventListener('change', function (e) {
+                if (e.target && e.target.id === 'crmTaskDueDate') {
+                    if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
+                }
+            });
+        })();
+
         function crmTaskCrear() {
             var titulo = (document.getElementById('crmTaskTitleInput') || {}).value || '';
-            if (!titulo.trim()) { showToast('El nombre de la tarea es requerido', 'error'); return; }
+            var dueDateEl = document.getElementById('crmTaskDueDate');
+            var hasDate = dueDateEl && dueDateEl.value;
+            // Validación visible: cualquier required vacío hace shake + error toast
+            var missing = [];
+            if (!titulo.trim()) missing.push('título');
+            if (!_crmTaskSelectedResp) {
+                missing.push('responsable');
+                var rb = document.getElementById('crmCreateRespBtn');
+                if (rb) { rb.classList.add('is-missing'); setTimeout(function(){ rb.classList.remove('is-missing'); }, 600); }
+            }
+            if (!hasDate) {
+                missing.push('fecha');
+                var fb = document.getElementById('crmCreateFechaBtn');
+                if (fb) { fb.classList.add('is-missing'); setTimeout(function(){ fb.classList.remove('is-missing'); }, 600); }
+            }
+            if (missing.length) {
+                showToast('Falta llenar: ' + missing.join(', '), 'error');
+                return;
+            }
 
             var descEditor = document.getElementById('crmTaskDescEditor');
             var descripcion = '';

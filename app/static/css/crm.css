@@ -3849,6 +3849,37 @@
     }
     .crm-tw-icon-btn:hover { background: #F1F5F9; color: #334155; }
     .crm-tw-icon-btn.is-open { background: #F1F5F9; color: #1E293B; }
+    /* Botón share: toast verde aparece debajo al copiar el enlace */
+    .crm-tw-share-wrap {
+        position: relative;
+        display: inline-flex;
+    }
+    .crm-tw-share-toast {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        background: #16A34A;
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 600;
+        border-radius: 999px;
+        white-space: nowrap;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.32);
+        opacity: 0;
+        transform: translateY(-4px);
+        pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.18s ease;
+        z-index: 50;
+    }
+    .crm-tw-share-toast.is-on {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .crm-tw-share-toast svg { flex-shrink: 0; }
     .crm-tw-header-divider {
         width: 1px;
         height: 16px;
@@ -5055,6 +5086,58 @@
         line-height: 1.18;
     }
     .crm-ctw-title::placeholder { color: #CBD5E1; font-weight: 800; }
+
+    /* Required fields row — Responsable + Fecha entre título y descripción
+       (estilo: pills outlined, similar al composer de Oportunidades) */
+    .crm-ctw-required {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 2px;
+    }
+    .crm-ctw-required-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748B;
+        margin-right: 2px;
+    }
+    .crm-ctw-required-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        background: transparent;
+        border: 1px dashed #CBD5E1;
+        border-radius: 999px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #64748B;
+        cursor: pointer;
+        transition: all 0.18s;
+        font-family: inherit;
+    }
+    .crm-ctw-required-pill:hover {
+        background: #F8FAFC;
+        border-color: #94A3B8;
+        color: #1E293B;
+    }
+    .crm-ctw-required-pill.is-filled {
+        border-style: solid;
+        border-color: #2563EB;
+        color: #2563EB;
+        background: rgba(37, 99, 235, 0.05);
+    }
+    .crm-ctw-required-pill.is-missing {
+        border-color: #EF4444;
+        color: #B91C1C;
+        animation: ctwShakePill 0.45s;
+    }
+    @keyframes ctwShakePill {
+        0%,100% { transform: translateX(0); }
+        20%,60% { transform: translateX(-4px); }
+        40%,80% { transform: translateX(4px); }
+    }
 
     .crm-ctw-desc {
         width: 100%;
