@@ -126,23 +126,32 @@
             </div>
         </a>
 
-        {# ═══ 1×1 — Techday ═══ #}
-        <button type="button" class="mkt-widget mkt-widget--soon" data-area="tech"
-                data-section-name="Techday" style="--mkt-accent:#2563EB;--mkt-accent-bg:rgba(37,99,235,0.08);">
+        {# ═══ 1×1 — Techday (activo) ═══ #}
+        <a class="mkt-widget mkt-widget--ready" data-area="tech"
+           href="?tab=prospeccion&vista=eventos&filter_tipo=techday&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           style="--mkt-accent:#2563EB;--mkt-accent-bg:rgba(37,99,235,0.08);">
             <span class="mkt-specular"></span>
             <div class="mkt-w-head">
                 <div class="mkt-w-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
                 </div>
                 <span class="mkt-w-title">Techday</span>
+                {% if techday_kpis.total %}<span class="mkt-w-count">{{ techday_kpis.total }}</span>{% endif %}
             </div>
             <div class="mkt-w-body">
-                <div class="mkt-tech-count">2 sesiones planificadas</div>
-                <div class="mkt-inner-card mkt-row-card"><span class="mkt-row-dot"></span><span>Panduit Infra · Jun 20</span></div>
-                <div class="mkt-inner-card mkt-row-card"><span class="mkt-row-dot"></span><span>Zebra Mobility · Jul 8</span></div>
+                {% if techday_kpis.total %}
+                <div class="mkt-tech-count">{{ techday_kpis.total }} sesión{{ techday_kpis.total|pluralize:"es" }} en el período</div>
+                {% else %}
+                <div class="mkt-tech-count">Sin sesiones en este período</div>
+                {% endif %}
+                {% for t in techday_kpis.proximas %}
+                <div class="mkt-inner-card mkt-row-card"><span class="mkt-row-dot"></span><span>{{ t.nombre }} · {{ t.fecha_display }}</span></div>
+                {% endfor %}
+                {% if techday_kpis.total and not techday_kpis.proximas %}
+                <div class="mkt-evt-hint" style="margin-top:auto;">Sin próximas — ya se realizaron las del período.</div>
+                {% endif %}
             </div>
-            <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
-        </button>
+        </a>
 
         {# ═══ 1×1 — Demos ═══ #}
         <button type="button" class="mkt-widget mkt-widget--soon" data-area="demo"

@@ -761,6 +761,7 @@ def crm_home(request):
     # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
     eventos_kpis = None
     eventos_lista = None
+    techday_kpis = None
     if tab_activo == 'prospeccion':
         from .models import Evento
         evt_qs = Evento.objects.exclude(estado='cancelado').filter(fecha_evento__isnull=False)
@@ -820,7 +821,30 @@ def crm_home(request):
                 'marcas': proximo.marcas or [],
             } if proximo else None,
         }
-        eventos_lista = eventos_periodo
+        # Sub-vista filtrada por tipo (Techday, Demos, etc.) — si no viene
+        # filter_tipo, la lista muestra todos los eventos del periodo.
+        filter_tipo = (request.GET.get('filter_tipo') or '').strip()
+        if filter_tipo:
+            eventos_lista = [e for e in eventos_periodo if e.tipo == filter_tipo]
+        else:
+            eventos_lista = eventos_periodo
+        # KPIs específicos por tipo — alimentan los widgets del bento (Techday,
+        # Demos, etc.). Solo calculo Techday por ahora; los demás siguen igual.
+        techday_periodo = [e for e in eventos_periodo if e.tipo == 'techday']
+        techday_proximas = [
+            {
+                'id': e.id,
+                'nombre': e.nombre,
+                'fecha_display': e.fecha_evento.strftime('%d %b · %H:%M'),
+                'marcas': e.marcas or [],
+            }
+            for e in techday_periodo if e.fecha_evento and e.fecha_evento >= ahora
+        ][:3]
+        techday_kpis = {
+            'total': len(techday_periodo),
+            'proximas': techday_proximas,
+            'filter_tipo': filter_tipo,
+        }
 
     context = {
         'widget_label': widget_label,
@@ -829,6 +853,7 @@ def crm_home(request):
         'marketing_kpis': marketing_kpis,
         'eventos_kpis': eventos_kpis,
         'eventos_lista': eventos_lista,
+        'techday_kpis': techday_kpis,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,

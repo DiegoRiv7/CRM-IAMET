@@ -465,7 +465,10 @@
         nombreEl.value = '';
         fechaEl.value = '';
         duracionEl.value = 60;
-        tipoEl.value = 'presencial';
+        // Si la vista nos pasó un tipo por defecto (ej. Techday), úsalo;
+        // en otro caso, "Presencial".
+        tipoEl.value = window._eventoTipoDefault || 'presencial';
+        window._eventoTipoDefault = null; // se consume al primer reset
         estadoEl.value = 'programado';
         descEl.value = '';
         notasEl.value = '';

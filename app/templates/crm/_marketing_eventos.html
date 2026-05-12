@@ -1,5 +1,6 @@
-{# ═══ MARKETING → EVENTOS (sub-vista lista) ═══ #}
-<div class="mkt-events" id="mktEventsPage">
+{% with ft=request.GET.filter_tipo %}
+{# ═══ MARKETING → EVENTOS / TECHDAY / etc. (sub-vista lista) ═══ #}
+<div class="mkt-events" id="mktEventsPage" data-filter-tipo="{{ ft|default:'' }}">
     {# Breadcrumb de regreso al dashboard #}
     <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
         <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
@@ -9,18 +10,23 @@
             Marketing
         </a>
         <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
-        <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Eventos</span>
+        <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">{% if ft == 'techday' %}Techday{% else %}Eventos{% endif %}</span>
     </div>
 
     {# Header con CTA #}
     <div class="mkt-events-head">
         <div>
+            {% if ft == 'techday' %}
+            <h1 class="mkt-events-title">Techday</h1>
+            <p class="mkt-events-sub">Sesiones técnicas con marcas — clientes y prospectos conocen la solución de primera mano.</p>
+            {% else %}
             <h1 class="mkt-events-title">Eventos</h1>
             <p class="mkt-events-sub">Sesiones con marcas para acercar soluciones a clientes y prospectos.</p>
+            {% endif %}
         </div>
         <button type="button" class="mkt-events-new" id="btnEventoNuevo">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nuevo evento
+            {% if ft == 'techday' %}Nuevo Techday{% else %}Nuevo evento{% endif %}
         </button>
     </div>
 
@@ -65,19 +71,30 @@
     {% else %}
     <div class="mkt-events-empty">
         <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        {% if ft == 'techday' %}
+        <h3>Aún no hay Techdays en este período</h3>
+        <p>Programa el primero para acercar las marcas a tus clientes.</p>
+        {% else %}
         <h3>Aún no hay eventos en este período</h3>
         <p>Crea el primero para empezar a llevar el control.</p>
+        {% endif %}
         <button type="button" class="mkt-events-new" id="btnEventoNuevoEmpty">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nuevo evento
+            {% if ft == 'techday' %}Nuevo Techday{% else %}Nuevo evento{% endif %}
         </button>
     </div>
     {% endif %}
 </div>
+{% endwith %}
 
 <script>
 (function(){
+    var page = document.getElementById('mktEventsPage');
+    var filterTipo = (page && page.dataset.filterTipo) || '';
     function abrirNuevo(){
+        // Si la sub-vista está filtrada por tipo (ej. Techday), pre-selecciona
+        // ese tipo en el form de Nuevo evento.
+        if (filterTipo) window._eventoTipoDefault = filterTipo;
         if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(null);
     }
     function abrirDetalle(eventoId){
