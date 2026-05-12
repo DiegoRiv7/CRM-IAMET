@@ -36,7 +36,9 @@ var _CRM_CONFIG = {
     var params = new URLSearchParams(window.location.search);
     var mes = params.get('mes') || '{{ mes_filter|escapejs }}';
     var anio = params.get('anio') || '{{ anio_filter|escapejs }}';
-    fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
+    var vendedores = params.get('vendedores') || '';
+    var _vq = vendedores ? '&vendedores=' + encodeURIComponent(vendedores) : '';
+    fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio + _vq, { credentials: 'same-origin' })
         .then(function(r) { return r.json(); })
         .then(function(resp) {
             if (resp.ok && resp.total !== undefined) {

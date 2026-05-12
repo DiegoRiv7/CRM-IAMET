@@ -2054,6 +2054,13 @@ def api_desglose_facturacion(request):
     try:
         mes = request.GET.get('mes', 'todos')
         anio_raw = request.GET.get('anio', '2026')
+        vendedores_raw = (request.GET.get('vendedores') or '').strip()
+        vendedores_ids = set()
+        if vendedores_raw:
+            for v in vendedores_raw.split(','):
+                v = v.strip()
+                if v.isdigit():
+                    vendedores_ids.add(int(v))
 
         def _parse_ints(s, default=None):
             if not s or s == 'todos':
@@ -2098,6 +2105,25 @@ def api_desglose_facturacion(request):
             _procesar_af(af)
 
         rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
+
+        # Si hay filtro de vendedor activo, hacer match cliente→vendedor y
+        # dejar fuera los clientes que no le pertenecen a esos vendedores.
+        if vendedores_ids:
+            all_clientes = list(Cliente.objects.select_related('asignado_a').all())
+            alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
+                         for a in AliasCliente.objects.all()}
+            filtered = []
+            for row in rows:
+                matches = _match_clientes_cobrado(row['nombre'], all_clientes, alias_map)
+                vid = None
+                for m in matches:
+                    if m.asignado_a_id:
+                        vid = m.asignado_a_id
+                        break
+                if vid in vendedores_ids:
+                    filtered.append(row)
+            rows = filtered
+
         total = sum(r['monto'] for r in rows)
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})
     except Exception as e:
@@ -2422,6 +2448,13 @@ def api_desglose_cobrado(request):
     try:
         mes = request.GET.get('mes', 'todos')
         anio_raw = request.GET.get('anio', '2026')
+        vendedores_raw = (request.GET.get('vendedores') or '').strip()
+        vendedores_ids = set()
+        if vendedores_raw:
+            for v in vendedores_raw.split(','):
+                v = v.strip()
+                if v.isdigit():
+                    vendedores_ids.add(int(v))
 
         def _parse_ints(s, default=None):
             if not s or s == 'todos':
@@ -2470,12 +2503,14 @@ def api_desglose_cobrado(request):
         for entry in sorted(acumulado.values(), key=lambda x: -x['monto']):
             matches = _match_clientes_cobrado(entry['nombre'], all_clientes, alias_map)
             vendedor = ''
+            vendedor_id = None
             meta_cobrado = 0
             if matches:
                 # Vendedor: tomar del primer match que tenga asignado
                 for m in matches:
                     if m.asignado_a:
                         vendedor = (m.asignado_a.get_full_name() or m.asignado_a.username)
+                        vendedor_id = m.asignado_a_id
                         break
                 # Meta: sumar meta_cobrado de TODAS las variantes.
                 # Multiplicar por número de meses en el rango (12 si 'todos').
@@ -2484,11 +2519,16 @@ def api_desglose_cobrado(request):
                     mc = float(m.meta_cobrado or 0)
                     mc = mc * meses_multiplier
                     meta_cobrado += mc
+            # Si hay filtro de vendedor activo, dejar fuera los clientes que
+            # no estén asignados a ninguno de los vendedores seleccionados.
+            if vendedores_ids and vendedor_id not in vendedores_ids:
+                continue
             faltante = meta_cobrado - entry['monto']
             rows.append({
                 'nombre': entry['nombre'],
                 'monto': entry['monto'],
                 'vendedor': vendedor,
+                'vendedor_id': vendedor_id,
                 'meta': meta_cobrado,
                 'faltante': faltante,
                 'facturas': entry.get('facturas', []),
