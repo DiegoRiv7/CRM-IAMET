@@ -11303,23 +11303,25 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 .mkt-board.is-at-end::after { opacity: 0; }
 
-/* ── Spans en el grid horizontal ─────────────────────────────────
-   Hero: 3×2 (ancla izquierda grande).
-   Eventos y Techday: 1c×2r (verticales, necesitan altura para
-   calendario y KPIs sin apretarse).
-   Cursos: wide 2c×1r.
-   Resto: 1c×1r cuadrados pequeños que llenan los huecos. */
-.mkt-widget--hero {
-    grid-row: span 3;
-    grid-column: span 2;
-}
-.mkt-widget--wide {
-    grid-column: span 2;
-}
-.mkt-widget--ready[data-area="evt"],
-.mkt-widget--ready[data-area="tech"] {
-    grid-row: span 2;
-}
+/* ── Placement explícito en el grid de 3 filas × 6 cols ──────────
+   Layout final (packing sin huecos):
+     Camp Camp | Tech Tech | Demos | Cert
+     Camp Camp | Evt  | Cur | Asoc Asoc
+     Camp Camp | Evt  | Cur | Redes Redes
+   - Camp: 2c × 3r (hero ancla)
+   - Tech: 2c × 1r (wide arriba — antes era Cursos ahí)
+   - Evt:  1c × 2r (tall vertical)
+   - Cur:  1c × 2r (tall vertical — swap con Tech)
+   - Demos/Cert: 1c × 1r cada uno
+   - Asoc/Redes: 2c × 1r (wide, para armonía con Tech) */
+.mkt-widget[data-area="camp"] { grid-column: 1 / span 2; grid-row: 1 / span 3; }
+.mkt-widget[data-area="tech"] { grid-column: 3 / span 2; grid-row: 1; }
+.mkt-widget[data-area="evt"]  { grid-column: 3;          grid-row: 2 / span 2; }
+.mkt-widget[data-area="cur"]  { grid-column: 4;          grid-row: 2 / span 2; }
+.mkt-widget[data-area="demo"] { grid-column: 5;          grid-row: 1; }
+.mkt-widget[data-area="cert"] { grid-column: 6;          grid-row: 1; }
+.mkt-widget[data-area="asoc"] { grid-column: 5 / span 2; grid-row: 2; }
+.mkt-widget[data-area="red"]  { grid-column: 5 / span 2; grid-row: 3; }
 
 /* Botones flotantes de navegación ◀ ▶ */
 .mkt-board-nav {
