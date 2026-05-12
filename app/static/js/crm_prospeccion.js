@@ -271,10 +271,37 @@ document.addEventListener('click', function(ev) {
         // Store selected client id for the form's autocomplete logic
         window._wpfSelectedClienteId = clienteId;
 
+        // Actualizar visualmente el pill del cliente (de "Selecciona un cliente" → nombre real)
+        var cliBtn = document.getElementById('wpClienteBtn');
+        var cliLbl = document.getElementById('wpClienteLabel');
+        if (cliLbl) cliLbl.textContent = clienteNombre;
+        if (cliBtn) {
+            cliBtn.classList.remove('empty');
+            cliBtn.classList.add('filled');
+        }
+
         // Pre-fill product select
         var productoSelect = document.getElementById('wpfProducto');
         if (productoSelect) {
             productoSelect.value = producto;
+        }
+
+        // Actualizar visualmente el pill de producto con el label legible (Zebra, Panduit, …)
+        var prodBtn = document.getElementById('wpProdBtn');
+        var prodLbl = document.getElementById('wpProdLabel');
+        if (productoSelect && prodLbl) {
+            var prodText = producto;
+            for (var i = 0; i < productoSelect.options.length; i++) {
+                if (productoSelect.options[i].value === producto) {
+                    prodText = productoSelect.options[i].text || producto;
+                    break;
+                }
+            }
+            prodLbl.textContent = prodText;
+            if (prodBtn) {
+                prodBtn.classList.remove('empty');
+                prodBtn.classList.add('filled');
+            }
         }
 
         // Store context so after creation we open the client widget + prospecto detail
