@@ -15,12 +15,15 @@
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="CRM IAMET">
     <meta property="og:url" content="https://{{ request.get_host }}{{ request.path }}">
-    <meta property="og:image" content="https://{{ request.get_host }}{% static 'images/iamet-logo.png' %}">
-    <meta property="og:image:alt" content="CRM IAMET">
+    <meta property="og:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="{{ tarea.titulo }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ tarea.titulo }}">
     <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
-    <meta name="twitter:image" content="https://{{ request.get_host }}{% static 'images/iamet-logo.png' %}">
+    <meta name="twitter:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
 
     <!-- Redirect rápido al widget si hay sesión activa (client-side para no romper OG) -->
     {% if autenticado %}
