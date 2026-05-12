@@ -251,9 +251,7 @@
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
             </div>
             {% else %}
-            {# Ocultar dynamic island cuando estamos en una sub-vista de
-               Marketing (?vista=campanas|eventos) — el usuario ya está
-               "adentro" y vuelve con el breadcrumb del sub-template. #}
+            {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
             {% if tab_activo != 'prospeccion' or not request.GET.vista %}
             <div class="crm-tabs">
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
