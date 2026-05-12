@@ -4660,15 +4660,25 @@ def api_tarea_share_link(request, tarea_id):
 def ver_tarea_compartida(request, token):
     """Vista pública read-only de una tarea a partir de un token firmado.
     No requiere login. Renderiza el template tarea_compartida.html.
+
+    Si el usuario YA tiene sesión activa, lo redirigimos directo al
+    home del CRM con ?open_task=<id> para abrir el widget de detalle —
+    ahorra el extra-click de "Ir a la tarea". Los crawlers de Open
+    Graph (WhatsApp, Slack, etc.) no están autenticados, así que ellos
+    siguen recibiendo el HTML con meta tags para el preview.
     """
     from django.core import signing
     from django.http import Http404
+    from django.shortcuts import redirect
     try:
         data = signing.loads(token, salt='tarea-preview')
     except signing.BadSignature:
         raise Http404('Enlace inválido o expirado')
     tarea_id = data.get('t')
     tarea = get_object_or_404(Tarea, id=tarea_id)
+
+    if request.user.is_authenticated:
+        return redirect(f'/app/home/?tab=tareas&open_task={tarea_id}')
 
     # Preparar datos seguros (sin exponer info sensible innecesaria)
     creador_nombre = (tarea.creado_por.get_full_name() or tarea.creado_por.username) if tarea.creado_por else '—'

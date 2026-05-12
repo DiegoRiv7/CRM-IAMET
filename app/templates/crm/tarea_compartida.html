@@ -7,9 +7,7 @@
     <title>{{ tarea.titulo }} — Vista previa</title>
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
 
-    {# ─── Open Graph + Twitter cards para que WhatsApp / Slack / etc.
-         muestren preview con título, descripción y logo cuando se pegue
-         el link copiado desde el botón de compartir. ────────────────── #}
+    {# Open Graph + Twitter cards — preview en WhatsApp/Slack al pegar el link #}
     <meta property="og:title" content="{{ tarea.titulo }}">
     <meta property="og:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% if responsable_nombre %} · Asignada a {{ responsable_nombre }}{% endif %}{% if tarea.fecha_limite %} · Vence {{ tarea.fecha_limite|date:'d M, H:i' }}{% endif %}{% endif %}">
     <meta property="og:type" content="article">
