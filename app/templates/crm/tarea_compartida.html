@@ -25,10 +25,15 @@
     <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
     <meta name="twitter:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
 
-    <!-- Redirect rápido al widget si hay sesión activa (client-side para no romper OG).
-         Los crawlers de OG no ejecutan JS y reciben el HTML intacto. -->
+    <!-- Redirect client-side: si tienes sesión, te llevamos al widget. Los crawlers
+         de OG no ejecutan JS y reciben el HTML intacto. -->
     {% if autenticado %}
-    <script>window.location.replace('/app/home/?tab=tareas&open_task={{ tarea.id }}');</script>
+    <script>
+        // Loguea antes de redirigir para que veamos qué ID se manda al CRM.
+        var _shareTId = '{{ tarea.id }}';
+        console.log('[share-preview] redirigiendo a tarea id=', _shareTId, 'titulo:', '{{ tarea.titulo|escapejs }}');
+        window.location.replace('/app/home/?tab=tareas&open_task=' + _shareTId);
+    </script>
     {% endif %}
     <style>
         :root {
