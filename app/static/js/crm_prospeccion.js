@@ -257,59 +257,65 @@ document.addEventListener('click', function(ev) {
         var widget = document.getElementById('widgetNuevoProspecto');
         console.log('[PROSPECCION] widgetNuevoProspecto:', widget ? 'FOUND' : 'NOT FOUND');
         if (!widget) return;
-        widget.classList.add('active');
 
-        // Pre-fill client name and hidden ID
-        var clienteInput = document.getElementById('wpfCliente');
-        var clienteHiddenId = document.getElementById('wpfClienteId');
-        if (clienteInput) {
-            clienteInput.value = clienteNombre;
-        }
-        if (clienteHiddenId) {
-            clienteHiddenId.value = clienteId;
-        }
-        // Store selected client id for the form's autocomplete logic
+        // Marcar contexto ANTES de abrir el form para que el init del widget
+        // pueda detectar pre-llenado si lo soporta.
         window._wpfSelectedClienteId = clienteId;
-
-        // Actualizar visualmente el pill del cliente (de "Selecciona un cliente" → nombre real)
-        var cliBtn = document.getElementById('wpClienteBtn');
-        var cliLbl = document.getElementById('wpClienteLabel');
-        if (cliLbl) cliLbl.textContent = clienteNombre;
-        if (cliBtn) {
-            cliBtn.classList.remove('empty');
-            cliBtn.classList.add('filled');
-        }
-
-        // Pre-fill product select
-        var productoSelect = document.getElementById('wpfProducto');
-        if (productoSelect) {
-            productoSelect.value = producto;
-        }
-
-        // Actualizar visualmente el pill de producto con el label legible (Zebra, Panduit, …)
-        var prodBtn = document.getElementById('wpProdBtn');
-        var prodLbl = document.getElementById('wpProdLabel');
-        if (productoSelect && prodLbl) {
-            var prodText = producto;
-            for (var i = 0; i < productoSelect.options.length; i++) {
-                if (productoSelect.options[i].value === producto) {
-                    prodText = productoSelect.options[i].text || producto;
-                    break;
-                }
-            }
-            prodLbl.textContent = prodText;
-            if (prodBtn) {
-                prodBtn.classList.remove('empty');
-                prodBtn.classList.add('filled');
-            }
-        }
-
-        // Store context so after creation we open the client widget + prospecto detail
         window._prospeccionProductoContext = {
             clienteId: clienteId,
             clienteNombre: clienteNombre,
             producto: producto
         };
+
+        widget.classList.add('active');
+
+        function _aplicarPrellenado() {
+            // Pre-fill client name and hidden ID
+            var clienteInput = document.getElementById('wpfCliente');
+            var clienteHiddenId = document.getElementById('wpfClienteId');
+            if (clienteInput) clienteInput.value = clienteNombre;
+            if (clienteHiddenId) clienteHiddenId.value = clienteId;
+
+            // Actualizar visualmente el pill del cliente
+            var cliBtn = document.getElementById('wpClienteBtn');
+            var cliLbl = document.getElementById('wpClienteLabel');
+            if (cliLbl) cliLbl.textContent = clienteNombre;
+            if (cliBtn) {
+                cliBtn.classList.remove('empty');
+                cliBtn.classList.add('filled');
+            }
+
+            // Pre-fill product select
+            var productoSelect = document.getElementById('wpfProducto');
+            if (productoSelect) productoSelect.value = producto;
+
+            // Actualizar visualmente el pill de producto
+            var prodBtn = document.getElementById('wpProdBtn');
+            var prodLbl = document.getElementById('wpProdLabel');
+            if (productoSelect && prodLbl) {
+                var prodText = producto;
+                for (var i = 0; i < productoSelect.options.length; i++) {
+                    if (productoSelect.options[i].value === producto) {
+                        prodText = productoSelect.options[i].text || producto;
+                        break;
+                    }
+                }
+                prodLbl.textContent = prodText;
+                if (prodBtn) {
+                    prodBtn.classList.remove('empty');
+                    prodBtn.classList.add('filled');
+                }
+            }
+        }
+
+        // Aplicamos el pre-llenado en varios tiempos: ahora, tras el reflow,
+        // y tras la animación de apertura — para que cualquier init del
+        // widget que resetee los pills sea sobreescrito por nuestro pre-llenado.
+        _aplicarPrellenado();
+        requestAnimationFrame(_aplicarPrellenado);
+        setTimeout(_aplicarPrellenado, 60);
+        setTimeout(_aplicarPrellenado, 200);
+        setTimeout(_aplicarPrellenado, 500);
     }
     window.abrirProspeccionConProducto = abrirProspeccionConProducto;
 
