@@ -4740,11 +4740,11 @@ def og_image_tarea(request, token):
             return ImageFont.truetype(path, size)
         except (IOError, OSError):
             return ImageFont.load_default()
-    f_title = _load(46, bold=True)
-    f_body = _load(22)
+    f_title = _load(38, bold=True)
+    f_body = _load(20)
     f_label = _load(13, bold=True)
-    f_value = _load(20, bold=True)
-    f_footer = _load(16)
+    f_value = _load(19, bold=True)
+    f_footer = _load(15)
 
     # Card blanca con borde redondeado
     M = 40
@@ -4781,22 +4781,25 @@ def og_image_tarea(request, token):
             lines.append(cur)
         return lines
 
-    titulo_lines = _wrap(tarea.titulo or 'Tarea', 32)[:2]
+    # Wrap más agresivo (24 chars) para que el título no invada el
+    # sidebar derecho que empieza en x ≈ 800. A 38pt bold cada char
+    # mide ~22px → 24 chars * 22 ≈ 530px, cabe holgadamente.
+    titulo_lines = _wrap(tarea.titulo or 'Tarea', 24)[:3]
     for line in titulo_lines:
         draw.text((M + pad_l, y), line, fill='#0F172A', font=f_title)
-        y += 56
-    y += 16
+        y += 48
+    y += 14
 
-    # Descripción (~5 líneas)
+    # Descripción (~5 líneas). 44 chars × ~12px (20pt) ≈ 528px, también
+    # cabe sin invadir el sidebar.
     desc = (tarea.descripcion or '').strip()
     if desc:
-        # Quita markdown sencillo
         import re as _re
         desc = _re.sub(r'[*_`#>\[\]]', '', desc)
-        desc_lines = _wrap(desc, 48)[:5]
+        desc_lines = _wrap(desc, 44)[:5]
         for line in desc_lines:
             draw.text((M + pad_l, y), line, fill='#475569', font=f_body)
-            y += 32
+            y += 30
 
     # Footer
     draw.text((M + pad_l, H - M - 55), 'Abre el link para ver la tarea completa →', fill='#94A3B8', font=f_footer)
