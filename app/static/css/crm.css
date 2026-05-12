@@ -7633,6 +7633,15 @@
 .crm-page-sidebar #crmContentSection {
     background: transparent !important;
 }
+/* Cuando el contenido es el dashboard de Marketing, propagamos flex
+   para que el board llene todo el alto disponible del viewport sin
+   dejar blanco abajo. :has() está soportado en navegadores modernos. */
+.crm-page-sidebar #crmContentSection:has(.mkt-dashboard) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
 
 /* ═══ BARRA UNIFICADA (CRM tab): facet-actions (izq) + tabs (centro) + period+CTA (der) ═══ */
 .crm-page-sidebar .crm-bar.crm-bar--unified {
@@ -11219,7 +11228,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-height: calc(100vh - 200px);
+    min-height: 0;
 }
 
 /* Blobs sutiles detrás del bento para que el liquid glass tenga algo que refractar */
