@@ -11258,9 +11258,11 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     gap: 14px;
     overflow-x: auto;
     overflow-y: hidden;
-    height: calc(100vh - 240px);
+    /* Altura acotada: el "pizarrón" mide ~620px (≈ 2 filas de 290px).
+       Antes usábamos 100vh-240px ≈ 840px y las cards quedaban con
+       mucho espacio blanco abajo. */
+    height: 620px;
     min-height: 520px;
-    max-height: 760px;
     padding: 4px 4px 14px;
     scroll-behavior: smooth;
     scroll-snap-type: x proximity;
@@ -11676,6 +11678,19 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     flex-direction: column;
     gap: 8px;
+    /* Crece para llenar el espacio remanente del hero — antes quedaba
+       un hueco grande blanco abajo de la card */
+    flex: 1;
+    min-height: 0;
+}
+.mkt-hero-prosp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+    /* Distribuye las filas con espacio constante para llenar la altura */
+    justify-content: space-around;
 }
 .mkt-hero-prosp-head {
     display: flex;
@@ -11692,11 +11707,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-hero-prosp-meta {
     font-size: 10px;
     color: var(--mkt-t3);
-}
-.mkt-hero-prosp-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
 }
 .mkt-hero-prosp-empty {
     font-size: 11px;
@@ -11882,6 +11892,12 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-tech-body {
     gap: 12px;
 }
+/* Marcas trabajadas: crece para llenar el espacio entre KPIs y "última
+   sesión" — antes quedaba un hueco grande en medio. */
+.mkt-tech-marcas {
+    flex: 1;
+    min-height: 0;
+}
 .mkt-tech-stats {
     display: flex;
     background: var(--mkt-accent-bg, rgba(37, 99, 235, 0.06));
@@ -11915,6 +11931,9 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     flex-direction: column;
     gap: 6px;
+    /* Distribuye las filas de marca para llenar la altura disponible
+       (la card es alta porque ocupa 2 filas del board). */
+    justify-content: space-around;
 }
 .mkt-tech-marcas-label {
     font-size: 9px;
@@ -12174,6 +12193,12 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     border-radius: 999px;
     padding: 2px 8px;
     letter-spacing: 0.3px;
+}
+
+/* Próximo evento — pegado al fondo de la card de Eventos para que el
+   calendario respire arriba y no quede aire muerto abajo. */
+.mkt-evt-next {
+    margin-top: auto;
 }
 
 /* Hint cuando no hay eventos en el periodo (widget) */
