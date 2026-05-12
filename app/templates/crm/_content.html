@@ -698,7 +698,10 @@
         {% include "crm/_content_prospectos_kanban.html" %}
 
         {% elif tab_activo == 'prospeccion' %}
-        {% if request.GET.vista == 'eventos' %}
+        {# En producción (crm.iamet.mx) mostramos placeholder "Próximamente"; en pruebas y otros entornos sigue funcionando todo normal. #}
+        {% if request.get_host == 'crm.iamet.mx' %}
+        {% include "crm/_marketing_placeholder.html" %}
+        {% elif request.GET.vista == 'eventos' %}
         {% include "crm/_marketing_eventos.html" %}
         {% elif request.GET.vista != 'campanas' %}
         {% include "crm/_widget_marketing.html" %}
