@@ -3451,6 +3451,10 @@
 
         if (typeof window.mailAbrir === 'function') {
             window.mailAbrir();
+            // Subir el z-index del widget Mail por encima del chat de oportunidad
+            // (que está en z-index ~10300) para que aparezca al frente.
+            var mailWidget = document.getElementById('widgetMail');
+            if (mailWidget) mailWidget.style.zIndex = '10800';
             // Esperar a que el widget esté visible y luego entrar a Redactar
             setTimeout(function(){
                 if (typeof window.mailRedactar === 'function') window.mailRedactar();
