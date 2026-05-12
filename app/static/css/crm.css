@@ -11263,18 +11263,18 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     flex-direction: column;
 }
 .mkt-bento {
-    /* AGGRESSIVE: altura fija basada en viewport, sin depender de la
-       cadena flex que no estaba propagando bien. Las cards estiran a
-       su celda del grid (cells de altura 1fr cada una). */
+    /* 3 filas para meter más cuadros compactos en lugar de cards
+       largas. Más alto al viewport (100vh - 110px) para que el
+       pizarrón abarque todo el largo de la pantalla. */
     display: grid;
     grid-auto-flow: column dense;
-    grid-template-rows: 1fr 1fr;
-    grid-auto-columns: 320px;
-    gap: 20px;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-auto-columns: 280px;
+    gap: 18px;
     overflow-x: auto;
     overflow-y: hidden;
-    height: calc(100vh - 160px);
-    min-height: 600px;
+    height: calc(100vh - 110px);
+    min-height: 640px;
     padding: 14px 10px 22px;
     scroll-behavior: smooth;
     scrollbar-width: thin;
@@ -11304,18 +11304,16 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-board.is-at-end::after { opacity: 0; }
 
 /* ── Spans en el grid horizontal ─────────────────────────────────
-   Hero ancla 2 filas × 2 columnas. Eventos/Techday ocupan 2 filas
-   (necesitan más alto para calendario + KPIs). Cursos es wide (2c). */
+   Hero ancla 3 filas × 2 columnas (panel ancla grande).
+   Todos los demás son cuadrados 1×1 — se mezclan en mosaico tipo
+   "creative board" en lugar de cards largas.
+   Cursos sigue siendo wide (2c × 1r). */
 .mkt-widget--hero {
-    grid-row: span 2;
+    grid-row: span 3;
     grid-column: span 2;
 }
 .mkt-widget--wide {
     grid-column: span 2;
-}
-.mkt-widget--ready[data-area="evt"],
-.mkt-widget--ready[data-area="tech"] {
-    grid-row: span 2;
 }
 
 /* Botones flotantes de navegación ◀ ▶ */
