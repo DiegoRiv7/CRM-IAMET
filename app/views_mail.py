@@ -690,6 +690,17 @@ def api_mail_enviar(request):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': f'Error al enviar: {e}'}, status=500)
 
+    # Vínculo opcional con una Oportunidad — cuando el envío viene del chat
+    # de oportunidad, queda registrada la evidencia del correo allí.
+    oportunidad_obj = None
+    opp_id = data.get('oportunidad_id')
+    if opp_id:
+        try:
+            from .models import TodoItem
+            oportunidad_obj = TodoItem.objects.filter(id=int(opp_id)).first()
+        except (TypeError, ValueError):
+            oportunidad_obj = None
+
     # Save to sent cache
     correo_sent = MailCorreo.objects.create(
         usuario=request.user,
@@ -707,6 +718,7 @@ def api_mail_enviar(request):
         leido=True,
         cuerpo_cargado=True,
         tiene_adjuntos=bool(archivos),
+        oportunidad=oportunidad_obj,
     )
 
     # Save attachments metadata

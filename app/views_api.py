@@ -627,8 +627,38 @@ def api_chat_oportunidad(request, opp_id):
         }
 
     if request.method == 'GET':
-        msgs = MensajeOportunidad.objects.filter(oportunidad=opp).select_related('usuario', 'reply_to', 'reply_to__usuario')
-        return JsonResponse({'mensajes': [serializar(m) for m in msgs]})
+        msgs = list(MensajeOportunidad.objects.filter(oportunidad=opp).select_related('usuario', 'reply_to', 'reply_to__usuario'))
+        items = [{'__tipo': 'chat', '__fecha': m.fecha, 'data': serializar(m)} for m in msgs]
+
+        # Incluir también los correos enviados/recibidos vinculados a la
+        # oportunidad. Se renderizan como tarjetas distintivas en el chat.
+        try:
+            from .models import MailCorreo
+            correos = MailCorreo.objects.filter(oportunidad=opp).order_by('fecha_envio')
+            for c in correos:
+                fecha_correo = c.fecha_envio or c.fecha_creacion
+                items.append({
+                    '__tipo': 'correo',
+                    '__fecha': fecha_correo,
+                    'data': {
+                        'id': c.id,
+                        'tipo': 'correo',
+                        'direccion': c.carpeta_display,  # SENT / INBOX
+                        'asunto': c.asunto,
+                        'remitente_nombre': c.remitente_nombre,
+                        'remitente_email': c.remitente_email,
+                        'destinatarios': c.destinatarios_json or '[]',
+                        'tiene_adjuntos': c.tiene_adjuntos,
+                        'fecha': fecha_correo.strftime('%d/%m/%Y %H:%M') if fecha_correo else '',
+                        'es_mio': (c.usuario_id == request.user.id),
+                    },
+                })
+        except Exception as exc:
+            print(f'[chat oportunidad] No se pudo cargar correos: {exc}')
+
+        # Ordenar por fecha y devolver solo el data
+        items.sort(key=lambda x: x['__fecha'] or timezone.now())
+        return JsonResponse({'mensajes': [it['data'] for it in items]})
 
     if request.method == 'POST':
         texto = (request.POST.get('texto') or '').strip()
