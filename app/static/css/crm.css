@@ -11246,11 +11246,11 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     flex: 1;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: minmax(240px, 1fr) minmax(240px, 1fr) minmax(220px, 1fr);
+    grid-template-rows: minmax(220px, 1fr) minmax(220px, 1fr) minmax(200px, 1fr);
     grid-template-areas:
         "camp camp evt  tech"
-        "camp camp demo cert"
-        "cur  cur  asoc red";
+        "cur  cur  demo cert"
+        "asoc asoc red  red";
     gap: 14px;
 }
 
@@ -11602,21 +11602,21 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     margin: 2px 0 6px;
 }
 
-/* ── Mini calendar (celdas fijas, alineadas) ── */
+/* ── Mini calendar (celdas grandes para abarcar más el widget) ── */
 .mkt-cal {
     display: grid;
-    grid-template-columns: repeat(7, 22px);
-    grid-auto-rows: 22px;
-    row-gap: 3px;
-    column-gap: 3px;
+    grid-template-columns: repeat(7, 28px);
+    grid-auto-rows: 28px;
+    row-gap: 4px;
+    column-gap: 4px;
     justify-content: center;
 }
 .mkt-cal-dow {
     text-align: center;
-    font-size: 8.5px;
+    font-size: 10px;
     color: var(--mkt-t3);
     font-weight: 700;
-    line-height: 22px;
+    line-height: 28px;
     letter-spacing: 0.05em;
 }
 .mkt-cal-day {
@@ -11624,7 +11624,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8.5px;
+    font-size: 10.5px;
     color: var(--mkt-t2);
     font-weight: 500;
     transition: background 0.15s, color 0.15s;

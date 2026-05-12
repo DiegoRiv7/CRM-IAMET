@@ -706,18 +706,21 @@ def crm_home(request):
     if tab_activo == 'prospeccion':
         from .models import Campana, CampanaEnvio
         envios_qs = CampanaEnvio.objects.all()
-        camps_qs = Campana.objects.exclude(estado='cancelada').filter(fecha_envio__isnull=False)
+        # Activas = campañas creadas en el periodo (excepto canceladas).
+        # Antes filtrábamos por fecha_envio, pero eso dejaba fuera campañas
+        # recién creadas que aún no se envían — el usuario veía 0 al crear.
+        camps_qs = Campana.objects.exclude(estado='cancelada')
         if desde_date or hasta_date:
             if desde_date:
                 envios_qs = envios_qs.filter(fecha_envio__date__gte=desde_date)
-                camps_qs = camps_qs.filter(fecha_envio__date__gte=desde_date)
+                camps_qs = camps_qs.filter(fecha_creacion__date__gte=desde_date)
             if hasta_date:
                 envios_qs = envios_qs.filter(fecha_envio__date__lte=hasta_date)
-                camps_qs = camps_qs.filter(fecha_envio__date__lte=hasta_date)
+                camps_qs = camps_qs.filter(fecha_creacion__date__lte=hasta_date)
         else:
             if anios_list is not None:
                 envios_qs = envios_qs.filter(fecha_envio__year__in=anios_list)
-                camps_qs = camps_qs.filter(fecha_envio__year__in=anios_list)
+                camps_qs = camps_qs.filter(fecha_creacion__year__in=anios_list)
             if meses_list is not None:
                 try:
                     meses_int = [int(m) for m in meses_list]
@@ -725,7 +728,7 @@ def crm_home(request):
                     meses_int = []
                 if meses_int:
                     envios_qs = envios_qs.filter(fecha_envio__month__in=meses_int)
-                    camps_qs = camps_qs.filter(fecha_envio__month__in=meses_int)
+                    camps_qs = camps_qs.filter(fecha_creacion__month__in=meses_int)
         total_enviadas = envios_qs.count()
         total_activas = camps_qs.count()
         total_respondidas = envios_qs.filter(respondido=True).count()
@@ -733,28 +736,10 @@ def crm_home(request):
             tasa_str = f'{round(total_respondidas / total_enviadas * 100)}%'
         else:
             tasa_str = '—'
-        # Top 3 campañas del periodo (por enviados) — para las mini-cards del hero
-        top_campanas = []
-        for c in camps_qs.order_by('-total_enviados', '-fecha_envio')[:3]:
-            enviados = c.total_enviados or 0
-            if enviados:
-                pct = round((c.total_abiertos or 0) / enviados * 100)
-                pct_label = f'{pct}% apert.'
-            else:
-                pct = 0
-                pct_label = '—'
-            top_campanas.append({
-                'nombre': c.nombre,
-                'enviados': enviados,
-                'pct': pct,
-                'pct_label': pct_label,
-            })
         marketing_kpis = {
             'activas': total_activas,
             'enviadas': total_enviadas,
             'tasa_contacto': tasa_str,
-            'top_campanas': top_campanas,
-            'empty_slots': list(range(max(0, 3 - len(top_campanas)))),
             'hay_actividad': total_enviadas > 0 or total_activas > 0,
         }
 
