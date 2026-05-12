@@ -11304,16 +11304,21 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-board.is-at-end::after { opacity: 0; }
 
 /* ── Spans en el grid horizontal ─────────────────────────────────
-   Hero ancla 3 filas × 2 columnas (panel ancla grande).
-   Todos los demás son cuadrados 1×1 — se mezclan en mosaico tipo
-   "creative board" en lugar de cards largas.
-   Cursos sigue siendo wide (2c × 1r). */
+   Hero: 3×2 (ancla izquierda grande).
+   Eventos y Techday: 1c×2r (verticales, necesitan altura para
+   calendario y KPIs sin apretarse).
+   Cursos: wide 2c×1r.
+   Resto: 1c×1r cuadrados pequeños que llenan los huecos. */
 .mkt-widget--hero {
     grid-row: span 3;
     grid-column: span 2;
 }
 .mkt-widget--wide {
     grid-column: span 2;
+}
+.mkt-widget--ready[data-area="evt"],
+.mkt-widget--ready[data-area="tech"] {
+    grid-row: span 2;
 }
 
 /* Botones flotantes de navegación ◀ ▶ */
@@ -11391,20 +11396,17 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
         box-shadow 0.28s ease;
 }
 
-/* Cards estiran a la celda del grid (sin align-self: start) — ocupan
-   todo el alto disponible para llenar el viewport. La rotación las
-   hace ver desordenadas a pesar de ser grandes. */
-
-/* Scatter por posición — ángulo + Y más marcados para que el desorden
-   se note. Cada card tiene su propio par único por nth-of-type. */
-.mkt-widget:nth-of-type(1) { --rot: -1.4deg; --y: 0px; }
-.mkt-widget:nth-of-type(2) { --rot:  1.8deg; --y: 22px; }
-.mkt-widget:nth-of-type(3) { --rot: -1.6deg; --y: -10px; }
-.mkt-widget:nth-of-type(4) { --rot:  2.0deg; --y: 14px; }
-.mkt-widget:nth-of-type(5) { --rot: -1.8deg; --y: -6px; }
-.mkt-widget:nth-of-type(6) { --rot:  1.2deg; --y: 18px; }
-.mkt-widget:nth-of-type(7) { --rot: -1.5deg; --y: -14px; }
-.mkt-widget:nth-of-type(8) { --rot:  1.6deg; --y: 8px; }
+/* Cards estiran a la celda del grid — ocupan todo el alto disponible.
+   Rotación MUY sutil para no causar overlap visual; sin translateY
+   (que sí causaba que el contenido invadiera celdas vecinas). */
+.mkt-widget:nth-of-type(1) { --rot: -0.5deg; --y: 0px; }
+.mkt-widget:nth-of-type(2) { --rot:  0.6deg; --y: 0px; }
+.mkt-widget:nth-of-type(3) { --rot: -0.7deg; --y: 0px; }
+.mkt-widget:nth-of-type(4) { --rot:  0.5deg; --y: 0px; }
+.mkt-widget:nth-of-type(5) { --rot: -0.6deg; --y: 0px; }
+.mkt-widget:nth-of-type(6) { --rot:  0.4deg; --y: 0px; }
+.mkt-widget:nth-of-type(7) { --rot: -0.5deg; --y: 0px; }
+.mkt-widget:nth-of-type(8) { --rot:  0.7deg; --y: 0px; }
 
 .mkt-widget:hover {
     /* Endereza al hover y eleva — sensación de "agarrar" el papel */
@@ -11828,34 +11830,29 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ── Mini calendar (celdas grandes para abarcar más el widget) ── */
 .mkt-cal {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: minmax(34px, 1fr);
+    grid-template-columns: repeat(7, 30px);
+    grid-auto-rows: 30px;
     row-gap: 4px;
     column-gap: 4px;
-    flex: 1;
-    min-height: 0;
+    justify-content: center;
 }
 .mkt-cal-dow {
     text-align: center;
     font-size: 10px;
     color: var(--mkt-t3);
     font-weight: 700;
+    line-height: 30px;
     letter-spacing: 0.05em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 .mkt-cal-day {
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--mkt-t2);
     font-weight: 500;
     transition: background 0.15s, color 0.15s;
-    aspect-ratio: 1;
-    justify-self: center;
 }
 .mkt-cal-day--ev {
     background: var(--mkt-accent, #7C3AED);
