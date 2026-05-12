@@ -4678,12 +4678,32 @@ def ver_tarea_compartida(request, token):
     tarea = get_object_or_404(Tarea, id=tarea_id)
 
     # NOTA: el redirect "rápido al widget si hay sesión" antes vivía aquí
-    # (server-side) pero rompía el preview de WhatsApp Web — el fetcher
-    # de preview de WA corre en el mismo browser context del usuario, así
-    # que comparte cookies → request.user.is_authenticated → redirige al
-    # CRM → no hay og tags ahí → no se muestra preview.
-    # Ahora ese redirect vive en el template (client-side, JS) — los
-    # crawlers de OG no ejecutan JS y reciben el HTML con og tags intactos.
+    # (server-side) pero rompía el preview de WhatsApp Web. Ahora ese
+    # redirect vive en el template (client-side, JS) — los crawlers de
+    # OG no ejecutan JS y reciben el HTML con og tags intactos.
+
+    creador_nombre = (tarea.creado_por.get_full_name() or tarea.creado_por.username) if tarea.creado_por else '—'
+    responsable_nombre = None
+    if tarea.asignado_a:
+        responsable_nombre = tarea.asignado_a.get_full_name() or tarea.asignado_a.username
+
+    subtareas = [{
+        'id': st.id,
+        'titulo': st.titulo,
+        'estado': st.estado,
+    } for st in tarea.subtareas.all()] if hasattr(tarea, 'subtareas') else []
+
+    ctx = {
+        'tarea': tarea,
+        'creador_nombre': creador_nombre,
+        'responsable_nombre': responsable_nombre,
+        'subtareas': subtareas,
+        'total_subtareas': len(subtareas),
+        'subtareas_done': sum(1 for s in subtareas if s['estado'] == 'completada'),
+        'autenticado': request.user.is_authenticated,
+        'preview_token': token,
+    }
+    return render(request, 'crm/tarea_compartida.html', ctx)
 
 
 def og_image_tarea(request, token):
