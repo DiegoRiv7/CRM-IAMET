@@ -11218,7 +11218,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     animation: mktDashIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 220px);
 }
 
 /* Blobs sutiles detrás del bento para que el liquid glass tenga algo que refractar */
@@ -11251,39 +11250,31 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     min-height: 0;
 }
 .mkt-bento {
-    display: grid;
-    grid-auto-flow: column dense;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    grid-auto-columns: 280px;
-    gap: 14px;
+    /* Pizarrón estilo "sticky-note board": las cards tienen altura
+       natural (no se estiran) y fluyen en columnas verticales. Cuando
+       una columna se llena, las siguientes se acomodan en la próxima
+       columna a la derecha — produce un look orgánico tipo Pinterest
+       en lugar de un grid perfecto. */
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    height: 600px;
+    gap: 18px 18px;
     overflow-x: auto;
     overflow-y: hidden;
-    /* Altura acotada: el "pizarrón" mide ~620px (≈ 2 filas de 290px).
-       Antes usábamos 100vh-240px ≈ 840px y las cards quedaban con
-       mucho espacio blanco abajo. */
-    height: 620px;
-    min-height: 520px;
-    padding: 4px 4px 14px;
+    padding: 12px 8px 18px;
     scroll-behavior: smooth;
-    scroll-snap-type: x proximity;
-    scroll-padding-left: 8px;
-    /* scrollbar discreto */
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
-.mkt-bento::-webkit-scrollbar {
-    height: 8px;
-}
-.mkt-bento::-webkit-scrollbar-track {
-    background: transparent;
-}
+.mkt-bento::-webkit-scrollbar { height: 8px; }
+.mkt-bento::-webkit-scrollbar-track { background: transparent; }
 .mkt-bento::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.12);
     border-radius: 4px;
 }
-.mkt-bento::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.22);
-}
+.mkt-bento::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.22); }
 /* Gradiente derecho indica que hay más contenido para hacer scroll */
 .mkt-board::after {
     content: '';
@@ -11300,21 +11291,15 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 .mkt-board.is-at-end::after { opacity: 0; }
 
-/* Card sizing: el hero ocupa 2 filas × 2 columnas (queda como un panel
-   ancla). Cursos sigue siendo wide (2 columnas, 1 fila). Los demás 1×1. */
-.mkt-widget--hero {
-    grid-row: span 2;
-    grid-column: span 2;
+/* ── Tamaños de card ──────────────────────────────────────────────
+   En flex-wrap column, cada card declara su width (la height la define
+   su contenido). El hero es más ancho para anclar la izquierda. */
+.mkt-widget {
+    width: 280px;
+    flex-shrink: 0;
 }
-.mkt-widget--wide {
-    grid-column: span 2;
-}
-.mkt-widget--ready[data-area="evt"],
-.mkt-widget--ready[data-area="tech"] {
-    /* Eventos y Techday se sienten mejor con 2 filas (más alto), como en
-       el diseño previo */
-    grid-row: span 2;
-}
+.mkt-widget--hero { width: 440px; }
+.mkt-widget--wide { width: 440px; }
 
 /* Botones flotantes de navegación ◀ ▶ */
 .mkt-board-nav {
@@ -11355,8 +11340,14 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     pointer-events: none !important;
 }
 
-/* ── Widget base — liquid glass ─────────────────────────────────── */
+/* ── Widget base — liquid glass + sticky-note ──────────────────────
+   Cada card tiene rotación y desplazamiento sutil, controlados por
+   --rot y --y. Las variantes nth-of-type abajo asignan valores
+   distintos para que el board se sienta "armado a mano" en vez de
+   un grid perfecto. */
 .mkt-widget {
+    --rot: 0deg;
+    --y: 0px;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -11378,23 +11369,36 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     font: inherit;
     cursor: pointer;
     opacity: 0;
-    transform: translateY(10px);
     animation: mktWidgetIn 0.4s ease both;
+    transform: rotate(var(--rot)) translateY(var(--y));
     transition:
-        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
         box-shadow 0.28s ease;
 }
 
+/* Scatter por posición — cada card tiene su propio ángulo y offset.
+   Usamos nth-of-type para que sea estable independiente de hover/JS. */
+.mkt-widget:nth-of-type(1) { --rot: -0.6deg; --y: 0px; }
+.mkt-widget:nth-of-type(2) { --rot:  0.9deg; --y: 14px; }
+.mkt-widget:nth-of-type(3) { --rot: -0.4deg; --y: -6px; }
+.mkt-widget:nth-of-type(4) { --rot:  1.1deg; --y: 8px; }
+.mkt-widget:nth-of-type(5) { --rot: -1.0deg; --y: -3px; }
+.mkt-widget:nth-of-type(6) { --rot:  0.5deg; --y: 10px; }
+.mkt-widget:nth-of-type(7) { --rot: -0.8deg; --y: -8px; }
+.mkt-widget:nth-of-type(8) { --rot:  0.7deg; --y: 4px; }
+
 .mkt-widget:hover {
-    transform: translateY(-4px) scale(1.014);
+    /* Endereza al hover y eleva — sensación de "agarrar" el papel */
+    transform: rotate(0deg) translateY(-6px) scale(1.018);
+    z-index: 4;
     box-shadow:
-        0 18px 44px rgba(0, 0, 0, 0.11),
-        0 4px 14px rgba(0, 0, 0, 0.06),
+        0 22px 50px rgba(0, 0, 0, 0.13),
+        0 6px 16px rgba(0, 0, 0, 0.07),
         inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .mkt-widget:active {
-    transform: translateY(-1px) scale(0.998);
+    transform: rotate(0deg) translateY(-2px) scale(0.998);
     transition-duration: 0.1s;
 }
 
@@ -11427,8 +11431,8 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-widget[data-area="red"]  { animation-delay: 315ms; }
 
 @keyframes mktWidgetIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 /* ── Widget head genérico (no hero) ─────────────────────────────── */
@@ -11678,19 +11682,11 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     flex-direction: column;
     gap: 8px;
-    /* Crece para llenar el espacio remanente del hero — antes quedaba
-       un hueco grande blanco abajo de la card */
-    flex: 1;
-    min-height: 0;
 }
 .mkt-hero-prosp-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
-    min-height: 0;
-    /* Distribuye las filas con espacio constante para llenar la altura */
-    justify-content: space-around;
 }
 .mkt-hero-prosp-head {
     display: flex;
@@ -11892,12 +11888,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-tech-body {
     gap: 12px;
 }
-/* Marcas trabajadas: crece para llenar el espacio entre KPIs y "última
-   sesión" — antes quedaba un hueco grande en medio. */
-.mkt-tech-marcas {
-    flex: 1;
-    min-height: 0;
-}
 .mkt-tech-stats {
     display: flex;
     background: var(--mkt-accent-bg, rgba(37, 99, 235, 0.06));
@@ -11931,9 +11921,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     flex-direction: column;
     gap: 6px;
-    /* Distribuye las filas de marca para llenar la altura disponible
-       (la card es alta porque ocupa 2 filas del board). */
-    justify-content: space-around;
 }
 .mkt-tech-marcas-label {
     font-size: 9px;
@@ -11952,7 +11939,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     margin-top: 4px;
 }
 .mkt-tech-ultima {
-    margin-top: auto;
     background: rgba(0, 0, 0, 0.03);
     border-radius: 10px;
     padding: 8px 10px;
@@ -12120,22 +12106,24 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
    Mantenemos el feeling de pizarrón (scroll horizontal) en todos los
    tamaños; solo achicamos las columnas en pantallas medianas/chicas. */
 @media (max-width: 1100px) {
-    .mkt-bento {
-        grid-auto-columns: 240px;
-        min-height: 480px;
-        max-height: 680px;
-    }
+    .mkt-widget { width: 240px; }
+    .mkt-widget--hero,
+    .mkt-widget--wide { width: 380px; }
+    .mkt-bento { height: 560px; }
 }
 
 @media (max-width: 640px) {
+    .mkt-widget { width: 220px; }
+    .mkt-widget--hero,
+    .mkt-widget--wide { width: 320px; }
     .mkt-bento {
-        grid-auto-columns: 200px;
-        gap: 10px;
-        min-height: 420px;
-        height: calc(100vh - 220px);
+        height: 540px;
+        gap: 14px;
     }
     .mkt-board-nav { display: none; }
     .mkt-title { font-size: 1.45rem; }
+    /* Reduce rotación en mobile para que no se sienta caótico */
+    .mkt-widget { --rot: 0deg; --y: 0px; }
 }
 
 /* ── Reduced motion ────────────────────────────────────────────── */
@@ -12193,12 +12181,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     border-radius: 999px;
     padding: 2px 8px;
     letter-spacing: 0.3px;
-}
-
-/* Próximo evento — pegado al fondo de la card de Eventos para que el
-   calendario respire arriba y no quede aire muerto abajo. */
-.mkt-evt-next {
-    margin-top: auto;
 }
 
 /* Hint cuando no hay eventos en el periodo (widget) */
