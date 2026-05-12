@@ -817,9 +817,14 @@
                         // Cuando llegamos via deep-link a una tarea (típicamente
                         // desde el preview de WhatsApp), cambiamos primero a la
                         // sección de Tareas para que al cerrar el widget, el
-                        // usuario quede en su lista en lugar de en CRM.
+                        // usuario quede en su lista en lugar de en CRM. También
+                        // disparamos recargarTareasCRM() para que el listado
+                        // se pinte (si no, queda vacío hasta que el usuario
+                        // navega manualmente).
+                        console.log('[deep-link] tarea id =', _openTaskClean, 'desde URL:', _openTaskId);
                         setTimeout(function () {
                             if (typeof switchCrmView === 'function') switchCrmView('tareas');
+                            if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
                             if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean);
                         }, 600);
                         _urlParams.delete('open_task');

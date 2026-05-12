@@ -25,13 +25,10 @@
     <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
     <meta name="twitter:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
 
-    <!-- Redirect rápido al widget si hay sesión activa (client-side para no romper OG) -->
+    <!-- Redirect rápido al widget si hay sesión activa (client-side para no romper OG).
+         Los crawlers de OG no ejecutan JS y reciben el HTML intacto. -->
     {% if autenticado %}
-    <script>
-        // Pequeño delay para dejar que cualquier scrapper "ejecute JS"
-        // y termine de procesar el HEAD antes de la navegación.
-        setTimeout(function(){ window.location.replace('/app/home/?tab=tareas&open_task={{ tarea.id }}'); }, 150);
-    </script>
+    <script>window.location.replace('/app/home/?tab=tareas&open_task={{ tarea.id }}');</script>
     {% endif %}
     <style>
         :root {
