@@ -814,7 +814,14 @@
                 if (_openTaskId) {
                     var _openTaskClean = parseInt(_openTaskId, 10);
                     if (_openTaskClean) {
-                        setTimeout(function () { if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean); }, 600);
+                        // Cuando llegamos via deep-link a una tarea (típicamente
+                        // desde el preview de WhatsApp), cambiamos primero a la
+                        // sección de Tareas para que al cerrar el widget, el
+                        // usuario quede en su lista en lugar de en CRM.
+                        setTimeout(function () {
+                            if (typeof switchCrmView === 'function') switchCrmView('tareas');
+                            if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean);
+                        }, 600);
                         _urlParams.delete('open_task');
                         _cleanParams = true;
                     }

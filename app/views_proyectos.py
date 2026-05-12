@@ -4680,6 +4680,173 @@ def ver_tarea_compartida(request, token):
     if request.user.is_authenticated:
         return redirect(f'/app/home/?tab=tareas&open_task={tarea_id}')
 
+
+def og_image_tarea(request, token):
+    """Genera dinámicamente un PNG estilo "screenshot del widget" con el
+    contenido de la tarea, para que WhatsApp/Slack muestren preview rico
+    al pegar el link. Tamaño 1200×630 (estándar OG).
+
+    No requiere login — los bots de OG no están autenticados. El token
+    firmado limita a tareas explícitamente compartidas.
+    """
+    from django.core import signing
+    from django.http import HttpResponse, Http404
+    from io import BytesIO
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        raise Http404('Pillow no instalado')
+
+    try:
+        data = signing.loads(token, salt='tarea-preview')
+    except signing.BadSignature:
+        raise Http404('Token inválido')
+    tarea = get_object_or_404(Tarea, id=data.get('t'))
+
+    W, H = 1200, 630
+    bg = '#F4F6F8'
+    img = Image.new('RGB', (W, H), color=bg)
+    draw = ImageDraw.Draw(img)
+
+    # Fonts: DejaVu Sans está en el Docker (fonts-dejavu-core)
+    def _load(size, bold=False):
+        path = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        try:
+            return ImageFont.truetype(path, size)
+        except (IOError, OSError):
+            return ImageFont.load_default()
+    f_title = _load(46, bold=True)
+    f_body = _load(22)
+    f_label = _load(13, bold=True)
+    f_value = _load(20, bold=True)
+    f_footer = _load(16)
+
+    # Card blanca con borde redondeado
+    M = 40
+    card_box = [M, M, W - M, H - M]
+    draw.rounded_rectangle(card_box, radius=22, fill='#FFFFFF', outline='#E2E8F0', width=1)
+
+    # Sidebar derecho (estado/responsable/fecha)
+    SB_W = 360
+    sb_x0 = W - M - SB_W
+    draw.line([(sb_x0, M + 30), (sb_x0, H - M - 30)], fill='#E2E8F0', width=1)
+
+    # ── Lado izquierdo: título + descripción ───────────────────────
+    pad_l = 60
+    y = M + 60
+
+    # Pill "Tarea"
+    pill_text = 'TAREA · CRM IAMET'
+    draw.rounded_rectangle([M + pad_l, y, M + pad_l + 200, y + 28], radius=14, fill='#EFF6FF')
+    draw.text((M + pad_l + 12, y + 6), pill_text, fill='#2563EB', font=f_label)
+    y += 50
+
+    # Título (envuelve a 2 líneas máximo)
+    def _wrap(text, max_chars):
+        words = text.split()
+        lines, cur = [], ''
+        for w in words:
+            test = (cur + ' ' + w).strip()
+            if len(test) > max_chars and cur:
+                lines.append(cur)
+                cur = w
+            else:
+                cur = test
+        if cur:
+            lines.append(cur)
+        return lines
+
+    titulo_lines = _wrap(tarea.titulo or 'Tarea', 32)[:2]
+    for line in titulo_lines:
+        draw.text((M + pad_l, y), line, fill='#0F172A', font=f_title)
+        y += 56
+    y += 16
+
+    # Descripción (~5 líneas)
+    desc = (tarea.descripcion or '').strip()
+    if desc:
+        # Quita markdown sencillo
+        import re as _re
+        desc = _re.sub(r'[*_`#>\[\]]', '', desc)
+        desc_lines = _wrap(desc, 48)[:5]
+        for line in desc_lines:
+            draw.text((M + pad_l, y), line, fill='#475569', font=f_body)
+            y += 32
+
+    # Footer
+    draw.text((M + pad_l, H - M - 55), 'Abre el link para ver la tarea completa →', fill='#94A3B8', font=f_footer)
+
+    # ── Sidebar derecho: estado / responsable / fecha ──────────────
+    sb_pad = 30
+    sx = sb_x0 + sb_pad
+    sy = M + 60
+
+    # Estado
+    estado_map = {
+        'pendiente':    ('Pendiente',   '#F59E0B'),
+        'iniciada':     ('Iniciada',    '#8B5CF6'),
+        'en_progreso':  ('En progreso', '#3B82F6'),
+        'completada':   ('Completada',  '#10B981'),
+        'cancelada':    ('Cancelada',   '#94A3B8'),
+    }
+    estado_label, estado_color = estado_map.get(tarea.estado, ('Pendiente', '#F59E0B'))
+    draw.text((sx, sy), 'ESTADO', fill='#94A3B8', font=f_label)
+    sy += 22
+    # Dot + label
+    draw.ellipse([sx, sy + 7, sx + 10, sy + 17], fill=estado_color)
+    draw.text((sx + 18, sy), estado_label, fill='#1E293B', font=f_value)
+    sy += 50
+
+    # Responsable
+    if tarea.asignado_a_id:
+        resp = tarea.asignado_a
+        resp_name = (resp.get_full_name() or resp.username) if resp else '—'
+    else:
+        resp_name = 'Sin asignar'
+    draw.text((sx, sy), 'RESPONSABLE', fill='#94A3B8', font=f_label)
+    sy += 22
+    # Avatar circular con iniciales
+    initials = ''.join([p[0].upper() for p in (resp_name.split() or ['?'])[:2]])
+    draw.ellipse([sx, sy, sx + 32, sy + 32], fill='#3B82F6')
+    bbox = draw.textbbox((0, 0), initials, font=f_label)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text((sx + 16 - tw / 2, sy + 16 - th / 2 - 2), initials, fill='#FFFFFF', font=f_label)
+    draw.text((sx + 44, sy + 6), resp_name[:24], fill='#1E293B', font=f_value)
+    sy += 50
+
+    # Fecha límite
+    if tarea.fecha_limite:
+        draw.text((sx, sy), 'FECHA LÍMITE', fill='#94A3B8', font=f_label)
+        sy += 22
+        from django.utils import timezone as _tz
+        fl = tarea.fecha_limite
+        # Formato dd MMM, HH:MM
+        meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        fecha_str = f'{fl.day:02d} {meses[fl.month - 1]}, {fl.hour:02d}:{fl.minute:02d}'
+        vencida = fl < _tz.now() and tarea.estado not in ('completada', 'cancelada')
+        draw.text((sx, sy), fecha_str, fill=('#DC2626' if vencida else '#1E293B'), font=f_value)
+        sy += 30
+        if vencida:
+            draw.text((sx, sy), 'Vencida', fill='#DC2626', font=f_footer)
+        sy += 30
+
+    # Prioridad
+    sy += 10
+    prio_map = {'alta': ('Alta', '#DC2626'), 'media': ('Media', '#F59E0B'), 'baja': ('Baja', '#94A3B8')}
+    prio_label, prio_color = prio_map.get(tarea.prioridad, ('Media', '#F59E0B'))
+    draw.text((sx, sy), 'PRIORIDAD', fill='#94A3B8', font=f_label)
+    sy += 22
+    draw.rounded_rectangle([sx, sy, sx + 80, sy + 26], radius=13, fill='#FFFFFF', outline=prio_color, width=1)
+    draw.text((sx + 12, sy + 4), prio_label, fill=prio_color, font=f_label)
+
+    # Serialize a PNG
+    buf = BytesIO()
+    img.save(buf, format='PNG', optimize=True)
+    response = HttpResponse(buf.getvalue(), content_type='image/png')
+    # Cache 1 hora — el contenido de la tarea puede cambiar
+    response['Cache-Control'] = 'public, max-age=3600'
+    return response
+
     # Preparar datos seguros (sin exponer info sensible innecesaria)
     creador_nombre = (tarea.creado_por.get_full_name() or tarea.creado_por.username) if tarea.creado_por else '—'
     responsable_nombre = None

@@ -90,6 +90,7 @@ urlpatterns = [
     path('api/tarea/<int:tarea_id>/share-link/', views.api_tarea_share_link, name='api_tarea_share_link'),
     path('api/tarea/<int:tarea_id>/eliminar/', views.api_eliminar_tarea, name='api_eliminar_tarea'),
     path('shared/tarea/<str:token>/', views.ver_tarea_compartida, name='ver_tarea_compartida'),
+    path('shared/tarea/<str:token>/og.png', views.og_image_tarea, name='og_image_tarea'),
     path('api/tarea/<int:tarea_id>/toggle-timer/', views.api_toggle_task_timer, name='api_toggle_task_timer'),
     path('api/tarea/<int:tarea_id>/completar/', views.api_completar_tarea, name='api_completar_tarea'),
     path('api/tarea/<int:tarea_id>/reabrir/', views.api_reabrir_tarea, name='api_reabrir_tarea'),
