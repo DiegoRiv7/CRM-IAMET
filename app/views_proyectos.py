@@ -4677,8 +4677,13 @@ def ver_tarea_compartida(request, token):
     tarea_id = data.get('t')
     tarea = get_object_or_404(Tarea, id=tarea_id)
 
-    if request.user.is_authenticated:
-        return redirect(f'/app/home/?tab=tareas&open_task={tarea_id}')
+    # NOTA: el redirect "rápido al widget si hay sesión" antes vivía aquí
+    # (server-side) pero rompía el preview de WhatsApp Web — el fetcher
+    # de preview de WA corre en el mismo browser context del usuario, así
+    # que comparte cookies → request.user.is_authenticated → redirige al
+    # CRM → no hay og tags ahí → no se muestra preview.
+    # Ahora ese redirect vive en el template (client-side, JS) — los
+    # crawlers de OG no ejecutan JS y reciben el HTML con og tags intactos.
 
 
 def og_image_tarea(request, token):

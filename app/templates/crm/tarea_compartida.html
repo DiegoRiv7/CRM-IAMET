@@ -18,6 +18,14 @@
     <meta name="twitter:title" content="{{ tarea.titulo }}">
     <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/iamet-logo.png' %}">
+
+    {% if autenticado %}
+    {# Redirect client-side: si abres el link en tu navegador y tienes
+       sesión, te llevamos directo al widget de la tarea en el CRM.
+       Vive en JS (no en el view) para que los crawlers de OG —que no
+       ejecutan JS— vean el HTML con meta tags intactos. #}
+    <script>window.location.replace('/app/home/?tab=tareas&open_task={{ tarea.id }}');</script>
+    {% endif %}
     <style>
         :root {
             --slate-50:#F8FAFC; --slate-100:#F1F5F9; --slate-200:#E2E8F0;
