@@ -1821,6 +1821,9 @@
 
         var _woConvReplyToId = null;
 
+        window.woCargarNotas = function (oppId) {
+            return woCargarNotas(oppId);
+        };
         function woCargarNotas(oppId) {
             var feed = document.getElementById('woConvMensajesGrid');
             if (!feed) return;
@@ -3388,46 +3391,6 @@
 })();
 </script>
 
-<!-- ═══ WIDGET: ENVIAR CORREO desde el chat de la oportunidad ═══ -->
-<div class="widget-overlay" id="widgetOppCorreoCompose" style="z-index:10520;">
-    <div class="widget-card" style="width:92vw;max-width:640px;display:flex;flex-direction:column;max-height:88vh;">
-        <header style="padding:18px 22px;border-bottom:1px solid #E5E5EA;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
-            <div style="display:flex;gap:12px;align-items:center;">
-                <div style="width:38px;height:38px;border-radius:11px;background:rgba(0,82,212,0.1);color:#0052D4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>
-                </div>
-                <div>
-                    <h2 style="margin:0;font-size:1.05rem;font-weight:700;color:#1D1D1F;">Enviar correo</h2>
-                    <p style="margin:1px 0 0;font-size:0.75rem;color:#86868B;">Quedará registrado como evidencia en esta conversación.</p>
-                </div>
-            </div>
-            <button onclick="document.getElementById('widgetOppCorreoCompose').classList.remove('active');" style="background:rgba(0,0,0,0.05);border:none;width:30px;height:30px;border-radius:50%;font-size:1.2rem;line-height:1;color:#6E6E73;cursor:pointer;">&times;</button>
-        </header>
-        <main style="flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;">
-            <div>
-                <label style="font-size:0.7rem;font-weight:700;color:#3C3C43;display:block;margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase;">Para <span style="color:#FF3B30;">*</span></label>
-                <input type="text" id="woCorreoPara" placeholder="cliente@empresa.com, otro@correo.com" style="width:100%;padding:9px 12px;border:1px solid #E5E5EA;border-radius:9px;font-size:0.88rem;outline:none;font-family:inherit;transition:border-color 0.15s;" onfocus="this.style.borderColor='#0052D4'" onblur="this.style.borderColor='#E5E5EA'">
-            </div>
-            <div>
-                <label style="font-size:0.7rem;font-weight:700;color:#3C3C43;display:block;margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase;">Asunto <span style="color:#FF3B30;">*</span></label>
-                <input type="text" id="woCorreoAsunto" placeholder="Asunto del correo" style="width:100%;padding:9px 12px;border:1px solid #E5E5EA;border-radius:9px;font-size:0.88rem;outline:none;font-family:inherit;transition:border-color 0.15s;" onfocus="this.style.borderColor='#0052D4'" onblur="this.style.borderColor='#E5E5EA'">
-            </div>
-            <div>
-                <label style="font-size:0.7rem;font-weight:700;color:#3C3C43;display:block;margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase;">Mensaje <span style="color:#FF3B30;">*</span></label>
-                <textarea id="woCorreoCuerpo" rows="9" placeholder="Escribe el mensaje…" style="width:100%;padding:11px 12px;border:1px solid #E5E5EA;border-radius:9px;font-size:0.88rem;outline:none;resize:vertical;font-family:inherit;transition:border-color 0.15s;line-height:1.5;" onfocus="this.style.borderColor='#0052D4'" onblur="this.style.borderColor='#E5E5EA'"></textarea>
-            </div>
-            <div id="woCorreoError" style="display:none;padding:10px 14px;background:rgba(255,59,48,0.1);color:#C9302E;border-radius:9px;font-size:0.78rem;font-weight:600;"></div>
-        </main>
-        <footer style="padding:14px 22px;border-top:1px solid #E5E5EA;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
-            <button onclick="document.getElementById('widgetOppCorreoCompose').classList.remove('active');" style="padding:9px 18px;background:#F2F2F7;color:#6E6E73;border:none;border-radius:9px;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;">Cancelar</button>
-            <button onclick="woCorreoEnviar()" id="woCorreoEnviarBtn" style="padding:9px 18px;background:#0052D4;color:#fff;border:none;border-radius:9px;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px;">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                Enviar correo
-            </button>
-        </footer>
-    </div>
-</div>
-
 <!-- ═══ WIDGET: VER CORREO desde el chat de la oportunidad ═══ -->
 <div class="widget-overlay" id="widgetOppCorreoDetalle" style="z-index:10525;">
     <div class="widget-card" style="width:92vw;max-width:760px;display:flex;flex-direction:column;max-height:88vh;">
@@ -3461,89 +3424,50 @@
 
 <script>
 (function(){
-    // ── Composer de correo desde el chat de oportunidad ────────────
-    var modalCompose = document.getElementById('widgetOppCorreoCompose');
+    // ── Apertura del composer: reusa el módulo Mail completo del CRM ──
     var modalDet = document.getElementById('widgetOppCorreoDetalle');
-    if (!modalCompose || !modalDet) return;
+    if (!modalDet) return;
 
     function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
     function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    function setErr(msg){
-        var el = document.getElementById('woCorreoError');
-        if (msg){ el.textContent = msg; el.style.display = 'block'; }
-        else { el.textContent = ''; el.style.display = 'none'; }
-    }
 
+    // Abrir el widget Mail completo en modo "Redactar", pre-llenando destinatario
+    // y dejando marcado el oportunidad_id para que mailEnviarCorreo lo adjunte
+    // al envío. El correo enviado queda vinculado a la oportunidad como evidencia.
     window.woConvAbrirCorreoComposer = function(){
-        // El modal se abre incluso si todavía no se carga _woCurrentOppId; el
-        // chequeo real se hace al momento de enviar (con mensaje inline si falta).
-        setErr('');
-        document.getElementById('woCorreoPara').value = '';
-        document.getElementById('woCorreoAsunto').value = '';
-        document.getElementById('woCorreoCuerpo').value = '';
-        // Pre-llenar destinatario con el email del contacto principal si lo tenemos
-        try {
-            var detail = window._woCurrentOppData || {};
-            var email = detail.contacto_email || (detail.contacto && detail.contacto.email) || '';
-            if (email) document.getElementById('woCorreoPara').value = email;
-        } catch(_){}
-        modalCompose.classList.add('active');
-        setTimeout(function(){ document.getElementById('woCorreoPara').focus(); }, 80);
-    };
-
-    window.woCorreoEnviar = function(){
-        setErr('');
-        var para = document.getElementById('woCorreoPara').value.trim();
-        var asunto = document.getElementById('woCorreoAsunto').value.trim();
-        var cuerpo = document.getElementById('woCorreoCuerpo').value.trim();
-        if (!para) { setErr('Captura al menos un destinatario'); return; }
-        if (!asunto) { setErr('Captura el asunto'); return; }
-        if (!cuerpo) { setErr('Escribe el mensaje del correo'); return; }
-        // Intentar obtener el opp id de varias fuentes posibles
         var oppId = window._woCurrentOppId;
         if (!oppId) {
-            // Algunas vistas guardan el id en el detalle inline; intentar leerlo del DOM
             var detalleEl = document.querySelector('[data-opp-id]');
             if (detalleEl) oppId = detalleEl.getAttribute('data-opp-id');
         }
-        if (!oppId) { setErr('Reabre la oportunidad e inténtalo de nuevo.'); return; }
+        if (!oppId) return;
 
-        var btn = document.getElementById('woCorreoEnviarBtn');
-        btn.disabled = true; btn.style.opacity = '0.6';
-        btn.textContent = 'Enviando…';
+        // Marcar contexto para que el composer del Mail incluya oportunidad_id en
+        // su FormData de envío (ver hook en crm_mail.js / mailEnviarCorreo).
+        window._mailCorreoContextoOppId = oppId;
+        var detail = window._woCurrentOppData || {};
+        window._mailCorreoContextoOppNombre = (detail.nombre || detail.oportunidad || '');
+        var prefillTo = detail.contacto_email || (detail.contacto && detail.contacto.email) || '';
 
-        // Construir HTML simple a partir del texto (preserva saltos de línea)
-        var cuerpoHtml = cuerpo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-
-        var payload = {
-            para: para,
-            asunto: asunto,
-            cuerpo_texto: cuerpo,
-            cuerpo_html: '<div style="font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1D1D1F;">' + cuerpoHtml + '</div>',
-            oportunidad_id: oppId,
-        };
-
-        fetch('/app/api/mail/enviar/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _csrf()},
-            body: JSON.stringify(payload),
-        }).then(function(r){ return r.json().then(function(d){ return {status: r.status, body: d}; }); })
-          .then(function(res){
-              btn.disabled = false; btn.style.opacity = '1';
-              btn.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Enviar correo';
-              if (res.status >= 200 && res.status < 300 && res.body && res.body.ok){
-                  modalCompose.classList.remove('active');
-                  // Refrescar la conversación para que aparezca la tarjeta del correo
-                  if (typeof woCargarNotas === 'function') woCargarNotas(oppId);
-              } else {
-                  setErr((res.body && res.body.error) || 'No se pudo enviar el correo');
-              }
-          })
-          .catch(function(){
-              btn.disabled = false; btn.style.opacity = '1';
-              btn.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Enviar correo';
-              setErr('Error de red al enviar');
-          });
+        if (typeof window.mailAbrir === 'function') {
+            window.mailAbrir();
+            // Esperar a que el widget esté visible y luego entrar a Redactar
+            setTimeout(function(){
+                if (typeof window.mailRedactar === 'function') window.mailRedactar();
+                setTimeout(function(){
+                    if (prefillTo) {
+                        var paraEl = document.getElementById('mailCompPara');
+                        if (paraEl) paraEl.value = prefillTo;
+                    }
+                    if (window._mailCorreoContextoOppNombre) {
+                        var asuntoEl = document.getElementById('mailCompAsunto');
+                        if (asuntoEl && !asuntoEl.value) asuntoEl.value = window._mailCorreoContextoOppNombre;
+                    }
+                    var editorEl = document.getElementById('mailCompEditor');
+                    if (editorEl) editorEl.focus();
+                }, 120);
+            }, 220);
+        }
     };
 
     // ── Detalle del correo (cuando se hace click en una tarjeta) ────
@@ -3598,14 +3522,10 @@
             });
     };
 
-    // Click fuera del modal cierra
-    modalCompose.addEventListener('click', function(e){ if (e.target === modalCompose) modalCompose.classList.remove('active'); });
+    // Click fuera del detalle cierra
     modalDet.addEventListener('click', function(e){ if (e.target === modalDet) modalDet.classList.remove('active'); });
     document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape'){
-            if (modalDet.classList.contains('active')) modalDet.classList.remove('active');
-            else if (modalCompose.classList.contains('active')) modalCompose.classList.remove('active');
-        }
+        if (e.key === 'Escape' && modalDet.classList.contains('active')) modalDet.classList.remove('active');
     });
 })();
 </script>
