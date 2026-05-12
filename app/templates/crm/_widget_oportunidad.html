@@ -2420,6 +2420,9 @@
         var origWoSetCurrentOppId = window.woSetCurrentOppId;
         window.woSetCurrentOppId = function (id) {
             _woCurrentOppId = id;
+            // Exponer globalmente para que otros módulos (e.g. composer de correo)
+            // que viven fuera del closure puedan leer la oportunidad actual.
+            window._woCurrentOppId = id;
             woCargarTareasInline(id);
             woCargarActividadReciente(id);
         };
@@ -3472,7 +3475,8 @@
     }
 
     window.woConvAbrirCorreoComposer = function(){
-        if (!window._woCurrentOppId) { alert('Abre una oportunidad primero'); return; }
+        // El modal se abre incluso si todavía no se carga _woCurrentOppId; el
+        // chequeo real se hace al momento de enviar (con mensaje inline si falta).
         setErr('');
         document.getElementById('woCorreoPara').value = '';
         document.getElementById('woCorreoAsunto').value = '';
@@ -3495,8 +3499,14 @@
         if (!para) { setErr('Captura al menos un destinatario'); return; }
         if (!asunto) { setErr('Captura el asunto'); return; }
         if (!cuerpo) { setErr('Escribe el mensaje del correo'); return; }
+        // Intentar obtener el opp id de varias fuentes posibles
         var oppId = window._woCurrentOppId;
-        if (!oppId) { setErr('No se identificó la oportunidad'); return; }
+        if (!oppId) {
+            // Algunas vistas guardan el id en el detalle inline; intentar leerlo del DOM
+            var detalleEl = document.querySelector('[data-opp-id]');
+            if (detalleEl) oppId = detalleEl.getAttribute('data-opp-id');
+        }
+        if (!oppId) { setErr('Reabre la oportunidad e inténtalo de nuevo.'); return; }
 
         var btn = document.getElementById('woCorreoEnviarBtn');
         btn.disabled = true; btn.style.opacity = '0.6';
