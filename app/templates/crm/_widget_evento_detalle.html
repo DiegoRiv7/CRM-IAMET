@@ -1,0 +1,324 @@
+{# ═══ WIDGET: EVENTO — Detalle (simple) ═══ #}
+<div class="widget-overlay" id="widgetEventoDetalle" style="z-index:10450;">
+    <div class="widget-card widget-card-lg">
+        <div id="evtDetLoading" style="text-align:center;padding:4rem;color:#86868B;">
+            <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2">
+                <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+            </svg>
+            Cargando evento...
+        </div>
+
+        <div id="evtDetContent" style="display:none;flex-direction:column;height:100%;">
+
+            {# Header #}
+            <div class="wo-header">
+                <div class="wo-header-top">
+                    <div>
+                        <div class="wo-type-badge" style="background:#AF52DE22;color:#7C3AED;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <span>EVENTO</span>
+                        </div>
+                        <h1 class="wo-title" id="evtDetTitle"></h1>
+                    </div>
+                    <div class="evt-det-head-actions">
+                        <button type="button" class="evt-det-action-btn" id="evtDetEdit" title="Editar evento">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                            Editar
+                        </button>
+                        <button type="button" class="evt-det-action-btn evt-det-action-btn--danger" id="evtDetDelete" title="Eliminar evento">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                        <button type="button" class="widget-close" id="evtDetClose">&times;</button>
+                    </div>
+                </div>
+            </div>
+
+            {# Contenido #}
+            <div class="wo-content" style="display:flex;flex-direction:column;gap:1rem;">
+
+                {# Card: Información del evento #}
+                <div class="wo-card">
+                    <div class="wo-info-grid" style="grid-template-columns:repeat(3, 1fr);gap:1rem 1.5rem;">
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Para</span>
+                            <span class="wo-info-value" id="evtDetTarget">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Tipo</span>
+                            <span class="wo-info-value medium" id="evtDetTipo">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Fecha</span>
+                            <span class="wo-info-value medium" id="evtDetFecha">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Estado</span>
+                            <span class="wo-info-value medium"><span class="evt-det-estado-badge" id="evtDetEstado">—</span></span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Marcas</span>
+                            <span class="wo-info-value" id="evtDetMarcas">—</span>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Costo</span>
+                            <span class="wo-info-value medium" id="evtDetCosto">—</span>
+                        </div>
+                        <div class="wo-info-item" style="grid-column:1 / -1;" id="evtDetDescBlock">
+                            <span class="wo-info-label">Agenda / Descripción</span>
+                            <span class="wo-info-value" id="evtDetDescripcion" style="font-size:0.85rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
+                        </div>
+                        <div class="wo-info-item" style="grid-column:1 / -1; display:none;" id="evtDetNotasBlock">
+                            <span class="wo-info-label">Notas post-evento</span>
+                            <span class="wo-info-value" id="evtDetNotasPost" style="font-size:0.85rem;color:#3C3C43;line-height:1.5;white-space:pre-wrap;">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                {# Card: Prospectos vinculados + botón Crear prospección #}
+                <div class="wo-card">
+                    <div class="wo-section-header">
+                        <h3 class="wo-section-title">Prospectos del evento <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
+                        <button type="button" class="evt-det-primary-btn" id="evtDetCrearProsp">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Crear prospección
+                        </button>
+                    </div>
+                    <div id="evtDetAsistList" class="evt-det-asist-list" style="margin-top:8px;"></div>
+                </div>
+
+                {# Card: Organizador + Participantes #}
+                <div class="wo-card">
+                    <div class="wo-info-grid" style="grid-template-columns:1fr 2fr;gap:0.6rem 1.5rem;">
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Organizador</span>
+                            <div class="evt-det-people-row">
+                                <div class="wo-avatar blue" id="evtDetOrgAvatar">?</div>
+                                <span id="evtDetOrgName" style="font-weight:600;color:#1D1D1F;">—</span>
+                            </div>
+                        </div>
+                        <div class="wo-info-item">
+                            <span class="wo-info-label">Participantes IAMET</span>
+                            <div id="evtDetParticipantes" class="evt-det-people-row" style="flex-wrap:wrap;gap:6px;">
+                                <span style="color:#AEAEB2;font-style:italic;font-size:0.85rem;">Solo el organizador</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── Mini-widget de confirmación de eliminación ─── #}
+<div class="widget-overlay" id="widgetEventoConfirmDelete" style="z-index:10550;">
+    <div class="evt-del-confirm-card">
+        <div class="evt-del-confirm-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <h3 class="evt-del-confirm-title">¿Eliminar este evento?</h3>
+        <p class="evt-del-confirm-desc">Se eliminará también la entrada del calendario de todos los participantes. Esta acción no se puede deshacer.</p>
+        <div class="evt-del-confirm-actions">
+            <button type="button" class="evt-del-confirm-cancel" id="evtDelConfirmCancel">Cancelar</button>
+            <button type="button" class="evt-del-confirm-ok" id="evtDelConfirmOk">Sí, eliminar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    var overlay = document.getElementById('widgetEventoDetalle');
+    if (!overlay) return;
+    var confirmOverlay = document.getElementById('widgetEventoConfirmDelete');
+
+    var loadingEl = document.getElementById('evtDetLoading');
+    var contentEl = document.getElementById('evtDetContent');
+
+    var _eventoId = null;
+    var _eventoEstado = null;
+
+    function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
+    function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function _iniciales(nombre){
+        var parts = (nombre || '').trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        if (parts[0]) return parts[0][0].toUpperCase();
+        return '?';
+    }
+
+    function render(d){
+        var e = d.evento;
+        _eventoEstado = e.estado;
+        document.getElementById('evtDetTitle').textContent = e.nombre;
+        document.getElementById('evtDetTipo').textContent = e.tipo_display || '—';
+        document.getElementById('evtDetFecha').textContent = (e.fecha_evento_display || '—') + (e.duracion_minutos ? ' · ' + e.duracion_minutos + ' min' : '');
+        document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
+
+        var estadoEl = document.getElementById('evtDetEstado');
+        estadoEl.textContent = e.estado_display;
+        estadoEl.className = 'evt-det-estado-badge evt-det-estado--' + e.estado;
+
+        var tgt = document.getElementById('evtDetTarget');
+        if (e.cliente_id){
+            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-cliente">Cliente</span>' + _esc(e.cliente_nombre);
+        } else if (e.prospecto_id){
+            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-prospecto">Prospecto</span>' + _esc(e.prospecto_nombre);
+        } else {
+            tgt.innerHTML = '<span style="color:#AEAEB2;font-style:italic;">— sin asignar —</span>';
+        }
+
+        var marcas = document.getElementById('evtDetMarcas');
+        if (e.marcas && e.marcas.length){
+            marcas.innerHTML = e.marcas.map(function(m){ var nm = String(m).toLowerCase().replace(/^./, function(c){return c.toUpperCase();}); return '<span class="mkt-event-marca-pill">' + _esc(nm) + '</span>'; }).join(' ');
+        } else {
+            marcas.innerHTML = '<span style="color:#AEAEB2;">—</span>';
+        }
+
+        if (e.descripcion){
+            document.getElementById('evtDetDescBlock').style.display = '';
+            document.getElementById('evtDetDescripcion').textContent = e.descripcion;
+        } else {
+            document.getElementById('evtDetDescBlock').style.display = 'none';
+        }
+        if (e.estado === 'realizado' && e.notas_post){
+            document.getElementById('evtDetNotasBlock').style.display = '';
+            document.getElementById('evtDetNotasPost').textContent = e.notas_post;
+        } else {
+            document.getElementById('evtDetNotasBlock').style.display = 'none';
+        }
+
+        document.getElementById('evtDetOrgName').textContent = e.organizador_nombre || '—';
+        document.getElementById('evtDetOrgAvatar').textContent = _iniciales(e.organizador_nombre);
+
+        var partWrap = document.getElementById('evtDetParticipantes');
+        if (e.participantes && e.participantes.length){
+            partWrap.innerHTML = e.participantes.map(function(p){
+                return '<span class="evt-part-chip evt-part-chip--ro">'
+                    + '<span class="evt-part-avatar">' + _esc(p.iniciales || _iniciales(p.nombre)) + '</span>'
+                    + _esc(p.nombre) + '</span>';
+            }).join('');
+        } else {
+            partWrap.innerHTML = '<span style="color:#AEAEB2;font-style:italic;font-size:0.85rem;">Solo el organizador</span>';
+        }
+
+        renderAsistentes(d.asistentes || []);
+
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'flex';
+    }
+
+    function renderAsistentes(items){
+        var list = document.getElementById('evtDetAsistList');
+        var count = document.getElementById('evtDetAsistCount');
+        if (!items.length){
+            list.innerHTML = '<div class="evt-det-empty">Aún no hay prospección vinculada a este evento. Da clic en <strong>"+ Crear prospección"</strong> para empezar.</div>';
+            count.textContent = '0';
+            return;
+        }
+        count.textContent = items.length;
+        list.innerHTML = items.map(function(a){
+            var kindLabel = a.kind === 'cliente' ? 'Cliente' : (a.kind === 'prospecto' ? 'Prospecto' : 'Contacto');
+            var kindClass = 'evt-kind-' + a.kind;
+            var sub = a.contacto_email || '';
+            var clickable = a.kind === 'prospecto' && a.prospecto_id;
+            var rowClass = 'evt-asist-row' + (clickable ? ' evt-asist-row--clickable' : '');
+            var dataAttrs = clickable ? (' data-prospecto-id="' + a.prospecto_id + '"') : '';
+            return '<div class="' + rowClass + '"' + dataAttrs + '>'
+                +   '<div class="evt-asist-info">'
+                +     '<div class="evt-asist-name">'
+                +       '<span class="evt-asist-kind ' + kindClass + '">' + kindLabel + '</span>'
+                +       _esc(a.nombre_display)
+                +     '</div>'
+                +     (sub ? '<div class="evt-asist-sub">' + _esc(sub) + '</div>' : '')
+                +   '</div>'
+                +   (clickable ? '<svg class="evt-asist-row-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' : '')
+                + '</div>';
+        }).join('');
+        // Click en una fila de prospecto → abrir su widget de detalle
+        list.querySelectorAll('.evt-asist-row--clickable').forEach(function(row){
+            row.addEventListener('click', function(){
+                var pid = row.dataset.prospectoId;
+                if (!pid || typeof window.abrirWidgetProspecto !== 'function') return;
+                cerrar();
+                setTimeout(function(){ window.abrirWidgetProspecto(parseInt(pid, 10)); }, 240);
+            });
+        });
+    }
+
+    function recargar(){
+        if (!_eventoId) return Promise.resolve();
+        return fetch('/app/api/evento/' + _eventoId + '/').then(function(r){ return r.json(); }).then(render);
+    }
+
+    function abrir(eventoId){
+        _eventoId = eventoId;
+        loadingEl.style.display = '';
+        contentEl.style.display = 'none';
+        overlay.classList.add('active');
+        recargar();
+    }
+    function cerrar(){
+        overlay.classList.add('closing');
+        setTimeout(function(){ overlay.classList.remove('active','closing'); }, 220);
+    }
+    window.eventoDetalleAbrir = abrir;
+    window.eventoDetalleCerrar = cerrar;
+
+    document.getElementById('evtDetClose').addEventListener('click', cerrar);
+    document.getElementById('evtDetEdit').addEventListener('click', function(){
+        cerrar();
+        if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(_eventoId);
+    });
+
+    // ── Crear prospección: abre el form global de Nuevo Prospecto con el ──
+    //    evento_origen marcado para que el prospecto quede vinculado.
+    document.getElementById('evtDetCrearProsp').addEventListener('click', function(){
+        if (!_eventoId) return;
+        window._eventoOrigenForProspecto = _eventoId;
+        if (typeof window._setNuevoProspectoMode === 'function') window._setNuevoProspectoMode('cliente');
+        var modalProsp = document.getElementById('widgetNuevoProspecto');
+        cerrar();
+        if (modalProsp){
+            setTimeout(function(){ modalProsp.classList.add('active'); }, 240);
+        }
+    });
+
+    // ── Eliminar evento: abrir mini-widget de confirmación (no confirm nativo) ──
+    document.getElementById('evtDetDelete').addEventListener('click', function(){
+        if (!_eventoId || !confirmOverlay) return;
+        confirmOverlay.classList.add('active');
+    });
+    document.getElementById('evtDelConfirmCancel').addEventListener('click', function(){
+        confirmOverlay.classList.remove('active');
+    });
+    confirmOverlay.addEventListener('click', function(e){
+        if (e.target === confirmOverlay) confirmOverlay.classList.remove('active');
+    });
+    document.getElementById('evtDelConfirmOk').addEventListener('click', function(){
+        if (!_eventoId) return;
+        var btn = document.getElementById('evtDelConfirmOk');
+        btn.disabled = true; btn.textContent = 'Eliminando…';
+        fetch('/app/api/evento/' + _eventoId + '/eliminar/', {method:'POST', headers:{'X-CSRFToken': _csrf()}})
+            .then(function(r){ return r.json(); }).then(function(d){
+                if (d && d.ok) window.location.reload();
+                else {
+                    btn.disabled = false; btn.textContent = 'Sí, eliminar';
+                    alert((d && d.error) || 'No se pudo eliminar');
+                }
+            });
+    });
+
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) cerrar(); });
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape'){
+            if (confirmOverlay.classList.contains('active')) confirmOverlay.classList.remove('active');
+            else if (overlay.classList.contains('active')) cerrar();
+        }
+    });
+})();
+</script>

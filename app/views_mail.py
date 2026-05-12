@@ -673,10 +673,17 @@ def api_mail_enviar(request):
     if not para or not asunto:
         return JsonResponse({'ok': False, 'error': 'Destinatario y asunto son requeridos'}, status=400)
 
+    # Generamos un Message-ID propio antes de enviar para poder detectar
+    # respuestas (vía In-Reply-To / References) y propagar la vinculación
+    # con la oportunidad al hilo completo.
+    from email.utils import make_msgid
+    msg_id = make_msgid(domain=(conexion.correo_electronico.split('@')[-1] if '@' in conexion.correo_electronico else 'iamet.mx'))
+
     msg = _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
+    msg['Message-ID'] = msg_id
     if cc:
         msg['CC'] = cc
 
@@ -690,11 +697,23 @@ def api_mail_enviar(request):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': f'Error al enviar: {e}'}, status=500)
 
+    # Vínculo opcional con una Oportunidad — cuando el envío viene del chat
+    # de oportunidad, queda registrada la evidencia del correo allí.
+    oportunidad_obj = None
+    opp_id = data.get('oportunidad_id')
+    if opp_id:
+        try:
+            from .models import TodoItem
+            oportunidad_obj = TodoItem.objects.filter(id=int(opp_id)).first()
+        except (TypeError, ValueError):
+            oportunidad_obj = None
+
     # Save to sent cache
     correo_sent = MailCorreo.objects.create(
         usuario=request.user,
         conexion=conexion,
         uid_imap=f'sent_{django_tz.now().timestamp()}',
+        message_id=msg_id,
         carpeta_imap='SENT',
         carpeta_display='SENT',
         asunto=asunto,
@@ -707,6 +726,7 @@ def api_mail_enviar(request):
         leido=True,
         cuerpo_cargado=True,
         tiene_adjuntos=bool(archivos),
+        oportunidad=oportunidad_obj,
     )
 
     # Save attachments metadata

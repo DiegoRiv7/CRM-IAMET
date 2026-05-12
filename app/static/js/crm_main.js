@@ -3059,7 +3059,9 @@
             var params = new URLSearchParams(window.location.search);
             var _m = params.get('mes') || currentMes;
             var _a = params.get('anio') || currentAnio;
-            fetch('/app/api/desglose-facturacion/?mes=' + _m + '&anio=' + _a, { credentials: 'same-origin' })
+            var _v = params.get('vendedores') || '';
+            var _vq = _v ? '&vendedores=' + encodeURIComponent(_v) : '';
+            fetch('/app/api/desglose-facturacion/?mes=' + _m + '&anio=' + _a + _vq, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
                     if (resp.ok && resp.total !== undefined) {
@@ -3070,7 +3072,7 @@
                 })
                 .catch(function () {});
             // También cargar total de cobrado del CSV
-            fetch('/app/api/desglose-cobrado/?mes=' + _m + '&anio=' + _a, { credentials: 'same-origin' })
+            fetch('/app/api/desglose-cobrado/?mes=' + _m + '&anio=' + _a + _vq, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
                     if (resp.ok && resp.total !== undefined) {
@@ -3099,7 +3101,9 @@
             var params = new URLSearchParams(window.location.search);
             var mes = params.get('mes') || 'todos';
             var anio = params.get('anio') || new Date().getFullYear();
-            fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
+            var vendedores = params.get('vendedores') || '';
+            var _vq = vendedores ? '&vendedores=' + encodeURIComponent(vendedores) : '';
+            fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio + _vq, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
                     if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
@@ -3181,8 +3185,10 @@
             var params = new URLSearchParams(window.location.search);
             var mes = params.get('mes') || 'todos';
             var anio = params.get('anio') || new Date().getFullYear();
+            var vendedores = params.get('vendedores') || '';
+            var _vq = vendedores ? '&vendedores=' + encodeURIComponent(vendedores) : '';
             var _fmtM = function(n) { return '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
-            fetch('/app/api/desglose-cobrado/?mes=' + mes + '&anio=' + anio, { credentials: 'same-origin' })
+            fetch('/app/api/desglose-cobrado/?mes=' + mes + '&anio=' + anio + _vq, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
                     if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }

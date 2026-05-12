@@ -20,7 +20,7 @@ jobs:
             cd /home/iamet2026/crm-pruebas
             git config --global --add safe.directory /home/iamet2026/crm-pruebas
             git pull origin pruebas
+            # `up -d --force-recreate` arranca el contenedor con docker-entrypoint.sh,
+            # que ya corre migrate + collectstatic --clear al iniciar. No se duplica
+            # aquí porque la segunda pasada agotaba memoria y mataba el deploy (137).
             sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml up -d --force-recreate web
-            sleep 5
-            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec -T web python manage.py migrate --noinput
-            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml exec -T web python manage.py collectstatic --noinput

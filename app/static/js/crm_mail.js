@@ -549,6 +549,12 @@
             fd.append('asunto', asunto);
             fd.append('cuerpo_html', cuerpo_html);
             fd.append('cuerpo_texto', cuerpo_texto);
+            // Hook: cuando el composer se abrió desde el chat de una oportunidad,
+            // window._mailCorreoContextoOppId queda marcado para que el correo
+            // enviado se vincule a esa oportunidad como evidencia.
+            if (window._mailCorreoContextoOppId) {
+                fd.append('oportunidad_id', window._mailCorreoContextoOppId);
+            }
             _mailComposeAttachments.forEach(function (f) { fd.append('adjuntos', f); });
 
             fetch('/app/api/mail/enviar/', {
@@ -560,6 +566,16 @@
                 .then(function (data) {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar'; }
                     if (data.ok) {
+                        // Si el envío estaba ligado a una oportunidad (desde su chat),
+                        // refrescar la conversación para que aparezca la tarjeta.
+                        if (window._mailCorreoContextoOppId) {
+                            var oppId = window._mailCorreoContextoOppId;
+                            window._mailCorreoContextoOppId = null;
+                            window._mailCorreoContextoOppNombre = null;
+                            if (typeof window.woCargarNotas === 'function') {
+                                try { window.woCargarNotas(oppId); } catch(_){}
+                            }
+                        }
                         // If this was a campaign email, register it
                         if (window._campanaEnvioContext && window._campanaEnvioContext.templateId) {
                             var ctx = window._campanaEnvioContext;

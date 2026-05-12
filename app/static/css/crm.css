@@ -11194,3 +11194,1621 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     }
     .crm-dash-proyectos-riesgo-progress { width: 100%; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MARKETING DASHBOARD — Bento grid + Liquid Glass
+   Usado por: app/templates/crm/_widget_marketing.html
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Tokens internos (no globales) */
+.mkt-dashboard {
+    --mkt-t1: #1C1C1E;
+    --mkt-t2: #6E6E73;
+    --mkt-t3: #AEAEB2;
+    --mkt-sep: rgba(0, 0, 0, 0.06);
+    --mkt-hero: #0052D4;
+    --mkt-hero-bg-soft: rgba(0, 82, 212, 0.07);
+    --mkt-hero-bg-soft2: rgba(0, 82, 212, 0.03);
+    --mkt-hero-tint: rgba(0, 82, 212, 0.10);
+    --mkt-hero-border: rgba(0, 82, 212, 0.14);
+    --mkt-radius: 22px;
+
+    position: relative;
+    padding: 2px 4px 16px;
+    animation: mktDashIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 220px);
+}
+
+/* Blobs sutiles detrás del bento para que el liquid glass tenga algo que refractar */
+.mkt-dashboard::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 10% 20%, rgba(0, 82, 212, 0.06) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 40% at 88% 80%, rgba(124, 58, 237, 0.045) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: 24px;
+}
+
+.mkt-dashboard > * { position: relative; z-index: 1; }
+
+@keyframes mktDashIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Bento grid — crece para llenar el viewport ──────────────────── */
+.mkt-bento {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(220px, 1fr) minmax(220px, 1fr) minmax(200px, 1fr);
+    grid-template-areas:
+        "camp camp evt  tech"
+        "cur  cur  demo cert"
+        "asoc asoc red  red";
+    gap: 14px;
+}
+
+.mkt-widget[data-area="camp"] { grid-area: camp; }
+.mkt-widget[data-area="evt"]  { grid-area: evt;  }
+.mkt-widget[data-area="tech"] { grid-area: tech; }
+.mkt-widget[data-area="demo"] { grid-area: demo; }
+.mkt-widget[data-area="cert"] { grid-area: cert; }
+.mkt-widget[data-area="cur"]  { grid-area: cur;  }
+.mkt-widget[data-area="asoc"] { grid-area: asoc; }
+.mkt-widget[data-area="red"]  { grid-area: red;  }
+
+/* ── Widget base — liquid glass ─────────────────────────────────── */
+.mkt-widget {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* padding-bottom extra reserva espacio para el badge "Próximamente" absoluto */
+    padding: 16px 16px 36px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: var(--mkt-radius);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.65) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    box-shadow:
+        0 2px 16px rgba(0, 0, 0, 0.06),
+        0 1px 4px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    color: inherit;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: mktWidgetIn 0.4s ease both;
+    transition:
+        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.28s ease;
+}
+
+.mkt-widget:hover {
+    transform: translateY(-4px) scale(1.014);
+    box-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.11),
+        0 4px 14px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.mkt-widget:active {
+    transform: translateY(-1px) scale(0.998);
+    transition-duration: 0.1s;
+}
+
+/* Hero (Campañas) lleva un tinte azul muy sutil y NO tiene badge —
+   recupera el padding-bottom normal */
+.mkt-widget--hero {
+    padding: 20px;
+    background: linear-gradient(145deg, var(--mkt-hero-bg-soft) 0%, var(--mkt-hero-bg-soft2) 100%);
+    border: 1px solid var(--mkt-hero-border);
+}
+
+/* Specular highlight de 1px arriba (simula reflejo de luz) */
+.mkt-specular {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--mkt-radius) var(--mkt-radius) 0 0;
+    pointer-events: none;
+}
+
+/* Stagger en la entrada — orden visual: camp, evt, tech, demo, cert, cur, asoc, red */
+.mkt-widget[data-area="camp"] { animation-delay: 0ms; }
+.mkt-widget[data-area="evt"]  { animation-delay: 45ms; }
+.mkt-widget[data-area="tech"] { animation-delay: 90ms; }
+.mkt-widget[data-area="demo"] { animation-delay: 135ms; }
+.mkt-widget[data-area="cert"] { animation-delay: 180ms; }
+.mkt-widget[data-area="cur"]  { animation-delay: 225ms; }
+.mkt-widget[data-area="asoc"] { animation-delay: 270ms; }
+.mkt-widget[data-area="red"]  { animation-delay: 315ms; }
+
+@keyframes mktWidgetIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Widget head genérico (no hero) ─────────────────────────────── */
+.mkt-w-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.mkt-w-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--mkt-accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--mkt-accent, var(--mkt-t1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mkt-w-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mkt-t1);
+    line-height: 1.2;
+}
+
+.mkt-w-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Inner card genérico (translúcido sobre glass) */
+.mkt-inner-card {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 7px 10px;
+}
+
+/* ── HERO: Campañas ─────────────────────────────────────────────── */
+.mkt-hero-grid {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mkt-hero-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mkt-hero-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--mkt-hero-tint);
+    color: var(--mkt-hero);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mkt-hero-titles { flex: 1; min-width: 0; }
+
+.mkt-hero-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--mkt-t1);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.mkt-hero-sub {
+    font-size: 11.5px;
+    color: var(--mkt-t2);
+    margin-top: 1px;
+}
+
+.mkt-hero-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border: 1px solid var(--mkt-hero-border);
+    border-radius: 20px;
+    background: var(--mkt-hero-bg-soft);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--mkt-hero);
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.mkt-dot-live {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22C55E;
+    box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
+}
+
+/* Badge "Sin envíos" cuando no hay actividad en el período */
+.mkt-hero-badge--idle {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: var(--mkt-t3);
+}
+.mkt-dot-idle {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--mkt-t3);
+    opacity: 0.65;
+}
+
+.mkt-hero-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.mkt-brand-pill {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--mkt-hero);
+    background: rgba(0, 82, 212, 0.07);
+    border: 1px solid rgba(0, 82, 212, 0.12);
+    border-radius: 7px;
+    padding: 3px 10px;
+}
+
+.mkt-hero-cards {
+    position: relative;
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Skeleton placeholder cuando hay menos de 3 campañas reales */
+.mkt-mini-card--placeholder {
+    opacity: 0.62;
+}
+
+/* Overlay "Sin campañas en este período" — cubre toda la zona de mini-cards */
+.mkt-hero-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(4px) saturate(160%);
+    -webkit-backdrop-filter: blur(4px) saturate(160%);
+    border-radius: 10px;
+    color: var(--mkt-t2);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-align: center;
+    z-index: 2;
+}
+.mkt-hero-empty svg {
+    color: var(--mkt-t3);
+    opacity: 0.85;
+}
+
+.mkt-mini-card {
+    flex: 1;
+    padding: 10px 11px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.mkt-mini-top { display: flex; flex-direction: column; gap: 3px; }
+.mkt-mini-line {
+    height: 2px;
+    background: rgba(0, 0, 0, 0.09);
+    border-radius: 2px;
+}
+.mkt-mini-name {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--mkt-t1);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mkt-mini-bar {
+    height: 3px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.mkt-mini-bar i {
+    display: block;
+    height: 100%;
+    background: var(--mkt-accent, var(--mkt-hero));
+    border-radius: 2px;
+    opacity: 0.78;
+}
+.mkt-mini-bar--lg { height: 4px; }
+.mkt-mini-stats {
+    font-size: 8.5px;
+    color: var(--mkt-t3);
+    margin-top: 3px;
+}
+
+.mkt-hero-stats {
+    display: flex;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--mkt-sep);
+    border-radius: 13px;
+}
+
+.mkt-stat {
+    flex: 1;
+    padding: 9px 13px;
+    border-right: 1px solid var(--mkt-sep);
+}
+.mkt-stat:last-child { border-right: none; }
+.mkt-stat-v {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--mkt-hero);
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+.mkt-stat-l {
+    font-size: 9.5px;
+    color: var(--mkt-t3);
+    margin-top: 2px;
+}
+
+/* ── Eventos: header del mes ── */
+.mkt-cal-header {
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--mkt-t2);
+    text-transform: uppercase;
+    margin: 2px 0 6px;
+}
+
+/* ── Mini calendar (celdas grandes para abarcar más el widget) ── */
+.mkt-cal {
+    display: grid;
+    grid-template-columns: repeat(7, 28px);
+    grid-auto-rows: 28px;
+    row-gap: 4px;
+    column-gap: 4px;
+    justify-content: center;
+}
+.mkt-cal-dow {
+    text-align: center;
+    font-size: 10px;
+    color: var(--mkt-t3);
+    font-weight: 700;
+    line-height: 28px;
+    letter-spacing: 0.05em;
+}
+.mkt-cal-day {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10.5px;
+    color: var(--mkt-t2);
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+.mkt-cal-day--ev {
+    background: var(--mkt-accent, #7C3AED);
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 1px 4px -1px rgba(124, 58, 237, 0.45);
+}
+.mkt-cal-day--today {
+    box-shadow: inset 0 0 0 1.5px var(--mkt-accent, #7C3AED);
+    color: var(--mkt-accent, #7C3AED);
+    font-weight: 800;
+}
+.mkt-cal-day--today.mkt-cal-day--ev {
+    /* Si hoy también tiene evento, gana el fill sólido */
+    box-shadow: 0 1px 4px -1px rgba(124, 58, 237, 0.45);
+}
+.mkt-cal-day--soft {
+    background: var(--mkt-accent-bg, rgba(124, 58, 237, 0.12));
+    color: var(--mkt-accent, #7C3AED);
+}
+
+/* ── Card "Próximo evento" con jerarquía clara ── */
+.mkt-inner-label {
+    font-size: 8.5px;
+    color: var(--mkt-t3);
+    margin-bottom: 3px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.mkt-inner-value {
+    font-size: 12px;
+    color: var(--mkt-t1);
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mkt-inner-meta {
+    font-size: 10.5px;
+    color: var(--mkt-accent, var(--mkt-t2));
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* ── Techday / Asociaciones: row cards ──────────────────────────── */
+.mkt-tech-count {
+    font-size: 10px;
+    color: var(--mkt-t3);
+    font-weight: 600;
+}
+.mkt-row-card {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10.5px;
+    color: var(--mkt-t1);
+}
+.mkt-row-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--mkt-accent, var(--mkt-t1));
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+.mkt-letter-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--mkt-accent, var(--mkt-t1));
+    background: var(--mkt-accent-bg, rgba(0, 0, 0, 0.05));
+    flex-shrink: 0;
+}
+
+/* ── Demos ─────────────────────────────────────────────────────── */
+.mkt-demo-body { gap: 7px; }
+.mkt-demo-row { flex: 1; padding: 8px 10px; }
+.mkt-demo-row-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.mkt-demo-label {
+    font-size: 11px;
+    color: var(--mkt-t2);
+    font-weight: 600;
+}
+.mkt-demo-value {
+    font-size: 11px;
+    color: var(--mkt-t1);
+    font-weight: 700;
+}
+
+/* ── Certificaciones ───────────────────────────────────────────── */
+.mkt-cert-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mkt-cert-letter {
+    width: 19px;
+    height: 19px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--mkt-accent, var(--mkt-t1));
+    background: var(--mkt-accent-bg, rgba(0, 0, 0, 0.05));
+    flex-shrink: 0;
+}
+.mkt-cert-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+.mkt-cert-bar i {
+    display: block;
+    height: 100%;
+    background: var(--mkt-accent, var(--mkt-t1));
+    opacity: 0.78;
+}
+.mkt-cert-pct {
+    font-size: 9px;
+    color: var(--mkt-t3);
+    width: 22px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Cursos ────────────────────────────────────────────────────── */
+.mkt-cursos-body { justify-content: center; gap: 10px; }
+.mkt-curso-row { display: flex; flex-direction: column; gap: 4px; }
+.mkt-curso-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+.mkt-curso-name {
+    font-size: 11px;
+    color: var(--mkt-t1);
+    font-weight: 600;
+}
+.mkt-curso-pct {
+    font-size: 11px;
+    color: var(--mkt-t3);
+}
+
+/* ── Redes ─────────────────────────────────────────────────────── */
+.mkt-redes-body { justify-content: center; gap: 5px; }
+.mkt-redes-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+}
+.mkt-redes-name {
+    font-size: 11px;
+    color: var(--mkt-t1);
+    font-weight: 700;
+}
+.mkt-redes-stat {
+    font-size: 10px;
+    color: var(--mkt-t3);
+    font-weight: 500;
+}
+
+/* ── "Próximamente" badge (dot pulsante) — fijo en esquina inf-izq ── */
+.mkt-soon-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3.5px 9px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--mkt-t3);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    z-index: 2;
+}
+.mkt-dot-pulse {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--mkt-t3);
+    animation: mktPulseDot 2.4s ease infinite;
+}
+@keyframes mktPulseDot {
+    0%, 100% { opacity: 0.35; transform: scale(1); }
+    50%      { opacity: 0.85; transform: scale(1.5); }
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+    .mkt-bento {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: 220px 200px 200px 176px 176px;
+        grid-template-areas:
+            "camp camp"
+            "evt  tech"
+            "demo cert"
+            "cur  cur"
+            "asoc red";
+    }
+}
+
+@media (max-width: 640px) {
+    .mkt-bento {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+            "camp"
+            "evt"
+            "tech"
+            "demo"
+            "cert"
+            "cur"
+            "asoc"
+            "red";
+    }
+    .mkt-widget { min-height: 160px; }
+    .mkt-widget--hero { min-height: 320px; }
+    .mkt-title { font-size: 1.45rem; }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .mkt-dashboard,
+    .mkt-widget,
+    .mkt-dot-pulse {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+    .mkt-widget:hover { transform: none; }
+}
+
+/* ── Toast "Próximamente" ──────────────────────────────────────── */
+.mkt-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translate(-50%, 24px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    background: rgba(28, 28, 30, 0.92);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 999px;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10800;
+    transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.mkt-toast.mkt-toast--on {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MARKETING → EVENTOS — Sub-vista lista + Modal crear/editar
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Contador chiquito en el head del widget (ej. "5 eventos") */
+.mkt-w-count {
+    margin-left: auto;
+    font-size: 9.5px;
+    font-weight: 800;
+    color: var(--mkt-accent, var(--mkt-t1));
+    background: var(--mkt-accent-bg, rgba(0,0,0,0.05));
+    border-radius: 999px;
+    padding: 2px 8px;
+    letter-spacing: 0.3px;
+}
+
+/* Hint cuando no hay eventos en el periodo (widget) */
+.mkt-evt-hint {
+    margin-top: auto;
+    font-size: 10px;
+    color: var(--mkt-t3);
+    text-align: center;
+    padding: 6px 4px;
+    border-top: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Sub-vista de Eventos */
+.mkt-events {
+    padding: 6px 4px 24px;
+}
+.mkt-events-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 8px 4px 22px;
+}
+.mkt-events-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1C1C1E;
+    letter-spacing: -0.022em;
+    line-height: 1.05;
+}
+.mkt-events-sub {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #6E6E73;
+    font-weight: 500;
+}
+.mkt-events-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 999px;
+    background: #0052D4;
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px -2px rgba(0, 82, 212, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.18s;
+}
+.mkt-events-new:hover {
+    background: #003fa6;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -4px rgba(0, 82, 212, 0.45);
+}
+
+/* Tabla */
+.mkt-events-table-wrap {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+.mkt-events-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.mkt-events-table thead {
+    background: rgba(0, 0, 0, 0.02);
+}
+.mkt-events-table th {
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6E6E73;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.mkt-events-table th.mkt-th-actions { width: 50px; }
+.mkt-events-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    color: #1C1C1E;
+    vertical-align: middle;
+}
+.mkt-events-table tbody tr {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.mkt-events-table tbody tr:hover {
+    background: rgba(0, 82, 212, 0.035);
+}
+.mkt-events-table tbody tr:last-child td { border-bottom: none; }
+
+.mkt-event-name { font-weight: 700; }
+.mkt-event-tipo, .mkt-event-org { color: #6E6E73; font-weight: 500; }
+.mkt-event-fecha { color: #1C1C1E; font-weight: 600; font-size: 0.78rem; }
+.mkt-event-asist { font-weight: 700; text-align: center; }
+.mkt-event-marcas { display: flex; gap: 4px; flex-wrap: wrap; }
+.mkt-event-marca-pill {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #0052D4;
+    background: rgba(0, 82, 212, 0.08);
+    border: 1px solid rgba(0, 82, 212, 0.14);
+    border-radius: 6px;
+    padding: 2px 7px;
+    letter-spacing: 0.02em;
+}
+.mkt-event-estado {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #6E6E73;
+}
+.mkt-event-estado--borrador    { background: rgba(0,0,0,0.05); color: #6E6E73; }
+.mkt-event-estado--programado  { background: rgba(0, 82, 212, 0.1); color: #0052D4; }
+.mkt-event-estado--confirmado  { background: rgba(52, 199, 89, 0.12); color: #248A3D; }
+.mkt-event-estado--realizado   { background: rgba(124, 58, 237, 0.12); color: #6B21A8; }
+.mkt-event-estado--cancelado   { background: rgba(255, 59, 48, 0.1); color: #C9302E; }
+
+.mkt-event-actions { text-align: right; }
+.mkt-event-edit {
+    background: rgba(0, 82, 212, 0.06);
+    border: none;
+    color: #0052D4;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.mkt-event-edit:hover { background: rgba(0, 82, 212, 0.12); }
+
+/* Empty state lista */
+.mkt-events-empty {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px dashed rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    padding: 56px 24px;
+    text-align: center;
+    color: #6E6E73;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.mkt-events-empty svg { color: #AEAEB2; margin-bottom: 6px; }
+.mkt-events-empty h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1C1C1E;
+}
+.mkt-events-empty p {
+    margin: 0 0 16px;
+    font-size: 0.82rem;
+}
+
+/* ── Modal Evento: chips de marcas + asistentes (encima del estilo wn-ctw del proyecto) ── */
+
+/* Fila "Marcas" del canvas — replica el rythm de wn-ctw-nl-row */
+.evt-marcas-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 0 4px;
+}
+.evt-marcas-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+}
+.evt-marca-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border: 1px solid #E5E5EA;
+    background: #fff;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #3C3C43;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+.evt-marca-chip input { display: none; }
+.evt-marca-chip:hover { border-color: #0052D4; color: #0052D4; }
+.evt-marca-chip:has(input:checked) {
+    background: #0052D4;
+    border-color: #0052D4;
+    color: #fff;
+}
+
+/* Bloque asistentes (solo en modo edición) */
+.evt-asist-block {
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.evt-asist-headline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.evt-asist-count {
+    background: rgba(0, 82, 212, 0.1);
+    color: #0052D4;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+.evt-asist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.evt-asist-empty {
+    padding: 10px;
+    font-size: 0.8rem;
+    color: #86868B;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 9px;
+}
+.evt-asist-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 9px;
+    gap: 10px;
+}
+.evt-asist-info { min-width: 0; }
+.evt-asist-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1D1D1F;
+}
+.evt-asist-sub {
+    font-size: 0.7rem;
+    color: #86868B;
+    margin-top: 1px;
+}
+.evt-asist-del {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 59, 48, 0.08);
+    color: #FF3B30;
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.evt-asist-del:hover { background: rgba(255, 59, 48, 0.18); }
+
+.evt-asist-add {
+    display: grid;
+    grid-template-columns: 1.2fr 1.4fr auto;
+    gap: 6px;
+    margin-top: 2px;
+}
+.evt-asist-add input {
+    padding: 8px 11px;
+    border: 1px solid #E5E5EA;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.evt-asist-add input:focus { border-color: #0052D4; }
+.evt-asist-add button {
+    padding: 8px 14px;
+    border: none;
+    background: rgba(0, 82, 212, 0.1);
+    color: #0052D4;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.evt-asist-add button:hover { background: rgba(0, 82, 212, 0.18); }
+
+/* Tabs de modo: Cliente / Prospecto / Contacto */
+.evt-asist-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    margin-top: 4px;
+}
+.evt-asist-tab {
+    flex: 1;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: #6E6E73;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.evt-asist-tab:hover { color: #1C1C1E; }
+.evt-asist-tab.active {
+    background: #fff;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.evt-asist-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Search + autocomplete */
+.evt-asist-search-wrap { position: relative; }
+.evt-asist-search {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #E5E5EA;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.evt-asist-search:focus {
+    border-color: #0052D4;
+    box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.12);
+}
+.evt-asist-ac {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: #fff;
+    border: 1px solid #E5E5EA;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.18);
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 10;
+}
+.evt-asist-ac-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    transition: background 0.12s;
+}
+.evt-asist-ac-item:last-child { border-bottom: none; }
+.evt-asist-ac-item:hover { background: rgba(0, 82, 212, 0.06); }
+.evt-asist-ac-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1C1C1E;
+}
+.evt-asist-ac-sub {
+    font-size: 0.72rem;
+    color: #86868B;
+    margin-top: 1px;
+}
+.evt-asist-ac-empty {
+    padding: 12px;
+    text-align: center;
+    color: #86868B;
+    font-size: 0.78rem;
+}
+
+/* Checkbox "generar prospecto" */
+.evt-asist-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    user-select: none;
+}
+.evt-asist-checkbox input { margin: 0; }
+.evt-asist-checkbox span {
+    font-size: 0.78rem;
+    color: #3C3C43;
+    font-weight: 500;
+}
+
+.evt-asist-mode button {
+    align-self: flex-start;
+    padding: 8px 16px;
+    border: none;
+    background: #0052D4;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.evt-asist-mode button:hover:not(:disabled) { background: #003fa6; }
+.evt-asist-mode button:disabled {
+    background: #E5E5EA;
+    color: #AEAEB2;
+    cursor: not-allowed;
+}
+
+/* Badge "Cliente / Prospecto / Contacto" en cada asistente listado */
+.evt-asist-kind {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+.evt-kind-cliente   { background: rgba(0, 82, 212, 0.1);   color: #0052D4; }
+.evt-kind-prospecto { background: rgba(255, 149, 0, 0.12); color: #B25600; }
+.evt-kind-contacto  { background: rgba(110, 110, 115, 0.1); color: #6E6E73; }
+
+/* Tabs Cliente/Prospecto en el pop del target */
+.evt-tgt-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+.evt-tgt-tab {
+    flex: 1;
+    padding: 5px 10px;
+    border: none;
+    background: transparent;
+    color: #6E6E73;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.evt-tgt-tab.active {
+    background: #fff;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Chips de participantes en el toolbar */
+.evt-part-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px 3px 3px;
+    background: rgba(0, 82, 212, 0.07);
+    border: 1px solid rgba(0, 82, 212, 0.14);
+    color: #0052D4;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+.evt-part-chip--ro { padding: 3px 10px 3px 3px; }
+.evt-part-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0052D4;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+}
+.evt-part-chip-x {
+    background: transparent;
+    border: none;
+    color: #0052D4;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0 0 2px;
+    opacity: 0.7;
+}
+.evt-part-chip-x:hover { opacity: 1; }
+
+/* ─── Widget DETALLE de evento: acciones header + stepper cancelado ─── */
+
+/* Botones de acción (Editar / Eliminar) en el header, junto al close */
+.evt-det-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.evt-det-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border: none;
+    background: rgba(0, 82, 212, 0.08);
+    color: #0052D4;
+    border-radius: 9px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+.evt-det-action-btn:hover { background: rgba(0, 82, 212, 0.18); }
+.evt-det-action-btn--danger {
+    background: rgba(255, 59, 48, 0.08);
+    color: #FF3B30;
+    padding: 7px 10px;
+}
+.evt-det-action-btn--danger:hover { background: rgba(255, 59, 48, 0.18); }
+
+/* Botón primary "Crear prospección" en el header de la card asistentes */
+.evt-det-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: none;
+    background: #0052D4;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+.evt-det-primary-btn:hover { background: #003fa6; }
+
+/* Badge pequeño de estado en el grid de info */
+.evt-det-estado-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #6E6E73;
+}
+.evt-det-estado--borrador    { background: rgba(0, 0, 0, 0.05);         color: #6E6E73; }
+.evt-det-estado--programado  { background: rgba(0, 82, 212, 0.1);       color: #0052D4; }
+.evt-det-estado--confirmado  { background: rgba(52, 199, 89, 0.12);     color: #248A3D; }
+.evt-det-estado--realizado   { background: rgba(124, 58, 237, 0.12);    color: #6B21A8; }
+.evt-det-estado--cancelado   { background: rgba(255, 59, 48, 0.1);      color: #C9302E; }
+
+/* Lista de asistentes y empty state del detalle */
+.evt-det-asist-list { display: flex; flex-direction: column; gap: 6px; }
+.evt-det-empty {
+    padding: 14px 16px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px dashed rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    color: #86868B;
+    font-size: 0.82rem;
+}
+
+/* Panel desplegable de "Crear prospección" */
+.evt-det-panel {
+    margin-top: 12px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Row organizador / chips de participantes */
+.evt-det-people-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* ─── Mini-widget de confirmación de eliminar evento ─── */
+.evt-del-confirm-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 26px 26px 22px;
+    width: 92vw;
+    max-width: 380px;
+    box-shadow: 0 24px 60px -12px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.9);
+    text-align: center;
+    animation: evtDelIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes evtDelIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.evt-del-confirm-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255, 59, 48, 0.1);
+    color: #FF3B30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+}
+.evt-del-confirm-title {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1C1C1E;
+}
+.evt-del-confirm-desc {
+    margin: 0 0 18px;
+    font-size: 0.85rem;
+    color: #6E6E73;
+    line-height: 1.45;
+}
+.evt-del-confirm-actions {
+    display: flex;
+    gap: 8px;
+}
+.evt-del-confirm-actions button {
+    flex: 1;
+    padding: 11px 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+.evt-del-confirm-cancel {
+    background: #F2F2F7;
+    color: #1C1C1E;
+}
+.evt-del-confirm-cancel:hover { background: #E5E5EA; }
+.evt-del-confirm-ok {
+    background: #FF3B30;
+    color: #fff;
+}
+.evt-del-confirm-ok:hover { background: #D7281F; }
+.evt-del-confirm-ok:disabled { opacity: 0.65; cursor: wait; }
+
+/* ─── Banner "Generado desde evento" en el widget de Prospecto ─── */
+.wp-evento-origen {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    margin: 0 0 12px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(124, 58, 237, 0.04) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 10px;
+    color: #6B21A8;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.wp-evento-origen:hover {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.14) 0%, rgba(124, 58, 237, 0.07) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -4px rgba(124, 58, 237, 0.3);
+}
+.wp-evento-origen-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(124, 58, 237, 0.18);
+    color: #7C3AED;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.wp-evento-origen-body { flex: 1; min-width: 0; }
+.wp-evento-origen-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #7C3AED;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+}
+.wp-evento-origen-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1C1C1E;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Fila de prospecto clickeable dentro del detalle del evento */
+.evt-asist-row--clickable {
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+}
+.evt-asist-row--clickable:hover {
+    background: rgba(0, 82, 212, 0.06) !important;
+    transform: translateX(2px);
+}
+.evt-asist-row-arrow {
+    color: #AEAEB2;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.evt-asist-row--clickable:hover .evt-asist-row-arrow { color: #0052D4; }
+
+/* Mensaje de error inline */
+.evt-error {
+    padding: 10px 14px;
+    background: rgba(255, 59, 48, 0.1);
+    color: #C9302E;
+    border-radius: 9px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Botón Eliminar en el footer del modal — variante roja del cancel */
+.evt-ctw-delete {
+    color: #FF3B30 !important;
+    margin-right: auto;
+}
+.evt-ctw-delete:hover {
+    background: rgba(255, 59, 48, 0.08) !important;
+}
+
+/* Mantener el media query de la sub-vista lista (no del modal) */
+@media (max-width: 600px) {
+    .mkt-events-head { flex-direction: column; align-items: flex-start; }
+    .evt-asist-add { grid-template-columns: 1fr; }
+    .evt-marcas-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MARKETING PLACEHOLDER — "Próximamente" con obrero 8-bit animado
+   ═══════════════════════════════════════════════════════════════════ */
+.mkt-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 240px);
+    padding: 24px;
+    text-align: center;
+    gap: 22px;
+    animation: mktSoonIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes mktSoonIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.mkt-soon-stage {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mkt-soon-worker {
+    width: 220px;
+    height: 220px;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.08));
+}
+.mkt-soon-arm {
+    /* Pivote en el hombro del obrero — el brazo derecho se balancea */
+    transform-origin: 56px 38px;
+    animation: mktSoonHammer 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+@keyframes mktSoonHammer {
+    0%   { transform: rotate(-40deg); }
+    35%  { transform: rotate(-50deg); }
+    55%  { transform: rotate(15deg); }
+    65%  { transform: rotate(15deg); }
+    100% { transform: rotate(-40deg); }
+}
+.mkt-soon-ground {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 6px;
+    background: repeating-linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.12) 0px,
+        rgba(0, 0, 0, 0.12) 8px,
+        transparent 8px,
+        transparent 14px
+    );
+    border-radius: 2px;
+}
+.mkt-soon-spark {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #FCD34D;
+    box-shadow: 0 0 8px rgba(252, 211, 77, 0.7);
+    opacity: 0;
+    border-radius: 1px;
+}
+.mkt-soon-spark--1 { top: 80px; right: 56px; animation: mktSoonSpark 1.1s ease-out infinite; }
+.mkt-soon-spark--2 { top: 86px; right: 46px; animation: mktSoonSpark 1.1s ease-out infinite 0.06s; transform: scale(0.6); }
+.mkt-soon-spark--3 { top: 78px; right: 38px; animation: mktSoonSpark 1.1s ease-out infinite 0.12s; transform: scale(0.5); }
+@keyframes mktSoonSpark {
+    0%, 50% { opacity: 0; transform: translateY(0) scale(1); }
+    55%     { opacity: 1; transform: translateY(0) scale(1); }
+    100%    { opacity: 0; transform: translateY(-18px) scale(0.4); }
+}
+.mkt-soon-text {
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.mkt-soon-tag {
+    display: inline-block;
+    padding: 5px 14px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(251, 146, 60, 0.18) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #B25500;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.mkt-soon-title {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #1C1C1E;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+.mkt-soon-sub {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #6E6E73;
+    line-height: 1.55;
+    font-weight: 500;
+}
+
+/* Respeta usuarios con prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .mkt-soon,
+    .mkt-soon-arm,
+    .mkt-soon-spark { animation: none; }
+    .mkt-soon-spark { opacity: 0; }
+}

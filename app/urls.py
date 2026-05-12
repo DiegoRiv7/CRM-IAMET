@@ -289,6 +289,16 @@ urlpatterns = [
     path('api/campana/template/<int:template_id>/render/', views.api_campana_template_render, name='api_campana_template_render'),
     path('api/campana/registrar-envio/', views.api_campana_registrar_envio, name='api_campana_registrar_envio'),
 
+    # ── Marketing → Eventos ─────────────────────────────────────────────
+    path('api/eventos/', views.api_eventos_list, name='api_eventos_list'),
+    path('api/evento/crear/', views.api_evento_crear, name='api_evento_crear'),
+    path('api/evento/<int:evento_id>/', views.api_evento_detalle, name='api_evento_detalle'),
+    path('api/evento/<int:evento_id>/editar/', views.api_evento_editar, name='api_evento_editar'),
+    path('api/evento/<int:evento_id>/eliminar/', views.api_evento_eliminar, name='api_evento_eliminar'),
+    path('api/evento/<int:evento_id>/asistente/', views.api_evento_asistente_agregar, name='api_evento_asistente_agregar'),
+    path('api/evento/<int:evento_id>/asistente/<int:asistente_id>/eliminar/', views.api_evento_asistente_quitar, name='api_evento_asistente_quitar'),
+    path('api/buscar-prospectos/', views.api_buscar_prospectos, name='api_buscar_prospectos'),
+
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='user_login'),

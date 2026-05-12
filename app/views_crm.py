@@ -700,10 +700,145 @@ def crm_home(request):
                 'count': len(items),
             })
 
+    # ── Marketing KPIs (solo para pestaña Marketing) ─────────────────
+    # Filtrado por el mismo mes/año o rango de fechas que rige la pestaña.
+    marketing_kpis = None
+    if tab_activo == 'prospeccion':
+        from .models import Campana, CampanaEnvio
+        envios_qs = CampanaEnvio.objects.all()
+        # Activas = campañas creadas en el periodo (excepto canceladas).
+        # Antes filtrábamos por fecha_envio, pero eso dejaba fuera campañas
+        # recién creadas que aún no se envían — el usuario veía 0 al crear.
+        camps_qs = Campana.objects.exclude(estado='cancelada')
+        if desde_date or hasta_date:
+            if desde_date:
+                envios_qs = envios_qs.filter(fecha_envio__date__gte=desde_date)
+                camps_qs = camps_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date:
+                envios_qs = envios_qs.filter(fecha_envio__date__lte=hasta_date)
+                camps_qs = camps_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                envios_qs = envios_qs.filter(fecha_envio__year__in=anios_list)
+                camps_qs = camps_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    envios_qs = envios_qs.filter(fecha_envio__month__in=meses_int)
+                    camps_qs = camps_qs.filter(fecha_creacion__month__in=meses_int)
+        total_enviadas = envios_qs.count()
+        total_activas = camps_qs.count()
+        total_respondidas = envios_qs.filter(respondido=True).count()
+        if total_enviadas > 0:
+            tasa_str = f'{round(total_respondidas / total_enviadas * 100)}%'
+        else:
+            tasa_str = '—'
+        marketing_kpis = {
+            'activas': total_activas,
+            'enviadas': total_enviadas,
+            'tasa_contacto': tasa_str,
+            'hay_actividad': total_enviadas > 0 or total_activas > 0,
+        }
+
+    # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
+    eventos_kpis = None
+    eventos_lista = None
+    techday_kpis = None
+    if tab_activo == 'prospeccion':
+        from .models import Evento
+        evt_qs = Evento.objects.exclude(estado='cancelado').filter(fecha_evento__isnull=False)
+        if desde_date or hasta_date:
+            if desde_date: evt_qs = evt_qs.filter(fecha_evento__date__gte=desde_date)
+            if hasta_date: evt_qs = evt_qs.filter(fecha_evento__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                evt_qs = evt_qs.filter(fecha_evento__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    evt_qs = evt_qs.filter(fecha_evento__month__in=meses_int)
+        eventos_periodo = list(
+            evt_qs.select_related('organizador').prefetch_related('asistentes')
+                  .order_by('fecha_evento')
+        )
+        dias_con_eventos = sorted({e.fecha_evento.day for e in eventos_periodo if e.fecha_evento})
+        ahora = timezone.now()
+        proximo = next((e for e in eventos_periodo if e.fecha_evento and e.fecha_evento >= ahora), None)
+        # Etiqueta del mes para el header del calendario + día de hoy si aplica
+        MES_NAMES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+        mes_label = None
+        dia_hoy = None
+        today = timezone.now().date()
+        if meses_list and len(meses_list) == 1 and anios_list and len(anios_list) == 1:
+            try:
+                mes_idx = int(meses_list[0])
+                if 1 <= mes_idx <= 12:
+                    mes_label = f'{MES_NAMES_FULL[mes_idx-1]} {anios_list[0]}'
+                    if anios_list[0] == today.year and mes_idx == today.month:
+                        dia_hoy = today.day
+            except (ValueError, IndexError, TypeError):
+                pass
+        elif anios_list and len(anios_list) == 1:
+            mes_label = f'Año {anios_list[0]}'
+        # Días 1..31 con flags para el grid del calendario
+        dias_set = set(dias_con_eventos)
+        dias_calendar = [
+            {'num': i, 'has_event': i in dias_set, 'is_today': dia_hoy == i}
+            for i in range(1, 32)
+        ]
+        eventos_kpis = {
+            'total': len(eventos_periodo),
+            'mes_label': mes_label,
+            'dia_hoy': dia_hoy,
+            'dias_con_eventos': dias_con_eventos,
+            'dias_calendar': dias_calendar,
+            'proximo': {
+                'id': proximo.id,
+                'nombre': proximo.nombre,
+                'fecha_display': proximo.fecha_evento.strftime('%d %b · %H:%M'),
+                'marcas': proximo.marcas or [],
+            } if proximo else None,
+        }
+        # Sub-vista filtrada por tipo (Techday, Demos, etc.) — si no viene
+        # filter_tipo, la lista muestra todos los eventos del periodo.
+        filter_tipo = (request.GET.get('filter_tipo') or '').strip()
+        if filter_tipo:
+            eventos_lista = [e for e in eventos_periodo if e.tipo == filter_tipo]
+        else:
+            eventos_lista = eventos_periodo
+        # KPIs específicos por tipo — alimentan los widgets del bento (Techday,
+        # Demos, etc.). Solo calculo Techday por ahora; los demás siguen igual.
+        techday_periodo = [e for e in eventos_periodo if e.tipo == 'techday']
+        techday_proximas = [
+            {
+                'id': e.id,
+                'nombre': e.nombre,
+                'fecha_display': e.fecha_evento.strftime('%d %b · %H:%M'),
+                'marcas': e.marcas or [],
+            }
+            for e in techday_periodo if e.fecha_evento and e.fecha_evento >= ahora
+        ][:3]
+        techday_kpis = {
+            'total': len(techday_periodo),
+            'proximas': techday_proximas,
+            'filter_tipo': filter_tipo,
+        }
+
     context = {
         'widget_label': widget_label,
         'widget_metric': widget_metric,
         'tab_activo': tab_activo,
+        'marketing_kpis': marketing_kpis,
+        'eventos_kpis': eventos_kpis,
+        'eventos_lista': eventos_lista,
+        'techday_kpis': techday_kpis,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,
@@ -1919,6 +2054,13 @@ def api_desglose_facturacion(request):
     try:
         mes = request.GET.get('mes', 'todos')
         anio_raw = request.GET.get('anio', '2026')
+        vendedores_raw = (request.GET.get('vendedores') or '').strip()
+        vendedores_ids = set()
+        if vendedores_raw:
+            for v in vendedores_raw.split(','):
+                v = v.strip()
+                if v.isdigit():
+                    vendedores_ids.add(int(v))
 
         def _parse_ints(s, default=None):
             if not s or s == 'todos':
@@ -1963,6 +2105,25 @@ def api_desglose_facturacion(request):
             _procesar_af(af)
 
         rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
+
+        # Si hay filtro de vendedor activo, hacer match cliente→vendedor y
+        # dejar fuera los clientes que no le pertenecen a esos vendedores.
+        if vendedores_ids:
+            all_clientes = list(Cliente.objects.select_related('asignado_a').all())
+            alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
+                         for a in AliasCliente.objects.all()}
+            filtered = []
+            for row in rows:
+                matches = _match_clientes_cobrado(row['nombre'], all_clientes, alias_map)
+                vid = None
+                for m in matches:
+                    if m.asignado_a_id:
+                        vid = m.asignado_a_id
+                        break
+                if vid in vendedores_ids:
+                    filtered.append(row)
+            rows = filtered
+
         total = sum(r['monto'] for r in rows)
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})
     except Exception as e:
@@ -2287,6 +2448,13 @@ def api_desglose_cobrado(request):
     try:
         mes = request.GET.get('mes', 'todos')
         anio_raw = request.GET.get('anio', '2026')
+        vendedores_raw = (request.GET.get('vendedores') or '').strip()
+        vendedores_ids = set()
+        if vendedores_raw:
+            for v in vendedores_raw.split(','):
+                v = v.strip()
+                if v.isdigit():
+                    vendedores_ids.add(int(v))
 
         def _parse_ints(s, default=None):
             if not s or s == 'todos':
@@ -2335,12 +2503,14 @@ def api_desglose_cobrado(request):
         for entry in sorted(acumulado.values(), key=lambda x: -x['monto']):
             matches = _match_clientes_cobrado(entry['nombre'], all_clientes, alias_map)
             vendedor = ''
+            vendedor_id = None
             meta_cobrado = 0
             if matches:
                 # Vendedor: tomar del primer match que tenga asignado
                 for m in matches:
                     if m.asignado_a:
                         vendedor = (m.asignado_a.get_full_name() or m.asignado_a.username)
+                        vendedor_id = m.asignado_a_id
                         break
                 # Meta: sumar meta_cobrado de TODAS las variantes.
                 # Multiplicar por número de meses en el rango (12 si 'todos').
@@ -2349,11 +2519,16 @@ def api_desglose_cobrado(request):
                     mc = float(m.meta_cobrado or 0)
                     mc = mc * meses_multiplier
                     meta_cobrado += mc
+            # Si hay filtro de vendedor activo, dejar fuera los clientes que
+            # no estén asignados a ninguno de los vendedores seleccionados.
+            if vendedores_ids and vendedor_id not in vendedores_ids:
+                continue
             faltante = meta_cobrado - entry['monto']
             rows.append({
                 'nombre': entry['nombre'],
                 'monto': entry['monto'],
                 'vendedor': vendedor,
+                'vendedor_id': vendedor_id,
                 'meta': meta_cobrado,
                 'faltante': faltante,
                 'facturas': entry.get('facturas', []),

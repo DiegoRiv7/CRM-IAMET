@@ -251,6 +251,8 @@
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
             </div>
             {% else %}
+            {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
+            {% if tab_activo != 'prospeccion' or not request.GET.vista %}
             <div class="crm-tabs">
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
@@ -263,15 +265,18 @@
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
                     Prospección
                 </a>
+                {% if not es_ingeniero %}
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
-                    Campañas
+                    Marketing
                 </a>
+                {% endif %}
             </div>
             {% endif %}
+            {% endif %}
             <div class="crm-bar-right">
-                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'prospectos' %}
+                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
                 <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
                     <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
@@ -693,24 +698,24 @@
         {% include "crm/_content_prospectos_kanban.html" %}
 
         {% elif tab_activo == 'prospeccion' %}
-        <!-- Period pills (botón "Nuevo Prospecto" removido — la prospección
-             ahora se inicia desde el kanban, no desde aquí) -->
-        <div class="crm-facet-bar crm-facet-bar--minimal" style="padding-bottom:6px;">
-            <div style="flex:1;"></div>
-            <div class="crm-period-pills" id="crmPeriodPills">
-                <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <span id="pillPeriodoLabel">Periodo</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                {% if es_supervisor %}
-                <button type="button" class="crm-period-pill" data-period="vendedor" id="pillVendedor">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                    <span id="pillVendedorLabel">Vendedores</span>
-                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="crm-period-pill-caret"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                {% endif %}
-            </div>
+        {# En producción (crm.iamet.mx) mostramos placeholder "Próximamente"; en pruebas y otros entornos sigue funcionando todo normal. #}
+        {% if request.get_host == 'crm.iamet.mx' %}
+        {% include "crm/_marketing_placeholder.html" %}
+        {% elif request.GET.vista == 'eventos' %}
+        {% include "crm/_marketing_eventos.html" %}
+        {% elif request.GET.vista != 'campanas' %}
+        {% include "crm/_widget_marketing.html" %}
+        {% else %}
+        <!-- Breadcrumb de regreso al dashboard de Marketing -->
+        <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
+            <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
+               style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#0052D4;text-decoration:none;padding:6px 12px;border-radius:18px;background:#0052D40D;transition:background 0.18s;"
+               onmouseover="this.style.background='#0052D418'" onmouseout="this.style.background='#0052D40D'">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                Marketing
+            </a>
+            <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
+            <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Campañas</span>
         </div>
         <!-- Filtro Clientes/Prospectos/Ambos (Campañas) -->
         <div id="campaniasFiltroBar" style="display:flex;gap:6px;align-items:center;padding:8px 0 12px;">
@@ -793,6 +798,7 @@
             <tbody id="prospeccionTbody"></tbody>
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
+        {% endif %}
         {% elif tab_activo == 'clientes' %}
         <!-- KPI Cards (dashboard: toggle modo y period pills ya están arriba en crm-bar) -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
@@ -1052,8 +1058,9 @@
 
         {% endif %}
     </div>
-    <!-- Footer (oculto en tab=prospectos para que el kanban ocupe toda la pantalla) -->
-    {% if tab_activo != 'prospectos' %}
+    <!-- Footer (oculto en tab=prospectos para que el kanban ocupe toda la pantalla,
+         y en tab=prospeccion/Marketing para no robar espacio al dashboard) -->
+    {% if tab_activo != 'prospectos' and tab_activo != 'prospeccion' %}
     <div class="crm-footer">
         <div class="footer-left" id="footerLeft">
             {% if tab_activo == 'cotizado' %}

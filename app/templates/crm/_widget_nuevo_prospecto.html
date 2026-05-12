@@ -734,6 +734,9 @@
             if (areaVal) payload.area = areaVal;
             // Etapa pre-seleccionada desde el kanban (click en "+" de una columna)
             if (window._pkStageForNew) payload.etapa = window._pkStageForNew;
+            // Si se abrió el form desde el detalle de un Evento, vincular el
+            // prospecto a ese evento (evento_origen + EventoAsistente).
+            if (window._eventoOrigenForProspecto) payload.evento_origen_id = window._eventoOrigenForProspecto;
             // Asignación a otro vendedor (solo supervisores/admin; el backend valida).
             var asigEl = document.getElementById('wpfAsignadoId');
             if (asigEl && asigEl.value) payload.usuario_id = parseInt(asigEl.value);
@@ -763,6 +766,7 @@
                     var asigBtnReset = document.getElementById('wpAsignadoBtn');
                     if (asigBtnReset) asigBtnReset.classList.remove('active');
                     window._pkStageForNew = null;  // consumida
+                    window._eventoOrigenForProspecto = null;  // consumida
 
                     // Recargas
                     if (typeof window.cargarProspectos === 'function') window.cargarProspectos();
