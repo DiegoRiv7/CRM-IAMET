@@ -11254,12 +11254,14 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
        natural (no se estiran) y fluyen en columnas verticales. Cuando
        una columna se llena, las siguientes se acomodan en la próxima
        columna a la derecha — produce un look orgánico tipo Pinterest
-       en lugar de un grid perfecto. */
+       en lugar de un grid perfecto.
+       Altura ligada al viewport para que aproveche todo el alto
+       disponible sin dejar gran espacio blanco abajo. */
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
     align-content: flex-start;
-    height: 600px;
+    height: clamp(540px, calc(100vh - 200px), 820px);
     gap: 18px 18px;
     overflow-x: auto;
     overflow-y: hidden;
