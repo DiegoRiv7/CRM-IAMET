@@ -673,10 +673,17 @@ def api_mail_enviar(request):
     if not para or not asunto:
         return JsonResponse({'ok': False, 'error': 'Destinatario y asunto son requeridos'}, status=400)
 
+    # Generamos un Message-ID propio antes de enviar para poder detectar
+    # respuestas (vía In-Reply-To / References) y propagar la vinculación
+    # con la oportunidad al hilo completo.
+    from email.utils import make_msgid
+    msg_id = make_msgid(domain=(conexion.correo_electronico.split('@')[-1] if '@' in conexion.correo_electronico else 'iamet.mx'))
+
     msg = _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
+    msg['Message-ID'] = msg_id
     if cc:
         msg['CC'] = cc
 
@@ -706,6 +713,7 @@ def api_mail_enviar(request):
         usuario=request.user,
         conexion=conexion,
         uid_imap=f'sent_{django_tz.now().timestamp()}',
+        message_id=msg_id,
         carpeta_imap='SENT',
         carpeta_display='SENT',
         asunto=asunto,

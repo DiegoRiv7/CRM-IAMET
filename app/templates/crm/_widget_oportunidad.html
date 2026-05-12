@@ -3391,45 +3391,18 @@
 })();
 </script>
 
-<!-- ═══ WIDGET: VER CORREO desde el chat de la oportunidad ═══ -->
-<div class="widget-overlay" id="widgetOppCorreoDetalle" style="z-index:11000;">
-    <div class="widget-card" style="width:92vw;max-width:760px;display:flex;flex-direction:column;max-height:88vh;">
-        <header style="padding:18px 22px;border-bottom:1px solid #E5E5EA;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
-            <div style="display:flex;gap:12px;align-items:center;min-width:0;flex:1;">
-                <div id="woCorreoDetIcon" style="width:38px;height:38px;border-radius:11px;background:rgba(0,82,212,0.1);color:#0052D4;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>
-                </div>
-                <div style="min-width:0;flex:1;">
-                    <div id="woCorreoDetKind" style="font-size:0.65rem;font-weight:800;color:#0052D4;text-transform:uppercase;letter-spacing:0.06em;">Correo</div>
-                    <h2 id="woCorreoDetAsunto" style="margin:1px 0 0;font-size:1rem;font-weight:700;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</h2>
-                </div>
-            </div>
-            <button onclick="document.getElementById('widgetOppCorreoDetalle').classList.remove('active');" style="background:rgba(0,0,0,0.05);border:none;width:30px;height:30px;border-radius:50%;font-size:1.2rem;line-height:1;color:#6E6E73;cursor:pointer;flex-shrink:0;">&times;</button>
-        </header>
-        <div style="padding:12px 22px 0;flex-shrink:0;">
-            <div style="display:grid;grid-template-columns:80px 1fr;gap:6px 12px;font-size:0.82rem;">
-                <div style="color:#86868B;font-weight:600;">De</div>
-                <div id="woCorreoDetDe" style="color:#1D1D1F;font-weight:500;word-break:break-word;">—</div>
-                <div style="color:#86868B;font-weight:600;">Para</div>
-                <div id="woCorreoDetPara" style="color:#1D1D1F;font-weight:500;word-break:break-word;">—</div>
-                <div style="color:#86868B;font-weight:600;">Fecha</div>
-                <div id="woCorreoDetFecha" style="color:#1D1D1F;font-weight:500;">—</div>
-            </div>
-        </div>
-        <main style="flex:1;overflow-y:auto;padding:14px 22px 22px;">
-            <div id="woCorreoDetCuerpo" style="font-size:0.88rem;color:#1D1D1F;line-height:1.55;white-space:pre-wrap;word-break:break-word;background:#FAFAFA;border:1px solid #F2F2F7;border-radius:10px;padding:14px 16px;min-height:120px;">Cargando…</div>
-        </main>
-    </div>
-</div>
-
 <script>
 (function(){
-    // ── Apertura del composer: reusa el módulo Mail completo del CRM ──
-    var modalDet = document.getElementById('widgetOppCorreoDetalle');
-    if (!modalDet) return;
-
     function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
-    function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    // ── Helper: abre el widget Mail por encima del chat de oportunidad ──
+    function _abrirMailEncima(){
+        if (typeof window.mailAbrir !== 'function') return false;
+        window.mailAbrir();
+        var mailWidget = document.getElementById('widgetMail');
+        if (mailWidget) mailWidget.style.zIndex = '11000';
+        return true;
+    }
 
     // Abrir el widget Mail completo en modo "Redactar", pre-llenando destinatario
     // y dejando marcado el oportunidad_id para que mailEnviarCorreo lo adjunte
@@ -3449,88 +3422,36 @@
         window._mailCorreoContextoOppNombre = (detail.nombre || detail.oportunidad || '');
         var prefillTo = detail.contacto_email || (detail.contacto && detail.contacto.email) || '';
 
-        if (typeof window.mailAbrir === 'function') {
-            window.mailAbrir();
-            // Subir el z-index del widget Mail por encima del chat de oportunidad
-            // (widgetOppConversacion vive en z-index 10800) para que el Mail
-            // aparezca al frente con espacio de margen.
-            var mailWidget = document.getElementById('widgetMail');
-            if (mailWidget) mailWidget.style.zIndex = '11000';
-            // Esperar a que el widget esté visible y luego entrar a Redactar
+        if (!_abrirMailEncima()) return;
+        setTimeout(function(){
+            if (typeof window.mailRedactar === 'function') window.mailRedactar();
             setTimeout(function(){
-                if (typeof window.mailRedactar === 'function') window.mailRedactar();
-                setTimeout(function(){
-                    if (prefillTo) {
-                        var paraEl = document.getElementById('mailCompPara');
-                        if (paraEl) paraEl.value = prefillTo;
-                    }
-                    if (window._mailCorreoContextoOppNombre) {
-                        var asuntoEl = document.getElementById('mailCompAsunto');
-                        if (asuntoEl && !asuntoEl.value) asuntoEl.value = window._mailCorreoContextoOppNombre;
-                    }
-                    var editorEl = document.getElementById('mailCompEditor');
-                    if (editorEl) editorEl.focus();
-                }, 120);
-            }, 220);
-        }
+                if (prefillTo) {
+                    var paraEl = document.getElementById('mailCompPara');
+                    if (paraEl) paraEl.value = prefillTo;
+                }
+                if (window._mailCorreoContextoOppNombre) {
+                    var asuntoEl = document.getElementById('mailCompAsunto');
+                    if (asuntoEl && !asuntoEl.value) asuntoEl.value = window._mailCorreoContextoOppNombre;
+                }
+                var editorEl = document.getElementById('mailCompEditor');
+                if (editorEl) editorEl.focus();
+            }, 120);
+        }, 220);
     };
 
-    // ── Detalle del correo (cuando se hace click en una tarjeta) ────
+    // ── Ver un correo desde una tarjeta del chat ──
+    // Ahora abrimos el gestor de Mail completo y le pedimos que muestre ese
+    // correo: el usuario puede responder, reenviar o navegar la conversación
+    // del hilo desde la misma UI que usa cuando entra al módulo Correo.
     window.woCorreoVerDetalle = function(correoId){
         if (!correoId) return;
-        document.getElementById('woCorreoDetAsunto').textContent = 'Cargando…';
-        document.getElementById('woCorreoDetDe').textContent = '—';
-        document.getElementById('woCorreoDetPara').textContent = '—';
-        document.getElementById('woCorreoDetFecha').textContent = '—';
-        document.getElementById('woCorreoDetCuerpo').textContent = 'Cargando…';
-        modalDet.classList.add('active');
-        fetch('/app/api/mail/detalle/' + correoId + '/')
-            .then(function(r){ return r.json(); })
-            .then(function(d){
-                var c = (d && d.correo) || d;
-                document.getElementById('woCorreoDetAsunto').textContent = c.asunto || '(sin asunto)';
-                var de = c.remitente_nombre ? (c.remitente_nombre + ' <' + (c.remitente_email||'') + '>') : (c.remitente_email||'—');
-                document.getElementById('woCorreoDetDe').textContent = de;
-                var destStr = '';
-                try {
-                    var dest = typeof c.destinatarios_json === 'string' ? JSON.parse(c.destinatarios_json) : (c.destinatarios || c.destinatarios_json || []);
-                    if (Array.isArray(dest)) destStr = dest.map(function(x){ return x.email || x; }).join(', ');
-                } catch(_) { destStr = c.destinatarios_json || ''; }
-                document.getElementById('woCorreoDetPara').textContent = destStr || '—';
-                document.getElementById('woCorreoDetFecha').textContent = c.fecha_envio_display || c.fecha_envio || c.fecha || '—';
-                var cuerpoEl = document.getElementById('woCorreoDetCuerpo');
-                if (c.cuerpo_html && c.cuerpo_html.length > 0){
-                    cuerpoEl.style.whiteSpace = 'normal';
-                    cuerpoEl.innerHTML = c.cuerpo_html;
-                } else {
-                    cuerpoEl.style.whiteSpace = 'pre-wrap';
-                    cuerpoEl.textContent = c.cuerpo_texto || '(sin contenido)';
-                }
-                // Esquema según direccion (SENT/INBOX)
-                var iconWrap = document.getElementById('woCorreoDetIcon');
-                var kindLbl = document.getElementById('woCorreoDetKind');
-                var esEnviado = (c.carpeta_display || c.carpeta_imap || '').toUpperCase() === 'SENT';
-                if (esEnviado){
-                    iconWrap.style.background = 'rgba(0,82,212,0.1)';
-                    iconWrap.style.color = '#0052D4';
-                    kindLbl.style.color = '#0052D4';
-                    kindLbl.textContent = 'Correo enviado';
-                } else {
-                    iconWrap.style.background = 'rgba(16,185,129,0.12)';
-                    iconWrap.style.color = '#059669';
-                    kindLbl.style.color = '#059669';
-                    kindLbl.textContent = 'Correo recibido';
-                }
-            })
-            .catch(function(){
-                document.getElementById('woCorreoDetCuerpo').textContent = 'No se pudo cargar el correo.';
-            });
+        if (!_abrirMailEncima()) return;
+        setTimeout(function(){
+            if (typeof window.mailVerCorreo === 'function') {
+                window.mailVerCorreo(correoId);
+            }
+        }, 220);
     };
-
-    // Click fuera del detalle cierra
-    modalDet.addEventListener('click', function(e){ if (e.target === modalDet) modalDet.classList.remove('active'); });
-    document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape' && modalDet.classList.contains('active')) modalDet.classList.remove('active');
-    });
 })();
 </script>
