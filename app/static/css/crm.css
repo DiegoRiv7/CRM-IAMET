@@ -11388,16 +11388,23 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
         box-shadow 0.28s ease;
 }
 
-/* Scatter por posición — cada card tiene su propio ángulo y offset.
-   Usamos nth-of-type para que sea estable independiente de hover/JS. */
-.mkt-widget:nth-of-type(1) { --rot: -0.6deg; --y: 0px; }
-.mkt-widget:nth-of-type(2) { --rot:  0.9deg; --y: 14px; }
-.mkt-widget:nth-of-type(3) { --rot: -0.4deg; --y: -6px; }
-.mkt-widget:nth-of-type(4) { --rot:  1.1deg; --y: 8px; }
-.mkt-widget:nth-of-type(5) { --rot: -1.0deg; --y: -3px; }
-.mkt-widget:nth-of-type(6) { --rot:  0.5deg; --y: 10px; }
-.mkt-widget:nth-of-type(7) { --rot: -0.8deg; --y: -8px; }
-.mkt-widget:nth-of-type(8) { --rot:  0.7deg; --y: 4px; }
+/* Las cards NO se estiran a la celda del grid: mantienen su altura
+   natural y dejan ver el background del board abajo. Esto da el
+   feeling sticky-note y permite scatter más visible. */
+.mkt-widget {
+    align-self: start;
+}
+
+/* Scatter por posición — ángulo + Y más marcados para que el desorden
+   se note. Cada card tiene su propio par único por nth-of-type. */
+.mkt-widget:nth-of-type(1) { --rot: -1.4deg; --y: 0px; }
+.mkt-widget:nth-of-type(2) { --rot:  1.8deg; --y: 22px; }
+.mkt-widget:nth-of-type(3) { --rot: -1.6deg; --y: -10px; }
+.mkt-widget:nth-of-type(4) { --rot:  2.0deg; --y: 14px; }
+.mkt-widget:nth-of-type(5) { --rot: -1.8deg; --y: -6px; }
+.mkt-widget:nth-of-type(6) { --rot:  1.2deg; --y: 18px; }
+.mkt-widget:nth-of-type(7) { --rot: -1.5deg; --y: -14px; }
+.mkt-widget:nth-of-type(8) { --rot:  1.6deg; --y: 8px; }
 
 .mkt-widget:hover {
     /* Endereza al hover y eleva — sensación de "agarrar" el papel */
@@ -11694,16 +11701,11 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex;
     flex-direction: column;
     gap: 8px;
-    flex: 1;
-    min-height: 0;
 }
 .mkt-hero-prosp-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    flex: 1;
-    min-height: 0;
-    justify-content: space-around;
+    gap: 8px;
 }
 .mkt-hero-prosp-head {
     display: flex;
@@ -11937,10 +11939,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-tech-marcas {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    flex: 1;
-    min-height: 0;
-    justify-content: space-around;
+    gap: 8px;
 }
 .mkt-tech-marcas-label {
     font-size: 9px;
@@ -11959,7 +11958,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     margin-top: 4px;
 }
 .mkt-tech-ultima {
-    margin-top: auto;
     background: rgba(0, 0, 0, 0.03);
     border-radius: 10px;
     padding: 8px 10px;
@@ -12197,9 +12195,6 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     padding: 2px 8px;
     letter-spacing: 0.3px;
 }
-
-/* Próximo evento pegado al fondo para que el calendario respire arriba */
-.mkt-evt-next { margin-top: auto; }
 
 /* Hint cuando no hay eventos en el periodo (widget) */
 .mkt-evt-hint {
