@@ -821,6 +821,12 @@ def crm_home(request):
                   .order_by('fecha_evento')
         )
         dias_con_eventos = sorted({e.fecha_evento.day for e in eventos_periodo if e.fecha_evento})
+        # Mapa día → lista de evento_ids, usado por el calendario clickable
+        dia_to_eventos = {}
+        for e in eventos_periodo:
+            if not e.fecha_evento:
+                continue
+            dia_to_eventos.setdefault(e.fecha_evento.day, []).append(e.id)
         ahora = timezone.now()
         proximo = next((e for e in eventos_periodo if e.fecha_evento and e.fecha_evento >= ahora), None)
         # Etiqueta del mes para el header del calendario + día de hoy si aplica
@@ -840,12 +846,21 @@ def crm_home(request):
                 pass
         elif anios_list and len(anios_list) == 1:
             mes_label = f'Año {anios_list[0]}'
-        # Días 1..31 con flags para el grid del calendario
+        # Días 1..31 con flags para el grid del calendario. Si un día tiene
+        # eventos, agregamos los ids para que el calendario sea clickable
+        # (1 evento → abre detalle; N eventos → lista filtrada por día).
         dias_set = set(dias_con_eventos)
-        dias_calendar = [
-            {'num': i, 'has_event': i in dias_set, 'is_today': dia_hoy == i}
-            for i in range(1, 32)
-        ]
+        dias_calendar = []
+        for i in range(1, 32):
+            ev_ids = dia_to_eventos.get(i, [])
+            dias_calendar.append({
+                'num': i,
+                'has_event': i in dias_set,
+                'is_today': dia_hoy == i,
+                'evento_ids_str': ','.join(str(x) for x in ev_ids),
+                'evento_count': len(ev_ids),
+                'single_evento_id': ev_ids[0] if len(ev_ids) == 1 else None,
+            })
         eventos_kpis = {
             'total': len(eventos_periodo),
             'mes_label': mes_label,
@@ -878,9 +893,44 @@ def crm_home(request):
             }
             for e in techday_periodo if e.fecha_evento and e.fecha_evento >= ahora
         ][:3]
+        # Métricas agregadas que llenan la card de Techday: asistentes únicos
+        # confirmados, prospectos generados, top de marcas trabajadas, y la
+        # última sesión realizada (para mostrar "Última: X" cuando no hay
+        # próximas en el período).
+        tech_asistentes = 0
+        tech_prospectos = 0
+        marca_count = {}
+        for e in techday_periodo:
+            tech_asistentes += sum(1 for a in e.asistentes.all() if a.confirmado)
+            tech_prospectos += e.prospectos_generados.count()
+            for m in (e.marcas or []):
+                marca_count[m] = marca_count.get(m, 0) + 1
+        # Top 3 marcas
+        top_marcas = sorted(marca_count.items(), key=lambda kv: -kv[1])[:3]
+        max_marca = top_marcas[0][1] if top_marcas else 0
+        tech_marcas_top = [
+            {
+                'label': str(m).title(),
+                'letter': str(m)[0].upper(),
+                'count': c,
+                'pct': round((c / max_marca) * 100) if max_marca else 0,
+            }
+            for m, c in top_marcas
+        ]
+        # Última sesión completada (más reciente, fecha < ahora)
+        pasadas = [e for e in techday_periodo if e.fecha_evento and e.fecha_evento < ahora]
+        ultima = max(pasadas, key=lambda e: e.fecha_evento) if pasadas else None
         techday_kpis = {
             'total': len(techday_periodo),
             'proximas': techday_proximas,
+            'asistentes': tech_asistentes,
+            'prospectos': tech_prospectos,
+            'marcas_top': tech_marcas_top,
+            'ultima': {
+                'id': ultima.id,
+                'nombre': ultima.nombre,
+                'fecha_display': ultima.fecha_evento.strftime('%d %b · %H:%M'),
+            } if ultima else None,
             'filter_tipo': filter_tipo,
         }
 

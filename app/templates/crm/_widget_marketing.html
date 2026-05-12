@@ -65,11 +65,11 @@
                     {% if marketing_kpis.prosp_por_marca %}
                     <div class="mkt-hero-prosp-list">
                         {% for m in marketing_kpis.prosp_por_marca %}
-                        <div class="mkt-prosp-row">
-                            <span class="mkt-prosp-letter">{{ m.letter }}</span>
-                            <span class="mkt-prosp-name">{{ m.label }}</span>
-                            <span class="mkt-prosp-bar"><i style="width:{{ m.pct }}%"></i></span>
-                            <span class="mkt-prosp-count">{{ m.count }}</span>
+                        <div class="mkt-bar-row mkt-bar-row--hero">
+                            <span class="mkt-bar-letter">{{ m.letter }}</span>
+                            <span class="mkt-bar-name">{{ m.label }}</span>
+                            <span class="mkt-bar-track"><i style="width:{{ m.pct }}%"></i></span>
+                            <span class="mkt-bar-count">{{ m.count }}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -99,7 +99,11 @@
                 <div class="mkt-cal">
                     <div class="mkt-cal-dow">L</div><div class="mkt-cal-dow">M</div><div class="mkt-cal-dow">X</div><div class="mkt-cal-dow">J</div><div class="mkt-cal-dow">V</div><div class="mkt-cal-dow">S</div><div class="mkt-cal-dow">D</div>
                     {% for d in eventos_kpis.dias_calendar %}
-                    <div class="mkt-cal-day{% if d.has_event %} mkt-cal-day--ev{% endif %}{% if d.is_today %} mkt-cal-day--today{% endif %}">{{ d.num }}</div>
+                    <div class="mkt-cal-day{% if d.has_event %} mkt-cal-day--ev{% endif %}{% if d.is_today %} mkt-cal-day--today{% endif %}"
+                         {% if d.has_event %}data-evento-ids="{{ d.evento_ids_str }}"
+                                              data-evento-count="{{ d.evento_count }}"
+                                              {% if d.single_evento_id %}data-evento-id="{{ d.single_evento_id }}"{% endif %}
+                                              title="{{ d.evento_count }} evento{{ d.evento_count|pluralize:'s' }}"{% endif %}>{{ d.num }}</div>
                     {% endfor %}
                 </div>
                 {% if eventos_kpis.proximo %}
@@ -126,17 +130,57 @@
                 <span class="mkt-w-title">Techday</span>
                 {% if techday_kpis.total %}<span class="mkt-w-count">{{ techday_kpis.total }}</span>{% endif %}
             </div>
-            <div class="mkt-w-body">
+            <div class="mkt-w-body mkt-tech-body">
                 {% if techday_kpis.total %}
-                <div class="mkt-tech-count">{{ techday_kpis.total }} sesión{{ techday_kpis.total|pluralize:"es" }} en el período</div>
-                {% else %}
-                <div class="mkt-tech-count">Sin sesiones en este período</div>
+                <div class="mkt-tech-stats">
+                    <div class="mkt-tech-stat">
+                        <div class="mkt-tech-stat-v">{{ techday_kpis.total }}</div>
+                        <div class="mkt-tech-stat-l">Sesiones</div>
+                    </div>
+                    <div class="mkt-tech-stat">
+                        <div class="mkt-tech-stat-v">{{ techday_kpis.asistentes|default:"0" }}</div>
+                        <div class="mkt-tech-stat-l">Asistentes</div>
+                    </div>
+                    <div class="mkt-tech-stat">
+                        <div class="mkt-tech-stat-v">{{ techday_kpis.prospectos|default:"0" }}</div>
+                        <div class="mkt-tech-stat-l">Prospectos</div>
+                    </div>
+                </div>
+
+                {% if techday_kpis.marcas_top %}
+                <div class="mkt-tech-marcas">
+                    <div class="mkt-tech-marcas-label">Marcas trabajadas</div>
+                    {% for m in techday_kpis.marcas_top %}
+                    <div class="mkt-bar-row">
+                        <span class="mkt-bar-letter">{{ m.letter }}</span>
+                        <span class="mkt-bar-name">{{ m.label }}</span>
+                        <span class="mkt-bar-track"><i style="width:{{ m.pct }}%"></i></span>
+                        <span class="mkt-bar-count">{{ m.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
                 {% endif %}
+
                 {% for t in techday_kpis.proximas %}
+                {% if forloop.first %}<div class="mkt-tech-foot-label">Próximas</div>{% endif %}
                 <div class="mkt-inner-card mkt-row-card"><span class="mkt-row-dot"></span><span>{{ t.nombre }} · {{ t.fecha_display }}</span></div>
                 {% endfor %}
-                {% if techday_kpis.total and not techday_kpis.proximas %}
-                <div class="mkt-evt-hint" style="margin-top:auto;">Sin próximas — ya se realizaron las del período.</div>
+
+                {% if techday_kpis.ultima and not techday_kpis.proximas %}
+                <div class="mkt-tech-ultima">
+                    <span class="mkt-tech-ultima-label">Última sesión</span>
+                    <span class="mkt-tech-ultima-name">{{ techday_kpis.ultima.nombre }}</span>
+                    <span class="mkt-tech-ultima-date">{{ techday_kpis.ultima.fecha_display }}</span>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="mkt-tech-empty">
+                    <div class="mkt-tech-empty-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                    </div>
+                    <div class="mkt-tech-empty-text">Sin sesiones en este período</div>
+                    <div class="mkt-tech-empty-hint">Crea un evento de tipo Techday</div>
+                </div>
                 {% endif %}
             </div>
         </a>
@@ -154,11 +198,11 @@
             <div class="mkt-w-body mkt-demo-body">
                 <div class="mkt-inner-card mkt-demo-row">
                     <div class="mkt-demo-row-top"><span class="mkt-demo-label">En sitio</span><span class="mkt-demo-value">7 solic.</span></div>
-                    <div class="mkt-mini-bar"><i style="width:70%"></i></div>
+                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:70%"></i></div>
                 </div>
                 <div class="mkt-inner-card mkt-demo-row">
                     <div class="mkt-demo-row-top"><span class="mkt-demo-label">Remoto</span><span class="mkt-demo-value">4 solic.</span></div>
-                    <div class="mkt-mini-bar"><i style="width:42%"></i></div>
+                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:42%"></i></div>
                 </div>
             </div>
             <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
@@ -176,9 +220,9 @@
             </div>
             <div class="mkt-w-body">
                 <div class="mkt-tech-count">Por marca</div>
-                <div class="mkt-cert-row"><span class="mkt-cert-letter">P</span><span class="mkt-cert-bar"><i style="width:75%"></i></span><span class="mkt-cert-pct">75%</span></div>
-                <div class="mkt-cert-row"><span class="mkt-cert-letter">Z</span><span class="mkt-cert-bar"><i style="width:55%"></i></span><span class="mkt-cert-pct">55%</span></div>
-                <div class="mkt-cert-row"><span class="mkt-cert-letter">A</span><span class="mkt-cert-bar"><i style="width:40%"></i></span><span class="mkt-cert-pct">40%</span></div>
+                <div class="mkt-bar-row"><span class="mkt-bar-letter">P</span><span class="mkt-bar-track"><i style="width:75%"></i></span><span class="mkt-bar-pct">75%</span></div>
+                <div class="mkt-bar-row"><span class="mkt-bar-letter">Z</span><span class="mkt-bar-track"><i style="width:55%"></i></span><span class="mkt-bar-pct">55%</span></div>
+                <div class="mkt-bar-row"><span class="mkt-bar-letter">A</span><span class="mkt-bar-track"><i style="width:40%"></i></span><span class="mkt-bar-pct">40%</span></div>
             </div>
             <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
         </button>
@@ -196,15 +240,15 @@
             <div class="mkt-w-body mkt-cursos-body">
                 <div class="mkt-curso-row">
                     <div class="mkt-curso-head"><span class="mkt-curso-name">Ventas Consultivas</span><span class="mkt-curso-pct">67%</span></div>
-                    <div class="mkt-mini-bar mkt-mini-bar--lg"><i style="width:67%"></i></div>
+                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:67%"></i></div>
                 </div>
                 <div class="mkt-curso-row">
                     <div class="mkt-curso-head"><span class="mkt-curso-name">Panduit Certified Sales</span><span class="mkt-curso-pct">34%</span></div>
-                    <div class="mkt-mini-bar mkt-mini-bar--lg"><i style="width:34%"></i></div>
+                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:34%"></i></div>
                 </div>
                 <div class="mkt-curso-row">
                     <div class="mkt-curso-head"><span class="mkt-curso-name">Zebra Partner Program</span><span class="mkt-curso-pct">22%</span></div>
-                    <div class="mkt-mini-bar mkt-mini-bar--lg"><i style="width:22%"></i></div>
+                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:22%"></i></div>
                 </div>
             </div>
             <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
@@ -274,6 +318,23 @@
         card.addEventListener('click', function(){
             var name = card.dataset.sectionName || 'Esta sección';
             showToast(name + ' — próximamente');
+        });
+    });
+
+    // Calendario clickable: día con evento(s) → eventos list (deep-linked
+    // al detalle si solo hay 1 en ese día). Como el calendario vive dentro
+    // del <a> que envuelve la card de Eventos, hay que cortar la
+    // propagación para no navegar a la vista=eventos sin el ?open.
+    dash.querySelectorAll('.mkt-cal-day--ev').forEach(function(day){
+        day.addEventListener('click', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            var params = new URLSearchParams(window.location.search);
+            params.set('tab', 'prospeccion');
+            params.set('vista', 'eventos');
+            var singleId = day.dataset.eventoId;
+            if (singleId) params.set('open', singleId);
+            window.location.search = params.toString();
         });
     });
 })();

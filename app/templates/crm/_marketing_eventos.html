@@ -120,5 +120,14 @@
             abrirDetalle(row.dataset.eventoId);
         });
     });
+    // Deep-link: ?open=ID en la URL → abre directo el detalle de ese evento.
+    // Usado por el calendario del dashboard de marketing cuando hay un solo
+    // evento en el día clickeado.
+    try {
+        var openId = new URLSearchParams(window.location.search).get('open');
+        if (openId) {
+            setTimeout(function(){ abrirDetalle(openId); }, 150);
+        }
+    } catch (e) { /* noop */ }
 })();
 </script>
