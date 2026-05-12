@@ -4707,14 +4707,15 @@ def ver_tarea_compartida(request, token):
 
 
 def og_image_tarea(request, token):
-    """Genera un PNG 1200×630 estilo card de tarea para preview en
-    WhatsApp/Slack. Layout vertical single-column (sin sidebar):
-    pill + título + descripción + separador + meta rows (responsable,
-    oportunidad, fecha, prioridad). Más simple y robusto que el
-    layout previo 2-cols donde el título se desbordaba al sidebar.
+    """Genera un PNG 1200×630 que recrea el widget de detalle de tarea
+    para preview en WhatsApp/Slack. Layout 2-cols como el real:
+    izquierda título + botón verde + descripción; derecha sidebar con
+    estado, responsable, creador, fecha límite (con subtítulo "vence
+    en X"), prioridad, participantes y observadores (con avatars).
     """
     from django.core import signing
     from django.http import HttpResponse, Http404
+    from django.utils import timezone as _tz
     from io import BytesIO
     try:
         from PIL import Image, ImageDraw, ImageFont
@@ -4737,34 +4738,29 @@ def og_image_tarea(request, token):
             return ImageFont.truetype(path, size)
         except (IOError, OSError):
             return ImageFont.load_default()
-    f_pill = _load(13, bold=True)
-    f_title = _load(38, bold=True)
-    f_body = _load(20)
-    f_meta_label = _load(16)
-    f_meta_value = _load(18, bold=True)
-    f_avatar = _load(14, bold=True)
-    f_footer = _load(14)
+    f_crumb = _load(13)
+    f_title = _load(34, bold=True)
+    f_btn = _load(14, bold=True)
+    f_section = _load(11, bold=True)
+    f_body = _load(17)
+    f_sb_label = _load(10, bold=True)
+    f_sb_value = _load(15, bold=True)
+    f_sb_sub = _load(12)
+    f_avatar = _load(11, bold=True)
+    f_footer = _load(13)
 
-    # Card blanca redondeada
-    M = 40
-    draw.rounded_rectangle([M, M, W - M, H - M], radius=22, fill='#FFFFFF', outline='#E2E8F0', width=1)
+    # Card blanca
+    M = 30
+    draw.rounded_rectangle([M, M, W - M, H - M], radius=18, fill='#FFFFFF', outline='#E2E8F0', width=1)
 
-    # Padding interno
-    PAD_L = 60
-    x0 = M + PAD_L
-    x_right = W - M - PAD_L
-    y = M + 40
+    # ── Sidebar separator vertical ────────────────────────────────
+    SB_W = 360
+    sb_x = W - M - SB_W
+    draw.line([(sb_x, M + 20), (sb_x, H - M - 20)], fill='#E2E8F0', width=1)
 
-    # ── Pill "TAREA · CRM IAMET" ───────────────────────────────────
-    pill_text = 'TAREA · CRM IAMET'
-    pill_w = 200
-    draw.rounded_rectangle([x0, y, x0 + pill_w, y + 28], radius=14, fill='#EFF6FF')
-    draw.text((x0 + 14, y + 6), pill_text, fill='#2563EB', font=f_pill)
-    y += 48
-
-    # ── Wrap helper ────────────────────────────────────────────────
+    # Wrap helper
     def _wrap(text, max_chars):
-        words = text.split()
+        words = (text or '').split()
         lines, cur = [], ''
         for w in words:
             test = (cur + ' ' + w).strip()
@@ -4777,121 +4773,226 @@ def og_image_tarea(request, token):
             lines.append(cur)
         return lines
 
-    # ── Título (2 líneas máx, ahora ancho completo del card) ──────
-    # Ancho disponible ≈ 1020px. A 38pt bold ≈ 22px/char → 46 chars cabe.
-    titulo_lines = _wrap(tarea.titulo or 'Tarea', 42)[:2]
-    for line in titulo_lines:
-        draw.text((x0, y), line, fill='#0F172A', font=f_title)
-        y += 46
-    y += 8
+    # Color por usuario (hash → paleta)
+    _palette = ['#3B82F6', '#8B5CF6', '#EC4899', '#F97316', '#10B981', '#6366F1', '#14B8A6', '#F59E0B']
 
-    # ── Descripción (3 líneas máx) ────────────────────────────────
+    def _color_for(name):
+        return _palette[sum(ord(c) for c in (name or '?')) % len(_palette)]
+
+    def _initials(name):
+        parts = (name or '?').split()
+        return ''.join([p[0].upper() for p in parts[:2]]) if parts else '?'
+
+    def _draw_avatar(cx, cy, size, name, color=None):
+        col = color or _color_for(name)
+        draw.ellipse([cx, cy, cx + size, cy + size], fill=col)
+        ini = _initials(name)
+        bbox = draw.textbbox((0, 0), ini, font=f_avatar)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text((cx + size / 2 - tw / 2, cy + size / 2 - th / 2 - 1), ini, fill='#FFFFFF', font=f_avatar)
+
+    # ═══════════════════════════════════════════════════════════════
+    # LADO IZQUIERDO — título, botón completar, descripción
+    # ═══════════════════════════════════════════════════════════════
+    PAD = 38
+    lx = M + PAD
+    ly = M + 32
+    l_right = sb_x - PAD
+
+    # Pill: oportunidad o cliente
+    crumb_text = None
+    if getattr(tarea, 'oportunidad', None) and getattr(tarea.oportunidad, 'titulo', None):
+        crumb_text = tarea.oportunidad.titulo
+    elif getattr(tarea, 'cliente', None) and getattr(tarea.cliente, 'nombre_empresa', None):
+        crumb_text = tarea.cliente.nombre_empresa
+    if crumb_text:
+        crumb_text = crumb_text[:34]
+        bb = draw.textbbox((0, 0), crumb_text, font=f_crumb)
+        pw = bb[2] - bb[0] + 22
+        draw.rounded_rectangle([lx, ly, lx + pw, ly + 26], radius=13, fill='#F1F5F9')
+        draw.text((lx + 11, ly + 6), crumb_text, fill='#64748B', font=f_crumb)
+        ly += 40
+
+    # Título (2 líneas, wrap a ~24 chars con 34pt en col izquierda ~720px)
+    titulo_lines = _wrap(tarea.titulo or 'Tarea', 30)[:2]
+    for line in titulo_lines:
+        draw.text((lx, ly), line, fill='#0F172A', font=f_title)
+        ly += 42
+    ly += 12
+
+    # Botón "Completar tarea" (visual, verde como el widget real)
+    btn_text = '✓ Completar tarea' if tarea.estado != 'completada' else '✓ Completada'
+    btn_color = '#10B981' if tarea.estado != 'completada' else '#94A3B8'
+    bb = draw.textbbox((0, 0), btn_text, font=f_btn)
+    bw = bb[2] - bb[0] + 36
+    draw.rounded_rectangle([lx, ly, lx + bw, ly + 38], radius=10, fill=btn_color)
+    draw.text((lx + 18, ly + 11), btn_text, fill='#FFFFFF', font=f_btn)
+    ly += 56
+
+    # Section header "DESCRIPCIÓN"
+    draw.text((lx, ly), 'DESCRIPCIÓN', fill='#94A3B8', font=f_section)
+    ly += 22
+
+    # Descripción
     desc = (tarea.descripcion or '').strip()
     if desc:
         import re as _re
-        desc = _re.sub(r'[*_`#>\[\]]+', '', desc)
-        desc = desc.replace('\n', ' ').strip()
-        # Ancho ≈ 1020 / 12 ≈ 85 chars/line a 20pt
-        desc_lines = _wrap(desc, 80)[:3]
+        desc = _re.sub(r'[*_`#>\[\]]+', '', desc).replace('\n', ' ').strip()
+        # Ancho ≈ 700px, 17pt ≈ 10px/char → 65 chars
+        max_lines = 5
+        desc_lines = _wrap(desc, 62)[:max_lines]
         for line in desc_lines:
-            draw.text((x0, y), line, fill='#475569', font=f_body)
-            y += 28
-        y += 6
+            draw.text((lx, ly), line, fill='#1E293B', font=f_body)
+            ly += 26
+    else:
+        draw.text((lx, ly), 'Sin descripción.', fill='#94A3B8', font=f_body)
 
-    # ── Separador horizontal ──────────────────────────────────────
-    y += 8
-    draw.line([(x0, y), (x_right, y)], fill='#E2E8F0', width=1)
-    y += 18
+    # Footer en el extremo inferior izquierdo
+    draw.text((lx, H - M - 32), 'Abre el link para ver la tarea completa →', fill='#94A3B8', font=f_footer)
 
-    # ── Meta rows: icono · label · valor ──────────────────────────
-    # Iconos: shapes simples (sin emoji para evitar problemas de fuente)
-    ICON_W = 22
-    ICON_GAP = 12
-    LABEL_W = 180   # ancho fijo para que valores se alineen
-    LABEL_X = x0 + ICON_W + ICON_GAP
-    VALUE_X = LABEL_X + LABEL_W
-    ROW_H = 38
+    # ═══════════════════════════════════════════════════════════════
+    # SIDEBAR DERECHO — meta rich (estado, responsable, creador,
+    # fecha + vence en X, prioridad, participantes, observadores)
+    # ═══════════════════════════════════════════════════════════════
+    SB_PAD = 28
+    sx = sb_x + SB_PAD
+    sw = SB_W - SB_PAD * 2
+    sy = M + 24
 
-    def _icon_user(cx, cy):
-        # Círculo cabeza + arco hombros
-        draw.ellipse([cx + 6, cy + 2, cx + 16, cy + 12], outline='#94A3B8', width=2)
-        draw.arc([cx + 2, cy + 10, cx + 20, cy + 26], start=180, end=360, fill='#94A3B8', width=2)
+    # Helper para sección "LABEL" + valor (devuelve la nueva y)
+    def _section_label(text, top_y):
+        draw.text((sx, top_y), text, fill='#94A3B8', font=f_sb_label)
+        return top_y + 16
 
-    def _icon_opp(cx, cy):
-        # Maletín: rectángulo cuerpo + handle arriba
-        draw.rounded_rectangle([cx + 2, cy + 7, cx + 20, cy + 20], radius=2, outline='#94A3B8', width=2)
-        draw.rounded_rectangle([cx + 7, cy + 3, cx + 15, cy + 9], radius=1, outline='#94A3B8', width=2)
+    SECTION_GAP = 16
 
-    def _icon_cal(cx, cy):
-        # Calendario: rectángulo + 2 patitas arriba
-        draw.rounded_rectangle([cx + 2, cy + 5, cx + 20, cy + 21], radius=2, outline='#94A3B8', width=2)
-        draw.line([(cx + 7, cy + 2), (cx + 7, cy + 7)], fill='#94A3B8', width=2)
-        draw.line([(cx + 15, cy + 2), (cx + 15, cy + 7)], fill='#94A3B8', width=2)
-        draw.line([(cx + 2, cy + 10), (cx + 20, cy + 10)], fill='#94A3B8', width=1)
+    # ESTADO
+    estado_map = {
+        'pendiente':    ('Pendiente',   '#F59E0B'),
+        'iniciada':     ('Iniciada',    '#8B5CF6'),
+        'en_progreso':  ('En progreso', '#3B82F6'),
+        'completada':   ('Completada',  '#10B981'),
+        'cancelada':    ('Cancelada',   '#94A3B8'),
+    }
+    e_label, e_color = estado_map.get(tarea.estado, ('Pendiente', '#F59E0B'))
+    sy = _section_label('ESTADO', sy)
+    draw.ellipse([sx, sy + 6, sx + 10, sy + 16], fill=e_color)
+    draw.text((sx + 18, sy + 1), e_label, fill='#1E293B', font=f_sb_value)
+    sy += 26 + SECTION_GAP
 
-    def _icon_flag(cx, cy):
-        # Bandera: línea poste + triángulo
-        draw.line([(cx + 4, cy + 2), (cx + 4, cy + 22)], fill='#94A3B8', width=2)
-        draw.polygon([(cx + 4, cy + 3), (cx + 18, cy + 8), (cx + 4, cy + 13)], outline='#94A3B8', fill='#94A3B8')
-
-    # ROW 1: Responsable
-    _icon_user(x0, y)
-    draw.text((LABEL_X, y + 3), 'Responsable', fill='#64748B', font=f_meta_label)
+    # RESPONSABLE
+    sy = _section_label('RESPONSABLE', sy)
     if tarea.asignado_a_id:
         resp = tarea.asignado_a
         resp_name = (resp.get_full_name() or resp.username) if resp else '—'
     else:
         resp_name = 'Sin asignar'
-    initials = ''.join([p[0].upper() for p in (resp_name.split() or ['?'])[:2]])
-    # Avatar circular junto al nombre
-    av_x = VALUE_X
-    av_y = y - 2
-    draw.ellipse([av_x, av_y, av_x + 28, av_y + 28], fill='#3B82F6')
-    bbox = draw.textbbox((0, 0), initials, font=f_avatar)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    draw.text((av_x + 14 - tw / 2, av_y + 14 - th / 2 - 2), initials, fill='#FFFFFF', font=f_avatar)
-    draw.text((av_x + 38, y + 2), resp_name[:42], fill='#0F172A', font=f_meta_value)
-    y += ROW_H
+    _draw_avatar(sx, sy, 26, resp_name)
+    draw.text((sx + 34, sy + 5), resp_name[:24], fill='#1E293B', font=f_sb_value)
+    sy += 32 + SECTION_GAP
 
-    # ROW 2: Oportunidad (solo si existe)
-    if tarea.oportunidad_id:
-        _icon_opp(x0, y)
-        draw.text((LABEL_X, y + 3), 'Oportunidad', fill='#64748B', font=f_meta_label)
-        opp = tarea.oportunidad
-        opp_text = (opp.titulo if hasattr(opp, 'titulo') and opp.titulo else (opp.tipo_negociacion if hasattr(opp, 'tipo_negociacion') else 'Oportunidad'))
-        draw.text((VALUE_X, y + 2), str(opp_text)[:55], fill='#2563EB', font=f_meta_value)
-        y += ROW_H
+    # CREADOR
+    sy = _section_label('CREADOR', sy)
+    if tarea.creado_por_id:
+        cr = tarea.creado_por
+        cr_name = (cr.get_full_name() or cr.username) if cr else '—'
+    else:
+        cr_name = '—'
+    _draw_avatar(sx, sy, 26, cr_name)
+    draw.text((sx + 34, sy + 5), cr_name[:24], fill='#1E293B', font=f_sb_value)
+    sy += 32 + SECTION_GAP
 
-    # ROW 3: Fecha límite (solo si existe)
+    # FECHA LÍMITE + subtítulo "Vence en X"
     if tarea.fecha_limite:
-        from django.utils import timezone as _tz
-        _icon_cal(x0, y)
-        draw.text((LABEL_X, y + 3), 'Fecha límite', fill='#64748B', font=f_meta_label)
+        sy = _section_label('FECHA LÍMITE', sy)
         fl = tarea.fecha_limite
         meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
         fecha_str = f'{fl.day} {meses[fl.month - 1]}, {fl.hour:02d}:{fl.minute:02d}'
-        vencida = fl < _tz.now() and tarea.estado not in ('completada', 'cancelada')
-        if vencida:
-            # Pill rojo claro tipo "vencida"
-            pill_text2 = f'⏰ {fecha_str}'
-            tb = draw.textbbox((0, 0), pill_text2, font=f_meta_value)
-            pw = tb[2] - tb[0] + 26
-            draw.rounded_rectangle([VALUE_X, y - 1, VALUE_X + pw, y + 30], radius=15, fill='#FEE2E2')
-            draw.text((VALUE_X + 13, y + 2), pill_text2, fill='#B91C1C', font=f_meta_value)
+        now = _tz.now()
+        delta = fl - now
+        secs = delta.total_seconds()
+        completada = tarea.estado in ('completada', 'cancelada')
+        # Colores: rojo si vencida, naranja si <24h, verde >=24h, gris si completada
+        if completada:
+            box_bg, txt_color, sub_text, sub_color = '#F1F5F9', '#64748B', 'Completada', '#64748B'
+        elif secs < 0:
+            box_bg, txt_color = '#FEE2E2', '#B91C1C'
+            hrs = int(abs(secs) // 3600)
+            days = hrs // 24
+            sub_text = f'Vencida hace {days} día{"s" if days != 1 else ""}' if days >= 1 else f'Vencida hace {hrs} h'
+            sub_color = '#B91C1C'
+        elif secs < 86400:
+            box_bg, txt_color = '#FEF3C7', '#B45309'
+            hrs = int(secs // 3600)
+            sub_text = f'Vence en {hrs} hora{"s" if hrs != 1 else ""}'
+            sub_color = '#B45309'
         else:
-            draw.text((VALUE_X, y + 2), fecha_str, fill='#0F172A', font=f_meta_value)
-        y += ROW_H
+            box_bg, txt_color = '#F1F5F9', '#1E293B'
+            days = int(secs // 86400)
+            sub_text = f'Vence en {days} día{"s" if days != 1 else ""}'
+            sub_color = '#64748B'
+        # Box pill alrededor
+        draw.rounded_rectangle([sx, sy, sx + sw, sy + 48], radius=10, fill=box_bg)
+        draw.text((sx + 12, sy + 5), fecha_str, fill=txt_color, font=f_sb_value)
+        draw.text((sx + 12, sy + 28), sub_text, fill=sub_color, font=f_sb_sub)
+        sy += 48 + SECTION_GAP
 
-    # ROW 4: Prioridad
-    _icon_flag(x0, y)
-    draw.text((LABEL_X, y + 3), 'Prioridad', fill='#64748B', font=f_meta_label)
-    prio_map = {'alta': ('Alta', '#DC2626'), 'media': ('Media', '#F59E0B'), 'baja': ('Baja', '#94A3B8')}
-    prio_label, prio_color = prio_map.get(tarea.prioridad, ('Media', '#F59E0B'))
-    draw.text((VALUE_X, y + 2), prio_label, fill=prio_color, font=f_meta_value)
-    y += ROW_H
+    # PRIORIDAD
+    sy = _section_label('PRIORIDAD', sy)
+    prio_map = {'alta': ('Alta', '#DC2626'), 'media': ('Normal', '#F59E0B'), 'baja': ('Baja', '#94A3B8')}
+    p_label, p_color = prio_map.get(tarea.prioridad, ('Normal', '#F59E0B'))
+    # Pill outlined
+    draw.rounded_rectangle([sx, sy, sx + 90, sy + 26], radius=13, outline='#E2E8F0', width=1)
+    # Flag mini
+    draw.line([(sx + 10, sy + 7), (sx + 10, sy + 21)], fill=p_color, width=2)
+    draw.polygon([(sx + 10, sy + 8), (sx + 22, sy + 12), (sx + 10, sy + 16)], fill=p_color)
+    draw.text((sx + 30, sy + 5), p_label, fill='#1E293B', font=f_sb_value)
+    sy += 26 + SECTION_GAP
 
-    # ── Footer hint ────────────────────────────────────────────────
-    draw.text((x0, H - M - 40), 'Abre el link para ver la tarea completa →', fill='#94A3B8', font=f_footer)
+    # PARTICIPANTES
+    parts = list(tarea.participantes.all()[:5]) if hasattr(tarea, 'participantes') else []
+    parts_total = tarea.participantes.count() if hasattr(tarea, 'participantes') else 0
+    sy = _section_label('PARTICIPANTES', sy)
+    if parts:
+        # Avatars en fila + "+N"
+        av_size = 24
+        ax = sx
+        for p in parts[:4]:
+            pn = p.get_full_name() or p.username
+            _draw_avatar(ax, sy, av_size, pn)
+            ax += av_size + 6
+        if parts_total > 4:
+            # +N badge
+            draw.ellipse([ax, sy, ax + av_size, sy + av_size], outline='#CBD5E1', width=1, fill='#F8FAFC')
+            extra = f'+{parts_total - 4}'
+            bb = draw.textbbox((0, 0), extra, font=f_avatar)
+            ew, eh = bb[2] - bb[0], bb[3] - bb[1]
+            draw.text((ax + av_size / 2 - ew / 2, sy + av_size / 2 - eh / 2 - 1), extra, fill='#64748B', font=f_avatar)
+        sy += 28
+    else:
+        draw.text((sx, sy + 2), 'Ninguno', fill='#94A3B8', font=f_sb_sub)
+        sy += 22
+    sy += SECTION_GAP - 4
+
+    # OBSERVADORES
+    obs = list(tarea.observadores.all()[:5]) if hasattr(tarea, 'observadores') else []
+    obs_total = tarea.observadores.count() if hasattr(tarea, 'observadores') else 0
+    sy = _section_label('OBSERVADORES', sy)
+    if obs:
+        av_size = 24
+        ax = sx
+        for o in obs[:4]:
+            on = o.get_full_name() or o.username
+            _draw_avatar(ax, sy, av_size, on)
+            ax += av_size + 6
+        if obs_total > 4:
+            draw.ellipse([ax, sy, ax + av_size, sy + av_size], outline='#CBD5E1', width=1, fill='#F8FAFC')
+            extra = f'+{obs_total - 4}'
+            bb = draw.textbbox((0, 0), extra, font=f_avatar)
+            ew, eh = bb[2] - bb[0], bb[3] - bb[1]
+            draw.text((ax + av_size / 2 - ew / 2, sy + av_size / 2 - eh / 2 - 1), extra, fill='#64748B', font=f_avatar)
+    else:
+        draw.text((sx, sy + 2), 'Ninguno', fill='#94A3B8', font=f_sb_sub)
 
     # Serialize PNG
     buf = BytesIO()
