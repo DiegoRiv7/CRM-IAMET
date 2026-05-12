@@ -53,6 +53,30 @@
                         <div class="mkt-stat-l">Tasa de contacto</div>
                     </div>
                 </div>
+
+                {# ── Mini-barras: prospecciones por marca en el periodo ── #}
+                <div class="mkt-hero-prosp">
+                    <div class="mkt-hero-prosp-head">
+                        <span class="mkt-hero-prosp-label">Prospecciones por marca</span>
+                        {% if marketing_kpis.prosp_por_marca %}
+                        <span class="mkt-hero-prosp-meta">{{ marketing_kpis.prosp_por_marca|length }} marca{{ marketing_kpis.prosp_por_marca|length|pluralize:"s" }}</span>
+                        {% endif %}
+                    </div>
+                    {% if marketing_kpis.prosp_por_marca %}
+                    <div class="mkt-hero-prosp-list">
+                        {% for m in marketing_kpis.prosp_por_marca %}
+                        <div class="mkt-prosp-row">
+                            <span class="mkt-prosp-letter">{{ m.letter }}</span>
+                            <span class="mkt-prosp-name">{{ m.label }}</span>
+                            <span class="mkt-prosp-bar"><i style="width:{{ m.pct }}%"></i></span>
+                            <span class="mkt-prosp-count">{{ m.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="mkt-hero-prosp-empty">Aún no hay prospecciones en este período</div>
+                    {% endif %}
+                </div>
             </div>
         </a>
 

@@ -737,11 +737,63 @@ def crm_home(request):
             tasa_str = f'{round(total_respondidas / total_enviadas * 100)}%'
         else:
             tasa_str = '—'
+
+        # Prospecciones por marca en el periodo — alimenta las mini-barras
+        # debajo de los KPIs en la card de Campañas para llenar el espacio
+        # vacío con algo útil: ¿qué marcas estamos trabajando más?
+        from .models import Prospecto
+        from django.db.models import Count
+        MARCAS_MKT = [
+            ('PANDUIT', 'Panduit'),
+            ('ZEBRA', 'Zebra'),
+            ('APC', 'APC'),
+            ('AVIGILION', 'Avigilon'),
+            ('GENETEC', 'Genetec'),
+            ('AXIS', 'Axis'),
+            ('CISCO', 'Cisco'),
+        ]
+        prosp_qs = Prospecto.objects.all()
+        if desde_date or hasta_date:
+            if desde_date:
+                prosp_qs = prosp_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date:
+                prosp_qs = prosp_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                prosp_qs = prosp_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int_p = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int_p = []
+                if meses_int_p:
+                    prosp_qs = prosp_qs.filter(fecha_creacion__month__in=meses_int_p)
+        conteo_marca = dict(
+            prosp_qs.values_list('producto')
+                    .annotate(c=Count('id'))
+                    .values_list('producto', 'c')
+        )
+        max_count = max(conteo_marca.values()) if conteo_marca else 0
+        prosp_por_marca = []
+        for code, label in MARCAS_MKT:
+            n = conteo_marca.get(code, 0)
+            if n <= 0:
+                continue
+            pct = round((n / max_count) * 100) if max_count else 0
+            prosp_por_marca.append({
+                'code': code,
+                'label': label,
+                'letter': label[0],
+                'count': n,
+                'pct': pct,
+            })
+
         marketing_kpis = {
             'activas': total_activas,
             'enviadas': total_enviadas,
             'tasa_contacto': tasa_str,
             'hay_actividad': total_enviadas > 0 or total_activas > 0,
+            'prosp_por_marca': prosp_por_marca,
         }
 
     # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
