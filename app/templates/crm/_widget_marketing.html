@@ -1,6 +1,13 @@
-{# ═══ DASHBOARD MARKETING — Bento grid liquid glass ═══ #}
+{# ═══ DASHBOARD MARKETING — Pizarrón horizontal liquid glass ═══ #}
 <div class="mkt-dashboard" id="mktDashboard">
-    <div class="mkt-bento">
+    <div class="mkt-board" id="mktBoard">
+    <button type="button" class="mkt-board-nav mkt-board-nav--prev" id="mktBoardPrev" aria-label="Anterior">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button type="button" class="mkt-board-nav mkt-board-nav--next" id="mktBoardNext" aria-label="Siguiente">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="mkt-bento" id="mktBento">
 
         {# ═══ HERO 2×2 — Campañas (ACTIVO) ═══ #}
         <a class="mkt-widget mkt-widget--hero" data-area="camp"
@@ -291,7 +298,8 @@
             <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
         </button>
 
-    </div>
+    </div>{# /.mkt-bento #}
+    </div>{# /.mkt-board #}
 </div>
 
 {# Toast "Próximamente" — un único nodo reutilizable #}
@@ -337,5 +345,42 @@
             window.location.search = params.toString();
         });
     });
+
+    // ── Pizarrón horizontal: navegación con ◀ ▶, wheel-to-horizontal y
+    //    detección de bordes para mostrar/ocultar gradientes y botones.
+    var board = document.getElementById('mktBoard');
+    var bento = document.getElementById('mktBento');
+    var btnPrev = document.getElementById('mktBoardPrev');
+    var btnNext = document.getElementById('mktBoardNext');
+    if (board && bento) {
+        function updateEdges(){
+            var atStart = bento.scrollLeft <= 4;
+            var atEnd = bento.scrollLeft + bento.clientWidth >= bento.scrollWidth - 4;
+            board.classList.toggle('is-at-start', atStart);
+            board.classList.toggle('is-at-end', atEnd);
+        }
+        function scrollByCols(dir){
+            // Avanza ~2 columnas (≈ 580px desktop / 480px mobile)
+            var step = Math.max(bento.clientWidth * 0.6, 320);
+            bento.scrollBy({ left: dir * step, behavior: 'smooth' });
+        }
+        if (btnPrev) btnPrev.addEventListener('click', function(){ scrollByCols(-1); });
+        if (btnNext) btnNext.addEventListener('click', function(){ scrollByCols(1); });
+        bento.addEventListener('scroll', updateEdges, { passive: true });
+
+        // Wheel vertical → scroll horizontal (sin shift). El usuario
+        // espera moverse por el pizarrón con su rueda normal, no tener
+        // que mantener Shift.
+        bento.addEventListener('wheel', function(e){
+            // Si el delta horizontal ya es dominante, lo dejamos pasar.
+            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+            e.preventDefault();
+            bento.scrollLeft += e.deltaY;
+        }, { passive: false });
+
+        // Estado inicial
+        updateEdges();
+        window.addEventListener('resize', updateEdges);
+    }
 })();
 </script>

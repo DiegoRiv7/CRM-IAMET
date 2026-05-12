@@ -11241,27 +11241,117 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Bento grid — crece para llenar el viewport ──────────────────── */
-.mkt-bento {
+/* ── Pizarrón horizontal — scroll a la derecha en lugar de hacia abajo.
+   La idea es que se sienta como un canvas de marketing/creativo:
+   columnas que crecen a la derecha, 2 filas de cards de altura fija,
+   y el hero (Campañas) ancla la izquierda ocupando 2×2. ─────────── */
+.mkt-board {
+    position: relative;
     flex: 1;
+    min-height: 0;
+}
+.mkt-bento {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: minmax(220px, 1fr) minmax(220px, 1fr) minmax(200px, 1fr);
-    grid-template-areas:
-        "camp camp evt  tech"
-        "cur  cur  demo cert"
-        "asoc asoc red  red";
+    grid-auto-flow: column dense;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-auto-columns: 280px;
     gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: calc(100vh - 240px);
+    min-height: 520px;
+    max-height: 760px;
+    padding: 4px 4px 14px;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 8px;
+    /* scrollbar discreto */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+.mkt-bento::-webkit-scrollbar {
+    height: 8px;
+}
+.mkt-bento::-webkit-scrollbar-track {
+    background: transparent;
+}
+.mkt-bento::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+}
+.mkt-bento::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.22);
+}
+/* Gradiente derecho indica que hay más contenido para hacer scroll */
+.mkt-board::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 14px;
+    width: 32px;
+    pointer-events: none;
+    background: linear-gradient(to right, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.85));
+    opacity: 1;
+    transition: opacity 0.25s ease;
+    border-radius: 0 var(--mkt-radius) var(--mkt-radius) 0;
+}
+.mkt-board.is-at-end::after { opacity: 0; }
+
+/* Card sizing: el hero ocupa 2 filas × 2 columnas (queda como un panel
+   ancla). Cursos sigue siendo wide (2 columnas, 1 fila). Los demás 1×1. */
+.mkt-widget--hero {
+    grid-row: span 2;
+    grid-column: span 2;
+}
+.mkt-widget--wide {
+    grid-column: span 2;
+}
+.mkt-widget--ready[data-area="evt"],
+.mkt-widget--ready[data-area="tech"] {
+    /* Eventos y Techday se sienten mejor con 2 filas (más alto), como en
+       el diseño previo */
+    grid-row: span 2;
 }
 
-.mkt-widget[data-area="camp"] { grid-area: camp; }
-.mkt-widget[data-area="evt"]  { grid-area: evt;  }
-.mkt-widget[data-area="tech"] { grid-area: tech; }
-.mkt-widget[data-area="demo"] { grid-area: demo; }
-.mkt-widget[data-area="cert"] { grid-area: cert; }
-.mkt-widget[data-area="cur"]  { grid-area: cur;  }
-.mkt-widget[data-area="asoc"] { grid-area: asoc; }
-.mkt-widget[data-area="red"]  { grid-area: red;  }
+/* Botones flotantes de navegación ◀ ▶ */
+.mkt-board-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--mkt-t1, #1C1C1E);
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.mkt-board-nav:hover {
+    transform: translateY(-50%) scale(1.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+}
+.mkt-board-nav--prev { left: -6px; }
+.mkt-board-nav--next { right: -6px; }
+.mkt-board:hover .mkt-board-nav {
+    opacity: 1;
+    pointer-events: auto;
+}
+.mkt-board.is-at-start .mkt-board-nav--prev,
+.mkt-board.is-at-end .mkt-board-nav--next {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
 
 /* ── Widget base — liquid glass ─────────────────────────────────── */
 .mkt-widget {
@@ -12007,36 +12097,25 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     50%      { opacity: 0.85; transform: scale(1.5); }
 }
 
-/* ── Responsive ────────────────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────────────────
+   Mantenemos el feeling de pizarrón (scroll horizontal) en todos los
+   tamaños; solo achicamos las columnas en pantallas medianas/chicas. */
 @media (max-width: 1100px) {
     .mkt-bento {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-rows: 220px 200px 200px 176px 176px;
-        grid-template-areas:
-            "camp camp"
-            "evt  tech"
-            "demo cert"
-            "cur  cur"
-            "asoc red";
+        grid-auto-columns: 240px;
+        min-height: 480px;
+        max-height: 680px;
     }
 }
 
 @media (max-width: 640px) {
     .mkt-bento {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-        grid-template-areas:
-            "camp"
-            "evt"
-            "tech"
-            "demo"
-            "cert"
-            "cur"
-            "asoc"
-            "red";
+        grid-auto-columns: 200px;
+        gap: 10px;
+        min-height: 420px;
+        height: calc(100vh - 220px);
     }
-    .mkt-widget { min-height: 160px; }
-    .mkt-widget--hero { min-height: 320px; }
+    .mkt-board-nav { display: none; }
     .mkt-title { font-size: 1.45rem; }
 }
 
