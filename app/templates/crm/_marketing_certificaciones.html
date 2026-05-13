@@ -13,9 +13,9 @@
         <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Certificaciones</span>
     </div>
 
-    {# Header: filtros + segmented control + CTA, todo alineado a la derecha #}
+    {# Header: filtros + segmented control a la izquierda; CTA a la derecha #}
     <div class="mkt-cert-head">
-        <div class="mkt-cert-head-controls">
+        <div class="mkt-cert-head-controls mkt-cert-head-controls--left">
             {# Segmented control Lista | Pared #}
             <div class="mkt-cert-vista-seg" role="tablist" aria-label="Vista de certificaciones">
                 <a class="mkt-cert-vista-btn {% if f.vista_cert != 'pared' %}is-active{% endif %}"
@@ -84,12 +84,12 @@
                 </a>
                 {% endif %}
             </div>
-
-            <button type="button" class="mkt-events-new" id="btnCertNuevo" style="background:#B45309;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Nueva certificación
-            </button>
         </div>
+
+        <button type="button" class="mkt-events-new" id="btnCertNuevo" style="background:#B45309;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva certificación
+        </button>
     </div>
 
     {# Stats compactas arriba #}
@@ -117,7 +117,10 @@
     {# ═══ VISTA PARED — galería estilo "diplomas colgados" ═══ #}
     {% if f.vista_cert == 'pared' %}
         {% if certificaciones_lista %}
-        <div class="mkt-cert-wall">
+        {# data-count alimenta el CSS responsivo: 1/2/3 = centrados y
+           más grandes; 4+ = grid normal de 4 columnas que se va
+           llenando. #}
+        <div class="mkt-cert-wall" data-count="{{ certificaciones_lista|length }}">
             {% for c in certificaciones_lista %}
             {# tilt determinístico a partir del id: rango -2°..+2° #}
             {% with tilt=c.id|stringformat:"d" %}

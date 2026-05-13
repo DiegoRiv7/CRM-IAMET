@@ -13243,16 +13243,16 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
    MARKETING → CERTIFICACIONES
    ════════════════════════════════════════════════════════════════════ */
 
-/* ── Header con controles right-aligned (sin título) ───────────── */
+/* ── Header: controles a la izquierda, CTA a la derecha ────────── */
 .mkt-cert-head {
-    display: flex; align-items: center; justify-content: flex-end;
+    display: flex; align-items: center; justify-content: space-between;
     gap: 16px; flex-wrap: wrap;
     margin-bottom: 18px;
 }
 .mkt-cert-head-controls {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    justify-content: flex-end;
 }
+.mkt-cert-head-controls--left { justify-content: flex-start; }
 
 /* Segmented control Lista | Pared */
 .mkt-cert-vista-seg {
@@ -13326,15 +13326,48 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .mkt-cert-filter-clear:hover { background: #FEE2E2; color: #DC2626; }
 
 /* ── Vista Pared ──────────────────────────────────────────────── */
+/* La pared "respira": con pocas certificaciones se centran y se
+   muestran más grandes; con muchas se llena el grid de 4 columnas. */
 .mkt-cert-wall {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 36px 28px;
     padding: 22px 6px 32px;
+    justify-content: center;
 }
-@media (max-width: 1280px) { .mkt-cert-wall { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 880px)  { .mkt-cert-wall { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; } }
-@media (max-width: 520px)  { .mkt-cert-wall { grid-template-columns: 1fr; gap: 24px; } }
+/* 1 certificación: una sola pieza protagonista, centrada y generosa */
+.mkt-cert-wall[data-count="1"] {
+    grid-template-columns: minmax(0, 520px);
+    padding-top: 40px;
+}
+/* 2 certificaciones: par centrado */
+.mkt-cert-wall[data-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 380px));
+    padding-top: 32px;
+}
+/* 3 certificaciones: trío centrado */
+.mkt-cert-wall[data-count="3"] {
+    grid-template-columns: repeat(3, minmax(0, 320px));
+}
+/* 4+ certificaciones: 4 columnas normales. Las filas incompletas
+   (5, 6, 7 certs) aparecen alineadas al inicio — Grid lo hace solo. */
+
+/* Responsive: en pantallas chicas se reduce el número máximo */
+@media (max-width: 1280px) {
+    .mkt-cert-wall { grid-template-columns: repeat(3, 1fr); }
+    .mkt-cert-wall[data-count="1"] { grid-template-columns: minmax(0, 460px); }
+    .mkt-cert-wall[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 340px)); }
+}
+@media (max-width: 880px) {
+    .mkt-cert-wall { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; }
+    .mkt-cert-wall[data-count="1"] { grid-template-columns: minmax(0, 400px); }
+}
+@media (max-width: 520px) {
+    .mkt-cert-wall,
+    .mkt-cert-wall[data-count="1"],
+    .mkt-cert-wall[data-count="2"],
+    .mkt-cert-wall[data-count="3"] { grid-template-columns: 1fr; gap: 24px; }
+}
 .mkt-cert-frame {
     display: flex; flex-direction: column;
     background: transparent; border: none;
