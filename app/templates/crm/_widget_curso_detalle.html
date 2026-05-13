@@ -94,6 +94,20 @@
                         <p class="curso-d-notas" id="cursoDetNotas"></p>
                     </div>
 
+                    {# ── Sesiones programadas ── #}
+                    <div class="curso-d-block">
+                        <div class="curso-d-sesiones-head">
+                            <div class="curso-d-block-lbl">Sesiones programadas <span id="cursoDetSesionesCountInline" class="curso-d-com-count"></span></div>
+                            <button type="button" id="cursoDetSesionAdd" class="curso-d-sesion-add" title="Agendar nueva sesión">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Agendar
+                            </button>
+                        </div>
+                        <div id="cursoDetSesionesList" class="curso-d-sesiones-list">
+                            <div class="curso-d-sesiones-empty">Aún no hay sesiones agendadas. Bloquea un horario en tu calendario para estudiar.</div>
+                        </div>
+                    </div>
+
                     {# ── Comentarios ── #}
                     <div class="curso-d-block">
                         <div class="curso-d-block-lbl">Comentarios <span id="cursoDetComCount" class="curso-d-com-count"></span></div>
@@ -175,19 +189,32 @@
                     <label>Fecha
                         <input type="date" id="cursoAgendarFecha">
                     </label>
-                    <label>Hora
+                    <label>Hora inicio
                         <input type="time" id="cursoAgendarHora" value="09:00">
                     </label>
-                    <label>Duración
-                        <select id="cursoAgendarDuracion">
-                            <option value="30">30 min</option>
-                            <option value="45">45 min</option>
-                            <option value="60" selected>1 hora</option>
-                            <option value="90">1h 30min</option>
-                            <option value="120">2 horas</option>
-                            <option value="180">3 horas</option>
-                        </select>
-                    </label>
+                </div>
+                <div class="curso-agendar-duracion-block">
+                    <div class="curso-agendar-duracion-lbl">Duración</div>
+                    <div class="curso-agendar-duracion-inputs">
+                        <div class="curso-agendar-num">
+                            <input type="number" id="cursoAgendarHoras" min="0" max="12" value="1" inputmode="numeric">
+                            <span>h</span>
+                        </div>
+                        <div class="curso-agendar-num">
+                            <input type="number" id="cursoAgendarMin" min="0" max="59" step="1" value="0" inputmode="numeric">
+                            <span>min</span>
+                        </div>
+                        <span class="curso-agendar-duracion-hint" id="cursoAgendarDuracionHint">1 hora</span>
+                    </div>
+                    {# Chips de duraciones rápidas #}
+                    <div class="curso-agendar-quick">
+                        <button type="button" data-h="0" data-m="30">30 min</button>
+                        <button type="button" data-h="0" data-m="45">45 min</button>
+                        <button type="button" data-h="1" data-m="0">1 h</button>
+                        <button type="button" data-h="1" data-m="30">1h 30min</button>
+                        <button type="button" data-h="2" data-m="0">2 h</button>
+                        <button type="button" data-h="3" data-m="0">3 h</button>
+                    </div>
                 </div>
                 <div id="cursoAgendarError" class="curso-agendar-error" style="display:none;"></div>
             </div>
@@ -315,9 +342,77 @@
 
                 // Carga comentarios y sesiones en paralelo
                 _cargarComentarios(cursoId);
-                _cargarSesionesCount(cursoId);
+                _cargarSesionesLista(cursoId);
             }).catch(function(){ cerrar(); });
     }
+
+    // ── Lista de sesiones programadas ──────────────────────────────
+    function _cargarSesionesLista(cursoId){
+        var listEl = document.getElementById('cursoDetSesionesList');
+        var countInline = document.getElementById('cursoDetSesionesCountInline');
+        var badgeTop = document.getElementById('cursoDetSesionesCount');
+        fetch('/app/api/cursos/' + cursoId + '/sesiones/')
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                var items = (data && data.sesiones) || [];
+                // Actualiza badges del botón Agendar + label inline
+                if (countInline) countInline.textContent = items.length ? '(' + items.length + ')' : '';
+                if (badgeTop) {
+                    if (items.length > 0){ badgeTop.textContent = items.length; badgeTop.style.display = ''; }
+                    else { badgeTop.style.display = 'none'; }
+                }
+                if (!items.length){
+                    listEl.innerHTML = '<div class="curso-d-sesiones-empty">Aún no hay sesiones agendadas. Bloquea un horario en tu calendario para estudiar.</div>';
+                    return;
+                }
+                listEl.innerHTML = items.map(function(s){
+                    var dur = s.duracion_minutos || 0;
+                    var h = Math.floor(dur / 60); var m = dur % 60;
+                    var durTxt = '';
+                    if (h > 0) durTxt += h + 'h';
+                    if (m > 0) durTxt += (h > 0 ? ' ' : '') + m + 'min';
+                    if (!durTxt) durTxt = '—';
+                    var rangoTxt = s.fecha_inicio_display + (s.fecha_fin_display ? ' – ' + s.fecha_fin_display : '');
+                    var completadaCls = s.completada ? ' is-completada' : '';
+                    return '<div class="curso-d-sesion-row' + completadaCls + '" data-sesion-id="' + s.id + '">'
+                         + '<div class="curso-d-sesion-ico"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>'
+                         + '<div class="curso-d-sesion-info">'
+                         +   '<div class="curso-d-sesion-fecha">' + _esc(rangoTxt) + '</div>'
+                         +   '<div class="curso-d-sesion-dur">' + _esc(durTxt) + (s.completada ? ' · Completada' : '') + '</div>'
+                         + '</div>'
+                         + '<button type="button" class="curso-d-sesion-rm" data-sesion-rm="' + s.id + '" title="Quitar del calendario">×</button>'
+                         + '</div>';
+                }).join('');
+            }).catch(function(){
+                listEl.innerHTML = '<div class="curso-d-sesiones-empty">No se pudieron cargar las sesiones.</div>';
+            });
+    }
+
+    // Click en "Agendar" del header de sesiones — abre el mini-modal
+    document.addEventListener('click', function(e){
+        if (e.target.closest('#cursoDetSesionAdd')) {
+            _abrirAgendar();
+        }
+        // Eliminar una sesión
+        var rmBtn = e.target.closest('[data-sesion-rm]');
+        if (rmBtn && _currentCursoId){
+            var sid = rmBtn.dataset.sesionRm;
+            function _doRm(){
+                fetch('/app/api/cursos/' + _currentCursoId + '/sesiones/' + sid + '/eliminar/', {
+                    method:'POST', headers:{'X-CSRFToken': _csrfToken()},
+                }).then(function(r){ return r.json(); }).then(function(d){
+                    if (d && d.ok) _cargarSesionesLista(_currentCursoId);
+                });
+            }
+            if (window.certConfirm){
+                window.certConfirm({
+                    title: '¿Quitar esta sesión del calendario?',
+                    message: 'La actividad se eliminará de tu calendario.',
+                    confirmText: 'Quitar', danger: true,
+                }).then(function(ok){ if (ok) _doRm(); });
+            } else if (confirm('¿Quitar esta sesión del calendario?')) _doRm();
+        }
+    });
     function cerrar(){
         overlay.style.display = 'none';
         document.documentElement.classList.remove('cert-d-lock');
@@ -466,25 +561,40 @@
         });
     }
 
-    // ── Sesiones agendadas (contador en el botón Agendar) ──────────
-    function _cargarSesionesCount(cursoId){
-        var badge = document.getElementById('cursoDetSesionesCount');
-        fetch('/app/api/cursos/' + cursoId + '/sesiones/')
-            .then(function(r){ return r.json(); })
-            .then(function(data){
-                var n = (data && data.total) || 0;
-                if (n > 0){ badge.textContent = n; badge.style.display = ''; }
-                else badge.style.display = 'none';
-            }).catch(function(){});
-    }
-
     // ── Agendar al calendario ──────────────────────────────────────
     var agendarOverlay = document.getElementById('cursoAgendarOverlay');
     var agendarFecha = document.getElementById('cursoAgendarFecha');
     var agendarHora = document.getElementById('cursoAgendarHora');
-    var agendarDur = document.getElementById('cursoAgendarDuracion');
+    var agendarHoras = document.getElementById('cursoAgendarHoras');
+    var agendarMin = document.getElementById('cursoAgendarMin');
+    var agendarDurHint = document.getElementById('cursoAgendarDuracionHint');
     var agendarErr = document.getElementById('cursoAgendarError');
     var agendarTitle = document.getElementById('cursoAgendarTitle');
+
+    function _duracionMin(){
+        var h = parseInt(agendarHoras.value || 0); if (isNaN(h) || h < 0) h = 0;
+        var m = parseInt(agendarMin.value || 0); if (isNaN(m) || m < 0) m = 0;
+        return h * 60 + m;
+    }
+    function _refreshDurHint(){
+        var total = _duracionMin();
+        if (total <= 0){ agendarDurHint.textContent = 'Selecciona la duración'; return; }
+        var h = Math.floor(total / 60); var m = total % 60;
+        var txt = '';
+        if (h > 0) txt += h + (h === 1 ? ' hora' : ' horas');
+        if (m > 0){ if (txt) txt += ' '; txt += m + (m === 1 ? ' minuto' : ' minutos'); }
+        agendarDurHint.textContent = txt;
+    }
+    if (agendarHoras) agendarHoras.addEventListener('input', _refreshDurHint);
+    if (agendarMin) agendarMin.addEventListener('input', _refreshDurHint);
+    // Chips de duración rápida
+    document.querySelectorAll('.curso-agendar-quick button').forEach(function(b){
+        b.addEventListener('click', function(){
+            agendarHoras.value = b.dataset.h;
+            agendarMin.value = b.dataset.m;
+            _refreshDurHint();
+        });
+    });
     function _abrirAgendar(){
         if (!_currentCurso) return;
         agendarTitle.textContent = _currentCurso.nombre || 'Sesión de estudio';
@@ -493,7 +603,9 @@
         var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
         agendarFecha.value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
         agendarHora.value = '09:00';
-        agendarDur.value = '60';
+        agendarHoras.value = '1';
+        agendarMin.value = '0';
+        _refreshDurHint();
         agendarErr.style.display = 'none';
         agendarOverlay.style.display = 'flex';
     }
@@ -504,14 +616,21 @@
     agendarOverlay.addEventListener('click', function(e){ if (e.target === agendarOverlay) _cerrarAgendar(); });
     document.getElementById('cursoAgendarSubmit').addEventListener('click', function(){
         if (!_currentCursoId) return;
+        var dur = _duracionMin();
+        if (!agendarFecha.value || !agendarHora.value){
+            agendarErr.textContent = 'Elige fecha y hora.'; agendarErr.style.display = 'block'; return;
+        }
+        if (dur < 15){
+            agendarErr.textContent = 'La duración mínima es 15 minutos.'; agendarErr.style.display = 'block'; return;
+        }
+        if (dur > 480){
+            agendarErr.textContent = 'La duración máxima es 8 horas.'; agendarErr.style.display = 'block'; return;
+        }
         var payload = {
             fecha: agendarFecha.value,
             hora_inicio: agendarHora.value,
-            duracion_minutos: parseInt(agendarDur.value || 60),
+            duracion_minutos: dur,
         };
-        if (!payload.fecha || !payload.hora_inicio){
-            agendarErr.textContent = 'Elige fecha y hora.'; agendarErr.style.display = 'block'; return;
-        }
         agendarErr.style.display = 'none';
         var btn = this; btn.disabled = true; var orig = btn.innerHTML; btn.textContent = 'Agendando…';
         fetch('/app/api/cursos/' + _currentCursoId + '/agendar/', {
@@ -522,7 +641,7 @@
             btn.disabled = false; btn.innerHTML = orig;
             if (data && data.ok){
                 _cerrarAgendar();
-                _cargarSesionesCount(_currentCursoId);
+                _cargarSesionesLista(_currentCursoId);
                 // Toast de éxito
                 var toast = document.getElementById('widgetToast');
                 if (toast){

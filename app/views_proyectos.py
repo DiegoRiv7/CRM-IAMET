@@ -2456,7 +2456,7 @@ def actividad_list_create(request):
             if oportunidad_id:
                 actividades = actividades.filter(oportunidad_id=oportunidad_id)
 
-            actividades = actividades.select_related('creado_por', 'oportunidad', 'evento').prefetch_related('participantes')
+            actividades = actividades.select_related('creado_por', 'oportunidad', 'evento', 'curso').prefetch_related('participantes')
 
             events = []
             _1h = timedelta(hours=1)
@@ -2468,6 +2468,9 @@ def actividad_list_create(request):
                 evento_data = None
                 if actividad.evento_id:
                     evento_data = {'id': actividad.evento_id, 'nombre': actividad.evento.nombre}
+                curso_data = None
+                if actividad.curso_id:
+                    curso_data = {'id': actividad.curso_id, 'nombre': actividad.curso.nombre}
                 # Clampar eventos multi-día a 1h para que no crucen semanas en el calendario
                 fin_display = actividad.fecha_fin
                 if (fin_display - actividad.fecha_inicio).days >= 1:
@@ -2483,6 +2486,7 @@ def actividad_list_create(request):
                     'participants': participants_data,
                     'opportunity': opportunity_data,
                     'evento': evento_data,
+                    'curso': curso_data,
                     'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
                     'es_mio': actividad.creado_por_id == request.user.pk,
                     'completada': actividad.completada,

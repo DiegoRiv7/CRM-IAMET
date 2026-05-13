@@ -325,6 +325,7 @@ urlpatterns = [
     path('api/cursos/comentario/<int:comentario_id>/eliminar/', views_cursos.api_curso_comentario_eliminar, name='api_curso_comentario_eliminar'),
     path('api/cursos/<int:curso_id>/agendar/', views_cursos.api_curso_agendar, name='api_curso_agendar'),
     path('api/cursos/<int:curso_id>/sesiones/', views_cursos.api_curso_sesiones, name='api_curso_sesiones'),
+    path('api/cursos/<int:curso_id>/sesiones/<int:sesion_id>/eliminar/', views_cursos.api_curso_sesion_eliminar, name='api_curso_sesion_eliminar'),
 
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),

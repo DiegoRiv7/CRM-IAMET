@@ -419,14 +419,29 @@ def api_curso_sesiones(request, curso_id):
     if not _access_ok(request.user):
         return HttpResponseForbidden()
     qs = Actividad.objects.filter(curso_id=curso_id).order_by('fecha_inicio')
-    items = [
-        {
+    items = []
+    for a in qs:
+        dur_min = 0
+        if a.fecha_inicio and a.fecha_fin:
+            dur_min = int((a.fecha_fin - a.fecha_inicio).total_seconds() // 60)
+        items.append({
             'id': a.id,
             'titulo': a.titulo,
             'fecha_inicio': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
+            'fecha_fin': a.fecha_fin.isoformat() if a.fecha_fin else None,
             'fecha_inicio_display': a.fecha_inicio.strftime('%a %d %b · %H:%M') if a.fecha_inicio else '',
+            'fecha_fin_display': a.fecha_fin.strftime('%H:%M') if a.fecha_fin else '',
+            'duracion_minutos': dur_min,
             'completada': a.completada,
-        }
-        for a in qs
-    ]
+        })
     return JsonResponse({'sesiones': items, 'total': len(items)})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_curso_sesion_eliminar(request, curso_id, sesion_id):
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    a = get_object_or_404(Actividad, id=sesion_id, curso_id=curso_id)
+    a.delete()
+    return JsonResponse({'ok': True})
