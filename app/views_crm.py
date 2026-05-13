@@ -5437,6 +5437,9 @@ def api_clientes_potenciales(request):
         qs = ClientePotencial.objects.select_related('asignado_a')
         if not is_supervisor(request.user):
             qs = qs.filter(asignado_a=request.user)
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            qs = qs.filter(nombre__icontains=q)
         qs = qs.order_by('-fecha_actualizacion')
         data = []
         for p in qs:

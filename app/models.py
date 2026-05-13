@@ -5004,7 +5004,13 @@ class Evento(models.Model):
                                 verbose_name='Cliente principal del evento')
     prospecto = models.ForeignKey('Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name='eventos_principales',
-                                  verbose_name='Prospecto principal del evento')
+                                  verbose_name='Prospección vinculada (legacy)',
+                                  help_text='LEGACY: vinculación a una Prospección (acercamiento). El nuevo flujo usa cliente_potencial.')
+    # Cliente potencial (lead) al que se dirige el evento. Reemplaza el uso
+    # del antiguo FK 'prospecto' para targetear leads sin oportunidad.
+    cliente_potencial = models.ForeignKey('ClientePotencial', on_delete=models.SET_NULL, null=True, blank=True,
+                                          related_name='eventos_principales',
+                                          verbose_name='Cliente potencial principal del evento')
     # Participantes internos: otros usuarios de IAMET que acompañarán al
     # vendedor (gerentes, técnicos, etc.). El evento aparece en su calendario.
     participantes = models.ManyToManyField(User, blank=True,

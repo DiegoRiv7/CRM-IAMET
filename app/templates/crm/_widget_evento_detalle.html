@@ -82,7 +82,7 @@
                 {# Card: Prospectos vinculados + botón Crear prospección #}
                 <div class="wo-card">
                     <div class="wo-section-header">
-                        <h3 class="wo-section-title">Prospectos del evento <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
+                        <h3 class="wo-section-title">Prospecciones del evento <span class="evt-asist-count" id="evtDetAsistCount" style="margin-left:6px;">0</span></h3>
                         <button type="button" class="evt-det-primary-btn" id="evtDetCrearProsp">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                             Crear prospección
@@ -141,6 +141,7 @@
 
     var _eventoId = null;
     var _eventoEstado = null;
+    var _evento = null; // snapshot del evento renderizado, usado al pre-llenar prospección
 
     function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
     function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -153,6 +154,7 @@
 
     function render(d){
         var e = d.evento;
+        _evento = e;
         _eventoEstado = e.estado;
         document.getElementById('evtDetTitle').textContent = e.nombre;
         // Si es demo_sitio, anexamos la dirección (Para cliente / De marca)
@@ -171,8 +173,11 @@
         var tgt = document.getElementById('evtDetTarget');
         if (e.cliente_id){
             tgt.innerHTML = '<span class="evt-asist-kind evt-kind-cliente">Cliente</span>' + _esc(e.cliente_nombre);
+        } else if (e.cliente_potencial_id){
+            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-prospecto">Prospecto</span>' + _esc(e.cliente_potencial_nombre);
         } else if (e.prospecto_id){
-            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-prospecto">Prospecto</span>' + _esc(e.prospecto_nombre);
+            // legacy: vínculo viejo a Prospección — lo mostramos como tal
+            tgt.innerHTML = '<span class="evt-asist-kind evt-kind-prospecto">Prospección</span>' + _esc(e.prospecto_nombre);
         } else {
             tgt.innerHTML = '<span style="color:#AEAEB2;font-style:italic;">— sin asignar —</span>';
         }
@@ -280,16 +285,69 @@
         if (typeof window.eventoFormAbrir === 'function') window.eventoFormAbrir(_eventoId);
     });
 
-    // ── Crear prospección: abre el form global de Nuevo Prospecto con el ──
-    //    evento_origen marcado para que el prospecto quede vinculado.
+    // ── Crear prospección: abre el form global de Nuevo Prospecto con
+    //    pre-fill (título, marca, cliente o cliente potencial) tomado del
+    //    evento. Marca evento_origen para que la prospección quede vinculada.
     document.getElementById('evtDetCrearProsp').addEventListener('click', function(){
-        if (!_eventoId) return;
+        if (!_eventoId || !_evento) return;
         window._eventoOrigenForProspecto = _eventoId;
+        // El form de Nuevo Prospecto tiene un init que resetea los campos,
+        // por eso aplicamos el pre-fill en varios tiempos (mismo patrón
+        // que abrirProspeccionConProducto).
+        function _aplicarPrefill(){
+            var ev = _evento;
+            if (!ev) return;
+            // Título de la prospección = nombre del evento
+            var nombreEl = document.getElementById('wpfNombre');
+            if (nombreEl && !nombreEl.value) nombreEl.value = ev.nombre || '';
+            // Marca = primera marca del evento (mapeo a producto)
+            var primaMarca = (ev.marcas && ev.marcas[0]) ? ev.marcas[0] : '';
+            if (primaMarca){
+                var prodSel = document.getElementById('wpfProducto');
+                if (prodSel) prodSel.value = primaMarca;
+                var prodBtn = document.getElementById('wpProdBtn');
+                var prodLbl = document.getElementById('wpProdLabel');
+                if (prodSel && prodLbl){
+                    var txt = primaMarca;
+                    for (var i = 0; i < prodSel.options.length; i++){
+                        if (prodSel.options[i].value === primaMarca){ txt = prodSel.options[i].text || primaMarca; break; }
+                    }
+                    prodLbl.textContent = txt;
+                    if (prodBtn){ prodBtn.classList.remove('empty'); prodBtn.classList.add('filled'); }
+                }
+            }
+            // Cliente preferente; si no hay, intentamos con cliente_potencial
+            var cliInput = document.getElementById('wpfCliente');
+            var cliHidden = document.getElementById('wpfClienteId');
+            var cliBtn = document.getElementById('wpClienteBtn');
+            var cliLbl = document.getElementById('wpClienteLabel');
+            if (ev.cliente_id && ev.cliente_nombre){
+                if (cliInput) cliInput.value = ev.cliente_nombre;
+                if (cliHidden) cliHidden.value = ev.cliente_id;
+                if (cliLbl) cliLbl.textContent = ev.cliente_nombre;
+                if (cliBtn){ cliBtn.classList.remove('empty'); cliBtn.classList.add('filled'); }
+            } else if (ev.cliente_potencial_nombre){
+                // Cliente potencial: dejamos el nombre en el input para que el
+                // usuario lo confirme/promueva, sin set del hidden (queda como
+                // texto editable). Pista visual con sufijo "(cliente potencial)".
+                if (cliInput) cliInput.value = ev.cliente_potencial_nombre;
+                if (cliLbl) cliLbl.textContent = ev.cliente_potencial_nombre + ' (cliente potencial)';
+                if (cliBtn){ cliBtn.classList.remove('empty'); cliBtn.classList.add('filled'); }
+            }
+        }
         if (typeof window._setNuevoProspectoMode === 'function') window._setNuevoProspectoMode('cliente');
         var modalProsp = document.getElementById('widgetNuevoProspecto');
         cerrar();
         if (modalProsp){
-            setTimeout(function(){ modalProsp.classList.add('active'); }, 240);
+            setTimeout(function(){
+                modalProsp.classList.add('active');
+                // Multiple tries: el init del widget puede sobreescribir
+                _aplicarPrefill();
+                requestAnimationFrame(_aplicarPrefill);
+                setTimeout(_aplicarPrefill, 60);
+                setTimeout(_aplicarPrefill, 200);
+                setTimeout(_aplicarPrefill, 500);
+            }, 240);
         }
     });
 

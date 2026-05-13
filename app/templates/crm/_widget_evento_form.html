@@ -43,7 +43,7 @@
                                 <div class="evt-asist-ac" id="evtTargetClienteAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
                             </div>
                             <div class="evt-tgt-mode" data-mode="prospecto" style="display:none;">
-                                <input type="text" id="evtTargetProspectoQ" class="wn-ctw-pop-input" placeholder="Buscar prospecto…" autocomplete="off">
+                                <input type="text" id="evtTargetProspectoQ" class="wn-ctw-pop-input" placeholder="Buscar cliente potencial por nombre…" autocomplete="off">
                                 <div class="evt-asist-ac" id="evtTargetProspectoAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
                             </div>
                         </div>
@@ -334,7 +334,11 @@
     }
     function refreshTargetPill(){
         if (_target){
-            var kind = _target.kind === 'prospecto' ? 'Prospecto' : 'Cliente';
+            var kind;
+            if (_target.kind === 'cliente') kind = 'Cliente';
+            else if (_target.kind === 'cliente_potencial') kind = 'Prospecto';
+            else if (_target.kind === 'prospecto') kind = 'Prospección'; // legacy
+            else kind = 'Target';
             targetLbl.innerHTML = '<span style="font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#0052D4;margin-right:6px;">' + kind + '</span>' + _esc(_target.nombre);
             targetBtn.classList.remove('empty');
             targetBtn.classList.add('filled');
@@ -448,16 +452,24 @@
         _closeAllPops();
         refreshTargetPill();
     });
+    // El tab "Prospecto" busca CLIENTES POTENCIALES (modelo ClientePotencial)
+    // no Prospecciones. Antes esto cargaba del modelo Prospecto, lo que era
+    // inconsistente — ahora un evento targetea o Cliente o ClientePotencial.
     var doTgtProsp = _debounce(function(){
         var q = tgtProspectoQ.value.trim();
-        if (q.length < 2){ tgtProspectoAC.style.display = 'none'; return; }
-        fetch('/app/api/buscar-prospectos/?q=' + encodeURIComponent(q))
+        if (q.length < 1){ tgtProspectoAC.style.display = 'none'; return; }
+        fetch('/app/api/clientes-potenciales/?q=' + encodeURIComponent(q))
             .then(function(r){ return r.json(); })
-            .then(function(d){ renderACItems(tgtProspectoAC, d.prospectos || [], function(p){ return {id: p.id, nombre: p.nombre, sub: p.cliente_nombre + (p.etapa ? ' · ' + p.etapa : '')}; }); });
+            .then(function(d){
+                renderACItems(tgtProspectoAC, d.prospectos || [], function(p){
+                    return {id: p.id, nombre: p.nombre, sub: p.asignado_a_name || ''};
+                });
+            });
     }, 220);
     tgtProspectoQ.addEventListener('input', doTgtProsp);
     bindACClick(tgtProspectoAC, function(sel){
-        _target = {kind: 'prospecto', id: sel.id, nombre: sel.nombre};
+        // kind: 'cliente_potencial' (antes era 'prospecto' apuntando al modelo Prospecto)
+        _target = {kind: 'cliente_potencial', id: sel.id, nombre: sel.nombre};
         tgtProspectoAC.style.display = 'none';
         tgtProspectoQ.value = '';
         _closeAllPops();
@@ -543,7 +555,8 @@
                 notasEl.value = e.notas_post || '';
                 setMarcas(e.marcas);
                 if (e.cliente_id) _target = {kind: 'cliente', id: e.cliente_id, nombre: e.cliente_nombre};
-                else if (e.prospecto_id) _target = {kind: 'prospecto', id: e.prospecto_id, nombre: e.prospecto_nombre};
+                else if (e.cliente_potencial_id) _target = {kind: 'cliente_potencial', id: e.cliente_potencial_id, nombre: e.cliente_potencial_nombre};
+                else if (e.prospecto_id) _target = {kind: 'prospecto', id: e.prospecto_id, nombre: e.prospecto_nombre}; // legacy
                 _participantes = (e.participantes || []).slice();
                 refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshCostoPill();
                 refreshTargetPill(); refreshPartPill();
@@ -580,7 +593,10 @@
             costo: parseFloat(costoEl.value) || 0,
             notas_post: notasEl.value.trim(),
             cliente_id: (_target && _target.kind === 'cliente') ? _target.id : null,
-            prospecto_id: (_target && _target.kind === 'prospecto') ? _target.id : null,
+            cliente_potencial_id: (_target && _target.kind === 'cliente_potencial') ? _target.id : null,
+            // legacy: dejamos prospecto_id null — antes el tab "Prospecto" mandaba ID
+            // de Prospección. Ya no se usa pero el backend sigue aceptándolo por compat.
+            prospecto_id: null,
             participantes_ids: _participantes.map(function(p){ return p.id; }),
         };
         var id = idEl.value;
