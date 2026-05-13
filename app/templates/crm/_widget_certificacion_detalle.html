@@ -225,13 +225,16 @@
         var first = archivos[0];
         if (first.es_imagen){
             main.innerHTML = ''
-              + '<a href="'+ first.url +'" target="_blank" rel="noopener" class="cert-d-proof cert-d-proof--img">'
+              + '<a href="'+ first.url +'" target="_blank" rel="noopener" class="cert-d-proof cert-d-proof--img" title="Abrir en pestaña nueva para ver el original">'
               +   '<div class="cert-d-proof-mat">'
               +     '<img src="'+ first.url +'" alt="'+ _esc(first.nombre) +'">'
               +   '</div>'
               +   '<div class="cert-d-proof-meta">'
-              +     '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>'
               +     '<span>'+ _esc(first.nombre) +'</span>'
+              +     '<span class="cert-d-proof-cta">'
+              +       'Ver original'
+              +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>'
+              +     '</span>'
               +   '</div>'
               + '</a>';
         } else if (first.es_pdf){
