@@ -13,6 +13,7 @@ from . import views_iamet
 from . import views_levantamientos_app
 from . import views_compras
 from . import views_certificaciones
+from . import views_cursos
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -311,6 +312,14 @@ urlpatterns = [
     path('api/certificaciones/<int:certificacion_id>/eliminar/', views_certificaciones.api_certificacion_eliminar, name='api_certificacion_eliminar'),
     path('api/certificaciones/<int:certificacion_id>/archivos/', views_certificaciones.api_certificacion_archivo_subir, name='api_certificacion_archivo_subir'),
     path('api/certificaciones/<int:certificacion_id>/archivos/<int:archivo_id>/eliminar/', views_certificaciones.api_certificacion_archivo_eliminar, name='api_certificacion_archivo_eliminar'),
+
+    # ── Marketing → Cursos ──────────────────────────────────────────────
+    path('api/cursos/', views_cursos.api_cursos_list, name='api_cursos_list'),
+    path('api/cursos/stats/', views_cursos.api_cursos_stats, name='api_cursos_stats'),
+    path('api/cursos/crear/', views_cursos.api_curso_crear, name='api_curso_crear'),
+    path('api/cursos/<int:curso_id>/', views_cursos.api_curso_detalle, name='api_curso_detalle'),
+    path('api/cursos/<int:curso_id>/editar/', views_cursos.api_curso_editar, name='api_curso_editar'),
+    path('api/cursos/<int:curso_id>/eliminar/', views_cursos.api_curso_eliminar, name='api_curso_eliminar'),
 
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),

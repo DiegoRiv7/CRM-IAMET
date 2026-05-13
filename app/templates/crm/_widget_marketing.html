@@ -287,9 +287,10 @@
             </div>
         </a>
 
-        {# ═══ 2×1 — Cursos (wide) ═══ #}
-        <button type="button" class="mkt-widget mkt-widget--soon mkt-widget--wide" data-area="cur"
-                data-section-name="Cursos" style="--mkt-accent:#0369A1;--mkt-accent-bg:rgba(3,105,161,0.08);">
+        {# ═══ 2×1 — Cursos (wide, funcional) ═══ #}
+        <a href="?tab=prospeccion&vista=cursos&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           class="mkt-widget mkt-widget--wide" data-area="cur"
+           data-section-name="Cursos" style="--mkt-accent:#0369A1;--mkt-accent-bg:rgba(3,105,161,0.08);text-decoration:none;">
             <span class="mkt-specular"></span>
             <div class="mkt-w-head">
                 <div class="mkt-w-icon">
@@ -298,21 +299,33 @@
                 <span class="mkt-w-title">Cursos</span>
             </div>
             <div class="mkt-w-body mkt-cursos-body">
-                <div class="mkt-curso-row">
-                    <div class="mkt-curso-head"><span class="mkt-curso-name">Ventas Consultivas</span><span class="mkt-curso-pct">67%</span></div>
-                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:67%"></i></div>
+                {% if cursos_kpis and cursos_kpis.total %}
+                <div class="mkt-cert-card-stats">
+                    <div class="mkt-cert-card-stat">
+                        <div class="mkt-cert-card-stat-num">{{ cursos_kpis.en_progreso }}</div>
+                        <div class="mkt-cert-card-stat-lbl">En progreso</div>
+                    </div>
+                    <div class="mkt-cert-card-stat">
+                        <div class="mkt-cert-card-stat-num">{{ cursos_kpis.completados }}</div>
+                        <div class="mkt-cert-card-stat-lbl">Completados</div>
+                    </div>
+                    <div class="mkt-cert-card-stat">
+                        <div class="mkt-cert-card-stat-num">{{ cursos_kpis.personas }}</div>
+                        <div class="mkt-cert-card-stat-lbl">Personas</div>
+                    </div>
+                    {% if cursos_kpis.proximos %}
+                    <div class="mkt-cert-card-stat mkt-cert-card-stat--warn">
+                        <div class="mkt-cert-card-stat-num">{{ cursos_kpis.proximos }}</div>
+                        <div class="mkt-cert-card-stat-lbl">Próximos a deadline</div>
+                    </div>
+                    {% endif %}
                 </div>
-                <div class="mkt-curso-row">
-                    <div class="mkt-curso-head"><span class="mkt-curso-name">Panduit Certified Sales</span><span class="mkt-curso-pct">34%</span></div>
-                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:34%"></i></div>
-                </div>
-                <div class="mkt-curso-row">
-                    <div class="mkt-curso-head"><span class="mkt-curso-name">Zebra Partner Program</span><span class="mkt-curso-pct">22%</span></div>
-                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:22%"></i></div>
-                </div>
+                {% else %}
+                <div class="mkt-tech-count">Sin cursos aún</div>
+                <p style="font-size:0.74rem;color:#6B7280;line-height:1.45;margin:6px 0 0;">Registra el primero — al completarlo puedes generar la certificación de un click.</p>
+                {% endif %}
             </div>
-            <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
-        </button>
+        </a>
 
         {# ═══ 1×1 — Asociaciones ═══ #}
         <button type="button" class="mkt-widget mkt-widget--soon" data-area="asoc"

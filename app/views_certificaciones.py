@@ -173,6 +173,14 @@ def api_certificacion_crear(request):
         notas=(data.get('notas') or '').strip(),
         creado_por=request.user,
     )
+    # Si esta cert nace de un curso (CTA "Subir certificado"), vincúlalos.
+    curso_origen_id = data.get('curso_origen_id')
+    if curso_origen_id:
+        try:
+            from .models import Curso
+            Curso.objects.filter(id=int(curso_origen_id)).update(certificacion_resultante=c)
+        except (TypeError, ValueError):
+            pass
     return JsonResponse({'ok': True, 'certificacion': _certificacion_to_dict(c, include_archivos=True)})
 
 

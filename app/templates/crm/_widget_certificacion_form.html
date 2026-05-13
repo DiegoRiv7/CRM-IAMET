@@ -620,6 +620,33 @@
     };
     window.certificacionFormCerrar = cerrar;
 
+    // Apertura "desde curso": pre-llena marca, nombre, nivel y persona,
+    // y guarda el curso_id en window para enviar al submit (vincula la
+    // cert al curso de origen en el backend).
+    window.certificacionFormAbrirDesdeCurso = function(prefill){
+        window.certificacionFormAbrir(null);
+        setTimeout(function(){
+            try {
+                if (prefill.nombre) nombreEl.value = prefill.nombre;
+                if (prefill.marca){
+                    var marcaCat = ['PANDUIT','ZEBRA','APC','AVIGILON','GENETEC','AXIS','CISCO'];
+                    var mU = (prefill.marca || '').toUpperCase();
+                    if (marcaCat.indexOf(mU) >= 0){ marcaSel.value = mU; marcaOtraWrap.style.display='none'; }
+                    else if (mU){ marcaSel.value = 'OTRA'; marcaOtraEl.value = mU; marcaOtraWrap.style.display='block'; }
+                }
+                if (prefill.nivel) document.getElementById('certFormNivel').value = prefill.nivel;
+                if (prefill.usuario_id) {
+                    // Reusa la estructura _persona del form (puede no ser supervisor:
+                    // en ese caso el backend caerá al request.user igual)
+                    window._certCursoOrigenId = prefill.curso_id || null;
+                }
+                // Guardamos curso_id para mandarlo al submit (extra field)
+                if (prefill.curso_id) window._certCursoOrigenId = prefill.curso_id;
+                refreshPills();
+            } catch(e) { console.error(e); }
+        }, 60);
+    };
+
     // ── Submit ─────────────────────────────────────────────────────
     function submitForm(){
         var nombre = (nombreEl.value || '').trim();
@@ -640,6 +667,9 @@
             notas: (notasEl.value || '').trim(),
         };
         if (_persona && _persona.id) payload.usuario_id = _persona.id;
+        // Si abrimos desde un curso completado, mandamos el curso_id para
+        // que el backend vincule la cert al curso de origen.
+        if (window._certCursoOrigenId) payload.curso_origen_id = window._certCursoOrigenId;
 
         var id = idEl.value;
         var url = id ? '/app/api/certificaciones/' + id + '/editar/' : '/app/api/certificaciones/crear/';
@@ -660,6 +690,7 @@
             var certId = data.certificacion.id;
             // Subir archivos nuevos en secuencia
             _subirArchivosSecuencial(certId, 0, function(){
+                window._certCursoOrigenId = null;  // limpia el prefill
                 cerrar();
                 // Reload de la lista para reflejar cambios
                 if (typeof window.location !== 'undefined') window.location.reload();

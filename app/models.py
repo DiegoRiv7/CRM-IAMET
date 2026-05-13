@@ -5167,3 +5167,85 @@ class CertificacionArchivo(models.Model):
     def __str__(self):
         return self.nombre or self.archivo.name
 
+
+# ============================================================
+# Marketing → Cursos (fase previa a Certificación)
+# ============================================================
+
+class Curso(models.Model):
+    """Curso/entrenamiento que un usuario IAMET está tomando.
+    Al completarse puede dar lugar a una Certificación.
+    """
+    ESTADO_CHOICES = [
+        ('en_progreso', 'En progreso'),
+        ('completado',  'Completado'),
+        ('pausado',     'Pausado'),
+        ('abandonado',  'Abandonado'),
+    ]
+    # Mismo catálogo que Certificacion.NIVEL_CHOICES (consistencia visual).
+    NIVEL_CHOICES = [
+        ('basico',     'Básico'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado',   'Avanzado'),
+        ('experto',    'Experto'),
+    ]
+
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='cursos',
+        verbose_name='Persona que toma el curso',
+    )
+    marca = models.CharField(
+        max_length=50,
+        help_text="Marca/familia del curso, e.g. 'PANDUIT', 'CISCO'.",
+    )
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name='Nombre del curso',
+        help_text='Ej. "Panduit Network Infrastructure Foundations".',
+    )
+    plataforma = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text='Dónde se imparte. Ej. Panduit Academy, Cisco Learning, Udemy.',
+    )
+    url = models.URLField(
+        blank=True, default='', max_length=500,
+        verbose_name='URL del curso',
+        help_text='Link a la plataforma donde se toma (opcional).',
+    )
+    nivel = models.CharField(
+        max_length=20, choices=NIVEL_CHOICES, blank=True, default='',
+    )
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default='en_progreso', db_index=True,
+    )
+    progreso = models.IntegerField(
+        default=0,
+        help_text='Porcentaje completado 0-100.',
+    )
+    fecha_inicio = models.DateField(null=True, blank=True)
+    # Fecha objetivo de finalización (compromiso).
+    fecha_compromiso = models.DateField(null=True, blank=True)
+    fecha_completado = models.DateField(null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    # Cuando el curso se convierte en certificación se enlaza aquí.
+    certificacion_resultante = models.ForeignKey(
+        Certificacion, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='curso_origen',
+        verbose_name='Certificación generada',
+    )
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='cursos_creados',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Curso'
+        verbose_name_plural = 'Cursos'
+        # En progreso primero por fecha_compromiso ascendente, después el
+        # resto por fecha de actualización descendente.
+        ordering = ['-fecha_actualizacion']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.usuario.get_full_name() or self.usuario.username})'

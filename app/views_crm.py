@@ -900,6 +900,79 @@ def crm_home(request):
             ],
         }
 
+    # ── Cursos (sub-vista ?vista=cursos + tarjeta del dashboard) ────
+    cursos_lista = None
+    cursos_kpis = None
+    cursos_filtros = None
+    if tab_activo == 'prospeccion':
+        from .models import Curso
+        from datetime import date as _date, timedelta as _td
+        cur_qs = (
+            Curso.objects.select_related('usuario')
+            .order_by('-fecha_actualizacion')
+        )
+        cur_marca = (request.GET.get('cur_marca') or '').strip().upper()
+        cur_nivel = (request.GET.get('cur_nivel') or '').strip()
+        cur_estado = (request.GET.get('cur_estado') or '').strip()
+        cur_q = (request.GET.get('cur_q') or '').strip()
+        if vendedores_ids:
+            cur_qs = cur_qs.filter(usuario_id__in=vendedores_ids)
+        if cur_marca:
+            cur_qs = cur_qs.filter(marca__iexact=cur_marca)
+        if cur_nivel:
+            cur_qs = cur_qs.filter(nivel=cur_nivel)
+        if cur_estado:
+            cur_qs = cur_qs.filter(estado=cur_estado)
+        if cur_q:
+            from django.db.models import Q as _Q
+            cur_qs = cur_qs.filter(
+                _Q(nombre__icontains=cur_q)
+                | _Q(plataforma__icontains=cur_q)
+                | _Q(marca__icontains=cur_q)
+                | _Q(usuario__first_name__icontains=cur_q)
+                | _Q(usuario__last_name__icontains=cur_q)
+                | _Q(usuario__username__icontains=cur_q)
+            )
+        cursos_lista = list(cur_qs)
+        # KPIs para la tarjeta del dashboard
+        hoy_c = _date.today()
+        total_c = Curso.objects.count()
+        en_prog = Curso.objects.filter(estado='en_progreso').count()
+        compl = Curso.objects.filter(estado='completado').count()
+        personas_c = Curso.objects.values('usuario_id').distinct().count()
+        proximos_c = Curso.objects.filter(
+            estado='en_progreso',
+            fecha_compromiso__isnull=False,
+            fecha_compromiso__lte=hoy_c + _td(days=14),
+        ).count()
+        cursos_kpis = {
+            'total': total_c,
+            'en_progreso': en_prog,
+            'completados': compl,
+            'personas': personas_c,
+            'proximos': proximos_c,
+        }
+        # Catálogo de marcas/niveles del universo (para popovers)
+        _all_q = Curso.objects.values_list('marca', 'nivel')
+        if vendedores_ids:
+            _all_q = Curso.objects.filter(usuario_id__in=vendedores_ids).values_list('marca', 'nivel')
+        marcas_set_c = set()
+        niveles_set_c = set()
+        for m, n in _all_q:
+            if m: marcas_set_c.add(m.upper())
+            if n: niveles_set_c.add(n)
+        NIVEL_ORDEN_C = ['basico', 'intermedio', 'avanzado', 'experto']
+        cursos_filtros = {
+            'marca': cur_marca,
+            'nivel': cur_nivel,
+            'estado': cur_estado,
+            'q': cur_q,
+            'marcas_disponibles': sorted(marcas_set_c),
+            'niveles_disponibles': [n for n in NIVEL_ORDEN_C if n in niveles_set_c],
+            'vista_curso': (request.GET.get('vista_curso') or 'tarjeta').strip() or 'tarjeta',
+            'tiene_filtros_activos': bool(cur_marca or cur_nivel or cur_estado or cur_q or vendedores_ids),
+        }
+
     # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
     eventos_kpis = None
     eventos_lista = None
@@ -1095,6 +1168,9 @@ def crm_home(request):
         'certificaciones_lista': certificaciones_lista,
         'certificaciones_kpis': certificaciones_kpis,
         'certificaciones_filtros': certificaciones_filtros,
+        'cursos_lista': cursos_lista,
+        'cursos_kpis': cursos_kpis,
+        'cursos_filtros': cursos_filtros,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,
