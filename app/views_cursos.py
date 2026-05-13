@@ -5,16 +5,17 @@ para ingenieros. Al completarse un curso, ofrece "subir certificado"
 que abre el composer de Certificacion pre-llenado.
 """
 import json
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.utils.dateparse import parse_date
+from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
 from django.views.decorators.http import require_http_methods
 
-from .models import Curso, Certificacion
+from .models import Curso, Certificacion, CursoComentario, CursoArchivo, Actividad
 from .views_utils import is_ingeniero
 
 
@@ -258,3 +259,174 @@ def api_cursos_stats(request):
         'personas': personas,
         'proximos': proximos,
     })
+
+
+# ── Comentarios ───────────────────────────────────────────────────────
+def _iniciales_u(u):
+    if not u: return '?'
+    return _iniciales(u)
+
+
+def _archivo_comentario_to_dict(a):
+    nombre = a.nombre or (a.archivo.name.rsplit('/', 1)[-1] if a.archivo else '')
+    ext = nombre.rsplit('.', 1)[-1].lower() if '.' in nombre else ''
+    return {
+        'id': a.id,
+        'nombre': nombre,
+        'url': a.archivo.url if a.archivo else '',
+        'extension': ext,
+        'es_imagen': ext in ('png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'),
+        'es_pdf': ext == 'pdf',
+    }
+
+
+def _comentario_to_dict(c):
+    return {
+        'id': c.id,
+        'autor_id': c.autor_id,
+        'autor_nombre': (c.autor.get_full_name() or c.autor.username) if c.autor else 'Usuario',
+        'autor_iniciales': _iniciales_u(c.autor),
+        'texto': c.texto,
+        'fecha': c.fecha_creacion.strftime('%d %b %Y · %H:%M') if c.fecha_creacion else '',
+        'archivos': [_archivo_comentario_to_dict(a) for a in c.archivos.all()],
+    }
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_curso_comentarios_list(request, curso_id):
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    qs = (
+        CursoComentario.objects
+        .filter(curso_id=curso_id)
+        .select_related('autor')
+        .prefetch_related('archivos')
+        .order_by('fecha_creacion')
+    )
+    return JsonResponse({'comentarios': [_comentario_to_dict(c) for c in qs]})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_curso_comentario_crear(request, curso_id):
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    c = get_object_or_404(Curso, id=curso_id)
+    # Soporta multipart (con archivos) o JSON (solo texto).
+    if request.content_type and request.content_type.startswith('multipart/'):
+        texto = (request.POST.get('texto') or '').strip()
+        archivos = request.FILES.getlist('archivos')
+    else:
+        try:
+            data = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        texto = (data.get('texto') or '').strip()
+        archivos = []
+    if not texto and not archivos:
+        return JsonResponse({'error': 'El comentario está vacío'}, status=400)
+    com = CursoComentario.objects.create(curso=c, autor=request.user, texto=texto)
+    for f in archivos:
+        CursoArchivo.objects.create(comentario=com, archivo=f, nombre=f.name)
+    com = CursoComentario.objects.select_related('autor').prefetch_related('archivos').get(id=com.id)
+    return JsonResponse({'ok': True, 'comentario': _comentario_to_dict(com)})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_curso_comentario_eliminar(request, comentario_id):
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    com = get_object_or_404(CursoComentario, id=comentario_id)
+    # Solo el autor (o supervisor) puede eliminar
+    from .views_utils import is_supervisor
+    if com.autor_id != request.user.id and not is_supervisor(request.user):
+        return HttpResponseForbidden()
+    # Borra los archivos físicos
+    for a in com.archivos.all():
+        try: a.archivo.delete(save=False)
+        except Exception: pass
+    com.delete()
+    return JsonResponse({'ok': True})
+
+
+# ── Agendar al calendario ─────────────────────────────────────────────
+@login_required
+@require_http_methods(['POST'])
+def api_curso_agendar(request, curso_id):
+    """Crea una Actividad en el calendario vinculada al curso.
+    Payload: {fecha: 'YYYY-MM-DD', hora_inicio: 'HH:MM', duracion_minutos: int}
+    """
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    c = get_object_or_404(Curso, id=curso_id)
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    fecha_s = (data.get('fecha') or '').strip()
+    hora_s = (data.get('hora_inicio') or '').strip()
+    try:
+        duracion = int(data.get('duracion_minutos') or 60)
+    except (TypeError, ValueError):
+        duracion = 60
+    duracion = max(15, min(8 * 60, duracion))  # entre 15min y 8h
+
+    if not fecha_s or not hora_s:
+        return JsonResponse({'error': 'Fecha y hora son requeridas'}, status=400)
+    try:
+        fecha_inicio = datetime.fromisoformat(f'{fecha_s}T{hora_s}')
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Formato de fecha/hora inválido'}, status=400)
+    if timezone.is_naive(fecha_inicio):
+        fecha_inicio = timezone.make_aware(fecha_inicio)
+    fecha_fin = fecha_inicio + timedelta(minutes=duracion)
+
+    titulo = f'📚 {c.nombre}'
+    descripcion = f'Sesión de estudio del curso "{c.nombre}"'
+    if c.plataforma:
+        descripcion += f' · {c.plataforma}'
+    if c.url:
+        descripcion += f'\n{c.url}'
+
+    act = Actividad.objects.create(
+        titulo=titulo[:200],
+        tipo_actividad='tarea',
+        descripcion=descripcion,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        creado_por=c.usuario,  # aparece en el calendario del que toma el curso
+        color='#0369A1',
+        curso=c,
+    )
+    # Si quien agenda no es la persona del curso (supervisor), también
+    # lo agregamos como participante para que ambos lo vean.
+    if request.user.id != c.usuario_id:
+        act.participantes.add(request.user)
+    return JsonResponse({
+        'ok': True,
+        'actividad_id': act.id,
+        'fecha_inicio': act.fecha_inicio.isoformat(),
+    })
+
+
+# Cuenta de actividades agendadas para mostrar en el detalle.
+@login_required
+@require_http_methods(['GET'])
+def api_curso_sesiones(request, curso_id):
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    qs = Actividad.objects.filter(curso_id=curso_id).order_by('fecha_inicio')
+    items = [
+        {
+            'id': a.id,
+            'titulo': a.titulo,
+            'fecha_inicio': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
+            'fecha_inicio_display': a.fecha_inicio.strftime('%a %d %b · %H:%M') if a.fecha_inicio else '',
+            'completada': a.completada,
+        }
+        for a in qs
+    ]
+    return JsonResponse({'sesiones': items, 'total': len(items)})

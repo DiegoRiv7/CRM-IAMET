@@ -66,38 +66,6 @@
                         </div>
                     </div>
 
-                    {# Plataforma (opcional) #}
-                    <div class="wn-ctw-popwrap">
-                        <button type="button" class="wn-ctw-pill-meta" id="cursoPlataformaBtn" onclick="cursoOpenPop('plataforma', event)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                            <span id="cursoPlataformaLabel">Plataforma</span>
-                        </button>
-                        <div class="wn-ctw-pop" id="cursoPopPlataforma" style="display:none;">
-                            <div class="wn-ctw-pop-title">Plataforma (opcional)</div>
-                            <input type="text" id="cursoFormPlataforma" class="wn-ctw-pop-input" placeholder="Panduit Academy, Cisco Learning…" maxlength="120">
-                            <div class="wn-ctw-pop-title" style="margin-top:10px;">URL del curso (opcional)</div>
-                            <input type="url" id="cursoFormUrl" class="wn-ctw-pop-input" placeholder="https://…" maxlength="500">
-                        </div>
-                    </div>
-
-                    {# Nivel (opcional) #}
-                    <div class="wn-ctw-popwrap">
-                        <button type="button" class="wn-ctw-pill-meta" id="cursoNivelBtn" onclick="cursoOpenPop('nivel', event)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8"/></svg>
-                            <span id="cursoNivelLabel">Nivel</span>
-                        </button>
-                        <div class="wn-ctw-pop" id="cursoPopNivel" style="display:none;">
-                            <div class="wn-ctw-pop-title">Nivel (opcional)</div>
-                            <select id="cursoFormNivel" class="wn-ctw-pop-input">
-                                <option value="">—</option>
-                                <option value="basico">Básico</option>
-                                <option value="intermedio">Intermedio</option>
-                                <option value="avanzado">Avanzado</option>
-                                <option value="experto">Experto</option>
-                            </select>
-                        </div>
-                    </div>
-
                     {# Estado #}
                     <div class="wn-ctw-popwrap">
                         <button type="button" class="wn-ctw-pill-meta filled" id="cursoEstadoBtn" onclick="cursoOpenPop('estado', event)">
@@ -147,12 +115,6 @@
                         <span class="curso-progress-pct" id="cursoProgressPct">0%</span>
                     </div>
                     <input type="range" id="cursoFormProgreso" min="0" max="100" step="5" value="0" class="curso-progress-slider">
-                    <div class="curso-progress-quick">
-                        <button type="button" data-add="25">+25%</button>
-                        <button type="button" data-add="-10">-10%</button>
-                        <button type="button" data-set="50">50%</button>
-                        <button type="button" data-set="100" class="curso-progress-complete">Marcar 100%</button>
-                    </div>
                 </div>
 
                 <textarea class="wn-ctw-desc" id="cursoFormNotas"
@@ -163,6 +125,38 @@
 
             <footer class="wn-ctw-toolbar">
                 <div class="wn-ctw-tools">
+                    {# Plataforma (opcional) — abajo, secundaria #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-tool-ghost" id="cursoPlataformaBtn" onclick="cursoOpenPop('plataforma', event)" title="Plataforma + URL">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            <span id="cursoPlataformaLabel">Plataforma</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopPlataforma" style="display:none;">
+                            <div class="wn-ctw-pop-title">Plataforma (opcional)</div>
+                            <input type="text" id="cursoFormPlataforma" class="wn-ctw-pop-input" placeholder="Panduit Academy, Cisco Learning…" maxlength="120">
+                            <div class="wn-ctw-pop-title" style="margin-top:10px;">URL del curso (opcional)</div>
+                            <input type="url" id="cursoFormUrl" class="wn-ctw-pop-input" placeholder="https://…" maxlength="500">
+                        </div>
+                    </div>
+
+                    {# Nivel (opcional) — abajo, secundaria #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-tool-ghost" id="cursoNivelBtn" onclick="cursoOpenPop('nivel', event)" title="Nivel">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8"/></svg>
+                            <span id="cursoNivelLabel">Nivel</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopNivel" style="display:none;">
+                            <div class="wn-ctw-pop-title">Nivel (opcional)</div>
+                            <select id="cursoFormNivel" class="wn-ctw-pop-input">
+                                <option value="">—</option>
+                                <option value="basico">Básico</option>
+                                <option value="intermedio">Intermedio</option>
+                                <option value="avanzado">Avanzado</option>
+                                <option value="experto">Experto</option>
+                            </select>
+                        </div>
+                    </div>
+
                     {# CTA "Subir certificado" — solo si el curso está editándose Y está completado #}
                     <button type="button" id="cursoUploadCertBtn" class="curso-upload-cert" style="display:none;">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
@@ -335,17 +329,6 @@
         if (p >= 100 && estadoEl.value !== 'completado') estadoEl.value = 'completado';
         refreshPills();
     });
-    // Quick actions de progreso
-    document.querySelectorAll('.curso-progress-quick button').forEach(function(b){
-        b.addEventListener('click', function(){
-            var cur = parseInt(progresoEl.value || 0);
-            if (b.dataset.add) cur = Math.max(0, Math.min(100, cur + parseInt(b.dataset.add)));
-            if (b.dataset.set) cur = parseInt(b.dataset.set);
-            progresoEl.value = cur;
-            progresoEl.dispatchEvent(new Event('input'));
-        });
-    });
-
     // Persona autocomplete
     var _personaDeb = null;
     personaQ.addEventListener('input', function(){

@@ -2518,6 +2518,17 @@ class Actividad(models.Model):
         verbose_name="Evento de Marketing Relacionado"
     )
 
+    # Enlace opcional a un Curso — sesiones de estudio agendadas al
+    # calendario desde el detalle del curso.
+    curso = models.ForeignKey(
+        'Curso',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='actividades_calendario',
+        verbose_name="Curso Relacionado"
+    )
+
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
     # Agrupador opcional para actividades creadas como serie recurrente.
@@ -5249,3 +5260,44 @@ class Curso(models.Model):
 
     def __str__(self):
         return f'{self.nombre} ({self.usuario.get_full_name() or self.usuario.username})'
+
+
+class CursoComentario(models.Model):
+    """Comentario en el hilo de un curso. Permite al equipo compartir
+    avances, dudas y materiales sin salir del CRM."""
+    curso = models.ForeignKey(
+        Curso, on_delete=models.CASCADE, related_name='comentarios',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='curso_comentarios',
+    )
+    texto = models.TextField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_creacion']
+        verbose_name = 'Comentario de curso'
+        verbose_name_plural = 'Comentarios de cursos'
+
+
+def _curso_archivo_upload_path(instance, filename):
+    return f'cursos/{instance.comentario.curso_id}/{filename}'
+
+
+class CursoArchivo(models.Model):
+    """Archivo adjunto a un comentario de curso (imagen, PDF, etc)."""
+    comentario = models.ForeignKey(
+        CursoComentario, on_delete=models.CASCADE, related_name='archivos',
+    )
+    archivo = models.FileField(upload_to=_curso_archivo_upload_path)
+    nombre = models.CharField(max_length=255, blank=True, default='')
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_subida']
+        verbose_name = 'Archivo de comentario de curso'
+        verbose_name_plural = 'Archivos de comentarios de cursos'
+
+    def __str__(self):
+        return self.nombre or self.archivo.name
