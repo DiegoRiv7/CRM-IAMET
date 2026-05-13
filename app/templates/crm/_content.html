@@ -202,7 +202,7 @@
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
-        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' %} crm-bar--dashboard{% endif %}">
+        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' or tab_activo == 'cli' %} crm-bar--dashboard{% endif %}">
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -243,12 +243,21 @@
                 <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
             </div>
             {% endif %}
-            {% if tab_activo == 'clientes' %}
-            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos -->
+            {% if tab_activo == 'clientes' or tab_activo == 'cli' %}
+            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes -->
             <div class="crm-tabs crm-tabs--dashboard">
+                {% if tab_activo == 'clientes' %}
                 <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
                 <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
+                <a href="?tab=cli&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Clientes</a>
+                {% else %}
+                {# En ?tab=cli mostramos los 4 botones como links — al volver a Oportunidades/Prospectos/Proyectos navegamos a ?tab=clientes con el modo persistido por el _crmSetMode (queda en localStorage). #}
+                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Oportunidades</a>
+                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Prospectos</a>
+                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Proyectos</a>
+                <a href="?tab=cli&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab active">Clientes</a>
+                {% endif %}
             </div>
             {% else %}
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
@@ -264,11 +273,6 @@
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
                     Prospección
-                </a>
-                <a href="?tab=cli&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
-                    class="crm-tab {% if tab_activo == 'cli' %}active{% endif %}">
-                    Clientes
                 </a>
                 {% if not es_ingeniero %}
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"

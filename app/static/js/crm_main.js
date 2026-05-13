@@ -4586,7 +4586,9 @@
                     });
             }
 
-            // ── Abrir widget ──
+            // ── Abrir widget (también expuesta globalmente para que otras
+            //    vistas — ej. el tab Clientes del Dashboard — la usen) ──
+            window.openClienteModal = openClienteModal;
             function openClienteModal(clienteId, clienteNombre, tab, porCreacion) {
                 currentClienteId = clienteId;
                 allClienteData = [];
