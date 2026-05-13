@@ -16,22 +16,6 @@
     {# Header: filtros + segmented control a la izquierda; CTA a la derecha #}
     <div class="mkt-cert-head">
         <div class="mkt-cert-head-controls mkt-cert-head-controls--left">
-            {# Segmented control Lista | Pared #}
-            <div class="mkt-cert-vista-seg" role="tablist" aria-label="Vista de certificaciones">
-                <a class="mkt-cert-vista-btn {% if f.vista_cert != 'pared' %}is-active{% endif %}"
-                   data-set-vista="lista" href="#"
-                   role="tab" aria-selected="{% if f.vista_cert != 'pared' %}true{% else %}false{% endif %}">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                    Lista
-                </a>
-                <a class="mkt-cert-vista-btn {% if f.vista_cert == 'pared' %}is-active{% endif %}"
-                   data-set-vista="pared" href="#"
-                   role="tab" aria-selected="{% if f.vista_cert == 'pared' %}true{% else %}false{% endif %}">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                    Pared
-                </a>
-            </div>
-
             {# Filtros: Marca + Nivel + Estado #}
             <div class="mkt-cert-filters">
                 <div class="mkt-cert-filter-wrap">
@@ -84,6 +68,22 @@
                 </a>
                 {% endif %}
             </div>
+
+            {# Segmented control Lista | Pared — después de los filtros #}
+            <div class="mkt-cert-vista-seg" role="tablist" aria-label="Vista de certificaciones">
+                <a class="mkt-cert-vista-btn {% if f.vista_cert != 'pared' %}is-active{% endif %}"
+                   data-set-vista="lista" href="#"
+                   role="tab" aria-selected="{% if f.vista_cert != 'pared' %}true{% else %}false{% endif %}">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    Lista
+                </a>
+                <a class="mkt-cert-vista-btn {% if f.vista_cert == 'pared' %}is-active{% endif %}"
+                   data-set-vista="pared" href="#"
+                   role="tab" aria-selected="{% if f.vista_cert == 'pared' %}true{% else %}false{% endif %}">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    Pared
+                </a>
+            </div>
         </div>
 
         <button type="button" class="mkt-events-new" id="btnCertNuevo" style="background:#B45309;">
@@ -117,9 +117,7 @@
     {# ═══ VISTA PARED — galería estilo "diplomas colgados" ═══ #}
     {% if f.vista_cert == 'pared' %}
         {% if certificaciones_lista %}
-        {# data-count alimenta el CSS responsivo: 1/2/3 = centrados y
-           más grandes; 4+ = grid normal de 4 columnas que se va
-           llenando. #}
+        {# data-count alimenta el CSS responsivo: 1/2/3 centrados, 4+ grid normal #}
         <div class="mkt-cert-wall" data-count="{{ certificaciones_lista|length }}">
             {% for c in certificaciones_lista %}
             {# tilt determinístico a partir del id: rango -2°..+2° #}
