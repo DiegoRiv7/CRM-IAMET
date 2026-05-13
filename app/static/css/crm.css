@@ -13344,6 +13344,14 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     box-shadow: 0 25px 60px rgba(20,14,4,0.18);
     overflow: hidden;
 }
+/* CRÍTICO: este contenedor (entre el card y los bloques internos) es el
+   que se manipula con JS para mostrar/ocultar todo el detalle. Si no
+   es flex, los hijos no pueden tomar flex:1 del card y el body no
+   activa overflow. */
+#certDetContent {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+}
 
 /* ── Topbar minimalista ─────────────────────────────────────────── */
 .cert-d-topbar {
