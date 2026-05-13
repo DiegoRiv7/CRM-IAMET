@@ -13243,18 +13243,15 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
    MARKETING → CERTIFICACIONES
    ════════════════════════════════════════════════════════════════════ */
 
-/* ── Header con título + controles ─────────────────────────────── */
+/* ── Header con controles right-aligned (sin título) ───────────── */
 .mkt-cert-head {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: flex-end;
     gap: 16px; flex-wrap: wrap;
     margin-bottom: 18px;
 }
-.mkt-cert-title {
-    font-size: 1.5rem; font-weight: 700; color: #B45309;
-    margin: 0; letter-spacing: -0.01em;
-}
 .mkt-cert-head-controls {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 /* Segmented control Lista | Pared */
@@ -13331,10 +13328,13 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ── Vista Pared ──────────────────────────────────────────────── */
 .mkt-cert-wall {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 28px 22px;
-    padding: 18px 6px 28px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 36px 28px;
+    padding: 22px 6px 32px;
 }
+@media (max-width: 1280px) { .mkt-cert-wall { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 880px)  { .mkt-cert-wall { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; } }
+@media (max-width: 520px)  { .mkt-cert-wall { grid-template-columns: 1fr; gap: 24px; } }
 .mkt-cert-frame {
     display: flex; flex-direction: column;
     background: transparent; border: none;
@@ -13363,9 +13363,9 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 
 .mkt-cert-frame-mat {
     background: #FFFFFF;
-    padding: 12px;
+    padding: 16px;
     border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(20,14,4,0.10), inset 0 0 0 1px #F1F5F9;
+    box-shadow: 0 6px 16px rgba(20,14,4,0.10), inset 0 0 0 1px #F1F5F9;
     aspect-ratio: 4 / 3;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
