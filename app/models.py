@@ -5057,3 +5057,96 @@ class EventoAsistente(models.Model):
         if self.prospecto_id: return f'{self.prospecto.nombre} → {self.evento.nombre}'
         return f'{self.contacto_nombre} → {self.evento.nombre}'
 
+
+# ============================================================
+# Marketing → Certificaciones
+# ============================================================
+
+class Certificacion(models.Model):
+    """Certificación técnica/comercial obtenida por un usuario de IAMET
+    para una marca (Panduit, Zebra, etc.). Sirve como historial colectivo
+    de las certificaciones del equipo. El comprobante (PDF/imagen) se
+    sube como CertificacionArchivo."""
+
+    NIVEL_CHOICES = [
+        ('basico', 'Básico'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado', 'Avanzado'),
+        ('experto', 'Experto'),
+    ]
+
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='certificaciones',
+        verbose_name='Persona certificada',
+    )
+    # Marca a la que pertenece la certificación. Usa el mismo catálogo que
+    # Evento.marcas (strings tipo 'PANDUIT', 'ZEBRA') para mantener
+    # consistencia con el resto del módulo Marketing.
+    marca = models.CharField(
+        max_length=50,
+        help_text="Marca emisora, e.g. 'PANDUIT', 'ZEBRA'.",
+    )
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name='Nombre de la certificación',
+        help_text='Ej. "PCDS — Panduit Certified Data Center Specialist".',
+    )
+    nivel = models.CharField(
+        max_length=20, choices=NIVEL_CHOICES, blank=True, default='',
+        help_text='Nivel de la certificación (opcional).',
+    )
+    numero = models.CharField(
+        max_length=120, blank=True, default='',
+        verbose_name='Número o folio',
+        help_text='Código o folio emitido por la marca (opcional).',
+    )
+    fecha_obtencion = models.DateField(verbose_name='Fecha de obtención')
+    # Algunas certificaciones vencen (Cisco, Panduit), otras no (Genetec basics).
+    # Null = sin vencimiento conocido.
+    fecha_vencimiento = models.DateField(
+        null=True, blank=True,
+        verbose_name='Fecha de vencimiento',
+    )
+    notas = models.TextField(blank=True, default='')
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificaciones_creadas',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Certificación'
+        verbose_name_plural = 'Certificaciones'
+        ordering = ['-fecha_obtencion', '-fecha_creacion']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.usuario.get_full_name() or self.usuario.username})'
+
+
+def _certificacion_archivo_upload_path(instance, filename):
+    return f'certificaciones/{instance.certificacion_id}/{filename}'
+
+
+class CertificacionArchivo(models.Model):
+    """Comprobante (PDF o imagen) de una certificación. Una certificación
+    puede tener varios archivos: el diploma escaneado, el badge, etc."""
+    certificacion = models.ForeignKey(
+        Certificacion, on_delete=models.CASCADE, related_name='archivos',
+    )
+    archivo = models.FileField(upload_to=_certificacion_archivo_upload_path)
+    nombre = models.CharField(max_length=255, blank=True, default='')
+    subido_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificacion_archivos_subidos',
+    )
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_subida']
+        verbose_name = 'Archivo de certificación'
+        verbose_name_plural = 'Archivos de certificación'
+
+    def __str__(self):
+        return self.nombre or self.archivo.name
+

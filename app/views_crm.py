@@ -796,6 +796,53 @@ def crm_home(request):
             'prosp_por_marca': prosp_por_marca,
         }
 
+    # ── Certificaciones (sub-vista ?vista=certificaciones + widget) ─
+    certificaciones_lista = None
+    certificaciones_kpis = None
+    if tab_activo == 'prospeccion':
+        from .models import Certificacion
+        from datetime import date as _date
+        cert_qs = (
+            Certificacion.objects
+            .select_related('usuario')
+            .prefetch_related('archivos')
+            .order_by('-fecha_obtencion', '-fecha_creacion')
+        )
+        certificaciones_lista = list(cert_qs)
+        # KPIs para la tarjeta del dashboard de Marketing.
+        hoy_d = _date.today()
+        cert_total = len(certificaciones_lista)
+        cert_personas = len({c.usuario_id for c in certificaciones_lista})
+        cert_por_vencer = 0
+        cert_vencidas = 0
+        cert_por_marca = {}
+        for c in certificaciones_lista:
+            m = (c.marca or '').upper() or 'OTROS'
+            cert_por_marca[m] = cert_por_marca.get(m, 0) + 1
+            if c.fecha_vencimiento:
+                if c.fecha_vencimiento < hoy_d:
+                    cert_vencidas += 1
+                elif (c.fecha_vencimiento - hoy_d).days <= 60:
+                    cert_por_vencer += 1
+        # Top 3 marcas para mostrar barras en la tarjeta del dashboard.
+        marcas_top = sorted(cert_por_marca.items(), key=lambda kv: kv[1], reverse=True)[:3]
+        max_count = marcas_top[0][1] if marcas_top else 0
+        certificaciones_kpis = {
+            'total': cert_total,
+            'personas': cert_personas,
+            'por_vencer': cert_por_vencer,
+            'vencidas': cert_vencidas,
+            'marcas_top': [
+                {
+                    'marca': m,
+                    'count': c,
+                    'pct': int(round((c / max_count) * 100)) if max_count else 0,
+                    'letra': m[0] if m else '?',
+                }
+                for m, c in marcas_top
+            ],
+        }
+
     # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
     eventos_kpis = None
     eventos_lista = None
@@ -988,6 +1035,8 @@ def crm_home(request):
         'eventos_lista': eventos_lista,
         'techday_kpis': techday_kpis,
         'demos_kpis': demos_kpis,
+        'certificaciones_lista': certificaciones_lista,
+        'certificaciones_kpis': certificaciones_kpis,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,

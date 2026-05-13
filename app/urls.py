@@ -12,6 +12,7 @@ from . import views_proyectos
 from . import views_iamet
 from . import views_levantamientos_app
 from . import views_compras
+from . import views_certificaciones
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -299,6 +300,16 @@ urlpatterns = [
     path('api/evento/<int:evento_id>/asistente/', views.api_evento_asistente_agregar, name='api_evento_asistente_agregar'),
     path('api/evento/<int:evento_id>/asistente/<int:asistente_id>/eliminar/', views.api_evento_asistente_quitar, name='api_evento_asistente_quitar'),
     path('api/buscar-prospectos/', views.api_buscar_prospectos, name='api_buscar_prospectos'),
+
+    # ── Marketing → Certificaciones ─────────────────────────────────────
+    path('api/certificaciones/', views_certificaciones.api_certificaciones_list, name='api_certificaciones_list'),
+    path('api/certificaciones/stats/', views_certificaciones.api_certificaciones_stats, name='api_certificaciones_stats'),
+    path('api/certificaciones/crear/', views_certificaciones.api_certificacion_crear, name='api_certificacion_crear'),
+    path('api/certificaciones/<int:certificacion_id>/', views_certificaciones.api_certificacion_detalle, name='api_certificacion_detalle'),
+    path('api/certificaciones/<int:certificacion_id>/editar/', views_certificaciones.api_certificacion_editar, name='api_certificacion_editar'),
+    path('api/certificaciones/<int:certificacion_id>/eliminar/', views_certificaciones.api_certificacion_eliminar, name='api_certificacion_eliminar'),
+    path('api/certificaciones/<int:certificacion_id>/archivos/', views_certificaciones.api_certificacion_archivo_subir, name='api_certificacion_archivo_subir'),
+    path('api/certificaciones/<int:certificacion_id>/archivos/<int:archivo_id>/eliminar/', views_certificaciones.api_certificacion_archivo_eliminar, name='api_certificacion_archivo_eliminar'),
 
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),
