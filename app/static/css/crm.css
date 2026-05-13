@@ -13516,8 +13516,8 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ── Detalle ───────────────────────────────────────────────────── */
 .curso-d-card {
     background: #FFFFFF; border-radius: 16px;
-    width: min(1600px, 96vw);
-    max-width: 96vw; max-height: 92vh;
+    width: min(1180px, 94vw);
+    max-width: 94vw; max-height: 92vh;
     display: flex; flex-direction: column;
     box-shadow: 0 25px 60px rgba(20,14,4,0.18);
     overflow: hidden;
@@ -13770,15 +13770,8 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 .curso-d-com-count { color: #9CA3AF; font-weight: 500; }
 .curso-d-com-thread {
     display: flex; flex-direction: column; gap: 12px;
-    margin-bottom: 14px;
 }
-.curso-d-com-empty {
-    padding: 18px 14px;
-    text-align: center; color: #9CA3AF;
-    font-size: 0.86rem; font-style: italic;
-    background: #FAFAFA; border-radius: 10px;
-    border: 1px dashed #E5E7EB;
-}
+.curso-d-com-thread:not(:empty) { margin-bottom: 14px; }
 .curso-d-com {
     display: flex; gap: 10px; align-items: flex-start;
     padding: 12px 14px;

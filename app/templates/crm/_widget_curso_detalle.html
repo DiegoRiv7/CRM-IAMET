@@ -97,9 +97,7 @@
                     {# ── Comentarios ── #}
                     <div class="curso-d-block">
                         <div class="curso-d-block-lbl">Comentarios <span id="cursoDetComCount" class="curso-d-com-count"></span></div>
-                        <div class="curso-d-com-thread" id="cursoDetComThread">
-                            <div class="curso-d-com-empty">Aún no hay comentarios. ¡Comparte tu avance!</div>
-                        </div>
+                        <div class="curso-d-com-thread" id="cursoDetComThread"></div>
                         <div class="curso-d-com-form">
                             <textarea id="cursoDetComTexto" placeholder="Escribe un comentario, comparte tu avance o pregunta…" rows="2"></textarea>
                             <div class="curso-d-com-form-foot">
@@ -411,13 +409,11 @@
                 var items = (data && data.comentarios) || [];
                 if (count) count.textContent = items.length ? '(' + items.length + ')' : '';
                 if (!items.length){
-                    thread.innerHTML = '<div class="curso-d-com-empty">Aún no hay comentarios. ¡Comparte tu avance!</div>';
+                    thread.innerHTML = '';
                     return;
                 }
                 thread.innerHTML = items.map(_comentarioToHTML).join('');
-            }).catch(function(){
-                thread.innerHTML = '<div class="curso-d-com-empty">No se pudieron cargar los comentarios.</div>';
-            });
+            }).catch(function(){ thread.innerHTML = ''; });
     }
 
     var comTexto = document.getElementById('cursoDetComTexto');
