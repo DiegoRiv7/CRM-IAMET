@@ -1,8 +1,8 @@
-{# ═══ WIDGET: CERTIFICACIÓN — Detalle (read-only) ═══ #}
+{# ═══ WIDGET: CERTIFICACIÓN — Detalle (diploma digital, minimalista) ═══ #}
 <div class="widget-overlay" id="widgetCertDetalle" style="z-index:10450;display:none;"
      onclick="if(event.target===this){window.certificacionDetalleCerrar();}">
-    <div class="widget-card widget-card-lg cert-det-card">
-        <div id="certDetLoading" style="text-align:center;padding:3rem;color:#86868B;">
+    <div class="widget-card cert-d-card">
+        <div id="certDetLoading" style="text-align:center;padding:4rem;color:#86868B;">
             <svg style="animation:spin 1s linear infinite;width:22px;height:22px;margin:0 auto 0.75rem;"
                  viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2">
                 <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93"/>
@@ -11,60 +11,123 @@
         </div>
 
         <div id="certDetContent" style="display:none;">
-            <div class="cert-det-header">
-                <div class="cert-det-header-info">
-                    <div class="cert-det-badge"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg> Certificación</div>
-                    <h2 class="cert-det-title" id="certDetTitle"></h2>
-                    <div class="cert-det-sub">
-                        <span class="cert-det-marca-pill" id="certDetMarca"></span>
-                        <span id="certDetNivel" style="color:#6B7280;font-size:0.82rem;font-weight:600;display:none;"></span>
-                        <span id="certDetNumero" style="color:#6B7280;font-size:0.82rem;display:none;"></span>
-                    </div>
+
+            {# Top bar minimalista con acciones — fuera del hero para no ensuciarlo #}
+            <div class="cert-d-topbar">
+                <div class="cert-d-crumb">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+                    <span>Certificación</span>
                 </div>
-                <div class="cert-det-actions">
-                    <button type="button" class="cert-det-btn cert-det-btn-edit" id="certDetEdit">
+                <div class="cert-d-actions">
+                    <button type="button" class="cert-d-act" id="certDetEdit" title="Editar">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
                         Editar
                     </button>
-                    <button type="button" class="cert-det-btn" id="certDetClose" title="Cerrar">
+                    <button type="button" class="cert-d-act cert-d-act--icon" id="certDetClose" title="Cerrar (Esc)">
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="cert-det-body">
-                {# Persona certificada #}
-                <div class="cert-det-block">
-                    <div class="cert-det-lbl">Persona certificada</div>
-                    <div class="cert-det-persona">
-                        <span class="cert-det-avatar" id="certDetAvatar"></span>
-                        <span id="certDetPersona" style="font-size:0.95rem;font-weight:600;color:#1d1d1f;"></span>
+            {# Hero: diploma virtual #}
+            <div class="cert-d-hero">
+                <div class="cert-d-hero-bg" aria-hidden="true"></div>
+
+                {# Sello circular con iniciales de la marca #}
+                <div class="cert-d-seal" id="certDetSeal">
+                    <div class="cert-d-seal-ring"></div>
+                    <div class="cert-d-seal-core">
+                        <span class="cert-d-seal-letters" id="certDetSealLetters">·</span>
+                        <span class="cert-d-seal-bottom" id="certDetSealMarca"></span>
                     </div>
                 </div>
 
-                {# Fechas #}
-                <div class="cert-det-grid">
-                    <div class="cert-det-block">
-                        <div class="cert-det-lbl">Obtenida</div>
-                        <div class="cert-det-val" id="certDetFechaObt">—</div>
+                {# Info ceremonial #}
+                <div class="cert-d-hero-info">
+                    <div class="cert-d-eyebrow">
+                        <span class="cert-d-eyebrow-mark" id="certDetEyebrowMarca">Certificación</span>
+                        <span id="certDetEyebrowNivel" style="display:none;"></span>
                     </div>
-                    <div class="cert-det-block">
-                        <div class="cert-det-lbl">Vencimiento</div>
-                        <div class="cert-det-val" id="certDetFechaVenc">—</div>
+                    <h2 class="cert-d-title" id="certDetTitle"></h2>
+                    <div class="cert-d-recipient-row">
+                        <span class="cert-d-recipient-lbl">Otorgada a</span>
+                        <span class="cert-d-recipient" id="certDetPersona"></span>
+                    </div>
+                    <div class="cert-d-issued" id="certDetIssuedLong"></div>
+                </div>
+            </div>
+
+            {# Banda de estado/datos rápidos — al pie del hero #}
+            <div class="cert-d-band">
+                <div class="cert-d-band-item">
+                    <div class="cert-d-band-lbl">Estado</div>
+                    <div class="cert-d-band-val" id="certDetEstadoBand">—</div>
+                </div>
+                <div class="cert-d-band-sep"></div>
+                <div class="cert-d-band-item">
+                    <div class="cert-d-band-lbl">Vigencia</div>
+                    <div class="cert-d-band-val" id="certDetVigenciaBand">—</div>
+                </div>
+                <div class="cert-d-band-sep"></div>
+                <div class="cert-d-band-item">
+                    <div class="cert-d-band-lbl">Nivel</div>
+                    <div class="cert-d-band-val" id="certDetNivelBand">—</div>
+                </div>
+                <div class="cert-d-band-sep"></div>
+                <div class="cert-d-band-item">
+                    <div class="cert-d-band-lbl">Folio</div>
+                    <div class="cert-d-band-val cert-d-band-val--mono" id="certDetFolioBand">—</div>
+                </div>
+            </div>
+
+            {# Cuerpo: 2 columnas — comprobante a la izquierda, info a la derecha #}
+            <div class="cert-d-body">
+                <div class="cert-d-main">
+                    <div class="cert-d-section-lbl">Comprobante</div>
+                    <div id="certDetComprobante" class="cert-d-comprobante">
+                        <div class="cert-d-noproof">
+                            <svg width="36" height="36" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div>Esta certificación aún no tiene comprobante adjunto.</div>
+                            <button type="button" class="cert-d-noproof-cta" id="certDetAddProof">Adjuntar diploma o constancia</button>
+                        </div>
+                    </div>
+
+                    {# Comprobantes adicionales en miniatura #}
+                    <div id="certDetExtras" class="cert-d-extras" style="display:none;">
+                        <div class="cert-d-section-lbl cert-d-section-lbl--sm">Otros comprobantes</div>
+                        <div id="certDetExtrasList" class="cert-d-extras-list"></div>
                     </div>
                 </div>
 
-                {# Notas #}
-                <div class="cert-det-block" id="certDetNotasBlock" style="display:none;">
-                    <div class="cert-det-lbl">Notas</div>
-                    <div class="cert-det-val" id="certDetNotas" style="white-space:pre-wrap;"></div>
-                </div>
+                <div class="cert-d-aside">
+                    <div class="cert-d-card">
+                        <div class="cert-d-card-lbl">Persona certificada</div>
+                        <div class="cert-d-persona-row">
+                            <span class="cert-d-avatar" id="certDetAvatar"></span>
+                            <span class="cert-d-persona-name" id="certDetPersonaAside"></span>
+                        </div>
+                    </div>
 
-                {# Archivos #}
-                <div class="cert-det-block">
-                    <div class="cert-det-lbl">Comprobantes (<span id="certDetArchivosCount">0</span>)</div>
-                    <div id="certDetArchivos" class="cert-det-archivos">
-                        <div class="cert-files-empty">Sin archivos.</div>
+                    <div class="cert-d-card">
+                        <div class="cert-d-card-lbl">Fechas</div>
+                        <div class="cert-d-kv">
+                            <span>Obtenida</span>
+                            <strong id="certDetFechaObt">—</strong>
+                        </div>
+                        <div class="cert-d-kv">
+                            <span>Vencimiento</span>
+                            <strong id="certDetFechaVenc">—</strong>
+                        </div>
+                    </div>
+
+                    <div class="cert-d-card" id="certDetNotasCard" style="display:none;">
+                        <div class="cert-d-card-lbl">Notas</div>
+                        <p class="cert-d-notas" id="certDetNotas"></p>
+                    </div>
+
+                    <div class="cert-d-card cert-d-card--ghost">
+                        <div class="cert-d-card-lbl">Registro</div>
+                        <div class="cert-d-registro" id="certDetRegistro">—</div>
                     </div>
                 </div>
             </div>
@@ -79,7 +142,122 @@
 
     function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+    // Texto de fecha en formato ceremonial: "21 de mayo de 2026"
+    var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    function _fechaLarga(iso){
+        if (!iso) return '';
+        try {
+            var d = new Date(iso + 'T00:00:00');
+            return d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear();
+        } catch(e){ return ''; }
+    }
+
+    function _vigenciaText(c){
+        if (!c.fecha_vencimiento) return { txt: 'Sin vencimiento', cls: '' };
+        try {
+            var venc = new Date(c.fecha_vencimiento + 'T00:00:00');
+            var hoy = new Date(); hoy.setHours(0,0,0,0);
+            var diff = Math.round((venc - hoy) / (1000*60*60*24));
+            if (diff < 0) return { txt: 'Expiró hace ' + (-diff) + ' días', cls: 'cert-d-band-val--danger' };
+            if (diff === 0) return { txt: 'Expira hoy', cls: 'cert-d-band-val--warn' };
+            if (diff <= 60) return { txt: 'Expira en ' + diff + ' días', cls: 'cert-d-band-val--warn' };
+            // > 60 días — usa meses si pasa de 12
+            if (diff >= 365){
+                var anios = Math.floor(diff / 365);
+                return { txt: 'Vigente · ' + anios + ' año' + (anios > 1 ? 's' : '') + ' restantes', cls: 'cert-d-band-val--ok' };
+            }
+            var meses = Math.round(diff / 30);
+            return { txt: 'Vigente · ' + meses + ' meses restantes', cls: 'cert-d-band-val--ok' };
+        } catch(e){ return { txt: '—', cls: '' }; }
+    }
+
+    function _estadoText(c){
+        if (!c.fecha_vencimiento) return { txt: 'Activa', cls: 'cert-d-band-val--ok' };
+        if (c.estado_vencimiento === 'vencida') return { txt: 'Vencida', cls: 'cert-d-band-val--danger' };
+        if (c.estado_vencimiento === 'por_vencer') return { txt: 'Por vencer', cls: 'cert-d-band-val--warn' };
+        return { txt: 'Vigente', cls: 'cert-d-band-val--ok' };
+    }
+
+    function _renderComprobante(archivos){
+        var main = document.getElementById('certDetComprobante');
+        var extras = document.getElementById('certDetExtras');
+        var extrasList = document.getElementById('certDetExtrasList');
+        if (!archivos || !archivos.length){
+            main.innerHTML = ''
+              + '<div class="cert-d-noproof">'
+              +   '<svg width="36" height="36" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+              +   '<div>Esta certificación aún no tiene comprobante adjunto.</div>'
+              +   '<button type="button" class="cert-d-noproof-cta" id="certDetAddProof">Adjuntar diploma o constancia</button>'
+              + '</div>';
+            // Re-bind del botón "agregar comprobante"
+            var addBtn = document.getElementById('certDetAddProof');
+            if (addBtn) addBtn.onclick = function(){
+                cerrar();
+                if (typeof window.certificacionFormAbrir === 'function') {
+                    window.certificacionFormAbrir(_currentCertId);
+                }
+            };
+            extras.style.display = 'none';
+            return;
+        }
+        var first = archivos[0];
+        if (first.es_imagen){
+            main.innerHTML = ''
+              + '<a href="'+ first.url +'" target="_blank" rel="noopener" class="cert-d-proof cert-d-proof--img">'
+              +   '<div class="cert-d-proof-mat">'
+              +     '<img src="'+ first.url +'" alt="'+ _esc(first.nombre) +'">'
+              +   '</div>'
+              +   '<div class="cert-d-proof-meta">'
+              +     '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>'
+              +     '<span>'+ _esc(first.nombre) +'</span>'
+              +   '</div>'
+              + '</a>';
+        } else if (first.es_pdf){
+            main.innerHTML = ''
+              + '<a href="'+ first.url +'" target="_blank" rel="noopener" class="cert-d-proof cert-d-proof--pdf">'
+              +   '<div class="cert-d-pdf-icon">'
+              +     '<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
+              +     '<span class="cert-d-pdf-tag">PDF</span>'
+              +   '</div>'
+              +   '<div class="cert-d-pdf-info">'
+              +     '<div class="cert-d-pdf-name">'+ _esc(first.nombre) +'</div>'
+              +     '<div class="cert-d-pdf-cta">Ver documento completo <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg></div>'
+              +   '</div>'
+              + '</a>';
+        } else {
+            main.innerHTML = ''
+              + '<a href="'+ first.url +'" target="_blank" rel="noopener" class="cert-d-proof cert-d-proof--pdf">'
+              +   '<div class="cert-d-pdf-icon"><span class="cert-d-pdf-tag">'+ _esc((first.extension || 'FILE').toUpperCase()) +'</span></div>'
+              +   '<div class="cert-d-pdf-info">'
+              +     '<div class="cert-d-pdf-name">'+ _esc(first.nombre) +'</div>'
+              +     '<div class="cert-d-pdf-cta">Abrir archivo</div>'
+              +   '</div>'
+              + '</a>';
+        }
+        // Extras (miniaturas)
+        if (archivos.length > 1){
+            var resto = archivos.slice(1);
+            extrasList.innerHTML = resto.map(function(a){
+                if (a.es_imagen){
+                    return '<a href="'+ a.url +'" target="_blank" rel="noopener" class="cert-d-thumb cert-d-thumb--img" title="'+ _esc(a.nombre) +'">'
+                        + '<img src="'+ a.url +'" alt="'+ _esc(a.nombre) +'">'
+                        + '</a>';
+                }
+                return '<a href="'+ a.url +'" target="_blank" rel="noopener" class="cert-d-thumb cert-d-thumb--file" title="'+ _esc(a.nombre) +'">'
+                     + '<span class="cert-d-thumb-tag">'+ (a.es_pdf ? 'PDF' : (a.extension || 'FILE').toUpperCase()) +'</span>'
+                     + '<span class="cert-d-thumb-name">'+ _esc(a.nombre) +'</span>'
+                     + '</a>';
+            }).join('');
+            extras.style.display = '';
+        } else {
+            extras.style.display = 'none';
+        }
+    }
+
+    var _currentCertId = null;
+
     function abrir(certId){
+        _currentCertId = certId;
         overlay.style.display = 'flex';
         document.getElementById('certDetLoading').style.display = '';
         document.getElementById('certDetContent').style.display = 'none';
@@ -88,70 +266,67 @@
             .then(function(data){
                 var c = data && data.certificacion;
                 if (!c) return cerrar();
-                document.getElementById('certDetTitle').textContent = c.nombre;
-                document.getElementById('certDetMarca').textContent = (c.marca || '').charAt(0) + (c.marca || '').slice(1).toLowerCase();
 
-                var nivelEl = document.getElementById('certDetNivel');
+                // ── Hero
+                var marcaCap = (c.marca || '').charAt(0) + (c.marca || '').slice(1).toLowerCase();
+                document.getElementById('certDetEyebrowMarca').textContent = marcaCap || 'Certificación';
+                var nivelEy = document.getElementById('certDetEyebrowNivel');
                 if (c.nivel_display){
-                    nivelEl.textContent = '· ' + c.nivel_display;
-                    nivelEl.style.display = '';
-                } else { nivelEl.style.display = 'none'; }
+                    nivelEy.textContent = ' · ' + c.nivel_display;
+                    nivelEy.style.display = '';
+                } else { nivelEy.style.display = 'none'; }
 
-                var numEl = document.getElementById('certDetNumero');
-                if (c.numero){
-                    numEl.textContent = '· #' + c.numero;
-                    numEl.style.display = '';
-                } else { numEl.style.display = 'none'; }
-
+                document.getElementById('certDetTitle').textContent = c.nombre || '';
                 document.getElementById('certDetPersona').textContent = c.usuario_nombre || '';
-                document.getElementById('certDetAvatar').textContent = c.usuario_iniciales || '?';
+                document.getElementById('certDetIssuedLong').textContent = c.fecha_obtencion ? ('Otorgada el ' + _fechaLarga(c.fecha_obtencion)) : '';
 
+                // Sello: usa la primera letra de la marca (o las dos primeras si es corta)
+                var seal = document.getElementById('certDetSealLetters');
+                var sealMarca = document.getElementById('certDetSealMarca');
+                var m = (c.marca || '').toUpperCase();
+                if (m.length <= 4) seal.textContent = m;
+                else seal.textContent = m.substring(0, 1);
+                sealMarca.textContent = m;
+
+                // ── Banda de estado
+                var estado = _estadoText(c);
+                var estadoEl = document.getElementById('certDetEstadoBand');
+                estadoEl.textContent = estado.txt;
+                estadoEl.className = 'cert-d-band-val ' + (estado.cls || '');
+
+                var vig = _vigenciaText(c);
+                var vigEl = document.getElementById('certDetVigenciaBand');
+                vigEl.textContent = vig.txt;
+                vigEl.className = 'cert-d-band-val ' + (vig.cls || '');
+
+                document.getElementById('certDetNivelBand').textContent = c.nivel_display || '—';
+                document.getElementById('certDetFolioBand').textContent = c.numero ? ('#' + c.numero) : '—';
+
+                // ── Comprobante principal + extras
+                _renderComprobante(c.archivos || []);
+
+                // ── Sidebar
+                document.getElementById('certDetAvatar').textContent = c.usuario_iniciales || '?';
+                document.getElementById('certDetPersonaAside').textContent = c.usuario_nombre || '';
                 document.getElementById('certDetFechaObt').textContent = c.fecha_obtencion_display || '—';
                 var vEl = document.getElementById('certDetFechaVenc');
                 if (c.fecha_vencimiento_display){
                     vEl.textContent = c.fecha_vencimiento_display;
-                    if (c.estado_vencimiento === 'vencida') {
-                        vEl.style.color = '#DC2626';
-                        vEl.textContent += ' · Vencida';
-                    } else if (c.estado_vencimiento === 'por_vencer') {
-                        vEl.style.color = '#B45309';
-                        vEl.textContent += ' · Por vencer';
-                    } else {
-                        vEl.style.color = '';
-                    }
+                    vEl.style.color = '';
                 } else {
                     vEl.textContent = 'Sin vencimiento';
                     vEl.style.color = '#9CA3AF';
                 }
 
-                var notasBlock = document.getElementById('certDetNotasBlock');
+                var notasCard = document.getElementById('certDetNotasCard');
                 if (c.notas && c.notas.trim()){
                     document.getElementById('certDetNotas').textContent = c.notas;
-                    notasBlock.style.display = '';
+                    notasCard.style.display = '';
                 } else {
-                    notasBlock.style.display = 'none';
+                    notasCard.style.display = 'none';
                 }
 
-                var archivos = c.archivos || [];
-                document.getElementById('certDetArchivosCount').textContent = archivos.length;
-                var listEl = document.getElementById('certDetArchivos');
-                if (!archivos.length){
-                    listEl.innerHTML = '<div class="cert-files-empty">Sin archivos.</div>';
-                } else {
-                    listEl.innerHTML = archivos.map(function(a){
-                        if (a.es_imagen){
-                            return '<a href="'+ a.url +'" target="_blank" rel="noopener" class="cert-det-archivo cert-det-archivo--img">'
-                                + '<img src="'+ a.url +'" alt="'+ _esc(a.nombre) +'">'
-                                + '<span class="cert-det-archivo-name">'+ _esc(a.nombre) +'</span>'
-                                + '</a>';
-                        }
-                        return '<a href="'+ a.url +'" target="_blank" rel="noopener" class="cert-det-archivo cert-det-archivo--pdf">'
-                            + '<span class="cert-det-archivo-ico">'+ (a.es_pdf ? 'PDF' : (a.extension || '·').toUpperCase()) +'</span>'
-                            + '<span class="cert-det-archivo-name">'+ _esc(a.nombre) +'</span>'
-                            + '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;color:#9CA3AF;"><path d="M7 17L17 7M7 7h10v10"/></svg>'
-                            + '</a>';
-                    }).join('');
-                }
+                document.getElementById('certDetRegistro').textContent = 'Creada el ' + (c.fecha_creacion || '—');
 
                 document.getElementById('certDetEdit').onclick = function(){
                     cerrar();
