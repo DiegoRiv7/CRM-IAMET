@@ -303,6 +303,7 @@ urlpatterns = [
 
     # ── Marketing → Certificaciones ─────────────────────────────────────
     path('api/certificaciones/', views_certificaciones.api_certificaciones_list, name='api_certificaciones_list'),
+    path('api/certificaciones/reordenar/', views_certificaciones.api_certificaciones_reordenar, name='api_certificaciones_reordenar'),
     path('api/certificaciones/stats/', views_certificaciones.api_certificaciones_stats, name='api_certificaciones_stats'),
     path('api/certificaciones/crear/', views_certificaciones.api_certificacion_crear, name='api_certificacion_crear'),
     path('api/certificaciones/<int:certificacion_id>/', views_certificaciones.api_certificacion_detalle, name='api_certificacion_detalle'),

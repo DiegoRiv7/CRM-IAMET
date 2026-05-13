@@ -159,7 +159,7 @@
                 <div class="wn-ctw-actions">
                     <button type="button" class="wn-ctw-cancel evt-ctw-delete" id="certFormDelete" style="display:none;">Eliminar</button>
                     <button type="button" class="wn-ctw-cancel" id="certFormCancel">Cancelar</button>
-                    <button type="button" class="wn-ctw-submit" id="certFormSave" disabled style="background:#B45309;">
+                    <button type="button" class="wn-ctw-submit cert-form-submit" id="certFormSave" disabled>
                         <span id="certFormSaveLbl">Registrar certificación</span>
                         <span class="wn-ctw-kbd">⌘ ↵</span>
                     </button>
@@ -381,6 +381,9 @@
         // Habilita guardar si los requeridos están listos
         var ok = (nombreEl.value || '').trim() && _marcaValue() && fechaObtEl.value;
         btnSave.disabled = !ok;
+        // is-ready ilumina el botón con la cromática café del módulo
+        if (ok) btnSave.classList.add('is-ready');
+        else btnSave.classList.remove('is-ready');
     }
     [nombreEl, fechaObtEl, fechaVencEl, nivelEl, numeroEl, marcaSel, marcaOtraEl].forEach(function(el){
         if (el) el.addEventListener('input', refreshPills);

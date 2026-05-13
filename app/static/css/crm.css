@@ -13243,6 +13243,17 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
    MARKETING → CERTIFICACIONES
    ════════════════════════════════════════════════════════════════════ */
 
+/* Botón submit del form de certificación: usa la cromática café
+   (en lugar del azul corporativo del composer de eventos). */
+.cert-form-submit.is-ready {
+    background: linear-gradient(180deg, #B45309 0%, #92400E 100%) !important;
+    box-shadow: 0 1px 3px rgba(180,83,9,0.28), 0 2px 8px -2px rgba(180,83,9,0.3) !important;
+}
+.cert-form-submit.is-ready:hover {
+    background: linear-gradient(180deg, #92400E 0%, #78350F 100%) !important;
+    box-shadow: 0 6px 14px -4px rgba(180,83,9,0.4), 0 2px 4px rgba(180,83,9,0.2) !important;
+}
+
 /* ── Header: controles a la izquierda, CTA a la derecha ────────── */
 .mkt-cert-head {
     display: flex; align-items: center; justify-content: space-between;
@@ -13381,6 +13392,19 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     transform: translateY(-4px) rotate(0deg) scale(1.02) !important;
     filter: drop-shadow(0 14px 28px rgba(20,14,4,0.18));
     z-index: 2;
+}
+.mkt-cert-frame[draggable="true"] {
+    cursor: grab;
+}
+.mkt-cert-frame.is-dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+    transform: rotate(0deg) !important;
+}
+.mkt-cert-frame.is-drop-target {
+    outline: 2px dashed #B45309;
+    outline-offset: 6px;
+    border-radius: 6px;
 }
 /* Tilt determinístico — última cifra del id mapea a un ángulo */
 .mkt-cert-frame--tilt-0 { transform: rotate(-1.4deg); }

@@ -803,11 +803,15 @@ def crm_home(request):
     if tab_activo == 'prospeccion':
         from .models import Certificacion
         from datetime import date as _date
+        from django.db.models import F
+        # Orden: primero las certificaciones reordenadas manualmente desde
+        # la pared (orden ascendente con nulls al final), después las que
+        # no tienen orden manual ordenadas por fecha de obtención.
         cert_qs = (
             Certificacion.objects
             .select_related('usuario')
             .prefetch_related('archivos')
-            .order_by('-fecha_obtencion', '-fecha_creacion')
+            .order_by(F('orden').asc(nulls_last=True), '-fecha_obtencion', '-fecha_creacion')
         )
         # ── Filtros para la sub-vista de Certificaciones ──
         cert_marca = (request.GET.get('cert_marca') or '').strip().upper()
@@ -847,7 +851,7 @@ def crm_home(request):
             'estado': cert_estado_v,
             'marcas_disponibles': sorted(marcas_set),
             'niveles_disponibles': [n for n in NIVEL_ORDEN if n in niveles_set],
-            'vista_cert': (request.GET.get('vista_cert') or 'lista').strip() or 'lista',
+            'vista_cert': (request.GET.get('vista_cert') or 'pared').strip() or 'pared',
             'tiene_filtros_activos': bool(cert_marca or cert_nivel or cert_estado_v or vendedores_ids),
         }
         # KPIs para la tarjeta del dashboard de Marketing.

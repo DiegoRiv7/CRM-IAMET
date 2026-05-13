@@ -5108,6 +5108,13 @@ class Certificacion(models.Model):
         verbose_name='Fecha de vencimiento',
     )
     notas = models.TextField(blank=True, default='')
+    # Posición manual en la "pared" (vista de galería). Null = sin orden
+    # manual; el view ordena estas al final por fecha. Permite reordenar
+    # con drag&drop sin perder el flujo natural cuando no se ha tocado.
+    orden = models.IntegerField(
+        null=True, blank=True, db_index=True,
+        help_text='Posición manual en la vista pared (drag & drop).',
+    )
     creado_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='certificaciones_creadas',

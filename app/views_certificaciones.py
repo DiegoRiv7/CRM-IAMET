@@ -269,6 +269,35 @@ def api_certificacion_archivo_eliminar(request, certificacion_id, archivo_id):
     return JsonResponse({'ok': True})
 
 
+# ── Reordenar (drag & drop de la pared) ───────────────────────────────
+@login_required
+@require_http_methods(['POST'])
+def api_certificaciones_reordenar(request):
+    """Persiste el orden manual establecido al arrastrar marcos en la
+    vista pared. Recibe {'ids': [1, 5, 3, ...]} y asigna a cada uno la
+    posición correspondiente. Las certificaciones no incluidas en la
+    lista mantienen su orden actual (no se tocan)."""
+    if not _access_ok(request.user):
+        return HttpResponseForbidden()
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    ids = data.get('ids') or []
+    if not isinstance(ids, list):
+        return JsonResponse({'error': 'Formato inválido (esperaba lista)'}, status=400)
+
+    # Bulk update: una query por certificación. N suele ser pequeño (<200).
+    for posicion, cid in enumerate(ids):
+        try:
+            cid_int = int(cid)
+        except (TypeError, ValueError):
+            continue
+        Certificacion.objects.filter(id=cid_int).update(orden=posicion)
+    return JsonResponse({'ok': True, 'count': len(ids)})
+
+
 # ── Stats para la tarjeta del dashboard ───────────────────────────────
 @login_required
 @require_http_methods(['GET'])
