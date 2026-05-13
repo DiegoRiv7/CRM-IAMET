@@ -12196,7 +12196,9 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 
 /* ── Cursos ────────────────────────────────────────────────────── */
 .mkt-cursos-body { justify-content: center; gap: 10px; }
-.mkt-curso-row { display: flex; flex-direction: column; gap: 4px; }
+/* OJO: scope necesario — la misma clase mkt-curso-row se reusa como
+   <tr> en la tabla de lista de cursos. Sin el scope rompía la tabla. */
+.mkt-cursos-body .mkt-curso-row { display: flex; flex-direction: column; gap: 4px; }
 .mkt-curso-head {
     display: flex;
     justify-content: space-between;
