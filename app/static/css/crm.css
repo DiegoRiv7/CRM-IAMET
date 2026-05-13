@@ -13516,8 +13516,8 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ── Detalle ───────────────────────────────────────────────────── */
 .curso-d-card {
     background: #FFFFFF; border-radius: 16px;
-    width: min(1280px, 94vw);
-    max-width: 94vw; max-height: 90vh;
+    width: min(1600px, 96vw);
+    max-width: 96vw; max-height: 92vh;
     display: flex; flex-direction: column;
     box-shadow: 0 25px 60px rgba(20,14,4,0.18);
     overflow: hidden;
