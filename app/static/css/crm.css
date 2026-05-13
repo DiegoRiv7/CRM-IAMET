@@ -13498,6 +13498,12 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     padding: 32px 56px 40px;
     overflow-x: hidden;
     overflow-y: auto;
+    /* min-height:0 es CRÍTICO: como el card es flex column, sin esto el body
+       expande hasta el tamaño natural del contenido y nunca activa overflow.
+       Con flex:1 + min-height:0 toma exactamente el espacio que sobra
+       después del hero+banda y empieza a hacer scroll al desbordarse. */
+    flex: 1;
+    min-height: 0;
 }
 @media (max-width: 900px) {
     .cert-d-body { grid-template-columns: 1fr; padding: 24px 28px 32px; }
@@ -13540,10 +13546,10 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 .cert-d-proof-mat img {
     width: 100%; height: auto;
-    /* Sin max-height fijo: la imagen se ve completa a su escala natural
-       (limitada al ancho de la columna). El body del modal hace scroll
-       si la imagen es más alta que el modal — el sidebar es sticky y
-       se queda visible. */
+    /* Limitamos al tamaño del viewport para que un PNG enorme no se
+       coma toda la pantalla. El body del modal hace scroll si aún así
+       sobra; el sidebar es sticky y se queda visible. */
+    max-height: 70vh;
     object-fit: contain; display: block;
     border-radius: 2px;
 }
