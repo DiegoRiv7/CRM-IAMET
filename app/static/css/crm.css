@@ -13493,7 +13493,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ── Cuerpo: 2 columnas ────────────────────────────────────────── */
 .cert-d-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 280px;
     gap: 32px;
     padding: 32px 56px 40px;
     overflow-x: hidden;
@@ -13633,60 +13633,79 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 
-/* ── Sidebar (cards de info) ───────────────────────────────────── */
-.cert-d-aside {
-    display: flex; flex-direction: column; gap: 12px;
-}
-.cert-d-card {
+/* ── Sidebar: ficha técnica única, densa ───────────────────────── */
+.cert-d-aside { min-width: 0; }
+
+.cert-d-ficha {
     background: #FFFFFF;
     border: 1px solid #E5E7EB;
-    border-radius: 10px;
-    padding: 14px 16px;
+    border-radius: 12px;
+    padding: 18px 18px 12px;
+    display: flex; flex-direction: column;
 }
-.cert-d-card--ghost {
-    background: #FAFAFA;
-    border-color: #F1F5F9;
-}
-.cert-d-card-lbl {
-    font-size: 0.62rem; color: #6B7280; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    margin-bottom: 8px;
-}
-.cert-d-persona-row {
-    display: flex; align-items: center; gap: 10px;
+.cert-d-ficha-head {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 4px;
 }
 .cert-d-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 40px; height: 40px; border-radius: 50%;
     background: linear-gradient(135deg, #B45309 0%, #92400E 100%);
-    color: #FFFFFF; font-size: 0.72rem; font-weight: 700;
+    color: #FFFFFF; font-size: 0.84rem; font-weight: 700;
     display: inline-flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
-.cert-d-persona-name {
-    font-size: 0.92rem; font-weight: 600; color: #1D1D1F;
+.cert-d-ficha-head-info { min-width: 0; flex: 1; }
+.cert-d-ficha-head-lbl {
+    font-size: 0.6rem; color: #6B7280; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 2px;
+}
+.cert-d-ficha-head-name {
+    font-size: 0.94rem; font-weight: 600; color: #1D1D1F;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.cert-d-kv {
-    display: flex; align-items: baseline; justify-content: space-between;
-    padding: 6px 0;
-    border-top: 1px solid #F1F5F9;
+
+.cert-d-ficha-divider {
+    height: 1px; background: #F1F5F9; margin: 14px 0;
 }
-.cert-d-kv:first-of-type { border-top: none; padding-top: 0; }
-.cert-d-kv span {
-    font-size: 0.78rem; color: #6B7280;
+
+.cert-d-ficha-section {
+    display: flex; flex-direction: column; gap: 6px;
 }
-.cert-d-kv strong {
-    font-size: 0.84rem; font-weight: 600; color: #1D1D1F;
+.cert-d-ficha-lbl {
+    font-size: 0.6rem; color: #6B7280; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 2px;
+}
+.cert-d-ficha-kv {
+    display: flex; flex-direction: column; gap: 1px;
+}
+.cert-d-ficha-k {
+    font-size: 0.72rem; color: #9CA3AF; font-weight: 500;
+}
+.cert-d-ficha-v {
+    font-size: 0.86rem; font-weight: 600; color: #1D1D1F;
 }
 .cert-d-notas {
     margin: 0;
     font-size: 0.84rem; color: #374151;
     line-height: 1.55;
     white-space: pre-wrap;
+    word-wrap: break-word;
 }
-.cert-d-registro {
-    font-size: 0.78rem; color: #6B7280;
+.cert-d-ficha-footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #F1F5F9;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; color: #9CA3AF;
     font-style: italic;
+}
+
+/* ── Body lock ─────────────────────────────────────────────────── */
+html.cert-d-lock,
+body.cert-d-lock {
+    overflow: hidden !important;
 }
 
 /* Responsivo */

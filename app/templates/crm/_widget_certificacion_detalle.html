@@ -99,37 +99,48 @@
                     </div>
                 </div>
 
-                <div class="cert-d-aside">
-                    <div class="cert-d-card">
-                        <div class="cert-d-card-lbl">Persona certificada</div>
-                        <div class="cert-d-persona-row">
+                <aside class="cert-d-aside">
+                    {# Ficha técnica única — todo en una sola card compacta #}
+                    <div class="cert-d-ficha">
+
+                        {# Persona certificada — header de la ficha #}
+                        <div class="cert-d-ficha-head">
                             <span class="cert-d-avatar" id="certDetAvatar"></span>
-                            <span class="cert-d-persona-name" id="certDetPersonaAside"></span>
+                            <div class="cert-d-ficha-head-info">
+                                <div class="cert-d-ficha-head-lbl">Persona certificada</div>
+                                <div class="cert-d-ficha-head-name" id="certDetPersonaAside"></div>
+                            </div>
+                        </div>
+
+                        <div class="cert-d-ficha-divider"></div>
+
+                        {# Fechas — kv apilados #}
+                        <div class="cert-d-ficha-section">
+                            <div class="cert-d-ficha-lbl">Fechas</div>
+                            <div class="cert-d-ficha-kv">
+                                <span class="cert-d-ficha-k">Obtenida</span>
+                                <span class="cert-d-ficha-v" id="certDetFechaObt">—</span>
+                            </div>
+                            <div class="cert-d-ficha-kv">
+                                <span class="cert-d-ficha-k">Vencimiento</span>
+                                <span class="cert-d-ficha-v" id="certDetFechaVenc">—</span>
+                            </div>
+                        </div>
+
+                        {# Notas — solo si hay #}
+                        <div class="cert-d-ficha-section" id="certDetNotasCard" style="display:none;">
+                            <div class="cert-d-ficha-divider"></div>
+                            <div class="cert-d-ficha-lbl">Notas</div>
+                            <p class="cert-d-notas" id="certDetNotas"></p>
+                        </div>
+
+                        {# Registro — footer discreto #}
+                        <div class="cert-d-ficha-footer">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span id="certDetRegistro">—</span>
                         </div>
                     </div>
-
-                    <div class="cert-d-card">
-                        <div class="cert-d-card-lbl">Fechas</div>
-                        <div class="cert-d-kv">
-                            <span>Obtenida</span>
-                            <strong id="certDetFechaObt">—</strong>
-                        </div>
-                        <div class="cert-d-kv">
-                            <span>Vencimiento</span>
-                            <strong id="certDetFechaVenc">—</strong>
-                        </div>
-                    </div>
-
-                    <div class="cert-d-card" id="certDetNotasCard" style="display:none;">
-                        <div class="cert-d-card-lbl">Notas</div>
-                        <p class="cert-d-notas" id="certDetNotas"></p>
-                    </div>
-
-                    <div class="cert-d-card cert-d-card--ghost">
-                        <div class="cert-d-card-lbl">Registro</div>
-                        <div class="cert-d-registro" id="certDetRegistro">—</div>
-                    </div>
-                </div>
+                </aside>
             </div>
         </div>
     </div>
@@ -259,6 +270,9 @@
     function abrir(certId){
         _currentCertId = certId;
         overlay.style.display = 'flex';
+        // Body-lock: evita scroll del fondo mientras se ve el certificado
+        document.documentElement.classList.add('cert-d-lock');
+        document.body.classList.add('cert-d-lock');
         document.getElementById('certDetLoading').style.display = '';
         document.getElementById('certDetContent').style.display = 'none';
         fetch('/app/api/certificaciones/' + certId + '/')
@@ -341,6 +355,8 @@
     }
     function cerrar(){
         overlay.style.display = 'none';
+        document.documentElement.classList.remove('cert-d-lock');
+        document.body.classList.remove('cert-d-lock');
     }
 
     document.getElementById('certDetClose').addEventListener('click', cerrar);
