@@ -982,6 +982,39 @@
         transition: background 0.15s;
     }
     .wco-close:hover { background: rgba(0,0,0,0.12); }
+    .wco-tabs {
+        display: flex; gap: 4px;
+        padding: 10px 24px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .wco-tab {
+        background: transparent; border: none;
+        color: #6B7280; font-size: 0.82rem; font-weight: 600;
+        padding: 8px 14px;
+        border-radius: 8px 8px 0 0;
+        cursor: pointer; font-family: inherit;
+        position: relative; transition: color 0.15s;
+    }
+    .wco-tab:hover { color: #1D1D1F; }
+    .wco-tab.is-active {
+        color: #0052D4;
+    }
+    .wco-tab.is-active::after {
+        content: ''; position: absolute;
+        left: 12px; right: 12px; bottom: -1px; height: 2px;
+        background: #0052D4; border-radius: 2px 2px 0 0;
+    }
+    .wco-prosp-etapa {
+        display: inline-block;
+        font-size: 0.66rem; font-weight: 700;
+        padding: 2px 8px; border-radius: 999px;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        background: #EEF3FF; color: #0052D4;
+    }
+    .wco-prosp-etapa--cerrado_ganado { background: #DCFCE7; color: #166534; }
+    .wco-prosp-etapa--cerrado_perdido { background: #FEE2E2; color: #991B1B; }
+    .wco-prosp-etapa--en_progreso, .wco-prosp-etapa--procesado { background: #FEF3C7; color: #92400E; }
+
     .wco-filters {
         padding: 14px 24px;
         display: flex;
@@ -13244,6 +13277,146 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ════════════════════════════════════════════════════════════════════
    MARKETING → CERTIFICACIONES
    ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════
+   TAB CLIENTES (dashboard) — tabla clientes × marcas + KPIs flotantes
+   ════════════════════════════════════════════════════════════════════ */
+.cli-page {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 8px 0 24px;
+}
+
+/* Fila de KPIs flotantes */
+.cli-kpis-bar {
+    background: linear-gradient(135deg, #EEF3FF 0%, #FFFFFF 60%);
+    border: 1px solid rgba(0, 82, 212, 0.18);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 16px rgba(0, 82, 212, 0.06);
+    animation: cliKpisIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cliKpisIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.cli-kpis-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 12px;
+}
+.cli-kpis-eyebrow {
+    font-size: 0.62rem; color: #0052D4; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+}
+.cli-kpis-name {
+    font-size: 1.05rem; font-weight: 700; color: #1D1D1F;
+    margin-top: 2px;
+}
+.cli-kpis-close {
+    background: transparent; border: none;
+    color: #6B7280; cursor: pointer;
+    padding: 4px; border-radius: 6px;
+    transition: all 0.15s;
+}
+.cli-kpis-close:hover { background: #FEE2E2; color: #DC2626; }
+.cli-kpis-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+@media (max-width: 720px) { .cli-kpis-grid { grid-template-columns: repeat(2, 1fr); } }
+.cli-kpi {
+    background: #FFFFFF;
+    border: 1px solid rgba(0,0,0,0.04);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+.cli-kpi-lbl {
+    font-size: 0.62rem; color: #6B7280; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.cli-kpi-val {
+    font-size: 1.35rem; font-weight: 800; color: #1D1D1F;
+    margin-top: 2px;
+    letter-spacing: -0.01em;
+}
+
+/* Toggle Ambos/Solo Clientes/Solo Prospectos */
+.cli-filter-bar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 2px 0;
+}
+.cli-filter-bar-lbl {
+    font-size: 0.72rem; color: #6B7280; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    margin-right: 4px;
+}
+.cli-filter-btn {
+    padding: 6px 12px; border: 1px solid #E5E7EB; background: #FFFFFF;
+    color: #374151; border-radius: 18px;
+    font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+}
+.cli-filter-btn:hover { border-color: #0052D4; color: #0052D4; }
+.cli-filter-btn.cli-filter-active {
+    background: #0052D4; border-color: #0052D4; color: #FFFFFF;
+}
+.cli-filter-meta {
+    margin-left: auto;
+    font-size: 0.72rem; color: #6B7280;
+}
+
+/* Tabla */
+.cli-table-wrap {
+    background: #FFFFFF;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.cli-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.84rem;
+}
+.cli-table thead { background: rgba(0,0,0,0.02); }
+.cli-table th {
+    text-align: left;
+    padding: 11px 12px;
+    font-size: 0.66rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: #6E6E73;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.cli-table th.cli-th-marca { text-align: center; width: 80px; }
+.cli-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.cli-table tbody tr {
+    cursor: pointer; transition: background 0.12s;
+}
+.cli-table tbody tr:hover { background: rgba(0, 82, 212, 0.035); }
+.cli-table tbody tr.cli-row-selected {
+    background: rgba(0, 82, 212, 0.08);
+}
+.cli-table tbody tr.cli-row-selected td { border-bottom-color: rgba(0,82,212,0.15); }
+
+.cli-td-cli { font-weight: 700; color: #1D1D1F; min-width: 220px; }
+.cli-cliente-name {
+    color: #1D1D1F; text-decoration: none;
+}
+.cli-cliente-name:hover { color: #0052D4; text-decoration: underline; }
+.cli-cliente-rfc {
+    font-size: 0.7rem; color: #9CA3AF; font-weight: 500;
+    margin-top: 2px;
+}
+.cli-td-cell {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600; color: #1D1D1F;
+}
+.cli-td-cell.cli-td-zero {
+    color: #C7C7CC; font-weight: 400;
+}
+.cli-empty {
+    padding: 36px 16px;
+    text-align: center; color: #9CA3AF;
+    font-size: 0.86rem; font-style: italic;
+}
 
 /* ════════════════════════════════════════════════════════════════════
    MARKETING → CURSOS

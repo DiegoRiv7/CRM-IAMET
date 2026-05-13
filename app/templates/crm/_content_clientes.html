@@ -1,0 +1,183 @@
+{% with meta=clientes_tabla_meta %}
+<div class="cli-page" id="cliPage">
+    {# ── Fila de KPIs flotantes (visible solo si hay cliente seleccionado) ── #}
+    <div id="cliKpisBar" class="cli-kpis-bar" style="display:none;">
+        <div class="cli-kpis-head">
+            <div class="cli-kpis-head-info">
+                <div class="cli-kpis-eyebrow">Resumen del cliente</div>
+                <div class="cli-kpis-name" id="cliKpisName">—</div>
+            </div>
+            <button type="button" class="cli-kpis-close" id="cliKpisClose" title="Quitar selección">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="cli-kpis-grid">
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Facturado</div>
+                <div class="cli-kpi-val" id="cliKpiFact">—</div>
+            </div>
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Oportunidades</div>
+                <div class="cli-kpi-val" id="cliKpiOp">—</div>
+            </div>
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Cotizaciones</div>
+                <div class="cli-kpi-val" id="cliKpiCot">—</div>
+            </div>
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Prospecciones</div>
+                <div class="cli-kpi-val" id="cliKpiPr">—</div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Toggle Ambos / Solo Clientes / Solo Prospectos ── #}
+    <div class="cli-filter-bar">
+        <span class="cli-filter-bar-lbl">Mostrar:</span>
+        <button type="button" data-cli-show="ambos" class="cli-filter-btn cli-filter-active">Ambos</button>
+        <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
+        <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
+        <span class="cli-filter-meta">
+            {{ meta.total_clientes }} clientes · {{ meta.total_op }} oportunidades · {{ meta.total_pr }} prospecciones
+        </span>
+    </div>
+
+    {# ── Tabla ── #}
+    <div class="cli-table-wrap">
+        <table class="cli-table">
+            <thead>
+                <tr>
+                    <th class="cli-th-cli">Cliente</th>
+                    {% for m in meta.marcas_col %}<th class="cli-th-marca">{{ m.label }}</th>{% endfor %}
+                    <th class="cli-th-marca">Otros</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clientes_tabla %}
+                <tr class="cli-row" data-cliente-id="{{ c.id }}" data-cliente-nombre="{{ c.nombre }}">
+                    <td class="cli-td-cli">
+                        <a href="#" class="cli-cliente-name" data-cliente-link="{{ c.id }}" data-cliente-nombre="{{ c.nombre }}">
+                            {{ c.nombre }}
+                        </a>
+                        {% if c.rfc %}<div class="cli-cliente-rfc">RFC: {{ c.rfc }}</div>{% endif %}
+                    </td>
+                    {% for cell in c.cells %}
+                    <td class="cli-td-cell"
+                        data-op="{{ cell.op }}"
+                        data-pr="{{ cell.pr }}"
+                        data-total="{{ cell.total }}">
+                        {{ cell.total }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ meta.marcas_col|length|add:2 }}" class="cli-empty">No hay clientes para mostrar con los filtros actuales.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endwith %}
+
+<script>
+(function(){
+    // ── Toggle Ambos / Solo Clientes / Solo Prospectos ──
+    var mode = 'ambos';
+    try { mode = localStorage.getItem('cliShow') || 'ambos'; } catch (e) {}
+    function applyMode(){
+        document.querySelectorAll('.cli-filter-btn').forEach(function(b){
+            b.classList.toggle('cli-filter-active', b.dataset.cliShow === mode);
+        });
+        // Cada celda muestra op/pr/total según el modo, en cero estilo "tenue"
+        document.querySelectorAll('.cli-td-cell').forEach(function(td){
+            var op = parseInt(td.dataset.op || 0);
+            var pr = parseInt(td.dataset.pr || 0);
+            var total = parseInt(td.dataset.total || 0);
+            var val = mode === 'clientes' ? op : (mode === 'prospectos' ? pr : total);
+            td.textContent = val;
+            td.classList.toggle('cli-td-zero', val === 0);
+        });
+    }
+    document.querySelectorAll('.cli-filter-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+            mode = b.dataset.cliShow;
+            try { localStorage.setItem('cliShow', mode); } catch (e) {}
+            applyMode();
+        });
+    });
+    applyMode();
+
+    // ── Click en fila → fetch KPIs y mostrar la barra ──
+    var kpisBar = document.getElementById('cliKpisBar');
+    var kpiName = document.getElementById('cliKpisName');
+    var kpiFact = document.getElementById('cliKpiFact');
+    var kpiOp = document.getElementById('cliKpiOp');
+    var kpiCot = document.getElementById('cliKpiCot');
+    var kpiPr = document.getElementById('cliKpiPr');
+    var selectedRow = null;
+
+    function _qs(){
+        var u = new URL(window.location.href);
+        var qs = '';
+        ['mes','anio','vendedores','desde','hasta'].forEach(function(k){
+            var v = u.searchParams.get(k);
+            if (v) qs += (qs ? '&' : '?') + k + '=' + encodeURIComponent(v);
+        });
+        return qs;
+    }
+    function _fmtMoney(n){
+        if (n == null) return '$0';
+        try { return '$' + Math.round(n).toLocaleString('es-MX'); }
+        catch(e) { return '$' + n; }
+    }
+
+    function _cargarKpis(clienteId, clienteNombre){
+        kpiName.textContent = clienteNombre || '';
+        kpisBar.style.display = 'block';
+        // Pone los KPIs en "—" mientras carga
+        kpiFact.textContent = '…'; kpiOp.textContent = '…'; kpiCot.textContent = '…'; kpiPr.textContent = '…';
+        fetch('/app/api/cliente-kpis/' + clienteId + '/' + _qs())
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (!data || !data.ok) return;
+                var k = data.kpis || {};
+                kpiFact.textContent = _fmtMoney(k.facturado);
+                kpiOp.textContent = k.oportunidades || 0;
+                kpiCot.textContent = k.cotizaciones || 0;
+                kpiPr.textContent = k.prospecciones || 0;
+            }).catch(function(){
+                kpiFact.textContent = '—'; kpiOp.textContent = '—'; kpiCot.textContent = '—'; kpiPr.textContent = '—';
+            });
+    }
+
+    document.querySelectorAll('.cli-row').forEach(function(row){
+        row.addEventListener('click', function(e){
+            // Si el clic fue en el link del nombre, deja que abra el modal y no marcar.
+            if (e.target.closest('[data-cliente-link]')) return;
+            if (selectedRow) selectedRow.classList.remove('cli-row-selected');
+            row.classList.add('cli-row-selected');
+            selectedRow = row;
+            _cargarKpis(row.dataset.clienteId, row.dataset.clienteNombre);
+        });
+    });
+
+    document.getElementById('cliKpisClose').addEventListener('click', function(){
+        kpisBar.style.display = 'none';
+        if (selectedRow) selectedRow.classList.remove('cli-row-selected');
+        selectedRow = null;
+    });
+
+    // ── Click en nombre del cliente → abre el widget de Oportunidades ──
+    document.querySelectorAll('[data-cliente-link]').forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            var cid = parseInt(a.dataset.clienteLink);
+            var cnom = a.dataset.clienteNombre || '';
+            if (typeof window.openClienteModal === 'function') {
+                window.openClienteModal(cid, cnom);
+            }
+        });
+    });
+})();
+</script>

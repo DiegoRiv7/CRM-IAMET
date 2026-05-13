@@ -796,6 +796,126 @@ def crm_home(request):
             'prosp_por_marca': prosp_por_marca,
         }
 
+    # ── Tab Clientes (vista consolidada cliente × marca) ──────────────
+    clientes_tabla = None
+    clientes_tabla_meta = None
+    if tab_activo == 'clientes':
+        # Catálogo de marcas (mismas columnas que en Campañas)
+        MARCAS_COL = [
+            ('ZEBRA',     'zebra',    'Zebra'),
+            ('PANDUIT',   'panduit',  'Panduit'),
+            ('APC',       'apc',      'APC'),
+            ('AVIGILION', 'avigilon', 'Avigilon'),
+            ('GENETEC',   'genetec',  'Genetec'),
+            ('AXIS',      'axis',     'Axis'),
+            ('SOFTWARE',  'software', 'Soft.'),
+            ('RUNRATE',   'runrate',  'RR'),
+            ('PÓLIZA',    'poliza',   'Pól.'),
+        ]
+        # Clientes visibles según rol/filtros
+        if es_supervisor:
+            if vendedores_ids:
+                clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids)
+            else:
+                clientes_qs = Cliente.objects.all()
+        else:
+            usuarios_visibles = get_usuarios_visibles_ids(user)
+            if usuarios_visibles and len(usuarios_visibles) > 1:
+                clientes_qs = Cliente.objects.filter(asignado_a_id__in=usuarios_visibles)
+            else:
+                clientes_qs = Cliente.objects.filter(asignado_a=user)
+        clientes_qs = clientes_qs.order_by('nombre_empresa')
+
+        # Filtro de periodo aplicable a TodoItem y Prospecto.
+        # Reutilizamos meses_list/anios_list/desde_date/hasta_date.
+        cliente_ids = list(clientes_qs.values_list('id', flat=True))
+
+        # ── Oportunidades activas por cliente y producto ──
+        # Usamos fecha_creacion para que coincida con cómo se cuentan en Campañas.
+        op_qs = TodoItem.objects.filter(cliente_id__in=cliente_ids)
+        # Excluir oportunidades cerradas perdidas o ganadas (criterio: estado_oportunidad).
+        # Aceptamos cualquier oportunidad creada en el periodo.
+        if desde_date or hasta_date:
+            if desde_date: op_qs = op_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date: op_qs = op_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                op_qs = op_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    op_qs = op_qs.filter(fecha_creacion__month__in=meses_int)
+        # ── Prospecciones (Prospecto) activas por cliente y producto ──
+        from .models import Prospecto
+        pr_qs = Prospecto.objects.filter(cliente_id__in=cliente_ids).exclude(
+            etapa__in=['cerrado_ganado', 'cerrado_perdido']
+        )
+        if desde_date or hasta_date:
+            if desde_date: pr_qs = pr_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date: pr_qs = pr_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                pr_qs = pr_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    pr_qs = pr_qs.filter(fecha_creacion__month__in=meses_int)
+
+        # Construye conteo por cliente. Estructura:
+        # { cliente_id: { 'op': {marca_key: count}, 'pr': {marca_key: count}, 'op_total':N, 'pr_total':N } }
+        def _bucket_marca(prod):
+            prod = (prod or '').upper()
+            for code, key, _label in MARCAS_COL:
+                if code in prod or (code == 'AVIGILION' and 'AVIGILON' in prod):
+                    return key
+            return 'otros'
+
+        counts = {}
+        for o in op_qs.values('cliente_id', 'producto'):
+            cid = o['cliente_id']
+            b = counts.setdefault(cid, {'op': {}, 'pr': {}, 'op_total': 0, 'pr_total': 0})
+            k = _bucket_marca(o['producto'])
+            b['op'][k] = b['op'].get(k, 0) + 1
+            b['op_total'] += 1
+        for p in pr_qs.values('cliente_id', 'producto'):
+            cid = p['cliente_id']
+            b = counts.setdefault(cid, {'op': {}, 'pr': {}, 'op_total': 0, 'pr_total': 0})
+            k = _bucket_marca(p['producto'])
+            b['pr'][k] = b['pr'].get(k, 0) + 1
+            b['pr_total'] += 1
+
+        # Construir filas (cells como lista ordenada para iterar en el template)
+        clientes_tabla = []
+        keys = [k for _c, k, _l in MARCAS_COL] + ['otros']
+        for c in clientes_qs:
+            b = counts.get(c.id, {'op': {}, 'pr': {}, 'op_total': 0, 'pr_total': 0})
+            cells = []
+            for k in keys:
+                op = b['op'].get(k, 0)
+                pr = b['pr'].get(k, 0)
+                cells.append({'key': k, 'op': op, 'pr': pr, 'total': op + pr})
+            clientes_tabla.append({
+                'id': c.id,
+                'nombre': c.nombre_empresa or '—',
+                'rfc': c.rfc or '',
+                'cells': cells,
+                'op_total': b['op_total'],
+                'pr_total': b['pr_total'],
+            })
+
+        clientes_tabla_meta = {
+            'marcas_col': [{'code': c, 'key': k, 'label': l} for c, k, l in MARCAS_COL],
+            'total_clientes': len(clientes_tabla),
+            'total_op': sum(r['op_total'] for r in clientes_tabla),
+            'total_pr': sum(r['pr_total'] for r in clientes_tabla),
+        }
+
     # ── Certificaciones (sub-vista ?vista=certificaciones + widget) ─
     certificaciones_lista = None
     certificaciones_kpis = None
@@ -1171,6 +1291,8 @@ def crm_home(request):
         'cursos_lista': cursos_lista,
         'cursos_kpis': cursos_kpis,
         'cursos_filtros': cursos_filtros,
+        'clientes_tabla': clientes_tabla,
+        'clientes_tabla_meta': clientes_tabla_meta,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,
@@ -2870,6 +2992,134 @@ def api_desglose_cobrado(request):
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def api_cliente_kpis(request, cliente_id):
+    """KPIs del cliente en el periodo seleccionado: facturado, oportunidades,
+    cotizaciones y prospecciones. Se usan en la fila flotante del tab Clientes.
+    """
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    # Filtros mes/año/desde/hasta — replica el patrón del crm_home
+    now = datetime.now()
+    def _parse_multi(raw, is_int=False):
+        if raw is None or raw == '' or raw == 'todos':
+            return None
+        items = [x.strip() for x in str(raw).split(',') if x.strip()]
+        if not items:
+            return None
+        if is_int:
+            out = []
+            for x in items:
+                try: out.append(int(x))
+                except ValueError: pass
+            return out or None
+        return items
+    meses_list = _parse_multi(request.GET.get('mes', str(now.month).zfill(2)))
+    anios_list = _parse_multi(request.GET.get('anio', str(now.year)), is_int=True)
+    desde_raw = (request.GET.get('desde', '') or '').strip()
+    hasta_raw = (request.GET.get('hasta', '') or '').strip()
+    desde_date = hasta_date = None
+    try:
+        if desde_raw: desde_date = datetime.strptime(desde_raw, '%Y-%m-%d').date()
+        if hasta_raw: hasta_date = datetime.strptime(hasta_raw, '%Y-%m-%d').date()
+    except ValueError:
+        desde_date = hasta_date = None
+
+    def _aplicar_periodo(qs, fecha_field='fecha_creacion'):
+        if desde_date or hasta_date:
+            if desde_date: qs = qs.filter(**{f'{fecha_field}__date__gte': desde_date})
+            if hasta_date: qs = qs.filter(**{f'{fecha_field}__date__lte': hasta_date})
+        else:
+            if anios_list is not None:
+                qs = qs.filter(**{f'{fecha_field}__year__in': anios_list})
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    qs = qs.filter(**{f'{fecha_field}__month__in': meses_int})
+        return qs
+
+    # Facturado: suma de monto de oportunidades en estado 'facturado' o por
+    # mes_facturacion. El sistema tiene FacturasIamet que es la fuente real;
+    # aquí usamos TodoItem.estado_facturacion como proxy (consistente con KPIs).
+    op_qs = _aplicar_periodo(TodoItem.objects.filter(cliente=cliente))
+    op_count = op_qs.count()
+    # Facturado: oportunidades con estado_facturacion='facturado' o 'cobrado'
+    try:
+        from django.db.models import Sum, Q as _Q
+        facturadas = op_qs.filter(_Q(estado_facturacion__in=['facturado', 'cobrado']))
+        facturado_total = facturadas.aggregate(t=Sum('monto'))['t'] or 0
+    except Exception:
+        facturado_total = 0
+
+    # Cotizaciones (modelo Cotizacion vinculado a cliente)
+    cot_count = 0
+    try:
+        from .models import Cotizacion
+        cot_qs = _aplicar_periodo(Cotizacion.objects.filter(cliente=cliente))
+        cot_count = cot_qs.count()
+    except Exception:
+        pass
+
+    # Prospecciones activas en el periodo
+    from .models import Prospecto
+    pr_qs = _aplicar_periodo(Prospecto.objects.filter(cliente=cliente)).exclude(
+        etapa__in=['cerrado_ganado', 'cerrado_perdido']
+    )
+    pr_count = pr_qs.count()
+
+    return JsonResponse({
+        'ok': True,
+        'cliente': {'id': cliente.id, 'nombre': cliente.nombre_empresa or '—'},
+        'kpis': {
+            'facturado': float(facturado_total or 0),
+            'oportunidades': op_count,
+            'cotizaciones': cot_count,
+            'prospecciones': pr_count,
+        },
+    })
+
+
+@login_required
+def api_cliente_prospecciones(request, cliente_id):
+    """Lista de prospecciones (Prospecto) de un cliente. Para mostrarlas
+    como sub-tab en el modal widgetClienteOportunidades."""
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+    from .models import Prospecto
+    qs = (
+        Prospecto.objects.select_related('contacto', 'usuario')
+        .filter(cliente=cliente).order_by('-fecha_actualizacion')
+    )
+    ETAPA_LBL = {
+        'identificado': 'Identificado', 'calificado': 'Calificado',
+        'reunion': 'Reunión', 'en_progreso': 'En Progreso', 'procesado': 'Procesado',
+        'cerrado_ganado': 'Cerrado · Ganado', 'cerrado_perdido': 'Cerrado · Perdido',
+    }
+    rows = []
+    for p in qs:
+        rows.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'contacto': p.contacto.nombre if p.contacto else '—',
+            'area': p.area or '—',
+            'producto': p.producto or '—',
+            'etapa': p.etapa,
+            'etapa_display': ETAPA_LBL.get(p.etapa, p.etapa),
+            'tipo_pipeline': p.tipo_pipeline,
+            'vendedor': p.usuario.get_full_name() or p.usuario.username,
+            'fecha_creacion': p.fecha_creacion.strftime('%d %b %Y') if p.fecha_creacion else '',
+        })
+    return JsonResponse({'ok': True, 'rows': rows, 'total': len(rows)})
 
 
 @login_required

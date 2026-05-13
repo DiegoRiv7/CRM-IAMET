@@ -4495,9 +4495,11 @@
             var clienteOppFiltersOpp = document.getElementById('clienteOppFiltersOpp');
             var clienteOppHeadOpp = document.getElementById('clienteOppHeadOpp');
             var clienteOppHeadCot = document.getElementById('clienteOppHeadCot');
+            var clienteOppHeadProsp = document.getElementById('clienteOppHeadProsp');
+            var clienteOppTabs = document.getElementById('clienteOppTabs');
 
             var currentClienteId = null;
-            var currentMode = 'oportunidades'; // 'oportunidades' | 'cobrado' | 'cotizado'
+            var currentMode = 'oportunidades'; // 'oportunidades' | 'cobrado' | 'cotizado' | 'prospecciones'
             var allClienteData = [];
 
             // ── Click en nombre de cliente ──
@@ -4539,9 +4541,49 @@
             function setWidgetMode(mode) {
                 currentMode = mode;
                 var isCot = (mode === 'cotizado');
-                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = isCot ? 'none' : '';
+                var isProsp = (mode === 'prospecciones');
+                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp) ? 'none' : '';
                 if (clienteOppHeadCot) clienteOppHeadCot.style.display = isCot ? '' : 'none';
-                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = isCot ? 'none' : '';
+                if (clienteOppHeadProsp) clienteOppHeadProsp.style.display = isProsp ? '' : 'none';
+                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp) ? 'none' : '';
+                // Marcar tab activo
+                if (clienteOppTabs) {
+                    var tabKey = mode === 'cobrado' ? 'oportunidades' : mode;
+                    clienteOppTabs.querySelectorAll('[data-cli-tab]').forEach(function(t){
+                        t.classList.toggle('is-active', t.dataset.cliTab === tabKey);
+                    });
+                }
+            }
+
+            // Listeners de las tabs internas
+            if (clienteOppTabs) {
+                clienteOppTabs.addEventListener('click', function(e){
+                    var t = e.target.closest('[data-cli-tab]');
+                    if (!t || !currentClienteId) return;
+                    var newMode = t.dataset.cliTab;
+                    setWidgetMode(newMode);
+                    _cargarTabActivo();
+                });
+            }
+            function _cargarTabActivo(){
+                if (!currentClienteId) return;
+                var url;
+                if (currentMode === 'cotizado') {
+                    url = '/app/api/cliente-cotizaciones/' + currentClienteId + '/';
+                } else if (currentMode === 'prospecciones') {
+                    url = '/app/api/cliente-prospecciones/' + currentClienteId + '/';
+                } else {
+                    url = '/app/api/cliente-oportunidades/' + currentClienteId + '/' + (currentMode === 'cobrado' ? '?tipo=cobrado' : '');
+                }
+                clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty">Cargando…</td></tr>';
+                fetch(url)
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        allClienteData = (data && data.rows) || [];
+                        renderClienteData();
+                    }).catch(function(){
+                        clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
+                    });
             }
 
             // ── Abrir widget ──
@@ -4611,6 +4653,18 @@
                         html += '<td style="text-align:right;font-weight:700;color:#007AFF;">$' + (cot.total || '0') + ' <span style="color:#8E8E93;font-weight:400;font-size:0.65rem;">' + (cot.moneda || '') + '</span></td>';
                         html += '</tr>';
                     });
+                } else if (currentMode === 'prospecciones') {
+                    filtered.forEach(function (p) {
+                        var etapaBadge = '<span class="wco-prosp-etapa wco-prosp-etapa--' + (p.etapa || '') + '">' + (p.etapa_display || p.etapa) + '</span>';
+                        html += '<tr data-prospecto-id="' + p.id + '">';
+                        html += '<td><span class="wco-opp-name" data-prospecto-row-id="' + p.id + '">' + truncate(p.nombre || '—', 50) + '</span></td>';
+                        html += '<td style="color:#6E6E73;">' + truncate(p.contacto || '—', 20) + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (p.area || '—') + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (p.producto || '—') + '</td>';
+                        html += '<td>' + etapaBadge + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (p.vendedor || '—') + '</td>';
+                        html += '</tr>';
+                    });
                 } else {
                     filtered.forEach(function (opp) {
                         var contactoNombre = opp.contacto ? opp.contacto.nombre : '-';
@@ -4640,6 +4694,11 @@
                         return !searchTerm ||
                             (item.titulo && item.titulo.toLowerCase().includes(searchTerm)) ||
                             (item.oportunidad && item.oportunidad.toLowerCase().includes(searchTerm));
+                    }
+                    if (currentMode === 'prospecciones') {
+                        return !searchTerm ||
+                            (item.nombre && item.nombre.toLowerCase().includes(searchTerm)) ||
+                            (item.contacto && item.contacto.toLowerCase().includes(searchTerm));
                     }
                     var matchSearch = !searchTerm ||
                         item.oportunidad.toLowerCase().includes(searchTerm) ||

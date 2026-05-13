@@ -37,6 +37,13 @@
             <button type="button" class="wco-close" id="clienteOppClose">&times;</button>
         </div>
 
+        <!-- Tabs internos: Oportunidades | Cotizaciones | Prospecciones -->
+        <div class="wco-tabs" id="clienteOppTabs">
+            <button type="button" class="wco-tab is-active" data-cli-tab="oportunidades">Oportunidades</button>
+            <button type="button" class="wco-tab" data-cli-tab="cotizado">Cotizaciones</button>
+            <button type="button" class="wco-tab" data-cli-tab="prospecciones">Prospecciones</button>
+        </div>
+
         <!-- Filters -->
         <div class="wco-filters">
             <div style="flex:1;position:relative;">
@@ -90,6 +97,14 @@
                         <th>Fecha</th>
                         <th>Creado por</th>
                         <th style="text-align:right;">Total</th>
+                    </tr>
+                    <tr id="clienteOppHeadProsp" class="wco-thead-row" style="display:none">
+                        <th style="width:34%;">Prospección</th>
+                        <th>Contacto</th>
+                        <th>Área</th>
+                        <th>Producto</th>
+                        <th>Etapa</th>
+                        <th>Vendedor</th>
                     </tr>
                 </thead>
                 <tbody id="clienteOppTbody"></tbody>
