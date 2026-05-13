@@ -38,12 +38,12 @@
         <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
         <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
         <span class="cli-filter-meta">
-            {{ meta.total_clientes }} clientes · {{ meta.total_op }} oportunidades · {{ meta.total_pr }} prospecciones
+            {{ meta.total_clientes }} clientes · {{ meta.total_op }} oportunidades · {{ meta.total_pr }} prospecciones · {{ potenciales_lista|length }} potenciales
         </span>
     </div>
 
-    {# ── Tabla ── #}
-    <div class="cli-table-wrap">
+    {# ── Tabla principal: clientes × marcas ── #}
+    <div class="cli-table-wrap" id="cliTableMarcasWrap">
         <table class="cli-table">
             <thead>
                 <tr>
@@ -76,6 +76,32 @@
             </tbody>
         </table>
     </div>
+
+    {# ── Tabla "Solo Prospectos": clientes potenciales (sin marcas) ── #}
+    <div class="cli-table-wrap" id="cliTablePotencialesWrap" style="display:none;">
+        <table class="cli-table">
+            <thead>
+                <tr>
+                    <th class="cli-th-cli">Prospecto (cliente potencial)</th>
+                    <th>Asignado a</th>
+                    <th>Notas</th>
+                    <th>Creado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in potenciales_lista %}
+                <tr class="cli-row-pot" data-pot-id="{{ p.id }}">
+                    <td class="cli-td-cli">{{ p.nombre }}</td>
+                    <td style="color:#6B7280;">{{ p.asignado_nombre }}</td>
+                    <td style="color:#6B7280;font-size:0.78rem;">{{ p.notas|default:'—'|truncatechars:80 }}</td>
+                    <td style="color:#9CA3AF;font-size:0.78rem;">{{ p.fecha }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="cli-empty">No hay prospectos (clientes potenciales) en este periodo.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endwith %}
 
@@ -88,12 +114,21 @@
         document.querySelectorAll('.cli-filter-btn').forEach(function(b){
             b.classList.toggle('cli-filter-active', b.dataset.cliShow === mode);
         });
-        // Cada celda muestra op/pr/total según el modo, en cero estilo "tenue"
+        var wrapMarcas = document.getElementById('cliTableMarcasWrap');
+        var wrapPot = document.getElementById('cliTablePotencialesWrap');
+        if (mode === 'prospectos') {
+            // Solo Prospectos → muestra ClientePotencial, oculta la tabla por marca
+            if (wrapMarcas) wrapMarcas.style.display = 'none';
+            if (wrapPot) wrapPot.style.display = '';
+            return;
+        }
+        if (wrapMarcas) wrapMarcas.style.display = '';
+        if (wrapPot) wrapPot.style.display = 'none';
+        // Cada celda muestra op/total según el modo, en cero estilo "tenue"
         document.querySelectorAll('.cli-td-cell').forEach(function(td){
             var op = parseInt(td.dataset.op || 0);
-            var pr = parseInt(td.dataset.pr || 0);
             var total = parseInt(td.dataset.total || 0);
-            var val = mode === 'clientes' ? op : (mode === 'prospectos' ? pr : total);
+            var val = mode === 'clientes' ? op : total;
             td.textContent = val;
             td.classList.toggle('cli-td-zero', val === 0);
         });

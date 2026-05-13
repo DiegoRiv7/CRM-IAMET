@@ -799,7 +799,10 @@ def crm_home(request):
     # ── Tab Clientes (vista consolidada cliente × marca) ──────────────
     clientes_tabla = None
     clientes_tabla_meta = None
-    if tab_activo == 'cli':
+    potenciales_lista = None
+    # La tabla de clientes se carga también en el Dashboard (tab=clientes)
+    # para que el modo "Clientes" funcione sin recargar.
+    if tab_activo == 'clientes' or tab_activo == 'cli':
         # Catálogo de marcas (mismas columnas que en Campañas)
         MARCAS_COL = [
             ('ZEBRA',     'zebra',    'Zebra'),
@@ -915,6 +918,31 @@ def crm_home(request):
             'total_op': sum(r['op_total'] for r in clientes_tabla),
             'total_pr': sum(r['pr_total'] for r in clientes_tabla),
         }
+
+        # ── ClientePotencial visibles (para el toggle "Solo Prospectos") ──
+        from .models import ClientePotencial
+        if es_supervisor:
+            if vendedores_ids:
+                pot_qs = ClientePotencial.objects.filter(asignado_a_id__in=vendedores_ids)
+            else:
+                pot_qs = ClientePotencial.objects.all()
+        else:
+            usuarios_visibles = get_usuarios_visibles_ids(user)
+            if usuarios_visibles and len(usuarios_visibles) > 1:
+                pot_qs = ClientePotencial.objects.filter(asignado_a_id__in=usuarios_visibles)
+            else:
+                pot_qs = ClientePotencial.objects.filter(asignado_a=user)
+        pot_qs = pot_qs.select_related('asignado_a').order_by('-fecha_actualizacion')
+        potenciales_lista = [
+            {
+                'id': p.id,
+                'nombre': p.nombre,
+                'asignado_nombre': (p.asignado_a.get_full_name() or p.asignado_a.username) if p.asignado_a_id else '—',
+                'notas': p.notas or '',
+                'fecha': p.fecha_creacion.strftime('%d %b %Y') if p.fecha_creacion else '',
+            }
+            for p in pot_qs
+        ]
 
     # ── Certificaciones (sub-vista ?vista=certificaciones + widget) ─
     certificaciones_lista = None
@@ -1293,6 +1321,7 @@ def crm_home(request):
         'cursos_filtros': cursos_filtros,
         'clientes_tabla': clientes_tabla,
         'clientes_tabla_meta': clientes_tabla_meta,
+        'potenciales_lista': potenciales_lista,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,

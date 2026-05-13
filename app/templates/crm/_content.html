@@ -243,21 +243,13 @@
                 <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
             </div>
             {% endif %}
-            {% if tab_activo == 'clientes' or tab_activo == 'cli' %}
-            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes -->
+            {% if tab_activo == 'clientes' %}
+            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes (todo JS, sin recargar) -->
             <div class="crm-tabs crm-tabs--dashboard">
-                {% if tab_activo == 'clientes' %}
                 <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
                 <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
-                <a href="?tab=cli&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Clientes</a>
-                {% else %}
-                {# En ?tab=cli mostramos los 4 botones como links — al volver a Oportunidades/Prospectos/Proyectos navegamos a ?tab=clientes con el modo persistido por el _crmSetMode (queda en localStorage). #}
-                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Oportunidades</a>
-                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Prospectos</a>
-                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab">Proyectos</a>
-                <a href="?tab=cli&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-tab active">Clientes</a>
-                {% endif %}
+                <button type="button" id="crmModeClientes" onclick="window._crmSetMode('clientes_tabla')" class="crm-tab">Clientes</button>
             </div>
             {% else %}
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
@@ -706,9 +698,6 @@
         {% elif tab_activo == 'prospectos' %}
         {% include "crm/_content_prospectos_kanban.html" %}
 
-        {% elif tab_activo == 'cli' %}
-        {% include "crm/_content_clientes.html" %}
-
         {% elif tab_activo == 'prospeccion' %}
         {# En producción (crm.iamet.mx) mostramos placeholder "Próximamente"; en pruebas y otros entornos sigue funcionando todo normal. #}
         {% if request.get_host == 'crm.iamet.mx' %}
@@ -1023,6 +1012,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Modo "Clientes": tabla cliente × marca (sin recargar) -->
+        <div id="ckClientesTablaSection" style="display:none;padding:0 12px 40px;">
+            {% include "crm/_content_clientes.html" %}
         </div>
 
         <!-- Hidden tbody for data merge (used by renderClientesCombinedTable) -->

@@ -1659,6 +1659,7 @@
                 var btnOpp = document.getElementById('crmModeOpp');
                 var btnProsp = document.getElementById('crmModeProsp');
                 var btnProy = document.getElementById('crmModeProyectos');
+                var btnClientes = document.getElementById('crmModeClientes');
                 if (btnOpp && btnProsp) {
                     btnOpp.classList.toggle('active', mode === 'oportunidades');
                     btnOpp.classList.remove('active-prospectos');
@@ -1673,6 +1674,11 @@
                     btnProy.classList.toggle('active-proyectos', mode === 'proyectos');
                     btnProy.style.background = ''; btnProy.style.color = '';
                 }
+                if (btnClientes) {
+                    btnClientes.classList.toggle('active', mode === 'clientes_tabla');
+                }
+                // Sección de tabla de Clientes (4° modo del Dashboard)
+                var cliSection = document.getElementById('ckClientesTablaSection');
                 var kpiOpp = document.getElementById('ckKpiRow');
                 var kpiProsp = document.getElementById('ckKpiRowProsp');
                 var kpiProy = document.getElementById('ckKpiRowProy');
@@ -1685,6 +1691,10 @@
                 // Si hay un drill-down activo (detalle visible) NO lo escondas — esto
                 // se llama desde refreshes periódicos y borraría la tabla del usuario.
                 var detalleOpen = !!(window._ckDetalleOpen) && detalle && detalle.style.display !== 'none';
+
+                // Por default ocultar la tabla de clientes; los modos que la
+                // necesiten la prenden abajo.
+                if (cliSection) cliSection.style.display = 'none';
 
                 if (mode === 'oportunidades') {
                     if (kpiOpp) kpiOpp.style.display = 'grid';
@@ -1724,6 +1734,21 @@
                     var pData = _clientesPanelData.prospeccion || {};
                     if (footerLeft) footerLeft.textContent = (pData.footer || {}).left || '';
                     if (footerRight) footerRight.textContent = (pData.footer || {}).right || '';
+                } else if (mode === 'clientes_tabla') {
+                    // Modo "Clientes" (4° del Dashboard): oculta todo lo
+                    // demás y muestra la tabla cliente × marca.
+                    if (kpiOpp) kpiOpp.style.display = 'none';
+                    if (kpiProsp) kpiProsp.style.display = 'none';
+                    if (kpiProy) kpiProy.style.display = 'none';
+                    if (charts) charts.style.display = 'none';
+                    if (chartsProsp) chartsProsp.style.display = 'none';
+                    if (chartsProy) chartsProy.style.display = 'none';
+                    if (detalle) detalle.style.display = 'none';
+                    if (cliSection) cliSection.style.display = '';
+                    var footerLeft = document.getElementById('footerLeft');
+                    var footerRight = document.getElementById('footerRight');
+                    if (footerLeft) footerLeft.textContent = '';
+                    if (footerRight) footerRight.textContent = '';
                 } else if (mode === 'proyectos') {
                     if (kpiOpp) kpiOpp.style.display = 'none';
                     if (kpiProsp) kpiProsp.style.display = 'none';
