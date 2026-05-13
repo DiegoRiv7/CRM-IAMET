@@ -13524,7 +13524,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 .cert-d-proof--img {
     background: #F1F5F9;
-    padding: 18px;
+    padding: 22px;
     border: 1px solid #E5E7EB;
 }
 .cert-d-proof--img:hover {
@@ -13539,7 +13539,11 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     box-shadow: 0 2px 6px rgba(0,0,0,0.06), inset 0 0 0 1px #F1F5F9;
 }
 .cert-d-proof-mat img {
-    width: 100%; height: auto; max-height: 460px;
+    width: 100%; height: auto;
+    /* Sin max-height fijo: la imagen se ve completa a su escala natural
+       (limitada al ancho de la columna). El body del modal hace scroll
+       si la imagen es más alta que el modal — el sidebar es sticky y
+       se queda visible. */
     object-fit: contain; display: block;
     border-radius: 2px;
 }

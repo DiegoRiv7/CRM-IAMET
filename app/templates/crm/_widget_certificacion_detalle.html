@@ -83,7 +83,6 @@
             {# Cuerpo: 2 columnas — comprobante a la izquierda, info a la derecha #}
             <div class="cert-d-body">
                 <div class="cert-d-main">
-                    <div class="cert-d-section-lbl">Comprobante</div>
                     <div id="certDetComprobante" class="cert-d-comprobante">
                         <div class="cert-d-noproof">
                             <svg width="36" height="36" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -130,14 +129,6 @@
                                 <div class="cert-d-icon-k">Vencimiento</div>
                                 <div class="cert-d-icon-v" id="certDetFechaVenc">—</div>
                             </div>
-                        </div>
-
-                        {# Barra de vigencia — solo si hay fecha vencimiento #}
-                        <div class="cert-d-vig-bar" id="certDetVigBar" style="display:none;">
-                            <div class="cert-d-vig-track">
-                                <div class="cert-d-vig-fill" id="certDetVigFill"></div>
-                            </div>
-                            <div class="cert-d-vig-lbl" id="certDetVigLbl">—</div>
                         </div>
 
                         {# Notas — solo si hay #}
@@ -350,36 +341,6 @@
                 } else {
                     vEl.textContent = 'Sin vencimiento';
                     vEl.style.color = '#9CA3AF';
-                }
-
-                // Barra de vigencia visual: % de tiempo transcurrido entre obtención y vencimiento
-                var vBar = document.getElementById('certDetVigBar');
-                var vFill = document.getElementById('certDetVigFill');
-                var vLbl = document.getElementById('certDetVigLbl');
-                if (c.fecha_obtencion && c.fecha_vencimiento){
-                    try {
-                        var obt = new Date(c.fecha_obtencion + 'T00:00:00');
-                        var ven = new Date(c.fecha_vencimiento + 'T00:00:00');
-                        var hoy = new Date(); hoy.setHours(0,0,0,0);
-                        var total = Math.max(1, ven - obt);
-                        var transcurrido = Math.max(0, Math.min(total, hoy - obt));
-                        var pct = Math.round((transcurrido / total) * 100);
-                        vFill.style.width = pct + '%';
-                        vFill.className = 'cert-d-vig-fill';
-                        if (c.estado_vencimiento === 'vencida'){
-                            vFill.classList.add('cert-d-vig-fill--danger');
-                            vLbl.textContent = 'Caducada';
-                        } else if (c.estado_vencimiento === 'por_vencer'){
-                            vFill.classList.add('cert-d-vig-fill--warn');
-                            vLbl.textContent = pct + '% de la vigencia transcurrida';
-                        } else {
-                            vFill.classList.add('cert-d-vig-fill--ok');
-                            vLbl.textContent = pct + '% de la vigencia transcurrida';
-                        }
-                        vBar.style.display = '';
-                    } catch(e){ vBar.style.display = 'none'; }
-                } else {
-                    vBar.style.display = 'none';
                 }
 
                 var notasCard = document.getElementById('certDetNotasCard');
