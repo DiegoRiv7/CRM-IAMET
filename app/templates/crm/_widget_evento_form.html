@@ -72,12 +72,27 @@
                         </button>
                         <div class="wn-ctw-pop" id="evtPopTipo" style="display:none;">
                             <div class="wn-ctw-pop-title">Tipo de evento</div>
-                            <select id="evtFormTipo" class="wn-ctw-pop-input">
+                            <select id="evtFormTipo" class="wn-ctw-pop-input" onchange="evtUpdateDirVisibility()">
                                 <option value="presencial">Presencial</option>
                                 <option value="webinar">Webinar</option>
                                 <option value="demo_sitio">Demo en sitio</option>
                                 <option value="breakfast">Breakfast Brief</option>
                                 <option value="techday">Techday</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Dirección de la demo (solo visible si tipo=demo_sitio) #}
+                    <div class="wn-ctw-popwrap" id="evtDirWrap" style="display:none;">
+                        <button type="button" class="wn-ctw-pill-meta filled" id="evtDirBtn" onclick="evtOpenPop('dir', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            <span id="evtDirLabel">Para cliente</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="evtPopDir" style="display:none;">
+                            <div class="wn-ctw-pop-title">Dirección de la demo</div>
+                            <select id="evtFormDir" class="wn-ctw-pop-input">
+                                <option value="outbound">Para cliente (vamos al cliente)</option>
+                                <option value="inbound">De marca (la marca nos capacita)</option>
                             </select>
                         </div>
                     </div>
@@ -215,8 +230,22 @@
     var partChipsWrap = document.getElementById('evtPartChips');
     var _participantes = []; // [{id, nombre, iniciales}]
 
-    var POP_IDS = { fecha:'evtPopFecha', tipo:'evtPopTipo', estado:'evtPopEstado', costo:'evtPopCosto', target:'evtPopTarget', participantes:'evtPopParticipantes' };
-    var BTN_IDS = { fecha:'evtFechaBtn', tipo:'evtTipoBtn', estado:'evtEstadoBtn', costo:'evtCostoBtn', target:'evtTargetBtn', participantes:'evtPartBtn' };
+    var POP_IDS = { fecha:'evtPopFecha', tipo:'evtPopTipo', dir:'evtPopDir', estado:'evtPopEstado', costo:'evtPopCosto', target:'evtPopTarget', participantes:'evtPopParticipantes' };
+    var BTN_IDS = { fecha:'evtFechaBtn', tipo:'evtTipoBtn', dir:'evtDirBtn', estado:'evtEstadoBtn', costo:'evtCostoBtn', target:'evtTargetBtn', participantes:'evtPartBtn' };
+
+    // Mostrar/ocultar el pill de Dirección según tipo (solo demo_sitio lo usa)
+    var dirEl = document.getElementById('evtFormDir');
+    var dirWrap = document.getElementById('evtDirWrap');
+    var dirLbl = document.getElementById('evtDirLabel');
+    window.evtUpdateDirVisibility = function(){
+        if (!dirWrap || !tipoEl) return;
+        dirWrap.style.display = (tipoEl.value === 'demo_sitio') ? '' : 'none';
+    };
+    if (dirEl) {
+        dirEl.addEventListener('change', function(){
+            if (dirLbl) dirLbl.textContent = (dirEl.value === 'inbound') ? 'De marca' : 'Para cliente';
+        });
+    }
 
     function _csrf(){
         var el = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -469,6 +498,9 @@
         // en otro caso, "Presencial".
         tipoEl.value = window._eventoTipoDefault || 'presencial';
         window._eventoTipoDefault = null; // se consume al primer reset
+        if (dirEl) dirEl.value = 'outbound';
+        if (dirLbl) dirLbl.textContent = 'Para cliente';
+        evtUpdateDirVisibility();
         estadoEl.value = 'programado';
         descEl.value = '';
         notasEl.value = '';
@@ -500,6 +532,9 @@
                 idEl.value = e.id;
                 nombreEl.value = e.nombre || '';
                 tipoEl.value = e.tipo || 'presencial';
+                if (dirEl) dirEl.value = e.demo_direccion || 'outbound';
+                if (dirLbl) dirLbl.textContent = (e.demo_direccion === 'inbound') ? 'De marca' : 'Para cliente';
+                evtUpdateDirVisibility();
                 estadoEl.value = e.estado || 'programado';
                 if (e.fecha_evento) fechaEl.value = e.fecha_evento.slice(0, 16);
                 duracionEl.value = e.duracion_minutos || 60;
@@ -536,6 +571,7 @@
         var payload = {
             nombre: nombreEl.value.trim(),
             tipo: tipoEl.value,
+            demo_direccion: (tipoEl.value === 'demo_sitio' && dirEl) ? dirEl.value : '',
             estado: estadoEl.value,
             fecha_evento: fechaEl.value.trim(),
             duracion_minutos: parseInt(duracionEl.value, 10) || 60,

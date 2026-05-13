@@ -1,3 +1,4 @@
+{% load app_filters %}
 {# ═══ DASHBOARD MARKETING — Pizarrón horizontal liquid glass ═══ #}
 <div class="mkt-dashboard" id="mktDashboard">
     <div class="mkt-board" id="mktBoard">
@@ -192,28 +193,60 @@
             </div>
         </a>
 
-        {# ═══ 1×1 — Demos ═══ #}
-        <button type="button" class="mkt-widget mkt-widget--soon" data-area="demo"
-                data-section-name="Demos" style="--mkt-accent:#059669;--mkt-accent-bg:rgba(5,150,105,0.08);">
+        {# ═══ Demos — filtered view de Eventos (tipo=demo_sitio) ═══ #}
+        <a class="mkt-widget mkt-widget--ready" data-area="demo"
+           href="?tab=prospeccion&vista=eventos&filter_tipo=demo_sitio&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           style="--mkt-accent:#059669;--mkt-accent-bg:rgba(5,150,105,0.08);">
             <span class="mkt-specular"></span>
             <div class="mkt-w-head">
                 <div class="mkt-w-icon">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 </div>
                 <span class="mkt-w-title">Demos</span>
+                {% if demos_kpis.total %}<span class="mkt-w-count">{{ demos_kpis.total }}</span>{% endif %}
             </div>
             <div class="mkt-w-body mkt-demo-body">
-                <div class="mkt-inner-card mkt-demo-row">
-                    <div class="mkt-demo-row-top"><span class="mkt-demo-label">En sitio</span><span class="mkt-demo-value">7 solic.</span></div>
-                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:70%"></i></div>
+                {% if demos_kpis.total %}
+                <div class="mkt-demo-split">
+                    <div class="mkt-inner-card mkt-demo-row mkt-demo-row--out">
+                        <div class="mkt-demo-row-top">
+                            <span class="mkt-demo-label">Para cliente</span>
+                            <span class="mkt-demo-value">{{ demos_kpis.outbound_total }}</span>
+                        </div>
+                        <div class="mkt-demo-row-sub">
+                            {{ demos_kpis.outbound_prospectos }} prospect{{ demos_kpis.outbound_prospectos|pluralize:"o,os" }}
+                            {% if demos_kpis.outbound_monto %} · ${{ demos_kpis.outbound_monto|format_currency_short }} pipeline{% endif %}
+                        </div>
+                    </div>
+                    <div class="mkt-inner-card mkt-demo-row mkt-demo-row--in">
+                        <div class="mkt-demo-row-top">
+                            <span class="mkt-demo-label">De marca</span>
+                            <span class="mkt-demo-value">{{ demos_kpis.inbound_total }}</span>
+                        </div>
+                        <div class="mkt-demo-row-sub">
+                            {{ demos_kpis.inbound_asistentes }} asistente{{ demos_kpis.inbound_asistentes|pluralize:"s" }}
+                            {% if demos_kpis.inbound_marcas %} · {{ demos_kpis.inbound_marcas }} marca{{ demos_kpis.inbound_marcas|pluralize:"s" }}{% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="mkt-inner-card mkt-demo-row">
-                    <div class="mkt-demo-row-top"><span class="mkt-demo-label">Remoto</span><span class="mkt-demo-value">4 solic.</span></div>
-                    <div class="mkt-bar-track mkt-bar-track--solo"><i style="width:42%"></i></div>
+                {% if demos_kpis.proxima %}
+                <div class="mkt-inner-card mkt-evt-next">
+                    <div class="mkt-inner-label">Próxima demo · {{ demos_kpis.proxima.direccion|title }}</div>
+                    <div class="mkt-inner-value">{{ demos_kpis.proxima.nombre }}</div>
+                    <div class="mkt-inner-meta">{{ demos_kpis.proxima.fecha_display }}</div>
                 </div>
+                {% endif %}
+                {% else %}
+                <div class="mkt-tech-empty">
+                    <div class="mkt-tech-empty-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <div class="mkt-tech-empty-text">Sin demos en este período</div>
+                    <div class="mkt-tech-empty-hint">Crea un evento tipo "Demo en sitio"</div>
+                </div>
+                {% endif %}
             </div>
-            <div class="mkt-soon-badge"><span class="mkt-dot-pulse"></span><span>Próximamente</span></div>
-        </button>
+        </a>
 
         {# ═══ 1×1 — Certificaciones ═══ #}
         <button type="button" class="mkt-widget mkt-widget--soon" data-area="cert"

@@ -98,6 +98,8 @@ def _evento_to_dict(e):
         'nombre': e.nombre,
         'tipo': e.tipo,
         'tipo_display': e.get_tipo_display(),
+        'demo_direccion': e.demo_direccion or '',
+        'demo_direccion_display': e.get_demo_direccion_display() if e.demo_direccion else '',
         'estado': e.estado,
         'estado_display': e.get_estado_display(),
         'fecha_evento': e.fecha_evento.isoformat() if e.fecha_evento else None,
@@ -227,9 +229,18 @@ def api_evento_crear(request):
     cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
     prospecto = Prospecto.objects.filter(id=prospecto_id).first() if prospecto_id else None
 
+    # demo_direccion: solo aplica si tipo == 'demo_sitio'; en otros se ignora.
+    tipo_v = data.get('tipo') or 'presencial'
+    dir_v = (data.get('demo_direccion') or '').strip()
+    if tipo_v != 'demo_sitio':
+        dir_v = ''
+    elif dir_v not in ('outbound', 'inbound'):
+        dir_v = 'outbound'
+
     e = Evento.objects.create(
         nombre=nombre,
-        tipo=data.get('tipo') or 'presencial',
+        tipo=tipo_v,
+        demo_direccion=dir_v,
         estado=data.get('estado') or 'programado',
         fecha_evento=fecha_dt,
         duracion_minutos=duracion,
@@ -271,6 +282,13 @@ def api_evento_editar(request, evento_id):
             e.nombre = v
     if 'tipo' in data and data['tipo']:
         e.tipo = data['tipo']
+    # demo_direccion solo aplica a tipo demo_sitio
+    if 'demo_direccion' in data:
+        dv = (data['demo_direccion'] or '').strip()
+        if e.tipo != 'demo_sitio':
+            e.demo_direccion = ''
+        elif dv in ('outbound', 'inbound'):
+            e.demo_direccion = dv
     if 'estado' in data and data['estado']:
         e.estado = data['estado']
     if 'fecha_evento' in data and data['fecha_evento']:

@@ -12154,23 +12154,44 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     flex-shrink: 0;
 }
 
-/* ── Demos ─────────────────────────────────────────────────────── */
-.mkt-demo-body { gap: 7px; }
-.mkt-demo-row { flex: 1; padding: 8px 10px; }
+/* ── Demos — wide card con split outbound/inbound ────────────────── */
+.mkt-demo-body { gap: 10px; }
+.mkt-demo-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.mkt-demo-row {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.mkt-demo-row--out { border-left: 2px solid var(--mkt-accent, #059669); }
+.mkt-demo-row--in  { border-left: 2px solid #6366F1; }
 .mkt-demo-row-top {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 6px;
+    align-items: baseline;
 }
 .mkt-demo-label {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--mkt-t2);
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 .mkt-demo-value {
-    font-size: 11px;
+    font-size: 22px;
     color: var(--mkt-t1);
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+.mkt-demo-row-sub {
+    font-size: 10.5px;
+    color: var(--mkt-t3);
+    font-weight: 500;
 }
 
 /* ── Cursos ────────────────────────────────────────────────────── */
@@ -12445,6 +12466,18 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     background: rgba(0, 0, 0, 0.05);
     color: #6E6E73;
 }
+/* Pill de dirección de demo (solo en tabla cuando ft=demo_sitio) */
+.mkt-demo-dir-pill {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+.mkt-demo-dir-pill--out { background: rgba(5,150,105,0.10); color: #047857; }
+.mkt-demo-dir-pill--in  { background: rgba(99,102,241,0.10); color: #4338CA; }
 .mkt-event-estado--borrador    { background: rgba(0,0,0,0.05); color: #6E6E73; }
 .mkt-event-estado--programado  { background: rgba(0, 82, 212, 0.1); color: #0052D4; }
 .mkt-event-estado--confirmado  { background: rgba(52, 199, 89, 0.12); color: #248A3D; }

@@ -155,7 +155,12 @@
         var e = d.evento;
         _eventoEstado = e.estado;
         document.getElementById('evtDetTitle').textContent = e.nombre;
-        document.getElementById('evtDetTipo').textContent = e.tipo_display || '—';
+        // Si es demo_sitio, anexamos la dirección (Para cliente / De marca)
+        var tipoText = e.tipo_display || '—';
+        if (e.tipo === 'demo_sitio' && e.demo_direccion_display) {
+            tipoText += ' · ' + e.demo_direccion_display;
+        }
+        document.getElementById('evtDetTipo').textContent = tipoText;
         document.getElementById('evtDetFecha').textContent = (e.fecha_evento_display || '—') + (e.duracion_minutos ? ' · ' + e.duracion_minutos + ' min' : '');
         document.getElementById('evtDetCosto').textContent = e.costo ? ('$' + e.costo.toLocaleString('es-MX')) : '—';
 

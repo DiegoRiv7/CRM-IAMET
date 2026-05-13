@@ -800,6 +800,7 @@ def crm_home(request):
     eventos_kpis = None
     eventos_lista = None
     techday_kpis = None
+    demos_kpis = None
     if tab_activo == 'prospeccion':
         from .models import Evento
         evt_qs = Evento.objects.exclude(estado='cancelado').filter(fecha_evento__isnull=False)
@@ -934,6 +935,50 @@ def crm_home(request):
             'filter_tipo': filter_tipo,
         }
 
+        # ── Demos KPIs ─────────────────────────────────────────────────
+        # Demos = eventos con tipo 'demo_sitio'. Separamos por dirección:
+        #   outbound = IAMET presenta a cliente/prospecto (genera oportunidades)
+        #   inbound  = una marca capacita al equipo IAMET (asistencia interna)
+        demos_periodo = [e for e in eventos_periodo if e.tipo == 'demo_sitio']
+        outbound = [e for e in demos_periodo if (e.demo_direccion or 'outbound') == 'outbound']
+        inbound  = [e for e in demos_periodo if e.demo_direccion == 'inbound']
+        # Outbound: prospectos generados + monto $ pipeline (de la oportunidad ligada)
+        out_prospectos = sum(e.prospectos_generados.count() for e in outbound)
+        out_monto = 0
+        for e in outbound:
+            for p in e.prospectos_generados.all():
+                if p.oportunidad_creada_id and p.oportunidad_creada.monto:
+                    out_monto += float(p.oportunidad_creada.monto)
+        # Inbound: asistentes IAMET totales + marcas únicas trabajadas
+        in_asistentes = sum(1 for e in inbound for a in e.asistentes.all() if a.confirmado)
+        in_marcas = set()
+        for e in inbound:
+            for m in (e.marcas or []):
+                in_marcas.add(m)
+        # Próxima demo (cualquier dirección)
+        demos_prox = next(
+            (e for e in sorted(demos_periodo, key=lambda x: x.fecha_evento or ahora)
+             if e.fecha_evento and e.fecha_evento >= ahora),
+            None,
+        )
+        demos_kpis = {
+            'total': len(demos_periodo),
+            'outbound_total': len(outbound),
+            'outbound_prospectos': out_prospectos,
+            'outbound_monto': int(out_monto),  # entero, sin centavos
+            'inbound_total': len(inbound),
+            'inbound_asistentes': in_asistentes,
+            'inbound_marcas': len(in_marcas),
+            'proxima': {
+                'id': demos_prox.id,
+                'nombre': demos_prox.nombre,
+                'fecha_display': demos_prox.fecha_evento.strftime('%d %b · %H:%M'),
+                'direccion': demos_prox.demo_direccion or 'outbound',
+                'marcas': demos_prox.marcas or [],
+            } if demos_prox else None,
+            'filter_tipo': filter_tipo,
+        }
+
     context = {
         'widget_label': widget_label,
         'widget_metric': widget_metric,
@@ -942,6 +987,7 @@ def crm_home(request):
         'eventos_kpis': eventos_kpis,
         'eventos_lista': eventos_lista,
         'techday_kpis': techday_kpis,
+        'demos_kpis': demos_kpis,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,

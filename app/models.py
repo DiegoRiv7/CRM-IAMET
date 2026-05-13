@@ -4970,8 +4970,21 @@ class Evento(models.Model):
         ('cancelado', 'Cancelado'),
     ]
 
+    # Dirección de la demo: outbound = IAMET presenta a cliente/prospecto;
+    # inbound = una marca (Panduit/Zebra/etc.) capacita al equipo IAMET.
+    # Solo tiene sentido cuando tipo == 'demo_sitio'; en otros tipos se ignora.
+    DEMO_DIRECCION_CHOICES = [
+        ('outbound', 'Para cliente'),
+        ('inbound', 'De marca'),
+    ]
+
     nombre = models.CharField(max_length=200, verbose_name='Nombre del evento')
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='presencial')
+    demo_direccion = models.CharField(
+        max_length=10, choices=DEMO_DIRECCION_CHOICES, default='outbound',
+        blank=True,
+        help_text='Sólo aplica a tipo=demo_sitio: outbound = vamos al cliente; inbound = la marca nos capacita.'
+    )
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='borrador')
     fecha_evento = models.DateTimeField(verbose_name='Fecha y hora del evento')
     duracion_minutos = models.IntegerField(default=60)
