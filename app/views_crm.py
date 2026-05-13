@@ -799,6 +799,7 @@ def crm_home(request):
     # ── Certificaciones (sub-vista ?vista=certificaciones + widget) ─
     certificaciones_lista = None
     certificaciones_kpis = None
+    certificaciones_filtros = None
     if tab_activo == 'prospeccion':
         from .models import Certificacion
         from datetime import date as _date
@@ -808,7 +809,47 @@ def crm_home(request):
             .prefetch_related('archivos')
             .order_by('-fecha_obtencion', '-fecha_creacion')
         )
+        # ── Filtros para la sub-vista de Certificaciones ──
+        cert_marca = (request.GET.get('cert_marca') or '').strip().upper()
+        cert_nivel = (request.GET.get('cert_nivel') or '').strip()
+        cert_estado_v = (request.GET.get('cert_estado') or '').strip()  # vigente|por_vencer|vencida|sin_vencimiento
+        # Aplicamos el filtro global de Vendedores (selector arriba del CRM).
+        if vendedores_ids:
+            cert_qs = cert_qs.filter(usuario_id__in=vendedores_ids)
+        if cert_marca:
+            cert_qs = cert_qs.filter(marca__iexact=cert_marca)
+        if cert_nivel:
+            cert_qs = cert_qs.filter(nivel=cert_nivel)
         certificaciones_lista = list(cert_qs)
+        # Filtro por estado (post-procesado porque depende de fecha de hoy).
+        if cert_estado_v:
+            hoy_e = _date.today()
+            def _estado_de(c):
+                if not c.fecha_vencimiento: return 'sin_vencimiento'
+                if c.fecha_vencimiento < hoy_e: return 'vencida'
+                if (c.fecha_vencimiento - hoy_e).days <= 60: return 'por_vencer'
+                return 'vigente'
+            certificaciones_lista = [c for c in certificaciones_lista if _estado_de(c) == cert_estado_v]
+        # Catálogo de marcas/niveles activos en el universo (sin filtros) para
+        # poblar los dropdowns. Limitado a marcas que tengan al menos 1 cert.
+        _all_qs = Certificacion.objects.values_list('marca', 'nivel')
+        if vendedores_ids:
+            _all_qs = Certificacion.objects.filter(usuario_id__in=vendedores_ids).values_list('marca', 'nivel')
+        marcas_set = set()
+        niveles_set = set()
+        for m, n in _all_qs:
+            if m: marcas_set.add(m.upper())
+            if n: niveles_set.add(n)
+        NIVEL_ORDEN = ['basico', 'intermedio', 'avanzado', 'experto']
+        certificaciones_filtros = {
+            'marca': cert_marca,
+            'nivel': cert_nivel,
+            'estado': cert_estado_v,
+            'marcas_disponibles': sorted(marcas_set),
+            'niveles_disponibles': [n for n in NIVEL_ORDEN if n in niveles_set],
+            'vista_cert': (request.GET.get('vista_cert') or 'lista').strip() or 'lista',
+            'tiene_filtros_activos': bool(cert_marca or cert_nivel or cert_estado_v or vendedores_ids),
+        }
         # KPIs para la tarjeta del dashboard de Marketing.
         hoy_d = _date.today()
         cert_total = len(certificaciones_lista)
@@ -1037,6 +1078,7 @@ def crm_home(request):
         'demos_kpis': demos_kpis,
         'certificaciones_lista': certificaciones_lista,
         'certificaciones_kpis': certificaciones_kpis,
+        'certificaciones_filtros': certificaciones_filtros,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,
