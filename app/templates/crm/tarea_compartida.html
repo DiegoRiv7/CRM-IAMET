@@ -29,9 +29,10 @@
          de OG no ejecutan JS y reciben el HTML intacto. -->
     {% if autenticado %}
     <script>
-        // Loguea antes de redirigir para que veamos qué ID se manda al CRM.
-        var _shareTId = '{{ tarea.id }}';
-        console.log('[share-preview] redirigiendo a tarea id=', _shareTId, 'titulo:', '{{ tarea.titulo|escapejs }}');
+        // `tarea.id|stringformat:"d"` evita el separador de miles que mete
+        // Django en locale es-* (ej. id 13341 → "13 341" con espacio invisible
+        // que rompía parseInt en el destino).
+        var _shareTId = '{{ tarea.id|stringformat:"d" }}';
         window.location.replace('/app/home/?tab=tareas&open_task=' + _shareTId);
     </script>
     {% endif %}
