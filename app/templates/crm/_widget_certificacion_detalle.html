@@ -100,43 +100,63 @@
                 </div>
 
                 <aside class="cert-d-aside">
-                    {# Ficha técnica única — todo en una sola card compacta #}
+                    {# Ficha estilo perfil — avatar grande, datos con iconos #}
                     <div class="cert-d-ficha">
 
-                        {# Persona certificada — header de la ficha #}
-                        <div class="cert-d-ficha-head">
-                            <span class="cert-d-avatar" id="certDetAvatar"></span>
-                            <div class="cert-d-ficha-head-info">
-                                <div class="cert-d-ficha-head-lbl">Persona certificada</div>
-                                <div class="cert-d-ficha-head-name" id="certDetPersonaAside"></div>
-                            </div>
+                        {# Persona certificada — perfil centrado #}
+                        <div class="cert-d-profile">
+                            <span class="cert-d-avatar-lg" id="certDetAvatar"></span>
+                            <div class="cert-d-profile-lbl">Persona certificada</div>
+                            <div class="cert-d-profile-name" id="certDetPersonaAside"></div>
                         </div>
 
                         <div class="cert-d-ficha-divider"></div>
 
-                        {# Fechas — kv apilados #}
-                        <div class="cert-d-ficha-section">
-                            <div class="cert-d-ficha-lbl">Fechas</div>
-                            <div class="cert-d-ficha-kv">
-                                <span class="cert-d-ficha-k">Obtenida</span>
-                                <span class="cert-d-ficha-v" id="certDetFechaObt">—</span>
+                        {# Fechas con iconos #}
+                        <div class="cert-d-icon-row">
+                            <div class="cert-d-icon-ico">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                             </div>
-                            <div class="cert-d-ficha-kv">
-                                <span class="cert-d-ficha-k">Vencimiento</span>
-                                <span class="cert-d-ficha-v" id="certDetFechaVenc">—</span>
+                            <div class="cert-d-icon-info">
+                                <div class="cert-d-icon-k">Obtenida</div>
+                                <div class="cert-d-icon-v" id="certDetFechaObt">—</div>
+                            </div>
+                        </div>
+                        <div class="cert-d-icon-row">
+                            <div class="cert-d-icon-ico">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            </div>
+                            <div class="cert-d-icon-info">
+                                <div class="cert-d-icon-k">Vencimiento</div>
+                                <div class="cert-d-icon-v" id="certDetFechaVenc">—</div>
                             </div>
                         </div>
 
+                        {# Barra de vigencia — solo si hay fecha vencimiento #}
+                        <div class="cert-d-vig-bar" id="certDetVigBar" style="display:none;">
+                            <div class="cert-d-vig-track">
+                                <div class="cert-d-vig-fill" id="certDetVigFill"></div>
+                            </div>
+                            <div class="cert-d-vig-lbl" id="certDetVigLbl">—</div>
+                        </div>
+
                         {# Notas — solo si hay #}
-                        <div class="cert-d-ficha-section" id="certDetNotasCard" style="display:none;">
+                        <div id="certDetNotasCard" style="display:none;">
                             <div class="cert-d-ficha-divider"></div>
-                            <div class="cert-d-ficha-lbl">Notas</div>
-                            <p class="cert-d-notas" id="certDetNotas"></p>
+                            <div class="cert-d-icon-row cert-d-icon-row--block">
+                                <div class="cert-d-icon-ico">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                </div>
+                                <div class="cert-d-icon-info">
+                                    <div class="cert-d-icon-k">Notas</div>
+                                    <p class="cert-d-notas" id="certDetNotas"></p>
+                                </div>
+                            </div>
                         </div>
 
                         {# Registro — footer discreto #}
                         <div class="cert-d-ficha-footer">
-                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             <span id="certDetRegistro">—</span>
                         </div>
                     </div>
@@ -330,6 +350,36 @@
                 } else {
                     vEl.textContent = 'Sin vencimiento';
                     vEl.style.color = '#9CA3AF';
+                }
+
+                // Barra de vigencia visual: % de tiempo transcurrido entre obtención y vencimiento
+                var vBar = document.getElementById('certDetVigBar');
+                var vFill = document.getElementById('certDetVigFill');
+                var vLbl = document.getElementById('certDetVigLbl');
+                if (c.fecha_obtencion && c.fecha_vencimiento){
+                    try {
+                        var obt = new Date(c.fecha_obtencion + 'T00:00:00');
+                        var ven = new Date(c.fecha_vencimiento + 'T00:00:00');
+                        var hoy = new Date(); hoy.setHours(0,0,0,0);
+                        var total = Math.max(1, ven - obt);
+                        var transcurrido = Math.max(0, Math.min(total, hoy - obt));
+                        var pct = Math.round((transcurrido / total) * 100);
+                        vFill.style.width = pct + '%';
+                        vFill.className = 'cert-d-vig-fill';
+                        if (c.estado_vencimiento === 'vencida'){
+                            vFill.classList.add('cert-d-vig-fill--danger');
+                            vLbl.textContent = 'Caducada';
+                        } else if (c.estado_vencimiento === 'por_vencer'){
+                            vFill.classList.add('cert-d-vig-fill--warn');
+                            vLbl.textContent = pct + '% de la vigencia transcurrida';
+                        } else {
+                            vFill.classList.add('cert-d-vig-fill--ok');
+                            vLbl.textContent = pct + '% de la vigencia transcurrida';
+                        }
+                        vBar.style.display = '';
+                    } catch(e){ vBar.style.display = 'none'; }
+                } else {
+                    vBar.style.display = 'none';
                 }
 
                 var notasCard = document.getElementById('certDetNotasCard');
