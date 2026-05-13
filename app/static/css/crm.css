@@ -13516,8 +13516,10 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 /* ── Detalle ───────────────────────────────────────────────────── */
 .curso-d-card {
     background: #FFFFFF; border-radius: 16px;
-    width: min(1180px, 94vw);
-    max-width: 94vw; max-height: 92vh;
+    /* Misma proporción que antes (~1.2:1), pero más grande. Ambos lados
+       crecen al mismo ritmo: ancho 1180→1380 (+17%), alto 92→94vh. */
+    width: min(1380px, 96vw);
+    max-width: 96vw; max-height: 94vh;
     display: flex; flex-direction: column;
     box-shadow: 0 25px 60px rgba(20,14,4,0.18);
     overflow: hidden;
