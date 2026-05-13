@@ -243,6 +243,14 @@
                 <button type="button" class="crm-facet-btn crm-facet-clear" id="pkBtnClear" style="display:none;">Limpiar</button>
             </div>
             {% endif %}
+            {% if tab_activo == 'clientes' %}
+            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos -->
+            <div class="crm-tabs crm-tabs--dashboard">
+                <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
+                <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
+                <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
+            </div>
+            {% else %}
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
             {% if tab_activo != 'prospeccion' or not request.GET.vista %}
             <div class="crm-tabs">
@@ -257,9 +265,9 @@
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
                     Prospección
                 </a>
-                <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                <a href="?tab=cli&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
-                    class="crm-tab {% if tab_activo == 'clientes' %}active{% endif %}">
+                    class="crm-tab {% if tab_activo == 'cli' %}active{% endif %}">
                     Clientes
                 </a>
                 {% if not es_ingeniero %}
@@ -271,8 +279,9 @@
                 {% endif %}
             </div>
             {% endif %}
+            {% endif %}
             <div class="crm-bar-right">
-                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
+                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'cli' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
                 <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
                     <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
@@ -693,7 +702,7 @@
         {% elif tab_activo == 'prospectos' %}
         {% include "crm/_content_prospectos_kanban.html" %}
 
-        {% elif tab_activo == 'clientes' %}
+        {% elif tab_activo == 'cli' %}
         {% include "crm/_content_clientes.html" %}
 
         {% elif tab_activo == 'prospeccion' %}

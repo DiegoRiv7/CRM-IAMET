@@ -799,7 +799,7 @@ def crm_home(request):
     # ── Tab Clientes (vista consolidada cliente × marca) ──────────────
     clientes_tabla = None
     clientes_tabla_meta = None
-    if tab_activo == 'clientes':
+    if tab_activo == 'cli':
         # Catálogo de marcas (mismas columnas que en Campañas)
         MARCAS_COL = [
             ('ZEBRA',     'zebra',    'Zebra'),
