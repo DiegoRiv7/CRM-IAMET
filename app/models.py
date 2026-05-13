@@ -1589,6 +1589,8 @@ class Notificacion(models.Model):
         ('programacion_proyecto', 'Asignado a actividad de proyecto'),
         ('mensaje_grupo', 'Mensaje en grupo de trabajo'),
         ('prospecto_asignado', 'Prospecto asignado por supervisor'),
+        ('certificacion_por_vencer', 'Certificación por vencer'),
+        ('certificacion_vencida', 'Certificación vencida'),
     ]
     
     usuario_destinatario = models.ForeignKey(
@@ -1669,6 +1671,14 @@ class Notificacion(models.Model):
         blank=True,
         related_name='notificaciones',
         verbose_name="Tarea de Oportunidad"
+    )
+    certificacion = models.ForeignKey(
+        'Certificacion',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notificaciones',
+        verbose_name="Certificación relacionada"
     )
     leida = models.BooleanField(
         default=False,

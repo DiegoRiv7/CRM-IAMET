@@ -86,10 +86,19 @@
             </div>
         </div>
 
-        <button type="button" class="mkt-events-new" id="btnCertNuevo" style="background:#B45309;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nueva certificación
-        </button>
+        <div class="mkt-cert-head-right">
+            <label class="mkt-cert-search">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="certSearchInput" value="{{ f.q|default:'' }}" placeholder="Buscar por nombre, persona, marca…" autocomplete="off">
+                {% if f.q %}<button type="button" id="btnCertSearchClear" title="Limpiar búsqueda" aria-label="Limpiar">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>{% endif %}
+            </label>
+            <button type="button" class="mkt-events-new" id="btnCertNuevo" style="background:#B45309;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nueva certificación
+            </button>
+        </div>
     </div>
 
     {# Stats compactas arriba #}
@@ -409,7 +418,33 @@
     var btnClear = document.getElementById('btnCertClearFilters');
     if (btnClear) btnClear.addEventListener('click', function(e){
         e.preventDefault();
-        _setQS({cert_marca: '', cert_nivel: '', cert_estado: ''});
+        _setQS({cert_marca: '', cert_nivel: '', cert_estado: '', cert_q: ''});
+    });
+
+    // ── Búsqueda en vivo (debounce 350ms) ──
+    var searchInput = document.getElementById('certSearchInput');
+    var searchDeb = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', function(){
+            clearTimeout(searchDeb);
+            var v = (this.value || '').trim();
+            searchDeb = setTimeout(function(){
+                _setQS({cert_q: v || ''});
+            }, 350);
+        });
+        searchInput.addEventListener('keydown', function(e){
+            if (e.key === 'Enter') {
+                clearTimeout(searchDeb);
+                _setQS({cert_q: (this.value || '').trim() || ''});
+            } else if (e.key === 'Escape' && this.value) {
+                clearTimeout(searchDeb);
+                _setQS({cert_q: ''});
+            }
+        });
+    }
+    var btnSearchClear = document.getElementById('btnCertSearchClear');
+    if (btnSearchClear) btnSearchClear.addEventListener('click', function(){
+        _setQS({cert_q: ''});
     });
     // Deep-link: ?open=ID en la URL abre el detalle directo (usado por la
     // tarjeta del dashboard de Marketing cuando hay una certificación destacada).

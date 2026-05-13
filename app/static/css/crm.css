@@ -13264,6 +13264,40 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
 .mkt-cert-head-controls--left { justify-content: flex-start; }
+.mkt-cert-head-right {
+    display: flex; align-items: center; gap: 10px;
+}
+
+/* Barra de búsqueda */
+.mkt-cert-search {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #FFFFFF; border: 1px solid #E5E7EB;
+    border-radius: 999px;
+    padding: 7px 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 260px;
+}
+.mkt-cert-search:focus-within {
+    border-color: #B45309;
+    box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.12);
+}
+.mkt-cert-search svg { color: #9CA3AF; flex-shrink: 0; }
+.mkt-cert-search input {
+    border: none; outline: none; background: transparent;
+    font-family: inherit; font-size: 0.82rem; color: #1D1D1F;
+    width: 100%; min-width: 0;
+}
+.mkt-cert-search input::placeholder { color: #9CA3AF; }
+.mkt-cert-search button {
+    background: transparent; border: none; padding: 2px;
+    color: #9CA3AF; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center;
+    border-radius: 50%; transition: all 0.15s;
+}
+.mkt-cert-search button:hover { background: #FEE2E2; color: #DC2626; }
+@media (max-width: 720px) {
+    .mkt-cert-search { min-width: 0; flex: 1; }
+}
 
 /* Segmented control Lista | Pared */
 .mkt-cert-vista-seg {

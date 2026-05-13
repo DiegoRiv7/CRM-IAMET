@@ -817,6 +817,7 @@ def crm_home(request):
         cert_marca = (request.GET.get('cert_marca') or '').strip().upper()
         cert_nivel = (request.GET.get('cert_nivel') or '').strip()
         cert_estado_v = (request.GET.get('cert_estado') or '').strip()  # vigente|por_vencer|vencida|sin_vencimiento
+        cert_q = (request.GET.get('cert_q') or '').strip()
         # Aplicamos el filtro global de Vendedores (selector arriba del CRM).
         if vendedores_ids:
             cert_qs = cert_qs.filter(usuario_id__in=vendedores_ids)
@@ -824,6 +825,16 @@ def crm_home(request):
             cert_qs = cert_qs.filter(marca__iexact=cert_marca)
         if cert_nivel:
             cert_qs = cert_qs.filter(nivel=cert_nivel)
+        if cert_q:
+            from django.db.models import Q as _Q
+            cert_qs = cert_qs.filter(
+                _Q(nombre__icontains=cert_q)
+                | _Q(numero__icontains=cert_q)
+                | _Q(marca__icontains=cert_q)
+                | _Q(usuario__first_name__icontains=cert_q)
+                | _Q(usuario__last_name__icontains=cert_q)
+                | _Q(usuario__username__icontains=cert_q)
+            )
         certificaciones_lista = list(cert_qs)
         # Filtro por estado (post-procesado porque depende de fecha de hoy).
         if cert_estado_v:
@@ -849,10 +860,11 @@ def crm_home(request):
             'marca': cert_marca,
             'nivel': cert_nivel,
             'estado': cert_estado_v,
+            'q': cert_q,
             'marcas_disponibles': sorted(marcas_set),
             'niveles_disponibles': [n for n in NIVEL_ORDEN if n in niveles_set],
             'vista_cert': (request.GET.get('vista_cert') or 'pared').strip() or 'pared',
-            'tiene_filtros_activos': bool(cert_marca or cert_nivel or cert_estado_v or vendedores_ids),
+            'tiene_filtros_activos': bool(cert_marca or cert_nivel or cert_estado_v or cert_q or vendedores_ids),
         }
         # KPIs para la tarjeta del dashboard de Marketing.
         hoy_d = _date.today()
