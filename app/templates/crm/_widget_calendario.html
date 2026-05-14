@@ -77,11 +77,20 @@
         <!-- ── Outer header ── -->
         <div style="padding:1rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
             <div style="display:flex;align-items:center;gap:1rem;">
+                {% if tab_activo == 'calendario' %}
+                <!-- En page mode: las pestañas Mes/Semana/Día ocupan el lugar del título "Calendario CRM" -->
+                <div style="display:flex;gap:3px;background:#F2F2F7;border-radius:10px;padding:3px;">
+                    <button id="calBtnMesPage" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
+                    <button id="calBtnSemanaPage" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
+                    <button id="calBtnDiaPage" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
+                </div>
+                {% else %}
                 <div style="font-size:1.5rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.03em;">Calendario CRM</div>
                 <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.04);border-radius:8px;padding:5px 11px;font-size:0.8rem;font-weight:600;color:#86868B;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <span id="calHeaderDateText">—</span>
                 </div>
+                {% endif %}
                 <div style="display:flex;align-items:center;gap:6px;">
                     <span style="font-size:0.72rem;font-weight:600;color:#86868B;">Ver:</span>
                     <div id="calUserPickerWrap" class="cal-userpick-wrap">
@@ -147,14 +156,6 @@
                     <div id="calWeekHeader" style="display:flex;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,0.07);padding-bottom:4px;"></div>
                     <div id="calWeekTimeline" style="overflow-y:auto;flex:1;min-height:0;position:relative;"></div>
                 </div>
-                {% if tab_activo == 'calendario' %}
-                <!-- En page mode: las pestañas Mes/Semana/Día viven al pie del calendario, no en el header -->
-                <div class="cal-page-view-toggle" style="display:flex;gap:3px;background:#F2F2F7;border-radius:10px;padding:3px;align-self:flex-start;margin-top:8px;">
-                    <button id="calBtnMesPage" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
-                    <button id="calBtnSemanaPage" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
-                    <button id="calBtnDiaPage" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
-                </div>
-                {% endif %}
             </div>
 
             <!-- Right: side panel -->
@@ -219,7 +220,7 @@
                     <!-- Tareas de hoy -->
                     <div>
                         <div class="cal-section-label">Tareas de hoy</div>
-                        <div id="calSideTareasList" style="display:flex;flex-direction:column;margin-top:8px;">
+                        <div id="calSideTareasList" class="cal-side-mini-list" style="display:flex;flex-direction:column;margin-top:8px;">
                             <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
                         </div>
                     </div>
@@ -227,7 +228,7 @@
                     <!-- Actividades de hoy -->
                     <div>
                         <div class="cal-section-label">Actividades de hoy</div>
-                        <div id="calSideActividadesList" style="display:flex;flex-direction:column;margin-top:8px;">
+                        <div id="calSideActividadesList" class="cal-side-mini-list" style="display:flex;flex-direction:column;margin-top:8px;">
                             <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
                         </div>
                     </div>

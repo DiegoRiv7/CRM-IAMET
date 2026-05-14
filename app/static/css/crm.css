@@ -2817,6 +2817,25 @@
         overflow: hidden !important;
     }
 
+    /* Listas compactas del panel derecho (Tareas de hoy / Actividades de hoy):
+       muestra ~3 items y desliza el resto con un scrollbar muy discreto */
+    .cal-side-mini-list {
+        max-height: 190px;          /* ~3 items con su sub-texto */
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(15,23,42,0.18) transparent;
+        padding-right: 4px;
+    }
+    .cal-side-mini-list::-webkit-scrollbar { width: 4px; }
+    .cal-side-mini-list::-webkit-scrollbar-track { background: transparent; }
+    .cal-side-mini-list::-webkit-scrollbar-thumb {
+        background: rgba(15,23,42,0.14);
+        border-radius: 999px;
+    }
+    .cal-side-mini-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(15,23,42,0.30);
+    }
+
     @keyframes overlayIn {
         from {
             opacity: 0;
