@@ -2165,8 +2165,11 @@
     /* ─── Filtro de tipos (Tareas / Actividades / Eventos / Cursos) ─── */
     window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true };
     function _calClassifyType(ev) {
+        // Solo es "Tarea" si el id viene con prefijo 'tarea-' (tareas reales).
+        // El extendedProps.tipo_actividad puede ser 'tarea' como categoría visual
+        // de una actividad del calendario, pero NO la hace una tarea real.
+        if (String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
         var ep = ev.extendedProps || {};
-        if (ep.tipo_actividad === 'tarea' || String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
         if (ep.evento) return 'evento';
         if (ep.curso) return 'curso';
         return 'actividad';

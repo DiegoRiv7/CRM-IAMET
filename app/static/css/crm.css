@@ -2783,9 +2783,41 @@
     .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-left {
         flex: 1 1 0 !important;
         justify-content: flex-start !important;
-        gap: 8px;
+        gap: 10px;
         display: flex !important;
         align-items: center !important;
+    }
+    /* Botones de la izquierda del calendario más pronunciados, en línea con
+       el tamaño de la dynamic island del centro. */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill {
+        padding: 8px 16px !important;
+        font-size: 0.86rem !important;
+        font-weight: 600 !important;
+        border-radius: 999px !important;
+        background: #ffffff !important;
+        border: 1px solid rgba(15,23,42,0.08) !important;
+        box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
+        height: auto !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:hover,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
+        background: #f8fafc !important;
+        border-color: rgba(15,23,42,0.14) !important;
+    }
+    /* Botón Nueva actividad: igualar tamaño con los pills, mismo color azul */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
+        padding: 8px 16px !important;
+        font-size: 0.86rem !important;
+        font-weight: 600 !important;
+        border-radius: 999px !important;
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.55) !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
+        transform: translateY(-1px);
     }
     /* Body (calendar grid + right panel): cards liquid glass */
     .widget-overlay.is-page-mode .cal-page-body {
