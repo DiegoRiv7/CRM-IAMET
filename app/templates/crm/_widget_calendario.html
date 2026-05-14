@@ -1091,7 +1091,7 @@
         var actItems = actEvts.map(function(ev){
             var sD = new Date(ev.start);
             var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
-            return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1 };
+            return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1, groupTop:null };
         });
         var colEnds = [];
         actItems.forEach(function(it){
@@ -1109,6 +1109,30 @@
             });
             it.numCols = maxC + 1;
         });
+        // Calcular el "grupo de solapamiento" transitivo: si A se solapa con B
+        // y B con C, entonces A, B, C son un grupo. Para cada item, su top
+        // visual = min(sMs) del grupo. Eso los alinea al lado en lugar de
+        // escalonados según el start exacto de cada uno.
+        actItems.forEach(function(it){
+            if (it.groupTop !== null) return;  // ya procesado
+            var group = [it];
+            var changed = true;
+            while (changed) {
+                changed = false;
+                actItems.forEach(function(other){
+                    if (group.indexOf(other) >= 0) return;
+                    var overlapsGroup = group.some(function(m){ return m.sMs < other.eMs && m.eMs > other.sMs; });
+                    if (overlapsGroup) { group.push(other); changed = true; }
+                });
+            }
+            // Solo aplicar groupTop si hay más de uno (es decir, hay solapamiento real)
+            if (group.length > 1) {
+                var minS = Math.min.apply(null, group.map(function(g){ return g.sMs; }));
+                group.forEach(function(g){ g.groupTop = minS; });
+            } else {
+                group[0].groupTop = group[0].sMs;
+            }
+        });
         // Renderizar actividades
         actItems.forEach(function(item){
             var ev = item.ev;
@@ -1119,9 +1143,14 @@
             var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
             var startMins = startD.getHours()*60+startD.getMinutes();
             var endMins = endD.getHours()*60+endD.getMinutes();
-            var evTop = (startMins/60)*CAL_HOUR_H;
+            // Usar el inicio del grupo de solapamiento para alinear los eventos
+            // que se solapan: así se ven todos al lado en lugar de escalonados.
+            var topMs = item.groupTop != null ? item.groupTop : startD.getTime();
+            var topD = new Date(topMs);
+            var topMins = topD.getHours()*60+topD.getMinutes();
+            var evTop = (topMins/60)*CAL_HOUR_H;
             // Altura proporcional al tiempo real del evento (sin forzar 45min mínimos).
-            // Solo 20px de altura mínima visual para que se vea clickable.
+            // Solo 22px de altura mínima visual para que se vea clickable.
             var evH = Math.max(((endMins-startMins)/60)*CAL_HOUR_H, 22);
             var safeId = String(ev.id).replace(/'/g,'');
 
