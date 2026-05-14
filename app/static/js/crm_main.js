@@ -4733,7 +4733,7 @@
                 el.textContent = val || '';
                 var row = id === 'wciRfc' ? document.getElementById('wciRfcRow') :
                           id === 'wciCategoria' ? document.getElementById('wciCatRow') : null;
-                if (row) row.style.display = (hideIfEmpty && !val) ? 'none' : 'flex';
+                if (row) row.style.display = (hideIfEmpty && !val) ? 'none' : 'block';
             }
             function _wciRenderLogo(url){
                 var img = document.getElementById('wciLogoImg');
@@ -4749,6 +4749,41 @@
             // ── Helpers para selectores inteligentes ──
             // Day picker: convierte una serialización JSON {dias:[],desde:'',hasta:''}
             // (o un string plano legacy) a los botones marcados + horas.
+            // Día → nombre (capitalizado)
+            var _WCI_DAY_ORDER = ['L','M','X','J','V','S','D'];
+            var _WCI_DAY_NAMES = { L:'Lunes', M:'Martes', X:'Miércoles', J:'Jueves', V:'Viernes', S:'Sábado', D:'Domingo' };
+            function _wciDiasFrase(dias){
+                if (!dias || !dias.length) return '';
+                // Ordenar según L,M,X,J,V,S,D
+                var orden = dias.slice().sort(function(a, b){ return _WCI_DAY_ORDER.indexOf(a) - _WCI_DAY_ORDER.indexOf(b); });
+                // Detectar si son consecutivos en _WCI_DAY_ORDER
+                var idxs = orden.map(function(d){ return _WCI_DAY_ORDER.indexOf(d); });
+                var consecutivos = idxs.length >= 2 && idxs.every(function(v, i){ return i === 0 || v === idxs[i-1] + 1; });
+                if (consecutivos) {
+                    return 'De ' + _WCI_DAY_NAMES[orden[0]] + ' a ' + _WCI_DAY_NAMES[orden[orden.length-1]];
+                }
+                if (orden.length === 1) return _WCI_DAY_NAMES[orden[0]];
+                var nombres = orden.map(function(d){ return _WCI_DAY_NAMES[d]; });
+                return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length-1];
+            }
+            function _wciHoraFrase(desde, hasta){
+                if (desde && hasta) return ' de ' + desde + ' a ' + hasta;
+                if (desde) return ' a partir de ' + desde;
+                if (hasta) return ' hasta ' + hasta;
+                return '';
+            }
+            function _wciPaintScheduleRead(scope){
+                var readEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoRead' : 'wciEntregaRead');
+                if (!readEl) return;
+                var dias = [];
+                document.querySelectorAll('.wci-days[data-wci-days="' + scope + '"] .wci-day.is-on').forEach(function(b){
+                    dias.push(b.dataset.day);
+                });
+                var d = (document.getElementById(scope === 'trabajo' ? 'wciTrabajoDesde' : 'wciEntregaDesde') || {}).value || '';
+                var h = (document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta') || {}).value || '';
+                var frase = _wciDiasFrase(dias) + _wciHoraFrase(d, h);
+                readEl.textContent = frase.trim();
+            }
             function _wciSetSchedule(scope, raw){
                 var parsed = null;
                 if (raw) { try { parsed = JSON.parse(raw); } catch(e) { parsed = null; } }
@@ -4762,12 +4797,7 @@
                 var hEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta');
                 if (dEl) dEl.value = desde;
                 if (hEl) hEl.value = hasta;
-                // Pinta el resumen legible para modo lectura
-                var readEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoRead' : 'wciEntregaRead');
-                if (readEl) {
-                    var range = (desde && hasta) ? (desde + ' – ' + hasta) : (desde || hasta || '');
-                    readEl.textContent = range;
-                }
+                _wciPaintScheduleRead(scope);
             }
             function _wciGetSchedule(scope){
                 var dias = [];
@@ -4869,12 +4899,14 @@
             function _wciBindOnce(){
                 if (_wciSaveBtnBound) return;
                 _wciSaveBtnBound = true;
-                // Toggle pills de días (sólo cuando el field está en edición)
+                // Toggle pills de días (sólo cuando el field está en edición) + repinte frase
                 document.querySelectorAll('#widgetClienteOportunidades .wci-day').forEach(function(btn){
                     btn.addEventListener('click', function(){
                         var field = btn.closest('.wco-info-id-field');
                         if (!field || !field.classList.contains('is-editing')) return;
                         btn.classList.toggle('is-on');
+                        var scope = btn.closest('.wci-days').dataset.wciDays;
+                        if (scope) _wciPaintScheduleRead(scope);
                     });
                 });
                 // Repintar el resumen "Del X al Y" cuando cambian los inputs del rango
@@ -4889,21 +4921,7 @@
                 // Cuando cambia un input de tiempo, repinta el resumen legible
                 ['wciTrabajoDesde','wciTrabajoHasta'].forEach(function(id){
                     var el = document.getElementById(id);
-                    if (el) el.addEventListener('input', function(){
-                        var d = (document.getElementById('wciTrabajoDesde')||{}).value || '';
-                        var h = (document.getElementById('wciTrabajoHasta')||{}).value || '';
-                        var rd = document.getElementById('wciTrabajoRead');
-                        if (rd) rd.textContent = (d && h) ? (d + ' – ' + h) : (d || h || '');
-                    });
-                });
-                ['wciEntregaDesde','wciEntregaHasta'].forEach(function(id){
-                    var el = document.getElementById(id);
-                    if (el) el.addEventListener('input', function(){
-                        var d = (document.getElementById('wciEntregaDesde')||{}).value || '';
-                        var h = (document.getElementById('wciEntregaHasta')||{}).value || '';
-                        var rd = document.getElementById('wciEntregaRead');
-                        if (rd) rd.textContent = (d && h) ? (d + ' – ' + h) : (d || h || '');
-                    });
+                    if (el) el.addEventListener('input', function(){ _wciPaintScheduleRead('trabajo'); });
                 });
                 // Click-to-edit: cada bloque entra en edición de forma independiente.
                 var panel = document.getElementById('clienteOppInfoPanel');
