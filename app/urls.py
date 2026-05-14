@@ -136,6 +136,7 @@ urlpatterns = [
     path('api/cliente-kpis/<int:cliente_id>/', views.api_cliente_kpis, name='api_cliente_kpis'),
     path('api/cliente-prospecciones/<int:cliente_id>/', views.api_cliente_prospecciones, name='api_cliente_prospecciones'),
     path('api/cliente-cotizaciones/<int:cliente_id>/', views.api_cliente_cotizaciones, name='api_cliente_cotizaciones'),
+    path('api/cliente-info/<int:cliente_id>/', views.api_cliente_info, name='api_cliente_info'),
     path('api/cambiar-estado-oportunidad/<int:oportunidad_id>/', views.cambiar_estado_oportunidad, name='cambiar_estado_oportunidad'),
     path('api/agregar-comentario-oportunidad/<int:oportunidad_id>/', views.agregar_comentario_oportunidad, name='agregar_comentario_oportunidad'),
     path('api/timeline-oportunidad/<int:oportunidad_id>/', views.timeline_oportunidad, name='timeline_oportunidad'),

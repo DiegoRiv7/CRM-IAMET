@@ -248,6 +248,21 @@ class Cliente(models.Model):
     # Se usa para los KPIs del dashboard de prospectos ("convertidos este mes").
     convertido_de_potencial_at = models.DateTimeField(null=True, blank=True, verbose_name="Convertido desde Prospecto")
 
+    # ── Carátula del cliente (tab "Información" del widget) ────────────────
+    # Campos libres que cualquier miembro puede llenar y consultar para tener
+    # contexto operativo del cliente (logo, ubicación, reglas internas, etc.)
+    def _cliente_logo_path(instance, filename):
+        return f'clientes/{instance.id}/logo/{filename}'
+    logo = models.ImageField(upload_to=_cliente_logo_path, blank=True, null=True, verbose_name="Logo")
+    ubicacion = models.TextField(blank=True, default='', verbose_name="Ubicación / Dirección completa")
+    mapa_url = models.URLField(max_length=500, blank=True, default='', verbose_name="Link a Google Maps")
+    dias_entrega = models.TextField(blank=True, default='', verbose_name="Días de entrega")
+    horarios_trabajo = models.TextField(blank=True, default='', verbose_name="Horarios de trabajo")
+    dias_facturacion = models.TextField(blank=True, default='', verbose_name="Días de facturación")
+    proceso_cobro = models.TextField(blank=True, default='', verbose_name="Proceso de cobro")
+    reglas_acceso = models.TextField(blank=True, default='', verbose_name="Reglas para acceder a la planta")
+    info_adicional = models.TextField(blank=True, default='', verbose_name="Información adicional")
+
     class Meta:
         """
         Metadatos del modelo Cliente.

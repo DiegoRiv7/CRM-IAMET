@@ -3195,6 +3195,42 @@ def api_cliente_prospecciones(request, cliente_id):
 
 
 @login_required
+def api_cliente_info(request, cliente_id):
+    """GET → devuelve la carátula (logo + campos editables) del cliente.
+    POST (multipart) → actualiza los campos y opcionalmente el logo.
+    """
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    CAMPOS = [
+        'ubicacion', 'mapa_url', 'dias_entrega', 'horarios_trabajo',
+        'dias_facturacion', 'proceso_cobro', 'reglas_acceso', 'info_adicional',
+    ]
+
+    if request.method == 'POST':
+        for f in CAMPOS:
+            if f in request.POST:
+                setattr(cliente, f, request.POST.get(f, '') or '')
+        if 'logo' in request.FILES:
+            cliente.logo = request.FILES['logo']
+        if request.POST.get('logo_clear') in ('1', 'true', 'on'):
+            if cliente.logo:
+                try: cliente.logo.delete(save=False)
+                except Exception: pass
+            cliente.logo = None
+        cliente.save()
+
+    data = {f: getattr(cliente, f, '') or '' for f in CAMPOS}
+    data['nombre'] = cliente.nombre_empresa or ''
+    data['rfc'] = cliente.rfc or ''
+    data['categoria'] = cliente.get_categoria_display() if cliente.categoria else ''
+    data['logo_url'] = cliente.logo.url if cliente.logo else ''
+    return JsonResponse({'ok': True, 'cliente': data})
+
+
+@login_required
 def api_cliente_oportunidades(request, cliente_id):
     """
     API que devuelve las oportunidades de un cliente específico en JSON.

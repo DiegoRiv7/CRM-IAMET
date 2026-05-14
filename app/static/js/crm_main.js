@@ -4649,10 +4649,18 @@
                 currentMode = mode;
                 var isCot = (mode === 'cotizado');
                 var isProsp = (mode === 'prospecciones');
-                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp) ? 'none' : '';
+                var isInfo = (mode === 'info');
+                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp || isInfo) ? 'none' : '';
                 if (clienteOppHeadCot) clienteOppHeadCot.style.display = isCot ? '' : 'none';
                 if (clienteOppHeadProsp) clienteOppHeadProsp.style.display = isProsp ? '' : 'none';
-                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp) ? 'none' : '';
+                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp || isInfo) ? 'none' : '';
+                // En modo "info" ocultamos los filters/búsqueda/periodo y la tabla; mostramos el panel.
+                var infoPanel = document.getElementById('clienteOppInfoPanel');
+                var listWrap = document.getElementById('clienteOppListWrap');
+                var filtersBar = document.querySelector('#widgetClienteOportunidades .wco-filters');
+                if (listWrap) listWrap.style.display = isInfo ? 'none' : '';
+                if (filtersBar) filtersBar.style.display = isInfo ? 'none' : '';
+                if (infoPanel) infoPanel.style.display = isInfo ? 'block' : 'none';
                 // Marcar tab activo
                 if (clienteOppTabs) {
                     var tabKey = mode === 'cobrado' ? 'oportunidades' : mode;
@@ -4674,6 +4682,11 @@
             }
             function _cargarTabActivo(){
                 if (!currentClienteId) return;
+                // Tab "Información" — no usa la tabla; carga la carátula del cliente.
+                if (currentMode === 'info') {
+                    _cargarClienteInfo();
+                    return;
+                }
                 // Periodo del modal — se aplica a los 3 tabs (op/cot/prosp).
                 var mesQ = _clienteOppMes || '';
                 var anioQ = _clienteOppAnio || '';
@@ -4702,6 +4715,115 @@
                     }).catch(function(){
                         clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
                     });
+            }
+
+            // ── Tab "Información" (carátula del cliente) ──
+            var _wciSaveBtnBound = false;
+            function _wciCsrf(){
+                var name = 'csrftoken=';
+                var parts = (document.cookie || '').split('; ');
+                for (var i = 0; i < parts.length; i++) {
+                    if (parts[i].indexOf(name) === 0) return parts[i].substring(name.length);
+                }
+                return '';
+            }
+            function _wciSetField(id, val){ var el = document.getElementById(id); if (el) el.value = val || ''; }
+            function _wciSetText(id, val, hideIfEmpty){
+                var el = document.getElementById(id); if (!el) return;
+                el.textContent = val || '';
+                var row = id === 'wciRfc' ? document.getElementById('wciRfcRow') :
+                          id === 'wciCategoria' ? document.getElementById('wciCatRow') : null;
+                if (row) row.style.display = (hideIfEmpty && !val) ? 'none' : 'flex';
+            }
+            function _wciRenderLogo(url){
+                var img = document.getElementById('wciLogoImg');
+                var empty = document.getElementById('wciLogoEmpty');
+                if (url) {
+                    if (img) { img.src = url; img.style.display = 'block'; }
+                    if (empty) empty.style.display = 'none';
+                } else {
+                    if (img) { img.src = ''; img.style.display = 'none'; }
+                    if (empty) empty.style.display = 'flex';
+                }
+            }
+            function _cargarClienteInfo(){
+                var saved = document.getElementById('wciSavedHint');
+                if (saved) saved.textContent = 'Cargando…';
+                fetch('/app/api/cliente-info/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if (!data || !data.ok) { if (saved) saved.textContent = 'Error al cargar'; return; }
+                        var c = data.cliente || {};
+                        _wciSetText('wciNombre', c.nombre || '—');
+                        _wciSetText('wciRfc', c.rfc || '', true);
+                        _wciSetText('wciCategoria', c.categoria || '', true);
+                        _wciRenderLogo(c.logo_url);
+                        _wciSetField('wciUbicacion', c.ubicacion);
+                        _wciSetField('wciMapaUrl', c.mapa_url);
+                        _wciSetField('wciDiasEntrega', c.dias_entrega);
+                        _wciSetField('wciHorarios', c.horarios_trabajo);
+                        _wciSetField('wciDiasFact', c.dias_facturacion);
+                        _wciSetField('wciCobro', c.proceso_cobro);
+                        _wciSetField('wciReglas', c.reglas_acceso);
+                        _wciSetField('wciInfoExtra', c.info_adicional);
+                        if (saved) saved.textContent = '';
+                    }).catch(function(){
+                        if (saved) saved.textContent = 'Error de red';
+                    });
+                _wciBindOnce();
+            }
+            function _wciBindOnce(){
+                if (_wciSaveBtnBound) return;
+                _wciSaveBtnBound = true;
+                var saveBtn = document.getElementById('wciSaveBtn');
+                var fileInput = document.getElementById('wciLogoFile');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function(){
+                        if (!currentClienteId) return;
+                        var fd = new FormData();
+                        fd.append('ubicacion', (document.getElementById('wciUbicacion') || {}).value || '');
+                        fd.append('mapa_url', (document.getElementById('wciMapaUrl') || {}).value || '');
+                        fd.append('dias_entrega', (document.getElementById('wciDiasEntrega') || {}).value || '');
+                        fd.append('horarios_trabajo', (document.getElementById('wciHorarios') || {}).value || '');
+                        fd.append('dias_facturacion', (document.getElementById('wciDiasFact') || {}).value || '');
+                        fd.append('proceso_cobro', (document.getElementById('wciCobro') || {}).value || '');
+                        fd.append('reglas_acceso', (document.getElementById('wciReglas') || {}).value || '');
+                        fd.append('info_adicional', (document.getElementById('wciInfoExtra') || {}).value || '');
+                        if (fileInput && fileInput.files && fileInput.files[0]) {
+                            fd.append('logo', fileInput.files[0]);
+                        }
+                        var saved = document.getElementById('wciSavedHint');
+                        if (saved) saved.textContent = 'Guardando…';
+                        saveBtn.disabled = true;
+                        fetch('/app/api/cliente-info/' + currentClienteId + '/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': _wciCsrf() },
+                            body: fd,
+                        }).then(function(r){ return r.json(); }).then(function(data){
+                            saveBtn.disabled = false;
+                            if (data && data.ok) {
+                                if (saved) saved.textContent = 'Guardado';
+                                if (data.cliente && data.cliente.logo_url) _wciRenderLogo(data.cliente.logo_url);
+                                if (fileInput) fileInput.value = '';
+                                setTimeout(function(){ if (saved && saved.textContent === 'Guardado') saved.textContent = ''; }, 2200);
+                            } else {
+                                if (saved) saved.textContent = 'Error al guardar';
+                            }
+                        }).catch(function(){
+                            saveBtn.disabled = false;
+                            if (saved) saved.textContent = 'Error de red';
+                        });
+                    });
+                }
+                if (fileInput) {
+                    fileInput.addEventListener('change', function(){
+                        if (fileInput.files && fileInput.files[0]) {
+                            var reader = new FileReader();
+                            reader.onload = function(e){ _wciRenderLogo(e.target.result); };
+                            reader.readAsDataURL(fileInput.files[0]);
+                        }
+                    });
+                }
             }
 
             // ── Abrir widget (también expuesta globalmente para que otras
