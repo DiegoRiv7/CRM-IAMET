@@ -1015,6 +1015,94 @@
     .wco-prosp-etapa--cerrado_perdido { background: #FEE2E2; color: #991B1B; }
     .wco-prosp-etapa--en_progreso, .wco-prosp-etapa--procesado { background: #FEF3C7; color: #92400E; }
 
+    /* ── Pill de periodo (en el modal del cliente) ──────────────── */
+    .wco-period-wrap { position: relative; }
+    .wco-period-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #FFFFFF; border: 1px solid rgba(0,0,0,0.08);
+        color: #1D1D1F;
+        padding: 6px 12px; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 600;
+        cursor: pointer; font-family: inherit;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    .wco-period-pill:hover { border-color: rgba(0,82,212,0.3); color: #0052D4; }
+    .wco-period-pill.is-default { color: #6B7280; font-weight: 500; }
+    .wco-period-pop {
+        position: absolute;
+        top: calc(100% + 6px); right: 0;
+        min-width: 380px;
+        background: #FFFFFF;
+        border: 1px solid rgba(0,0,0,0.06);
+        border-radius: 12px;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.12);
+        z-index: 200;
+        overflow: hidden;
+        animation: wcoPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes wcoPopIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .wco-period-pop-cols {
+        display: grid; grid-template-columns: 1fr 1fr;
+        max-height: 280px;
+    }
+    .wco-period-col {
+        display: flex; flex-direction: column;
+        border-right: 1px solid rgba(0,0,0,0.04);
+        min-height: 0;
+    }
+    .wco-period-col:last-child { border-right: none; }
+    .wco-period-col-lbl {
+        padding: 10px 14px 6px;
+        font-size: 0.62rem; color: #6B7280; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .wco-period-list {
+        overflow-y: auto;
+        flex: 1; min-height: 0;
+        padding: 0 6px 6px;
+    }
+    .wco-period-item {
+        display: block; width: 100%;
+        background: transparent; border: none;
+        text-align: left;
+        padding: 7px 10px; border-radius: 7px;
+        font-size: 0.82rem; color: #1D1D1F;
+        cursor: pointer; font-family: inherit;
+        transition: all 0.12s;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .wco-period-item:hover { background: #F3F4F6; }
+    .wco-period-item.is-active {
+        background: rgba(0, 82, 212, 0.08); color: #0052D4; font-weight: 600;
+    }
+    .wco-period-item.is-active::after {
+        content: '✓';
+        font-size: 0.8rem; color: #0052D4;
+    }
+    .wco-period-pop-foot {
+        display: flex; gap: 8px;
+        padding: 10px 14px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        background: #FAFAFA;
+    }
+    .wco-period-btn-reset, .wco-period-btn-apply {
+        flex: 1;
+        padding: 8px 14px; border-radius: 8px;
+        font-size: 0.82rem; font-weight: 600;
+        cursor: pointer; font-family: inherit;
+        transition: all 0.15s;
+        border: none;
+    }
+    .wco-period-btn-reset {
+        background: #FFFFFF; border: 1px solid #E5E7EB; color: #374151;
+    }
+    .wco-period-btn-reset:hover { background: #F3F4F6; }
+    .wco-period-btn-apply {
+        background: #0052D4; color: #FFFFFF;
+    }
+    .wco-period-btn-apply:hover { background: #0041a8; }
+
     .wco-filters {
         padding: 14px 24px;
         display: flex;

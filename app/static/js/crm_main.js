@@ -4516,18 +4516,82 @@
             var clienteOppSearch = document.getElementById('clienteOppSearch');
             var clienteOppFilterArea = document.getElementById('clienteOppFilterArea');
             var clienteOppFilterProducto = document.getElementById('clienteOppFilterProducto');
-            var clienteOppFilterMes = document.getElementById('clienteOppFilterMes');
-            var clienteOppFilterAnio = document.getElementById('clienteOppFilterAnio');
-            // Llena los años disponibles (3 años atrás + actual)
-            if (clienteOppFilterAnio && clienteOppFilterAnio.options.length <= 1) {
+            // Periodo unificado (pill estilo Dashboard)
+            var clienteOppPeriodPill = document.getElementById('clienteOppPeriodPill');
+            var clienteOppPeriodPop = document.getElementById('clienteOppPeriodPop');
+            var clienteOppPeriodLabel = document.getElementById('clienteOppPeriodLabel');
+            var clienteOppPeriodAniosList = document.getElementById('clienteOppPeriodAniosList');
+            var clienteOppPeriodMesesList = document.getElementById('clienteOppPeriodMesesList');
+            var clienteOppPeriodReset = document.getElementById('clienteOppPeriodReset');
+            var clienteOppPeriodApply = document.getElementById('clienteOppPeriodApply');
+            var _clienteOppMes = '';   // '' = todos, '01'…'12'
+            var _clienteOppAnio = '';  // '' = todos, '2026' etc.
+            // Llena los años (3 atrás + actual + 1 adelante)
+            if (clienteOppPeriodAniosList && clienteOppPeriodAniosList.querySelectorAll('[data-anio]').length <= 1) {
                 var nowY = new Date().getFullYear();
-                for (var y = nowY; y >= nowY - 3; y--) {
-                    var opt = document.createElement('option');
-                    opt.value = String(y);
-                    opt.textContent = String(y);
-                    clienteOppFilterAnio.appendChild(opt);
+                for (var y = nowY + 1; y >= nowY - 3; y--) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'wco-period-item';
+                    b.dataset.anio = String(y);
+                    b.textContent = String(y);
+                    clienteOppPeriodAniosList.appendChild(b);
                 }
             }
+            var MES_NAMES = {'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+            function _refreshPeriodLabel(){
+                var mPart = _clienteOppMes ? MES_NAMES[_clienteOppMes] : 'Todos';
+                var aPart = _clienteOppAnio || 'Todos';
+                if (clienteOppPeriodLabel) clienteOppPeriodLabel.textContent = mPart + ' · ' + aPart;
+                if (clienteOppPeriodPill) clienteOppPeriodPill.classList.toggle('is-default', !_clienteOppMes && !_clienteOppAnio);
+            }
+            function _markActive(list, attr, val){
+                if (!list) return;
+                list.querySelectorAll('[data-' + attr + ']').forEach(function(b){
+                    b.classList.toggle('is-active', b.dataset[attr] === val);
+                });
+            }
+            function _refreshPeriodActives(){
+                _markActive(clienteOppPeriodMesesList, 'mes', _clienteOppMes);
+                _markActive(clienteOppPeriodAniosList, 'anio', _clienteOppAnio);
+            }
+            // Click en pill → abre/cierra popover
+            if (clienteOppPeriodPill) {
+                clienteOppPeriodPill.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    var open = clienteOppPeriodPop.style.display !== 'none';
+                    clienteOppPeriodPop.style.display = open ? 'none' : 'block';
+                });
+            }
+            // Click fuera cierra el popover (limitado al overlay)
+            document.addEventListener('click', function(e){
+                if (!clienteOppPeriodPop || clienteOppPeriodPop.style.display === 'none') return;
+                if (e.target.closest('.wco-period-wrap')) return;
+                clienteOppPeriodPop.style.display = 'none';
+            });
+            // Click en mes/año (selección simple, no múltiple)
+            if (clienteOppPeriodMesesList) clienteOppPeriodMesesList.addEventListener('click', function(e){
+                var b = e.target.closest('[data-mes]'); if (!b) return;
+                _clienteOppMes = b.dataset.mes || '';
+                _refreshPeriodActives();
+            });
+            if (clienteOppPeriodAniosList) clienteOppPeriodAniosList.addEventListener('click', function(e){
+                var b = e.target.closest('[data-anio]'); if (!b) return;
+                _clienteOppAnio = b.dataset.anio || '';
+                _refreshPeriodActives();
+            });
+            if (clienteOppPeriodReset) clienteOppPeriodReset.addEventListener('click', function(){
+                _clienteOppMes = ''; _clienteOppAnio = '';
+                _refreshPeriodActives();
+                _refreshPeriodLabel();
+                clienteOppPeriodPop.style.display = 'none';
+                _cargarTabActivo();
+            });
+            if (clienteOppPeriodApply) clienteOppPeriodApply.addEventListener('click', function(){
+                _refreshPeriodLabel();
+                clienteOppPeriodPop.style.display = 'none';
+                _cargarTabActivo();
+            });
             var clienteOppClearFilters = document.getElementById('clienteOppClearFilters');
             var clienteOppFiltersOpp = document.getElementById('clienteOppFiltersOpp');
             var clienteOppHeadOpp = document.getElementById('clienteOppHeadOpp');
@@ -4605,8 +4669,8 @@
             function _cargarTabActivo(){
                 if (!currentClienteId) return;
                 // Periodo del modal — se aplica a los 3 tabs (op/cot/prosp).
-                var mesQ = clienteOppFilterMes ? (clienteOppFilterMes.value || '') : '';
-                var anioQ = clienteOppFilterAnio ? (clienteOppFilterAnio.value || '') : '';
+                var mesQ = _clienteOppMes || '';
+                var anioQ = _clienteOppAnio || '';
                 function _withPeriodo(url){
                     var sep = url.indexOf('?') >= 0 ? '&' : '?';
                     var q = '';
@@ -4633,9 +4697,6 @@
                         clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
                     });
             }
-            // Listeners de periodo: recargan el tab actual al cambiar
-            if (clienteOppFilterMes) clienteOppFilterMes.addEventListener('change', _cargarTabActivo);
-            if (clienteOppFilterAnio) clienteOppFilterAnio.addEventListener('change', _cargarTabActivo);
 
             // ── Abrir widget (también expuesta globalmente para que otras
             //    vistas — ej. el tab Clientes del Dashboard — la usen) ──
@@ -4652,9 +4713,9 @@
                 if (clienteOppSearch) clienteOppSearch.value = '';
                 if (clienteOppFilterArea) clienteOppFilterArea.value = '';
                 if (clienteOppFilterProducto) clienteOppFilterProducto.value = '';
-                // Periodo arranca en "Todos" al abrir el modal
-                if (clienteOppFilterMes) clienteOppFilterMes.value = 'todos';
-                if (clienteOppFilterAnio) clienteOppFilterAnio.value = 'todos';
+                // Periodo arranca en "Todos · Todos" al abrir el modal
+                _clienteOppMes = ''; _clienteOppAnio = '';
+                _refreshPeriodActives(); _refreshPeriodLabel();
                 setWidgetMode(mode);
 
                 var colspan = '6';
