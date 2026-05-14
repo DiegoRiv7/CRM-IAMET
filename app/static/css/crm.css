@@ -2766,26 +2766,21 @@
         gap: 8px;
         height: 100vh !important;
     }
-    /* Outer header (Calendario CRM + filtros + Nueva Actividad): sin caja */
-    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(1) {
-        background: transparent !important;
-        border: none !important;
-        padding: 14px 4px !important;
-    }
-    /* Sub-nav (Hoy + arrows + Mes/Semana/Día toggle): sin caja, pero con
-       el toggle de vistas a la derecha */
-    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(2) {
-        background: transparent !important;
-        border: none !important;
-        padding: 0 4px 10px !important;
+    /* Sub-nav viejo (cal-subnav-default): siempre oculto en page-mode */
+    .widget-overlay.is-page-mode .cal-subnav-default { display: none !important; }
+    /* Header en page-mode = crm-bar — su estilo viene de .crm-bar y
+       .crm-bar--dashboard ya definidos arriba. Solo aseguramos el margen. */
+    .widget-overlay.is-page-mode .cal-page-bar {
+        margin-bottom: 12px;
+        flex-shrink: 0;
     }
     /* Body (calendar grid + right panel): cada uno una card individual */
-    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(3) {
+    .widget-overlay.is-page-mode .cal-page-body {
         gap: 14px;
         flex: 1;
         min-height: 0;
     }
-    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(3) > div:first-child {
+    .widget-overlay.is-page-mode .cal-page-body > div:first-child {
         background: #ffffff;
         border: 1px solid rgba(15,23,42,0.06);
         border-radius: 16px;
@@ -2803,7 +2798,7 @@
     }
     /* Restringir scroll: solo el panel derecho cuando es necesario, no la
        página completa ni el card externo. */
-    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(3) {
+    .widget-overlay.is-page-mode .cal-page-body {
         overflow: hidden !important;
     }
     /* Sin scroll en el body de la card */
@@ -2815,6 +2810,46 @@
     body:has(.widget-overlay.is-page-mode) .crm-main,
     body:has(.widget-overlay.is-page-mode) .crm-content {
         overflow: hidden !important;
+    }
+
+    /* Popover de filtro de tipos en el header del calendario (page mode) */
+    .cal-filter-pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.08);
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(15,23,42,0.18);
+        padding: 8px;
+        min-width: 200px;
+        z-index: 200;
+    }
+    .cal-filter-pop-lbl {
+        font-size: 10.5px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: #86868B;
+        padding: 6px 8px 4px;
+    }
+    .cal-filter-pop-item {
+        display: flex; align-items: center; gap: 9px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        font-size: 13px; font-weight: 500;
+        color: #1D1D1F;
+        cursor: pointer;
+        transition: background 0.12s ease;
+    }
+    .cal-filter-pop-item:hover { background: rgba(15,23,42,0.04); }
+    .cal-filter-pop-item input[type="checkbox"] {
+        width: 14px; height: 14px;
+        accent-color: #0052D4;
+        cursor: pointer;
+    }
+    .cal-filter-dot {
+        width: 9px; height: 9px;
+        border-radius: 50%;
+        display: inline-block;
     }
 
     /* Chips de filtro de tipo en el header del calendario (page mode) */

@@ -80,23 +80,64 @@
             .cal-recur-chip.active:hover { background:#0041A8; border-color:#0041A8; }
         </style>
 
-        <!-- ── Outer header ── -->
+        {% if tab_activo == 'calendario' %}
+        <!-- ── Outer header (page mode): estilo .crm-bar.crm-bar--dashboard para
+             mantener armonía con Oportunidades/Prospección/Proyectos ── -->
+        <div class="crm-bar crm-bar--dashboard cal-page-bar">
+            <div class="crm-bar-left">
+                <!-- Filtro de tipos (Tareas / Actividades / Eventos / Cursos) -->
+                <div class="cal-filter-wrap" style="position:relative;">
+                    <button type="button" class="crm-facet-btn crm-facet-add" id="calFiltroBtn" onclick="calFiltroToggle(event)" title="Filtro">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        <span>Filtro</span>
+                    </button>
+                    <div class="cal-filter-pop" id="calFiltroPop" style="display:none;">
+                        <div class="cal-filter-pop-lbl">Mostrar</div>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="tarea" checked><span class="cal-filter-dot" style="background:#FF9500;"></span><span>Tareas</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="actividad" checked><span class="cal-filter-dot" style="background:#0052D4;"></span><span>Actividades</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="evento" checked><span class="cal-filter-dot" style="background:#8B5CF6;"></span><span>Eventos</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="curso" checked><span class="cal-filter-dot" style="background:#10B981;"></span><span>Cursos</span></label>
+                    </div>
+                </div>
+                <!-- Selector de usuario (mismo estilo que el pill "Vendedores Todos" del CRM) -->
+                <div id="calUserPickerWrap" class="cal-userpick-wrap" style="position:relative;">
+                    <button type="button" id="calUserPickerBtn" class="crm-period-pill" onclick="calUserPickerToggle(event)" aria-haspopup="listbox" aria-expanded="false">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span id="calUserPickerLabel">Usuarios</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6;"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div id="calUserPickerMenu" class="cal-userpick-menu" role="listbox" style="display:none;">
+                        <div class="cal-userpick-search">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" id="calUserPickerSearch" placeholder="Buscar usuario…" autocomplete="off" oninput="calUserPickerFilter(this.value)" onkeydown="calUserPickerKey(event)">
+                        </div>
+                        <div id="calUserPickerList" class="cal-userpick-list"></div>
+                    </div>
+                    <input type="hidden" id="calUserFilter" value="all">
+                </div>
+            </div>
+            <!-- Dynamic island central: Mes / Semana / Día -->
+            <div class="crm-tabs crm-tabs--dashboard">
+                <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
+                <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
+                <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
+            </div>
+            <div class="crm-bar-right">
+                <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nueva actividad</span>
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <!-- ── Outer header (widget mode tradicional) ── -->
         <div style="padding:1rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
             <div style="display:flex;align-items:center;gap:1rem;">
-                {% if tab_activo == 'calendario' %}
-                <!-- En page mode: las pestañas Mes/Semana/Día ocupan el lugar del título "Calendario CRM" -->
-                <div style="display:flex;gap:3px;background:#F2F2F7;border-radius:10px;padding:3px;">
-                    <button id="calBtnMesPage" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
-                    <button id="calBtnSemanaPage" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
-                    <button id="calBtnDiaPage" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
-                </div>
-                {% else %}
                 <div style="font-size:1.5rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.03em;">Calendario CRM</div>
                 <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.04);border-radius:8px;padding:5px 11px;font-size:0.8rem;font-weight:600;color:#86868B;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <span id="calHeaderDateText">—</span>
                 </div>
-                {% endif %}
                 <div style="display:flex;align-items:center;gap:6px;">
                     <span style="font-size:0.72rem;font-weight:600;color:#86868B;">Ver:</span>
                     <div id="calUserPickerWrap" class="cal-userpick-wrap">
@@ -120,12 +161,11 @@
                     <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
                     Nueva Actividad
                 </button>
-                {% if tab_activo != 'calendario' %}
                 <div style="width:1px;height:22px;background:#E5E5EA;"></div>
                 <button type="button" onclick="calendarioCerrar()" style="color:#86868B;background:none;border:none;font-size:1.8rem;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;font-family:inherit;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'">&times;</button>
-                {% endif %}
             </div>
         </div>
+        {% endif %}
 
         <!-- ── Sub-nav: arrows + title + Mes/Día toggle (sólo en modo widget, en page-mode estos controles viven dentro del panel derecho y al pie del calendario) ── -->
         <div class="cal-subnav-default" style="padding:0.65rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;{% if tab_activo == 'calendario' %}display:none;{% endif %}">
@@ -147,7 +187,7 @@
         </div>
 
         <!-- ── Body: left + right ── -->
-        <div style="flex:1;display:flex;overflow:hidden;min-height:0;">
+        <div class="cal-page-body" style="flex:1;display:flex;overflow:hidden;min-height:0;">
 
             <!-- Left: calendar views -->
             <div style="flex:1;padding:0.8rem 0.8rem 0.8rem 1.4rem;overflow:hidden;display:flex;flex-direction:column;min-width:0;">
@@ -627,6 +667,7 @@
                     window.calSwitchView(savedV);
                 }
             } catch (e) {}
+            if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
         }, 80);
 
         calGlobalRefetch();
@@ -1247,6 +1288,7 @@
 
         // Asegura los handlers de drag (idempotente)
         _calDayBindDragHandlers();
+        if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
 
         calUpdateSidePanel();
     }
@@ -2116,7 +2158,58 @@
     function calApplyFilter(filterVal) {
         var events = window._calAllEvents || _globalEvents;
         var filtered = _calFilterEventsForSelection(events, filterVal);
+        filtered = _calApplyTypeFilters(filtered);
         if (_globalCalendar) { _globalCalendar.removeAllEventSources(); _globalCalendar.addEventSource(filtered); }
+    }
+
+    /* ─── Filtro de tipos (Tareas / Actividades / Eventos / Cursos) ─── */
+    window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true };
+    function _calClassifyType(ev) {
+        var ep = ev.extendedProps || {};
+        if (ep.tipo_actividad === 'tarea' || String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
+        if (ep.evento) return 'evento';
+        if (ep.curso) return 'curso';
+        return 'actividad';
+    }
+    function _calApplyTypeFilters(events) {
+        var f = window._calTypeFilters || {};
+        return events.filter(function (ev) { return f[_calClassifyType(ev)] !== false; });
+    }
+    window.calFiltroToggle = function (e) {
+        e.stopPropagation();
+        var pop = document.getElementById('calFiltroPop');
+        if (!pop) return;
+        pop.style.display = (pop.style.display === 'none' || !pop.style.display) ? 'block' : 'none';
+        if (pop.style.display === 'block') {
+            // Click-fuera cierra el popover
+            setTimeout(function(){
+                document.addEventListener('click', _calFiltroCloseOnOutside, { once: true });
+            }, 0);
+        }
+    };
+    function _calFiltroCloseOnOutside(e) {
+        var pop = document.getElementById('calFiltroPop');
+        var btn = document.getElementById('calFiltroBtn');
+        if (!pop) return;
+        if (pop.contains(e.target) || (btn && btn.contains(e.target))) {
+            document.addEventListener('click', _calFiltroCloseOnOutside, { once: true });
+            return;
+        }
+        pop.style.display = 'none';
+    }
+    // Bindear checkboxes (idempotente; el popover puede no existir en widget mode)
+    function _calFiltroBindCheckboxes() {
+        var pop = document.getElementById('calFiltroPop');
+        if (!pop || pop._wired) return;
+        pop._wired = true;
+        pop.querySelectorAll('input[type="checkbox"][data-cal-type]').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var tipo = cb.getAttribute('data-cal-type');
+                window._calTypeFilters[tipo] = cb.checked;
+                var inp = document.getElementById('calUserFilter');
+                calApplyFilter(inp ? inp.value : 'all');
+            });
+        });
     }
 
     /* ─── CREAR ACTIVIDAD ─── */
