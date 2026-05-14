@@ -2741,6 +2741,21 @@
         display: flex;
     }
 
+    /* Calendario en modo página: el overlay deja de serlo y vive en el flujo */
+    .widget-overlay.is-page-mode {
+        position: static !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        z-index: auto !important;
+        padding: 12px 16px 24px;
+        animation: none !important;
+    }
+    .widget-overlay.is-page-mode .cal-card--page {
+        margin: 0 auto;
+        max-width: none;
+    }
+
     @keyframes overlayIn {
         from {
             opacity: 0;

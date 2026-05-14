@@ -1,6 +1,6 @@
-<!-- ═══ WIDGET: CALENDARIO OVERLAY MASTER ═══ -->
-<div class="widget-overlay" id="widgetCalendarioMaster" style="z-index:10100;display:none;"><!-- CAPA 1 -->
-    <div style="width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.85);overflow:hidden;">
+<!-- ═══ CALENDARIO: widget overlay (default) o sección de página (cuando tab=calendario) ═══ -->
+<div class="widget-overlay{% if tab_activo == 'calendario' %} is-page-mode{% endif %}" id="widgetCalendarioMaster" style="z-index:10100;{% if tab_activo == 'calendario' %}display:flex;position:static;background:transparent;align-items:stretch;justify-content:stretch;{% else %}display:none;{% endif %}">
+    <div class="cal-card{% if tab_activo == 'calendario' %} cal-card--page{% endif %}" style="{% if tab_activo == 'calendario' %}width:100%;height:calc(100vh - 72px);max-width:none;background:#ffffff;border-radius:18px;{% else %}width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;{% endif %}display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(15,23,42,0.06);overflow:hidden;">
         <style>
             /* ─── FullCalendar base ─── */
             #fullCalendarRoot {
@@ -106,7 +106,11 @@
                     Nueva Actividad
                 </button>
                 <div style="width:1px;height:22px;background:#E5E5EA;"></div>
+                {% if tab_activo == 'calendario' %}
+                <a href="?tab=crm" style="color:#86868B;text-decoration:none;font-size:1.8rem;line-height:1;padding:0;display:flex;align-items:center;font-family:inherit;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'" title="Volver al CRM">&times;</a>
+                {% else %}
                 <button type="button" onclick="calendarioCerrar()" style="color:#86868B;background:none;border:none;font-size:1.8rem;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;font-family:inherit;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'">&times;</button>
+                {% endif %}
             </div>
         </div>
 
@@ -445,13 +449,18 @@
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
         var ov = document.getElementById('widgetCalendarioMaster');
-        ov.style.display = 'flex';
-        var _scrollY = window.scrollY;
-        document.body.style.position = 'fixed';
-        document.body.style.top = '-' + _scrollY + 'px';
-        document.body.style.width = '100%';
-        document.body.dataset.calScrollY = _scrollY;
-        try { sessionStorage.setItem('_crm_cal_open', '1'); } catch (e) {}
+        // En modo página (tab=calendario), el contenedor ya está visible y no
+        // bloqueamos el scroll del body (no es modal).
+        var isPageMode = ov && ov.classList.contains('is-page-mode');
+        if (!isPageMode) {
+            ov.style.display = 'flex';
+            var _scrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + _scrollY + 'px';
+            document.body.style.width = '100%';
+            document.body.dataset.calScrollY = _scrollY;
+            try { sessionStorage.setItem('_crm_cal_open', '1'); } catch (e) {}
+        }
 
         _calCurrentDay = new Date();
         calUpdateNavTitle();
@@ -2347,6 +2356,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         try { if (sessionStorage.getItem('_crm_cal_open')==='1') setTimeout(function(){calendarioAbrir();},500); } catch(e){}
+        // Modo página: si el contenedor ya tiene is-page-mode (renderizado por
+        // Django cuando tab=calendario), inicializamos el calendario automáticamente.
+        var ovPage = document.getElementById('widgetCalendarioMaster');
+        if (ovPage && ovPage.classList.contains('is-page-mode')) {
+            setTimeout(function(){ try { calendarioAbrir(); } catch(e){ console.error('calendario page init:', e); } }, 80);
+        }
         var inicioEl=document.getElementById('calFormActInicio');
         var finEl=document.getElementById('calFormActFin');
         if (inicioEl&&finEl) {

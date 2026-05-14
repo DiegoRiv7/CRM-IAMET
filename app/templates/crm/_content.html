@@ -1,6 +1,8 @@
 {% load app_filters %}{% load l10n %}
 <div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
-<div class="crm-content" id="crmContentSection"{% if es_ingeniero or es_administrador %} style="display:none;"{% endif %}>
+{# Cuando tab=calendario, ocultamos todo el contenido normal del CRM; el
+   widget de calendario (renderizado más abajo) se vuelve la página completa. #}
+<div class="crm-content" id="crmContentSection"{% if es_ingeniero or es_administrador or tab_activo == 'calendario' %} style="display:none;"{% endif %}>
 
     {% if tab_activo == 'crm' %}
     <!-- ═══════════════════════════════════════════════════════════

@@ -92,9 +92,9 @@
                 <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">
                     {% if request.user.userprofile.language == 'en' %}WALL{% else %}MURO{% endif %}
                 </button>
-                <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">
+                <a href="?tab=calendario" class="island-nav-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" style="text-decoration:none;display:inline-flex;align-items:center;">
                     {% if request.user.userprofile.language == 'en' %}CALENDAR{% else %}CALENDARIO{% endif %}
-                </button>
+                </a>
                 <button type="button" class="island-nav-btn" id="btnMail" onclick="mailAbrir()">
                     CORREO
                 </button>
