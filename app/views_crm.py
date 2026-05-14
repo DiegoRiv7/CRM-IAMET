@@ -704,12 +704,13 @@ def crm_home(request):
     # Filtrado por el mismo mes/año o rango de fechas que rige la pestaña.
     marketing_kpis = None
     if tab_activo == 'prospeccion':
-        from .models import Campana, CampanaEnvio
+        from .models import CampanaTemplate, CampanaEnvio
         envios_qs = CampanaEnvio.objects.all()
-        # Activas = campañas creadas en el periodo (excepto canceladas).
-        # Antes filtrábamos por fecha_envio, pero eso dejaba fuera campañas
-        # recién creadas que aún no se envían — el usuario veía 0 al crear.
-        camps_qs = Campana.objects.exclude(estado='cancelada')
+        # Activas = templates de campaña activos creados en el periodo. El
+        # usuario considera "una campaña activa" cuando sube el material
+        # (la plantilla HTML), incluso si aún no se envía a nadie. La cuenta
+        # de envíos efectivos vive aparte en "Enviadas".
+        camps_qs = CampanaTemplate.objects.filter(activa=True)
         if desde_date or hasta_date:
             if desde_date:
                 envios_qs = envios_qs.filter(fecha_envio__date__gte=desde_date)
@@ -736,17 +737,395 @@ def crm_home(request):
             tasa_str = f'{round(total_respondidas / total_enviadas * 100)}%'
         else:
             tasa_str = '—'
+
+        # Prospecciones por marca en el periodo — alimenta las mini-barras
+        # debajo de los KPIs en la card de Campañas para llenar el espacio
+        # vacío con algo útil: ¿qué marcas estamos trabajando más?
+        from .models import Prospecto
+        from django.db.models import Count
+        MARCAS_MKT = [
+            ('PANDUIT', 'Panduit'),
+            ('ZEBRA', 'Zebra'),
+            ('APC', 'APC'),
+            ('AVIGILION', 'Avigilon'),
+            ('GENETEC', 'Genetec'),
+            ('AXIS', 'Axis'),
+            ('CISCO', 'Cisco'),
+        ]
+        prosp_qs = Prospecto.objects.all()
+        if desde_date or hasta_date:
+            if desde_date:
+                prosp_qs = prosp_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date:
+                prosp_qs = prosp_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                prosp_qs = prosp_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int_p = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int_p = []
+                if meses_int_p:
+                    prosp_qs = prosp_qs.filter(fecha_creacion__month__in=meses_int_p)
+        conteo_marca = dict(
+            prosp_qs.values_list('producto')
+                    .annotate(c=Count('id'))
+                    .values_list('producto', 'c')
+        )
+        max_count = max(conteo_marca.values()) if conteo_marca else 0
+        prosp_por_marca = []
+        for code, label in MARCAS_MKT:
+            n = conteo_marca.get(code, 0)
+            if n <= 0:
+                continue
+            pct = round((n / max_count) * 100) if max_count else 0
+            prosp_por_marca.append({
+                'code': code,
+                'label': label,
+                'letter': label[0],
+                'count': n,
+                'pct': pct,
+            })
+
         marketing_kpis = {
             'activas': total_activas,
             'enviadas': total_enviadas,
             'tasa_contacto': tasa_str,
             'hay_actividad': total_enviadas > 0 or total_activas > 0,
+            'prosp_por_marca': prosp_por_marca,
+        }
+
+    # ── Tab Clientes (vista consolidada cliente × marca) ──────────────
+    clientes_tabla = None
+    clientes_tabla_meta = None
+    potenciales_lista = None
+    # La tabla de clientes se carga también en el Dashboard (tab=clientes)
+    # para que el modo "Clientes" funcione sin recargar.
+    if tab_activo == 'clientes' or tab_activo == 'cli':
+        # Catálogo de marcas (mismas columnas que en Campañas)
+        MARCAS_COL = [
+            ('ZEBRA',     'zebra',    'Zebra'),
+            ('PANDUIT',   'panduit',  'Panduit'),
+            ('APC',       'apc',      'APC'),
+            ('AVIGILION', 'avigilon', 'Avigilon'),
+            ('GENETEC',   'genetec',  'Genetec'),
+            ('AXIS',      'axis',     'Axis'),
+            ('SOFTWARE',  'software', 'Soft.'),
+            ('RUNRATE',   'runrate',  'RR'),
+            ('PÓLIZA',    'poliza',   'Pól.'),
+        ]
+        # Clientes visibles según rol/filtros
+        if es_supervisor:
+            if vendedores_ids:
+                clientes_qs = Cliente.objects.filter(asignado_a_id__in=vendedores_ids)
+            else:
+                clientes_qs = Cliente.objects.all()
+        else:
+            usuarios_visibles = get_usuarios_visibles_ids(user)
+            if usuarios_visibles and len(usuarios_visibles) > 1:
+                clientes_qs = Cliente.objects.filter(asignado_a_id__in=usuarios_visibles)
+            else:
+                clientes_qs = Cliente.objects.filter(asignado_a=user)
+        clientes_qs = clientes_qs.order_by('nombre_empresa')
+
+        # Filtro de periodo aplicable a TodoItem y Prospecto.
+        # Reutilizamos meses_list/anios_list/desde_date/hasta_date.
+        cliente_ids = list(clientes_qs.values_list('id', flat=True))
+
+        # ── Oportunidades activas por cliente y producto ──
+        # Usamos fecha_creacion para que coincida con cómo se cuentan en Campañas.
+        op_qs = TodoItem.objects.filter(cliente_id__in=cliente_ids)
+        # Excluir oportunidades cerradas perdidas o ganadas (criterio: estado_oportunidad).
+        # Aceptamos cualquier oportunidad creada en el periodo.
+        if desde_date or hasta_date:
+            if desde_date: op_qs = op_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date: op_qs = op_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                op_qs = op_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    op_qs = op_qs.filter(fecha_creacion__month__in=meses_int)
+        # ── Prospecciones (Prospecto) activas por cliente y producto ──
+        from .models import Prospecto
+        pr_qs = Prospecto.objects.filter(cliente_id__in=cliente_ids).exclude(
+            etapa__in=['cerrado_ganado', 'cerrado_perdido']
+        )
+        if desde_date or hasta_date:
+            if desde_date: pr_qs = pr_qs.filter(fecha_creacion__date__gte=desde_date)
+            if hasta_date: pr_qs = pr_qs.filter(fecha_creacion__date__lte=hasta_date)
+        else:
+            if anios_list is not None:
+                pr_qs = pr_qs.filter(fecha_creacion__year__in=anios_list)
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    pr_qs = pr_qs.filter(fecha_creacion__month__in=meses_int)
+
+        # Construye conteo por cliente. Estructura:
+        # { cliente_id: { 'op': {marca_key: count}, 'pr': {marca_key: count}, 'op_total':N, 'pr_total':N } }
+        def _bucket_marca(prod):
+            prod = (prod or '').upper()
+            for code, key, _label in MARCAS_COL:
+                if code in prod or (code == 'AVIGILION' and 'AVIGILON' in prod):
+                    return key
+            return 'otros'
+
+        counts = {}
+        for o in op_qs.values('cliente_id', 'producto'):
+            cid = o['cliente_id']
+            b = counts.setdefault(cid, {'op': {}, 'pr': {}, 'op_total': 0, 'pr_total': 0})
+            k = _bucket_marca(o['producto'])
+            b['op'][k] = b['op'].get(k, 0) + 1
+            b['op_total'] += 1
+        for p in pr_qs.values('cliente_id', 'producto'):
+            cid = p['cliente_id']
+            b = counts.setdefault(cid, {'op': {}, 'pr': {}, 'op_total': 0, 'pr_total': 0})
+            k = _bucket_marca(p['producto'])
+            b['pr'][k] = b['pr'].get(k, 0) + 1
+            b['pr_total'] += 1
+
+        # Construir filas (cells como lista ordenada para iterar en el template)
+        clientes_tabla = []
+        keys = [k for _c, k, _l in MARCAS_COL] + ['otros']
+        for c in clientes_qs:
+            b = counts.get(c.id, {'op': {}, 'pr': {}, 'op_total': 0, 'pr_total': 0})
+            cells = []
+            for k in keys:
+                op = b['op'].get(k, 0)
+                pr = b['pr'].get(k, 0)
+                cells.append({'key': k, 'op': op, 'pr': pr, 'total': op + pr})
+            clientes_tabla.append({
+                'id': c.id,
+                'nombre': c.nombre_empresa or '—',
+                'rfc': c.rfc or '',
+                'cells': cells,
+                'op_total': b['op_total'],
+                'pr_total': b['pr_total'],
+            })
+
+        clientes_tabla_meta = {
+            'marcas_col': [{'code': c, 'key': k, 'label': l} for c, k, l in MARCAS_COL],
+            'total_clientes': len(clientes_tabla),
+            'total_op': sum(r['op_total'] for r in clientes_tabla),
+            'total_pr': sum(r['pr_total'] for r in clientes_tabla),
+        }
+
+        # ── ClientePotencial visibles (para el toggle "Solo Prospectos") ──
+        from .models import ClientePotencial
+        if es_supervisor:
+            if vendedores_ids:
+                pot_qs = ClientePotencial.objects.filter(asignado_a_id__in=vendedores_ids)
+            else:
+                pot_qs = ClientePotencial.objects.all()
+        else:
+            usuarios_visibles = get_usuarios_visibles_ids(user)
+            if usuarios_visibles and len(usuarios_visibles) > 1:
+                pot_qs = ClientePotencial.objects.filter(asignado_a_id__in=usuarios_visibles)
+            else:
+                pot_qs = ClientePotencial.objects.filter(asignado_a=user)
+        pot_qs = pot_qs.select_related('asignado_a').order_by('-fecha_actualizacion')
+        potenciales_lista = [
+            {
+                'id': p.id,
+                'nombre': p.nombre,
+                'asignado_nombre': (p.asignado_a.get_full_name() or p.asignado_a.username) if p.asignado_a_id else '—',
+                'notas': p.notas or '',
+                'fecha': p.fecha_creacion.strftime('%d %b %Y') if p.fecha_creacion else '',
+            }
+            for p in pot_qs
+        ]
+
+    # ── Certificaciones (sub-vista ?vista=certificaciones + widget) ─
+    certificaciones_lista = None
+    certificaciones_kpis = None
+    certificaciones_filtros = None
+    if tab_activo == 'prospeccion':
+        from .models import Certificacion
+        from datetime import date as _date
+        from django.db.models import F
+        # Orden: primero las certificaciones reordenadas manualmente desde
+        # la pared (orden ascendente con nulls al final), después las que
+        # no tienen orden manual ordenadas por fecha de obtención.
+        cert_qs = (
+            Certificacion.objects
+            .select_related('usuario')
+            .prefetch_related('archivos')
+            .order_by(F('orden').asc(nulls_last=True), '-fecha_obtencion', '-fecha_creacion')
+        )
+        # ── Filtros para la sub-vista de Certificaciones ──
+        cert_marca = (request.GET.get('cert_marca') or '').strip().upper()
+        cert_nivel = (request.GET.get('cert_nivel') or '').strip()
+        cert_estado_v = (request.GET.get('cert_estado') or '').strip()  # vigente|por_vencer|vencida|sin_vencimiento
+        cert_q = (request.GET.get('cert_q') or '').strip()
+        # Aplicamos el filtro global de Vendedores (selector arriba del CRM).
+        if vendedores_ids:
+            cert_qs = cert_qs.filter(usuario_id__in=vendedores_ids)
+        if cert_marca:
+            cert_qs = cert_qs.filter(marca__iexact=cert_marca)
+        if cert_nivel:
+            cert_qs = cert_qs.filter(nivel=cert_nivel)
+        if cert_q:
+            from django.db.models import Q as _Q
+            cert_qs = cert_qs.filter(
+                _Q(nombre__icontains=cert_q)
+                | _Q(numero__icontains=cert_q)
+                | _Q(marca__icontains=cert_q)
+                | _Q(usuario__first_name__icontains=cert_q)
+                | _Q(usuario__last_name__icontains=cert_q)
+                | _Q(usuario__username__icontains=cert_q)
+            )
+        certificaciones_lista = list(cert_qs)
+        # Filtro por estado (post-procesado porque depende de fecha de hoy).
+        if cert_estado_v:
+            hoy_e = _date.today()
+            def _estado_de(c):
+                if not c.fecha_vencimiento: return 'sin_vencimiento'
+                if c.fecha_vencimiento < hoy_e: return 'vencida'
+                if (c.fecha_vencimiento - hoy_e).days <= 60: return 'por_vencer'
+                return 'vigente'
+            certificaciones_lista = [c for c in certificaciones_lista if _estado_de(c) == cert_estado_v]
+        # Catálogo de marcas/niveles activos en el universo (sin filtros) para
+        # poblar los dropdowns. Limitado a marcas que tengan al menos 1 cert.
+        _all_qs = Certificacion.objects.values_list('marca', 'nivel')
+        if vendedores_ids:
+            _all_qs = Certificacion.objects.filter(usuario_id__in=vendedores_ids).values_list('marca', 'nivel')
+        marcas_set = set()
+        niveles_set = set()
+        for m, n in _all_qs:
+            if m: marcas_set.add(m.upper())
+            if n: niveles_set.add(n)
+        NIVEL_ORDEN = ['basico', 'intermedio', 'avanzado', 'experto']
+        certificaciones_filtros = {
+            'marca': cert_marca,
+            'nivel': cert_nivel,
+            'estado': cert_estado_v,
+            'q': cert_q,
+            'marcas_disponibles': sorted(marcas_set),
+            'niveles_disponibles': [n for n in NIVEL_ORDEN if n in niveles_set],
+            'vista_cert': (request.GET.get('vista_cert') or 'pared').strip() or 'pared',
+            'tiene_filtros_activos': bool(cert_marca or cert_nivel or cert_estado_v or cert_q or vendedores_ids),
+        }
+        # KPIs para la tarjeta del dashboard de Marketing.
+        hoy_d = _date.today()
+        cert_total = len(certificaciones_lista)
+        cert_personas = len({c.usuario_id for c in certificaciones_lista})
+        cert_por_vencer = 0
+        cert_vencidas = 0
+        cert_por_marca = {}
+        for c in certificaciones_lista:
+            m = (c.marca or '').upper() or 'OTROS'
+            cert_por_marca[m] = cert_por_marca.get(m, 0) + 1
+            if c.fecha_vencimiento:
+                if c.fecha_vencimiento < hoy_d:
+                    cert_vencidas += 1
+                elif (c.fecha_vencimiento - hoy_d).days <= 60:
+                    cert_por_vencer += 1
+        # Top 3 marcas para mostrar barras en la tarjeta del dashboard.
+        marcas_top = sorted(cert_por_marca.items(), key=lambda kv: kv[1], reverse=True)[:3]
+        max_count = marcas_top[0][1] if marcas_top else 0
+        certificaciones_kpis = {
+            'total': cert_total,
+            'personas': cert_personas,
+            'por_vencer': cert_por_vencer,
+            'vencidas': cert_vencidas,
+            'marcas_top': [
+                {
+                    'marca': m,
+                    'count': c,
+                    'pct': int(round((c / max_count) * 100)) if max_count else 0,
+                    'letra': m[0] if m else '?',
+                }
+                for m, c in marcas_top
+            ],
+        }
+
+    # ── Cursos (sub-vista ?vista=cursos + tarjeta del dashboard) ────
+    cursos_lista = None
+    cursos_kpis = None
+    cursos_filtros = None
+    if tab_activo == 'prospeccion':
+        from .models import Curso
+        from datetime import date as _date, timedelta as _td
+        cur_qs = (
+            Curso.objects.select_related('usuario')
+            .order_by('-fecha_actualizacion')
+        )
+        cur_marca = (request.GET.get('cur_marca') or '').strip().upper()
+        cur_nivel = (request.GET.get('cur_nivel') or '').strip()
+        cur_estado = (request.GET.get('cur_estado') or '').strip()
+        cur_q = (request.GET.get('cur_q') or '').strip()
+        if vendedores_ids:
+            cur_qs = cur_qs.filter(usuario_id__in=vendedores_ids)
+        if cur_marca:
+            cur_qs = cur_qs.filter(marca__iexact=cur_marca)
+        if cur_nivel:
+            cur_qs = cur_qs.filter(nivel=cur_nivel)
+        if cur_estado:
+            cur_qs = cur_qs.filter(estado=cur_estado)
+        if cur_q:
+            from django.db.models import Q as _Q
+            cur_qs = cur_qs.filter(
+                _Q(nombre__icontains=cur_q)
+                | _Q(plataforma__icontains=cur_q)
+                | _Q(marca__icontains=cur_q)
+                | _Q(usuario__first_name__icontains=cur_q)
+                | _Q(usuario__last_name__icontains=cur_q)
+                | _Q(usuario__username__icontains=cur_q)
+            )
+        cursos_lista = list(cur_qs)
+        # KPIs para la tarjeta del dashboard
+        hoy_c = _date.today()
+        total_c = Curso.objects.count()
+        en_prog = Curso.objects.filter(estado='en_progreso').count()
+        compl = Curso.objects.filter(estado='completado').count()
+        personas_c = Curso.objects.values('usuario_id').distinct().count()
+        proximos_c = Curso.objects.filter(
+            estado='en_progreso',
+            fecha_compromiso__isnull=False,
+            fecha_compromiso__lte=hoy_c + _td(days=14),
+        ).count()
+        cursos_kpis = {
+            'total': total_c,
+            'en_progreso': en_prog,
+            'completados': compl,
+            'personas': personas_c,
+            'proximos': proximos_c,
+        }
+        # Catálogo de marcas/niveles del universo (para popovers)
+        _all_q = Curso.objects.values_list('marca', 'nivel')
+        if vendedores_ids:
+            _all_q = Curso.objects.filter(usuario_id__in=vendedores_ids).values_list('marca', 'nivel')
+        marcas_set_c = set()
+        niveles_set_c = set()
+        for m, n in _all_q:
+            if m: marcas_set_c.add(m.upper())
+            if n: niveles_set_c.add(n)
+        NIVEL_ORDEN_C = ['basico', 'intermedio', 'avanzado', 'experto']
+        cursos_filtros = {
+            'marca': cur_marca,
+            'nivel': cur_nivel,
+            'estado': cur_estado,
+            'q': cur_q,
+            'marcas_disponibles': sorted(marcas_set_c),
+            'niveles_disponibles': [n for n in NIVEL_ORDEN_C if n in niveles_set_c],
+            'vista_curso': (request.GET.get('vista_curso') or 'tarjeta').strip() or 'tarjeta',
+            'tiene_filtros_activos': bool(cur_marca or cur_nivel or cur_estado or cur_q or vendedores_ids),
         }
 
     # ── Eventos (widget Eventos + sub-vista ?vista=eventos) ──────────
     eventos_kpis = None
     eventos_lista = None
     techday_kpis = None
+    demos_kpis = None
     if tab_activo == 'prospeccion':
         from .models import Evento
         evt_qs = Evento.objects.exclude(estado='cancelado').filter(fecha_evento__isnull=False)
@@ -768,6 +1147,12 @@ def crm_home(request):
                   .order_by('fecha_evento')
         )
         dias_con_eventos = sorted({e.fecha_evento.day for e in eventos_periodo if e.fecha_evento})
+        # Mapa día → lista de evento_ids, usado por el calendario clickable
+        dia_to_eventos = {}
+        for e in eventos_periodo:
+            if not e.fecha_evento:
+                continue
+            dia_to_eventos.setdefault(e.fecha_evento.day, []).append(e.id)
         ahora = timezone.now()
         proximo = next((e for e in eventos_periodo if e.fecha_evento and e.fecha_evento >= ahora), None)
         # Etiqueta del mes para el header del calendario + día de hoy si aplica
@@ -787,12 +1172,21 @@ def crm_home(request):
                 pass
         elif anios_list and len(anios_list) == 1:
             mes_label = f'Año {anios_list[0]}'
-        # Días 1..31 con flags para el grid del calendario
+        # Días 1..31 con flags para el grid del calendario. Si un día tiene
+        # eventos, agregamos los ids para que el calendario sea clickable
+        # (1 evento → abre detalle; N eventos → lista filtrada por día).
         dias_set = set(dias_con_eventos)
-        dias_calendar = [
-            {'num': i, 'has_event': i in dias_set, 'is_today': dia_hoy == i}
-            for i in range(1, 32)
-        ]
+        dias_calendar = []
+        for i in range(1, 32):
+            ev_ids = dia_to_eventos.get(i, [])
+            dias_calendar.append({
+                'num': i,
+                'has_event': i in dias_set,
+                'is_today': dia_hoy == i,
+                'evento_ids_str': ','.join(str(x) for x in ev_ids),
+                'evento_count': len(ev_ids),
+                'single_evento_id': ev_ids[0] if len(ev_ids) == 1 else None,
+            })
         eventos_kpis = {
             'total': len(eventos_periodo),
             'mes_label': mes_label,
@@ -825,9 +1219,88 @@ def crm_home(request):
             }
             for e in techday_periodo if e.fecha_evento and e.fecha_evento >= ahora
         ][:3]
+        # Métricas agregadas que llenan la card de Techday: asistentes únicos
+        # confirmados, prospectos generados, top de marcas trabajadas, y la
+        # última sesión realizada (para mostrar "Última: X" cuando no hay
+        # próximas en el período).
+        tech_asistentes = 0
+        tech_prospectos = 0
+        marca_count = {}
+        for e in techday_periodo:
+            tech_asistentes += sum(1 for a in e.asistentes.all() if a.confirmado)
+            tech_prospectos += e.prospectos_generados.count()
+            for m in (e.marcas or []):
+                marca_count[m] = marca_count.get(m, 0) + 1
+        # Top 3 marcas
+        top_marcas = sorted(marca_count.items(), key=lambda kv: -kv[1])[:3]
+        max_marca = top_marcas[0][1] if top_marcas else 0
+        tech_marcas_top = [
+            {
+                'label': str(m).title(),
+                'letter': str(m)[0].upper(),
+                'count': c,
+                'pct': round((c / max_marca) * 100) if max_marca else 0,
+            }
+            for m, c in top_marcas
+        ]
+        # Última sesión completada (más reciente, fecha < ahora)
+        pasadas = [e for e in techday_periodo if e.fecha_evento and e.fecha_evento < ahora]
+        ultima = max(pasadas, key=lambda e: e.fecha_evento) if pasadas else None
         techday_kpis = {
             'total': len(techday_periodo),
             'proximas': techday_proximas,
+            'asistentes': tech_asistentes,
+            'prospectos': tech_prospectos,
+            'marcas_top': tech_marcas_top,
+            'ultima': {
+                'id': ultima.id,
+                'nombre': ultima.nombre,
+                'fecha_display': ultima.fecha_evento.strftime('%d %b · %H:%M'),
+            } if ultima else None,
+            'filter_tipo': filter_tipo,
+        }
+
+        # ── Demos KPIs ─────────────────────────────────────────────────
+        # Demos = eventos con tipo 'demo_sitio'. Separamos por dirección:
+        #   outbound = IAMET presenta a cliente/prospecto (genera oportunidades)
+        #   inbound  = una marca capacita al equipo IAMET (asistencia interna)
+        demos_periodo = [e for e in eventos_periodo if e.tipo == 'demo_sitio']
+        outbound = [e for e in demos_periodo if (e.demo_direccion or 'outbound') == 'outbound']
+        inbound  = [e for e in demos_periodo if e.demo_direccion == 'inbound']
+        # Outbound: prospectos generados + monto $ pipeline (de la oportunidad ligada)
+        out_prospectos = sum(e.prospectos_generados.count() for e in outbound)
+        out_monto = 0
+        for e in outbound:
+            for p in e.prospectos_generados.all():
+                if p.oportunidad_creada_id and p.oportunidad_creada.monto:
+                    out_monto += float(p.oportunidad_creada.monto)
+        # Inbound: asistentes IAMET totales + marcas únicas trabajadas
+        in_asistentes = sum(1 for e in inbound for a in e.asistentes.all() if a.confirmado)
+        in_marcas = set()
+        for e in inbound:
+            for m in (e.marcas or []):
+                in_marcas.add(m)
+        # Próxima demo (cualquier dirección)
+        demos_prox = next(
+            (e for e in sorted(demos_periodo, key=lambda x: x.fecha_evento or ahora)
+             if e.fecha_evento and e.fecha_evento >= ahora),
+            None,
+        )
+        demos_kpis = {
+            'total': len(demos_periodo),
+            'outbound_total': len(outbound),
+            'outbound_prospectos': out_prospectos,
+            'outbound_monto': int(out_monto),  # entero, sin centavos
+            'inbound_total': len(inbound),
+            'inbound_asistentes': in_asistentes,
+            'inbound_marcas': len(in_marcas),
+            'proxima': {
+                'id': demos_prox.id,
+                'nombre': demos_prox.nombre,
+                'fecha_display': demos_prox.fecha_evento.strftime('%d %b · %H:%M'),
+                'direccion': demos_prox.demo_direccion or 'outbound',
+                'marcas': demos_prox.marcas or [],
+            } if demos_prox else None,
             'filter_tipo': filter_tipo,
         }
 
@@ -839,6 +1312,16 @@ def crm_home(request):
         'eventos_kpis': eventos_kpis,
         'eventos_lista': eventos_lista,
         'techday_kpis': techday_kpis,
+        'demos_kpis': demos_kpis,
+        'certificaciones_lista': certificaciones_lista,
+        'certificaciones_kpis': certificaciones_kpis,
+        'certificaciones_filtros': certificaciones_filtros,
+        'cursos_lista': cursos_lista,
+        'cursos_kpis': cursos_kpis,
+        'cursos_filtros': cursos_filtros,
+        'clientes_tabla': clientes_tabla,
+        'clientes_tabla_meta': clientes_tabla_meta,
+        'potenciales_lista': potenciales_lista,
         'tabla_data': tabla_data,
         'mes_filter': mes_filter,
         'anio_filter': anio_filter,
@@ -2538,6 +3021,143 @@ def api_desglose_cobrado(request):
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def api_cliente_kpis(request, cliente_id):
+    """KPIs del cliente en el periodo seleccionado: facturado, oportunidades,
+    cotizaciones y prospecciones. Se usan en la fila flotante del tab Clientes.
+    """
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    # Filtros mes/año/desde/hasta — replica el patrón del crm_home
+    now = datetime.now()
+    def _parse_multi(raw, is_int=False):
+        if raw is None or raw == '' or raw == 'todos':
+            return None
+        items = [x.strip() for x in str(raw).split(',') if x.strip()]
+        if not items:
+            return None
+        if is_int:
+            out = []
+            for x in items:
+                try: out.append(int(x))
+                except ValueError: pass
+            return out or None
+        return items
+    meses_list = _parse_multi(request.GET.get('mes', str(now.month).zfill(2)))
+    anios_list = _parse_multi(request.GET.get('anio', str(now.year)), is_int=True)
+    desde_raw = (request.GET.get('desde', '') or '').strip()
+    hasta_raw = (request.GET.get('hasta', '') or '').strip()
+    desde_date = hasta_date = None
+    try:
+        if desde_raw: desde_date = datetime.strptime(desde_raw, '%Y-%m-%d').date()
+        if hasta_raw: hasta_date = datetime.strptime(hasta_raw, '%Y-%m-%d').date()
+    except ValueError:
+        desde_date = hasta_date = None
+
+    def _aplicar_periodo(qs, fecha_field='fecha_creacion'):
+        if desde_date or hasta_date:
+            if desde_date: qs = qs.filter(**{f'{fecha_field}__date__gte': desde_date})
+            if hasta_date: qs = qs.filter(**{f'{fecha_field}__date__lte': hasta_date})
+        else:
+            if anios_list is not None:
+                qs = qs.filter(**{f'{fecha_field}__year__in': anios_list})
+            if meses_list is not None:
+                try:
+                    meses_int = [int(m) for m in meses_list]
+                except (TypeError, ValueError):
+                    meses_int = []
+                if meses_int:
+                    qs = qs.filter(**{f'{fecha_field}__month__in': meses_int})
+        return qs
+
+    # Facturado: suma de monto de oportunidades en estado 'facturado' o por
+    # mes_facturacion. El sistema tiene FacturasIamet que es la fuente real;
+    # aquí usamos TodoItem.estado_facturacion como proxy (consistente con KPIs).
+    op_qs = _aplicar_periodo(TodoItem.objects.filter(cliente=cliente))
+    op_count = op_qs.count()
+    # Facturado: oportunidades con estado_facturacion='facturado' o 'cobrado'
+    try:
+        from django.db.models import Sum, Q as _Q
+        facturadas = op_qs.filter(_Q(estado_facturacion__in=['facturado', 'cobrado']))
+        facturado_total = facturadas.aggregate(t=Sum('monto'))['t'] or 0
+    except Exception:
+        facturado_total = 0
+
+    # Cotizaciones (modelo Cotizacion vinculado a cliente)
+    cot_count = 0
+    try:
+        from .models import Cotizacion
+        cot_qs = _aplicar_periodo(Cotizacion.objects.filter(cliente=cliente))
+        cot_count = cot_qs.count()
+    except Exception:
+        pass
+
+    # Prospecciones activas en el periodo
+    from .models import Prospecto
+    pr_qs = _aplicar_periodo(Prospecto.objects.filter(cliente=cliente)).exclude(
+        etapa__in=['cerrado_ganado', 'cerrado_perdido']
+    )
+    pr_count = pr_qs.count()
+
+    return JsonResponse({
+        'ok': True,
+        'cliente': {'id': cliente.id, 'nombre': cliente.nombre_empresa or '—'},
+        'kpis': {
+            'facturado': float(facturado_total or 0),
+            'oportunidades': op_count,
+            'cotizaciones': cot_count,
+            'prospecciones': pr_count,
+        },
+    })
+
+
+@login_required
+def api_cliente_prospecciones(request, cliente_id):
+    """Lista de prospecciones (Prospecto) de un cliente. Para mostrarlas
+    como sub-tab en el modal widgetClienteOportunidades."""
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+    from .models import Prospecto
+    qs = (
+        Prospecto.objects.select_related('contacto', 'usuario')
+        .filter(cliente=cliente).order_by('-fecha_actualizacion')
+    )
+    # Filtros opcionales mes / año (por fecha_creacion)
+    mes_p = (request.GET.get('mes') or '').strip()
+    anio_p = (request.GET.get('anio') or '').strip()
+    if mes_p and mes_p != 'todos':
+        try: qs = qs.filter(fecha_creacion__month=int(mes_p))
+        except ValueError: pass
+    if anio_p and anio_p != 'todos':
+        try: qs = qs.filter(fecha_creacion__year=int(anio_p))
+        except ValueError: pass
+    ETAPA_LBL = {
+        'identificado': 'Identificado', 'calificado': 'Calificado',
+        'reunion': 'Reunión', 'en_progreso': 'En Progreso', 'procesado': 'Procesado',
+        'cerrado_ganado': 'Cerrado · Ganado', 'cerrado_perdido': 'Cerrado · Perdido',
+    }
+    rows = []
+    for p in qs:
+        rows.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'contacto': p.contacto.nombre if p.contacto else '—',
+            'area': p.area or '—',
+            'producto': p.producto or '—',
+            'etapa': p.etapa,
+            'etapa_display': ETAPA_LBL.get(p.etapa, p.etapa),
+            'tipo_pipeline': p.tipo_pipeline,
+            'vendedor': p.usuario.get_full_name() or p.usuario.username,
+            'fecha_creacion': p.fecha_creacion.strftime('%d %b %Y') if p.fecha_creacion else '',
+        })
+    return JsonResponse({'ok': True, 'rows': rows, 'total': len(rows)})
 
 
 @login_required
@@ -5288,6 +5908,9 @@ def api_clientes_potenciales(request):
         qs = ClientePotencial.objects.select_related('asignado_a')
         if not is_supervisor(request.user):
             qs = qs.filter(asignado_a=request.user)
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            qs = qs.filter(nombre__icontains=q)
         qs = qs.order_by('-fecha_actualizacion')
         data = []
         for p in qs:

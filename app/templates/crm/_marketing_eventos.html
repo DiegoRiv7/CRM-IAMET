@@ -10,7 +10,7 @@
             Marketing
         </a>
         <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
-        <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">{% if ft == 'techday' %}Techday{% else %}Eventos{% endif %}</span>
+        <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">{% if ft == 'techday' %}Techday{% elif ft == 'demo_sitio' %}Demos{% else %}Eventos{% endif %}</span>
     </div>
 
     {# Header con CTA #}
@@ -19,6 +19,9 @@
             {% if ft == 'techday' %}
             <h1 class="mkt-events-title">Techday</h1>
             <p class="mkt-events-sub">Sesiones técnicas con marcas — clientes y prospectos conocen la solución de primera mano.</p>
+            {% elif ft == 'demo_sitio' %}
+            <h1 class="mkt-events-title">Demos</h1>
+            <p class="mkt-events-sub">Demos a cliente (outbound) y capacitaciones de marca al equipo (inbound).</p>
             {% else %}
             <h1 class="mkt-events-title">Eventos</h1>
             <p class="mkt-events-sub">Sesiones con marcas para acercar soluciones a clientes y prospectos.</p>
@@ -26,7 +29,7 @@
         </div>
         <button type="button" class="mkt-events-new" id="btnEventoNuevo">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            {% if ft == 'techday' %}Nuevo Techday{% else %}Nuevo evento{% endif %}
+            {% if ft == 'techday' %}Nuevo Techday{% elif ft == 'demo_sitio' %}Nueva demo{% else %}Nuevo evento{% endif %}
         </button>
     </div>
 
@@ -38,6 +41,7 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Tipo</th>
+                    {% if ft == 'demo_sitio' %}<th>Dirección</th>{% endif %}
                     <th>Fecha</th>
                     <th>Marcas</th>
                     <th>Asistentes</th>
@@ -51,6 +55,13 @@
                 <tr data-evento-id="{{ e.id }}" class="mkt-event-row">
                     <td class="mkt-event-name">{{ e.nombre }}</td>
                     <td class="mkt-event-tipo">{{ e.get_tipo_display }}</td>
+                    {% if ft == 'demo_sitio' %}
+                    <td>
+                        {% if e.demo_direccion == 'inbound' %}<span class="mkt-demo-dir-pill mkt-demo-dir-pill--in">De marca</span>
+                        {% else %}<span class="mkt-demo-dir-pill mkt-demo-dir-pill--out">Para cliente</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
                     <td class="mkt-event-fecha">{{ e.fecha_evento|date:"d M Y · H:i" }}</td>
                     <td class="mkt-event-marcas">
                         {% for m in e.marcas %}<span class="mkt-event-marca-pill">{{ m|title }}</span>{% endfor %}
@@ -74,13 +85,16 @@
         {% if ft == 'techday' %}
         <h3>Aún no hay Techdays en este período</h3>
         <p>Programa el primero para acercar las marcas a tus clientes.</p>
+        {% elif ft == 'demo_sitio' %}
+        <h3>Aún no hay demos en este período</h3>
+        <p>Programa una demo a cliente o una capacitación de marca.</p>
         {% else %}
         <h3>Aún no hay eventos en este período</h3>
         <p>Crea el primero para empezar a llevar el control.</p>
         {% endif %}
         <button type="button" class="mkt-events-new" id="btnEventoNuevoEmpty">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            {% if ft == 'techday' %}Nuevo Techday{% else %}Nuevo evento{% endif %}
+            {% if ft == 'techday' %}Nuevo Techday{% elif ft == 'demo_sitio' %}Nueva demo{% else %}Nuevo evento{% endif %}
         </button>
     </div>
     {% endif %}
@@ -120,5 +134,14 @@
             abrirDetalle(row.dataset.eventoId);
         });
     });
+    // Deep-link: ?open=ID en la URL → abre directo el detalle de ese evento.
+    // Usado por el calendario del dashboard de marketing cuando hay un solo
+    // evento en el día clickeado.
+    try {
+        var openId = new URLSearchParams(window.location.search).get('open');
+        if (openId) {
+            setTimeout(function(){ abrirDetalle(openId); }, 150);
+        }
+    } catch (e) { /* noop */ }
 })();
 </script>

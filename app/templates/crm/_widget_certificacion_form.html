@@ -1,0 +1,742 @@
+{# ═══ WIDGET: CERTIFICACIÓN — Crear / Editar (composer wn-ctw) ═══ #}
+<div class="widget-overlay wn-overlay" id="widgetCertForm" style="z-index:10500;"
+     onclick="if(event.target===this){var w=this;w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);}">
+    <div class="wn-card wn-composer">
+        <form id="formCert" autocomplete="off" novalidate style="display:contents;">
+            {% csrf_token %}
+
+            {# Header #}
+            <header class="wn-ctw-header">
+                <div class="wn-ctw-breadcrumb">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+                    <span class="wn-ctw-crumb-muted">Certificaciones</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <span class="wn-ctw-crumb-current" id="certFormCrumb">Nueva certificación</span>
+                </div>
+                <button type="button" class="wn-ctw-close" id="certFormClose" title="Cerrar (Esc)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </header>
+
+            <main class="wn-ctw-canvas">
+                <input type="hidden" id="certFormId" value="">
+
+                {# Título: nombre de la certificación #}
+                <input type="text" class="wn-ctw-title" id="certFormNombre"
+                       placeholder="Ej. PCDS — Panduit Certified Data Center Specialist" autocomplete="off" maxlength="200">
+
+                {# Pill "Persona" — quién es el certificado #}
+                <div class="wn-ctw-nl-row">
+                    <span class="wn-ctw-nl-label">Persona</span>
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-large" id="certPersonaBtn" onclick="certOpenPop('persona', event)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span id="certPersonaLabel">Yo</span>
+                        </button>
+                        <div class="wn-ctw-pop wn-ctw-pop-wide" id="certPopPersona" style="display:none;">
+                            <div class="wn-ctw-pop-title">Persona certificada</div>
+                            <input type="text" id="certPersonaQ" class="wn-ctw-pop-input" placeholder="Buscar compañero… (vacío = yo)" autocomplete="off">
+                            <div class="evt-asist-ac" id="certPersonaAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:200px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Pills meta: Marca + Fecha obtención + Fecha vencimiento + Nivel + Número #}
+                <div class="wn-ctw-meta-row">
+                    {# Marca (requerido) #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta empty" id="certMarcaBtn" onclick="certOpenPop('marca', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                            <span id="certMarcaLabel">Marca (requerido)</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="certPopMarca" style="display:none;">
+                            <div class="wn-ctw-pop-title">Marca</div>
+                            <select id="certFormMarca" class="wn-ctw-pop-input">
+                                <option value="">Selecciona…</option>
+                                <option value="PANDUIT">Panduit</option>
+                                <option value="ZEBRA">Zebra</option>
+                                <option value="APC">APC</option>
+                                <option value="AVIGILON">Avigilon</option>
+                                <option value="GENETEC">Genetec</option>
+                                <option value="AXIS">Axis</option>
+                                <option value="CISCO">Cisco</option>
+                                <option value="OTRA">Otra</option>
+                            </select>
+                            <div id="certMarcaOtraWrap" style="display:none;margin-top:8px;">
+                                <input type="text" id="certFormMarcaOtra" class="wn-ctw-pop-input" placeholder="Nombre de la marca…" maxlength="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Fecha de obtención (requerido) #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta empty" id="certFechaObtBtn" onclick="certOpenPop('fechaObt', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span id="certFechaObtLabel">Obtenida (requerido)</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="certPopFechaObt" style="display:none;">
+                            <div class="wn-ctw-pop-title">Fecha de obtención</div>
+                            <input type="date" id="certFormFechaObt" class="wn-ctw-pop-input">
+                        </div>
+                    </div>
+
+                    {# Fecha de vencimiento (opcional) #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta" id="certFechaVencBtn" onclick="certOpenPop('fechaVenc', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+                            <span id="certFechaVencLabel">Vencimiento (opcional)</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="certPopFechaVenc" style="display:none;">
+                            <div class="wn-ctw-pop-title">Fecha de vencimiento</div>
+                            <input type="date" id="certFormFechaVenc" class="wn-ctw-pop-input">
+                            <button type="button" id="certFechaVencClear" style="margin-top:8px;background:transparent;border:none;color:#0052D4;font-size:0.78rem;cursor:pointer;padding:0;">Quitar vencimiento</button>
+                        </div>
+                    </div>
+
+                    {# Nivel (opcional) #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta" id="certNivelBtn" onclick="certOpenPop('nivel', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8"/></svg>
+                            <span id="certNivelLabel">Nivel</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="certPopNivel" style="display:none;">
+                            <div class="wn-ctw-pop-title">Nivel (opcional)</div>
+                            <select id="certFormNivel" class="wn-ctw-pop-input">
+                                <option value="">—</option>
+                                <option value="basico">Básico</option>
+                                <option value="intermedio">Intermedio</option>
+                                <option value="avanzado">Avanzado</option>
+                                <option value="experto">Experto</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Número / folio (opcional) #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta" id="certNumeroBtn" onclick="certOpenPop('numero', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                            <span id="certNumeroLabel">Número</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="certPopNumero" style="display:none;">
+                            <div class="wn-ctw-pop-title">Número o folio (opcional)</div>
+                            <input type="text" id="certFormNumero" class="wn-ctw-pop-input" placeholder="Ej. PCDS-2024-1893" maxlength="120">
+                        </div>
+                    </div>
+                </div>
+
+                <textarea class="wn-ctw-desc" id="certFormNotas"
+                          placeholder="Notas adicionales (área de aplicación, instructor, observaciones…)" rows="2"></textarea>
+
+                {# Archivos #}
+                <div class="cert-files-section" id="certFormFilesSection">
+                    <div class="cert-files-head">
+                        <span class="wn-ctw-nl-label">Comprobantes (PDF / imagen)</span>
+                        <label class="cert-files-add">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Adjuntar archivo
+                            <input type="file" id="certFormArchivoInput" multiple accept=".pdf,image/*" style="display:none;">
+                        </label>
+                    </div>
+                    <div class="cert-files-list" id="certFormArchivosList">
+                        <div class="cert-files-empty">
+                            <svg width="22" height="22" fill="none" stroke="#C7C7CC" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <div><strong>Arrastra tus archivos aquí</strong> o haz clic en <em>Adjuntar archivo</em></div>
+                            <div style="font-size:0.74rem;color:#9CA3AF;margin-top:4px;">PDF o imagen del diploma, badge o constancia</div>
+                        </div>
+                    </div>
+                    <div class="cert-files-dropmask" id="certFormFilesDropmask" aria-hidden="true">
+                        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span>Suelta para adjuntar</span>
+                    </div>
+                </div>
+
+                <div class="evt-error" id="certFormError" style="display:none;"></div>
+            </main>
+
+            {# Toolbar de acciones #}
+            <footer class="wn-ctw-toolbar">
+                <div class="wn-ctw-tools"></div>
+                <div class="wn-ctw-actions">
+                    <button type="button" class="wn-ctw-cancel evt-ctw-delete" id="certFormDelete" style="display:none;">Eliminar</button>
+                    <button type="button" class="wn-ctw-cancel" id="certFormCancel">Cancelar</button>
+                    <button type="button" class="wn-ctw-submit cert-form-submit" id="certFormSave" disabled>
+                        <span id="certFormSaveLbl">Registrar certificación</span>
+                        <span class="wn-ctw-kbd">⌘ ↵</span>
+                    </button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+{# Mini widget de confirmación reutilizable (reemplaza confirm() nativo) #}
+<div class="widget-overlay cert-confirm-overlay" id="certConfirmOverlay" style="z-index:10600;display:none;">
+    <div class="cert-confirm-card">
+        <div class="cert-confirm-icon" id="certConfirmIcon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="cert-confirm-title" id="certConfirmTitle">¿Estás seguro?</div>
+        <div class="cert-confirm-msg" id="certConfirmMsg">Esta acción no se puede deshacer.</div>
+        <div class="cert-confirm-actions">
+            <button type="button" class="cert-confirm-cancel" id="certConfirmCancel">Cancelar</button>
+            <button type="button" class="cert-confirm-ok" id="certConfirmOk">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mini-API de confirmación: window.certConfirm({title,message,confirmText,danger}) -> Promise<bool>
+(function(){
+    var ov = document.getElementById('certConfirmOverlay');
+    if (!ov) return;
+    var icon = document.getElementById('certConfirmIcon');
+    var titEl = document.getElementById('certConfirmTitle');
+    var msgEl = document.getElementById('certConfirmMsg');
+    var okBtn = document.getElementById('certConfirmOk');
+    var cancelBtn = document.getElementById('certConfirmCancel');
+    var _resolver = null;
+
+    function close(result){
+        ov.style.display = 'none';
+        var r = _resolver; _resolver = null;
+        if (r) r(result);
+    }
+    okBtn.addEventListener('click', function(){ close(true); });
+    cancelBtn.addEventListener('click', function(){ close(false); });
+    ov.addEventListener('click', function(e){ if (e.target === ov) close(false); });
+    document.addEventListener('keydown', function(e){
+        if (ov.style.display === 'none') return;
+        if (e.key === 'Escape') close(false);
+        if (e.key === 'Enter') close(true);
+    });
+
+    window.certConfirm = function(opts){
+        opts = opts || {};
+        titEl.textContent = opts.title || '¿Estás seguro?';
+        msgEl.textContent = opts.message || '';
+        okBtn.textContent = opts.confirmText || 'Eliminar';
+        icon.className = 'cert-confirm-icon' + (opts.danger !== false ? ' cert-confirm-icon--danger' : '');
+        okBtn.className = 'cert-confirm-ok' + (opts.danger !== false ? ' cert-confirm-ok--danger' : '');
+        ov.style.display = 'flex';
+        return new Promise(function(resolve){ _resolver = resolve; });
+    };
+})();
+</script>
+
+<script>
+(function(){
+    var overlay = document.getElementById('widgetCertForm');
+    if (!overlay) return;
+
+    // Refs
+    var crumb = document.getElementById('certFormCrumb');
+    var idEl = document.getElementById('certFormId');
+    var nombreEl = document.getElementById('certFormNombre');
+    var marcaSel = document.getElementById('certFormMarca');
+    var marcaOtraWrap = document.getElementById('certMarcaOtraWrap');
+    var marcaOtraEl = document.getElementById('certFormMarcaOtra');
+    var fechaObtEl = document.getElementById('certFormFechaObt');
+    var fechaVencEl = document.getElementById('certFormFechaVenc');
+    var nivelEl = document.getElementById('certFormNivel');
+    var numeroEl = document.getElementById('certFormNumero');
+    var notasEl = document.getElementById('certFormNotas');
+    var errEl = document.getElementById('certFormError');
+    var btnSave = document.getElementById('certFormSave');
+    var btnSaveLbl = document.getElementById('certFormSaveLbl');
+    var btnDelete = document.getElementById('certFormDelete');
+
+    var personaBtn = document.getElementById('certPersonaBtn');
+    var personaLbl = document.getElementById('certPersonaLabel');
+    var personaQ = document.getElementById('certPersonaQ');
+    var personaAC = document.getElementById('certPersonaAC');
+    var marcaBtn = document.getElementById('certMarcaBtn');
+    var marcaLbl = document.getElementById('certMarcaLabel');
+    var fechaObtBtn = document.getElementById('certFechaObtBtn');
+    var fechaObtLbl = document.getElementById('certFechaObtLabel');
+    var fechaVencBtn = document.getElementById('certFechaVencBtn');
+    var fechaVencLbl = document.getElementById('certFechaVencLabel');
+    var nivelBtn = document.getElementById('certNivelBtn');
+    var nivelLbl = document.getElementById('certNivelLabel');
+    var numeroBtn = document.getElementById('certNumeroBtn');
+    var numeroLbl = document.getElementById('certNumeroLabel');
+
+    var archivoInput = document.getElementById('certFormArchivoInput');
+    var archivosListEl = document.getElementById('certFormArchivosList');
+
+    // _persona: null = yo. {id, nombre, iniciales}
+    var _persona = null;
+    // _archivosNuevos: File[] pendientes de subir tras crear/editar
+    var _archivosNuevos = [];
+    // _archivosExistentes: archivos ya subidos (cuando se edita una cert)
+    var _archivosExistentes = [];
+
+    var POP_IDS = { persona:'certPopPersona', marca:'certPopMarca', fechaObt:'certPopFechaObt', fechaVenc:'certPopFechaVenc', nivel:'certPopNivel', numero:'certPopNumero' };
+    var BTN_IDS = { persona:'certPersonaBtn', marca:'certMarcaBtn', fechaObt:'certFechaObtBtn', fechaVenc:'certFechaVencBtn', nivel:'certNivelBtn', numero:'certNumeroBtn' };
+
+    function _csrf(){
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+    function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function _closeAllPops(){
+        Object.keys(POP_IDS).forEach(function(k){
+            var p = document.getElementById(POP_IDS[k]); if (p) p.style.display = 'none';
+            var b = document.getElementById(BTN_IDS[k]); if (b) b.classList.remove('active');
+        });
+    }
+    window.certOpenPop = function(which, e){
+        if (e) e.stopPropagation();
+        var pop = document.getElementById(POP_IDS[which]);
+        var btn = document.getElementById(BTN_IDS[which]);
+        if (!pop || !btn) return;
+        var isOpen = pop.style.display !== 'none';
+        _closeAllPops();
+        if (!isOpen){
+            pop.style.display = 'block';
+            btn.classList.add('active');
+            setTimeout(function(){
+                var first = pop.querySelector('input, select, textarea');
+                if (first && first.focus) first.focus();
+            }, 30);
+        }
+    };
+    document.addEventListener('click', function(e){
+        if (!overlay.classList.contains('active')) return;
+        var wraps = overlay.querySelectorAll('.wn-ctw-popwrap');
+        for (var i = 0; i < wraps.length; i++){
+            if (wraps[i].contains(e.target)) return;
+        }
+        _closeAllPops();
+    });
+    document.addEventListener('keydown', function(e){
+        if (!overlay.classList.contains('active')) return;
+        if (e.key === 'Escape') cerrar();
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); submitForm(); }
+    });
+
+    function setError(msg){
+        if (msg){ errEl.textContent = msg; errEl.style.display = 'block'; }
+        else { errEl.textContent = ''; errEl.style.display = 'none'; }
+    }
+
+    // ── Pills refresh + validación ─────────────────────────────────
+    function _marcaValue(){
+        var v = (marcaSel.value || '').trim();
+        if (v === 'OTRA') return (marcaOtraEl.value || '').trim().toUpperCase();
+        return v;
+    }
+    function refreshPills(){
+        // Marca
+        var mv = _marcaValue();
+        if (mv){
+            var lbl;
+            if (marcaSel.value === 'OTRA') lbl = mv ? (mv.charAt(0) + mv.slice(1).toLowerCase()) : 'Marca (requerido)';
+            else lbl = marcaSel.options[marcaSel.selectedIndex].textContent;
+            marcaLbl.textContent = lbl;
+            marcaBtn.classList.remove('empty');
+            marcaBtn.classList.add('filled');
+        } else {
+            marcaLbl.textContent = 'Marca (requerido)';
+            marcaBtn.classList.add('empty');
+            marcaBtn.classList.remove('filled');
+        }
+        // Fecha obtención
+        if (fechaObtEl.value){
+            try {
+                var d = new Date(fechaObtEl.value + 'T00:00:00');
+                fechaObtLbl.textContent = d.toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+                fechaObtBtn.classList.remove('empty'); fechaObtBtn.classList.add('filled');
+            } catch(e) {}
+        } else {
+            fechaObtLbl.textContent = 'Obtenida (requerido)';
+            fechaObtBtn.classList.add('empty'); fechaObtBtn.classList.remove('filled');
+        }
+        // Vencimiento (opcional)
+        if (fechaVencEl.value){
+            try {
+                var d2 = new Date(fechaVencEl.value + 'T00:00:00');
+                fechaVencLbl.textContent = 'Vence ' + d2.toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+                fechaVencBtn.classList.add('filled');
+            } catch(e) {}
+        } else {
+            fechaVencLbl.textContent = 'Vencimiento (opcional)';
+            fechaVencBtn.classList.remove('filled');
+        }
+        // Nivel (opcional)
+        if (nivelEl.value){
+            nivelLbl.textContent = nivelEl.options[nivelEl.selectedIndex].textContent;
+            nivelBtn.classList.add('filled');
+        } else {
+            nivelLbl.textContent = 'Nivel';
+            nivelBtn.classList.remove('filled');
+        }
+        // Número (opcional)
+        var n = (numeroEl.value || '').trim();
+        if (n){ numeroLbl.textContent = '#' + n; numeroBtn.classList.add('filled'); }
+        else { numeroLbl.textContent = 'Número'; numeroBtn.classList.remove('filled'); }
+        // Persona
+        personaLbl.textContent = _persona ? _persona.nombre : 'Yo';
+
+        // Habilita guardar si los requeridos están listos
+        var ok = (nombreEl.value || '').trim() && _marcaValue() && fechaObtEl.value;
+        btnSave.disabled = !ok;
+        // is-ready ilumina el botón con la cromática café del módulo
+        if (ok) btnSave.classList.add('is-ready');
+        else btnSave.classList.remove('is-ready');
+    }
+    [nombreEl, fechaObtEl, fechaVencEl, nivelEl, numeroEl, marcaSel, marcaOtraEl].forEach(function(el){
+        if (el) el.addEventListener('input', refreshPills);
+        if (el) el.addEventListener('change', refreshPills);
+    });
+    marcaSel.addEventListener('change', function(){
+        marcaOtraWrap.style.display = (marcaSel.value === 'OTRA') ? 'block' : 'none';
+        if (marcaSel.value === 'OTRA') setTimeout(function(){ marcaOtraEl.focus(); }, 30);
+    });
+    document.getElementById('certFechaVencClear').addEventListener('click', function(){
+        fechaVencEl.value = '';
+        refreshPills();
+        _closeAllPops();
+    });
+
+    // ── Persona autocomplete ───────────────────────────────────────
+    var _personaDeb = null;
+    personaQ.addEventListener('input', function(){
+        clearTimeout(_personaDeb);
+        var q = (this.value || '').trim();
+        if (!q){ personaAC.style.display='none'; return; }
+        _personaDeb = setTimeout(function(){
+            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    var items = (data && (data.usuarios || data.results || data)) || [];
+                    if (!items.length){ personaAC.innerHTML=''; personaAC.style.display='none'; return; }
+                    personaAC.innerHTML = items.map(function(u){
+                        var nm = _esc(u.nombre || u.full_name || u.username || '');
+                        return '<div class="evt-asist-ac-item" data-uid="'+ u.id +'" data-uname="'+ nm +'"'
+                             + ' style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #F1F5F9;display:flex;gap:8px;align-items:center;">'
+                             + '<span style="width:24px;height:24px;border-radius:50%;background:#B45309;color:#fff;font-size:0.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+ _esc((nm || '?').substring(0,1).toUpperCase()) +'</span>'
+                             + '<span style="font-size:0.84rem;color:#1d1d1f;">'+ nm +'</span>'
+                             + '</div>';
+                    }).join('');
+                    personaAC.style.display = 'block';
+                }).catch(function(){ personaAC.style.display='none'; });
+        }, 220);
+    });
+    personaAC.addEventListener('click', function(ev){
+        var it = ev.target.closest('[data-uid]');
+        if (!it) return;
+        _persona = { id: parseInt(it.dataset.uid), nombre: it.dataset.uname };
+        personaQ.value = '';
+        personaAC.style.display='none';
+        refreshPills();
+        _closeAllPops();
+    });
+
+    // ── Archivos ───────────────────────────────────────────────────
+    function _renderArchivos(){
+        var rows = [];
+        _archivosExistentes.forEach(function(a){
+            rows.push(
+                '<div class="cert-file-row" data-existing-id="'+ a.id +'">'
+              +   '<span class="cert-file-ico">'+ (a.es_pdf ? 'PDF' : (a.es_imagen ? 'IMG' : '·')) +'</span>'
+              +   '<a href="'+ a.url +'" target="_blank" rel="noopener" class="cert-file-name">'+ _esc(a.nombre) +'</a>'
+              +   '<button type="button" class="cert-file-rm" data-existing-rm="'+ a.id +'" title="Eliminar">×</button>'
+              + '</div>'
+            );
+        });
+        _archivosNuevos.forEach(function(f, i){
+            var ext = (f.name.split('.').pop() || '').toLowerCase();
+            var ico = ext === 'pdf' ? 'PDF' : (/(png|jpg|jpeg|gif|webp)/.test(ext) ? 'IMG' : '·');
+            rows.push(
+                '<div class="cert-file-row" data-new-idx="'+ i +'">'
+              +   '<span class="cert-file-ico">'+ ico +'</span>'
+              +   '<span class="cert-file-name">'+ _esc(f.name) +' <i style="color:#6B7280;font-size:0.7rem;">(pendiente de subir)</i></span>'
+              +   '<button type="button" class="cert-file-rm" data-new-rm="'+ i +'" title="Eliminar">×</button>'
+              + '</div>'
+            );
+        });
+        var emptyHTML = ''
+          + '<div class="cert-files-empty">'
+          +   '<svg width="22" height="22" fill="none" stroke="#C7C7CC" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'
+          +   '<div><strong>Arrastra tus archivos aquí</strong> o haz clic en <em>Adjuntar archivo</em></div>'
+          +   '<div style="font-size:0.74rem;color:#9CA3AF;margin-top:4px;">PDF o imagen del diploma, badge o constancia</div>'
+          + '</div>';
+        archivosListEl.innerHTML = rows.length ? rows.join('') : emptyHTML;
+    }
+    // Helper: acepta File[] (de input o de drop) y agrega filtrados (pdf/imagen).
+    function _agregarArchivos(files){
+        if (!files || !files.length) return;
+        var ok = [];
+        Array.from(files).forEach(function(f){
+            var name = (f.name || '').toLowerCase();
+            var type = (f.type || '').toLowerCase();
+            if (type === 'application/pdf' || name.endsWith('.pdf') || type.startsWith('image/')) {
+                ok.push(f);
+            }
+        });
+        if (!ok.length) return;
+        _archivosNuevos = _archivosNuevos.concat(ok);
+        _renderArchivos();
+    }
+    archivoInput.addEventListener('change', function(){
+        _agregarArchivos(this.files);
+        this.value = ''; // reset para poder re-elegir mismo archivo
+    });
+
+    // ── Drag & drop ──────────────────────────────────────────────
+    var filesSection = document.getElementById('certFormFilesSection');
+    var dragCounter = 0;
+    function _stop(e){ e.preventDefault(); e.stopPropagation(); }
+    ['dragenter','dragover','dragleave','drop'].forEach(function(ev){
+        filesSection.addEventListener(ev, _stop);
+    });
+    filesSection.addEventListener('dragenter', function(e){
+        // Solo si el drag trae archivos (no texto del propio composer)
+        if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+        dragCounter++;
+        filesSection.classList.add('is-dragover');
+    });
+    filesSection.addEventListener('dragleave', function(){
+        dragCounter = Math.max(0, dragCounter - 1);
+        if (dragCounter === 0) filesSection.classList.remove('is-dragover');
+    });
+    filesSection.addEventListener('drop', function(e){
+        dragCounter = 0;
+        filesSection.classList.remove('is-dragover');
+        var dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length) _agregarArchivos(dt.files);
+    });
+    // Evitar que el navegador abra un archivo soltado FUERA de la zona.
+    // Solo aplicamos esto cuando el form está visible.
+    function _blockOutside(e){
+        if (!overlay.classList.contains('active')) return;
+        if (filesSection.contains(e.target)) return;
+        e.preventDefault();
+    }
+    window.addEventListener('dragover', _blockOutside);
+    window.addEventListener('drop', _blockOutside);
+    archivosListEl.addEventListener('click', function(ev){
+        var rmNew = ev.target.closest('[data-new-rm]');
+        if (rmNew){
+            var idx = parseInt(rmNew.dataset.newRm);
+            _archivosNuevos.splice(idx, 1);
+            _renderArchivos();
+            return;
+        }
+        var rmExist = ev.target.closest('[data-existing-rm]');
+        if (rmExist){
+            var aid = parseInt(rmExist.dataset.existingRm);
+            var cid = parseInt(idEl.value);
+            if (!cid) return;
+            window.certConfirm({
+                title: '¿Eliminar este archivo?',
+                message: 'El archivo se borrará permanentemente del comprobante.',
+                confirmText: 'Eliminar',
+                danger: true,
+            }).then(function(ok){
+                if (!ok) return;
+                fetch('/app/api/certificaciones/' + cid + '/archivos/' + aid + '/eliminar/', {
+                    method:'POST',
+                    headers:{'X-CSRFToken': _csrf()}
+                }).then(function(r){ return r.json(); }).then(function(data){
+                    if (data && data.ok){
+                        _archivosExistentes = _archivosExistentes.filter(function(a){ return a.id !== aid; });
+                        _renderArchivos();
+                    }
+                });
+            });
+        }
+    });
+
+    // ── Abrir / cerrar ─────────────────────────────────────────────
+    function cerrar(){
+        overlay.classList.add('closing');
+        setTimeout(function(){ overlay.classList.remove('active','closing'); }, 220);
+    }
+    document.getElementById('certFormClose').addEventListener('click', cerrar);
+    document.getElementById('certFormCancel').addEventListener('click', cerrar);
+
+    function resetForm(){
+        idEl.value = '';
+        nombreEl.value = '';
+        marcaSel.value = '';
+        marcaOtraEl.value = '';
+        marcaOtraWrap.style.display = 'none';
+        fechaObtEl.value = '';
+        fechaVencEl.value = '';
+        nivelEl.value = '';
+        numeroEl.value = '';
+        notasEl.value = '';
+        _persona = null;
+        _archivosNuevos = [];
+        _archivosExistentes = [];
+        setError('');
+        _renderArchivos();
+        crumb.textContent = 'Nueva certificación';
+        btnSaveLbl.textContent = 'Registrar certificación';
+        btnDelete.style.display = 'none';
+        refreshPills();
+    }
+
+    window.certificacionFormAbrir = function(certId){
+        resetForm();
+        overlay.classList.add('active');
+        if (certId){
+            // Modo editar
+            crumb.textContent = 'Editar certificación';
+            btnSaveLbl.textContent = 'Guardar cambios';
+            btnDelete.style.display = '';
+            fetch('/app/api/certificaciones/' + certId + '/')
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    var c = data && data.certificacion;
+                    if (!c) return;
+                    idEl.value = c.id;
+                    nombreEl.value = c.nombre || '';
+                    // Marca: si está en el catálogo, selecciónala; si no, OTRA
+                    var marcaCat = ['PANDUIT','ZEBRA','APC','AVIGILON','GENETEC','AXIS','CISCO'];
+                    var mUpper = (c.marca || '').toUpperCase();
+                    if (marcaCat.indexOf(mUpper) >= 0){
+                        marcaSel.value = mUpper;
+                        marcaOtraWrap.style.display = 'none';
+                    } else if (mUpper) {
+                        marcaSel.value = 'OTRA';
+                        marcaOtraEl.value = mUpper;
+                        marcaOtraWrap.style.display = 'block';
+                    }
+                    fechaObtEl.value = c.fecha_obtencion || '';
+                    fechaVencEl.value = c.fecha_vencimiento || '';
+                    nivelEl.value = c.nivel || '';
+                    numeroEl.value = c.numero || '';
+                    notasEl.value = c.notas || '';
+                    if (c.usuario_id) _persona = { id: c.usuario_id, nombre: c.usuario_nombre };
+                    _archivosExistentes = c.archivos || [];
+                    refreshPills();
+                    _renderArchivos();
+                });
+        }
+        setTimeout(function(){ nombreEl.focus(); }, 80);
+    };
+    window.certificacionFormCerrar = cerrar;
+
+    // Apertura "desde curso": pre-llena marca, nombre, nivel y persona,
+    // y guarda el curso_id en window para enviar al submit (vincula la
+    // cert al curso de origen en el backend).
+    window.certificacionFormAbrirDesdeCurso = function(prefill){
+        window.certificacionFormAbrir(null);
+        setTimeout(function(){
+            try {
+                if (prefill.nombre) nombreEl.value = prefill.nombre;
+                if (prefill.marca){
+                    var marcaCat = ['PANDUIT','ZEBRA','APC','AVIGILON','GENETEC','AXIS','CISCO'];
+                    var mU = (prefill.marca || '').toUpperCase();
+                    if (marcaCat.indexOf(mU) >= 0){ marcaSel.value = mU; marcaOtraWrap.style.display='none'; }
+                    else if (mU){ marcaSel.value = 'OTRA'; marcaOtraEl.value = mU; marcaOtraWrap.style.display='block'; }
+                }
+                if (prefill.nivel) document.getElementById('certFormNivel').value = prefill.nivel;
+                if (prefill.usuario_id) {
+                    // Reusa la estructura _persona del form (puede no ser supervisor:
+                    // en ese caso el backend caerá al request.user igual)
+                    window._certCursoOrigenId = prefill.curso_id || null;
+                }
+                // Guardamos curso_id para mandarlo al submit (extra field)
+                if (prefill.curso_id) window._certCursoOrigenId = prefill.curso_id;
+                refreshPills();
+            } catch(e) { console.error(e); }
+        }, 60);
+    };
+
+    // ── Submit ─────────────────────────────────────────────────────
+    function submitForm(){
+        var nombre = (nombreEl.value || '').trim();
+        var marca = _marcaValue();
+        var fechaObt = fechaObtEl.value;
+        if (!nombre){ setError('Pon el nombre de la certificación.'); nombreEl.focus(); return; }
+        if (!marca){ setError('Selecciona la marca.'); return; }
+        if (!fechaObt){ setError('Pon la fecha de obtención.'); return; }
+        setError('');
+
+        var payload = {
+            nombre: nombre,
+            marca: marca,
+            fecha_obtencion: fechaObt,
+            fecha_vencimiento: fechaVencEl.value || null,
+            nivel: nivelEl.value || '',
+            numero: (numeroEl.value || '').trim(),
+            notas: (notasEl.value || '').trim(),
+        };
+        if (_persona && _persona.id) payload.usuario_id = _persona.id;
+        // Si abrimos desde un curso completado, mandamos el curso_id para
+        // que el backend vincule la cert al curso de origen.
+        if (window._certCursoOrigenId) payload.curso_origen_id = window._certCursoOrigenId;
+
+        var id = idEl.value;
+        var url = id ? '/app/api/certificaciones/' + id + '/editar/' : '/app/api/certificaciones/crear/';
+        btnSave.disabled = true;
+        var origLbl = btnSaveLbl.textContent;
+        btnSaveLbl.textContent = 'Guardando…';
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
+            body: JSON.stringify(payload),
+        }).then(function(r){ return r.json(); }).then(function(data){
+            if (!data || !data.ok){
+                setError((data && data.error) || 'Error al guardar.');
+                btnSave.disabled = false;
+                btnSaveLbl.textContent = origLbl;
+                return;
+            }
+            var certId = data.certificacion.id;
+            // Subir archivos nuevos en secuencia
+            _subirArchivosSecuencial(certId, 0, function(){
+                window._certCursoOrigenId = null;  // limpia el prefill
+                cerrar();
+                // Reload de la lista para reflejar cambios
+                if (typeof window.location !== 'undefined') window.location.reload();
+            });
+        }).catch(function(){
+            setError('Error de red. Intenta de nuevo.');
+            btnSave.disabled = false;
+            btnSaveLbl.textContent = origLbl;
+        });
+    }
+    function _subirArchivosSecuencial(certId, idx, done){
+        if (idx >= _archivosNuevos.length) return done();
+        var f = _archivosNuevos[idx];
+        var fd = new FormData();
+        fd.append('archivo', f);
+        fd.append('nombre', f.name);
+        fetch('/app/api/certificaciones/' + certId + '/archivos/', {
+            method:'POST',
+            headers:{'X-CSRFToken': _csrf()},
+            body: fd,
+        }).then(function(){ _subirArchivosSecuencial(certId, idx+1, done); })
+          .catch(function(){ _subirArchivosSecuencial(certId, idx+1, done); });
+    }
+    btnSave.addEventListener('click', submitForm);
+
+    // ── Eliminar ───────────────────────────────────────────────────
+    btnDelete.addEventListener('click', function(){
+        var id = idEl.value;
+        if (!id) return;
+        window.certConfirm({
+            title: '¿Eliminar esta certificación?',
+            message: 'Se borrarán también todos sus archivos. Esta acción no se puede deshacer.',
+            confirmText: 'Eliminar certificación',
+            danger: true,
+        }).then(function(ok){
+            if (!ok) return;
+            fetch('/app/api/certificaciones/' + id + '/eliminar/', {
+                method:'POST',
+                headers:{'X-CSRFToken': _csrf()},
+            }).then(function(r){ return r.json(); }).then(function(data){
+                if (data && data.ok){
+                    cerrar();
+                    if (typeof window.location !== 'undefined') window.location.reload();
+                }
+            });
+        });
+    });
+})();
+</script>

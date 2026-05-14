@@ -1589,6 +1589,8 @@ class Notificacion(models.Model):
         ('programacion_proyecto', 'Asignado a actividad de proyecto'),
         ('mensaje_grupo', 'Mensaje en grupo de trabajo'),
         ('prospecto_asignado', 'Prospecto asignado por supervisor'),
+        ('certificacion_por_vencer', 'Certificación por vencer'),
+        ('certificacion_vencida', 'Certificación vencida'),
     ]
     
     usuario_destinatario = models.ForeignKey(
@@ -1669,6 +1671,14 @@ class Notificacion(models.Model):
         blank=True,
         related_name='notificaciones',
         verbose_name="Tarea de Oportunidad"
+    )
+    certificacion = models.ForeignKey(
+        'Certificacion',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notificaciones',
+        verbose_name="Certificación relacionada"
     )
     leida = models.BooleanField(
         default=False,
@@ -2506,6 +2516,17 @@ class Actividad(models.Model):
         blank=True,
         related_name='actividades_calendario',
         verbose_name="Evento de Marketing Relacionado"
+    )
+
+    # Enlace opcional a un Curso — sesiones de estudio agendadas al
+    # calendario desde el detalle del curso.
+    curso = models.ForeignKey(
+        'Curso',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='actividades_calendario',
+        verbose_name="Curso Relacionado"
     )
 
     completada = models.BooleanField(default=False, verbose_name="Completada")
@@ -4970,8 +4991,21 @@ class Evento(models.Model):
         ('cancelado', 'Cancelado'),
     ]
 
+    # Dirección de la demo: outbound = IAMET presenta a cliente/prospecto;
+    # inbound = una marca (Panduit/Zebra/etc.) capacita al equipo IAMET.
+    # Solo tiene sentido cuando tipo == 'demo_sitio'; en otros tipos se ignora.
+    DEMO_DIRECCION_CHOICES = [
+        ('outbound', 'Para cliente'),
+        ('inbound', 'De marca'),
+    ]
+
     nombre = models.CharField(max_length=200, verbose_name='Nombre del evento')
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='presencial')
+    demo_direccion = models.CharField(
+        max_length=10, choices=DEMO_DIRECCION_CHOICES, default='outbound',
+        blank=True,
+        help_text='Sólo aplica a tipo=demo_sitio: outbound = vamos al cliente; inbound = la marca nos capacita.'
+    )
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='borrador')
     fecha_evento = models.DateTimeField(verbose_name='Fecha y hora del evento')
     duracion_minutos = models.IntegerField(default=60)
@@ -4991,7 +5025,13 @@ class Evento(models.Model):
                                 verbose_name='Cliente principal del evento')
     prospecto = models.ForeignKey('Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name='eventos_principales',
-                                  verbose_name='Prospecto principal del evento')
+                                  verbose_name='Prospección vinculada (legacy)',
+                                  help_text='LEGACY: vinculación a una Prospección (acercamiento). El nuevo flujo usa cliente_potencial.')
+    # Cliente potencial (lead) al que se dirige el evento. Reemplaza el uso
+    # del antiguo FK 'prospecto' para targetear leads sin oportunidad.
+    cliente_potencial = models.ForeignKey('ClientePotencial', on_delete=models.SET_NULL, null=True, blank=True,
+                                          related_name='eventos_principales',
+                                          verbose_name='Cliente potencial principal del evento')
     # Participantes internos: otros usuarios de IAMET que acompañarán al
     # vendedor (gerentes, técnicos, etc.). El evento aparece en su calendario.
     participantes = models.ManyToManyField(User, blank=True,
@@ -5038,3 +5078,226 @@ class EventoAsistente(models.Model):
         if self.prospecto_id: return f'{self.prospecto.nombre} → {self.evento.nombre}'
         return f'{self.contacto_nombre} → {self.evento.nombre}'
 
+
+# ============================================================
+# Marketing → Certificaciones
+# ============================================================
+
+class Certificacion(models.Model):
+    """Certificación técnica/comercial obtenida por un usuario de IAMET
+    para una marca (Panduit, Zebra, etc.). Sirve como historial colectivo
+    de las certificaciones del equipo. El comprobante (PDF/imagen) se
+    sube como CertificacionArchivo."""
+
+    NIVEL_CHOICES = [
+        ('basico', 'Básico'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado', 'Avanzado'),
+        ('experto', 'Experto'),
+    ]
+
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='certificaciones',
+        verbose_name='Persona certificada',
+    )
+    # Marca a la que pertenece la certificación. Usa el mismo catálogo que
+    # Evento.marcas (strings tipo 'PANDUIT', 'ZEBRA') para mantener
+    # consistencia con el resto del módulo Marketing.
+    marca = models.CharField(
+        max_length=50,
+        help_text="Marca emisora, e.g. 'PANDUIT', 'ZEBRA'.",
+    )
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name='Nombre de la certificación',
+        help_text='Ej. "PCDS — Panduit Certified Data Center Specialist".',
+    )
+    nivel = models.CharField(
+        max_length=20, choices=NIVEL_CHOICES, blank=True, default='',
+        help_text='Nivel de la certificación (opcional).',
+    )
+    numero = models.CharField(
+        max_length=120, blank=True, default='',
+        verbose_name='Número o folio',
+        help_text='Código o folio emitido por la marca (opcional).',
+    )
+    fecha_obtencion = models.DateField(verbose_name='Fecha de obtención')
+    # Algunas certificaciones vencen (Cisco, Panduit), otras no (Genetec basics).
+    # Null = sin vencimiento conocido.
+    fecha_vencimiento = models.DateField(
+        null=True, blank=True,
+        verbose_name='Fecha de vencimiento',
+    )
+    notas = models.TextField(blank=True, default='')
+    # Posición manual en la "pared" (vista de galería). Null = sin orden
+    # manual; el view ordena estas al final por fecha. Permite reordenar
+    # con drag&drop sin perder el flujo natural cuando no se ha tocado.
+    orden = models.IntegerField(
+        null=True, blank=True, db_index=True,
+        help_text='Posición manual en la vista pared (drag & drop).',
+    )
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificaciones_creadas',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Certificación'
+        verbose_name_plural = 'Certificaciones'
+        ordering = ['-fecha_obtencion', '-fecha_creacion']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.usuario.get_full_name() or self.usuario.username})'
+
+
+def _certificacion_archivo_upload_path(instance, filename):
+    return f'certificaciones/{instance.certificacion_id}/{filename}'
+
+
+class CertificacionArchivo(models.Model):
+    """Comprobante (PDF o imagen) de una certificación. Una certificación
+    puede tener varios archivos: el diploma escaneado, el badge, etc."""
+    certificacion = models.ForeignKey(
+        Certificacion, on_delete=models.CASCADE, related_name='archivos',
+    )
+    archivo = models.FileField(upload_to=_certificacion_archivo_upload_path)
+    nombre = models.CharField(max_length=255, blank=True, default='')
+    subido_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificacion_archivos_subidos',
+    )
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_subida']
+        verbose_name = 'Archivo de certificación'
+        verbose_name_plural = 'Archivos de certificación'
+
+    def __str__(self):
+        return self.nombre or self.archivo.name
+
+
+# ============================================================
+# Marketing → Cursos (fase previa a Certificación)
+# ============================================================
+
+class Curso(models.Model):
+    """Curso/entrenamiento que un usuario IAMET está tomando.
+    Al completarse puede dar lugar a una Certificación.
+    """
+    ESTADO_CHOICES = [
+        ('en_progreso', 'En progreso'),
+        ('completado',  'Completado'),
+        ('pausado',     'Pausado'),
+        ('abandonado',  'Abandonado'),
+    ]
+    # Mismo catálogo que Certificacion.NIVEL_CHOICES (consistencia visual).
+    NIVEL_CHOICES = [
+        ('basico',     'Básico'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado',   'Avanzado'),
+        ('experto',    'Experto'),
+    ]
+
+    usuario = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='cursos',
+        verbose_name='Persona que toma el curso',
+    )
+    marca = models.CharField(
+        max_length=50,
+        help_text="Marca/familia del curso, e.g. 'PANDUIT', 'CISCO'.",
+    )
+    nombre = models.CharField(
+        max_length=200,
+        verbose_name='Nombre del curso',
+        help_text='Ej. "Panduit Network Infrastructure Foundations".',
+    )
+    plataforma = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text='Dónde se imparte. Ej. Panduit Academy, Cisco Learning, Udemy.',
+    )
+    url = models.URLField(
+        blank=True, default='', max_length=500,
+        verbose_name='URL del curso',
+        help_text='Link a la plataforma donde se toma (opcional).',
+    )
+    nivel = models.CharField(
+        max_length=20, choices=NIVEL_CHOICES, blank=True, default='',
+    )
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default='en_progreso', db_index=True,
+    )
+    progreso = models.IntegerField(
+        default=0,
+        help_text='Porcentaje completado 0-100.',
+    )
+    fecha_inicio = models.DateField(null=True, blank=True)
+    # Fecha objetivo de finalización (compromiso).
+    fecha_compromiso = models.DateField(null=True, blank=True)
+    fecha_completado = models.DateField(null=True, blank=True)
+    notas = models.TextField(blank=True, default='')
+    # Cuando el curso se convierte en certificación se enlaza aquí.
+    certificacion_resultante = models.ForeignKey(
+        Certificacion, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='curso_origen',
+        verbose_name='Certificación generada',
+    )
+    creado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='cursos_creados',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Curso'
+        verbose_name_plural = 'Cursos'
+        # En progreso primero por fecha_compromiso ascendente, después el
+        # resto por fecha de actualización descendente.
+        ordering = ['-fecha_actualizacion']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.usuario.get_full_name() or self.usuario.username})'
+
+
+class CursoComentario(models.Model):
+    """Comentario en el hilo de un curso. Permite al equipo compartir
+    avances, dudas y materiales sin salir del CRM."""
+    curso = models.ForeignKey(
+        Curso, on_delete=models.CASCADE, related_name='comentarios',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='curso_comentarios',
+    )
+    texto = models.TextField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_creacion']
+        verbose_name = 'Comentario de curso'
+        verbose_name_plural = 'Comentarios de cursos'
+
+
+def _curso_archivo_upload_path(instance, filename):
+    return f'cursos/{instance.comentario.curso_id}/{filename}'
+
+
+class CursoArchivo(models.Model):
+    """Archivo adjunto a un comentario de curso (imagen, PDF, etc)."""
+    comentario = models.ForeignKey(
+        CursoComentario, on_delete=models.CASCADE, related_name='archivos',
+    )
+    archivo = models.FileField(upload_to=_curso_archivo_upload_path)
+    nombre = models.CharField(max_length=255, blank=True, default='')
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_subida']
+        verbose_name = 'Archivo de comentario de curso'
+        verbose_name_plural = 'Archivos de comentarios de cursos'
+
+    def __str__(self):
+        return self.nombre or self.archivo.name

@@ -1,0 +1,321 @@
+{% with f=cursos_filtros %}
+{# ═══ MARKETING → CURSOS (sub-vista) ═══ #}
+<div class="mkt-cursos" id="mktCursosPage" data-vista="{{ f.vista_curso|default:'tarjeta' }}">
+    {# Breadcrumb de regreso al dashboard #}
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
+        <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#0052D4;text-decoration:none;padding:6px 12px;border-radius:18px;background:#0052D40D;transition:background 0.18s;"
+           onmouseover="this.style.background='#0052D418'" onmouseout="this.style.background='#0052D40D'">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Marketing
+        </a>
+        <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
+        <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Cursos</span>
+    </div>
+
+    {# Header: filtros + segmented control a la izquierda; búsqueda + CTA a la derecha #}
+    <div class="mkt-curso-head">
+        <div class="mkt-curso-head-controls mkt-curso-head-controls--left">
+            {# Filtros: Marca + Nivel + Estado #}
+            <div class="mkt-curso-filters">
+                <div class="mkt-curso-filter-wrap">
+                    <button type="button" class="mkt-curso-filter-btn {% if f.marca %}is-active{% endif %}" data-pop="marca">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        <span>Marca{% if f.marca %}: {{ f.marca|capfirst }}{% endif %}</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="mkt-curso-pop" data-pop-content="marca">
+                        <a href="#" data-set-filter="cur_marca" data-set-val="" class="mkt-curso-pop-opt {% if not f.marca %}is-sel{% endif %}">Todas</a>
+                        {% for m in f.marcas_disponibles %}
+                        <a href="#" data-set-filter="cur_marca" data-set-val="{{ m }}" class="mkt-curso-pop-opt {% if f.marca == m %}is-sel{% endif %}">{{ m|capfirst }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mkt-curso-filter-wrap">
+                    <button type="button" class="mkt-curso-filter-btn {% if f.nivel %}is-active{% endif %}" data-pop="nivel">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8"/></svg>
+                        <span>Nivel{% if f.nivel %}: {{ f.nivel|capfirst }}{% endif %}</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="mkt-curso-pop" data-pop-content="nivel">
+                        <a href="#" data-set-filter="cur_nivel" data-set-val="" class="mkt-curso-pop-opt {% if not f.nivel %}is-sel{% endif %}">Todos</a>
+                        {% for n in f.niveles_disponibles %}
+                        <a href="#" data-set-filter="cur_nivel" data-set-val="{{ n }}" class="mkt-curso-pop-opt {% if f.nivel == n %}is-sel{% endif %}">{{ n|capfirst }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mkt-curso-filter-wrap">
+                    <button type="button" class="mkt-curso-filter-btn {% if f.estado %}is-active{% endif %}" data-pop="estado">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Estado{% if f.estado %}: {{ f.estado|capfirst }}{% endif %}</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="mkt-curso-pop" data-pop-content="estado">
+                        <a href="#" data-set-filter="cur_estado" data-set-val="" class="mkt-curso-pop-opt {% if not f.estado %}is-sel{% endif %}">Todos</a>
+                        <a href="#" data-set-filter="cur_estado" data-set-val="en_progreso" class="mkt-curso-pop-opt {% if f.estado == 'en_progreso' %}is-sel{% endif %}">En progreso</a>
+                        <a href="#" data-set-filter="cur_estado" data-set-val="completado" class="mkt-curso-pop-opt {% if f.estado == 'completado' %}is-sel{% endif %}">Completado</a>
+                        <a href="#" data-set-filter="cur_estado" data-set-val="pausado" class="mkt-curso-pop-opt {% if f.estado == 'pausado' %}is-sel{% endif %}">Pausado</a>
+                        <a href="#" data-set-filter="cur_estado" data-set-val="abandonado" class="mkt-curso-pop-opt {% if f.estado == 'abandonado' %}is-sel{% endif %}">Abandonado</a>
+                    </div>
+                </div>
+
+                {% if f.marca or f.nivel or f.estado or f.q %}
+                <a href="#" id="btnCursoClearFilters" class="mkt-curso-filter-clear" title="Quitar filtros">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Limpiar
+                </a>
+                {% endif %}
+            </div>
+
+            {# Segmented: Lista | Tarjeta #}
+            <div class="mkt-curso-vista-seg" role="tablist" aria-label="Vista de cursos">
+                <a class="mkt-curso-vista-btn {% if f.vista_curso != 'lista' %}is-active{% endif %}"
+                   data-set-vista="tarjeta" href="#" role="tab">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    Tarjeta
+                </a>
+                <a class="mkt-curso-vista-btn {% if f.vista_curso == 'lista' %}is-active{% endif %}"
+                   data-set-vista="lista" href="#" role="tab">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    Lista
+                </a>
+            </div>
+        </div>
+
+        <div class="mkt-curso-head-right">
+            <label class="mkt-curso-search">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="cursoSearchInput" value="{{ f.q|default:'' }}" placeholder="Buscar curso, persona, plataforma…" autocomplete="off">
+                {% if f.q %}<button type="button" id="btnCursoSearchClear" title="Limpiar búsqueda" aria-label="Limpiar">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>{% endif %}
+            </label>
+            <button type="button" class="mkt-events-new" id="btnCursoNuevo" style="background:#0369A1;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo curso
+            </button>
+        </div>
+    </div>
+
+    {# Stats compactas arriba #}
+    {% if cursos_kpis %}
+    <div class="mkt-cert-stats">
+        <div class="mkt-cert-stat">
+            <div class="mkt-cert-stat-num" style="color:#0369A1;">{{ cursos_kpis.total }}</div>
+            <div class="mkt-cert-stat-lbl">Total</div>
+        </div>
+        <div class="mkt-cert-stat">
+            <div class="mkt-cert-stat-num" style="color:#0369A1;">{{ cursos_kpis.en_progreso }}</div>
+            <div class="mkt-cert-stat-lbl">En progreso</div>
+        </div>
+        <div class="mkt-cert-stat">
+            <div class="mkt-cert-stat-num" style="color:#047857;">{{ cursos_kpis.completados }}</div>
+            <div class="mkt-cert-stat-lbl">Completados</div>
+        </div>
+        <div class="mkt-cert-stat {% if cursos_kpis.proximos %}mkt-cert-stat--warn{% endif %}">
+            <div class="mkt-cert-stat-num">{{ cursos_kpis.proximos }}</div>
+            <div class="mkt-cert-stat-lbl">Próximos a deadline</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ═══ VISTA TARJETA ═══ #}
+    {% if f.vista_curso != 'lista' %}
+        {% if cursos_lista %}
+        <div class="mkt-curso-grid">
+            {% for c in cursos_lista %}
+            <button type="button" class="mkt-curso-card mkt-curso-card--{{ c.estado }}" data-curso-id="{{ c.id }}">
+                <div class="mkt-curso-card-head">
+                    <span class="mkt-curso-marca-pill">{{ c.marca|capfirst }}</span>
+                    <span class="mkt-curso-estado mkt-curso-estado--{{ c.estado }}">{{ c.get_estado_display }}</span>
+                </div>
+                <div class="mkt-curso-card-title">{{ c.nombre|truncatechars:80 }}</div>
+                {% if c.plataforma %}<div class="mkt-curso-card-plataforma">{{ c.plataforma }}{% if c.nivel %} · {{ c.get_nivel_display }}{% endif %}</div>{% elif c.nivel %}<div class="mkt-curso-card-plataforma">{{ c.get_nivel_display }}</div>{% endif %}
+
+                {# Barra de progreso prominente #}
+                <div class="mkt-curso-progress">
+                    <div class="mkt-curso-progress-row">
+                        <span class="mkt-curso-progress-lbl">Avance</span>
+                        <span class="mkt-curso-progress-pct">{{ c.progreso|default:0 }}%</span>
+                    </div>
+                    <div class="mkt-curso-progress-track">
+                        <div class="mkt-curso-progress-fill" style="width: {{ c.progreso|default:0 }}%;"></div>
+                    </div>
+                </div>
+
+                <div class="mkt-curso-card-foot">
+                    <span class="mkt-curso-persona">
+                        <span class="mkt-curso-avatar">{% with u=c.usuario %}{% if u.first_name and u.last_name %}{{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}{% elif u.first_name %}{{ u.first_name|slice:":1" }}{% else %}{{ u.username|slice:":1" }}{% endif %}{% endwith %}</span>
+                        <span>{{ c.usuario.get_full_name|default:c.usuario.username|truncatechars:20 }}</span>
+                    </span>
+                    {% if c.fecha_compromiso %}
+                    <span class="mkt-curso-deadline" title="Fecha compromiso">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {{ c.fecha_compromiso|date:"d M" }}
+                    </span>
+                    {% endif %}
+                </div>
+            </button>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="mkt-events-empty">
+            <svg width="40" height="40" fill="none" stroke="#0369A1" stroke-width="1.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <h3>Aún no hay cursos registrados</h3>
+            <p>Registra el primero para empezar a llevar el avance del equipo.</p>
+            <button type="button" class="mkt-events-new" id="btnCursoNuevoEmpty" style="background:#0369A1;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo curso
+            </button>
+        </div>
+        {% endif %}
+
+    {% else %}
+    {# ═══ VISTA LISTA ═══ #}
+    {% if cursos_lista %}
+    <div class="mkt-events-table-wrap">
+        <table class="mkt-events-table mkt-cursos-table">
+            <thead>
+                <tr>
+                    <th>Persona</th>
+                    <th>Curso</th>
+                    <th>Plataforma</th>
+                    <th>Marca</th>
+                    <th>Avance</th>
+                    <th>Estado</th>
+                    <th>Deadline</th>
+                    <th class="mkt-th-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in cursos_lista %}
+                <tr data-curso-id="{{ c.id }}" class="mkt-curso-row">
+                    <td class="mkt-cert-persona">
+                        <span class="mkt-curso-avatar">{% with u=c.usuario %}{% if u.first_name and u.last_name %}{{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}{% elif u.first_name %}{{ u.first_name|slice:":1" }}{% else %}{{ u.username|slice:":1" }}{% endif %}{% endwith %}</span>
+                        <span>{{ c.usuario.get_full_name|default:c.usuario.username }}</span>
+                    </td>
+                    <td class="mkt-event-name">{{ c.nombre }}{% if c.nivel %}<span class="mkt-cert-numero">{{ c.get_nivel_display }}</span>{% endif %}</td>
+                    <td style="color:#6B7280;font-size:0.82rem;">{{ c.plataforma|default:"—" }}</td>
+                    <td><span class="mkt-curso-marca-pill">{{ c.marca|capfirst }}</span></td>
+                    <td style="min-width:140px;">
+                        <div class="mkt-curso-progress-row" style="margin-bottom:4px;">
+                            <span class="mkt-curso-progress-lbl" style="font-size:0.66rem;">{{ c.progreso|default:0 }}%</span>
+                        </div>
+                        <div class="mkt-curso-progress-track">
+                            <div class="mkt-curso-progress-fill" style="width: {{ c.progreso|default:0 }}%;"></div>
+                        </div>
+                    </td>
+                    <td><span class="mkt-curso-estado mkt-curso-estado--{{ c.estado }}">{{ c.get_estado_display }}</span></td>
+                    <td class="mkt-event-fecha">{% if c.fecha_compromiso %}{{ c.fecha_compromiso|date:"d M Y" }}{% else %}<span style="color:#9CA3AF;font-size:0.8rem;">—</span>{% endif %}</td>
+                    <td class="mkt-event-actions">
+                        <button type="button" class="mkt-event-edit mkt-curso-edit" data-curso-id="{{ c.id }}" title="Editar">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="mkt-events-empty">
+        <svg width="40" height="40" fill="none" stroke="#0369A1" stroke-width="1.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <h3>Aún no hay cursos registrados</h3>
+        <p>Registra el primero para empezar a llevar el avance del equipo.</p>
+        <button type="button" class="mkt-events-new" id="btnCursoNuevoEmpty2" style="background:#0369A1;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo curso
+        </button>
+    </div>
+    {% endif %}
+    {% endif %}{# fin vista #}
+</div>
+{% endwith %}
+
+<script>
+(function(){
+    function abrirNuevo(){ if (window.cursoFormAbrir) window.cursoFormAbrir(null); }
+    function abrirDetalle(id){ if (window.cursoDetalleAbrir) window.cursoDetalleAbrir(id); }
+    function abrirEditar(id){ if (window.cursoFormAbrir) window.cursoFormAbrir(id); }
+
+    ['btnCursoNuevo','btnCursoNuevoEmpty','btnCursoNuevoEmpty2'].forEach(function(id){
+        var b = document.getElementById(id); if (b) b.addEventListener('click', abrirNuevo);
+    });
+    document.querySelectorAll('.mkt-curso-edit').forEach(function(btn){
+        btn.addEventListener('click', function(e){ e.stopPropagation(); abrirEditar(btn.dataset.cursoId); });
+    });
+    document.querySelectorAll('.mkt-curso-row').forEach(function(row){
+        row.addEventListener('click', function(){ abrirDetalle(row.dataset.cursoId); });
+    });
+    document.querySelectorAll('.mkt-curso-card').forEach(function(card){
+        card.addEventListener('click', function(){ abrirDetalle(card.dataset.cursoId); });
+    });
+
+    function _setQS(updates){
+        var u = new URL(window.location.href);
+        Object.keys(updates).forEach(function(k){
+            var v = updates[k];
+            if (v === null || v === '') u.searchParams.delete(k);
+            else u.searchParams.set(k, v);
+        });
+        window.location.href = u.toString();
+    }
+    document.querySelectorAll('[data-set-vista]').forEach(function(a){
+        a.addEventListener('click', function(e){ e.preventDefault(); _setQS({vista_curso: a.dataset.setVista}); });
+    });
+    var openPop = null;
+    document.querySelectorAll('.mkt-curso-filter-btn[data-pop]').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            var pop = document.querySelector('.mkt-curso-pop[data-pop-content="'+ btn.dataset.pop +'"]');
+            if (!pop) return;
+            if (openPop && openPop !== pop) openPop.classList.remove('is-open');
+            pop.classList.toggle('is-open');
+            openPop = pop.classList.contains('is-open') ? pop : null;
+        });
+    });
+    document.addEventListener('click', function(e){
+        if (openPop && !e.target.closest('.mkt-curso-filter-wrap')) {
+            openPop.classList.remove('is-open');
+            openPop = null;
+        }
+    });
+    document.querySelectorAll('[data-set-filter]').forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault();
+            var update = {}; update[a.dataset.setFilter] = a.dataset.setVal || '';
+            _setQS(update);
+        });
+    });
+    var btnClear = document.getElementById('btnCursoClearFilters');
+    if (btnClear) btnClear.addEventListener('click', function(e){
+        e.preventDefault();
+        _setQS({cur_marca: '', cur_nivel: '', cur_estado: '', cur_q: ''});
+    });
+
+    // Búsqueda
+    var searchInput = document.getElementById('cursoSearchInput');
+    var searchDeb = null;
+    if (searchInput){
+        searchInput.addEventListener('input', function(){
+            clearTimeout(searchDeb);
+            var v = (this.value || '').trim();
+            searchDeb = setTimeout(function(){ _setQS({cur_q: v || ''}); }, 350);
+        });
+        searchInput.addEventListener('keydown', function(e){
+            if (e.key === 'Enter') { clearTimeout(searchDeb); _setQS({cur_q: (this.value || '').trim() || ''}); }
+            else if (e.key === 'Escape' && this.value) { clearTimeout(searchDeb); _setQS({cur_q: ''}); }
+        });
+    }
+    var btnSearchClear = document.getElementById('btnCursoSearchClear');
+    if (btnSearchClear) btnSearchClear.addEventListener('click', function(){ _setQS({cur_q: ''}); });
+
+    // Deep-link ?open=ID
+    try {
+        var openId = new URLSearchParams(window.location.search).get('open');
+        if (openId) setTimeout(function(){ abrirDetalle(openId); }, 150);
+    } catch (e) {}
+})();
+</script>

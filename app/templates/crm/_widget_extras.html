@@ -37,6 +37,13 @@
             <button type="button" class="wco-close" id="clienteOppClose">&times;</button>
         </div>
 
+        <!-- Tabs internos: Oportunidades | Cotizaciones | Prospecciones -->
+        <div class="wco-tabs" id="clienteOppTabs">
+            <button type="button" class="wco-tab is-active" data-cli-tab="oportunidades">Oportunidades</button>
+            <button type="button" class="wco-tab" data-cli-tab="cotizado">Cotizaciones</button>
+            <button type="button" class="wco-tab" data-cli-tab="prospecciones">Prospecciones</button>
+        </div>
+
         <!-- Filters -->
         <div class="wco-filters">
             <div style="flex:1;position:relative;">
@@ -44,6 +51,47 @@
                 <svg class="wco-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
+            </div>
+            <!-- Periodo unificado (estilo pill como el Dashboard) -->
+            <div class="wco-period-wrap">
+                <button type="button" class="wco-period-pill is-default" id="clienteOppPeriodPill" title="Periodo">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span id="clienteOppPeriodLabel">Periodo</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="wco-period-pop" id="clienteOppPeriodPop" style="display:none;">
+                    <div class="wco-period-pop-cols">
+                        <div class="wco-period-col">
+                            <div class="wco-period-col-lbl">Meses</div>
+                            <div class="wco-period-list" id="clienteOppPeriodMesesList">
+                                <button type="button" class="wco-period-item is-active" data-mes="">Todos los meses</button>
+                                <button type="button" class="wco-period-item" data-mes="01">Enero</button>
+                                <button type="button" class="wco-period-item" data-mes="02">Febrero</button>
+                                <button type="button" class="wco-period-item" data-mes="03">Marzo</button>
+                                <button type="button" class="wco-period-item" data-mes="04">Abril</button>
+                                <button type="button" class="wco-period-item" data-mes="05">Mayo</button>
+                                <button type="button" class="wco-period-item" data-mes="06">Junio</button>
+                                <button type="button" class="wco-period-item" data-mes="07">Julio</button>
+                                <button type="button" class="wco-period-item" data-mes="08">Agosto</button>
+                                <button type="button" class="wco-period-item" data-mes="09">Septiembre</button>
+                                <button type="button" class="wco-period-item" data-mes="10">Octubre</button>
+                                <button type="button" class="wco-period-item" data-mes="11">Noviembre</button>
+                                <button type="button" class="wco-period-item" data-mes="12">Diciembre</button>
+                            </div>
+                        </div>
+                        <div class="wco-period-col">
+                            <div class="wco-period-col-lbl">Años</div>
+                            <div class="wco-period-list" id="clienteOppPeriodAniosList">
+                                <button type="button" class="wco-period-item is-active" data-anio="">Todos los años</button>
+                                {# Llenado por JS al abrir el modal #}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wco-period-pop-foot">
+                        <button type="button" class="wco-period-btn-reset" id="clienteOppPeriodReset">Restablecer</button>
+                        <button type="button" class="wco-period-btn-apply" id="clienteOppPeriodApply">Aplicar</button>
+                    </div>
+                </div>
             </div>
             <div id="clienteOppFiltersOpp" style="display:flex;gap:8px;align-items:center;">
                 <select id="clienteOppFilterArea" class="wco-select">
@@ -90,6 +138,14 @@
                         <th>Fecha</th>
                         <th>Creado por</th>
                         <th style="text-align:right;">Total</th>
+                    </tr>
+                    <tr id="clienteOppHeadProsp" class="wco-thead-row" style="display:none">
+                        <th style="width:34%;">Prospección</th>
+                        <th>Contacto</th>
+                        <th>Área</th>
+                        <th>Producto</th>
+                        <th>Etapa</th>
+                        <th>Vendedor</th>
                     </tr>
                 </thead>
                 <tbody id="clienteOppTbody"></tbody>

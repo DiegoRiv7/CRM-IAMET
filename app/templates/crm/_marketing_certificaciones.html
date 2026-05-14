@@ -1,0 +1,456 @@
+{% with f=certificaciones_filtros %}
+{# ═══ MARKETING → CERTIFICACIONES (sub-vista) ═══ #}
+<div class="mkt-certs" id="mktCertsPage" data-vista="{{ f.vista_cert|default:'lista' }}">
+    {# Breadcrumb de regreso al dashboard #}
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
+        <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
+           style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#0052D4;text-decoration:none;padding:6px 12px;border-radius:18px;background:#0052D40D;transition:background 0.18s;"
+           onmouseover="this.style.background='#0052D418'" onmouseout="this.style.background='#0052D40D'">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Marketing
+        </a>
+        <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
+        <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Certificaciones</span>
+    </div>
+
+    {# Header: filtros + segmented control a la izquierda; CTA a la derecha #}
+    <div class="mkt-cert-head">
+        <div class="mkt-cert-head-controls mkt-cert-head-controls--left">
+            {# Filtros: Marca + Nivel + Estado #}
+            <div class="mkt-cert-filters">
+                <div class="mkt-cert-filter-wrap">
+                    <button type="button" class="mkt-cert-filter-btn {% if f.marca %}is-active{% endif %}" data-pop="marca">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        <span>Marca{% if f.marca %}: {{ f.marca|capfirst }}{% endif %}</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="mkt-cert-pop" data-pop-content="marca">
+                        <a href="?{% if f.marca %}{{ '' }}{% else %}cert_marca={{ f.marca }}&{% endif %}" data-set-filter="cert_marca" data-set-val="" class="mkt-cert-pop-opt {% if not f.marca %}is-sel{% endif %}">Todas</a>
+                        {% for m in f.marcas_disponibles %}
+                        <a href="#" data-set-filter="cert_marca" data-set-val="{{ m }}" class="mkt-cert-pop-opt {% if f.marca == m %}is-sel{% endif %}">{{ m|capfirst }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mkt-cert-filter-wrap">
+                    <button type="button" class="mkt-cert-filter-btn {% if f.nivel %}is-active{% endif %}" data-pop="nivel">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8"/></svg>
+                        <span>Nivel{% if f.nivel %}: {{ f.nivel|capfirst }}{% endif %}</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="mkt-cert-pop" data-pop-content="nivel">
+                        <a href="#" data-set-filter="cert_nivel" data-set-val="" class="mkt-cert-pop-opt {% if not f.nivel %}is-sel{% endif %}">Todos</a>
+                        {% for n in f.niveles_disponibles %}
+                        <a href="#" data-set-filter="cert_nivel" data-set-val="{{ n }}" class="mkt-cert-pop-opt {% if f.nivel == n %}is-sel{% endif %}">{{ n|capfirst }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mkt-cert-filter-wrap">
+                    <button type="button" class="mkt-cert-filter-btn {% if f.estado %}is-active{% endif %}" data-pop="estado">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>Estado{% if f.estado %}: {{ f.estado|capfirst }}{% endif %}</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="mkt-cert-pop" data-pop-content="estado">
+                        <a href="#" data-set-filter="cert_estado" data-set-val="" class="mkt-cert-pop-opt {% if not f.estado %}is-sel{% endif %}">Todos</a>
+                        <a href="#" data-set-filter="cert_estado" data-set-val="vigente" class="mkt-cert-pop-opt {% if f.estado == 'vigente' %}is-sel{% endif %}">Vigente</a>
+                        <a href="#" data-set-filter="cert_estado" data-set-val="por_vencer" class="mkt-cert-pop-opt {% if f.estado == 'por_vencer' %}is-sel{% endif %}">Por vencer</a>
+                        <a href="#" data-set-filter="cert_estado" data-set-val="vencida" class="mkt-cert-pop-opt {% if f.estado == 'vencida' %}is-sel{% endif %}">Vencida</a>
+                        <a href="#" data-set-filter="cert_estado" data-set-val="sin_vencimiento" class="mkt-cert-pop-opt {% if f.estado == 'sin_vencimiento' %}is-sel{% endif %}">Sin vencimiento</a>
+                    </div>
+                </div>
+
+                {% if f.marca or f.nivel or f.estado %}
+                <a href="#" id="btnCertClearFilters" class="mkt-cert-filter-clear" title="Quitar filtros">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Limpiar
+                </a>
+                {% endif %}
+            </div>
+
+            {# Segmented control Lista | Pared — después de los filtros #}
+            <div class="mkt-cert-vista-seg" role="tablist" aria-label="Vista de certificaciones">
+                <a class="mkt-cert-vista-btn {% if f.vista_cert != 'pared' %}is-active{% endif %}"
+                   data-set-vista="lista" href="#"
+                   role="tab" aria-selected="{% if f.vista_cert != 'pared' %}true{% else %}false{% endif %}">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    Lista
+                </a>
+                <a class="mkt-cert-vista-btn {% if f.vista_cert == 'pared' %}is-active{% endif %}"
+                   data-set-vista="pared" href="#"
+                   role="tab" aria-selected="{% if f.vista_cert == 'pared' %}true{% else %}false{% endif %}">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    Pared
+                </a>
+            </div>
+        </div>
+
+        <div class="mkt-cert-head-right">
+            <label class="mkt-cert-search">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="certSearchInput" value="{{ f.q|default:'' }}" placeholder="Buscar por nombre, persona, marca…" autocomplete="off">
+                {% if f.q %}<button type="button" id="btnCertSearchClear" title="Limpiar búsqueda" aria-label="Limpiar">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>{% endif %}
+            </label>
+            <button type="button" class="mkt-events-new" id="btnCertNuevo" style="background:#B45309;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nueva certificación
+            </button>
+        </div>
+    </div>
+
+    {# Stats compactas arriba #}
+    {% if certificaciones_kpis %}
+    <div class="mkt-cert-stats">
+        <div class="mkt-cert-stat">
+            <div class="mkt-cert-stat-num">{{ certificaciones_kpis.total }}</div>
+            <div class="mkt-cert-stat-lbl">Total</div>
+        </div>
+        <div class="mkt-cert-stat">
+            <div class="mkt-cert-stat-num">{{ certificaciones_kpis.personas }}</div>
+            <div class="mkt-cert-stat-lbl">Personas</div>
+        </div>
+        <div class="mkt-cert-stat {% if certificaciones_kpis.por_vencer %}mkt-cert-stat--warn{% endif %}">
+            <div class="mkt-cert-stat-num">{{ certificaciones_kpis.por_vencer }}</div>
+            <div class="mkt-cert-stat-lbl">Por vencer</div>
+        </div>
+        <div class="mkt-cert-stat {% if certificaciones_kpis.vencidas %}mkt-cert-stat--danger{% endif %}">
+            <div class="mkt-cert-stat-num">{{ certificaciones_kpis.vencidas }}</div>
+            <div class="mkt-cert-stat-lbl">Vencidas</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ═══ VISTA PARED — galería estilo "diplomas colgados" ═══ #}
+    {% if f.vista_cert == 'pared' %}
+        {% if certificaciones_lista %}
+        {# data-count alimenta el CSS responsivo: 1/2/3 centrados, 4+ grid normal #}
+        <div class="mkt-cert-wall" data-count="{{ certificaciones_lista|length }}">
+            {% for c in certificaciones_lista %}
+            {# tilt determinístico a partir del id: rango -2°..+2° #}
+            {% with tilt=c.id|stringformat:"d" %}
+            <button type="button" class="mkt-cert-frame mkt-cert-frame--tilt-{{ c.id|stringformat:'d'|slice:'-1:' }}" data-cert-id="{{ c.id }}"
+                    style="--mkt-cert-marca-color:#B45309;">
+                <div class="mkt-cert-frame-mat">
+                    {% with first_img=c.archivos.all|first %}
+                    {% if first_img and first_img.archivo %}
+                        {% with name=first_img.archivo.name %}
+                        {% if name|lower|slice:'-4:' == '.pdf' %}
+                            <div class="mkt-cert-frame-placeholder">
+                                <div class="mkt-cert-frame-seal">
+                                    <span>{{ c.marca|slice:":1"|upper }}</span>
+                                </div>
+                                <div class="mkt-cert-frame-pdf-badge">PDF</div>
+                            </div>
+                        {% else %}
+                            <img src="{{ first_img.archivo.url }}" alt="{{ c.nombre }}" loading="lazy">
+                        {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div class="mkt-cert-frame-placeholder">
+                            <div class="mkt-cert-frame-seal">
+                                <span>{{ c.marca|slice:":1"|upper }}</span>
+                            </div>
+                            <div class="mkt-cert-frame-noproof">Sin comprobante</div>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="mkt-cert-frame-info">
+                    <div class="mkt-cert-frame-marca">{{ c.marca|capfirst }}{% if c.nivel %} · {{ c.get_nivel_display }}{% endif %}</div>
+                    <div class="mkt-cert-frame-title">{{ c.nombre|truncatechars:60 }}</div>
+                    <div class="mkt-cert-frame-persona">
+                        <span class="mkt-cert-frame-avatar">{% with u=c.usuario %}{% if u.first_name and u.last_name %}{{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}{% elif u.first_name %}{{ u.first_name|slice:":1" }}{% else %}{{ u.username|slice:":1" }}{% endif %}{% endwith %}</span>
+                        <span>{{ c.usuario.get_full_name|default:c.usuario.username }}</span>
+                    </div>
+                </div>
+            </button>
+            {% endwith %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="mkt-events-empty">
+            <svg width="40" height="40" fill="none" stroke="#B45309" stroke-width="1.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+            <h3>Sin certificaciones que mostrar en la pared</h3>
+            <p>Ajusta los filtros o agrega una certificación nueva.</p>
+        </div>
+        {% endif %}
+    {% else %}
+
+    {# Tabla #}
+    {% if certificaciones_lista %}
+    <div class="mkt-events-table-wrap">
+        <table class="mkt-events-table mkt-certs-table">
+            <thead>
+                <tr>
+                    <th>Persona</th>
+                    <th>Certificación</th>
+                    <th>Marca</th>
+                    <th>Nivel</th>
+                    <th>Obtenida</th>
+                    <th>Vence</th>
+                    <th>Archivos</th>
+                    <th class="mkt-th-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in certificaciones_lista %}
+                <tr data-cert-id="{{ c.id }}" class="mkt-cert-row">
+                    <td class="mkt-cert-persona">
+                        <span class="mkt-cert-avatar">
+                            {% with u=c.usuario %}{% if u.first_name and u.last_name %}{{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}{% elif u.first_name %}{{ u.first_name|slice:":1" }}{% else %}{{ u.username|slice:":1" }}{% endif %}{% endwith %}
+                        </span>
+                        <span>{{ c.usuario.get_full_name|default:c.usuario.username }}</span>
+                    </td>
+                    <td class="mkt-event-name">
+                        {{ c.nombre }}
+                        {% if c.numero %}<span class="mkt-cert-numero">#{{ c.numero }}</span>{% endif %}
+                    </td>
+                    <td><span class="mkt-event-marca-pill">{{ c.marca|title }}</span></td>
+                    <td class="mkt-event-tipo">{% if c.nivel %}{{ c.get_nivel_display }}{% else %}—{% endif %}</td>
+                    <td class="mkt-event-fecha">{{ c.fecha_obtencion|date:"d M Y" }}</td>
+                    <td>
+                        {% if c.fecha_vencimiento %}
+                            {% now "Y-m-d" as today %}
+                            {% if c.fecha_vencimiento|date:"Y-m-d" < today %}
+                                <span class="mkt-cert-venc mkt-cert-venc--vencida">{{ c.fecha_vencimiento|date:"d M Y" }}</span>
+                            {% else %}
+                                <span class="mkt-cert-venc">{{ c.fecha_vencimiento|date:"d M Y" }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color:#9CA3AF;font-size:0.8rem;">Sin vencimiento</span>
+                        {% endif %}
+                    </td>
+                    <td class="mkt-cert-files">
+                        {% with n=c.archivos.count %}
+                        {% if n %}
+                        <span class="mkt-cert-files-pill" title="{{ n }} archivo{{ n|pluralize }}">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            {{ n }}
+                        </span>
+                        {% else %}
+                        <span style="color:#9CA3AF;font-size:0.78rem;">—</span>
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td class="mkt-event-actions">
+                        <button type="button" class="mkt-event-edit mkt-cert-edit" data-cert-id="{{ c.id }}" title="Editar">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="mkt-events-empty">
+        <svg width="40" height="40" fill="none" stroke="#B45309" stroke-width="1.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+        <h3>Aún no hay certificaciones registradas</h3>
+        <p>Registra la primera para empezar el historial del equipo.</p>
+        <button type="button" class="mkt-events-new" id="btnCertNuevoEmpty" style="background:#B45309;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva certificación
+        </button>
+    </div>
+    {% endif %}
+
+    {% endif %}{# fin vista_cert lista #}
+</div>
+{% endwith %}
+
+<script>
+(function(){
+    function abrirNuevo(){
+        if (typeof window.certificacionFormAbrir === 'function') window.certificacionFormAbrir(null);
+    }
+    function abrirDetalle(certId){
+        if (typeof window.certificacionDetalleAbrir === 'function') window.certificacionDetalleAbrir(certId);
+    }
+    function abrirEditar(certId){
+        if (typeof window.certificacionFormAbrir === 'function') window.certificacionFormAbrir(certId);
+    }
+    var btnNuevo = document.getElementById('btnCertNuevo');
+    if (btnNuevo) btnNuevo.addEventListener('click', abrirNuevo);
+    var btnNuevoE = document.getElementById('btnCertNuevoEmpty');
+    if (btnNuevoE) btnNuevoE.addEventListener('click', abrirNuevo);
+    document.querySelectorAll('.mkt-cert-edit').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            abrirEditar(btn.dataset.certId);
+        });
+    });
+    document.querySelectorAll('.mkt-cert-row').forEach(function(row){
+        row.addEventListener('click', function(){
+            abrirDetalle(row.dataset.certId);
+        });
+    });
+    // Frames de la pared — click abre detalle (pero no si fue drag)
+    document.querySelectorAll('.mkt-cert-frame').forEach(function(frame){
+        frame.addEventListener('click', function(){
+            if (frame.dataset._wasDragged === '1') {
+                // Limpia el flag y NO abre detalle: fue un drag, no un click.
+                frame.dataset._wasDragged = '0';
+                return;
+            }
+            abrirDetalle(frame.dataset.certId);
+        });
+    });
+
+    // ── Drag & drop de la pared ────────────────────────────────────
+    // Cada marco es draggable. Al soltar sobre otro, reinserta el DOM
+    // y manda la nueva secuencia de ids al backend para persistir.
+    var wall = document.querySelector('.mkt-cert-wall');
+    if (wall) {
+        var dragging = null;
+        wall.querySelectorAll('.mkt-cert-frame').forEach(function(frame){
+            frame.setAttribute('draggable', 'true');
+            frame.addEventListener('dragstart', function(e){
+                dragging = frame;
+                frame.classList.add('is-dragging');
+                // Mantiene el cursor pero hace que el "ghost" sea el marco completo
+                if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', frame.dataset.certId); } catch(_){}
+                }
+            });
+            frame.addEventListener('dragend', function(){
+                frame.classList.remove('is-dragging');
+                wall.querySelectorAll('.is-drop-target').forEach(function(el){ el.classList.remove('is-drop-target'); });
+                // Marca el flag para evitar que el click subsecuente abra el detalle
+                frame.dataset._wasDragged = '1';
+                setTimeout(function(){ frame.dataset._wasDragged = '0'; }, 200);
+                dragging = null;
+            });
+            frame.addEventListener('dragover', function(e){
+                if (!dragging || dragging === frame) return;
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                frame.classList.add('is-drop-target');
+            });
+            frame.addEventListener('dragleave', function(){
+                frame.classList.remove('is-drop-target');
+            });
+            frame.addEventListener('drop', function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                frame.classList.remove('is-drop-target');
+                if (!dragging || dragging === frame) return;
+                // Decide insertar antes o después según posición horizontal del mouse
+                var rect = frame.getBoundingClientRect();
+                var insertAfter = (e.clientX - rect.left) > rect.width / 2;
+                if (insertAfter) frame.parentNode.insertBefore(dragging, frame.nextSibling);
+                else frame.parentNode.insertBefore(dragging, frame);
+                _persistirOrden();
+            });
+        });
+        function _csrfToken(){
+            var el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
+        }
+        var _saveTimer = null;
+        function _persistirOrden(){
+            // Debounce para no saturar si arrastra varios seguidos
+            if (_saveTimer) clearTimeout(_saveTimer);
+            _saveTimer = setTimeout(function(){
+                var ids = Array.from(wall.querySelectorAll('.mkt-cert-frame')).map(function(f){ return parseInt(f.dataset.certId); });
+                fetch('/app/api/certificaciones/reordenar/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken() },
+                    body: JSON.stringify({ ids: ids }),
+                }).catch(function(){ /* silencioso — si falla el orden se reaplica al recargar */ });
+            }, 250);
+        }
+    }
+
+    // ── Helpers para actualizar querystring sin perder otros params ──
+    function _setQS(updates){
+        var u = new URL(window.location.href);
+        Object.keys(updates).forEach(function(k){
+            var v = updates[k];
+            if (v === null || v === '') u.searchParams.delete(k);
+            else u.searchParams.set(k, v);
+        });
+        window.location.href = u.toString();
+    }
+
+    // Segmented control de vista (Lista | Pared)
+    document.querySelectorAll('[data-set-vista]').forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault();
+            _setQS({vista_cert: a.dataset.setVista});
+        });
+    });
+
+    // Filtros: popovers
+    var openPop = null;
+    document.querySelectorAll('[data-pop]').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            var key = btn.dataset.pop;
+            var pop = document.querySelector('[data-pop-content="'+ key +'"]');
+            if (!pop) return;
+            if (openPop && openPop !== pop) openPop.classList.remove('is-open');
+            pop.classList.toggle('is-open');
+            openPop = pop.classList.contains('is-open') ? pop : null;
+        });
+    });
+    document.addEventListener('click', function(e){
+        if (openPop && !e.target.closest('.mkt-cert-filter-wrap')) {
+            openPop.classList.remove('is-open');
+            openPop = null;
+        }
+    });
+
+    // Opciones de filtro
+    document.querySelectorAll('[data-set-filter]').forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault();
+            var update = {};
+            update[a.dataset.setFilter] = a.dataset.setVal || '';
+            _setQS(update);
+        });
+    });
+
+    // Limpiar todos los filtros
+    var btnClear = document.getElementById('btnCertClearFilters');
+    if (btnClear) btnClear.addEventListener('click', function(e){
+        e.preventDefault();
+        _setQS({cert_marca: '', cert_nivel: '', cert_estado: '', cert_q: ''});
+    });
+
+    // ── Búsqueda en vivo (debounce 350ms) ──
+    var searchInput = document.getElementById('certSearchInput');
+    var searchDeb = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', function(){
+            clearTimeout(searchDeb);
+            var v = (this.value || '').trim();
+            searchDeb = setTimeout(function(){
+                _setQS({cert_q: v || ''});
+            }, 350);
+        });
+        searchInput.addEventListener('keydown', function(e){
+            if (e.key === 'Enter') {
+                clearTimeout(searchDeb);
+                _setQS({cert_q: (this.value || '').trim() || ''});
+            } else if (e.key === 'Escape' && this.value) {
+                clearTimeout(searchDeb);
+                _setQS({cert_q: ''});
+            }
+        });
+    }
+    var btnSearchClear = document.getElementById('btnCertSearchClear');
+    if (btnSearchClear) btnSearchClear.addEventListener('click', function(){
+        _setQS({cert_q: ''});
+    });
+    // Deep-link: ?open=ID en la URL abre el detalle directo (usado por la
+    // tarjeta del dashboard de Marketing cuando hay una certificación destacada).
+    try {
+        var openId = new URLSearchParams(window.location.search).get('open');
+        if (openId) setTimeout(function(){ abrirDetalle(openId); }, 150);
+    } catch (e) { /* noop */ }
+})();
+</script>

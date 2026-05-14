@@ -1,0 +1,392 @@
+{% with meta=clientes_tabla_meta %}
+<style>
+/* ─── Clientes · diseño profesional scoped ─── */
+#cliPage{
+    padding: 8px 14px 40px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    font-feature-settings: "cv11", "ss01", "ss03";
+}
+#cliPage .cli-kpis-bar{
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.06);
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 30px -18px rgba(15,23,42,0.18);
+}
+#cliPage .cli-kpis-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+#cliPage .cli-kpis-eyebrow{ font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8; margin-bottom:4px; }
+#cliPage .cli-kpis-name{ font-size:18px; font-weight:700; color:#0f172a; letter-spacing:-0.01em; }
+#cliPage .cli-kpis-close{
+    width:28px; height:28px; border-radius:50%; border:1px solid rgba(15,23,42,0.08);
+    background:#f8fafc; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition: all 0.18s ease;
+}
+#cliPage .cli-kpis-close:hover{ background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+#cliPage .cli-kpis-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; }
+#cliPage .cli-kpi{
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid rgba(15,23,42,0.05);
+    border-radius: 14px; padding: 14px 16px;
+}
+#cliPage .cli-kpi-lbl{ font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
+#cliPage .cli-kpi-val{ font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
+
+/* ── Filtro "Mostrar" en la barra superior (esquina superior izquierda) ── */
+.crm-page-sidebar .crm-bar.crm-bar--dashboard{ position: relative; }
+.cli-filter-island{
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(15,23,42,0.04);
+    border-radius: 999px;
+    padding: 4px;
+    border: 1px solid rgba(15,23,42,0.06);
+    z-index: 2;
+}
+.cli-filter-island .cli-filter-btn{
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+.cli-filter-island .cli-filter-btn:hover{ color:#0f172a; background: rgba(255,255,255,0.6); }
+.cli-filter-island .cli-filter-btn.cli-filter-active{
+    background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+    color: #fff;
+    box-shadow: 0 6px 14px -6px rgba(0,82,212,0.5);
+}
+
+/* ── Tabla card ── */
+#cliPage .cli-table-wrap{
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.06);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px -28px rgba(15,23,42,0.22);
+    overflow: hidden;
+    overflow-x: auto;
+}
+#cliPage .cli-table{
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+/* Anchos de columnas: primera ~26%, las 10 de marcas se reparten ~74%/10 */
+#cliPage .cli-table col.cli-col-cli{ width: 26%; }
+#cliPage .cli-table col.cli-col-marca{ width: 7.4%; }
+#cliPage .cli-table thead th{
+    position: sticky; top: 0; z-index: 2;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 14px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    text-align: center;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    white-space: nowrap;
+}
+#cliPage .cli-table thead th.cli-th-cli{
+    text-align: left;
+    padding-left: 24px;
+    position: sticky; left: 0; z-index: 3;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border-right: 1px solid rgba(15,23,42,0.06);
+}
+#cliPage .cli-table tbody td{
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(15,23,42,0.05);
+    color: #1e293b;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    vertical-align: middle;
+}
+#cliPage .cli-table tbody td.cli-td-cli{
+    text-align: left;
+    padding-left: 24px;
+    padding-right: 16px;
+    position: sticky; left: 0;
+    background: #ffffff;
+    border-right: 1px solid rgba(15,23,42,0.06);
+    z-index: 1;
+    word-break: break-word;
+}
+#cliPage .cli-cliente-name{
+    color:#0f172a;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+}
+#cliPage a.cli-cliente-name:hover{ color:#0052D4; text-decoration: underline; }
+#cliPage .cli-cliente-rfc{ font-size:11px; color:#94a3b8; margin-top:2px; font-weight:500; }
+
+/* Celdas con valor > 0: badge sutil */
+#cliPage .cli-td-cell{
+    font-weight: 600;
+    color: #0f172a;
+}
+#cliPage .cli-td-cell.cli-td-zero{
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+/* Hover de fila */
+#cliPage .cli-row{ cursor: pointer; transition: background 0.15s ease; }
+#cliPage .cli-row:hover td{ background:#f8fafc; }
+#cliPage .cli-row:hover td.cli-td-cli{ background:#f1f5f9; }
+#cliPage .cli-row.cli-row-selected td{ background:#eff6ff; }
+#cliPage .cli-row.cli-row-selected td.cli-td-cli{
+    background:#dbeafe;
+    border-left: 3px solid #0052D4;
+    padding-left: 21px;
+}
+
+/* Zebra muy suave */
+#cliPage .cli-table tbody tr:nth-child(even) td.cli-td-cli{ background:#fafbfc; }
+#cliPage .cli-table tbody tr:nth-child(even):hover td.cli-td-cli{ background:#f1f5f9; }
+
+#cliPage .cli-empty{
+    text-align:center; padding: 40px 20px; color:#94a3b8; font-style: italic;
+}
+
+/* Numérico destacado cuando > 0 mediante un wrapper interno */
+#cliPage .cli-td-cell .cli-cell-pill{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: rgba(0,82,212,0.10);
+    color: #0052D4;
+    font-weight: 700;
+    line-height: 1;
+}
+#cliPage .cli-td-cell.cli-td-zero .cli-cell-pill,
+#cliPage .cli-td-cell.cli-td-zero{
+    background: transparent;
+    color: #cbd5e1;
+}
+</style>
+
+<div class="cli-page" id="cliPage">
+    {# ── Fila de KPIs flotantes (visible solo si hay cliente seleccionado) ── #}
+    <div id="cliKpisBar" class="cli-kpis-bar" style="display:none;">
+        <div class="cli-kpis-head">
+            <div class="cli-kpis-head-info">
+                <div class="cli-kpis-eyebrow">Resumen del cliente</div>
+                <div class="cli-kpis-name" id="cliKpisName">—</div>
+            </div>
+            <button type="button" class="cli-kpis-close" id="cliKpisClose" title="Quitar selección">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="cli-kpis-grid">
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Facturado</div>
+                <div class="cli-kpi-val" id="cliKpiFact">—</div>
+            </div>
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Oportunidades</div>
+                <div class="cli-kpi-val" id="cliKpiOp">—</div>
+            </div>
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Cotizaciones</div>
+                <div class="cli-kpi-val" id="cliKpiCot">—</div>
+            </div>
+            <div class="cli-kpi">
+                <div class="cli-kpi-lbl">Prospecciones</div>
+                <div class="cli-kpi-val" id="cliKpiPr">—</div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Tabla principal: clientes × marcas ── #}
+    <div class="cli-table-wrap" id="cliTableMarcasWrap">
+        <table class="cli-table">
+            <colgroup>
+                <col class="cli-col-cli">
+                {% for m in meta.marcas_col %}<col class="cli-col-marca">{% endfor %}
+                <col class="cli-col-marca">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="cli-th-cli" id="cliTableMarcasHead">Cliente</th>
+                    {% for m in meta.marcas_col %}<th class="cli-th-marca">{{ m.label }}</th>{% endfor %}
+                    <th class="cli-th-marca">Otros</th>
+                </tr>
+            </thead>
+            <tbody id="cliTbodyClientes">
+                {% for c in clientes_tabla %}
+                <tr class="cli-row" data-cliente-id="{{ c.id }}" data-cliente-nombre="{{ c.nombre }}">
+                    <td class="cli-td-cli">
+                        <a href="#" class="cli-cliente-name" data-cliente-link="{{ c.id }}" data-cliente-nombre="{{ c.nombre }}">
+                            {{ c.nombre }}
+                        </a>
+                        {% if c.rfc %}<div class="cli-cliente-rfc">RFC: {{ c.rfc }}</div>{% endif %}
+                    </td>
+                    {% for cell in c.cells %}
+                    <td class="cli-td-cell{% if cell.total == 0 %} cli-td-zero{% endif %}"
+                        data-op="{{ cell.op }}"
+                        data-pr="{{ cell.pr }}"
+                        data-total="{{ cell.total }}">
+                        <span class="cli-cell-pill">{{ cell.total }}</span>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ meta.marcas_col|length|add:2 }}" class="cli-empty">No hay clientes para mostrar con los filtros actuales.</td></tr>
+                {% endfor %}
+            </tbody>
+            {# tbody alternativo para "Solo Prospectos": filas = ClientePotencial #}
+            <tbody id="cliTbodyPotenciales" style="display:none;">
+                {% for p in potenciales_lista %}
+                <tr class="cli-row cli-row-pot" data-pot-id="{{ p.id }}" data-pot-nombre="{{ p.nombre }}">
+                    <td class="cli-td-cli">
+                        <span class="cli-cliente-name">{{ p.nombre }}</span>
+                        <div class="cli-cliente-rfc">{{ p.asignado_nombre }}</div>
+                    </td>
+                    {% for m in meta.marcas_col %}<td class="cli-td-cell cli-td-zero"><span class="cli-cell-pill">0</span></td>{% endfor %}
+                    <td class="cli-td-cell cli-td-zero"><span class="cli-cell-pill">0</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ meta.marcas_col|length|add:2 }}" class="cli-empty">No hay clientes potenciales aún.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endwith %}
+
+<script>
+(function(){
+    // ── Toggle Ambos / Solo Clientes / Solo Prospectos ──
+    var mode = 'ambos';
+    try { mode = localStorage.getItem('cliShow') || 'ambos'; } catch (e) {}
+    var tbodyClientes = document.getElementById('cliTbodyClientes');
+    var tbodyPotenciales = document.getElementById('cliTbodyPotenciales');
+    var headPrimera = document.getElementById('cliTableMarcasHead');
+
+    function applyMode(){
+        document.querySelectorAll('.cli-filter-btn').forEach(function(b){
+            b.classList.toggle('cli-filter-active', b.dataset.cliShow === mode);
+        });
+        // "Solo Prospectos" muestra las filas de ClientePotencial; cualquier
+        // otro modo muestra los Cliente regulares.
+        if (mode === 'prospectos') {
+            if (tbodyClientes) tbodyClientes.style.display = 'none';
+            if (tbodyPotenciales) tbodyPotenciales.style.display = '';
+            if (headPrimera) headPrimera.textContent = 'Prospectos';
+            return;
+        }
+        if (tbodyClientes) tbodyClientes.style.display = '';
+        if (tbodyPotenciales) tbodyPotenciales.style.display = 'none';
+        if (headPrimera) headPrimera.textContent = 'Cliente';
+        // Cada celda muestra op/total según el modo en filas de Cliente.
+        document.querySelectorAll('#cliTbodyClientes .cli-td-cell').forEach(function(td){
+            var op = parseInt(td.dataset.op || 0);
+            var total = parseInt(td.dataset.total || 0);
+            var val = mode === 'clientes' ? op : total;
+            var pill = td.querySelector('.cli-cell-pill');
+            if (pill) pill.textContent = val;
+            else td.textContent = val;
+            td.classList.toggle('cli-td-zero', val === 0);
+        });
+    }
+    document.querySelectorAll('.cli-filter-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+            mode = b.dataset.cliShow;
+            try { localStorage.setItem('cliShow', mode); } catch (e) {}
+            applyMode();
+        });
+    });
+    applyMode();
+
+    // ── Click en fila → fetch KPIs y mostrar la barra ──
+    var kpisBar = document.getElementById('cliKpisBar');
+    var kpiName = document.getElementById('cliKpisName');
+    var kpiFact = document.getElementById('cliKpiFact');
+    var kpiOp = document.getElementById('cliKpiOp');
+    var kpiCot = document.getElementById('cliKpiCot');
+    var kpiPr = document.getElementById('cliKpiPr');
+    var selectedRow = null;
+
+    function _qs(){
+        var u = new URL(window.location.href);
+        var qs = '';
+        ['mes','anio','vendedores','desde','hasta'].forEach(function(k){
+            var v = u.searchParams.get(k);
+            if (v) qs += (qs ? '&' : '?') + k + '=' + encodeURIComponent(v);
+        });
+        return qs;
+    }
+    function _fmtMoney(n){
+        if (n == null) return '$0';
+        try { return '$' + Math.round(n).toLocaleString('es-MX'); }
+        catch(e) { return '$' + n; }
+    }
+
+    function _cargarKpis(clienteId, clienteNombre){
+        kpiName.textContent = clienteNombre || '';
+        kpisBar.style.display = 'block';
+        // Pone los KPIs en "—" mientras carga
+        kpiFact.textContent = '…'; kpiOp.textContent = '…'; kpiCot.textContent = '…'; kpiPr.textContent = '…';
+        fetch('/app/api/cliente-kpis/' + clienteId + '/' + _qs())
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (!data || !data.ok) return;
+                var k = data.kpis || {};
+                kpiFact.textContent = _fmtMoney(k.facturado);
+                kpiOp.textContent = k.oportunidades || 0;
+                kpiCot.textContent = k.cotizaciones || 0;
+                kpiPr.textContent = k.prospecciones || 0;
+            }).catch(function(){
+                kpiFact.textContent = '—'; kpiOp.textContent = '—'; kpiCot.textContent = '—'; kpiPr.textContent = '—';
+            });
+    }
+
+    document.querySelectorAll('.cli-row').forEach(function(row){
+        row.addEventListener('click', function(e){
+            // Si el clic fue en el link del nombre, deja que abra el modal y no marcar.
+            if (e.target.closest('[data-cliente-link]')) return;
+            if (selectedRow) selectedRow.classList.remove('cli-row-selected');
+            row.classList.add('cli-row-selected');
+            selectedRow = row;
+            _cargarKpis(row.dataset.clienteId, row.dataset.clienteNombre);
+        });
+    });
+
+    document.getElementById('cliKpisClose').addEventListener('click', function(){
+        kpisBar.style.display = 'none';
+        if (selectedRow) selectedRow.classList.remove('cli-row-selected');
+        selectedRow = null;
+    });
+
+    // ── Click en nombre del cliente → abre el widget de Oportunidades ──
+    document.querySelectorAll('[data-cliente-link]').forEach(function(a){
+        a.addEventListener('click', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            var cid = parseInt(a.dataset.clienteLink);
+            var cnom = a.dataset.clienteNombre || '';
+            if (typeof window.openClienteModal === 'function') {
+                window.openClienteModal(cid, cnom);
+            }
+        });
+    });
+})();
+</script>

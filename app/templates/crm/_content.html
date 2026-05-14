@@ -202,7 +202,7 @@
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
-        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' %} crm-bar--dashboard{% endif %}">
+        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' or tab_activo == 'cli' %} crm-bar--dashboard{% endif %}">
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -244,11 +244,18 @@
             </div>
             {% endif %}
             {% if tab_activo == 'clientes' %}
-            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos -->
+            <!-- Filtro Mostrar (Ambos / Solo Clientes / Solo Prospectos) — solo visible en modo clientes_tabla -->
+            <div class="crm-bar-left cli-filter-island" id="cliFilterIsland" style="display:none;">
+                <button type="button" data-cli-show="ambos" class="cli-filter-btn cli-filter-active">Ambos</button>
+                <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
+                <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
+            </div>
+            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes (todo JS, sin recargar) -->
             <div class="crm-tabs crm-tabs--dashboard">
                 <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
                 <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
+                <button type="button" id="crmModeClientes" onclick="window._crmSetMode('clientes_tabla')" class="crm-tab">Clientes</button>
             </div>
             {% else %}
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
@@ -276,7 +283,7 @@
             {% endif %}
             {% endif %}
             <div class="crm-bar-right">
-                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
+                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'cli' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
                 <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
                     <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
@@ -703,6 +710,10 @@
         {% include "crm/_marketing_placeholder.html" %}
         {% elif request.GET.vista == 'eventos' %}
         {% include "crm/_marketing_eventos.html" %}
+        {% elif request.GET.vista == 'certificaciones' %}
+        {% include "crm/_marketing_certificaciones.html" %}
+        {% elif request.GET.vista == 'cursos' %}
+        {% include "crm/_marketing_cursos.html" %}
         {% elif request.GET.vista != 'campanas' %}
         {% include "crm/_widget_marketing.html" %}
         {% else %}
@@ -1007,6 +1018,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Modo "Clientes": tabla cliente × marca (sin recargar) -->
+        <div id="ckClientesTablaSection" style="display:none;padding:0;">
+            {% include "crm/_content_clientes.html" %}
         </div>
 
         <!-- Hidden tbody for data merge (used by renderClientesCombinedTable) -->
@@ -2044,15 +2060,22 @@
                 <span class="crm-task-breadcrumb-sep" style="display:none;"></span>
             </div>
             <div class="crm-tw-header-right">
+                <!-- Compartir enlace (acción rápida, fuera del menú) -->
+                <div class="crm-tw-share-wrap">
+                    <button type="button" class="crm-tw-icon-btn" id="crmTaskShareBtn" title="Copiar enlace para compartir" onclick="crmTaskCompartirPreview()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    </button>
+                    <!-- Toast de confirmación: chip verde abajo del botón -->
+                    <div class="crm-tw-share-toast" id="crmTaskShareToast">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Enlace copiado</span>
+                    </div>
+                </div>
                 <div class="crm-tw-menu-wrap">
                     <button type="button" class="crm-tw-icon-btn" id="crmTaskMenuBtn" title="Más acciones" onclick="crmTaskToggleMenu(event)" aria-haspopup="true" aria-expanded="false">
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                     </button>
                     <div class="crm-tw-menu" id="crmTaskMenu" role="menu" style="display:none;">
-                        <button type="button" class="crm-tw-menu-item" onclick="crmTaskCompartirPreview()" role="menuitem">
-                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            <span>Copiar enlace de vista previa</span>
-                        </button>
                         <button type="button" class="crm-tw-menu-item danger" id="crmTaskMenuEliminar" onclick="crmTaskEliminarTarea()" role="menuitem" style="display:none;">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                             <span>Eliminar tarea</span>
@@ -2363,9 +2386,39 @@
             </button>
         </header>
 
-        <!-- Lienzo: título + descripción (sin bordes, tipo message composer) -->
+        <!-- Lienzo: título + campos obligatorios + descripción -->
         <main class="crm-ctw-canvas">
             <input type="text" id="crmTaskTitleInput" class="crm-ctw-title" placeholder="Título de la tarea" autocomplete="off">
+
+            <!-- Required fields row: Responsable + Fecha arriba (como oportunidad) -->
+            <div class="crm-ctw-required">
+                <span class="crm-ctw-required-label">Para</span>
+                <!-- Responsable (obligatorio) -->
+                <div class="crm-ctw-popwrap">
+                    <button type="button" class="crm-ctw-required-pill" id="crmCreateRespBtn" onclick="crmCreateOpenPop('resp', event)">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span id="crmCreateRespLabel">Selecciona responsable (requerido)</span>
+                    </button>
+                    <div class="crm-ctw-pop" id="crmCreatePopResp" style="display:none;">
+                        <div class="crm-ctw-pop-title">Responsable</div>
+                        <input type="text" id="crmTaskResponsibleSearch" class="crm-ctw-pop-input" placeholder="Buscar responsable…">
+                        <div id="crmTaskSelectedResponsible" class="crm-ctw-pop-chips"></div>
+                    </div>
+                </div>
+                <!-- Fecha (obligatorio — pre-poblada con today+1h al abrir) -->
+                <div class="crm-ctw-popwrap">
+                    <button type="button" class="crm-ctw-required-pill" id="crmCreateFechaBtn" onclick="crmCreateOpenPop('fecha', event)">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span id="crmCreateFechaLabel">Fecha (requerido)</span>
+                    </button>
+                    <div class="crm-ctw-pop" id="crmCreatePopFecha" style="display:none;">
+                        <div class="crm-ctw-pop-title">Fecha límite</div>
+                        <input type="datetime-local" id="crmTaskDueDate" class="crm-ctw-pop-input">
+                        <button type="button" class="crm-ctw-pop-clear" onclick="crmCreateClearFecha()">Quitar fecha</button>
+                    </div>
+                </div>
+            </div>
+
             <textarea id="crmTaskDescEditor" class="crm-ctw-desc" rows="4" placeholder="Añade una descripción… (soporta Markdown)"></textarea>
             <!-- Chips de archivos adjuntos (aparece cuando hay archivos) -->
             <div id="crmCreateFilesPreview" class="crm-ctw-files-preview" style="display:none;"></div>
@@ -2378,19 +2431,6 @@
                 <button type="button" class="crm-ctw-tool" disabled title="Estado inicial">
                     <span class="crm-ctw-dot"></span>Pendiente
                 </button>
-
-                <!-- Responsable -->
-                <div class="crm-ctw-popwrap">
-                    <button type="button" class="crm-ctw-tool" id="crmCreateRespBtn" onclick="crmCreateOpenPop('resp', event)">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <span id="crmCreateRespLabel">Responsable</span>
-                    </button>
-                    <div class="crm-ctw-pop" id="crmCreatePopResp" style="display:none;">
-                        <div class="crm-ctw-pop-title">Responsable</div>
-                        <input type="text" id="crmTaskResponsibleSearch" class="crm-ctw-pop-input" placeholder="Buscar responsable…">
-                        <div id="crmTaskSelectedResponsible" class="crm-ctw-pop-chips"></div>
-                    </div>
-                </div>
 
                 <!-- Participantes -->
                 <div class="crm-ctw-popwrap">
@@ -2423,19 +2463,6 @@
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
                     <span id="crmCreatePrioLabel">Prioridad</span>
                 </button>
-
-                <!-- Fecha (popover con datetime-local) -->
-                <div class="crm-ctw-popwrap">
-                    <button type="button" class="crm-ctw-tool" id="crmCreateFechaBtn" onclick="crmCreateOpenPop('fecha', event)">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span id="crmCreateFechaLabel">Fecha</span>
-                    </button>
-                    <div class="crm-ctw-pop" id="crmCreatePopFecha" style="display:none;">
-                        <div class="crm-ctw-pop-title">Fecha límite</div>
-                        <input type="datetime-local" id="crmTaskDueDate" class="crm-ctw-pop-input">
-                        <button type="button" class="crm-ctw-pop-clear" onclick="crmCreateClearFecha()">Quitar fecha</button>
-                    </div>
-                </div>
 
                 <div class="crm-ctw-sep"></div>
 
@@ -3556,6 +3583,10 @@
 
     // Render inicial (tras crm_main.js para que los selects estén poblados)
     setTimeout(function(){
+        // renderPeriodPills siempre: no depende de la facet bar y se ve en
+        // tabs que no la tienen (Dashboard, Clientes…). renderChips después
+        // sale temprano si no hay chips, pero pills ya quedan correctos.
+        try { renderPeriodPills(); } catch(e){ console.error('[FacetBar] renderPeriodPills error:', e); }
         try { renderChips(); } catch(e){ console.error('[FacetBar] renderChips error:', e); }
         try {
             if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();

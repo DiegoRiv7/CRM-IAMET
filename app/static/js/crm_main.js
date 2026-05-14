@@ -814,7 +814,19 @@
                 if (_openTaskId) {
                     var _openTaskClean = parseInt(_openTaskId, 10);
                     if (_openTaskClean) {
-                        setTimeout(function () { if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean); }, 600);
+                        // Cuando llegamos via deep-link a una tarea (típicamente
+                        // desde el preview de WhatsApp), cambiamos primero a la
+                        // sección de Tareas para que al cerrar el widget, el
+                        // usuario quede en su lista en lugar de en CRM. También
+                        // disparamos recargarTareasCRM() para que el listado
+                        // se pinte (si no, queda vacío hasta que el usuario
+                        // navega manualmente).
+                        console.log('[deep-link] tarea id =', _openTaskClean, 'desde URL:', _openTaskId);
+                        setTimeout(function () {
+                            if (typeof switchCrmView === 'function') switchCrmView('tareas');
+                            if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
+                            if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean);
+                        }, 600);
                         _urlParams.delete('open_task');
                         _cleanParams = true;
                     }
@@ -1647,6 +1659,7 @@
                 var btnOpp = document.getElementById('crmModeOpp');
                 var btnProsp = document.getElementById('crmModeProsp');
                 var btnProy = document.getElementById('crmModeProyectos');
+                var btnClientes = document.getElementById('crmModeClientes');
                 if (btnOpp && btnProsp) {
                     btnOpp.classList.toggle('active', mode === 'oportunidades');
                     btnOpp.classList.remove('active-prospectos');
@@ -1661,6 +1674,11 @@
                     btnProy.classList.toggle('active-proyectos', mode === 'proyectos');
                     btnProy.style.background = ''; btnProy.style.color = '';
                 }
+                if (btnClientes) {
+                    btnClientes.classList.toggle('active', mode === 'clientes_tabla');
+                }
+                // Sección de tabla de Clientes (4° modo del Dashboard)
+                var cliSection = document.getElementById('ckClientesTablaSection');
                 var kpiOpp = document.getElementById('ckKpiRow');
                 var kpiProsp = document.getElementById('ckKpiRowProsp');
                 var kpiProy = document.getElementById('ckKpiRowProy');
@@ -1673,6 +1691,16 @@
                 // Si hay un drill-down activo (detalle visible) NO lo escondas — esto
                 // se llama desde refreshes periódicos y borraría la tabla del usuario.
                 var detalleOpen = !!(window._ckDetalleOpen) && detalle && detalle.style.display !== 'none';
+
+                // Por default ocultar la tabla de clientes; los modos que la
+                // necesiten la prenden abajo.
+                if (cliSection) cliSection.style.display = 'none';
+
+                // Filtro "Mostrar" (cli-filter-island) solo visible en modo clientes_tabla.
+                var cliFilterIsland = document.getElementById('cliFilterIsland');
+                if (cliFilterIsland) {
+                    cliFilterIsland.style.display = (mode === 'clientes_tabla') ? '' : 'none';
+                }
 
                 if (mode === 'oportunidades') {
                     if (kpiOpp) kpiOpp.style.display = 'grid';
@@ -1712,6 +1740,21 @@
                     var pData = _clientesPanelData.prospeccion || {};
                     if (footerLeft) footerLeft.textContent = (pData.footer || {}).left || '';
                     if (footerRight) footerRight.textContent = (pData.footer || {}).right || '';
+                } else if (mode === 'clientes_tabla') {
+                    // Modo "Clientes" (4° del Dashboard): oculta todo lo
+                    // demás y muestra la tabla cliente × marca.
+                    if (kpiOpp) kpiOpp.style.display = 'none';
+                    if (kpiProsp) kpiProsp.style.display = 'none';
+                    if (kpiProy) kpiProy.style.display = 'none';
+                    if (charts) charts.style.display = 'none';
+                    if (chartsProsp) chartsProsp.style.display = 'none';
+                    if (chartsProy) chartsProy.style.display = 'none';
+                    if (detalle) detalle.style.display = 'none';
+                    if (cliSection) cliSection.style.display = '';
+                    var footerLeft = document.getElementById('footerLeft');
+                    var footerRight = document.getElementById('footerRight');
+                    if (footerLeft) footerLeft.textContent = '';
+                    if (footerRight) footerRight.textContent = '';
                 } else if (mode === 'proyectos') {
                     if (kpiOpp) kpiOpp.style.display = 'none';
                     if (kpiProsp) kpiProsp.style.display = 'none';
@@ -4479,13 +4522,91 @@
             var clienteOppSearch = document.getElementById('clienteOppSearch');
             var clienteOppFilterArea = document.getElementById('clienteOppFilterArea');
             var clienteOppFilterProducto = document.getElementById('clienteOppFilterProducto');
+            // Periodo unificado (pill estilo Dashboard)
+            var clienteOppPeriodPill = document.getElementById('clienteOppPeriodPill');
+            var clienteOppPeriodPop = document.getElementById('clienteOppPeriodPop');
+            var clienteOppPeriodLabel = document.getElementById('clienteOppPeriodLabel');
+            var clienteOppPeriodAniosList = document.getElementById('clienteOppPeriodAniosList');
+            var clienteOppPeriodMesesList = document.getElementById('clienteOppPeriodMesesList');
+            var clienteOppPeriodReset = document.getElementById('clienteOppPeriodReset');
+            var clienteOppPeriodApply = document.getElementById('clienteOppPeriodApply');
+            var _clienteOppMes = '';   // '' = todos, '01'…'12'
+            var _clienteOppAnio = '';  // '' = todos, '2026' etc.
+            // Llena los años (3 atrás + actual + 1 adelante)
+            if (clienteOppPeriodAniosList && clienteOppPeriodAniosList.querySelectorAll('[data-anio]').length <= 1) {
+                var nowY = new Date().getFullYear();
+                for (var y = nowY + 1; y >= nowY - 3; y--) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'wco-period-item';
+                    b.dataset.anio = String(y);
+                    b.textContent = String(y);
+                    clienteOppPeriodAniosList.appendChild(b);
+                }
+            }
+            var MES_NAMES = {'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+            function _refreshPeriodLabel(){
+                var mPart = _clienteOppMes ? MES_NAMES[_clienteOppMes] : 'Todos';
+                var aPart = _clienteOppAnio || 'Todos';
+                if (clienteOppPeriodLabel) clienteOppPeriodLabel.textContent = mPart + ' · ' + aPart;
+                if (clienteOppPeriodPill) clienteOppPeriodPill.classList.toggle('is-default', !_clienteOppMes && !_clienteOppAnio);
+            }
+            function _markActive(list, attr, val){
+                if (!list) return;
+                list.querySelectorAll('[data-' + attr + ']').forEach(function(b){
+                    b.classList.toggle('is-active', b.dataset[attr] === val);
+                });
+            }
+            function _refreshPeriodActives(){
+                _markActive(clienteOppPeriodMesesList, 'mes', _clienteOppMes);
+                _markActive(clienteOppPeriodAniosList, 'anio', _clienteOppAnio);
+            }
+            // Click en pill → abre/cierra popover
+            if (clienteOppPeriodPill) {
+                clienteOppPeriodPill.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    var open = clienteOppPeriodPop.style.display !== 'none';
+                    clienteOppPeriodPop.style.display = open ? 'none' : 'block';
+                });
+            }
+            // Click fuera cierra el popover (limitado al overlay)
+            document.addEventListener('click', function(e){
+                if (!clienteOppPeriodPop || clienteOppPeriodPop.style.display === 'none') return;
+                if (e.target.closest('.wco-period-wrap')) return;
+                clienteOppPeriodPop.style.display = 'none';
+            });
+            // Click en mes/año (selección simple, no múltiple)
+            if (clienteOppPeriodMesesList) clienteOppPeriodMesesList.addEventListener('click', function(e){
+                var b = e.target.closest('[data-mes]'); if (!b) return;
+                _clienteOppMes = b.dataset.mes || '';
+                _refreshPeriodActives();
+            });
+            if (clienteOppPeriodAniosList) clienteOppPeriodAniosList.addEventListener('click', function(e){
+                var b = e.target.closest('[data-anio]'); if (!b) return;
+                _clienteOppAnio = b.dataset.anio || '';
+                _refreshPeriodActives();
+            });
+            if (clienteOppPeriodReset) clienteOppPeriodReset.addEventListener('click', function(){
+                _clienteOppMes = ''; _clienteOppAnio = '';
+                _refreshPeriodActives();
+                _refreshPeriodLabel();
+                clienteOppPeriodPop.style.display = 'none';
+                _cargarTabActivo();
+            });
+            if (clienteOppPeriodApply) clienteOppPeriodApply.addEventListener('click', function(){
+                _refreshPeriodLabel();
+                clienteOppPeriodPop.style.display = 'none';
+                _cargarTabActivo();
+            });
             var clienteOppClearFilters = document.getElementById('clienteOppClearFilters');
             var clienteOppFiltersOpp = document.getElementById('clienteOppFiltersOpp');
             var clienteOppHeadOpp = document.getElementById('clienteOppHeadOpp');
             var clienteOppHeadCot = document.getElementById('clienteOppHeadCot');
+            var clienteOppHeadProsp = document.getElementById('clienteOppHeadProsp');
+            var clienteOppTabs = document.getElementById('clienteOppTabs');
 
             var currentClienteId = null;
-            var currentMode = 'oportunidades'; // 'oportunidades' | 'cobrado' | 'cotizado'
+            var currentMode = 'oportunidades'; // 'oportunidades' | 'cobrado' | 'cotizado' | 'prospecciones'
             var allClienteData = [];
 
             // ── Click en nombre de cliente ──
@@ -4527,12 +4648,65 @@
             function setWidgetMode(mode) {
                 currentMode = mode;
                 var isCot = (mode === 'cotizado');
-                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = isCot ? 'none' : '';
+                var isProsp = (mode === 'prospecciones');
+                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp) ? 'none' : '';
                 if (clienteOppHeadCot) clienteOppHeadCot.style.display = isCot ? '' : 'none';
-                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = isCot ? 'none' : '';
+                if (clienteOppHeadProsp) clienteOppHeadProsp.style.display = isProsp ? '' : 'none';
+                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp) ? 'none' : '';
+                // Marcar tab activo
+                if (clienteOppTabs) {
+                    var tabKey = mode === 'cobrado' ? 'oportunidades' : mode;
+                    clienteOppTabs.querySelectorAll('[data-cli-tab]').forEach(function(t){
+                        t.classList.toggle('is-active', t.dataset.cliTab === tabKey);
+                    });
+                }
             }
 
-            // ── Abrir widget ──
+            // Listeners de las tabs internas
+            if (clienteOppTabs) {
+                clienteOppTabs.addEventListener('click', function(e){
+                    var t = e.target.closest('[data-cli-tab]');
+                    if (!t || !currentClienteId) return;
+                    var newMode = t.dataset.cliTab;
+                    setWidgetMode(newMode);
+                    _cargarTabActivo();
+                });
+            }
+            function _cargarTabActivo(){
+                if (!currentClienteId) return;
+                // Periodo del modal — se aplica a los 3 tabs (op/cot/prosp).
+                var mesQ = _clienteOppMes || '';
+                var anioQ = _clienteOppAnio || '';
+                function _withPeriodo(url){
+                    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+                    var q = '';
+                    if (mesQ) q += 'mes=' + encodeURIComponent(mesQ);
+                    if (anioQ) q += (q ? '&' : '') + 'anio=' + encodeURIComponent(anioQ);
+                    return q ? url + sep + q : url;
+                }
+                var url;
+                if (currentMode === 'cotizado') {
+                    url = _withPeriodo('/app/api/cliente-cotizaciones/' + currentClienteId + '/');
+                } else if (currentMode === 'prospecciones') {
+                    url = _withPeriodo('/app/api/cliente-prospecciones/' + currentClienteId + '/');
+                } else {
+                    url = '/app/api/cliente-oportunidades/' + currentClienteId + '/' + (currentMode === 'cobrado' ? '?tipo=cobrado' : '');
+                    url = _withPeriodo(url);
+                }
+                clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty">Cargando…</td></tr>';
+                fetch(url)
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        allClienteData = (data && data.rows) || [];
+                        renderClienteData();
+                    }).catch(function(){
+                        clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
+                    });
+            }
+
+            // ── Abrir widget (también expuesta globalmente para que otras
+            //    vistas — ej. el tab Clientes del Dashboard — la usen) ──
+            window.openClienteModal = openClienteModal;
             function openClienteModal(clienteId, clienteNombre, tab, porCreacion) {
                 currentClienteId = clienteId;
                 allClienteData = [];
@@ -4545,6 +4719,9 @@
                 if (clienteOppSearch) clienteOppSearch.value = '';
                 if (clienteOppFilterArea) clienteOppFilterArea.value = '';
                 if (clienteOppFilterProducto) clienteOppFilterProducto.value = '';
+                // Periodo arranca en "Todos · Todos" al abrir el modal
+                _clienteOppMes = ''; _clienteOppAnio = '';
+                _refreshPeriodActives(); _refreshPeriodLabel();
                 setWidgetMode(mode);
 
                 var colspan = '6';
@@ -4599,6 +4776,18 @@
                         html += '<td style="text-align:right;font-weight:700;color:#007AFF;">$' + (cot.total || '0') + ' <span style="color:#8E8E93;font-weight:400;font-size:0.65rem;">' + (cot.moneda || '') + '</span></td>';
                         html += '</tr>';
                     });
+                } else if (currentMode === 'prospecciones') {
+                    filtered.forEach(function (p) {
+                        var etapaBadge = '<span class="wco-prosp-etapa wco-prosp-etapa--' + (p.etapa || '') + '">' + (p.etapa_display || p.etapa) + '</span>';
+                        html += '<tr data-prospecto-id="' + p.id + '">';
+                        html += '<td><span class="wco-opp-name" data-prospecto-row-id="' + p.id + '">' + truncate(p.nombre || '—', 50) + '</span></td>';
+                        html += '<td style="color:#6E6E73;">' + truncate(p.contacto || '—', 20) + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (p.area || '—') + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (p.producto || '—') + '</td>';
+                        html += '<td>' + etapaBadge + '</td>';
+                        html += '<td style="color:#8E8E93;font-size:0.75rem;">' + (p.vendedor || '—') + '</td>';
+                        html += '</tr>';
+                    });
                 } else {
                     filtered.forEach(function (opp) {
                         var contactoNombre = opp.contacto ? opp.contacto.nombre : '-';
@@ -4629,6 +4818,11 @@
                             (item.titulo && item.titulo.toLowerCase().includes(searchTerm)) ||
                             (item.oportunidad && item.oportunidad.toLowerCase().includes(searchTerm));
                     }
+                    if (currentMode === 'prospecciones') {
+                        return !searchTerm ||
+                            (item.nombre && item.nombre.toLowerCase().includes(searchTerm)) ||
+                            (item.contacto && item.contacto.toLowerCase().includes(searchTerm));
+                    }
                     var matchSearch = !searchTerm ||
                         item.oportunidad.toLowerCase().includes(searchTerm) ||
                         (item.contacto && item.contacto.nombre.toLowerCase().includes(searchTerm));
@@ -4651,15 +4845,21 @@
                 });
             }
 
-            // ── Click en nombre de oportunidad dentro del widget → abrir detalle ──
+            // ── Click en nombre de oportunidad/prospección dentro del widget ──
             if (widgetClienteOpp) {
                 widgetClienteOpp.addEventListener('click', function (e) {
-                    var oppLink = e.target.closest('.wco-opp-name');
-                    if (oppLink) {
-                        var oppId = oppLink.getAttribute('data-oportunidad-id');
-                        if (oppId && typeof openDetalle === 'function') {
-                            openDetalle(oppId);
-                        }
+                    var link = e.target.closest('.wco-opp-name');
+                    if (!link) return;
+                    // Prospección → abre widget de prospección
+                    var prospId = link.getAttribute('data-prospecto-row-id');
+                    if (prospId && typeof window.abrirWidgetProspecto === 'function') {
+                        window.abrirWidgetProspecto(parseInt(prospId));
+                        return;
+                    }
+                    // Oportunidad → abre detalle
+                    var oppId = link.getAttribute('data-oportunidad-id');
+                    if (oppId && typeof openDetalle === 'function') {
+                        openDetalle(oppId);
                     }
                 });
             }
@@ -8353,12 +8553,30 @@
             if (!_crmCurrentTaskId) return;
             var menu = document.getElementById('crmTaskMenu');
             if (menu) menu.style.display = 'none';
+            // Mini-toast verde de confirmación debajo del botón share
+            function showShareToast() {
+                var t = document.getElementById('crmTaskShareToast');
+                if (!t) return;
+                t.classList.add('is-on');
+                setTimeout(function () { t.classList.remove('is-on'); }, 1800);
+            }
             fetch('/app/api/tarea/' + _crmCurrentTaskId + '/share-link/')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data && data.url) {
                         var full = data.url.indexOf('http') === 0 ? data.url : (window.location.origin + data.url);
-                        crmTaskCopyToClipboard(full, 'Enlace de vista previa copiado');
+                        // Copia silenciosa al portapapeles (sin global toast) y
+                        // muestra el chip verde debajo del botón.
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(full).then(showShareToast, function () {
+                                // fallback al método legacy si clipboard API falla
+                                crmTaskCopyToClipboard(full, '');
+                                showShareToast();
+                            });
+                        } else {
+                            crmTaskCopyToClipboard(full, '');
+                            showShareToast();
+                        }
                     } else {
                         showToast(data.error || 'No se pudo generar el enlace', 'error');
                     }
@@ -9122,10 +9340,17 @@
             crmCreateCloseAllPops();
         });
 
-        // Actualiza los labels de las pills según selecciones actuales
+        // Actualiza los labels de las pills según selecciones actuales,
+        // marca las pills required como "filled" o "missing" y habilita
+        // el botón de crear solo si título + responsable + fecha están OK.
         function crmCreateRefreshLabels() {
             var rl = document.getElementById('crmCreateRespLabel');
-            if (rl) rl.textContent = _crmTaskSelectedResp ? (_crmTaskSelectedResp.nombre || _crmTaskSelectedResp.username || 'Responsable') : 'Responsable';
+            var respBtn = document.getElementById('crmCreateRespBtn');
+            if (rl) rl.textContent = _crmTaskSelectedResp ? (_crmTaskSelectedResp.nombre || _crmTaskSelectedResp.username || 'Responsable') : 'Selecciona responsable (requerido)';
+            if (respBtn) {
+                respBtn.classList.toggle('is-filled', !!_crmTaskSelectedResp);
+                respBtn.classList.remove('is-missing');
+            }
             var pl = document.getElementById('crmCreatePartsLabel');
             if (pl) pl.textContent = (_crmTaskSelectedParts && _crmTaskSelectedParts.length) ? ('Participantes · ' + _crmTaskSelectedParts.length) : 'Participantes';
             var ol = document.getElementById('crmCreateObsLabel');
@@ -9147,6 +9372,8 @@
             if (fLabel && fBtn) {
                 if (dd && dd.value) {
                     fBtn.classList.add('active');
+                    fBtn.classList.add('is-filled');
+                    fBtn.classList.remove('is-missing');
                     try {
                         var d = new Date(dd.value);
                         var opts = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
@@ -9154,10 +9381,30 @@
                     } catch (_) { fLabel.textContent = dd.value; }
                 } else {
                     fBtn.classList.remove('active');
-                    fLabel.textContent = 'Fecha';
+                    fBtn.classList.remove('is-filled');
+                    fLabel.textContent = 'Fecha (requerido)';
                 }
             }
+
+            // Habilita/deshabilita el botón Crear según campos requeridos
+            crmCreateUpdateSubmitState();
         }
+
+        // Verifica si título, responsable y fecha están llenos para habilitar
+        // el botón de Crear tarea.
+        function crmCreateUpdateSubmitState() {
+            var titleEl = document.getElementById('crmTaskTitleInput');
+            var ddEl = document.getElementById('crmTaskDueDate');
+            var btn = document.getElementById('crmTaskSubmitBtn');
+            if (!btn) return;
+            var titleOk = titleEl && titleEl.value.trim().length > 0;
+            var respOk = !!_crmTaskSelectedResp;
+            var fechaOk = ddEl && ddEl.value;
+            var allOk = titleOk && respOk && fechaOk;
+            btn.disabled = !allOk;
+            btn.classList.toggle('is-disabled', !allOk);
+        }
+        window.crmCreateUpdateSubmitState = crmCreateUpdateSubmitState;
         window.crmCreateTogglePriority = function () {
             var hp = document.getElementById('crmTaskHighPriority');
             if (!hp) return;
@@ -9409,9 +9656,42 @@
             });
         }
 
+        // Listener en el title input: revalida al escribir
+        (function attachTitleListener() {
+            document.addEventListener('input', function (e) {
+                if (e.target && e.target.id === 'crmTaskTitleInput') {
+                    if (typeof crmCreateUpdateSubmitState === 'function') crmCreateUpdateSubmitState();
+                }
+            });
+            // El input datetime-local también debe refrescar al cambiar
+            document.addEventListener('change', function (e) {
+                if (e.target && e.target.id === 'crmTaskDueDate') {
+                    if (typeof crmCreateRefreshLabels === 'function') crmCreateRefreshLabels();
+                }
+            });
+        })();
+
         function crmTaskCrear() {
             var titulo = (document.getElementById('crmTaskTitleInput') || {}).value || '';
-            if (!titulo.trim()) { showToast('El nombre de la tarea es requerido', 'error'); return; }
+            var dueDateEl = document.getElementById('crmTaskDueDate');
+            var hasDate = dueDateEl && dueDateEl.value;
+            // Validación visible: cualquier required vacío hace shake + error toast
+            var missing = [];
+            if (!titulo.trim()) missing.push('título');
+            if (!_crmTaskSelectedResp) {
+                missing.push('responsable');
+                var rb = document.getElementById('crmCreateRespBtn');
+                if (rb) { rb.classList.add('is-missing'); setTimeout(function(){ rb.classList.remove('is-missing'); }, 600); }
+            }
+            if (!hasDate) {
+                missing.push('fecha');
+                var fb = document.getElementById('crmCreateFechaBtn');
+                if (fb) { fb.classList.add('is-missing'); setTimeout(function(){ fb.classList.remove('is-missing'); }, 600); }
+            }
+            if (missing.length) {
+                showToast('Falta llenar: ' + missing.join(', '), 'error');
+                return;
+            }
 
             var descEditor = document.getElementById('crmTaskDescEditor');
             var descripcion = '';

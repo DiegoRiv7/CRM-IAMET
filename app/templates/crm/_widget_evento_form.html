@@ -43,7 +43,7 @@
                                 <div class="evt-asist-ac" id="evtTargetClienteAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
                             </div>
                             <div class="evt-tgt-mode" data-mode="prospecto" style="display:none;">
-                                <input type="text" id="evtTargetProspectoQ" class="wn-ctw-pop-input" placeholder="Buscar prospecto…" autocomplete="off">
+                                <input type="text" id="evtTargetProspectoQ" class="wn-ctw-pop-input" placeholder="Buscar cliente potencial por nombre…" autocomplete="off">
                                 <div class="evt-asist-ac" id="evtTargetProspectoAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:180px;"></div>
                             </div>
                         </div>
@@ -72,12 +72,27 @@
                         </button>
                         <div class="wn-ctw-pop" id="evtPopTipo" style="display:none;">
                             <div class="wn-ctw-pop-title">Tipo de evento</div>
-                            <select id="evtFormTipo" class="wn-ctw-pop-input">
+                            <select id="evtFormTipo" class="wn-ctw-pop-input" onchange="evtUpdateDirVisibility()">
                                 <option value="presencial">Presencial</option>
                                 <option value="webinar">Webinar</option>
                                 <option value="demo_sitio">Demo en sitio</option>
                                 <option value="breakfast">Breakfast Brief</option>
                                 <option value="techday">Techday</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Dirección de la demo (solo visible si tipo=demo_sitio) #}
+                    <div class="wn-ctw-popwrap" id="evtDirWrap" style="display:none;">
+                        <button type="button" class="wn-ctw-pill-meta filled" id="evtDirBtn" onclick="evtOpenPop('dir', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            <span id="evtDirLabel">Para cliente</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="evtPopDir" style="display:none;">
+                            <div class="wn-ctw-pop-title">Dirección de la demo</div>
+                            <select id="evtFormDir" class="wn-ctw-pop-input">
+                                <option value="outbound">Para cliente (vamos al cliente)</option>
+                                <option value="inbound">De marca (la marca nos capacita)</option>
                             </select>
                         </div>
                     </div>
@@ -215,8 +230,22 @@
     var partChipsWrap = document.getElementById('evtPartChips');
     var _participantes = []; // [{id, nombre, iniciales}]
 
-    var POP_IDS = { fecha:'evtPopFecha', tipo:'evtPopTipo', estado:'evtPopEstado', costo:'evtPopCosto', target:'evtPopTarget', participantes:'evtPopParticipantes' };
-    var BTN_IDS = { fecha:'evtFechaBtn', tipo:'evtTipoBtn', estado:'evtEstadoBtn', costo:'evtCostoBtn', target:'evtTargetBtn', participantes:'evtPartBtn' };
+    var POP_IDS = { fecha:'evtPopFecha', tipo:'evtPopTipo', dir:'evtPopDir', estado:'evtPopEstado', costo:'evtPopCosto', target:'evtPopTarget', participantes:'evtPopParticipantes' };
+    var BTN_IDS = { fecha:'evtFechaBtn', tipo:'evtTipoBtn', dir:'evtDirBtn', estado:'evtEstadoBtn', costo:'evtCostoBtn', target:'evtTargetBtn', participantes:'evtPartBtn' };
+
+    // Mostrar/ocultar el pill de Dirección según tipo (solo demo_sitio lo usa)
+    var dirEl = document.getElementById('evtFormDir');
+    var dirWrap = document.getElementById('evtDirWrap');
+    var dirLbl = document.getElementById('evtDirLabel');
+    window.evtUpdateDirVisibility = function(){
+        if (!dirWrap || !tipoEl) return;
+        dirWrap.style.display = (tipoEl.value === 'demo_sitio') ? '' : 'none';
+    };
+    if (dirEl) {
+        dirEl.addEventListener('change', function(){
+            if (dirLbl) dirLbl.textContent = (dirEl.value === 'inbound') ? 'De marca' : 'Para cliente';
+        });
+    }
 
     function _csrf(){
         var el = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -305,7 +334,11 @@
     }
     function refreshTargetPill(){
         if (_target){
-            var kind = _target.kind === 'prospecto' ? 'Prospecto' : 'Cliente';
+            var kind;
+            if (_target.kind === 'cliente') kind = 'Cliente';
+            else if (_target.kind === 'cliente_potencial') kind = 'Prospecto';
+            else if (_target.kind === 'prospecto') kind = 'Prospección'; // legacy
+            else kind = 'Target';
             targetLbl.innerHTML = '<span style="font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#0052D4;margin-right:6px;">' + kind + '</span>' + _esc(_target.nombre);
             targetBtn.classList.remove('empty');
             targetBtn.classList.add('filled');
@@ -419,16 +452,24 @@
         _closeAllPops();
         refreshTargetPill();
     });
+    // El tab "Prospecto" busca CLIENTES POTENCIALES (modelo ClientePotencial)
+    // no Prospecciones. Antes esto cargaba del modelo Prospecto, lo que era
+    // inconsistente — ahora un evento targetea o Cliente o ClientePotencial.
     var doTgtProsp = _debounce(function(){
         var q = tgtProspectoQ.value.trim();
-        if (q.length < 2){ tgtProspectoAC.style.display = 'none'; return; }
-        fetch('/app/api/buscar-prospectos/?q=' + encodeURIComponent(q))
+        if (q.length < 1){ tgtProspectoAC.style.display = 'none'; return; }
+        fetch('/app/api/clientes-potenciales/?q=' + encodeURIComponent(q))
             .then(function(r){ return r.json(); })
-            .then(function(d){ renderACItems(tgtProspectoAC, d.prospectos || [], function(p){ return {id: p.id, nombre: p.nombre, sub: p.cliente_nombre + (p.etapa ? ' · ' + p.etapa : '')}; }); });
+            .then(function(d){
+                renderACItems(tgtProspectoAC, d.prospectos || [], function(p){
+                    return {id: p.id, nombre: p.nombre, sub: p.asignado_a_name || ''};
+                });
+            });
     }, 220);
     tgtProspectoQ.addEventListener('input', doTgtProsp);
     bindACClick(tgtProspectoAC, function(sel){
-        _target = {kind: 'prospecto', id: sel.id, nombre: sel.nombre};
+        // kind: 'cliente_potencial' (antes era 'prospecto' apuntando al modelo Prospecto)
+        _target = {kind: 'cliente_potencial', id: sel.id, nombre: sel.nombre};
         tgtProspectoAC.style.display = 'none';
         tgtProspectoQ.value = '';
         _closeAllPops();
@@ -469,6 +510,9 @@
         // en otro caso, "Presencial".
         tipoEl.value = window._eventoTipoDefault || 'presencial';
         window._eventoTipoDefault = null; // se consume al primer reset
+        if (dirEl) dirEl.value = 'outbound';
+        if (dirLbl) dirLbl.textContent = 'Para cliente';
+        evtUpdateDirVisibility();
         estadoEl.value = 'programado';
         descEl.value = '';
         notasEl.value = '';
@@ -500,6 +544,9 @@
                 idEl.value = e.id;
                 nombreEl.value = e.nombre || '';
                 tipoEl.value = e.tipo || 'presencial';
+                if (dirEl) dirEl.value = e.demo_direccion || 'outbound';
+                if (dirLbl) dirLbl.textContent = (e.demo_direccion === 'inbound') ? 'De marca' : 'Para cliente';
+                evtUpdateDirVisibility();
                 estadoEl.value = e.estado || 'programado';
                 if (e.fecha_evento) fechaEl.value = e.fecha_evento.slice(0, 16);
                 duracionEl.value = e.duracion_minutos || 60;
@@ -508,7 +555,8 @@
                 notasEl.value = e.notas_post || '';
                 setMarcas(e.marcas);
                 if (e.cliente_id) _target = {kind: 'cliente', id: e.cliente_id, nombre: e.cliente_nombre};
-                else if (e.prospecto_id) _target = {kind: 'prospecto', id: e.prospecto_id, nombre: e.prospecto_nombre};
+                else if (e.cliente_potencial_id) _target = {kind: 'cliente_potencial', id: e.cliente_potencial_id, nombre: e.cliente_potencial_nombre};
+                else if (e.prospecto_id) _target = {kind: 'prospecto', id: e.prospecto_id, nombre: e.prospecto_nombre}; // legacy
                 _participantes = (e.participantes || []).slice();
                 refreshFechaPill(); refreshTipoPill(); refreshEstadoPill(); refreshCostoPill();
                 refreshTargetPill(); refreshPartPill();
@@ -536,6 +584,7 @@
         var payload = {
             nombre: nombreEl.value.trim(),
             tipo: tipoEl.value,
+            demo_direccion: (tipoEl.value === 'demo_sitio' && dirEl) ? dirEl.value : '',
             estado: estadoEl.value,
             fecha_evento: fechaEl.value.trim(),
             duracion_minutos: parseInt(duracionEl.value, 10) || 60,
@@ -544,7 +593,10 @@
             costo: parseFloat(costoEl.value) || 0,
             notas_post: notasEl.value.trim(),
             cliente_id: (_target && _target.kind === 'cliente') ? _target.id : null,
-            prospecto_id: (_target && _target.kind === 'prospecto') ? _target.id : null,
+            cliente_potencial_id: (_target && _target.kind === 'cliente_potencial') ? _target.id : null,
+            // legacy: dejamos prospecto_id null — antes el tab "Prospecto" mandaba ID
+            // de Prospección. Ya no se usa pero el backend sigue aceptándolo por compat.
+            prospecto_id: null,
             participantes_ids: _participantes.map(function(p){ return p.id; }),
         };
         var id = idEl.value;

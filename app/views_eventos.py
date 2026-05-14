@@ -17,7 +17,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods
 
-from .models import Actividad, Cliente, Evento, EventoAsistente, Prospecto
+from .models import Actividad, Cliente, ClientePotencial, Evento, EventoAsistente, Prospecto
 from .views_utils import is_ingeniero
 
 
@@ -98,6 +98,8 @@ def _evento_to_dict(e):
         'nombre': e.nombre,
         'tipo': e.tipo,
         'tipo_display': e.get_tipo_display(),
+        'demo_direccion': e.demo_direccion or '',
+        'demo_direccion_display': e.get_demo_direccion_display() if e.demo_direccion else '',
         'estado': e.estado,
         'estado_display': e.get_estado_display(),
         'fecha_evento': e.fecha_evento.isoformat() if e.fecha_evento else None,
@@ -113,6 +115,8 @@ def _evento_to_dict(e):
         'asistentes_count': e.asistentes.count(),
         'cliente_id': e.cliente_id,
         'cliente_nombre': e.cliente.nombre_empresa if e.cliente_id else '',
+        'cliente_potencial_id': e.cliente_potencial_id,
+        'cliente_potencial_nombre': e.cliente_potencial.nombre if e.cliente_potencial_id else '',
         'prospecto_id': e.prospecto_id,
         'prospecto_nombre': e.prospecto.nombre if e.prospecto_id else '',
         'participantes': participantes,
@@ -223,13 +227,24 @@ def api_evento_crear(request):
         costo = 0
 
     cliente_id = data.get('cliente_id')
-    prospecto_id = data.get('prospecto_id')
+    cliente_potencial_id = data.get('cliente_potencial_id')
+    prospecto_id = data.get('prospecto_id')  # legacy
     cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
+    cliente_potencial = ClientePotencial.objects.filter(id=cliente_potencial_id).first() if cliente_potencial_id else None
     prospecto = Prospecto.objects.filter(id=prospecto_id).first() if prospecto_id else None
+
+    # demo_direccion: solo aplica si tipo == 'demo_sitio'; en otros se ignora.
+    tipo_v = data.get('tipo') or 'presencial'
+    dir_v = (data.get('demo_direccion') or '').strip()
+    if tipo_v != 'demo_sitio':
+        dir_v = ''
+    elif dir_v not in ('outbound', 'inbound'):
+        dir_v = 'outbound'
 
     e = Evento.objects.create(
         nombre=nombre,
-        tipo=data.get('tipo') or 'presencial',
+        tipo=tipo_v,
+        demo_direccion=dir_v,
         estado=data.get('estado') or 'programado',
         fecha_evento=fecha_dt,
         duracion_minutos=duracion,
@@ -238,6 +253,7 @@ def api_evento_crear(request):
         marcas=data.get('marcas') or [],
         costo=costo,
         cliente=cliente,
+        cliente_potencial=cliente_potencial,
         prospecto=prospecto,
         organizador=organizador,
         creado_por=request.user,
@@ -271,6 +287,13 @@ def api_evento_editar(request, evento_id):
             e.nombre = v
     if 'tipo' in data and data['tipo']:
         e.tipo = data['tipo']
+    # demo_direccion solo aplica a tipo demo_sitio
+    if 'demo_direccion' in data:
+        dv = (data['demo_direccion'] or '').strip()
+        if e.tipo != 'demo_sitio':
+            e.demo_direccion = ''
+        elif dv in ('outbound', 'inbound'):
+            e.demo_direccion = dv
     if 'estado' in data and data['estado']:
         e.estado = data['estado']
     if 'fecha_evento' in data and data['fecha_evento']:
@@ -299,9 +322,13 @@ def api_evento_editar(request, evento_id):
         org = User.objects.filter(id=data['organizador_id']).first()
         if org:
             e.organizador = org
-    # Cliente / Prospecto principal — null limpia el vínculo
+    # Cliente / Cliente Potencial / Prospecto (legacy) — null limpia el vínculo.
+    # Solo uno de los tres debería estar set a la vez (es lo que el form fuerza
+    # con sus tabs), pero el backend no lo valida — confiamos en el UI.
     if 'cliente_id' in data:
         e.cliente = Cliente.objects.filter(id=data['cliente_id']).first() if data['cliente_id'] else None
+    if 'cliente_potencial_id' in data:
+        e.cliente_potencial = ClientePotencial.objects.filter(id=data['cliente_potencial_id']).first() if data['cliente_potencial_id'] else None
     if 'prospecto_id' in data:
         e.prospecto = Prospecto.objects.filter(id=data['prospecto_id']).first() if data['prospecto_id'] else None
     e.save()

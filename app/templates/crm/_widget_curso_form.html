@@ -1,0 +1,520 @@
+{# ═══ WIDGET: CURSO — Crear / Editar ═══ #}
+<div class="widget-overlay wn-overlay" id="widgetCursoForm" style="z-index:10500;"
+     onclick="if(event.target===this){var w=this;w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);}">
+    <div class="wn-card wn-composer">
+        <form id="formCurso" autocomplete="off" novalidate style="display:contents;">
+            {% csrf_token %}
+
+            <header class="wn-ctw-header">
+                <div class="wn-ctw-breadcrumb">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <span class="wn-ctw-crumb-muted">Cursos</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <span class="wn-ctw-crumb-current" id="cursoFormCrumb">Nuevo curso</span>
+                </div>
+                <button type="button" class="wn-ctw-close" id="cursoFormClose" title="Cerrar (Esc)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </header>
+
+            <main class="wn-ctw-canvas">
+                <input type="hidden" id="cursoFormId" value="">
+
+                <input type="text" class="wn-ctw-title" id="cursoFormNombre"
+                       placeholder="Ej. Panduit Network Infrastructure Foundations" autocomplete="off" maxlength="200">
+
+                {# Persona #}
+                <div class="wn-ctw-nl-row">
+                    <span class="wn-ctw-nl-label">Persona</span>
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-large" id="cursoPersonaBtn" onclick="cursoOpenPop('persona', event)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span id="cursoPersonaLabel">Yo</span>
+                        </button>
+                        <div class="wn-ctw-pop wn-ctw-pop-wide" id="cursoPopPersona" style="display:none;">
+                            <div class="wn-ctw-pop-title">Persona que toma el curso</div>
+                            <input type="text" id="cursoPersonaQ" class="wn-ctw-pop-input" placeholder="Buscar compañero… (vacío = yo)" autocomplete="off">
+                            <div class="evt-asist-ac" id="cursoPersonaAC" style="display:none;position:static;margin-top:6px;box-shadow:none;border:1px solid #E5E5EA;max-height:200px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Pills meta: Marca + Plataforma + Nivel + Estado #}
+                <div class="wn-ctw-meta-row">
+                    {# Marca (requerido) #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta empty" id="cursoMarcaBtn" onclick="cursoOpenPop('marca', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                            <span id="cursoMarcaLabel">Marca (requerido)</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopMarca" style="display:none;">
+                            <div class="wn-ctw-pop-title">Marca</div>
+                            <select id="cursoFormMarca" class="wn-ctw-pop-input">
+                                <option value="">Selecciona…</option>
+                                <option value="PANDUIT">Panduit</option>
+                                <option value="ZEBRA">Zebra</option>
+                                <option value="APC">APC</option>
+                                <option value="AVIGILON">Avigilon</option>
+                                <option value="GENETEC">Genetec</option>
+                                <option value="AXIS">Axis</option>
+                                <option value="CISCO">Cisco</option>
+                                <option value="OTRA">Otra</option>
+                            </select>
+                            <div id="cursoMarcaOtraWrap" style="display:none;margin-top:8px;">
+                                <input type="text" id="cursoFormMarcaOtra" class="wn-ctw-pop-input" placeholder="Nombre de la marca…" maxlength="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Estado #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta filled" id="cursoEstadoBtn" onclick="cursoOpenPop('estado', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span id="cursoEstadoLabel">En progreso</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopEstado" style="display:none;">
+                            <div class="wn-ctw-pop-title">Estado</div>
+                            <select id="cursoFormEstado" class="wn-ctw-pop-input">
+                                <option value="en_progreso" selected>En progreso</option>
+                                <option value="completado">Completado</option>
+                                <option value="pausado">Pausado</option>
+                                <option value="abandonado">Abandonado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Fecha inicio #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta" id="cursoFechaIniBtn" onclick="cursoOpenPop('fechaIni', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span id="cursoFechaIniLabel">Inicio</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopFechaIni" style="display:none;">
+                            <div class="wn-ctw-pop-title">Fecha de inicio</div>
+                            <input type="date" id="cursoFormFechaIni" class="wn-ctw-pop-input">
+                        </div>
+                    </div>
+
+                    {# Fecha compromiso #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-pill-meta" id="cursoFechaCompBtn" onclick="cursoOpenPop('fechaComp', event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 11 22 12 17 17 18 23 12 19 6 23 7 17 2 12 9 11"/></svg>
+                            <span id="cursoFechaCompLabel">Deadline</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopFechaComp" style="display:none;">
+                            <div class="wn-ctw-pop-title">Fecha objetivo (deadline)</div>
+                            <input type="date" id="cursoFormFechaComp" class="wn-ctw-pop-input">
+                        </div>
+                    </div>
+                </div>
+
+                {# Slider de progreso #}
+                <div class="curso-progress-section">
+                    <div class="curso-progress-head">
+                        <span class="wn-ctw-nl-label">Avance</span>
+                        <span class="curso-progress-pct" id="cursoProgressPct">0%</span>
+                    </div>
+                    <input type="range" id="cursoFormProgreso" min="0" max="100" step="5" value="0" class="curso-progress-slider">
+                </div>
+
+                <textarea class="wn-ctw-desc" id="cursoFormNotas"
+                          placeholder="Notas: módulos importantes, próximos pasos, fechas clave…" rows="2"></textarea>
+
+                <div class="evt-error" id="cursoFormError" style="display:none;"></div>
+            </main>
+
+            <footer class="wn-ctw-toolbar">
+                <div class="wn-ctw-tools">
+                    {# Plataforma (opcional) — abajo, secundaria #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-tool-ghost" id="cursoPlataformaBtn" onclick="cursoOpenPop('plataforma', event)" title="Plataforma + URL">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            <span id="cursoPlataformaLabel">Plataforma</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopPlataforma" style="display:none;">
+                            <div class="wn-ctw-pop-title">Plataforma (opcional)</div>
+                            <input type="text" id="cursoFormPlataforma" class="wn-ctw-pop-input" placeholder="Panduit Academy, Cisco Learning…" maxlength="120">
+                            <div class="wn-ctw-pop-title" style="margin-top:10px;">URL del curso (opcional)</div>
+                            <input type="url" id="cursoFormUrl" class="wn-ctw-pop-input" placeholder="https://…" maxlength="500">
+                        </div>
+                    </div>
+
+                    {# Nivel (opcional) — abajo, secundaria #}
+                    <div class="wn-ctw-popwrap">
+                        <button type="button" class="wn-ctw-tool-ghost" id="cursoNivelBtn" onclick="cursoOpenPop('nivel', event)" title="Nivel">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 8 22 9 17 14 18 21 12 18 6 21 7 14 2 9 9 8"/></svg>
+                            <span id="cursoNivelLabel">Nivel</span>
+                        </button>
+                        <div class="wn-ctw-pop" id="cursoPopNivel" style="display:none;">
+                            <div class="wn-ctw-pop-title">Nivel (opcional)</div>
+                            <select id="cursoFormNivel" class="wn-ctw-pop-input">
+                                <option value="">—</option>
+                                <option value="basico">Básico</option>
+                                <option value="intermedio">Intermedio</option>
+                                <option value="avanzado">Avanzado</option>
+                                <option value="experto">Experto</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {# CTA "Subir certificado" — solo si el curso está editándose Y está completado #}
+                    <button type="button" id="cursoUploadCertBtn" class="curso-upload-cert" style="display:none;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+                        Subir certificado
+                    </button>
+                </div>
+                <div class="wn-ctw-actions">
+                    <button type="button" class="wn-ctw-cancel evt-ctw-delete" id="cursoFormDelete" style="display:none;">Eliminar</button>
+                    <button type="button" class="wn-ctw-cancel" id="cursoFormCancel">Cancelar</button>
+                    <button type="button" class="wn-ctw-submit curso-form-submit" id="cursoFormSave" disabled>
+                        <span id="cursoFormSaveLbl">Registrar curso</span>
+                        <span class="wn-ctw-kbd">⌘ ↵</span>
+                    </button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<script>
+(function(){
+    var overlay = document.getElementById('widgetCursoForm');
+    if (!overlay) return;
+
+    var crumb = document.getElementById('cursoFormCrumb');
+    var idEl = document.getElementById('cursoFormId');
+    var nombreEl = document.getElementById('cursoFormNombre');
+    var marcaSel = document.getElementById('cursoFormMarca');
+    var marcaOtraWrap = document.getElementById('cursoMarcaOtraWrap');
+    var marcaOtraEl = document.getElementById('cursoFormMarcaOtra');
+    var plataformaEl = document.getElementById('cursoFormPlataforma');
+    var urlEl = document.getElementById('cursoFormUrl');
+    var nivelEl = document.getElementById('cursoFormNivel');
+    var estadoEl = document.getElementById('cursoFormEstado');
+    var fechaIniEl = document.getElementById('cursoFormFechaIni');
+    var fechaCompEl = document.getElementById('cursoFormFechaComp');
+    var progresoEl = document.getElementById('cursoFormProgreso');
+    var progresoPct = document.getElementById('cursoProgressPct');
+    var notasEl = document.getElementById('cursoFormNotas');
+    var errEl = document.getElementById('cursoFormError');
+    var btnSave = document.getElementById('cursoFormSave');
+    var btnSaveLbl = document.getElementById('cursoFormSaveLbl');
+    var btnDelete = document.getElementById('cursoFormDelete');
+    var btnUploadCert = document.getElementById('cursoUploadCertBtn');
+
+    var personaBtn = document.getElementById('cursoPersonaBtn');
+    var personaLbl = document.getElementById('cursoPersonaLabel');
+    var personaQ = document.getElementById('cursoPersonaQ');
+    var personaAC = document.getElementById('cursoPersonaAC');
+    var marcaBtn = document.getElementById('cursoMarcaBtn');
+    var marcaLbl = document.getElementById('cursoMarcaLabel');
+    var platBtn = document.getElementById('cursoPlataformaBtn');
+    var platLbl = document.getElementById('cursoPlataformaLabel');
+    var nivelBtn = document.getElementById('cursoNivelBtn');
+    var nivelLbl = document.getElementById('cursoNivelLabel');
+    var estadoBtn = document.getElementById('cursoEstadoBtn');
+    var estadoLbl = document.getElementById('cursoEstadoLabel');
+    var fIniBtn = document.getElementById('cursoFechaIniBtn');
+    var fIniLbl = document.getElementById('cursoFechaIniLabel');
+    var fCompBtn = document.getElementById('cursoFechaCompBtn');
+    var fCompLbl = document.getElementById('cursoFechaCompLabel');
+
+    var _persona = null; // {id, nombre}
+
+    var POP_IDS = { persona:'cursoPopPersona', marca:'cursoPopMarca', plataforma:'cursoPopPlataforma', nivel:'cursoPopNivel', estado:'cursoPopEstado', fechaIni:'cursoPopFechaIni', fechaComp:'cursoPopFechaComp' };
+    var BTN_IDS = { persona:'cursoPersonaBtn', marca:'cursoMarcaBtn', plataforma:'cursoPlataformaBtn', nivel:'cursoNivelBtn', estado:'cursoEstadoBtn', fechaIni:'cursoFechaIniBtn', fechaComp:'cursoFechaCompBtn' };
+
+    function _csrf(){ var el = document.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
+    function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function _closeAllPops(){
+        Object.keys(POP_IDS).forEach(function(k){
+            var p = document.getElementById(POP_IDS[k]); if (p) p.style.display = 'none';
+            var b = document.getElementById(BTN_IDS[k]); if (b) b.classList.remove('active');
+        });
+    }
+    window.cursoOpenPop = function(which, e){
+        if (e) e.stopPropagation();
+        var pop = document.getElementById(POP_IDS[which]);
+        var btn = document.getElementById(BTN_IDS[which]);
+        if (!pop || !btn) return;
+        var isOpen = pop.style.display !== 'none';
+        _closeAllPops();
+        if (!isOpen){
+            pop.style.display = 'block';
+            btn.classList.add('active');
+            setTimeout(function(){ var first = pop.querySelector('input, select'); if (first && first.focus) first.focus(); }, 30);
+        }
+    };
+    document.addEventListener('click', function(e){
+        if (!overlay.classList.contains('active')) return;
+        var wraps = overlay.querySelectorAll('.wn-ctw-popwrap');
+        for (var i = 0; i < wraps.length; i++){ if (wraps[i].contains(e.target)) return; }
+        _closeAllPops();
+    });
+    document.addEventListener('keydown', function(e){
+        if (!overlay.classList.contains('active')) return;
+        if (e.key === 'Escape') cerrar();
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); submitForm(); }
+    });
+
+    function setError(msg){
+        if (msg){ errEl.textContent = msg; errEl.style.display = 'block'; }
+        else { errEl.textContent = ''; errEl.style.display = 'none'; }
+    }
+
+    function _marcaValue(){
+        var v = (marcaSel.value || '').trim();
+        if (v === 'OTRA') return (marcaOtraEl.value || '').trim().toUpperCase();
+        return v;
+    }
+    function refreshPills(){
+        var mv = _marcaValue();
+        if (mv){
+            var lbl = marcaSel.value === 'OTRA' ? (mv.charAt(0) + mv.slice(1).toLowerCase()) : marcaSel.options[marcaSel.selectedIndex].textContent;
+            marcaLbl.textContent = lbl;
+            marcaBtn.classList.remove('empty'); marcaBtn.classList.add('filled');
+        } else {
+            marcaLbl.textContent = 'Marca (requerido)';
+            marcaBtn.classList.add('empty'); marcaBtn.classList.remove('filled');
+        }
+        var pv = (plataformaEl.value || '').trim();
+        platLbl.textContent = pv ? pv : 'Plataforma';
+        if (pv) platBtn.classList.add('filled'); else platBtn.classList.remove('filled');
+
+        if (nivelEl.value){ nivelLbl.textContent = nivelEl.options[nivelEl.selectedIndex].textContent; nivelBtn.classList.add('filled'); }
+        else { nivelLbl.textContent = 'Nivel'; nivelBtn.classList.remove('filled'); }
+
+        estadoLbl.textContent = estadoEl.options[estadoEl.selectedIndex].textContent;
+
+        if (fechaIniEl.value){
+            try { var d = new Date(fechaIniEl.value + 'T00:00:00');
+                  fIniLbl.textContent = 'Inicio ' + d.toLocaleDateString('es-MX', { day:'numeric', month:'short' });
+                  fIniBtn.classList.add('filled'); } catch(e){}
+        } else { fIniLbl.textContent = 'Inicio'; fIniBtn.classList.remove('filled'); }
+        if (fechaCompEl.value){
+            try { var d2 = new Date(fechaCompEl.value + 'T00:00:00');
+                  fCompLbl.textContent = 'Deadline ' + d2.toLocaleDateString('es-MX', { day:'numeric', month:'short' });
+                  fCompBtn.classList.add('filled'); } catch(e){}
+        } else { fCompLbl.textContent = 'Deadline'; fCompBtn.classList.remove('filled'); }
+
+        personaLbl.textContent = _persona ? _persona.nombre : 'Yo';
+
+        // Progreso
+        var p = parseInt(progresoEl.value || 0);
+        progresoPct.textContent = p + '%';
+
+        // Habilita guardar
+        var ok = (nombreEl.value || '').trim() && _marcaValue();
+        btnSave.disabled = !ok;
+        if (ok) btnSave.classList.add('is-ready'); else btnSave.classList.remove('is-ready');
+
+        // CTA "Subir certificado": solo si está editando y completado
+        if (idEl.value && estadoEl.value === 'completado'){
+            btnUploadCert.style.display = '';
+        } else {
+            btnUploadCert.style.display = 'none';
+        }
+    }
+    [nombreEl, plataformaEl, urlEl, nivelEl, estadoEl, fechaIniEl, fechaCompEl, marcaSel, marcaOtraEl, progresoEl].forEach(function(el){
+        if (el) { el.addEventListener('input', refreshPills); el.addEventListener('change', refreshPills); }
+    });
+    marcaSel.addEventListener('change', function(){
+        marcaOtraWrap.style.display = (marcaSel.value === 'OTRA') ? 'block' : 'none';
+        if (marcaSel.value === 'OTRA') setTimeout(function(){ marcaOtraEl.focus(); }, 30);
+    });
+    // Si progreso llega a 100, forzar estado completado
+    progresoEl.addEventListener('input', function(){
+        var p = parseInt(progresoEl.value || 0);
+        if (p >= 100 && estadoEl.value !== 'completado') estadoEl.value = 'completado';
+        refreshPills();
+    });
+    // Persona autocomplete
+    var _personaDeb = null;
+    personaQ.addEventListener('input', function(){
+        clearTimeout(_personaDeb);
+        var q = (this.value || '').trim();
+        if (!q){ personaAC.style.display='none'; return; }
+        _personaDeb = setTimeout(function(){
+            fetch('/app/api/buscar-usuarios/?q=' + encodeURIComponent(q))
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    var items = (data && (data.usuarios || data.results || data)) || [];
+                    if (!items.length){ personaAC.innerHTML=''; personaAC.style.display='none'; return; }
+                    personaAC.innerHTML = items.map(function(u){
+                        var nm = _esc(u.nombre || u.full_name || u.username || '');
+                        return '<div class="evt-asist-ac-item" data-uid="'+ u.id +'" data-uname="'+ nm +'" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #F1F5F9;display:flex;gap:8px;align-items:center;">'
+                             + '<span style="width:24px;height:24px;border-radius:50%;background:#0369A1;color:#fff;font-size:0.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+ _esc((nm || '?').substring(0,1).toUpperCase()) +'</span>'
+                             + '<span style="font-size:0.84rem;color:#1d1d1f;">'+ nm +'</span></div>';
+                    }).join('');
+                    personaAC.style.display = 'block';
+                }).catch(function(){ personaAC.style.display='none'; });
+        }, 220);
+    });
+    personaAC.addEventListener('click', function(ev){
+        var it = ev.target.closest('[data-uid]');
+        if (!it) return;
+        _persona = { id: parseInt(it.dataset.uid), nombre: it.dataset.uname };
+        personaQ.value = '';
+        personaAC.style.display='none';
+        refreshPills();
+        _closeAllPops();
+    });
+
+    function cerrar(){
+        overlay.classList.add('closing');
+        setTimeout(function(){ overlay.classList.remove('active','closing'); }, 220);
+    }
+    document.getElementById('cursoFormClose').addEventListener('click', cerrar);
+    document.getElementById('cursoFormCancel').addEventListener('click', cerrar);
+
+    function resetForm(){
+        idEl.value = '';
+        nombreEl.value = '';
+        marcaSel.value = '';
+        marcaOtraEl.value = '';
+        marcaOtraWrap.style.display = 'none';
+        plataformaEl.value = '';
+        urlEl.value = '';
+        nivelEl.value = '';
+        estadoEl.value = 'en_progreso';
+        fechaIniEl.value = '';
+        fechaCompEl.value = '';
+        progresoEl.value = 0;
+        notasEl.value = '';
+        _persona = null;
+        setError('');
+        crumb.textContent = 'Nuevo curso';
+        btnSaveLbl.textContent = 'Registrar curso';
+        btnDelete.style.display = 'none';
+        btnUploadCert.style.display = 'none';
+        refreshPills();
+    }
+
+    window.cursoFormAbrir = function(cursoId){
+        resetForm();
+        overlay.classList.add('active');
+        if (cursoId){
+            crumb.textContent = 'Editar curso';
+            btnSaveLbl.textContent = 'Guardar cambios';
+            btnDelete.style.display = '';
+            fetch('/app/api/cursos/' + cursoId + '/')
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    var c = data && data.curso;
+                    if (!c) return;
+                    idEl.value = c.id;
+                    nombreEl.value = c.nombre || '';
+                    var marcaCat = ['PANDUIT','ZEBRA','APC','AVIGILON','GENETEC','AXIS','CISCO'];
+                    var mU = (c.marca || '').toUpperCase();
+                    if (marcaCat.indexOf(mU) >= 0){ marcaSel.value = mU; marcaOtraWrap.style.display='none'; }
+                    else if (mU){ marcaSel.value = 'OTRA'; marcaOtraEl.value = mU; marcaOtraWrap.style.display='block'; }
+                    plataformaEl.value = c.plataforma || '';
+                    urlEl.value = c.url || '';
+                    nivelEl.value = c.nivel || '';
+                    estadoEl.value = c.estado || 'en_progreso';
+                    fechaIniEl.value = c.fecha_inicio || '';
+                    fechaCompEl.value = c.fecha_compromiso || '';
+                    progresoEl.value = c.progreso || 0;
+                    notasEl.value = c.notas || '';
+                    if (c.usuario_id) _persona = { id: c.usuario_id, nombre: c.usuario_nombre };
+                    refreshPills();
+                });
+        }
+        setTimeout(function(){ nombreEl.focus(); }, 80);
+    };
+    window.cursoFormCerrar = cerrar;
+
+    function submitForm(){
+        var nombre = (nombreEl.value || '').trim();
+        var marca = _marcaValue();
+        if (!nombre){ setError('Pon el nombre del curso.'); nombreEl.focus(); return; }
+        if (!marca){ setError('Selecciona la marca.'); return; }
+        setError('');
+
+        var payload = {
+            nombre: nombre,
+            marca: marca,
+            plataforma: (plataformaEl.value || '').trim(),
+            url: (urlEl.value || '').trim(),
+            nivel: nivelEl.value || '',
+            estado: estadoEl.value || 'en_progreso',
+            progreso: parseInt(progresoEl.value || 0),
+            fecha_inicio: fechaIniEl.value || null,
+            fecha_compromiso: fechaCompEl.value || null,
+            notas: (notasEl.value || '').trim(),
+        };
+        if (_persona && _persona.id) payload.usuario_id = _persona.id;
+
+        var id = idEl.value;
+        var url = id ? '/app/api/cursos/' + id + '/editar/' : '/app/api/cursos/crear/';
+        btnSave.disabled = true;
+        var origLbl = btnSaveLbl.textContent;
+        btnSaveLbl.textContent = 'Guardando…';
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
+            body: JSON.stringify(payload),
+        }).then(function(r){ return r.json(); }).then(function(data){
+            if (!data || !data.ok){
+                setError((data && data.error) || 'Error al guardar.');
+                btnSave.disabled = false;
+                btnSaveLbl.textContent = origLbl;
+                return;
+            }
+            cerrar();
+            if (typeof window.location !== 'undefined') window.location.reload();
+        }).catch(function(){
+            setError('Error de red.');
+            btnSave.disabled = false;
+            btnSaveLbl.textContent = origLbl;
+        });
+    }
+    btnSave.addEventListener('click', submitForm);
+
+    // Eliminar (usa confirm bonito si existe; sino fallback a confirm nativo)
+    btnDelete.addEventListener('click', function(){
+        var id = idEl.value;
+        if (!id) return;
+        function _doDelete(){
+            fetch('/app/api/cursos/' + id + '/eliminar/', {
+                method:'POST', headers:{'X-CSRFToken': _csrf()},
+            }).then(function(r){ return r.json(); }).then(function(data){
+                if (data && data.ok){ cerrar(); window.location.reload(); }
+            });
+        }
+        if (window.certConfirm){
+            window.certConfirm({
+                title: '¿Eliminar este curso?',
+                message: 'No se podrá deshacer.',
+                confirmText: 'Eliminar curso',
+                danger: true,
+            }).then(function(ok){ if (ok) _doDelete(); });
+        } else if (confirm('¿Eliminar este curso?')) {
+            _doDelete();
+        }
+    });
+
+    // Subir certificado: pre-llena el form de Certificación con los datos del curso
+    btnUploadCert.addEventListener('click', function(){
+        if (!idEl.value) return;
+        // Cierra este modal y abre el de Certificación con prefill
+        var prefill = {
+            marca: _marcaValue(),
+            nombre: (nombreEl.value || '').trim(),
+            nivel: nivelEl.value || '',
+            usuario_id: _persona ? _persona.id : null,
+            usuario_nombre: _persona ? _persona.nombre : null,
+            curso_id: parseInt(idEl.value),
+        };
+        cerrar();
+        setTimeout(function(){
+            if (typeof window.certificacionFormAbrirDesdeCurso === 'function') {
+                window.certificacionFormAbrirDesdeCurso(prefill);
+            } else if (typeof window.certificacionFormAbrir === 'function') {
+                window.certificacionFormAbrir(null);
+            }
+        }, 250);
+    });
+})();
+</script>

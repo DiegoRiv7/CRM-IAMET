@@ -12,6 +12,8 @@ from . import views_proyectos
 from . import views_iamet
 from . import views_levantamientos_app
 from . import views_compras
+from . import views_certificaciones
+from . import views_cursos
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -90,6 +92,7 @@ urlpatterns = [
     path('api/tarea/<int:tarea_id>/share-link/', views.api_tarea_share_link, name='api_tarea_share_link'),
     path('api/tarea/<int:tarea_id>/eliminar/', views.api_eliminar_tarea, name='api_eliminar_tarea'),
     path('shared/tarea/<str:token>/', views.ver_tarea_compartida, name='ver_tarea_compartida'),
+    path('shared/tarea/<str:token>/og.png', views.og_image_tarea, name='og_image_tarea'),
     path('api/tarea/<int:tarea_id>/toggle-timer/', views.api_toggle_task_timer, name='api_toggle_task_timer'),
     path('api/tarea/<int:tarea_id>/completar/', views.api_completar_tarea, name='api_completar_tarea'),
     path('api/tarea/<int:tarea_id>/reabrir/', views.api_reabrir_tarea, name='api_reabrir_tarea'),
@@ -130,6 +133,8 @@ urlpatterns = [
     path('api/oportunidad/<int:opp_id>/toggle-pin/', views.api_toggle_pin_oportunidad, name='api_toggle_pin_oportunidad'),
     path('api/tarea/<int:tarea_id>/toggle-pin/', views.api_toggle_pin_tarea, name='api_toggle_pin_tarea'),
     path('api/cliente-oportunidades/<int:cliente_id>/', views.api_cliente_oportunidades, name='api_cliente_oportunidades'),
+    path('api/cliente-kpis/<int:cliente_id>/', views.api_cliente_kpis, name='api_cliente_kpis'),
+    path('api/cliente-prospecciones/<int:cliente_id>/', views.api_cliente_prospecciones, name='api_cliente_prospecciones'),
     path('api/cliente-cotizaciones/<int:cliente_id>/', views.api_cliente_cotizaciones, name='api_cliente_cotizaciones'),
     path('api/cambiar-estado-oportunidad/<int:oportunidad_id>/', views.cambiar_estado_oportunidad, name='cambiar_estado_oportunidad'),
     path('api/agregar-comentario-oportunidad/<int:oportunidad_id>/', views.agregar_comentario_oportunidad, name='agregar_comentario_oportunidad'),
@@ -298,6 +303,31 @@ urlpatterns = [
     path('api/evento/<int:evento_id>/asistente/', views.api_evento_asistente_agregar, name='api_evento_asistente_agregar'),
     path('api/evento/<int:evento_id>/asistente/<int:asistente_id>/eliminar/', views.api_evento_asistente_quitar, name='api_evento_asistente_quitar'),
     path('api/buscar-prospectos/', views.api_buscar_prospectos, name='api_buscar_prospectos'),
+
+    # ── Marketing → Certificaciones ─────────────────────────────────────
+    path('api/certificaciones/', views_certificaciones.api_certificaciones_list, name='api_certificaciones_list'),
+    path('api/certificaciones/reordenar/', views_certificaciones.api_certificaciones_reordenar, name='api_certificaciones_reordenar'),
+    path('api/certificaciones/stats/', views_certificaciones.api_certificaciones_stats, name='api_certificaciones_stats'),
+    path('api/certificaciones/crear/', views_certificaciones.api_certificacion_crear, name='api_certificacion_crear'),
+    path('api/certificaciones/<int:certificacion_id>/', views_certificaciones.api_certificacion_detalle, name='api_certificacion_detalle'),
+    path('api/certificaciones/<int:certificacion_id>/editar/', views_certificaciones.api_certificacion_editar, name='api_certificacion_editar'),
+    path('api/certificaciones/<int:certificacion_id>/eliminar/', views_certificaciones.api_certificacion_eliminar, name='api_certificacion_eliminar'),
+    path('api/certificaciones/<int:certificacion_id>/archivos/', views_certificaciones.api_certificacion_archivo_subir, name='api_certificacion_archivo_subir'),
+    path('api/certificaciones/<int:certificacion_id>/archivos/<int:archivo_id>/eliminar/', views_certificaciones.api_certificacion_archivo_eliminar, name='api_certificacion_archivo_eliminar'),
+
+    # ── Marketing → Cursos ──────────────────────────────────────────────
+    path('api/cursos/', views_cursos.api_cursos_list, name='api_cursos_list'),
+    path('api/cursos/stats/', views_cursos.api_cursos_stats, name='api_cursos_stats'),
+    path('api/cursos/crear/', views_cursos.api_curso_crear, name='api_curso_crear'),
+    path('api/cursos/<int:curso_id>/', views_cursos.api_curso_detalle, name='api_curso_detalle'),
+    path('api/cursos/<int:curso_id>/editar/', views_cursos.api_curso_editar, name='api_curso_editar'),
+    path('api/cursos/<int:curso_id>/eliminar/', views_cursos.api_curso_eliminar, name='api_curso_eliminar'),
+    path('api/cursos/<int:curso_id>/comentarios/', views_cursos.api_curso_comentarios_list, name='api_curso_comentarios_list'),
+    path('api/cursos/<int:curso_id>/comentarios/crear/', views_cursos.api_curso_comentario_crear, name='api_curso_comentario_crear'),
+    path('api/cursos/comentario/<int:comentario_id>/eliminar/', views_cursos.api_curso_comentario_eliminar, name='api_curso_comentario_eliminar'),
+    path('api/cursos/<int:curso_id>/agendar/', views_cursos.api_curso_agendar, name='api_curso_agendar'),
+    path('api/cursos/<int:curso_id>/sesiones/', views_cursos.api_curso_sesiones, name='api_curso_sesiones'),
+    path('api/cursos/<int:curso_id>/sesiones/<int:sesion_id>/eliminar/', views_cursos.api_curso_sesion_eliminar, name='api_curso_sesion_eliminar'),
 
     # ── Autenticación ─────────────────────────────────────────────────────────
     path('register/', views.register, name='register'),
