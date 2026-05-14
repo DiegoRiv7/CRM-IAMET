@@ -2819,9 +2819,49 @@
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
         transform: translateY(-1px);
     }
-    /* Body (calendar grid + right panel): cards liquid glass */
+    /* Mini-barra de navegación del mes (debajo del header) */
+    .widget-overlay.is-page-mode .cal-page-monthnav {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 4px 8px;
+        flex-shrink: 0;
+    }
+    .cal-monthnav-arrow {
+        width: 32px; height: 32px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(20px);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #1D1D1F;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .cal-monthnav-arrow:hover { background: #ffffff; transform: scale(1.04); }
+    .cal-monthnav-today {
+        padding: 0 14px; height: 32px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(20px);
+        border-radius: 10px;
+        font-size: 0.82rem; font-weight: 600;
+        color: #1D1D1F;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+    }
+    .cal-monthnav-today:hover { background: #ffffff; }
+    .cal-monthnav-title {
+        font-size: 1.3rem; font-weight: 700;
+        color: #1D1D1F;
+        letter-spacing: -0.02em;
+        margin-left: 10px;
+    }
+
+    /* Body (calendar grid): ocupa todo el ancho (sin panel derecho) */
     .widget-overlay.is-page-mode .cal-page-body {
-        gap: 14px;
+        gap: 0;
         flex: 1;
         min-height: 0;
     }
@@ -2833,18 +2873,11 @@
         border-radius: 18px;
         box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 24px -8px rgba(15,23,42,0.10);
         overflow: hidden;
+        width: 100% !important;
+        flex: 1 1 100% !important;
     }
-    .widget-overlay.is-page-mode #calRightPanel {
-        background: rgba(255,255,255,0.70);
-        backdrop-filter: blur(28px) saturate(180%);
-        -webkit-backdrop-filter: blur(28px) saturate(180%);
-        border: 1px solid rgba(255,255,255,0.55);
-        border-left: 1px solid rgba(255,255,255,0.55) !important;
-        border-radius: 18px;
-        box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 24px -8px rgba(15,23,42,0.10);
-        margin-left: 0 !important;
-        max-height: 100%;
-    }
+    /* En page mode, el panel derecho se OCULTA: el calendario ocupa todo el ancho */
+    .widget-overlay.is-page-mode #calRightPanel { display: none !important; }
     /* Bordes internos del FullCalendar más sutiles en page-mode */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard td,
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard th {
@@ -2869,9 +2902,12 @@
     /* Popover de hover preview de evento del calendario */
     .cal-hover-popover {
         position: fixed;
-        width: 320px;
+        width: 380px;
         max-width: calc(100vw - 16px);
-        background: rgba(255,255,255,0.92);
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        background: rgba(255,255,255,0.94);
         backdrop-filter: blur(30px) saturate(180%);
         -webkit-backdrop-filter: blur(30px) saturate(180%);
         border: 1px solid rgba(255,255,255,0.65);
@@ -2896,7 +2932,17 @@
         font-size: 0.62rem; font-weight: 800;
         text-transform: uppercase; letter-spacing: 0.08em;
     }
-    .cal-hover-body { padding: 12px 14px; }
+    .cal-hover-body {
+        padding: 14px 16px;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(15,23,42,0.18) transparent;
+    }
+    .cal-hover-body::-webkit-scrollbar { width: 5px; }
+    .cal-hover-body::-webkit-scrollbar-track { background: transparent; }
+    .cal-hover-body::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.16); border-radius: 999px; }
     .cal-hover-title {
         font-size: 15px; font-weight: 700;
         color: #1D1D1F;
@@ -2912,13 +2958,12 @@
         margin-top: 10px;
         font-size: 12.5px;
         color: #334155;
-        line-height: 1.45;
+        line-height: 1.5;
         background: rgba(15,23,42,0.04);
         border-radius: 8px;
-        padding: 8px 10px;
-        max-height: 90px;
-        overflow: hidden;
+        padding: 10px 12px;
         white-space: pre-wrap;
+        word-break: break-word;
     }
     .cal-hover-meta {
         margin-top: 8px;

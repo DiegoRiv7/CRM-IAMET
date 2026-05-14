@@ -129,6 +129,17 @@
                 </button>
             </div>
         </div>
+        <!-- Mini-barra de navegación del mes (page mode) -->
+        <div class="cal-page-monthnav">
+            <button type="button" class="cal-monthnav-arrow" onclick="calNavPrev()" title="Anterior">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="cal-monthnav-arrow" onclick="calNavNext()" title="Siguiente">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button type="button" class="cal-monthnav-today" onclick="calNavToday()">Hoy</button>
+            <span id="calNavTitlePage" class="cal-monthnav-title">—</span>
+        </div>
         {% else %}
         <!-- ── Outer header (widget mode tradicional) ── -->
         <div style="padding:1rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
@@ -209,23 +220,7 @@
 
                 <!-- ── OVERVIEW STATE ── -->
                 <div id="calPanelOverview">
-                    {% if tab_activo == 'calendario' %}
-                    <!-- En page mode, el "Tu mes de un vistazo" se reemplaza por los controles de navegación de mes. -->
-                    <div class="cal-page-nav" style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
-                        <div style="display:flex;align-items:center;gap:5px;">
-                            <button onclick="calNavPrev()" title="Anterior" style="background:#F2F2F7;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">
-                                <svg width="12" height="12" fill="none" stroke="#1D1D1F" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-                            </button>
-                            <button onclick="calNavNext()" title="Siguiente" style="background:#F2F2F7;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">
-                                <svg width="12" height="12" fill="none" stroke="#1D1D1F" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-                            </button>
-                            <button onclick="calNavToday()" style="background:#F2F2F7;border:none;border-radius:8px;padding:0 11px;height:30px;cursor:pointer;font-size:0.8rem;font-weight:600;color:#1D1D1F;transition:background 0.15s;font-family:inherit;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">Hoy</button>
-                        </div>
-                        <span id="calNavTitlePage" style="font-size:1.1rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.01em;">—</span>
-                    </div>
-                    {% else %}
                     <div id="calPanelOverviewTitle" style="font-size:1rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.01em;">Tu mes de un vistazo</div>
-                    {% endif %}
 
                     <!-- Efectividad card (dark) -->
                     <div style="background:#1D1D1F;border-radius:16px;padding:1.1rem 1.2rem;">
@@ -2200,8 +2195,16 @@
             ' · ' + pad(startD.getHours()) + ':' + pad(startD.getMinutes()) +
             (endD ? ' – ' + pad(endD.getHours()) + ':' + pad(endD.getMinutes()) : '');
         var esTarea = String(evt.id).indexOf('tarea-') === 0;
+        var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
         var tipo = esTarea ? 'Tarea' : (ep.evento ? 'Evento' : (ep.curso ? 'Curso' : 'Actividad'));
-        var tipoColor = esTarea ? '#FF9500' : (ep.evento ? '#8B5CF6' : (ep.curso ? '#10B981' : '#0052D4'));
+        // Respeta el color real del evento (mismo cálculo que el grid del calendario):
+        // - color custom si está definido (incluye negro #1D1D1F, café, etc.)
+        // - tareas: naranja
+        // - con oportunidad: azul
+        // - sin opp: gris oscuro
+        var evColor = evt.color || null;
+        if (evColor === '#8B5CF6') evColor = '#B45309'; // migración legacy
+        var tipoColor = evColor || (esTarea ? '#FF9500' : (hasOpp ? '#0052D4' : '#3A3A3C'));
         var participantes = (ep.participants || []).map(function (p) { return p.nombre || p.name || ''; }).filter(Boolean);
         var creador = ep.creado_por ? (ep.creado_por.nombre || ep.creado_por.name || '') : '';
         var oppHTML = '';
