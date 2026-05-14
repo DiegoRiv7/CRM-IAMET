@@ -28,7 +28,7 @@
             .cal-view-btn { background:transparent; border:none; border-radius:7px; padding:0.4rem 1.1rem; font-size:0.88rem; font-weight:600; color:#86868B; cursor:pointer; transition:all 0.15s; font-family:inherit; }
             .cal-view-btn.active { background:#fff; color:#1D1D1F; box-shadow:0 1px 5px rgba(0,0,0,0.1); }
             /* ─── Day timeline ─── */
-            #calDayTimeline { overflow-y:auto; flex:1; min-height:0; }
+            #calDayTimeline { overflow-y:auto; flex:1; min-height:0; padding-top:8px; }
             .cal-hour-row { display:flex; align-items:flex-start; height:64px; border-bottom:1px solid rgba(0,0,0,0.05); position:relative; }
             .cal-hour-label { width:56px; min-width:56px; font-size:0.7rem; font-weight:600; color:#AEAEB2; padding:0 10px 0 0; text-align:right; line-height:1; margin-top:-9px; }
             .cal-hour-area { flex:1; }
@@ -1245,46 +1245,95 @@
         // El día arranca a las 06:00 (top 0), así que no requerimos auto-scroll.
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
 
+        // Asegura los handlers de drag (idempotente)
+        _calDayBindDragHandlers();
+
         calUpdateSidePanel();
     }
 
-    /* ─── DRAG & DROP de eventos en vista Día (event delegation) ─── */
+    /* ─── DRAG & DROP de eventos en vista Día ───
+       Bindeado al container #calDayTimeline cada vez que se renderiza
+       (no global) para evitar conflictos con otros handlers. */
     var _calDayDrag = null;
-    function _calDayDragMove(ev) {
+
+    function _calDayBindDragHandlers() {
+        var container = document.getElementById('calDayTimeline');
+        if (!container || container._calDragBound) return;
+        container._calDragBound = true;
+        console.log('[cal-drag-day] handlers bound to #calDayTimeline');
+
+        container.addEventListener('mousedown', function (ev) {
+            if (ev.button !== 0) return;
+            var card = ev.target.closest ? ev.target.closest('.cal-day-evt[data-draggable="1"]') : null;
+            if (!card) return;
+            var evtId = card.getAttribute('data-evt-id');
+            if (!evtId) return;
+            var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
+            if (!stored) {
+                console.warn('[cal-drag-day] stored event not found for id', evtId);
+                return;
+            }
+            var sD = new Date(stored.start);
+            var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
+            _calDayDrag = {
+                card: card,
+                evtId: evtId,
+                startY: ev.clientY,
+                startTop: parseFloat(card.style.top) || 0,
+                originalStartMs: sD.getTime(),
+                originalEndMs: eD.getTime(),
+                moved: false,
+                stored: stored,
+                lastDeltaMin: 0,
+            };
+            console.log('[cal-drag-day] mousedown on', evtId, 'startTop=', _calDayDrag.startTop);
+            ev.preventDefault();
+            ev.stopPropagation();
+        });
+    }
+
+    function _calDayDragMoveGlobal(ev) {
         if (!_calDayDrag) return;
         var dy = ev.clientY - _calDayDrag.startY;
-        if (!_calDayDrag.moved && Math.abs(dy) > 4) _calDayDrag.moved = true;
+        if (!_calDayDrag.moved && Math.abs(dy) > 3) {
+            _calDayDrag.moved = true;
+            _calDayDrag.card.style.opacity = '0.7';
+            _calDayDrag.card.style.zIndex = '30';
+            _calDayDrag.card.style.cursor = 'grabbing';
+            console.log('[cal-drag-day] dragging started');
+        }
         if (!_calDayDrag.moved) return;
         var pxPerMin = CAL_HOUR_H / 60;
-        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;  // snap 15 min
+        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;
         _calDayDrag.lastDeltaMin = deltaMin;
         _calDayDrag.card.style.top = (_calDayDrag.startTop + deltaMin * pxPerMin) + 'px';
-        _calDayDrag.card.style.opacity = '0.7';
-        _calDayDrag.card.style.zIndex = '30';
-        ev.preventDefault();
     }
-    function _calDayDragEnd(ev) {
-        document.removeEventListener('mousemove', _calDayDragMove, true);
-        document.removeEventListener('mouseup', _calDayDragEnd, true);
+
+    function _calDayDragUpGlobal(ev) {
         if (!_calDayDrag) return;
         var drag = _calDayDrag;
+        _calDayDrag = null;
         drag.card.style.opacity = '';
         drag.card.style.zIndex = '';
-        // Si NO se movió, fue click — abrir detalle
+        drag.card.style.cursor = '';
         if (!drag.moved) {
-            _calDayDrag = null;
+            // Click puro → abrir detalle
+            console.log('[cal-drag-day] click (no drag), opening detail for', drag.evtId);
             if (typeof window.calShowEventDetail === 'function') window.calShowEventDetail(drag.evtId);
             return;
         }
         var deltaMin = drag.lastDeltaMin || 0;
-        _calDayDrag = null;
-        if (deltaMin === 0) return;
+        if (deltaMin === 0) {
+            drag.card.style.top = drag.startTop + 'px';
+            return;
+        }
         var newStart = new Date(drag.originalStartMs + deltaMin * 60000);
         var newEnd = new Date(drag.originalEndMs + deltaMin * 60000);
         var pad = function(n){return String(n).padStart(2,'0');};
         function localIso(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
         var ep = drag.stored.extendedProps || {};
         var csrf = (function(){ var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; })();
+        console.log('[cal-drag-day] PUT new dates', localIso(newStart), localIso(newEnd));
         fetch('/app/api/actividades/' + drag.evtId + '/', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
@@ -1311,39 +1360,15 @@
             }
             calRenderDayView(_calCurrentDay);
         }).catch(function (err) {
-            console.error('[cal-drag-day] error:', err);
+            console.error('[cal-drag-day] PUT failed:', err);
             drag.card.style.top = drag.startTop + 'px';
-            alert('No se pudo mover el evento. ' + (err.message || ''));
+            alert('No se pudo mover el evento: ' + (err.message || 'error desconocido'));
         });
     }
-    // Delegation global: cualquier mousedown en una card de vista día arranca drag
-    document.addEventListener('mousedown', function (ev) {
-        if (ev.button !== 0) return;
-        var card = ev.target.closest ? ev.target.closest('.cal-day-evt[data-draggable="1"]') : null;
-        if (!card) return;
-        if (!document.getElementById('calDayViewRoot') || document.getElementById('calDayViewRoot').style.display === 'none') return;
-        var evtId = card.getAttribute('data-evt-id');
-        if (!evtId || evtId.indexOf('tarea-') === 0) return;
-        var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
-        if (!stored) return;
-        if ((stored.extendedProps||{}).tipo_actividad === 'tarea') return;
-        var sD = new Date(stored.start);
-        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
-        _calDayDrag = {
-            card: card,
-            evtId: evtId,
-            startY: ev.clientY,
-            startTop: parseFloat(card.style.top) || 0,
-            originalStartMs: sD.getTime(),
-            originalEndMs: eD.getTime(),
-            moved: false,
-            stored: stored,
-            lastDeltaMin: 0,
-        };
-        document.addEventListener('mousemove', _calDayDragMove, true);
-        document.addEventListener('mouseup', _calDayDragEnd, true);
-        ev.preventDefault();
-    }, true);
+
+    // Handlers globales para move/up — siempre activos (cheap, solo verifican _calDayDrag)
+    document.addEventListener('mousemove', _calDayDragMoveGlobal);
+    document.addEventListener('mouseup', _calDayDragUpGlobal);
 
     window.calDayHourClick = function(e, hour) {
         if (e.target && e.target.closest && e.target.closest('.cal-day-evt')) return;
