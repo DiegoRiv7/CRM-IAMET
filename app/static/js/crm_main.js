@@ -507,15 +507,9 @@
             if (btnClose) btnClose.addEventListener('click', closeWidget);
             if (btnCancel) btnCancel.addEventListener('click', closeWidget);
 
-            // Close on overlay background click
-            if (overlay) {
-                overlay.addEventListener('click', function (e) {
-                    if (e.target === overlay) closeWidget();
-                });
-            }
-
-            // Nota: el modal de Nueva Oportunidad solo se cierra con el botón ×.
-            // ESC y click-fuera están deshabilitados para evitar perder un draft por accidente.
+            // Nota: el modal de Nueva Oportunidad solo se cierra con el botón ×
+            // (o el "Cancelar" del footer). El click sobre el backdrop y ESC están
+            // deshabilitados a propósito para evitar perder un draft por accidente.
 
             // ── Autocomplete: Cliente ──
             var clienteInput = document.getElementById('wfCliente');
