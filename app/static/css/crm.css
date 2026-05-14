@@ -1019,11 +1019,15 @@
 
     /* ── Tab "Información" (carátula del cliente) ── */
     .wco-info-panel {
-        padding: 18px 28px 100px; /* extra bottom para que la savebar no tape */
+        padding: 18px 28px 40px;
         overflow-y: auto;
+        overflow-x: hidden;   /* el scroll horizontal vive en el track de contactos, no aquí */
         max-height: calc(100% - 80px);
         position: relative;
     }
+    .wco-info-grid { min-width: 0; }
+    .wco-info-right { min-width: 0; }
+    .wci-contactos { min-width: 0; }
 
     /* ── MODO LECTURA (default): inputs como texto, pills no-on ocultos ── */
     .wco-info-panel:not(.is-editing) .wco-info-input,
@@ -1072,38 +1076,43 @@
         font-weight: 400;
     }
 
-    /* ── Savebar flotante al fondo (visible sólo en modo edición) ── */
+    /* ── Save/Cancel: botones flotantes (sólo visibles en modo edición) ── */
     .wco-info-savebar {
-        position: sticky; bottom: 0;
-        margin: 14px -28px -100px;
-        padding: 12px 28px;
-        background: rgba(255,255,255,0.92);
-        border-top: 1px solid rgba(15,23,42,0.08);
-        backdrop-filter: blur(14px) saturate(160%);
+        position: sticky; bottom: 16px;
+        margin: 16px 0 0;
         display: none;
-        align-items: center; gap: 12px;
+        align-items: center; gap: 10px;
+        justify-content: flex-end;
+        pointer-events: none;  /* deja pasar clicks fuera de los botones */
         z-index: 5;
     }
     .wco-info-panel.is-editing .wco-info-savebar { display: flex; }
     .wco-info-savebar .wco-info-saved {
-        flex: 1;
-        font-size: 12.5px;
-        color: #0052D4;
-        font-weight: 600;
-        letter-spacing: 0.01em;
+        display: none;  /* eliminamos el texto "estás editando..." que pedía el user */
+    }
+    .wco-info-btn-cancel,
+    .wco-info-savebar .wco-info-btn {
+        pointer-events: auto;
     }
     .wco-info-btn-cancel {
-        padding: 9px 16px;
+        padding: 10px 18px;
         border: 1px solid rgba(15,23,42,0.10);
-        background: #ffffff;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px) saturate(160%);
         color: #475569;
-        border-radius: 10px;
+        border-radius: 999px;
         font-weight: 600; font-size: 13px;
         cursor: pointer;
         font-family: inherit;
+        box-shadow: 0 8px 20px -8px rgba(15,23,42,0.25);
         transition: all 0.16s ease;
     }
-    .wco-info-btn-cancel:hover { background: #f1f5f9; color: #0f172a; }
+    .wco-info-btn-cancel:hover { background: #ffffff; color: #0f172a; transform: translateY(-1px); }
+    .wco-info-savebar .wco-info-btn {
+        padding: 10px 22px;
+        border-radius: 999px;
+        box-shadow: 0 10px 24px -8px rgba(0,82,212,0.55);
+    }
     .wco-info-grid {
         display: grid;
         grid-template-columns: 380px 1fr;
@@ -1318,16 +1327,27 @@
     }
     .wci-contactos-add:hover { background: #DDE7FF; }
     .wci-contactos-track {
-        display: flex; gap: 12px;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 240px;
+        grid-template-rows: repeat(2, auto);
+        gap: 12px;
         overflow-x: auto;
+        overflow-y: hidden;
         scroll-behavior: smooth;
         padding-bottom: 6px;
-        min-height: 130px;
+        /* Aísla el scroll horizontal a este contenedor */
+        overscroll-behavior-x: contain;
+    }
+    .wci-contactos-track.is-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 110px;
     }
     .wci-contactos-track::-webkit-scrollbar { height: 6px; }
     .wci-contactos-track::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.18); border-radius: 999px; }
     .wci-contacto-card {
-        flex: 0 0 220px;
         background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
         border: 1px solid rgba(15,23,42,0.06);
         border-radius: 12px;
@@ -1335,6 +1355,7 @@
         display: flex; flex-direction: column; gap: 4px;
         position: relative;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        min-width: 0;
     }
     .wci-contacto-card:hover {
         border-color: rgba(0,82,212,0.20);

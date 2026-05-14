@@ -5008,11 +5008,11 @@
 
             function _wciRenderContactos(rows){
                 var track = document.getElementById('wciContactosTrack');
-                var empty = document.getElementById('wciContactosEmpty');
                 var count = document.getElementById('wciContactosCount');
                 if (!track) return;
                 rows = rows || [];
                 if (count) count.textContent = rows.length;
+                track.classList.toggle('is-empty', rows.length === 0);
                 if (!rows.length) {
                     track.innerHTML = '<div class="wci-contactos-empty" id="wciContactosEmpty">No hay contactos para este cliente. Agrega el primero.</div>';
                     return;
