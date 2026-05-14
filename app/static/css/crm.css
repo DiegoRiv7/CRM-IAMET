@@ -984,16 +984,17 @@
     .wco-close:hover { background: rgba(0,0,0,0.12); }
     .wco-tabs {
         display: flex; gap: 4px;
-        padding: 10px 24px 0;
+        padding: 12px 24px 0;
         border-bottom: 1px solid rgba(0,0,0,0.04);
     }
     .wco-tab {
         background: transparent; border: none;
         color: #6B7280; font-size: 0.82rem; font-weight: 600;
-        padding: 8px 14px;
-        border-radius: 8px 8px 0 0;
+        padding: 9px 16px;
+        border-radius: 10px 10px 0 0;
         cursor: pointer; font-family: inherit;
-        position: relative; transition: color 0.15s;
+        position: relative;
+        transition: color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .wco-tab:hover { color: #1D1D1F; }
     .wco-tab.is-active {
@@ -1001,8 +1002,9 @@
     }
     .wco-tab.is-active::after {
         content: ''; position: absolute;
-        left: 12px; right: 12px; bottom: -1px; height: 2px;
-        background: #0052D4; border-radius: 2px 2px 0 0;
+        left: 14px; right: 14px; bottom: -1px; height: 2.5px;
+        background: linear-gradient(90deg, #0052D4, #5856D6);
+        border-radius: 2px 2px 0 0;
     }
     .wco-prosp-etapa {
         display: inline-block;
@@ -1019,27 +1021,39 @@
     .wco-period-wrap { position: relative; }
     .wco-period-pill {
         display: inline-flex; align-items: center; gap: 6px;
-        background: #FFFFFF; border: 1px solid rgba(0,0,0,0.08);
+        background: rgba(255,255,255,0.7);
+        backdrop-filter: blur(12px) saturate(160%);
+        -webkit-backdrop-filter: blur(12px) saturate(160%);
+        border: 1px solid rgba(0,0,0,0.06);
         color: #1D1D1F;
-        padding: 6px 12px; border-radius: 999px;
+        padding: 7px 14px; border-radius: 999px;
         font-size: 0.78rem; font-weight: 600;
         cursor: pointer; font-family: inherit;
-        transition: all 0.15s;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
         white-space: nowrap;
     }
-    .wco-period-pill:hover { border-color: rgba(0,82,212,0.3); color: #0052D4; }
+    .wco-period-pill:hover {
+        border-color: rgba(0,82,212,0.35); color: #0052D4;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px -4px rgba(0,82,212,0.25);
+    }
     .wco-period-pill.is-default { color: #6B7280; font-weight: 500; }
     .wco-period-pop {
         position: absolute;
-        top: calc(100% + 6px); right: 0;
-        min-width: 380px;
-        background: #FFFFFF;
-        border: 1px solid rgba(0,0,0,0.06);
-        border-radius: 12px;
-        box-shadow: 0 14px 32px rgba(0,0,0,0.12);
+        top: calc(100% + 8px); right: 0;
+        min-width: 400px;
+        background: rgba(255, 255, 255, 0.78);
+        backdrop-filter: blur(36px) saturate(200%);
+        -webkit-backdrop-filter: blur(36px) saturate(200%);
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 18px;
+        box-shadow:
+            0 32px 64px -16px rgba(20, 14, 4, 0.22),
+            0 8px 16px -4px rgba(20, 14, 4, 0.08),
+            inset 0 1px 0 rgba(255,255,255,0.7);
         z-index: 200;
         overflow: hidden;
-        animation: wcoPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: wcoPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes wcoPopIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
     .wco-period-pop-cols {
@@ -1082,9 +1096,11 @@
     }
     .wco-period-pop-foot {
         display: flex; gap: 8px;
-        padding: 10px 14px;
-        border-top: 1px solid rgba(0,0,0,0.05);
-        background: #FAFAFA;
+        padding: 12px 16px;
+        border-top: 1px solid rgba(0,0,0,0.04);
+        background: rgba(250,250,250,0.5);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     .wco-period-btn-reset, .wco-period-btn-apply {
         flex: 1;
@@ -1099,9 +1115,18 @@
     }
     .wco-period-btn-reset:hover { background: #F3F4F6; }
     .wco-period-btn-apply {
-        background: #0052D4; color: #FFFFFF;
+        background: linear-gradient(135deg, #0052D4 0%, #0041a8 100%);
+        color: #FFFFFF;
+        box-shadow:
+            0 4px 14px -2px rgba(0, 82, 212, 0.4),
+            inset 0 1px 0 rgba(255,255,255,0.18);
     }
-    .wco-period-btn-apply:hover { background: #0041a8; }
+    .wco-period-btn-apply:hover {
+        transform: translateY(-1px);
+        box-shadow:
+            0 6px 18px -2px rgba(0, 82, 212, 0.5),
+            inset 0 1px 0 rgba(255,255,255,0.18);
+    }
 
     .wco-filters {
         padding: 14px 24px;
@@ -13368,20 +13393,26 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 
 /* ════════════════════════════════════════════════════════════════════
    TAB CLIENTES (dashboard) — tabla clientes × marcas + KPIs flotantes
+   Estilo iPadOS: glassmorphism + cards blandas con sombras difusas
    ════════════════════════════════════════════════════════════════════ */
 .cli-page {
-    display: flex; flex-direction: column; gap: 14px;
-    padding: 8px 0 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    padding: 8px 0 32px;
 }
 
-/* Fila de KPIs flotantes */
+/* Fila de KPIs flotantes — "liquid glass" con backdrop blur */
 .cli-kpis-bar {
-    background: linear-gradient(135deg, #EEF3FF 0%, #FFFFFF 60%);
-    border: 1px solid rgba(0, 82, 212, 0.18);
-    border-radius: 14px;
-    padding: 14px 18px;
-    box-shadow: 0 4px 16px rgba(0, 82, 212, 0.06);
-    animation: cliKpisIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(238, 243, 255, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(0, 82, 212, 0.14);
+    border-radius: 22px;
+    padding: 18px 22px;
+    box-shadow:
+        0 30px 60px -30px rgba(0, 82, 212, 0.18),
+        0 4px 12px -2px rgba(0, 82, 212, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    animation: cliKpisIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes cliKpisIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .cli-kpis-head {
@@ -13408,22 +13439,27 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
 }
 @media (max-width: 720px) { .cli-kpis-grid { grid-template-columns: repeat(2, 1fr); } }
 .cli-kpi {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid rgba(0,0,0,0.04);
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.cli-kpi:hover { transform: translateY(-1px); }
 .cli-kpi-lbl {
     font-size: 0.62rem; color: #6B7280; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.06em;
 }
 .cli-kpi-val {
-    font-size: 1.35rem; font-weight: 800; color: #1D1D1F;
-    margin-top: 2px;
-    letter-spacing: -0.01em;
+    font-size: 1.45rem; font-weight: 800; color: #1D1D1F;
+    margin-top: 3px;
+    letter-spacing: -0.02em;
 }
 
-/* Toggle Ambos/Solo Clientes/Solo Prospectos */
+/* Toggle Ambos/Solo Clientes/Solo Prospectos — pills líquidos */
 .cli-filter-bar {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     padding: 2px 0;
@@ -13434,54 +13470,74 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     margin-right: 4px;
 }
 .cli-filter-btn {
-    padding: 6px 12px; border: 1px solid #E5E7EB; background: #FFFFFF;
-    color: #374151; border-radius: 18px;
-    font-size: 0.72rem; font-weight: 600;
+    padding: 7px 14px;
+    border: 1px solid rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    color: #374151; border-radius: 999px;
+    font-size: 0.74rem; font-weight: 600;
     cursor: pointer; font-family: inherit;
-    transition: all 0.15s;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.cli-filter-btn:hover { border-color: #0052D4; color: #0052D4; }
+.cli-filter-btn:hover {
+    border-color: rgba(0, 82, 212, 0.4);
+    color: #0052D4;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -4px rgba(0, 82, 212, 0.25);
+}
 .cli-filter-btn.cli-filter-active {
-    background: #0052D4; border-color: #0052D4; color: #FFFFFF;
+    background: linear-gradient(135deg, #0052D4 0%, #0041a8 100%);
+    border-color: transparent; color: #FFFFFF;
+    box-shadow:
+        0 4px 14px -2px rgba(0, 82, 212, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.18);
 }
 .cli-filter-meta {
     margin-left: auto;
     font-size: 0.72rem; color: #6B7280;
 }
 
-/* Tabla */
+/* Tabla — card blanda con sombra difusa */
 .cli-table-wrap {
-    background: #FFFFFF;
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(0,0,0,0.04);
+    border-radius: 22px;
     overflow: hidden;
+    box-shadow:
+        0 30px 60px -30px rgba(20, 14, 4, 0.12),
+        0 4px 14px -4px rgba(20, 14, 4, 0.05),
+        inset 0 1px 0 rgba(255,255,255,0.6);
 }
 .cli-table {
     width: 100%; border-collapse: collapse;
     font-size: 0.84rem;
 }
-.cli-table thead { background: rgba(0,0,0,0.02); }
+.cli-table thead { background: rgba(0,0,0,0.018); }
 .cli-table th {
     text-align: left;
-    padding: 11px 12px;
+    padding: 13px 14px;
     font-size: 0.66rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.06em;
+    text-transform: uppercase; letter-spacing: 0.07em;
     color: #6E6E73;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 .cli-table th.cli-th-marca { text-align: center; width: 80px; }
 .cli-table td {
-    padding: 11px 12px;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.035);
 }
 .cli-table tbody tr {
-    cursor: pointer; transition: background 0.12s;
+    cursor: pointer;
+    transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.cli-table tbody tr:hover { background: rgba(0, 82, 212, 0.035); }
+.cli-table tbody tr:hover { background: rgba(0, 82, 212, 0.04); }
 .cli-table tbody tr.cli-row-selected {
-    background: rgba(0, 82, 212, 0.08);
+    background: rgba(0, 82, 212, 0.075);
 }
-.cli-table tbody tr.cli-row-selected td { border-bottom-color: rgba(0,82,212,0.15); }
+.cli-table tbody tr.cli-row-selected td { border-bottom-color: rgba(0,82,212,0.14); }
 
 .cli-td-cli { font-weight: 700; color: #1D1D1F; min-width: 220px; }
 .cli-cliente-name {
