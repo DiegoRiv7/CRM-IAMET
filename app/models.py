@@ -5316,3 +5316,70 @@ class CursoArchivo(models.Model):
 
     def __str__(self):
         return self.nombre or self.archivo.name
+
+
+class AvanceEtapaPendiente(models.Model):
+    """
+    Cuando una tarea de automatización se completa Y su regla tiene
+    `avanzar_etapa_al_completar=True`, NO avanzamos la oportunidad
+    automáticamente: dejamos un AvanceEtapaPendiente abierto para que el
+    responsable de la oportunidad describa cada nueva tarea antes de
+    confirmar el avance.
+
+    Si el avance no requiere descripción (no hay reglas en la siguiente
+    etapa), no se crea pendiente y la cadena reactiva corre de inmediato.
+    """
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('confirmado', 'Confirmado'),
+        ('descartado', 'Descartado'),
+    ]
+
+    tarea = models.ForeignKey(
+        'Tarea',
+        on_delete=models.CASCADE,
+        related_name='avances_pendientes',
+        verbose_name='Tarea completada que dispara el avance',
+    )
+    oportunidad = models.ForeignKey(
+        'TodoItem',
+        on_delete=models.CASCADE,
+        related_name='avances_etapa_pendientes',
+        verbose_name='Oportunidad',
+    )
+    responsable = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='avances_etapa_pendientes',
+        verbose_name='Usuario que debe describir las próximas tareas',
+        help_text='Normalmente el dueño de la oportunidad',
+    )
+    etapa_actual = models.CharField(max_length=100, blank=True, default='')
+    etapa_siguiente = models.CharField(max_length=100, blank=True, default='')
+    estado = models.CharField(
+        max_length=12,
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+    )
+    descripciones_json = models.JSONField(blank=True, null=True, default=dict)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True)
+    confirmado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='avances_etapa_confirmados',
+    )
+
+    class Meta:
+        verbose_name = 'Avance de Etapa Pendiente'
+        verbose_name_plural = 'Avances de Etapa Pendientes'
+        ordering = ['fecha_creacion']
+        indexes = [
+            models.Index(fields=['responsable', 'estado']),
+            models.Index(fields=['oportunidad', 'estado']),
+        ]
+
+    def __str__(self):
+        return f"Avance {self.etapa_actual} → {self.etapa_siguiente} ({self.estado})"

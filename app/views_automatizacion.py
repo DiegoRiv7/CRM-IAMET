@@ -19,6 +19,7 @@ from .models import (
     Tarea,
     TodoItem,
     Notificacion,
+    AvanceEtapaPendiente,
 )
 from .views_utils import is_supervisor, crear_notificacion
 
@@ -358,7 +359,78 @@ def api_automatizacion_toggle(request, regla_id):
 
 # ─── Función principal: ejecutar automatizaciones ────────────────────────────
 
-def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
+def _reglas_para_etapa(oportunidad, etapa):
+    """Devuelve un queryset de ReglaAutomatizacion activas que aplican a la
+    etapa dada, considerando el tipo_negociacion de la oportunidad."""
+    tipo_neg = getattr(oportunidad, 'tipo_negociacion', 'runrate') or 'runrate'
+    return (
+        ReglaAutomatizacion.objects.filter(
+            activa=True,
+            etapa_disparadora__iexact=etapa,
+        )
+        .filter(tipo_negociacion__in=['ambos', tipo_neg])
+        .prefetch_related(
+            'participantes_predeterminados',
+            'observadores_predeterminados',
+        )
+        .order_by('orden')
+    )
+
+
+def previsualizar_avance_etapa(tarea):
+    """
+    Para una tarea que acaba de completarse, calcula si al cerrarla habrá un
+    avance de etapa (su regla_origen tiene avanzar_etapa_al_completar=True) y
+    qué tareas se crearían en la siguiente etapa.
+
+    Devuelve un dict {'aplica': bool, 'etapa_actual': str, 'etapa_siguiente': str|None,
+                      'proximas_reglas': [...], 'oportunidad_id': int|None}
+    o None si no aplica.
+    """
+    regla = getattr(tarea, 'regla_origen', None)
+    if not regla or not regla.avanzar_etapa_al_completar:
+        return None
+    oportunidad = getattr(tarea, 'oportunidad', None)
+    if not oportunidad:
+        return None
+    tipo_neg = getattr(oportunidad, 'tipo_negociacion', 'runrate') or 'runrate'
+    etapa_actual = oportunidad.etapa_corta or ''
+    siguiente = obtener_siguiente_etapa(tipo_neg, etapa_actual)
+    if not siguiente:
+        return None
+
+    # Reglas que se ejecutarían en la siguiente etapa (excluyendo las ya ejecutadas
+    # para esta oportunidad, igual que hace `ejecutar_automatizaciones`).
+    reglas_qs = _reglas_para_etapa(oportunidad, siguiente)
+    ya_ejecutadas_ids = set(
+        EjecucionAutomatizacion.objects.filter(
+            regla__in=reglas_qs, oportunidad=oportunidad,
+        ).values_list('regla_id', flat=True)
+    )
+    proximas = []
+    for r in reglas_qs:
+        if r.id in ya_ejecutadas_ids:
+            continue
+        proximas.append({
+            'regla_id': r.id,
+            'titulo': r.titulo_tarea,
+            'descripcion_sugerida': r.descripcion_tarea or '',
+            'prioridad': r.prioridad_tarea,
+        })
+
+    return {
+        'aplica': True,
+        'oportunidad_id': oportunidad.id,
+        'oportunidad_nombre': oportunidad.oportunidad,
+        'etapa_actual': etapa_actual,
+        'etapa_siguiente': siguiente,
+        'proximas_reglas': proximas,
+        # Si no hay próximas reglas, el avance es trivial (no se piden descripciones).
+        'requiere_descripcion': len(proximas) > 0,
+    }
+
+
+def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_por_regla=None):
     """
     Busca reglas activas para la etapa dada y crea las tareas correspondientes.
     Llamar desde views_crm.py cuando se cambia la etapa de una oportunidad.
@@ -367,20 +439,21 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
         oportunidad: instancia de TodoItem
         nueva_etapa: str con el nombre de la nueva etapa (etapa_corta)
         usuario: instancia de User que realizó el cambio
+        descripciones_por_regla: dict opcional {regla_id (int|str): str} con
+            descripciones provistas por el usuario que reemplazan la
+            descripción predeterminada de la regla.
     """
-    tipo_neg = getattr(oportunidad, 'tipo_negociacion', 'runrate') or 'runrate'
-
     # Buscar reglas activas para esta etapa
-    reglas = ReglaAutomatizacion.objects.filter(
-        activa=True,
-        etapa_disparadora__iexact=nueva_etapa,
-    ).filter(
-        # Aplica si la regla es para ambos tipos, o si coincide con el tipo de la oportunidad
-        tipo_negociacion__in=['ambos', tipo_neg]
-    ).prefetch_related(
-        'participantes_predeterminados',
-        'observadores_predeterminados',
-    ).order_by('orden')
+    reglas = _reglas_para_etapa(oportunidad, nueva_etapa)
+
+    descripciones_por_regla = descripciones_por_regla or {}
+    # Normalizar claves a int para tolerar JSON con strings
+    descripciones_norm = {}
+    for k, v in descripciones_por_regla.items():
+        try:
+            descripciones_norm[int(k)] = v
+        except (TypeError, ValueError):
+            continue
 
     tareas_creadas = []
 
@@ -402,10 +475,14 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
 
         # Crear la tarea
         try:
+            # Si el usuario proveyó una descripción específica para esta regla, usarla.
+            descripcion_final = descripciones_norm.get(regla.id, None)
+            if descripcion_final is None or not str(descripcion_final).strip():
+                descripcion_final = regla.descripcion_tarea
             tarea = Tarea.objects.create(
                 oportunidad=oportunidad,
                 titulo=regla.titulo_tarea,
-                descripcion=regla.descripcion_tarea,
+                descripcion=descripcion_final,
                 prioridad=regla.prioridad_tarea if regla.prioridad_tarea in ['normal', 'alta'] else 'normal',
                 estado='pendiente',
                 fecha_limite=fecha_limite,
@@ -495,11 +572,17 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario):
 MAX_AVANCES_CADENA = 10  # Proteccion contra loops infinitos
 
 
-def procesar_cadena_reactiva(tarea, usuario):
+def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None):
     """
     Al completar una tarea creada por automatizacion, verifica si la regla
     tiene avanzar_etapa_al_completar=True. Si es asi, avanza la oportunidad
     a la siguiente etapa y ejecuta las automatizaciones de esa nueva etapa.
+
+    Args:
+        tarea: la Tarea recién completada
+        usuario: User que disparó el avance
+        descripciones_por_regla: dict opcional {regla_id: str} con descripciones
+            que reemplazan la descripción default al crear las nuevas tareas.
 
     Retorna dict con info de lo que sucedio, o None si no aplica.
     """
@@ -545,7 +628,10 @@ def procesar_cadena_reactiva(tarea, usuario):
         })
 
         # Ejecutar automatizaciones para la nueva etapa
-        nuevas_tareas = ejecutar_automatizaciones(oportunidad, siguiente, usuario)
+        nuevas_tareas = ejecutar_automatizaciones(
+            oportunidad, siguiente, usuario,
+            descripciones_por_regla=descripciones_por_regla,
+        )
         resultado['tareas_creadas'].extend(nuevas_tareas)
 
         # Verificar si alguna de las nuevas tareas tambien tiene avanzar_etapa_al_completar
@@ -566,6 +652,147 @@ def procesar_cadena_reactiva(tarea, usuario):
         )
 
     return resultado if resultado['avances'] else None
+
+
+# ─── API: Confirmar avance de etapa (modal bloqueante) ───────────────────────
+
+@login_required
+@require_http_methods(['POST'])
+def api_confirmar_avance_etapa(request, pendiente_id):
+    """
+    POST /app/api/automatizacion/avance-pendiente/<id>/confirmar/
+
+    Body JSON: {"descripciones": {regla_id: "texto", ...}}
+
+    Aplica el avance de etapa de la tarea completada (ya marcada como completed),
+    creando las nuevas tareas con las descripciones provistas por el usuario.
+    Solo puede confirmar el usuario responsable de la oportunidad (responsable
+    de la pendiente). Devuelve el resultado de la cadena reactiva.
+    """
+    try:
+        pendiente = AvanceEtapaPendiente.objects.select_related(
+            'tarea', 'oportunidad', 'responsable',
+        ).get(id=pendiente_id)
+    except AvanceEtapaPendiente.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Pendiente no encontrado'}, status=404)
+
+    if pendiente.estado != 'pendiente':
+        return JsonResponse({'success': False, 'error': f'Ya {pendiente.estado}'}, status=400)
+
+    # Solo el responsable (dueño de la oportunidad) o un superusuario pueden confirmar.
+    if request.user != pendiente.responsable and not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Sin permisos para confirmar este avance'}, status=403)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    descripciones = data.get('descripciones') or {}
+    if not isinstance(descripciones, dict):
+        descripciones = {}
+
+    tarea = pendiente.tarea
+    if tarea is None:
+        return JsonResponse({'success': False, 'error': 'La tarea original ya no existe'}, status=400)
+
+    # Verificar que aún hay proximas reglas que requieran descripción y que
+    # esas descripciones fueron provistas (no vacías).
+    preview = previsualizar_avance_etapa(tarea)
+    if preview:
+        for r in preview['proximas_reglas']:
+            rid = r['regla_id']
+            txt = descripciones.get(str(rid)) or descripciones.get(rid)
+            if not txt or not str(txt).strip():
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Falta descripción para "{r["titulo"]}"',
+                }, status=400)
+
+    resultado = procesar_cadena_reactiva(
+        tarea, request.user, descripciones_por_regla=descripciones,
+    )
+
+    pendiente.estado = 'confirmado'
+    pendiente.fecha_confirmacion = timezone.now()
+    pendiente.descripciones_json = descripciones
+    pendiente.confirmado_por = request.user
+    pendiente.save(update_fields=[
+        'estado', 'fecha_confirmacion', 'descripciones_json', 'confirmado_por',
+    ])
+
+    return JsonResponse({
+        'success': True,
+        'cadena_reactiva': resultado or {'avances': [], 'tareas_creadas': []},
+        'mensaje': 'Avance confirmado',
+    })
+
+
+@login_required
+def api_avance_pendiente_para_usuario(request):
+    """
+    GET /app/api/automatizacion/avance-pendiente/mio/
+
+    Devuelve el AvanceEtapaPendiente más antiguo en estado 'pendiente' cuyo
+    responsable sea el usuario que consulta. Lo usa el frontend para abrir el
+    modal cuando el usuario regresa a la app y tenía un avance pendiente
+    (porque cerró su tarea en otro lugar o por otra razón).
+    """
+    pend = (
+        AvanceEtapaPendiente.objects.filter(
+            responsable=request.user, estado='pendiente',
+        )
+        .select_related('tarea', 'oportunidad')
+        .order_by('fecha_creacion')
+        .first()
+    )
+    if not pend:
+        return JsonResponse({'success': True, 'pendiente': None})
+    return JsonResponse({
+        'success': True,
+        'pendiente': _serializar_pendiente(pend),
+    })
+
+
+def _serializar_pendiente(pendiente):
+    tarea = pendiente.tarea
+    preview = previsualizar_avance_etapa(tarea) if tarea else None
+    return {
+        'id': pendiente.id,
+        'tarea_completada_id': tarea.id if tarea else None,
+        'tarea_completada_titulo': tarea.titulo if tarea else '',
+        'oportunidad_id': pendiente.oportunidad_id,
+        'oportunidad_nombre': pendiente.oportunidad.oportunidad if pendiente.oportunidad else '',
+        'etapa_actual': preview['etapa_actual'] if preview else (pendiente.etapa_actual or ''),
+        'etapa_siguiente': preview['etapa_siguiente'] if preview else (pendiente.etapa_siguiente or ''),
+        'proximas_reglas': preview['proximas_reglas'] if preview else [],
+    }
+
+
+def crear_avance_pendiente(tarea, responsable):
+    """
+    Helper: crea un AvanceEtapaPendiente para la tarea recién completada,
+    sólo si todavía no existe un pendiente abierto para esa tarea.
+    Retorna el objeto pendiente (creado o existente).
+    """
+    if not tarea or not responsable:
+        return None
+    existente = AvanceEtapaPendiente.objects.filter(
+        tarea=tarea, estado='pendiente',
+    ).first()
+    if existente:
+        return existente
+    preview = previsualizar_avance_etapa(tarea)
+    if not preview:
+        return None
+    return AvanceEtapaPendiente.objects.create(
+        tarea=tarea,
+        oportunidad=tarea.oportunidad,
+        responsable=responsable,
+        etapa_actual=preview['etapa_actual'],
+        etapa_siguiente=preview['etapa_siguiente'],
+        estado='pendiente',
+    )
 
 
 # ─── API: Historial de ejecuciones ───────────────────────────────────────────

@@ -362,6 +362,8 @@ urlpatterns = [
     path('api/automatizacion/reglas/<int:regla_id>/eliminar/', views_automatizacion.api_automatizacion_eliminar, name='api_automatizacion_eliminar'),
     path('api/automatizacion/reglas/<int:regla_id>/toggle/', views_automatizacion.api_automatizacion_toggle, name='api_automatizacion_toggle'),
     path('api/automatizacion/historial/', views_automatizacion.api_automatizacion_historial, name='api_automatizacion_historial'),
+    path('api/automatizacion/avance-pendiente/mio/', views_automatizacion.api_avance_pendiente_para_usuario, name='api_avance_pendiente_para_usuario'),
+    path('api/automatizacion/avance-pendiente/<int:pendiente_id>/confirmar/', views_automatizacion.api_confirmar_avance_etapa, name='api_confirmar_avance_etapa'),
     # ── Grupos de Trabajo ─────────────────────────────────────────────────────────────────────────────
     path('api/grupos/', views_grupos.api_grupos_listar, name='api_grupos_listar'),
     path('api/grupos/crear/', views_grupos.api_grupos_crear, name='api_grupos_crear'),

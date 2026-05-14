@@ -8822,6 +8822,12 @@
 
                         var estadoEl = document.getElementById('crm-task-estado');
                         if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM('completada');
+
+                        // Avance de etapa con descripcion requerida (modal bloqueante)
+                        if (data.requiere_descripcion && window.crmAvanceEtapa) {
+                            window.crmAvanceEtapa.handleCompletarResponse(data);
+                        }
+
                         if (data.cadena_reactiva && data.cadena_reactiva.mensaje) {
                             showToast('Tarea completada — ' + data.cadena_reactiva.mensaje, 'success', 5000);
                         } else {
