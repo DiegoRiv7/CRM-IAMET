@@ -1025,29 +1025,33 @@
     }
     .wco-info-grid {
         display: grid;
-        grid-template-columns: 240px 1fr;
-        gap: 28px;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
         align-items: start;
     }
-    .wco-info-side {
-        display: flex; flex-direction: column; align-items: center;
-        gap: 12px;
-        padding: 20px 16px;
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+
+    /* ── Credencial del cliente (columna izquierda) ── */
+    .wco-info-id {
+        background: #ffffff;
         border: 1px solid rgba(15,23,42,0.06);
         border-radius: 18px;
+        padding: 22px 22px 18px;
+        box-shadow: 0 10px 30px -22px rgba(15,23,42,0.22), 0 2px 6px -3px rgba(15,23,42,0.05);
+        position: sticky;
+        top: 0;
     }
-    .wco-info-logo {
-        width: 180px; height: 180px;
-        border-radius: 18px;
-        background: #ffffff;
+    .wco-info-id-photo {
+        width: 100%; aspect-ratio: 1 / 1;
+        max-width: 240px; margin: 0 auto 14px;
+        border-radius: 16px;
+        background: #f8fafc;
         border: 1px dashed rgba(15,23,42,0.12);
         display: flex; align-items: center; justify-content: center;
         position: relative;
         overflow: hidden;
     }
-    .wco-info-logo img {
-        width: 100%; height: 100%; object-fit: contain; padding: 8px;
+    .wco-info-id-photo img {
+        width: 100%; height: 100%; object-fit: contain; padding: 10px;
     }
     .wco-info-logo-empty {
         display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -1066,106 +1070,99 @@
         opacity: 0;
         transition: opacity 0.18s ease;
     }
-    .wco-info-logo:hover .wco-info-logo-cta { opacity: 1; }
-    .wco-info-name {
-        font-size: 16px; font-weight: 700; color: #0f172a;
+    .wco-info-id-photo:hover .wco-info-logo-cta { opacity: 1; }
+    .wco-info-id-name {
+        font-size: 17px; font-weight: 700; color: #1D1D1F;
         letter-spacing: -0.01em; text-align: center;
         word-break: break-word;
     }
-    .wco-info-side-row {
-        display: flex; justify-content: space-between; align-items: center;
+    .wco-info-id-rfc {
+        font-size: 11.5px; color: #86868B;
+        text-align: center; margin-top: 3px;
+        font-weight: 500; letter-spacing: 0.02em;
+    }
+    .wco-info-id-divider {
+        height: 1px;
+        background: rgba(15,23,42,0.06);
+        margin: 16px 0 14px;
+    }
+    .wco-info-id-field {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(15,23,42,0.05);
+    }
+    .wco-info-id-field:last-child { border-bottom: none; }
+    .wco-info-id-lbl {
+        display: flex; align-items: center; gap: 5px;
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: #86868B;
+    }
+    .wco-info-id-lbl svg { color: #0052D4; }
+    .wco-info-id-input {
         width: 100%;
-        padding: 6px 0;
-        border-top: 1px solid rgba(15,23,42,0.05);
-        font-size: 12px;
+        padding: 4px 0 2px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        color: #1D1D1F;
+        font-family: inherit;
+        resize: vertical;
+        line-height: 1.45;
     }
-    .wco-info-side-lbl {
-        color: #64748b; font-weight: 600;
-        text-transform: uppercase; letter-spacing: 0.04em;
-        font-size: 10px;
-    }
-    .wco-info-side-val { color: #0f172a; font-weight: 600; }
+    .wco-info-id-input::placeholder { color: #b6bfcc; font-weight: 400; }
+    .wco-info-id-input:focus { outline: none; }
 
+    /* ── Columna derecha: campos operativos ── */
     .wco-info-fields {
-        display: flex; flex-direction: column; gap: 16px;
+        display: flex; flex-direction: column; gap: 14px;
     }
     .wco-info-row-2 {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
     }
 
-    /* ── Tarjetas flotantes por campo ── */
-    @keyframes wciFloatIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
     .wco-info-card {
         display: flex; align-items: flex-start; gap: 14px;
-        padding: 16px 18px;
-        background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        border: 1px solid rgba(15,23,42,0.05);
-        border-radius: 16px;
-        box-shadow: 0 4px 16px -10px rgba(15,23,42,0.18), 0 2px 4px -3px rgba(15,23,42,0.06);
-        transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-                    box-shadow 0.25s ease,
-                    border-color 0.25s ease;
-        animation: wciFloatIn 0.55s cubic-bezier(0.16, 0.84, 0.34, 1) both;
-        animation-delay: var(--wci-delay, 0s);
-    }
-    .wco-info-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 18px 32px -16px rgba(15,23,42,0.22), 0 4px 8px -5px rgba(15,23,42,0.08);
-        border-color: rgba(15,23,42,0.10);
+        padding: 14px 16px;
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px -10px rgba(15,23,42,0.18);
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
     }
     .wco-info-card:focus-within {
-        transform: translateY(-3px);
-        box-shadow: 0 18px 32px -14px var(--wci-glow, rgba(0,82,212,0.28)), 0 4px 8px -5px rgba(15,23,42,0.08);
-        border-color: var(--wci-accent, #0052D4);
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
     }
 
     .wco-info-card-icon {
         flex: 0 0 auto;
-        width: 38px; height: 38px;
-        border-radius: 11px;
+        width: 34px; height: 34px;
+        border-radius: 10px;
         display: flex; align-items: center; justify-content: center;
-        background: var(--wci-bg, #eef2ff);
-        color: var(--wci-fg, #4338ca);
-        transition: transform 0.25s ease;
+        background: #EEF3FF;
+        color: #0052D4;
     }
-    .wco-info-card:hover .wco-info-card-icon { transform: rotate(-6deg) scale(1.05); }
 
-    .wco-info-card-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .wco-info-card-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .wco-info-lbl {
         font-size: 10.5px; font-weight: 700;
         text-transform: uppercase; letter-spacing: 0.07em;
-        color: var(--wci-fg, #475569);
+        color: #86868B;
     }
     .wco-info-input {
         width: 100%;
-        padding: 6px 0 4px;
+        padding: 4px 0 2px;
         border: none;
         background: transparent;
-        font-size: 13.5px;
-        color: #0f172a;
+        font-size: 13px;
+        color: #1D1D1F;
         font-family: inherit;
         resize: vertical;
         line-height: 1.45;
-        transition: color 0.15s ease;
     }
     .wco-info-input::placeholder { color: #b6bfcc; font-weight: 400; }
-    .wco-info-input:focus {
-        outline: none;
-        color: #0f172a;
-    }
-
-    /* Variantes de color (pastel para fondo del ícono + glow al focus) */
-    .wco-info-card--rose    { --wci-bg:#fff1f2; --wci-fg:#e11d48; --wci-accent:#fda4af; --wci-glow:rgba(225,29,72,0.25); }
-    .wco-info-card--sky     { --wci-bg:#e0f2fe; --wci-fg:#0284c7; --wci-accent:#7dd3fc; --wci-glow:rgba(2,132,199,0.25); }
-    .wco-info-card--amber   { --wci-bg:#fef3c7; --wci-fg:#b45309; --wci-accent:#fcd34d; --wci-glow:rgba(180,83,9,0.25); }
-    .wco-info-card--violet  { --wci-bg:#ede9fe; --wci-fg:#7c3aed; --wci-accent:#c4b5fd; --wci-glow:rgba(124,58,237,0.25); }
-    .wco-info-card--teal    { --wci-bg:#ccfbf1; --wci-fg:#0d9488; --wci-accent:#5eead4; --wci-glow:rgba(13,148,136,0.25); }
-    .wco-info-card--emerald { --wci-bg:#d1fae5; --wci-fg:#059669; --wci-accent:#6ee7b7; --wci-glow:rgba(5,150,105,0.25); }
-    .wco-info-card--red     { --wci-bg:#fee2e2; --wci-fg:#dc2626; --wci-accent:#fca5a5; --wci-glow:rgba(220,38,38,0.25); }
-    .wco-info-card--slate   { --wci-bg:#e2e8f0; --wci-fg:#475569; --wci-accent:#94a3b8; --wci-glow:rgba(71,85,105,0.25); }
+    .wco-info-input:focus { outline: none; }
     .wco-info-actions {
         display: flex; align-items: center; justify-content: flex-end;
         gap: 12px;
@@ -1191,6 +1188,7 @@
     @media (max-width: 880px){
         .wco-info-grid { grid-template-columns: 1fr; }
         .wco-info-row-2 { grid-template-columns: 1fr; }
+        .wco-info-id { position: static; }
     }
 
     /* ── Pill de periodo (en el modal del cliente) ──────────────── */
