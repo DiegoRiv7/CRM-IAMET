@@ -3231,6 +3231,69 @@ def api_cliente_info(request, cliente_id):
 
 
 @login_required
+def api_cliente_contactos(request, cliente_id):
+    """GET → lista los contactos del cliente. POST → crea uno nuevo."""
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre', '') or '').strip()
+        if not nombre:
+            return JsonResponse({'ok': False, 'error': 'Nombre requerido'}, status=400)
+        c = Contacto.objects.create(
+            cliente=cliente,
+            nombre=nombre,
+            apellido=(request.POST.get('apellido', '') or '').strip(),
+            email=(request.POST.get('email', '') or '').strip(),
+            telefono=(request.POST.get('telefono', '') or '').strip(),
+            puesto=(request.POST.get('puesto', '') or '').strip(),
+        )
+        return JsonResponse({'ok': True, 'contacto': {
+            'id': c.id, 'nombre': c.nombre, 'apellido': c.apellido or '',
+            'email': c.email or '', 'telefono': c.telefono or '', 'puesto': c.puesto or '',
+        }})
+
+    rows = []
+    for c in cliente.contactos.all().order_by('nombre', 'apellido'):
+        rows.append({
+            'id': c.id,
+            'nombre': c.nombre or '',
+            'apellido': c.apellido or '',
+            'email': c.email or '',
+            'telefono': c.telefono or '',
+            'puesto': c.puesto or '',
+        })
+    return JsonResponse({'ok': True, 'contactos': rows})
+
+
+@login_required
+def api_cliente_contacto_detail(request, contacto_id):
+    """PUT/POST → actualiza un contacto. DELETE → lo elimina."""
+    try:
+        c = Contacto.objects.get(id=contacto_id)
+    except Contacto.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Contacto no encontrado'}, status=404)
+
+    if request.method == 'DELETE':
+        c.delete()
+        return JsonResponse({'ok': True})
+
+    if request.method == 'POST':
+        for f in ('nombre', 'apellido', 'email', 'telefono', 'puesto'):
+            if f in request.POST:
+                setattr(c, f, (request.POST.get(f, '') or '').strip())
+        c.save()
+        return JsonResponse({'ok': True, 'contacto': {
+            'id': c.id, 'nombre': c.nombre, 'apellido': c.apellido or '',
+            'email': c.email or '', 'telefono': c.telefono or '', 'puesto': c.puesto or '',
+        }})
+
+    return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
 def api_cliente_oportunidades(request, cliente_id):
     """
     API que devuelve las oportunidades de un cliente específico en JSON.

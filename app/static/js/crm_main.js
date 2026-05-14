@@ -4801,12 +4801,8 @@
 
             function _wciSetEditing(on){
                 var panel = document.getElementById('clienteOppInfoPanel');
-                var btn = document.getElementById('wciEditBtn');
-                var lbl = document.getElementById('wciEditBtnLabel');
                 if (!panel) return;
                 panel.classList.toggle('is-editing', !!on);
-                if (btn) btn.classList.toggle('is-editing', !!on);
-                if (lbl) lbl.textContent = on ? 'Cancelar edición' : 'Editar información';
             }
 
             function _cargarClienteInfo(){
@@ -4830,10 +4826,11 @@
                         _wciSetField('wciCobro', c.proceso_cobro);
                         _wciSetField('wciReglas', c.reglas_acceso);
                         _wciSetField('wciInfoExtra', c.info_adicional);
-                        if (saved) saved.textContent = '';
+                        if (saved) saved.textContent = 'Estás editando información';
                     }).catch(function(){
                         if (saved) saved.textContent = 'Error de red';
                     });
+                _wciCargarContactos();
                 _wciBindOnce();
             }
             function _wciBindOnce(){
@@ -4868,19 +4865,31 @@
                         if (rd) rd.textContent = (d && h) ? (d + ' – ' + h) : (d || h || '');
                     });
                 });
-                // Botón Editar / Cancelar
-                var editBtn = document.getElementById('wciEditBtn');
-                if (editBtn) {
-                    editBtn.addEventListener('click', function(){
-                        var panel = document.getElementById('clienteOppInfoPanel');
-                        if (!panel) return;
-                        var nowEditing = panel.classList.contains('is-editing');
-                        if (nowEditing) {
-                            // Cancelar → recargar los datos desde server para descartar cambios.
-                            _cargarClienteInfo();
-                        } else {
-                            _wciSetEditing(true);
+                // Click-to-edit: cualquier click sobre un campo, pill, chip, label,
+                // o sobre el bloque entero entra en modo edición.
+                var panel = document.getElementById('clienteOppInfoPanel');
+                if (panel) {
+                    panel.addEventListener('click', function(e){
+                        if (panel.classList.contains('is-editing')) return;
+                        // Ignora clicks en el track de contactos (tiene su propio CRUD)
+                        if (e.target.closest('.wci-contactos')) return;
+                        // Ignora clicks en el savebar
+                        if (e.target.closest('.wco-info-savebar')) return;
+                        var inField = e.target.closest('.wco-info-input, .wco-info-id-input, .wci-day, .wci-fact-chip, .wco-info-card, .wco-info-id-field, .wco-info-id-photo, .wci-range-read');
+                        if (!inField) return;
+                        _wciSetEditing(true);
+                        // Si el click fue sobre un input/textarea, dale focus
+                        var input = e.target.closest('input, textarea');
+                        if (input) {
+                            setTimeout(function(){ input.focus(); }, 0);
                         }
+                    });
+                }
+                // Botón Cancelar
+                var cancelBtn = document.getElementById('wciCancelBtn');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function(){
+                        _cargarClienteInfo();
                     });
                 }
                 var saveBtn = document.getElementById('wciSaveBtn');
@@ -4934,6 +4943,122 @@
                         }
                     });
                 }
+
+                // ── Tablero de contactos ──
+                var contactoAddBtn = document.getElementById('wciContactoAdd');
+                if (contactoAddBtn) {
+                    contactoAddBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        _wciContactoOpenModal(null);
+                    });
+                }
+                var contClose = document.getElementById('wciContClose');
+                var contCancel = document.getElementById('wciContCancel');
+                var contSave = document.getElementById('wciContSave');
+                var contOverlay = document.getElementById('widgetContacto');
+                function _closeContModal(){ if (contOverlay) contOverlay.classList.remove('active'); }
+                if (contClose) contClose.addEventListener('click', _closeContModal);
+                if (contCancel) contCancel.addEventListener('click', _closeContModal);
+                if (contOverlay) contOverlay.addEventListener('click', function(e){
+                    if (e.target === contOverlay) _closeContModal();
+                });
+                if (contSave) {
+                    contSave.addEventListener('click', function(){
+                        var id = (document.getElementById('wciContId')||{}).value || '';
+                        var nombre = (document.getElementById('wciContNombre')||{}).value.trim();
+                        if (!nombre) { document.getElementById('wciContNombre').focus(); return; }
+                        var fd = new FormData();
+                        fd.append('nombre', nombre);
+                        fd.append('apellido', (document.getElementById('wciContApellido')||{}).value || '');
+                        fd.append('puesto', (document.getElementById('wciContPuesto')||{}).value || '');
+                        fd.append('email', (document.getElementById('wciContEmail')||{}).value || '');
+                        fd.append('telefono', (document.getElementById('wciContTel')||{}).value || '');
+                        var url = id
+                            ? '/app/api/cliente-contacto/' + id + '/'
+                            : '/app/api/cliente-info/' + currentClienteId + '/contactos/';
+                        contSave.disabled = true;
+                        fetch(url, { method: 'POST', headers: { 'X-CSRFToken': _wciCsrf() }, body: fd })
+                            .then(function(r){ return r.json(); })
+                            .then(function(data){
+                                contSave.disabled = false;
+                                if (data && data.ok) {
+                                    _closeContModal();
+                                    _wciCargarContactos();
+                                }
+                            }).catch(function(){ contSave.disabled = false; });
+                    });
+                }
+            }
+
+            function _wciContactoOpenModal(c){
+                document.getElementById('wciContTitle').textContent = c ? 'Editar contacto' : 'Nuevo contacto';
+                document.getElementById('wciContId').value = c ? c.id : '';
+                document.getElementById('wciContNombre').value = c ? (c.nombre || '') : '';
+                document.getElementById('wciContApellido').value = c ? (c.apellido || '') : '';
+                document.getElementById('wciContPuesto').value = c ? (c.puesto || '') : '';
+                document.getElementById('wciContEmail').value = c ? (c.email || '') : '';
+                document.getElementById('wciContTel').value = c ? (c.telefono || '') : '';
+                document.getElementById('widgetContacto').classList.add('active');
+                setTimeout(function(){ document.getElementById('wciContNombre').focus(); }, 50);
+            }
+
+            function _escapeHTML(s){
+                return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            }
+
+            function _wciRenderContactos(rows){
+                var track = document.getElementById('wciContactosTrack');
+                var empty = document.getElementById('wciContactosEmpty');
+                var count = document.getElementById('wciContactosCount');
+                if (!track) return;
+                rows = rows || [];
+                if (count) count.textContent = rows.length;
+                if (!rows.length) {
+                    track.innerHTML = '<div class="wci-contactos-empty" id="wciContactosEmpty">No hay contactos para este cliente. Agrega el primero.</div>';
+                    return;
+                }
+                var html = '';
+                rows.forEach(function(c){
+                    var nombre = _escapeHTML((c.nombre || '') + (c.apellido ? ' ' + c.apellido : ''));
+                    html += '<div class="wci-contacto-card" data-cid="' + c.id + '">' +
+                        (c.puesto ? '<div class="wci-contacto-puesto">' + _escapeHTML(c.puesto) + '</div>' : '') +
+                        '<div class="wci-contacto-name">' + (nombre || '—') + '</div>' +
+                        (c.email ? '<div class="wci-contacto-meta"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:' + _escapeHTML(c.email) + '" style="color:inherit;text-decoration:none;">' + _escapeHTML(c.email) + '</a></div>' : '') +
+                        (c.telefono ? '<div class="wci-contacto-meta"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' + _escapeHTML(c.telefono) + '</div>' : '') +
+                        '<div class="wci-contacto-actions">' +
+                        '  <button type="button" class="wci-contacto-act is-edit" title="Editar"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+                        '  <button type="button" class="wci-contacto-act is-del" title="Eliminar"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>' +
+                        '</div>' +
+                        '</div>';
+                });
+                track.innerHTML = html;
+                // Bind actions
+                track.querySelectorAll('.wci-contacto-card').forEach(function(card){
+                    var cid = card.dataset.cid;
+                    var c = rows.find(function(x){ return String(x.id) === String(cid); });
+                    var editBtn = card.querySelector('.wci-contacto-act.is-edit');
+                    var delBtn = card.querySelector('.wci-contacto-act.is-del');
+                    if (editBtn) editBtn.addEventListener('click', function(e){ e.stopPropagation(); _wciContactoOpenModal(c); });
+                    if (delBtn) delBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        if (!confirm('¿Eliminar el contacto "' + (c.nombre || '') + '"?')) return;
+                        fetch('/app/api/cliente-contacto/' + cid + '/', {
+                            method: 'DELETE',
+                            headers: { 'X-CSRFToken': _wciCsrf() },
+                        }).then(function(r){ return r.json(); }).then(function(d){
+                            if (d && d.ok) _wciCargarContactos();
+                        });
+                    });
+                });
+            }
+
+            function _wciCargarContactos(){
+                if (!currentClienteId) return;
+                fetch('/app/api/cliente-info/' + currentClienteId + '/contactos/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if (data && data.ok) _wciRenderContactos(data.contactos || []);
+                    });
             }
 
             // ── Abrir widget (también expuesta globalmente para que otras

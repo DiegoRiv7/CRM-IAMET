@@ -1019,36 +1019,11 @@
 
     /* ── Tab "Información" (carátula del cliente) ── */
     .wco-info-panel {
-        padding: 18px 28px 32px;
+        padding: 18px 28px 100px; /* extra bottom para que la savebar no tape */
         overflow-y: auto;
-        max-height: calc(100% - 120px);
+        max-height: calc(100% - 80px);
+        position: relative;
     }
-    .wco-info-toolbar {
-        display: flex; justify-content: flex-end; align-items: center;
-        margin-bottom: 14px;
-    }
-    .wco-info-edit-btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 8px 14px;
-        border: 1px solid rgba(15,23,42,0.10);
-        background: #ffffff;
-        color: #0052D4;
-        border-radius: 10px;
-        font-size: 12.5px; font-weight: 600;
-        cursor: pointer;
-        font-family: inherit;
-        transition: all 0.16s ease;
-    }
-    .wco-info-edit-btn:hover {
-        border-color: #0052D4;
-        background: #EEF3FF;
-    }
-    .wco-info-edit-btn.is-editing {
-        background: #FEE2E2;
-        border-color: #FCA5A5;
-        color: #B91C1C;
-    }
-    .wco-info-edit-btn.is-editing:hover { background: #FECACA; }
 
     /* ── MODO LECTURA (default): inputs como texto, pills no-on ocultos ── */
     .wco-info-panel:not(.is-editing) .wco-info-input,
@@ -1057,6 +1032,14 @@
         background: transparent !important;
         color: #1D1D1F;
     }
+    /* Pero el input/textarea SÍ acepta hover para sugerir editabilidad */
+    .wco-info-panel:not(.is-editing) .wco-info-card,
+    .wco-info-panel:not(.is-editing) .wco-info-id-field {
+        cursor: text;
+        transition: background 0.15s ease;
+    }
+    .wco-info-panel:not(.is-editing) .wco-info-card:hover { background: #fafbff; }
+    .wco-info-panel:not(.is-editing) .wco-info-id-field:hover { background: rgba(0,82,212,0.02); border-radius: 6px; }
     .wco-info-panel:not(.is-editing) .wci-day:not(.is-on),
     .wco-info-panel:not(.is-editing) .wci-fact-chip:not(.is-on) {
         display: none;
@@ -1067,9 +1050,8 @@
     }
     .wco-info-panel:not(.is-editing) .wci-range { display: none; }
     .wco-info-panel.is-editing .wci-range-read { display: none; }
-    .wco-info-panel:not(.is-editing) .wco-info-actions { display: none; }
     .wco-info-panel:not(.is-editing) .wco-info-id-photo .wco-info-logo-cta { display: none !important; }
-    .wco-info-panel:not(.is-editing) .wco-info-id-photo { border-style: solid; border-color: rgba(15,23,42,0.06); cursor: default; }
+    .wco-info-panel:not(.is-editing) .wco-info-id-photo { border-style: solid; border-color: rgba(15,23,42,0.06); cursor: pointer; }
     /* Cuando un campo está vacío y estamos en lectura, mostramos un "—" sutil */
     .wco-info-panel:not(.is-editing) .wco-info-input:placeholder-shown,
     .wco-info-panel:not(.is-editing) .wco-info-id-input:placeholder-shown {
@@ -1077,7 +1059,7 @@
     }
 
     .wci-range-read {
-        font-size: 13px;
+        font-size: 14px;
         color: #1D1D1F;
         font-weight: 500;
         margin-top: 6px;
@@ -1089,6 +1071,39 @@
         color: #cbd5e1;
         font-weight: 400;
     }
+
+    /* ── Savebar flotante al fondo (visible sólo en modo edición) ── */
+    .wco-info-savebar {
+        position: sticky; bottom: 0;
+        margin: 14px -28px -100px;
+        padding: 12px 28px;
+        background: rgba(255,255,255,0.92);
+        border-top: 1px solid rgba(15,23,42,0.08);
+        backdrop-filter: blur(14px) saturate(160%);
+        display: none;
+        align-items: center; gap: 12px;
+        z-index: 5;
+    }
+    .wco-info-panel.is-editing .wco-info-savebar { display: flex; }
+    .wco-info-savebar .wco-info-saved {
+        flex: 1;
+        font-size: 12.5px;
+        color: #0052D4;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+    .wco-info-btn-cancel {
+        padding: 9px 16px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #ffffff;
+        color: #475569;
+        border-radius: 10px;
+        font-weight: 600; font-size: 13px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.16s ease;
+    }
+    .wco-info-btn-cancel:hover { background: #f1f5f9; color: #0f172a; }
     .wco-info-grid {
         display: grid;
         grid-template-columns: 380px 1fr;
@@ -1253,13 +1268,187 @@
         box-shadow: 0 4px 10px -4px rgba(0,82,212,0.6);
     }
 
-    /* ── Columna derecha: campos operativos ── */
+    /* ── Columna derecha: contactos + campos operativos ── */
+    .wco-info-right {
+        display: flex; flex-direction: column; gap: 16px;
+    }
     .wco-info-fields {
         display: flex; flex-direction: column; gap: 14px;
     }
     .wco-info-row-2 {
         display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
     }
+
+    /* ── Tablero de contactos ── */
+    .wci-contactos {
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 16px;
+        padding: 14px 16px 16px;
+        box-shadow: 0 4px 14px -10px rgba(15,23,42,0.18);
+    }
+    .wci-contactos-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .wci-contactos-title {
+        display: flex; align-items: center; gap: 8px;
+        color: #1D1D1F; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .wci-contactos-title svg { color: #0052D4; }
+    .wci-contactos-count {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 22px; height: 20px;
+        padding: 0 6px; border-radius: 999px;
+        background: #EEF3FF; color: #0052D4;
+        font-size: 11px; font-weight: 700;
+    }
+    .wci-contactos-add {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 6px 12px;
+        border: 1px solid rgba(0,82,212,0.18);
+        background: #EEF3FF;
+        color: #0052D4;
+        border-radius: 9px;
+        font-size: 12px; font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.16s ease;
+    }
+    .wci-contactos-add:hover { background: #DDE7FF; }
+    .wci-contactos-track {
+        display: flex; gap: 12px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding-bottom: 6px;
+        min-height: 130px;
+    }
+    .wci-contactos-track::-webkit-scrollbar { height: 6px; }
+    .wci-contactos-track::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.18); border-radius: 999px; }
+    .wci-contacto-card {
+        flex: 0 0 220px;
+        background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex; flex-direction: column; gap: 4px;
+        position: relative;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .wci-contacto-card:hover {
+        border-color: rgba(0,82,212,0.20);
+        box-shadow: 0 8px 18px -10px rgba(0,82,212,0.20);
+    }
+    .wci-contacto-name {
+        font-size: 13.5px; font-weight: 700; color: #1D1D1F;
+        letter-spacing: -0.005em;
+    }
+    .wci-contacto-puesto {
+        font-size: 11px; color: #0052D4; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .wci-contacto-meta {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 12px; color: #475569;
+        word-break: break-all;
+    }
+    .wci-contacto-meta svg { color: #94a3b8; flex-shrink: 0; }
+    .wci-contacto-actions {
+        display: flex; gap: 4px;
+        position: absolute; top: 8px; right: 8px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+    .wci-contacto-card:hover .wci-contacto-actions { opacity: 1; }
+    .wci-contacto-act {
+        width: 24px; height: 24px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: #ffffff;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: #64748b; cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .wci-contacto-act:hover { color: #0052D4; border-color: #0052D4; }
+    .wci-contacto-act.is-del:hover { color: #DC2626; border-color: #FCA5A5; background: #FEE2E2; }
+    .wci-contactos-empty {
+        color: #94a3b8;
+        font-size: 13px;
+        font-style: italic;
+        padding: 28px 16px;
+        text-align: center;
+        width: 100%;
+    }
+
+    /* ── Modal de contacto ── */
+    .wci-cont-card {
+        width: min(520px, 92vw);
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 30px 80px -10px rgba(15,23,42,0.4);
+        overflow: hidden;
+        font-family: inherit;
+    }
+    .wci-cont-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(15,23,42,0.06);
+    }
+    .wci-cont-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1D1D1F; }
+    .wci-cont-close {
+        background: none; border: none;
+        font-size: 22px; color: #94a3b8; cursor: pointer;
+        line-height: 1;
+    }
+    .wci-cont-body { padding: 20px 22px; }
+    .wci-cont-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .wci-cont-field { display: flex; flex-direction: column; gap: 5px; }
+    .wci-cont-field label {
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: #64748b;
+    }
+    .wci-cont-field input {
+        padding: 9px 12px;
+        border: 1px solid rgba(15,23,42,0.10);
+        border-radius: 9px;
+        font-size: 13.5px; color: #1D1D1F;
+        font-family: inherit;
+        transition: all 0.15s ease;
+    }
+    .wci-cont-field input:focus {
+        outline: none;
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    .wci-cont-foot {
+        display: flex; gap: 10px; justify-content: flex-end;
+        padding: 14px 22px;
+        background: #fafbff;
+        border-top: 1px solid rgba(15,23,42,0.05);
+    }
+    .wci-cont-btn-cancel,
+    .wci-cont-btn-save {
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.16s ease;
+    }
+    .wci-cont-btn-cancel {
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #ffffff; color: #475569;
+    }
+    .wci-cont-btn-cancel:hover { background: #f1f5f9; }
+    .wci-cont-btn-save {
+        border: none;
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        color: #fff;
+        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.6);
+    }
+    .wci-cont-btn-save:hover { transform: translateY(-1px); }
 
     .wco-info-card {
         display: flex; align-items: flex-start; gap: 14px;
@@ -1295,11 +1484,12 @@
         padding: 4px 0 2px;
         border: none;
         background: transparent;
-        font-size: 13px;
+        font-size: 14px;
         color: #1D1D1F;
         font-family: inherit;
         resize: vertical;
-        line-height: 1.45;
+        line-height: 1.5;
+        min-height: 60px;
     }
     .wco-info-input::placeholder { color: #b6bfcc; font-weight: 400; }
     .wco-info-input:focus { outline: none; }

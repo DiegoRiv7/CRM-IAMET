@@ -418,6 +418,9 @@ class Contacto(models.Model):
     bitrix_contact_id = models.IntegerField(unique=True, null=True, blank=True, verbose_name="ID de Contacto en Bitrix24")
     company_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Compañía en Bitrix24") # To link with Bitrix Company
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True, related_name='contactos', verbose_name="Cliente Asociado")
+    email = models.EmailField(blank=True, default='', verbose_name="Correo")
+    telefono = models.CharField(max_length=30, blank=True, default='', verbose_name="Teléfono")
+    puesto = models.CharField(max_length=120, blank=True, default='', verbose_name="Puesto / Cargo")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
 

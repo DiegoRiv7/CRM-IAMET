@@ -155,12 +155,6 @@
 
         <!-- Panel "Información" (carátula del cliente) -->
         <div class="wco-info-panel" id="clienteOppInfoPanel" style="display:none;">
-            <div class="wco-info-toolbar">
-                <button type="button" class="wco-info-edit-btn" id="wciEditBtn">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span id="wciEditBtnLabel">Editar información</span>
-                </button>
-            </div>
             <div class="wco-info-grid">
                 <!-- Credencial del cliente: logo + nombre + datos básicos -->
                 <aside class="wco-info-id">
@@ -262,8 +256,27 @@
                     </div>
                 </aside>
 
-                <!-- Columna derecha: campos operativos -->
-                <section class="wco-info-fields">
+                <!-- Columna derecha: contactos + campos operativos -->
+                <section class="wco-info-right">
+
+                    {# ── Tablero de contactos (mitad superior derecha) ── #}
+                    <div class="wci-contactos">
+                        <div class="wci-contactos-head">
+                            <div class="wci-contactos-title">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <span>Contactos</span>
+                                <span class="wci-contactos-count" id="wciContactosCount">0</span>
+                            </div>
+                            <button type="button" class="wci-contactos-add" id="wciContactoAdd">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span>Agregar contacto</span>
+                            </button>
+                        </div>
+                        <div class="wci-contactos-track" id="wciContactosTrack">
+                            <div class="wci-contactos-empty" id="wciContactosEmpty">No hay contactos para este cliente. Agrega el primero.</div>
+                        </div>
+                    </div>
+
                     <div class="wco-info-card">
                         <div class="wco-info-card-icon">
                             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -292,12 +305,52 @@
                         </div>
                     </div>
 
-                    <div class="wco-info-actions">
-                        <span class="wco-info-saved" id="wciSavedHint"></span>
-                        <button type="button" class="wco-info-btn" id="wciSaveBtn">Guardar cambios</button>
-                    </div>
                 </section>
             </div>
+            <div class="wco-info-savebar" id="wciSaveBar">
+                <span class="wco-info-saved" id="wciSavedHint">Estás editando información</span>
+                <button type="button" class="wco-info-btn-cancel" id="wciCancelBtn">Cancelar</button>
+                <button type="button" class="wco-info-btn" id="wciSaveBtn">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: contacto del cliente (alta / edición) ═══ -->
+<div class="widget-overlay" id="widgetContacto" style="z-index:11200; align-items:center; justify-content:center;">
+    <div class="wci-cont-card">
+        <div class="wci-cont-head">
+            <h3 id="wciContTitle">Nuevo contacto</h3>
+            <button type="button" class="wci-cont-close" id="wciContClose">&times;</button>
+        </div>
+        <div class="wci-cont-body">
+            <input type="hidden" id="wciContId">
+            <div class="wci-cont-grid">
+                <div class="wci-cont-field">
+                    <label>Nombre</label>
+                    <input type="text" id="wciContNombre" required>
+                </div>
+                <div class="wci-cont-field">
+                    <label>Apellido</label>
+                    <input type="text" id="wciContApellido">
+                </div>
+                <div class="wci-cont-field" style="grid-column:1/-1;">
+                    <label>Puesto / Cargo</label>
+                    <input type="text" id="wciContPuesto" placeholder="Ej. Gerente de compras">
+                </div>
+                <div class="wci-cont-field">
+                    <label>Correo</label>
+                    <input type="email" id="wciContEmail" placeholder="correo@empresa.com">
+                </div>
+                <div class="wci-cont-field">
+                    <label>Teléfono</label>
+                    <input type="tel" id="wciContTel" placeholder="664 123 4567">
+                </div>
+            </div>
+        </div>
+        <div class="wci-cont-foot">
+            <button type="button" class="wci-cont-btn-cancel" id="wciContCancel">Cancelar</button>
+            <button type="button" class="wci-cont-btn-save" id="wciContSave">Guardar</button>
         </div>
     </div>
 </div>
