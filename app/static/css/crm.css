@@ -2773,9 +2773,9 @@
        y forzamos que .crm-bar-left quede pegado a la esquina izquierda
        (anulando el ::before spacer que centra contenido en otras vistas). */
     .widget-overlay.is-page-mode .cal-page-bar {
-        margin-bottom: 6px;
+        margin-bottom: 10px;
         flex-shrink: 0;
-        padding: 6px 4px !important;
+        padding: 10px 14px !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar.crm-bar--dashboard::before {
         display: none !important;
