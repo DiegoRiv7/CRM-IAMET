@@ -351,7 +351,7 @@
                 if (!data || !data.ok) return;
                 var k = data.kpis || {};
                 kpiFact.textContent = _fmtMoney(k.facturado);
-                kpiOp.textContent = k.oportunidades || 0;
+                kpiOp.textContent = _fmtMoney(k.oportunidades);
                 kpiCot.textContent = k.cotizaciones || 0;
                 kpiPr.textContent = k.prospecciones || 0;
             }).catch(function(){
