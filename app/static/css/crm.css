@@ -2866,6 +2866,112 @@
         overflow: hidden !important;
     }
 
+    /* Popover de hover preview de evento del calendario */
+    .cal-hover-popover {
+        position: fixed;
+        width: 320px;
+        max-width: calc(100vw - 16px);
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        border: 1px solid rgba(255,255,255,0.65);
+        border-radius: 14px;
+        box-shadow: 0 24px 60px rgba(15,23,42,0.22), 0 1px 0 rgba(255,255,255,0.7) inset;
+        z-index: 11000;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        animation: calHoverFadeIn 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes calHoverFadeIn {
+        from { opacity: 0; transform: translateY(4px) scale(0.985); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .cal-hover-head {
+        height: 22px;
+        display: flex; align-items: center;
+        padding: 0 14px;
+    }
+    .cal-hover-type {
+        color: #ffffff;
+        font-size: 0.62rem; font-weight: 800;
+        text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .cal-hover-body { padding: 12px 14px; }
+    .cal-hover-title {
+        font-size: 15px; font-weight: 700;
+        color: #1D1D1F;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+    }
+    .cal-hover-when {
+        font-size: 12px; color: #64748b;
+        margin-top: 3px;
+        font-weight: 500;
+    }
+    .cal-hover-desc {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: #334155;
+        line-height: 1.45;
+        background: rgba(15,23,42,0.04);
+        border-radius: 8px;
+        padding: 8px 10px;
+        max-height: 90px;
+        overflow: hidden;
+        white-space: pre-wrap;
+    }
+    .cal-hover-meta {
+        margin-top: 8px;
+        display: flex; gap: 8px;
+        font-size: 12px;
+        color: #1D1D1F;
+        line-height: 1.4;
+    }
+    .cal-hover-meta-lbl {
+        color: #86868B;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+        min-width: 86px;
+        padding-top: 1px;
+    }
+    .cal-hover-related {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(15,23,42,0.06);
+        display: flex; gap: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #0052D4;
+    }
+    .cal-hover-related .cal-hover-meta-lbl { color: #86868B; font-weight: 700; }
+
+    /* Eventos del calendario (mes): hover suave con elevación */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-event {
+        transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 0.18s ease,
+                    filter 0.15s ease;
+    }
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-event:hover {
+        transform: translateY(-1px) scale(1.01);
+        filter: brightness(0.98);
+        z-index: 100;
+    }
+    /* Día actual: fondo azul suave (más allá del círculo del número) */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
+        background: rgba(0,82,212,0.025) !important;
+    }
+    /* Animación al cargar el grid */
+    @keyframes calGridFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .widget-overlay.is-page-mode .cal-page-body {
+        animation: calGridFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
     /* Popover de filtro de tipos en el header del calendario (page mode) */
     .cal-filter-pop {
         position: absolute;

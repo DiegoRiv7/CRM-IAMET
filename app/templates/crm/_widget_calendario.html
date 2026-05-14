@@ -623,7 +623,22 @@
                         }).catch(function(){info.revert();});
                     },
                     eventClick: function (info) {
-                        calShowEventDetail(String(info.event.id));
+                        // Click directo → modal completo (oportunidad/curso/evento/actividad/tarea)
+                        _calOpenFull(String(info.event.id));
+                    },
+                    eventDidMount: function (info) {
+                        // Hover preview con popover
+                        var elId = String(info.event.id);
+                        info.el.addEventListener('mouseenter', function (e) {
+                            clearTimeout(window._calHoverTimer);
+                            window._calHoverTimer = setTimeout(function () {
+                                _calShowHoverPreview(elId, info.el);
+                            }, 280);
+                        });
+                        info.el.addEventListener('mouseleave', function () {
+                            clearTimeout(window._calHoverTimer);
+                            _calHideHoverPreview();
+                        });
                     },
                     selectable: true,
                     select: function (info) {
@@ -1025,7 +1040,7 @@
                 if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
                 else if (isOvAct) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:1px;"></div>';
 
-                html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                     '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
                     '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
                     '</div>'+
@@ -1053,7 +1068,7 @@
 
                     html += '<div style="position:absolute;top:'+evTop+'px;left:'+taskX+'px;width:'+(taskLaneW-2)+'px;height:1px;background:'+tColor+';opacity:0.25;pointer-events:none;"></div>';
                     html += '<div style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);'+tOpacity+'"' +
-                        ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                        ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                         '<div style="font-size:0.68rem;font-weight:700;color:'+tColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
                         '<div style="font-size:0.6rem;color:'+tColor+';opacity:0.75;">'+deadlineFmt+'</div>'+
                         '</div>';
@@ -1271,7 +1286,7 @@
             html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
             // Bloque de tarea (más alto, como una tarjeta)
             html += '<div style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
-                ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                 '<div style="display:flex;align-items:center;gap:5px;">'+
                 '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
                 '<div style="font-size:0.77rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
@@ -1368,7 +1383,8 @@
         if (!drag.moved) {
             // Click puro → abrir detalle
             console.log('[cal-drag-day] click (no drag), opening detail for', drag.evtId);
-            if (typeof window.calShowEventDetail === 'function') window.calShowEventDetail(drag.evtId);
+            if (typeof window._calOpenFull === 'function') window._calOpenFull(drag.evtId);
+            else if (typeof window.calShowEventDetail === 'function') window.calShowEventDetail(drag.evtId);
             return;
         }
         var deltaMin = drag.lastDeltaMin || 0;
@@ -2154,6 +2170,112 @@
             return isP || isC;
         });
     }
+
+    /* ─── Hover preview de eventos del calendario ─── */
+    function _ensureHoverPopover() {
+        var pop = document.getElementById('calHoverPopover');
+        if (pop) return pop;
+        pop = document.createElement('div');
+        pop.id = 'calHoverPopover';
+        pop.className = 'cal-hover-popover';
+        pop.style.display = 'none';
+        document.body.appendChild(pop);
+        // Mantener visible si el mouse entra al popover
+        pop.addEventListener('mouseenter', function () { clearTimeout(window._calHoverHideTimer); });
+        pop.addEventListener('mouseleave', _calHideHoverPreview);
+        return pop;
+    }
+    function _calEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function _calShowHoverPreview(id, anchorEl) {
+        var evt = _globalEvents.find(function (x) { return String(x.id) === String(id); });
+        if (!evt) return;
+        var ep = evt.extendedProps || {};
+        var pop = _ensureHoverPopover();
+        // Construir contenido
+        var startD = new Date(evt.start);
+        var endD = evt.end ? new Date(evt.end) : null;
+        var pad = function(n){return String(n).padStart(2,'0');};
+        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var fechaStr = startD.getDate() + ' ' + MESES[startD.getMonth()] + ' ' + startD.getFullYear() +
+            ' · ' + pad(startD.getHours()) + ':' + pad(startD.getMinutes()) +
+            (endD ? ' – ' + pad(endD.getHours()) + ':' + pad(endD.getMinutes()) : '');
+        var esTarea = String(evt.id).indexOf('tarea-') === 0;
+        var tipo = esTarea ? 'Tarea' : (ep.evento ? 'Evento' : (ep.curso ? 'Curso' : 'Actividad'));
+        var tipoColor = esTarea ? '#FF9500' : (ep.evento ? '#8B5CF6' : (ep.curso ? '#10B981' : '#0052D4'));
+        var participantes = (ep.participants || []).map(function (p) { return p.nombre || p.name || ''; }).filter(Boolean);
+        var creador = ep.creado_por ? (ep.creado_por.nombre || ep.creado_por.name || '') : '';
+        var oppHTML = '';
+        if (ep.opportunity && ep.opportunity.id) {
+            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Oportunidad</span><span>' + _calEsc(ep.opportunity.title || ep.opportunity.titulo || '—') + '</span></div>';
+        } else if (ep.curso) {
+            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Curso</span><span>' + _calEsc(ep.curso.titulo || ep.curso.title || '—') + '</span></div>';
+        } else if (ep.evento) {
+            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Evento</span><span>' + _calEsc(ep.evento.titulo || ep.evento.title || '—') + '</span></div>';
+        }
+        var descHTML = '';
+        var desc = evt.description || ep.description || '';
+        if (desc) descHTML = '<div class="cal-hover-desc">' + _calEsc(desc) + '</div>';
+        pop.innerHTML =
+            '<div class="cal-hover-head" style="background:linear-gradient(135deg,'+tipoColor+'CC 0%,'+tipoColor+' 100%);">'+
+            '  <span class="cal-hover-type">'+tipo+'</span>'+
+            '</div>'+
+            '<div class="cal-hover-body">'+
+            '  <div class="cal-hover-title">'+_calEsc(evt.title)+'</div>'+
+            '  <div class="cal-hover-when">'+fechaStr+'</div>'+
+            descHTML +
+            (creador ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Creador</span><span>'+_calEsc(creador)+'</span></div>' : '') +
+            (participantes.length ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Participantes</span><span>'+_calEsc(participantes.join(', '))+'</span></div>' : '') +
+            oppHTML +
+            '</div>';
+        // Posicionar cerca del anchor
+        var rect = anchorEl.getBoundingClientRect();
+        pop.style.visibility = 'hidden';
+        pop.style.display = 'block';
+        var pW = pop.offsetWidth;
+        var pH = pop.offsetHeight;
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var left = rect.right + 10;
+        if (left + pW + 8 > vw) left = rect.left - pW - 10;
+        if (left < 8) left = 8;
+        var top = rect.top;
+        if (top + pH + 8 > vh) top = vh - pH - 8;
+        if (top < 8) top = 8;
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+        pop.style.visibility = '';
+    }
+    function _calHideHoverPreview() {
+        clearTimeout(window._calHoverHideTimer);
+        window._calHoverHideTimer = setTimeout(function () {
+            var pop = document.getElementById('calHoverPopover');
+            if (pop) pop.style.display = 'none';
+        }, 80);
+    }
+
+    /* ─── Abrir modal completo del evento ─── */
+    window._calOpenFull = function (id) {
+        var evt = _globalEvents.find(function (x) { return String(x.id) === String(id); });
+        if (!evt) return;
+        var ep = evt.extendedProps || {};
+        if (ep.evento && ep.evento.id && typeof window.eventoDetalleAbrir === 'function') {
+            window.eventoDetalleAbrir(ep.evento.id); return;
+        }
+        if (ep.curso && ep.curso.id && typeof window.cursoDetalleAbrir === 'function') {
+            window.cursoDetalleAbrir(ep.curso.id); return;
+        }
+        if (String(id).indexOf('tarea-') === 0) {
+            var tareaId = parseInt(String(id).slice(6), 10);
+            if (tareaId && typeof window.crmTaskVerDetalle === 'function') {
+                window.crmTaskVerDetalle(tareaId); return;
+            }
+        }
+        if (typeof window.woVerActividadGenerica === 'function') {
+            window.woVerActividadGenerica(id);
+        } else if (typeof window.calShowEventDetail === 'function') {
+            window.calShowEventDetail(id);
+        }
+    };
 
     function calApplyFilter(filterVal) {
         var events = window._calAllEvents || _globalEvents;
