@@ -4762,6 +4762,12 @@
                 var hEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta');
                 if (dEl) dEl.value = desde;
                 if (hEl) hEl.value = hasta;
+                // Pinta el resumen legible para modo lectura
+                var readEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoRead' : 'wciEntregaRead');
+                if (readEl) {
+                    var range = (desde && hasta) ? (desde + ' – ' + hasta) : (desde || hasta || '');
+                    readEl.textContent = range;
+                }
             }
             function _wciGetSchedule(scope){
                 var dias = [];
@@ -4793,9 +4799,21 @@
                 return JSON.stringify({ dias: dias });
             }
 
+            function _wciSetEditing(on){
+                var panel = document.getElementById('clienteOppInfoPanel');
+                var btn = document.getElementById('wciEditBtn');
+                var lbl = document.getElementById('wciEditBtnLabel');
+                if (!panel) return;
+                panel.classList.toggle('is-editing', !!on);
+                if (btn) btn.classList.toggle('is-editing', !!on);
+                if (lbl) lbl.textContent = on ? 'Cancelar edición' : 'Editar información';
+            }
+
             function _cargarClienteInfo(){
                 var saved = document.getElementById('wciSavedHint');
                 if (saved) saved.textContent = 'Cargando…';
+                // Siempre vuelve a modo lectura al recargar.
+                _wciSetEditing(false);
                 fetch('/app/api/cliente-info/' + currentClienteId + '/')
                     .then(function(r){ return r.json(); })
                     .then(function(data){
@@ -4821,10 +4839,50 @@
             function _wciBindOnce(){
                 if (_wciSaveBtnBound) return;
                 _wciSaveBtnBound = true;
-                // Toggle pills/chips
+                // Toggle pills/chips (sólo respondes al click si la app está en modo edición —
+                //  el CSS pone pointer-events:none a los pills activos en lectura, pero
+                //  reforzamos en JS por si CSS no llega a aplicarse).
                 document.querySelectorAll('#widgetClienteOportunidades .wci-day, #widgetClienteOportunidades .wci-fact-chip').forEach(function(btn){
-                    btn.addEventListener('click', function(){ btn.classList.toggle('is-on'); });
+                    btn.addEventListener('click', function(){
+                        var panel = document.getElementById('clienteOppInfoPanel');
+                        if (!panel || !panel.classList.contains('is-editing')) return;
+                        btn.classList.toggle('is-on');
+                    });
                 });
+                // Cuando cambia un input de tiempo, repinta el resumen legible
+                ['wciTrabajoDesde','wciTrabajoHasta'].forEach(function(id){
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('input', function(){
+                        var d = (document.getElementById('wciTrabajoDesde')||{}).value || '';
+                        var h = (document.getElementById('wciTrabajoHasta')||{}).value || '';
+                        var rd = document.getElementById('wciTrabajoRead');
+                        if (rd) rd.textContent = (d && h) ? (d + ' – ' + h) : (d || h || '');
+                    });
+                });
+                ['wciEntregaDesde','wciEntregaHasta'].forEach(function(id){
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('input', function(){
+                        var d = (document.getElementById('wciEntregaDesde')||{}).value || '';
+                        var h = (document.getElementById('wciEntregaHasta')||{}).value || '';
+                        var rd = document.getElementById('wciEntregaRead');
+                        if (rd) rd.textContent = (d && h) ? (d + ' – ' + h) : (d || h || '');
+                    });
+                });
+                // Botón Editar / Cancelar
+                var editBtn = document.getElementById('wciEditBtn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', function(){
+                        var panel = document.getElementById('clienteOppInfoPanel');
+                        if (!panel) return;
+                        var nowEditing = panel.classList.contains('is-editing');
+                        if (nowEditing) {
+                            // Cancelar → recargar los datos desde server para descartar cambios.
+                            _cargarClienteInfo();
+                        } else {
+                            _wciSetEditing(true);
+                        }
+                    });
+                }
                 var saveBtn = document.getElementById('wciSaveBtn');
                 var fileInput = document.getElementById('wciLogoFile');
                 if (saveBtn) {
@@ -4855,6 +4913,8 @@
                                 if (saved) saved.textContent = 'Guardado';
                                 if (data.cliente && data.cliente.logo_url) _wciRenderLogo(data.cliente.logo_url);
                                 if (fileInput) fileInput.value = '';
+                                // Vuelve a modo lectura tras guardar
+                                _wciSetEditing(false);
                                 setTimeout(function(){ if (saved && saved.textContent === 'Guardado') saved.textContent = ''; }, 2200);
                             } else {
                                 if (saved) saved.textContent = 'Error al guardar';

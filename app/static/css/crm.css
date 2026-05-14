@@ -1019,9 +1019,75 @@
 
     /* ── Tab "Información" (carátula del cliente) ── */
     .wco-info-panel {
-        padding: 24px 28px 32px;
+        padding: 18px 28px 32px;
         overflow-y: auto;
         max-height: calc(100% - 120px);
+    }
+    .wco-info-toolbar {
+        display: flex; justify-content: flex-end; align-items: center;
+        margin-bottom: 14px;
+    }
+    .wco-info-edit-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 14px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #ffffff;
+        color: #0052D4;
+        border-radius: 10px;
+        font-size: 12.5px; font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.16s ease;
+    }
+    .wco-info-edit-btn:hover {
+        border-color: #0052D4;
+        background: #EEF3FF;
+    }
+    .wco-info-edit-btn.is-editing {
+        background: #FEE2E2;
+        border-color: #FCA5A5;
+        color: #B91C1C;
+    }
+    .wco-info-edit-btn.is-editing:hover { background: #FECACA; }
+
+    /* ── MODO LECTURA (default): inputs como texto, pills no-on ocultos ── */
+    .wco-info-panel:not(.is-editing) .wco-info-input,
+    .wco-info-panel:not(.is-editing) .wco-info-id-input {
+        pointer-events: none;
+        background: transparent !important;
+        color: #1D1D1F;
+    }
+    .wco-info-panel:not(.is-editing) .wci-day:not(.is-on),
+    .wco-info-panel:not(.is-editing) .wci-fact-chip:not(.is-on) {
+        display: none;
+    }
+    .wco-info-panel:not(.is-editing) .wci-day.is-on,
+    .wco-info-panel:not(.is-editing) .wci-fact-chip.is-on {
+        pointer-events: none;
+    }
+    .wco-info-panel:not(.is-editing) .wci-range { display: none; }
+    .wco-info-panel.is-editing .wci-range-read { display: none; }
+    .wco-info-panel:not(.is-editing) .wco-info-actions { display: none; }
+    .wco-info-panel:not(.is-editing) .wco-info-id-photo .wco-info-logo-cta { display: none !important; }
+    .wco-info-panel:not(.is-editing) .wco-info-id-photo { border-style: solid; border-color: rgba(15,23,42,0.06); cursor: default; }
+    /* Cuando un campo está vacío y estamos en lectura, mostramos un "—" sutil */
+    .wco-info-panel:not(.is-editing) .wco-info-input:placeholder-shown,
+    .wco-info-panel:not(.is-editing) .wco-info-id-input:placeholder-shown {
+        color: #cbd5e1;
+    }
+
+    .wci-range-read {
+        font-size: 13px;
+        color: #1D1D1F;
+        font-weight: 500;
+        margin-top: 6px;
+        padding: 4px 0;
+        letter-spacing: 0.01em;
+    }
+    .wci-range-read:empty::before {
+        content: '—';
+        color: #cbd5e1;
+        font-weight: 400;
     }
     .wco-info-grid {
         display: grid;
