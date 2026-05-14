@@ -91,6 +91,23 @@
                     <span id="calHeaderDateText">—</span>
                 </div>
                 {% endif %}
+                {% if tab_activo == 'calendario' %}
+                <!-- Filtros rápidos por tipo (sólo en page mode) -->
+                <div class="cal-type-filters" style="display:flex;gap:4px;">
+                    <button type="button" class="cal-type-chip is-on" data-cal-type="tarea" onclick="calToggleTypeFilter('tarea')" title="Tareas">
+                        <span class="cal-type-dot" style="background:#FF9500;"></span><span>Tareas</span>
+                    </button>
+                    <button type="button" class="cal-type-chip is-on" data-cal-type="actividad" onclick="calToggleTypeFilter('actividad')" title="Actividades">
+                        <span class="cal-type-dot" style="background:#0052D4;"></span><span>Actividades</span>
+                    </button>
+                    <button type="button" class="cal-type-chip is-on" data-cal-type="evento" onclick="calToggleTypeFilter('evento')" title="Eventos">
+                        <span class="cal-type-dot" style="background:#8B5CF6;"></span><span>Eventos</span>
+                    </button>
+                    <button type="button" class="cal-type-chip is-on" data-cal-type="curso" onclick="calToggleTypeFilter('curso')" title="Cursos">
+                        <span class="cal-type-dot" style="background:#10B981;"></span><span>Cursos</span>
+                    </button>
+                </div>
+                {% endif %}
                 <div style="display:flex;align-items:center;gap:6px;">
                     <span style="font-size:0.72rem;font-weight:600;color:#86868B;">Ver:</span>
                     <div id="calUserPickerWrap" class="cal-userpick-wrap">
@@ -500,10 +517,20 @@
                     height: '100%',
                     expandRows: true,
                     headerToolbar: false,
-                    buttonText: { today: 'Hoy' },
+                    buttonText: { today: 'Hoy', more: 'más' },
+                    moreLinkText: function(n){ return '+' + n + ' más'; },
+                    moreLinkClick: 'popover',
+                    dayMaxEvents: 3,
                     eventInteractive: true,
                     views: {
                         dayGridMonth: { eventDisplay: 'list-item' }
+                    },
+                    // Click en una celda vacía abre el formulario con la fecha pre-llenada
+                    dateClick: function (info) {
+                        var d = info.date || (info.dateStr ? new Date(info.dateStr) : null);
+                        if (typeof window.calGlobalAbrirCrearActividad === 'function') {
+                            window.calGlobalAbrirCrearActividad(d);
+                        }
                     },
                     datesSet: function () {
                         calUpdateNavTitle();
@@ -1922,15 +1949,48 @@
     function calApplyFilter(filterVal) {
         var events = window._calAllEvents || _globalEvents;
         var filtered = _calFilterEventsForSelection(events, filterVal);
+        filtered = _calApplyTypeFilters(filtered);
         if (_globalCalendar) { _globalCalendar.removeAllEventSources(); _globalCalendar.addEventSource(filtered); }
     }
 
+    /* ─── Filtros rápidos por tipo (Tareas / Actividades / Eventos / Cursos) ─── */
+    window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true };
+    function _calClassifyType(ev) {
+        // Devuelve uno de: 'tarea', 'evento', 'curso', 'actividad'
+        var ep = ev.extendedProps || {};
+        if (ep.tipo_actividad === 'tarea' || String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
+        if (ep.evento) return 'evento';
+        if (ep.curso) return 'curso';
+        return 'actividad';
+    }
+    function _calApplyTypeFilters(events) {
+        var f = window._calTypeFilters || {};
+        return events.filter(function (ev) {
+            var t = _calClassifyType(ev);
+            return f[t] !== false;
+        });
+    }
+    window.calToggleTypeFilter = function (tipo) {
+        if (!window._calTypeFilters.hasOwnProperty(tipo)) return;
+        window._calTypeFilters[tipo] = !window._calTypeFilters[tipo];
+        // Marcar visual en el chip
+        document.querySelectorAll('.cal-type-chip[data-cal-type="' + tipo + '"]').forEach(function (b) {
+            b.classList.toggle('is-on', !!window._calTypeFilters[tipo]);
+        });
+        // Reaplicar el filtro completo (incluye el filtro de usuario actual)
+        var inp = document.getElementById('calUserFilter');
+        calApplyFilter(inp ? inp.value : 'all');
+    };
+
     /* ─── CREAR ACTIVIDAD ─── */
-    window.calGlobalAbrirCrearActividad = function () {
+    window.calGlobalAbrirCrearActividad = function (preDate) {
         document.getElementById('calFormActNombre').value = '';
-        var d=new Date(); var pad=function(n){return String(n).padStart(2,'0');};
+        var pad=function(n){return String(n).padStart(2,'0');};
+        // Si vino con fecha (click en celda del calendario), usa esa fecha pero con hora actual.
+        var d = (preDate instanceof Date) ? preDate : new Date();
+        var now = new Date();
         document.getElementById('calFormActFecha').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-        var startH=d.getHours(), startM=d.getMinutes();
+        var startH=now.getHours(), startM=now.getMinutes();
         document.getElementById('calFormActInicio').value = pad(startH)+':'+pad(startM);
         var endH=startH+1; if(endH>=24) endH=23;
         document.getElementById('calFormActFin').value = pad(endH)+':'+pad(startM);

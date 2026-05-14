@@ -2817,6 +2817,40 @@
         overflow: hidden !important;
     }
 
+    /* Chips de filtro de tipo en el header del calendario (page mode) */
+    .cal-type-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #ffffff;
+        color: #64748b;
+        border-radius: 999px;
+        font-size: 12px; font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .cal-type-chip:hover { color: #0f172a; border-color: rgba(15,23,42,0.18); }
+    .cal-type-chip .cal-type-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .cal-type-chip:not(.is-on) {
+        background: #f8fafc;
+        color: #94a3b8;
+        text-decoration: line-through;
+    }
+    .cal-type-chip:not(.is-on) .cal-type-dot {
+        opacity: 0.35;
+    }
+    .cal-type-chip.is-on {
+        background: #ffffff;
+        color: #1D1D1F;
+        border-color: rgba(15,23,42,0.14);
+        box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+    }
+
     /* Listas compactas del panel derecho (Tareas de hoy / Actividades de hoy):
        muestra ~3 items y desliza el resto con un scrollbar muy discreto */
     .cal-side-mini-list {
