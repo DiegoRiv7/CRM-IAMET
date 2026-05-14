@@ -2762,39 +2762,61 @@
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 4px 18px 14px !important;
-        gap: 8px;
+        padding: 0 18px 12px !important;
+        gap: 6px;
         height: 100vh !important;
     }
     /* Sub-nav viejo (cal-subnav-default): siempre oculto en page-mode */
     .widget-overlay.is-page-mode .cal-subnav-default { display: none !important; }
     /* Header en page-mode = crm-bar — su estilo viene de .crm-bar y
-       .crm-bar--dashboard ya definidos arriba. Solo aseguramos el margen. */
+       .crm-bar--dashboard ya definidos arriba. Solo aseguramos el margen
+       y forzamos que .crm-bar-left quede pegado a la esquina izquierda
+       (anulando el ::before spacer que centra contenido en otras vistas). */
     .widget-overlay.is-page-mode .cal-page-bar {
-        margin-bottom: 12px;
+        margin-bottom: 6px;
         flex-shrink: 0;
+        padding: 6px 4px !important;
     }
-    /* Body (calendar grid + right panel): cada uno una card individual */
+    .widget-overlay.is-page-mode .cal-page-bar.crm-bar--dashboard::before {
+        display: none !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-left {
+        flex: 1 1 0 !important;
+        justify-content: flex-start !important;
+        gap: 8px;
+        display: flex !important;
+        align-items: center !important;
+    }
+    /* Body (calendar grid + right panel): cards liquid glass */
     .widget-overlay.is-page-mode .cal-page-body {
         gap: 14px;
         flex: 1;
         min-height: 0;
     }
     .widget-overlay.is-page-mode .cal-page-body > div:first-child {
-        background: #ffffff;
-        border: 1px solid rgba(15,23,42,0.06);
-        border-radius: 16px;
-        box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+        background: rgba(255,255,255,0.70);
+        backdrop-filter: blur(28px) saturate(180%);
+        -webkit-backdrop-filter: blur(28px) saturate(180%);
+        border: 1px solid rgba(255,255,255,0.55);
+        border-radius: 18px;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 24px -8px rgba(15,23,42,0.10);
         overflow: hidden;
     }
     .widget-overlay.is-page-mode #calRightPanel {
-        background: #ffffff;
-        border: 1px solid rgba(15,23,42,0.06);
-        border-left: 1px solid rgba(15,23,42,0.06) !important;
-        border-radius: 16px;
-        box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+        background: rgba(255,255,255,0.70);
+        backdrop-filter: blur(28px) saturate(180%);
+        -webkit-backdrop-filter: blur(28px) saturate(180%);
+        border: 1px solid rgba(255,255,255,0.55);
+        border-left: 1px solid rgba(255,255,255,0.55) !important;
+        border-radius: 18px;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 24px -8px rgba(15,23,42,0.10);
         margin-left: 0 !important;
         max-height: 100%;
+    }
+    /* Bordes internos del FullCalendar más sutiles en page-mode */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard td,
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard th {
+        border-color: rgba(15,23,42,0.04) !important;
     }
     /* Restringir scroll: solo el panel derecho cuando es necesario, no la
        página completa ni el card externo. */
