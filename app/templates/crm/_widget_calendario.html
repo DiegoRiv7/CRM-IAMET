@@ -1135,12 +1135,16 @@
             var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
             var endFmt   = pad(endD.getHours())+':'+pad(endD.getMinutes());
 
-            // Posición en píxeles exactos (dentro del carril de actividades)
+            // Posición en píxeles: cada evento ocupa una "card" de ~240px de ancho.
+            // Si hay solapamiento (varios en la misma hora), se ponen al lado.
             var n = item.numCols, c = item.col;
-            var gap = n > 1 ? 4 : 0;
-            var colW = Math.floor((areaW - gap*(n-1)) / n);
-            var leftPx = 64 + c * (colW + gap);
-            var widthPx = colW;
+            var gap = n > 1 ? 6 : 0;
+            var CARD_W = 240;
+            // Si hay tantos eventos solapados que no caben con 240px cada uno, se reducen al
+            // ancho disponible.
+            var maxByArea = Math.floor((areaW - gap*(n-1)) / n);
+            var widthPx = Math.max(140, Math.min(CARD_W, maxByArea));
+            var leftPx = 64 + c * (widthPx + gap);
 
             var statusHTML = '';
             if (isNow) statusHTML='<div class="cal-day-evt-status" style="background:rgba(52,199,89,0.15);color:#34C759;">En curso</div>';
