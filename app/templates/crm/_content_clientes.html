@@ -1,4 +1,178 @@
 {% with meta=clientes_tabla_meta %}
+<style>
+/* ─── Clientes · diseño profesional scoped ─── */
+#cliPage{
+    padding: 28px 32px 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+    font-feature-settings: "cv11", "ss01", "ss03";
+}
+#cliPage .cli-kpis-bar{
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.06);
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 30px -18px rgba(15,23,42,0.18);
+}
+#cliPage .cli-kpis-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+#cliPage .cli-kpis-eyebrow{ font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8; margin-bottom:4px; }
+#cliPage .cli-kpis-name{ font-size:18px; font-weight:700; color:#0f172a; letter-spacing:-0.01em; }
+#cliPage .cli-kpis-close{
+    width:28px; height:28px; border-radius:50%; border:1px solid rgba(15,23,42,0.08);
+    background:#f8fafc; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition: all 0.18s ease;
+}
+#cliPage .cli-kpis-close:hover{ background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+#cliPage .cli-kpis-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; }
+#cliPage .cli-kpi{
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid rgba(15,23,42,0.05);
+    border-radius: 14px; padding: 14px 16px;
+}
+#cliPage .cli-kpi-lbl{ font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
+#cliPage .cli-kpi-val{ font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
+
+/* ── Filtros ── */
+#cliPage .cli-filter-bar{
+    display:flex; align-items:center; gap:10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+#cliPage .cli-filter-bar-lbl{ font-size:12px; font-weight:600; color:#64748b; letter-spacing:0.02em; }
+#cliPage .cli-filter-btn{
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,0.08);
+    background: #ffffff;
+    color:#475569;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+#cliPage .cli-filter-btn:hover{ background:#f1f5f9; color:#0f172a; }
+#cliPage .cli-filter-btn.cli-filter-active{
+    background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+    border-color: transparent;
+    color:#fff;
+    box-shadow: 0 6px 14px -6px rgba(0,82,212,0.5);
+}
+#cliPage .cli-filter-meta{
+    margin-left:auto; font-size:12px; color:#94a3b8; font-weight:500;
+}
+
+/* ── Tabla card ── */
+#cliPage .cli-table-wrap{
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.06);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px -28px rgba(15,23,42,0.22);
+    overflow: hidden;
+    overflow-x: auto;
+}
+#cliPage .cli-table{
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+#cliPage .cli-table thead th{
+    position: sticky; top: 0; z-index: 2;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 14px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    text-align: center;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    white-space: nowrap;
+}
+#cliPage .cli-table thead th.cli-th-cli{
+    text-align: left;
+    padding-left: 24px;
+    position: sticky; left: 0; z-index: 3;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    min-width: 280px;
+    border-right: 1px solid rgba(15,23,42,0.06);
+}
+#cliPage .cli-table tbody td{
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(15,23,42,0.05);
+    color: #1e293b;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    vertical-align: middle;
+}
+#cliPage .cli-table tbody td.cli-td-cli{
+    text-align: left;
+    padding-left: 24px;
+    position: sticky; left: 0;
+    background: #ffffff;
+    border-right: 1px solid rgba(15,23,42,0.06);
+    min-width: 280px;
+    z-index: 1;
+}
+#cliPage .cli-cliente-name{
+    color:#0f172a;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+}
+#cliPage a.cli-cliente-name:hover{ color:#0052D4; text-decoration: underline; }
+#cliPage .cli-cliente-rfc{ font-size:11px; color:#94a3b8; margin-top:2px; font-weight:500; }
+
+/* Celdas con valor > 0: badge sutil */
+#cliPage .cli-td-cell{
+    font-weight: 600;
+    color: #0f172a;
+}
+#cliPage .cli-td-cell.cli-td-zero{
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+/* Hover de fila */
+#cliPage .cli-row{ cursor: pointer; transition: background 0.15s ease; }
+#cliPage .cli-row:hover td{ background:#f8fafc; }
+#cliPage .cli-row:hover td.cli-td-cli{ background:#f1f5f9; }
+#cliPage .cli-row.cli-row-selected td{ background:#eff6ff; }
+#cliPage .cli-row.cli-row-selected td.cli-td-cli{
+    background:#dbeafe;
+    border-left: 3px solid #0052D4;
+    padding-left: 21px;
+}
+
+/* Zebra muy suave */
+#cliPage .cli-table tbody tr:nth-child(even) td.cli-td-cli{ background:#fafbfc; }
+#cliPage .cli-table tbody tr:nth-child(even):hover td.cli-td-cli{ background:#f1f5f9; }
+
+#cliPage .cli-empty{
+    text-align:center; padding: 40px 20px; color:#94a3b8; font-style: italic;
+}
+
+/* Numérico destacado cuando > 0 mediante un wrapper interno */
+#cliPage .cli-td-cell .cli-cell-pill{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: rgba(0,82,212,0.10);
+    color: #0052D4;
+    font-weight: 700;
+    line-height: 1;
+}
+#cliPage .cli-td-cell.cli-td-zero .cli-cell-pill,
+#cliPage .cli-td-cell.cli-td-zero{
+    background: transparent;
+    color: #cbd5e1;
+}
+</style>
+
 <div class="cli-page" id="cliPage">
     {# ── Fila de KPIs flotantes (visible solo si hay cliente seleccionado) ── #}
     <div id="cliKpisBar" class="cli-kpis-bar" style="display:none;">
@@ -62,11 +236,11 @@
                         {% if c.rfc %}<div class="cli-cliente-rfc">RFC: {{ c.rfc }}</div>{% endif %}
                     </td>
                     {% for cell in c.cells %}
-                    <td class="cli-td-cell"
+                    <td class="cli-td-cell{% if cell.total == 0 %} cli-td-zero{% endif %}"
                         data-op="{{ cell.op }}"
                         data-pr="{{ cell.pr }}"
                         data-total="{{ cell.total }}">
-                        {{ cell.total }}
+                        <span class="cli-cell-pill">{{ cell.total }}</span>
                     </td>
                     {% endfor %}
                 </tr>
@@ -82,8 +256,8 @@
                         <span class="cli-cliente-name">{{ p.nombre }}</span>
                         <div class="cli-cliente-rfc">{{ p.asignado_nombre }}</div>
                     </td>
-                    {% for m in meta.marcas_col %}<td class="cli-td-cell cli-td-zero">0</td>{% endfor %}
-                    <td class="cli-td-cell cli-td-zero">0</td>
+                    {% for m in meta.marcas_col %}<td class="cli-td-cell cli-td-zero"><span class="cli-cell-pill">0</span></td>{% endfor %}
+                    <td class="cli-td-cell cli-td-zero"><span class="cli-cell-pill">0</span></td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="{{ meta.marcas_col|length|add:2 }}" class="cli-empty">No hay clientes potenciales aún.</td></tr>
@@ -124,7 +298,9 @@
             var op = parseInt(td.dataset.op || 0);
             var total = parseInt(td.dataset.total || 0);
             var val = mode === 'clientes' ? op : total;
-            td.textContent = val;
+            var pill = td.querySelector('.cli-cell-pill');
+            if (pill) pill.textContent = val;
+            else td.textContent = val;
             td.classList.toggle('cli-td-zero', val === 0);
         });
     }
