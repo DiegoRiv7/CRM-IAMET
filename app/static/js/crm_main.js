@@ -4780,23 +4780,44 @@
                 if (!dias.length && !payload.desde && !payload.hasta) return '';
                 return JSON.stringify(payload);
             }
-            // Facturación: chips numéricos (+ 'ultimo')
+            // Facturación: rango "del día X al día Y de cada mes"
+            function _wciFactPaintRead(desde, hasta){
+                var el = document.getElementById('wciFactRead');
+                if (!el) return;
+                if (desde && hasta) el.textContent = 'Del ' + desde + ' al ' + hasta + ' de cada mes';
+                else if (desde) el.textContent = 'Día ' + desde + ' de cada mes';
+                else if (hasta) el.textContent = 'Hasta el ' + hasta + ' de cada mes';
+                else el.textContent = '';
+            }
             function _wciSetFact(raw){
                 var parsed = null;
                 if (raw) { try { parsed = JSON.parse(raw); } catch(e) { parsed = null; } }
-                var set = {};
-                if (parsed && Array.isArray(parsed.dias)) parsed.dias.forEach(function(d){ set[String(d)] = true; });
-                document.querySelectorAll('#wciFactChips .wci-fact-chip').forEach(function(c){
-                    c.classList.toggle('is-on', !!set[c.dataset.fact]);
-                });
+                var desde = '', hasta = '';
+                if (parsed) {
+                    if (parsed.desde != null) desde = String(parsed.desde);
+                    if (parsed.hasta != null) hasta = String(parsed.hasta);
+                    // Compat con formato viejo {dias:[5,15,30]}: tomar min/max
+                    if (!desde && !hasta && Array.isArray(parsed.dias) && parsed.dias.length) {
+                        var nums = parsed.dias.map(function(d){ var n = parseInt(d, 10); return isNaN(n) ? null : n; }).filter(function(n){ return n != null; });
+                        if (nums.length) { desde = String(Math.min.apply(null, nums)); hasta = String(Math.max.apply(null, nums)); }
+                    }
+                }
+                var dEl = document.getElementById('wciFactDesde');
+                var hEl = document.getElementById('wciFactHasta');
+                if (dEl) dEl.value = desde;
+                if (hEl) hEl.value = hasta;
+                _wciFactPaintRead(desde, hasta);
             }
             function _wciGetFact(){
-                var dias = [];
-                document.querySelectorAll('#wciFactChips .wci-fact-chip.is-on').forEach(function(c){
-                    dias.push(c.dataset.fact);
-                });
-                if (!dias.length) return '';
-                return JSON.stringify({ dias: dias });
+                var dEl = document.getElementById('wciFactDesde');
+                var hEl = document.getElementById('wciFactHasta');
+                var desde = (dEl && dEl.value) || '';
+                var hasta = (hEl && hEl.value) || '';
+                if (!desde && !hasta) return '';
+                var payload = {};
+                if (desde) payload.desde = parseInt(desde, 10);
+                if (hasta) payload.hasta = parseInt(hasta, 10);
+                return JSON.stringify(payload);
             }
 
             function _wciClearEditing(){
@@ -4848,14 +4869,21 @@
             function _wciBindOnce(){
                 if (_wciSaveBtnBound) return;
                 _wciSaveBtnBound = true;
-                // Toggle pills/chips (sólo respondes al click si la app está en modo edición —
-                //  el CSS pone pointer-events:none a los pills activos en lectura, pero
-                //  reforzamos en JS por si CSS no llega a aplicarse).
-                document.querySelectorAll('#widgetClienteOportunidades .wci-day, #widgetClienteOportunidades .wci-fact-chip').forEach(function(btn){
+                // Toggle pills de días (sólo cuando el field está en edición)
+                document.querySelectorAll('#widgetClienteOportunidades .wci-day').forEach(function(btn){
                     btn.addEventListener('click', function(){
-                        var panel = document.getElementById('clienteOppInfoPanel');
-                        if (!panel || !panel.classList.contains('is-editing')) return;
+                        var field = btn.closest('.wco-info-id-field');
+                        if (!field || !field.classList.contains('is-editing')) return;
                         btn.classList.toggle('is-on');
+                    });
+                });
+                // Repintar el resumen "Del X al Y" cuando cambian los inputs del rango
+                ['wciFactDesde','wciFactHasta'].forEach(function(id){
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('input', function(){
+                        var d = (document.getElementById('wciFactDesde')||{}).value || '';
+                        var h = (document.getElementById('wciFactHasta')||{}).value || '';
+                        _wciFactPaintRead(d, h);
                     });
                 });
                 // Cuando cambia un input de tiempo, repinta el resumen legible
