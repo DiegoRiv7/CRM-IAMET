@@ -2751,9 +2751,51 @@
         padding: 0;
         animation: none !important;
     }
+    /* En page mode, la "card" externa pierde bordes y se vuelve un layout flex
+       transparente; los hijos (header, subnav, body) se ven separados como en
+       las secciones de Tareas/Proyectos */
     .widget-overlay.is-page-mode .cal-card--page {
         margin: 0;
         max-width: none;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 8px 20px 20px !important;
+        gap: 12px;
+    }
+    /* Outer header (Calendario CRM + filtros + Nueva Actividad): sin caja */
+    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(1) {
+        background: transparent !important;
+        border: none !important;
+        padding: 14px 4px !important;
+    }
+    /* Sub-nav (Hoy + arrows + Mes/Semana/Día toggle): sin caja, pero con
+       el toggle de vistas a la derecha */
+    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(2) {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 4px 10px !important;
+    }
+    /* Body (calendar grid + right panel): cada uno una card individual */
+    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(3) {
+        gap: 14px;
+        flex: 1;
+        min-height: 0;
+    }
+    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(3) > div:first-child {
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+        overflow: hidden;
+    }
+    .widget-overlay.is-page-mode #calRightPanel {
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-left: 1px solid rgba(15,23,42,0.06) !important;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+        margin-left: 0 !important;
     }
 
     @keyframes overlayIn {
