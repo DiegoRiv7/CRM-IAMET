@@ -1,6 +1,5 @@
     <!-- ═══ WIDGET: NUEVO PROSPECTO (composer style igual a Oportunidad) ═══ -->
-    <div class="widget-overlay wn-overlay" id="widgetNuevoProspecto" style="z-index:10300;"
-        onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},220);}">
+    <div class="widget-overlay wn-overlay" id="widgetNuevoProspecto" style="z-index:10300;"><!-- Solo cierra con la × del header -->
         <div class="wn-card wn-composer">
 
             <form id="formNuevoProspecto" autocomplete="off" novalidate style="display:contents;">
@@ -14,7 +13,7 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                         <span class="wn-ctw-crumb-current">Nuevo prospecto</span>
                     </div>
-                    <button type="button" class="wn-ctw-close" id="wpWidgetClose" title="Cerrar (Esc)"
+                    <button type="button" class="wn-ctw-close" id="wpWidgetClose" title="Cerrar"
                         onclick="var w=document.getElementById('widgetNuevoProspecto');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');var l1=document.getElementById('wpfLblNombre');var l2=document.getElementById('wpfLblCliente');if(l1)l1.textContent='Nombre del prospecto';if(l2)l2.textContent='Cliente';},220);">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>

@@ -514,10 +514,8 @@
                 });
             }
 
-            // Close on Escape
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && overlay && overlay.classList.contains('active')) closeWidget();
-            });
+            // Nota: el modal de Nueva Oportunidad solo se cierra con el botón ×.
+            // ESC y click-fuera están deshabilitados para evitar perder un draft por accidente.
 
             // ── Autocomplete: Cliente ──
             var clienteInput = document.getElementById('wfCliente');
