@@ -506,10 +506,7 @@
                     height: '100%',
                     expandRows: true,
                     headerToolbar: false,
-                    buttonText: { today: 'Hoy', more: 'más' },
-                    moreLinkText: function(n){ return '+' + n + ' más'; },
-                    moreLinkClick: 'popover',
-                    dayMaxEvents: 3,
+                    buttonText: { today: 'Hoy' },
                     eventInteractive: true,
                     views: {
                         dayGridMonth: { eventDisplay: 'list-item' }
@@ -1055,14 +1052,17 @@
             return ev.start && ev.start.substring(0,10) === dateStr;
         }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
 
-        // Build inner wrapper (position:relative, tall enough for 24 hours)
-        var totalH = 24 * CAL_HOUR_H;
-        var html = '<div style="position:relative;min-height:'+totalH+'px;">';
+        // Vista día: ventana visible de 06:00 a 23:00 (oculta noche).
+        // El offset CAL_DAY_OFFSET_H se resta del top para que 06:00 quede en y=0.
+        var CAL_DAY_START_H = 6;
+        var CAL_DAY_END_H = 23;
+        var totalH = (CAL_DAY_END_H - CAL_DAY_START_H + 1) * CAL_HOUR_H;
+        var html = '<div style="position:relative;min-height:'+totalH+'px;" data-cal-day-start="'+CAL_DAY_START_H+'">';
 
         // Hour rows (background grid) + media hora punteada
-        for (var h = 0; h < 24; h++) {
-            var label = h > 0 ? calFmtHour(h) : '';
-            var topPx = h * CAL_HOUR_H;
+        for (var h = CAL_DAY_START_H; h <= CAL_DAY_END_H; h++) {
+            var label = calFmtHour(h);
+            var topPx = (h - CAL_DAY_START_H) * CAL_HOUR_H;
             html += '<div class="cal-hour-row" style="position:absolute;top:'+topPx+'px;left:0;right:0;height:'+CAL_HOUR_H+'px;" data-hour="'+h+'" onclick="calDayHourClick(event,'+h+')">' +
                 '<div class="cal-hour-label">'+label+'</div>' +
                 '<div class="cal-hour-area"></div>' +
@@ -1075,9 +1075,11 @@
         // Now line
         if (isToday) {
             var nowMins = now.getHours()*60+now.getMinutes();
-            var nowTop = (nowMins/60)*CAL_HOUR_H;
-            html += '<div class="cal-now-dot" style="top:'+(nowTop-4)+'px;"></div>';
-            html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
+            var nowTop = (nowMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
+            if (nowTop >= 0 && nowTop <= totalH) {
+                html += '<div class="cal-now-dot" style="top:'+(nowTop-4)+'px;"></div>';
+                html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
+            }
         }
 
         // ── Column-split layout (ancho en píxeles reales) ──
@@ -1149,7 +1151,7 @@
             var topMs = item.groupTop != null ? item.groupTop : startD.getTime();
             var topD = new Date(topMs);
             var topMins = topD.getHours()*60+topD.getMinutes();
-            var evTop = (topMins/60)*CAL_HOUR_H;
+            var evTop = (topMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
             // Altura proporcional al tiempo real del evento (sin forzar 45min mínimos).
             // Restamos 3px para crear un gap visual entre cards consecutivos.
             var evH = Math.max(((endMins-startMins)/60)*CAL_HOUR_H - 3, 22);
@@ -1193,8 +1195,7 @@
             // línea. Antes el badge se desbordaba y se veía encimado con el card
             // siguiente cuando los eventos estaban juntos.
             var isCompact = evH < 64;
-            html += '<div class="cal-day-evt'+(isCompact?' is-compact':'')+'" data-evt-id="'+safeId+'" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'"' +
-                ' onmousedown="calDayEvtDragStart(event)" onclick="calDayEvtMaybeOpen(event,\''+safeId+'\')">'+
+            html += '<div class="cal-day-evt'+(isCompact?' is-compact':'')+'" data-evt-id="'+safeId+'" data-draggable="1" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'">'+
                 titleHTML+
                 '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' – '+endFmt+'</div>'+
                 statusHTML+'</div>';
@@ -1214,7 +1215,7 @@
         taskEvts.forEach(function(ev){
             var startD = new Date(ev.start);
             var startMins = startD.getHours()*60+startD.getMinutes();
-            var evTop = (startMins/60)*CAL_HOUR_H;
+            var evTop = (startMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
             var safeId = String(ev.id).replace(/'/g,'');
             var tEp = ev.extendedProps || {};
             var tCompletada = tEp.estado === 'completada';
@@ -1241,81 +1242,45 @@
         html += '</div>';
         container.innerHTML = html;
 
-        // Auto-scroll to 7am
-        setTimeout(function(){ if(container) container.scrollTop = 7*CAL_HOUR_H; }, 50);
+        // El día arranca a las 06:00 (top 0), así que no requerimos auto-scroll.
+        setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
 
         calUpdateSidePanel();
     }
 
-    /* ─── DRAG & DROP de eventos en vista Día ─── */
-    var _calDayDrag = null;  // { card, evtId, startY, startTop, height, originalStartMs, originalEndMs, moved }
-    window.calDayEvtMaybeOpen = function (e, id) {
-        // Si fue drag, NO abrir el detalle. Si fue click puro, sí.
-        if (_calDayDrag && _calDayDrag.moved) {
-            _calDayDrag = null;
-            return;
-        }
-        _calDayDrag = null;
-        e.stopPropagation();
-        if (typeof window.calShowEventDetail === 'function') window.calShowEventDetail(id);
-    };
-    window.calDayEvtDragStart = function (ev) {
-        // Solo botón izquierdo
-        if (ev.button !== 0) return;
-        var card = ev.currentTarget;
-        if (!card) return;
-        var evtId = card.getAttribute('data-evt-id');
-        // No permitir drag a tareas (id 'tarea-X'): viven en su carril propio.
-        if (!evtId || evtId.indexOf('tarea-') === 0) return;
-        var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
-        // No permitir drag si la actividad es una tarea genérica del API (igual restricción que eventDrop).
-        if (!stored || (stored.extendedProps||{}).tipo_actividad === 'tarea') return;
-        ev.preventDefault();
-        var sD = new Date(stored.start);
-        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
-        _calDayDrag = {
-            card: card,
-            evtId: evtId,
-            startY: ev.clientY,
-            startTop: parseFloat(card.style.top) || 0,
-            originalStartMs: sD.getTime(),
-            originalEndMs: eD.getTime(),
-            durationMs: eD.getTime() - sD.getTime(),
-            moved: false,
-            stored: stored,
-        };
-        card.style.cursor = 'grabbing';
-        card.style.opacity = '0.72';
-        card.style.zIndex = '20';
-        document.addEventListener('mousemove', calDayEvtDragMove);
-        document.addEventListener('mouseup', calDayEvtDragEnd);
-    };
-    function calDayEvtDragMove(ev) {
+    /* ─── DRAG & DROP de eventos en vista Día (event delegation) ─── */
+    var _calDayDrag = null;
+    function _calDayDragMove(ev) {
         if (!_calDayDrag) return;
         var dy = ev.clientY - _calDayDrag.startY;
-        if (!_calDayDrag.moved && Math.abs(dy) > 3) _calDayDrag.moved = true;
-        // Snap a múltiplos de 15 minutos
+        if (!_calDayDrag.moved && Math.abs(dy) > 4) _calDayDrag.moved = true;
+        if (!_calDayDrag.moved) return;
         var pxPerMin = CAL_HOUR_H / 60;
-        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;
-        var newTop = _calDayDrag.startTop + (deltaMin * pxPerMin);
-        _calDayDrag.card.style.top = newTop + 'px';
+        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;  // snap 15 min
         _calDayDrag.lastDeltaMin = deltaMin;
+        _calDayDrag.card.style.top = (_calDayDrag.startTop + deltaMin * pxPerMin) + 'px';
+        _calDayDrag.card.style.opacity = '0.7';
+        _calDayDrag.card.style.zIndex = '30';
+        ev.preventDefault();
     }
-    function calDayEvtDragEnd(ev) {
-        document.removeEventListener('mousemove', calDayEvtDragMove);
-        document.removeEventListener('mouseup', calDayEvtDragEnd);
+    function _calDayDragEnd(ev) {
+        document.removeEventListener('mousemove', _calDayDragMove, true);
+        document.removeEventListener('mouseup', _calDayDragEnd, true);
         if (!_calDayDrag) return;
         var drag = _calDayDrag;
-        drag.card.style.cursor = '';
         drag.card.style.opacity = '';
         drag.card.style.zIndex = '';
-        if (!drag.moved) { _calDayDrag = null; return; }
+        // Si NO se movió, fue click — abrir detalle
+        if (!drag.moved) {
+            _calDayDrag = null;
+            if (typeof window.calShowEventDetail === 'function') window.calShowEventDetail(drag.evtId);
+            return;
+        }
         var deltaMin = drag.lastDeltaMin || 0;
-        if (deltaMin === 0) { _calDayDrag = null; return; }
-        // Calcular nueva fecha
+        _calDayDrag = null;
+        if (deltaMin === 0) return;
         var newStart = new Date(drag.originalStartMs + deltaMin * 60000);
         var newEnd = new Date(drag.originalEndMs + deltaMin * 60000);
-        // Mantener el día actual (no permitir cruzar a otro día con scroll vertical)
         var pad = function(n){return String(n).padStart(2,'0');};
         function localIso(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
         var ep = drag.stored.extendedProps || {};
@@ -1334,23 +1299,51 @@
                 participants: (ep.participants || []).map(function(p){ return p.id; }),
                 opportunity: ep.opportunity ? ep.opportunity.id : null,
             })
-        }).then(function (r) { return r.json(); }).then(function () {
-            // Actualizar el evento en memoria y re-renderizar el día
+        }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function () {
             drag.stored.start = localIso(newStart);
             drag.stored.end = localIso(newEnd);
-            // Re-sync con FullCalendar
             if (_globalCalendar) {
                 var fcEv = _globalCalendar.getEventById(drag.evtId);
                 if (fcEv) fcEv.setDates(newStart, newEnd);
             }
             calRenderDayView(_calCurrentDay);
         }).catch(function (err) {
-            console.error('drag-day error:', err);
-            // Revertir al original
+            console.error('[cal-drag-day] error:', err);
             drag.card.style.top = drag.startTop + 'px';
+            alert('No se pudo mover el evento. ' + (err.message || ''));
         });
-        _calDayDrag = null;
     }
+    // Delegation global: cualquier mousedown en una card de vista día arranca drag
+    document.addEventListener('mousedown', function (ev) {
+        if (ev.button !== 0) return;
+        var card = ev.target.closest ? ev.target.closest('.cal-day-evt[data-draggable="1"]') : null;
+        if (!card) return;
+        if (!document.getElementById('calDayViewRoot') || document.getElementById('calDayViewRoot').style.display === 'none') return;
+        var evtId = card.getAttribute('data-evt-id');
+        if (!evtId || evtId.indexOf('tarea-') === 0) return;
+        var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
+        if (!stored) return;
+        if ((stored.extendedProps||{}).tipo_actividad === 'tarea') return;
+        var sD = new Date(stored.start);
+        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
+        _calDayDrag = {
+            card: card,
+            evtId: evtId,
+            startY: ev.clientY,
+            startTop: parseFloat(card.style.top) || 0,
+            originalStartMs: sD.getTime(),
+            originalEndMs: eD.getTime(),
+            moved: false,
+            stored: stored,
+            lastDeltaMin: 0,
+        };
+        document.addEventListener('mousemove', _calDayDragMove, true);
+        document.addEventListener('mouseup', _calDayDragEnd, true);
+        ev.preventDefault();
+    }, true);
 
     window.calDayHourClick = function(e, hour) {
         if (e.target && e.target.closest && e.target.closest('.cal-day-evt')) return;
