@@ -77,31 +77,41 @@
         </table>
     </div>
 
-    {# ── Tabla "Solo Prospectos": clientes potenciales (sin marcas) ── #}
-    <div class="cli-table-wrap" id="cliTablePotencialesWrap" style="display:none;">
-        <table class="cli-table">
-            <thead>
-                <tr>
-                    <th class="cli-th-cli">Prospecto (cliente potencial)</th>
-                    <th>Asignado a</th>
-                    <th>Notas</th>
-                    <th>Creado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in potenciales_lista %}
-                <tr class="cli-row-pot" data-pot-id="{{ p.id }}">
-                    <td class="cli-td-cli">{{ p.nombre }}</td>
-                    <td style="color:#6B7280;">{{ p.asignado_nombre }}</td>
-                    <td style="color:#6B7280;font-size:0.78rem;">{{ p.notas|default:'—'|truncatechars:80 }}</td>
-                    <td style="color:#9CA3AF;font-size:0.78rem;">{{ p.fecha }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="cli-empty">No hay prospectos (clientes potenciales) en este periodo.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {# ── Bloque adicional: ClientePotencial (potenciales sin marca aún) ──
+       Aparece al final de la tabla, colapsable. Útil para ver leads
+       crudos que aún no se han convertido en cliente ni se les ha
+       creado una prospección con marca. #}
+    {% if potenciales_lista %}
+    <div class="cli-pot-block" id="cliPotBlock">
+        <div class="cli-pot-head" id="cliPotHead">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="cli-pot-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+            <span>Clientes potenciales sin prospección registrada · {{ potenciales_lista|length }}</span>
+            <span class="cli-pot-hint">leads aún sin marca</span>
+        </div>
+        <div class="cli-pot-body" id="cliPotBody">
+            <table class="cli-table">
+                <thead>
+                    <tr>
+                        <th class="cli-th-cli">Potencial</th>
+                        <th>Asignado a</th>
+                        <th>Notas</th>
+                        <th>Creado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in potenciales_lista %}
+                    <tr class="cli-row-pot" data-pot-id="{{ p.id }}">
+                        <td class="cli-td-cli">{{ p.nombre }}</td>
+                        <td style="color:#6B7280;">{{ p.asignado_nombre }}</td>
+                        <td style="color:#6B7280;font-size:0.78rem;">{{ p.notas|default:'—'|truncatechars:80 }}</td>
+                        <td style="color:#9CA3AF;font-size:0.78rem;">{{ p.fecha }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+    {% endif %}
 </div>
 {% endwith %}
 
@@ -114,23 +124,26 @@
         document.querySelectorAll('.cli-filter-btn').forEach(function(b){
             b.classList.toggle('cli-filter-active', b.dataset.cliShow === mode);
         });
-        var wrapMarcas = document.getElementById('cliTableMarcasWrap');
-        var wrapPot = document.getElementById('cliTablePotencialesWrap');
-        if (mode === 'prospectos') {
-            // Solo Prospectos → muestra ClientePotencial, oculta la tabla por marca
-            if (wrapMarcas) wrapMarcas.style.display = 'none';
-            if (wrapPot) wrapPot.style.display = '';
-            return;
-        }
-        if (wrapMarcas) wrapMarcas.style.display = '';
-        if (wrapPot) wrapPot.style.display = 'none';
-        // Cada celda muestra op/total según el modo, en cero estilo "tenue"
+        // Cada celda muestra op/pr/total según el modo, en cero estilo "tenue".
+        // El bloque ClientePotencial se mantiene visible siempre al final.
         document.querySelectorAll('.cli-td-cell').forEach(function(td){
             var op = parseInt(td.dataset.op || 0);
+            var pr = parseInt(td.dataset.pr || 0);
             var total = parseInt(td.dataset.total || 0);
-            var val = mode === 'clientes' ? op : total;
+            var val;
+            if (mode === 'clientes') val = op;
+            else if (mode === 'prospectos') val = pr;
+            else val = total;
             td.textContent = val;
             td.classList.toggle('cli-td-zero', val === 0);
+        });
+    }
+    // Bloque ClientePotencial: colapsable
+    var potHead = document.getElementById('cliPotHead');
+    var potBlock = document.getElementById('cliPotBlock');
+    if (potHead && potBlock) {
+        potHead.addEventListener('click', function(){
+            potBlock.classList.toggle('is-collapsed');
         });
     }
     document.querySelectorAll('.cli-filter-btn').forEach(function(b){

@@ -4749,15 +4749,21 @@
                 });
             }
 
-            // ── Click en nombre de oportunidad dentro del widget → abrir detalle ──
+            // ── Click en nombre de oportunidad/prospección dentro del widget ──
             if (widgetClienteOpp) {
                 widgetClienteOpp.addEventListener('click', function (e) {
-                    var oppLink = e.target.closest('.wco-opp-name');
-                    if (oppLink) {
-                        var oppId = oppLink.getAttribute('data-oportunidad-id');
-                        if (oppId && typeof openDetalle === 'function') {
-                            openDetalle(oppId);
-                        }
+                    var link = e.target.closest('.wco-opp-name');
+                    if (!link) return;
+                    // Prospección → abre widget de prospección
+                    var prospId = link.getAttribute('data-prospecto-row-id');
+                    if (prospId && typeof window.abrirWidgetProspecto === 'function') {
+                        window.abrirWidgetProspecto(parseInt(prospId));
+                        return;
+                    }
+                    // Oportunidad → abre detalle
+                    var oppId = link.getAttribute('data-oportunidad-id');
+                    if (oppId && typeof openDetalle === 'function') {
+                        openDetalle(oppId);
                     }
                 });
             }
