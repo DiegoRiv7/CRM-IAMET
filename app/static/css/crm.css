@@ -1029,37 +1029,62 @@
     .wco-info-right { min-width: 0; }
     .wci-contactos { min-width: 0; }
 
-    /* ── MODO LECTURA (default): inputs como texto, pills no-on ocultos ── */
-    .wco-info-panel:not(.is-editing) .wco-info-input,
-    .wco-info-panel:not(.is-editing) .wco-info-id-input {
+    /* ── EDICIÓN FIELD-BY-FIELD: cada bloque entra en edición de forma independiente.
+       Cuando alguno está en .is-editing, el panel recibe .has-editing y muestra
+       la savebar de Guardar/Cancelar al fondo. ── */
+
+    /* Hover sugiere editabilidad sólo en los bloques que NO están en edición */
+    .wco-info-card:not(.is-editing),
+    .wco-info-id-field:not(.is-editing),
+    .wco-info-id-photo:not(.is-editing) {
+        cursor: text;
+        transition: background 0.15s ease;
+    }
+    .wco-info-card:not(.is-editing):hover { background: #fafbff; }
+    .wco-info-id-field:not(.is-editing):hover { background: rgba(0,82,212,0.02); border-radius: 6px; }
+
+    /* Inputs/textareas: no interactivos hasta que su field esté en edición */
+    .wco-info-card:not(.is-editing) .wco-info-input,
+    .wco-info-id-field:not(.is-editing) .wco-info-id-input {
         pointer-events: none;
         background: transparent !important;
         color: #1D1D1F;
     }
-    /* Pero el input/textarea SÍ acepta hover para sugerir editabilidad */
-    .wco-info-panel:not(.is-editing) .wco-info-card,
-    .wco-info-panel:not(.is-editing) .wco-info-id-field {
-        cursor: text;
-        transition: background 0.15s ease;
+    .wco-info-card:not(.is-editing) .wco-info-input:placeholder-shown,
+    .wco-info-id-field:not(.is-editing) .wco-info-id-input:placeholder-shown {
+        color: #cbd5e1;
     }
-    .wco-info-panel:not(.is-editing) .wco-info-card:hover { background: #fafbff; }
-    .wco-info-panel:not(.is-editing) .wco-info-id-field:hover { background: rgba(0,82,212,0.02); border-radius: 6px; }
-    .wco-info-panel:not(.is-editing) .wci-day:not(.is-on),
-    .wco-info-panel:not(.is-editing) .wci-fact-chip:not(.is-on) {
+
+    /* Day picker / chips: cuando el field NO está en edición, sólo se ven los activos
+       y no se pueden togglear */
+    .wco-info-id-field:not(.is-editing) .wci-day:not(.is-on),
+    .wco-info-id-field:not(.is-editing) .wci-fact-chip:not(.is-on) {
         display: none;
     }
-    .wco-info-panel:not(.is-editing) .wci-day.is-on,
-    .wco-info-panel:not(.is-editing) .wci-fact-chip.is-on {
+    .wco-info-id-field:not(.is-editing) .wci-day.is-on,
+    .wco-info-id-field:not(.is-editing) .wci-fact-chip.is-on {
         pointer-events: none;
     }
-    .wco-info-panel:not(.is-editing) .wci-range { display: none; }
-    .wco-info-panel.is-editing .wci-range-read { display: none; }
-    .wco-info-panel:not(.is-editing) .wco-info-id-photo .wco-info-logo-cta { display: none !important; }
-    .wco-info-panel:not(.is-editing) .wco-info-id-photo { border-style: solid; border-color: rgba(15,23,42,0.06); cursor: pointer; }
-    /* Cuando un campo está vacío y estamos en lectura, mostramos un "—" sutil */
-    .wco-info-panel:not(.is-editing) .wco-info-input:placeholder-shown,
-    .wco-info-panel:not(.is-editing) .wco-info-id-input:placeholder-shown {
-        color: #cbd5e1;
+
+    /* Time range: oculto en lectura, visible en edición; el read-text es lo contrario */
+    .wco-info-id-field:not(.is-editing) .wci-range { display: none; }
+    .wco-info-id-field.is-editing .wci-range-read { display: none; }
+
+    /* Foto del logo: cta visible sólo cuando esa caja está en edición */
+    .wco-info-id-photo:not(.is-editing) .wco-info-logo-cta { display: none !important; }
+    .wco-info-id-photo { border-style: solid; border-color: rgba(15,23,42,0.06); cursor: pointer; }
+
+    /* Indicador visual del field en edición */
+    .wco-info-card.is-editing {
+        background: #ffffff;
+        border-color: rgba(0,82,212,0.30);
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    .wco-info-id-field.is-editing {
+        background: rgba(0,82,212,0.03);
+        border-radius: 8px;
+        outline: 2px solid rgba(0,82,212,0.12);
+        outline-offset: 4px;
     }
 
     .wci-range-read {
@@ -1086,7 +1111,7 @@
         pointer-events: none;  /* deja pasar clicks fuera de los botones */
         z-index: 5;
     }
-    .wco-info-panel.is-editing .wco-info-savebar { display: flex; }
+    .wco-info-panel.has-editing .wco-info-savebar { display: flex; }
     .wco-info-savebar .wco-info-saved {
         display: none;  /* eliminamos el texto "estás editando..." que pedía el user */
     }
@@ -1329,7 +1354,7 @@
     .wci-contactos-track {
         display: grid;
         grid-auto-flow: column;
-        grid-auto-columns: 240px;
+        grid-auto-columns: 300px;
         grid-template-rows: repeat(2, auto);
         gap: 12px;
         overflow-x: auto;

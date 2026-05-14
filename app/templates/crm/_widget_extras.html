@@ -215,27 +215,13 @@
                         <div class="wci-range-read" id="wciTrabajoRead"></div>
                     </div>
 
-                    {# ── Horarios de entrega: días + rango ── #}
-                    <div class="wco-info-id-field" data-wci-block="entrega">
-                        <label class="wco-info-id-lbl">
+                    {# ── Instrucciones de entrega (texto libre) ── #}
+                    <div class="wco-info-id-field">
+                        <label class="wco-info-id-lbl" for="wciInstruccionesEntrega">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                            Horarios de entrega
+                            Instrucciones de entrega
                         </label>
-                        <div class="wci-days" data-wci-days="entrega">
-                            <button type="button" class="wci-day" data-day="L">L</button>
-                            <button type="button" class="wci-day" data-day="M">M</button>
-                            <button type="button" class="wci-day" data-day="X">M</button>
-                            <button type="button" class="wci-day" data-day="J">J</button>
-                            <button type="button" class="wci-day" data-day="V">V</button>
-                            <button type="button" class="wci-day" data-day="S">S</button>
-                            <button type="button" class="wci-day" data-day="D">D</button>
-                        </div>
-                        <div class="wci-range">
-                            <input type="time" class="wci-time" id="wciEntregaDesde">
-                            <span class="wci-range-sep">–</span>
-                            <input type="time" class="wci-time" id="wciEntregaHasta">
-                        </div>
-                        <div class="wci-range-read" id="wciEntregaRead"></div>
+                        <textarea class="wco-info-id-input" id="wciInstruccionesEntrega" rows="2" placeholder="Ej. Andén 3, ingresar por puerta sur, llamar al contacto 30 min antes…"></textarea>
                     </div>
 
                     {# ── Días de facturación: chips numéricos ── #}

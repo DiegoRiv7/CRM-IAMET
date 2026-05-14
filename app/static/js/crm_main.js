@@ -4799,17 +4799,25 @@
                 return JSON.stringify({ dias: dias });
             }
 
-            function _wciSetEditing(on){
+            function _wciClearEditing(){
                 var panel = document.getElementById('clienteOppInfoPanel');
                 if (!panel) return;
-                panel.classList.toggle('is-editing', !!on);
+                panel.classList.remove('has-editing');
+                panel.querySelectorAll('.wco-info-card.is-editing, .wco-info-id-field.is-editing, .wco-info-id-photo.is-editing')
+                    .forEach(function(el){ el.classList.remove('is-editing'); });
+            }
+            function _wciActivateField(field){
+                if (!field) return;
+                var panel = document.getElementById('clienteOppInfoPanel');
+                if (panel) panel.classList.add('has-editing');
+                field.classList.add('is-editing');
             }
 
             function _cargarClienteInfo(){
                 var saved = document.getElementById('wciSavedHint');
                 if (saved) saved.textContent = 'Cargando…';
                 // Siempre vuelve a modo lectura al recargar.
-                _wciSetEditing(false);
+                _wciClearEditing();
                 fetch('/app/api/cliente-info/' + currentClienteId + '/')
                     .then(function(r){ return r.json(); })
                     .then(function(data){
@@ -4821,7 +4829,11 @@
                         _wciSetField('wciUbicacion', c.ubicacion);
                         _wciSetField('wciMapaUrl', c.mapa_url);
                         _wciSetSchedule('trabajo', c.horarios_trabajo);
-                        _wciSetSchedule('entrega', c.dias_entrega);
+                        // dias_entrega ahora es texto libre. Si por compatibilidad viejo
+                        // venía como JSON, lo limpiamos para que el user lo reescriba.
+                        var instrTxt = c.dias_entrega || '';
+                        if (instrTxt && instrTxt.charAt(0) === '{') instrTxt = '';
+                        _wciSetField('wciInstruccionesEntrega', instrTxt);
                         _wciSetFact(c.dias_facturacion);
                         _wciSetField('wciCobro', c.proceso_cobro);
                         _wciSetField('wciReglas', c.reglas_acceso);
@@ -4865,23 +4877,24 @@
                         if (rd) rd.textContent = (d && h) ? (d + ' – ' + h) : (d || h || '');
                     });
                 });
-                // Click-to-edit: cualquier click sobre un campo, pill, chip, label,
-                // o sobre el bloque entero entra en modo edición.
+                // Click-to-edit: cada bloque entra en edición de forma independiente.
                 var panel = document.getElementById('clienteOppInfoPanel');
                 if (panel) {
                     panel.addEventListener('click', function(e){
-                        if (panel.classList.contains('is-editing')) return;
-                        // Ignora clicks en el track de contactos (tiene su propio CRUD)
-                        if (e.target.closest('.wci-contactos')) return;
-                        // Ignora clicks en el savebar
+                        if (e.target.closest('.wci-contactos')) return;  // contactos: CRUD propio
                         if (e.target.closest('.wco-info-savebar')) return;
-                        var inField = e.target.closest('.wco-info-input, .wco-info-id-input, .wci-day, .wci-fact-chip, .wco-info-card, .wco-info-id-field, .wco-info-id-photo, .wci-range-read');
-                        if (!inField) return;
-                        _wciSetEditing(true);
-                        // Si el click fue sobre un input/textarea, dale focus
+                        // El field más cercano: card de la derecha, field de la credencial, o la foto
+                        var field = e.target.closest('.wco-info-card, .wco-info-id-field, .wco-info-id-photo');
+                        if (!field) return;
+                        if (field.classList.contains('is-editing')) return;  // ya está en edición
+                        _wciActivateField(field);
                         var input = e.target.closest('input, textarea');
                         if (input) {
                             setTimeout(function(){ input.focus(); }, 0);
+                        } else {
+                            // dale foco al primer input del field para edición rápida
+                            var first = field.querySelector('textarea, input:not([type=file])');
+                            if (first) setTimeout(function(){ first.focus(); }, 0);
                         }
                     });
                 }
@@ -4901,7 +4914,7 @@
                         fd.append('ubicacion', (document.getElementById('wciUbicacion') || {}).value || '');
                         fd.append('mapa_url', (document.getElementById('wciMapaUrl') || {}).value || '');
                         fd.append('horarios_trabajo', _wciGetSchedule('trabajo'));
-                        fd.append('dias_entrega', _wciGetSchedule('entrega'));
+                        fd.append('dias_entrega', (document.getElementById('wciInstruccionesEntrega') || {}).value || '');
                         fd.append('dias_facturacion', _wciGetFact());
                         fd.append('proceso_cobro', (document.getElementById('wciCobro') || {}).value || '');
                         fd.append('reglas_acceso', (document.getElementById('wciReglas') || {}).value || '');
@@ -4923,7 +4936,7 @@
                                 if (data.cliente && data.cliente.logo_url) _wciRenderLogo(data.cliente.logo_url);
                                 if (fileInput) fileInput.value = '';
                                 // Vuelve a modo lectura tras guardar
-                                _wciSetEditing(false);
+                                _wciClearEditing();
                                 setTimeout(function(){ if (saved && saved.textContent === 'Guardado') saved.textContent = ''; }, 2200);
                             } else {
                                 if (saved) saved.textContent = 'Error al guardar';
