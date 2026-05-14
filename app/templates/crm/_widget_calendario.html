@@ -1,6 +1,6 @@
 <!-- ═══ CALENDARIO: widget overlay (default) o sección de página (cuando tab=calendario) ═══ -->
 <div class="widget-overlay{% if tab_activo == 'calendario' %} is-page-mode{% endif %}" id="widgetCalendarioMaster" style="z-index:10100;{% if tab_activo == 'calendario' %}display:flex;position:static;background:transparent;align-items:stretch;justify-content:stretch;{% else %}display:none;{% endif %}">
-    <div class="cal-card{% if tab_activo == 'calendario' %} cal-card--page{% endif %}" style="{% if tab_activo == 'calendario' %}width:100%;height:calc(100vh - 72px);max-width:none;background:#ffffff;border-radius:18px;{% else %}width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;{% endif %}display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(15,23,42,0.06);overflow:hidden;">
+    <div class="cal-card{% if tab_activo == 'calendario' %} cal-card--page{% endif %}" style="{% if tab_activo == 'calendario' %}width:100%;height:calc(100vh - 24px);max-width:none;background:#ffffff;border-radius:0;border:none;box-shadow:none;{% else %}width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(15,23,42,0.06);{% endif %}display:flex;flex-direction:column;overflow:hidden;">
         <style>
             /* ─── FullCalendar base ─── */
             #fullCalendarRoot {
@@ -105,10 +105,8 @@
                     <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
                     Nueva Actividad
                 </button>
+                {% if tab_activo != 'calendario' %}
                 <div style="width:1px;height:22px;background:#E5E5EA;"></div>
-                {% if tab_activo == 'calendario' %}
-                <a href="?tab=crm" style="color:#86868B;text-decoration:none;font-size:1.8rem;line-height:1;padding:0;display:flex;align-items:center;font-family:inherit;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'" title="Volver al CRM">&times;</a>
-                {% else %}
                 <button type="button" onclick="calendarioCerrar()" style="color:#86868B;background:none;border:none;font-size:1.8rem;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;font-family:inherit;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'">&times;</button>
                 {% endif %}
             </div>
