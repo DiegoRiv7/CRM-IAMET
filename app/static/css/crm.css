@@ -1055,13 +1055,15 @@
         color: #cbd5e1;
     }
 
-    /* Day picker / chips: cuando el field NO está en edición, sólo se ven los activos
-       y no se pueden togglear */
-    .wco-info-id-field:not(.is-editing) .wci-day:not(.is-on),
+    /* Day picker: en lectura ocultamos TODO el track de pills — la frase del
+       resumen (wci-range-read) ya describe los días seleccionados. */
+    .wco-info-id-field:not(.is-editing) .wci-days {
+        display: none;
+    }
+    /* Chips no usados actualmente, pero por si quedan: */
     .wco-info-id-field:not(.is-editing) .wci-fact-chip:not(.is-on) {
         display: none;
     }
-    .wco-info-id-field:not(.is-editing) .wci-day.is-on,
     .wco-info-id-field:not(.is-editing) .wci-fact-chip.is-on {
         pointer-events: none;
     }
