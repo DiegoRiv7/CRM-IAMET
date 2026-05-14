@@ -2750,6 +2750,8 @@
         z-index: auto !important;
         padding: 0;
         animation: none !important;
+        height: 100vh !important;
+        overflow: hidden !important;
     }
     /* En page mode, la "card" externa pierde bordes y se vuelve un layout flex
        transparente; los hijos (header, subnav, body) se ven separados como en
@@ -2797,6 +2799,22 @@
         border-radius: 16px;
         box-shadow: 0 1px 3px rgba(15,23,42,0.04);
         margin-left: 0 !important;
+        max-height: 100%;
+    }
+    /* Restringir scroll: solo el panel derecho cuando es necesario, no la
+       página completa ni el card externo. */
+    .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(3) {
+        overflow: hidden !important;
+    }
+    /* Sin scroll en el body de la card */
+    .widget-overlay.is-page-mode > div.cal-card--page {
+        overflow: hidden !important;
+    }
+    /* La página principal (.crm-content/.crm-main) no debe scrollear: el
+       calendario ocupa exactamente 100vh */
+    body:has(.widget-overlay.is-page-mode) .crm-main,
+    body:has(.widget-overlay.is-page-mode) .crm-content {
+        overflow: hidden !important;
     }
 
     @keyframes overlayIn {
