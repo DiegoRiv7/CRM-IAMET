@@ -127,7 +127,7 @@
                 </button>
                 {% endif %}
             </nav>
-            <script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('btnCRM');if(c)c.classList.remove('active');var b=document.getElementById(v==='tareas'?'btnTareas':'btnProyectos');if(b)b.classList.add('active');}})();</script>
+            <script>(function(){var u=new URL(window.location.href);var t=u.searchParams.get('tab');/* Si la URL define tab=calendario, no respetar el crmView guardado: el botón activo lo marca el server-render. */ if(t==='calendario')return;var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('btnCRM');if(c)c.classList.remove('active');var b=document.getElementById(v==='tareas'?'btnTareas':'btnProyectos');if(b)b.classList.add('active');}})();</script>
 
             <div class="island-sep"></div>
 

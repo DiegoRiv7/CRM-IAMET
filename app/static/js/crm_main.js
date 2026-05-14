@@ -6010,6 +6010,22 @@
                 'btnCRM'
             );
             if (activeBtn) activeBtn.classList.add('active');
+            // Si el calendario está renderizado como página completa (porque el
+            // user llegó desde ?tab=calendario), al cambiar a CRM/Tareas/Proyectos
+            // hay que ocultarlo o se queda visible debajo del nuevo contenido.
+            var calOv = document.getElementById('widgetCalendarioMaster');
+            if (calOv && calOv.classList.contains('is-page-mode')) {
+                calOv.style.display = 'none';
+                calOv.classList.remove('is-page-mode');
+                // Limpia ?tab=calendario de la URL para que un refresh no reabra el calendario
+                try {
+                    var url = new URL(window.location.href);
+                    if (url.searchParams.get('tab') === 'calendario') {
+                        url.searchParams.delete('tab');
+                        window.history.replaceState({}, '', url.toString());
+                    }
+                } catch (e) { /* defensivo */ }
+            }
             // Al salir del CRM (tareas/proyectos) quitar el scroll-lock que el
             // kanban del CRM pudo haber dejado — si no, el body/main quedan con
             // height:100vh + overflow:hidden y el scroll de la lista de tareas

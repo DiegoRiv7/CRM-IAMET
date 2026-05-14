@@ -259,6 +259,12 @@
 
 <script>
 (function(){
+    // Si la URL define tab=calendario, ignoramos el crmView persistido: la
+    // página activa la marca el server-render (btnCalendario).
+    try {
+        var _u = new URL(window.location.href);
+        if (_u.searchParams.get('tab') === 'calendario') return;
+    } catch(e) { /* defensivo */ }
     var v = localStorage.getItem('crmView');
     if (v === 'tareas' || v === 'proyectos') {
         var c = document.getElementById('btnCRM'); if (c) c.classList.remove('active');
