@@ -2,9 +2,10 @@
 <style>
 /* ─── Clientes · diseño profesional scoped ─── */
 #cliPage{
-    padding: 28px 32px 40px;
-    max-width: 1600px;
+    padding: 24px 28px 40px;
+    width: 100%;
     margin: 0 auto;
+    box-sizing: border-box;
     font-feature-settings: "cv11", "ss01", "ss03";
 }
 #cliPage .cli-kpis-bar{
@@ -72,10 +73,14 @@
 }
 #cliPage .cli-table{
     width: 100%;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 13px;
 }
+/* Anchos de columnas: primera ~26%, las 10 de marcas se reparten ~74%/10 */
+#cliPage .cli-table col.cli-col-cli{ width: 26%; }
+#cliPage .cli-table col.cli-col-marca{ width: 7.4%; }
 #cliPage .cli-table thead th{
     position: sticky; top: 0; z-index: 2;
     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
@@ -94,7 +99,6 @@
     padding-left: 24px;
     position: sticky; left: 0; z-index: 3;
     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    min-width: 280px;
     border-right: 1px solid rgba(15,23,42,0.06);
 }
 #cliPage .cli-table tbody td{
@@ -108,11 +112,12 @@
 #cliPage .cli-table tbody td.cli-td-cli{
     text-align: left;
     padding-left: 24px;
+    padding-right: 16px;
     position: sticky; left: 0;
     background: #ffffff;
     border-right: 1px solid rgba(15,23,42,0.06);
-    min-width: 280px;
     z-index: 1;
+    word-break: break-word;
 }
 #cliPage .cli-cliente-name{
     color:#0f172a;
@@ -219,6 +224,11 @@
     {# ── Tabla principal: clientes × marcas ── #}
     <div class="cli-table-wrap" id="cliTableMarcasWrap">
         <table class="cli-table">
+            <colgroup>
+                <col class="cli-col-cli">
+                {% for m in meta.marcas_col %}<col class="cli-col-marca">{% endfor %}
+                <col class="cli-col-marca">
+            </colgroup>
             <thead>
                 <tr>
                     <th class="cli-th-cli" id="cliTableMarcasHead">Cliente</th>
