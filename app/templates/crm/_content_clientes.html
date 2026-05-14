@@ -345,17 +345,28 @@
         kpisBar.style.display = 'block';
         // Pone los KPIs en "—" mientras carga
         kpiFact.textContent = '…'; kpiOp.textContent = '…'; kpiCot.textContent = '…'; kpiPr.textContent = '…';
-        fetch('/app/api/cliente-kpis/' + clienteId + '/' + _qs())
-            .then(function(r){ return r.json(); })
+        var url = '/app/api/cliente-kpis/' + clienteId + '/' + _qs();
+        fetch(url)
+            .then(function(r){
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
             .then(function(data){
-                if (!data || !data.ok) return;
+                if (!data || !data.ok) {
+                    console.error('[cliKPIs] respuesta inválida:', data);
+                    kpiFact.textContent = 'Err'; kpiOp.textContent = 'Err';
+                    kpiCot.textContent = 'Err'; kpiPr.textContent = 'Err';
+                    return;
+                }
                 var k = data.kpis || {};
                 kpiFact.textContent = _fmtMoney(k.facturado);
                 kpiOp.textContent = _fmtMoney(k.oportunidades);
-                kpiCot.textContent = k.cotizaciones || 0;
-                kpiPr.textContent = k.prospecciones || 0;
-            }).catch(function(){
-                kpiFact.textContent = '—'; kpiOp.textContent = '—'; kpiCot.textContent = '—'; kpiPr.textContent = '—';
+                kpiCot.textContent = (k.cotizaciones != null) ? k.cotizaciones : 0;
+                kpiPr.textContent = (k.prospecciones != null) ? k.prospecciones : 0;
+            }).catch(function(err){
+                console.error('[cliKPIs] fetch falló', url, err);
+                kpiFact.textContent = '—'; kpiOp.textContent = '—';
+                kpiCot.textContent = '—'; kpiPr.textContent = '—';
             });
     }
 
