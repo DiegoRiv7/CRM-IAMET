@@ -244,6 +244,12 @@
             </div>
             {% endif %}
             {% if tab_activo == 'clientes' %}
+            <!-- Filtro Mostrar (Ambos / Solo Clientes / Solo Prospectos) — solo visible en modo clientes_tabla -->
+            <div class="crm-bar-left cli-filter-island" id="cliFilterIsland" style="display:none;">
+                <button type="button" data-cli-show="ambos" class="cli-filter-btn cli-filter-active">Ambos</button>
+                <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
+                <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
+            </div>
             <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes (todo JS, sin recargar) -->
             <div class="crm-tabs crm-tabs--dashboard">
                 <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>

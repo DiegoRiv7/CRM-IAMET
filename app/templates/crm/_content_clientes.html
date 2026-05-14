@@ -2,7 +2,7 @@
 <style>
 /* ─── Clientes · diseño profesional scoped ─── */
 #cliPage{
-    padding: 24px 28px 40px;
+    padding: 8px 28px 40px;
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
@@ -34,32 +34,30 @@
 #cliPage .cli-kpi-lbl{ font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
 #cliPage .cli-kpi-val{ font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
 
-/* ── Filtros ── */
-#cliPage .cli-filter-bar{
-    display:flex; align-items:center; gap:10px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
+/* ── Filtro "Mostrar" en la barra superior (junto a la dynamic island) ── */
+.cli-filter-island{
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(15,23,42,0.04);
+    border-radius: 999px;
+    padding: 4px;
+    border: 1px solid rgba(15,23,42,0.06);
 }
-#cliPage .cli-filter-bar-lbl{ font-size:12px; font-weight:600; color:#64748b; letter-spacing:0.02em; }
-#cliPage .cli-filter-btn{
+.cli-filter-island .cli-filter-btn{
     padding: 7px 14px;
     border-radius: 999px;
-    border: 1px solid rgba(15,23,42,0.08);
-    background: #ffffff;
-    color:#475569;
+    border: none;
+    background: transparent;
+    color: #475569;
     font-size: 13px; font-weight: 600;
     cursor: pointer;
     transition: all 0.18s ease;
+    white-space: nowrap;
 }
-#cliPage .cli-filter-btn:hover{ background:#f1f5f9; color:#0f172a; }
-#cliPage .cli-filter-btn.cli-filter-active{
+.cli-filter-island .cli-filter-btn:hover{ color:#0f172a; background: rgba(255,255,255,0.6); }
+.cli-filter-island .cli-filter-btn.cli-filter-active{
     background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
-    border-color: transparent;
-    color:#fff;
+    color: #fff;
     box-shadow: 0 6px 14px -6px rgba(0,82,212,0.5);
-}
-#cliPage .cli-filter-meta{
-    margin-left:auto; font-size:12px; color:#94a3b8; font-weight:500;
 }
 
 /* ── Tabla card ── */
@@ -210,16 +208,8 @@
         </div>
     </div>
 
-    {# ── Toggle Ambos / Solo Clientes / Solo Prospectos ── #}
-    <div class="cli-filter-bar">
-        <span class="cli-filter-bar-lbl">Mostrar:</span>
-        <button type="button" data-cli-show="ambos" class="cli-filter-btn cli-filter-active">Ambos</button>
-        <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
-        <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
-        <span class="cli-filter-meta">
-            {{ meta.total_clientes }} clientes · {{ meta.total_op }} oportunidades · {{ meta.total_pr }} prospecciones · {{ potenciales_lista|length }} potenciales
-        </span>
-    </div>
+    {# Los botones "Mostrar: Ambos / Solo Clientes / Solo Prospectos" se renderizan
+       en la barra superior junto a la dynamic island (#cliFilterIsland en _content.html). #}
 
     {# ── Tabla principal: clientes × marcas ── #}
     <div class="cli-table-wrap" id="cliTableMarcasWrap">

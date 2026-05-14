@@ -1696,6 +1696,12 @@
                 // necesiten la prenden abajo.
                 if (cliSection) cliSection.style.display = 'none';
 
+                // Filtro "Mostrar" (cli-filter-island) solo visible en modo clientes_tabla.
+                var cliFilterIsland = document.getElementById('cliFilterIsland');
+                if (cliFilterIsland) {
+                    cliFilterIsland.style.display = (mode === 'clientes_tabla') ? '' : 'none';
+                }
+
                 if (mode === 'oportunidades') {
                     if (kpiOpp) kpiOpp.style.display = 'grid';
                     if (kpiProsp) kpiProsp.style.display = 'none';
