@@ -2760,8 +2760,9 @@
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 8px 20px 20px !important;
-        gap: 12px;
+        padding: 4px 18px 14px !important;
+        gap: 8px;
+        height: 100vh !important;
     }
     /* Outer header (Calendario CRM + filtros + Nueva Actividad): sin caja */
     .widget-overlay.is-page-mode .cal-card--page > div:nth-of-type(1) {
