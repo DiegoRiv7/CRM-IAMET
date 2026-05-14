@@ -823,6 +823,33 @@
                         _cleanParams = true;
                     }
                 }
+                // Deep-link a cliente: abre el widget de cliente en la pestaña Información
+                var _openClienteId = _urlParams.get('open_cliente');
+                if (_openClienteId) {
+                    var _openClienteClean = parseInt(_openClienteId, 10);
+                    if (_openClienteClean) {
+                        setTimeout(function () {
+                            if (typeof window.openClienteModal === 'function') {
+                                window.openClienteModal(_openClienteClean, '', 'info');
+                            }
+                        }, 600);
+                        _urlParams.delete('open_cliente');
+                        _cleanParams = true;
+                    }
+                }
+                // Deep-link a proyecto: cambia a la vista Proyectos y abre el detalle
+                var _openProyId = _urlParams.get('open_proyecto');
+                if (_openProyId) {
+                    var _openProyClean = parseInt(_openProyId, 10);
+                    if (_openProyClean) {
+                        setTimeout(function () {
+                            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
+                            if (typeof window.proyectosVerDetalle === 'function') window.proyectosVerDetalle(_openProyClean);
+                        }, 600);
+                        _urlParams.delete('open_proyecto');
+                        _cleanParams = true;
+                    }
+                }
                 if (_cleanParams) {
                     var newUrl = window.location.pathname + (_urlParams.toString() ? '?' + _urlParams.toString() : '');
                     window.history.replaceState({}, '', newUrl);
@@ -5154,9 +5181,9 @@
             function openClienteModal(clienteId, clienteNombre, tab, porCreacion) {
                 currentClienteId = clienteId;
                 allClienteData = [];
-                var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado' };
+                var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado', info: 'info', prospecciones: 'prospecciones' };
                 var mode = modeMap[tab] || 'oportunidades';
-                var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones' };
+                var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones', info: 'Información', prospecciones: 'Prospecciones' };
                 clienteOppTitle.textContent = labelMap[mode] + ' — ' + clienteNombre;
                 widgetClienteOpp.style.display = 'flex';
 
@@ -5167,6 +5194,13 @@
                 _clienteOppMes = ''; _clienteOppAnio = '';
                 _refreshPeriodActives(); _refreshPeriodLabel();
                 setWidgetMode(mode);
+
+                // Si entramos directo al tab Información, carga la carátula del cliente
+                // (no la tabla de oportunidades).
+                if (mode === 'info') {
+                    if (typeof _cargarTabActivo === 'function') _cargarTabActivo();
+                    return;
+                }
 
                 var colspan = '6';
                 clienteOppTbody.innerHTML = '<tr><td colspan="' + colspan + '" class="wco-empty">Cargando...</td></tr>';

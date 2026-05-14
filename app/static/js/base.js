@@ -423,6 +423,29 @@ window.addEventListener('resize', () => {
             window.location.href = url3;
             return;
         }
+        if (r.type === 'cliente' && r.id) {
+            var urlC = '/app/todos/?tab=crm&open_cliente=' + r.id;
+            if (newTab) { window.open(urlC, '_blank'); return; }
+            // Si estamos en el CRM y el widget de cliente existe, abrirlo directo en Información
+            if (enCRM && typeof window.openClienteModal === 'function') {
+                window.openClienteModal(r.id, r.title || r.nombre || '', 'info');
+                return;
+            }
+            window.location.href = urlC;
+            return;
+        }
+        if (r.type === 'proyecto' && r.id) {
+            var urlP = '/app/todos/?tab=crm&open_proyecto=' + r.id;
+            if (newTab) { window.open(urlP, '_blank'); return; }
+            // Si estamos en el CRM, abrir el detalle del proyecto sin recargar
+            if (enCRM && typeof window.proyectosVerDetalle === 'function') {
+                if (typeof window.switchCrmView === 'function') window.switchCrmView('proyectos');
+                window.proyectosVerDetalle(r.id);
+                return;
+            }
+            window.location.href = urlP;
+            return;
+        }
         if (r.url) {
             if (newTab) window.open(r.url, '_blank');
             else window.location.href = r.url;
