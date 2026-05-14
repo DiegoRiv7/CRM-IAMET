@@ -1257,39 +1257,42 @@
     var _calDayDrag = null;
 
     function _calDayBindDragHandlers() {
-        var container = document.getElementById('calDayTimeline');
-        if (!container || container._calDragBound) return;
-        container._calDragBound = true;
-        console.log('[cal-drag-day] handlers bound to #calDayTimeline');
-
-        container.addEventListener('mousedown', function (ev) {
-            if (ev.button !== 0) return;
-            var card = ev.target.closest ? ev.target.closest('.cal-day-evt[data-draggable="1"]') : null;
-            if (!card) return;
-            var evtId = card.getAttribute('data-evt-id');
-            if (!evtId) return;
-            var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
-            if (!stored) {
-                console.warn('[cal-drag-day] stored event not found for id', evtId);
-                return;
-            }
-            var sD = new Date(stored.start);
-            var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
-            _calDayDrag = {
-                card: card,
-                evtId: evtId,
-                startY: ev.clientY,
-                startTop: parseFloat(card.style.top) || 0,
-                originalStartMs: sD.getTime(),
-                originalEndMs: eD.getTime(),
-                moved: false,
-                stored: stored,
-                lastDeltaMin: 0,
-            };
-            console.log('[cal-drag-day] mousedown on', evtId, 'startTop=', _calDayDrag.startTop);
-            ev.preventDefault();
-            ev.stopPropagation();
+        // Bindea mousedown a cada card individualmente (más confiable que delegation)
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-draggable="1"]');
+        console.log('[cal-drag-day] binding to', cards.length, 'cards');
+        cards.forEach(function (card) {
+            if (card._calDragBound) return;
+            card._calDragBound = true;
+            card.addEventListener('mousedown', _calDayCardMouseDown);
         });
+    }
+
+    function _calDayCardMouseDown(ev) {
+        if (ev.button !== 0) return;
+        var card = ev.currentTarget;
+        var evtId = card.getAttribute('data-evt-id');
+        console.log('[cal-drag-day] mousedown on', evtId);
+        if (!evtId) return;
+        var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
+        if (!stored) {
+            console.warn('[cal-drag-day] stored event not found for id', evtId);
+            return;
+        }
+        var sD = new Date(stored.start);
+        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
+        _calDayDrag = {
+            card: card,
+            evtId: evtId,
+            startY: ev.clientY,
+            startTop: parseFloat(card.style.top) || 0,
+            originalStartMs: sD.getTime(),
+            originalEndMs: eD.getTime(),
+            moved: false,
+            stored: stored,
+            lastDeltaMin: 0,
+        };
+        ev.preventDefault();
+        ev.stopPropagation();
     }
 
     function _calDayDragMoveGlobal(ev) {
