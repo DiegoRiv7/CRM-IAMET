@@ -6293,16 +6293,20 @@
 
         // ── Renderizar tabla de tareas ──
 
-        // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint)
+        // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint).
+        // Si la URL trae ?tab=calendario, el server-render marca btnCalendario activo y
+        // NO debemos sobrescribir con el crmView persistido (eso causaba doble-active).
+        var _urlTab = null;
+        try { _urlTab = new URL(window.location.href).searchParams.get('tab'); } catch (e) {}
         var _savedView = localStorage.getItem('crmView');
-        if (_savedView === 'tareas') {
+        if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
             // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             cargarTareasCRM();
-        } else if (_savedView === 'proyectos') {
+        } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
