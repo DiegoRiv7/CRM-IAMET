@@ -3028,6 +3028,18 @@ def api_cliente_kpis(request, cliente_id):
     """KPIs del cliente en el periodo seleccionado: facturado, oportunidades,
     cotizaciones y prospecciones. Se usan en la fila flotante del tab Clientes.
     """
+    import traceback
+    try:
+        return _api_cliente_kpis_impl(request, cliente_id)
+    except Exception as e:
+        return JsonResponse({
+            'ok': False,
+            'error': str(e),
+            'trace': traceback.format_exc(),
+        }, status=500)
+
+
+def _api_cliente_kpis_impl(request, cliente_id):
     try:
         cliente = Cliente.objects.get(id=cliente_id)
     except Cliente.DoesNotExist:
