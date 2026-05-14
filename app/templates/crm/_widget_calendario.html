@@ -35,12 +35,17 @@
             .cal-now-line { position:absolute; left:56px; right:0; height:2px; background:#FF3B30; z-index:10; pointer-events:none; }
             .cal-now-dot { position:absolute; left:48px; width:8px; height:8px; border-radius:50%; background:#FF3B30; z-index:11; pointer-events:none; margin-top:-3px; }
             /* ─── Day view events ─── */
-            .cal-day-evt { position:absolute; border-radius:10px; padding:7px 10px; cursor:pointer; box-sizing:border-box; overflow:hidden; transition:filter 0.15s, box-shadow 0.15s; min-height:36px; z-index:5; border-left-width:3px; border-left-style:solid; }
-            .cal-day-evt:hover { filter:brightness(0.96); box-shadow:0 4px 16px rgba(0,0,0,0.14) !important; }
-            .cal-day-evt-title { font-size:0.82rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-            .cal-day-evt-time { font-size:0.72rem; font-weight:500; margin-top:2px; }
+            .cal-day-evt { position:absolute; border-radius:8px; padding:4px 8px; cursor:pointer; box-sizing:border-box; overflow:hidden; transition:filter 0.15s, box-shadow 0.15s; min-height:22px; z-index:5; border-left-width:3px; border-left-style:solid; }
+            .cal-day-evt:hover { filter:brightness(0.96); box-shadow:0 4px 16px rgba(0,0,0,0.14) !important; z-index:7; }
+            .cal-day-evt-title { font-size:0.78rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
+            .cal-day-evt-time { font-size:0.7rem; font-weight:500; margin-top:1px; line-height:1.2; }
             .cal-day-evt-badge { font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap; color:#fff; }
-            .cal-day-evt-status { display:inline-block; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-top:3px; }
+            .cal-day-evt-status { display:inline-block; font-size:0.66rem; font-weight:700; padding:1px 6px; border-radius:20px; margin-top:2px; }
+            /* Eventos cortos (<40px): título y hora en una línea horizontal, sin badge */
+            .cal-day-evt.is-compact { padding:2px 8px; display:flex; align-items:center; gap:8px; }
+            .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; flex:1; }
+            .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.8; }
+            .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
             /* ─── Right panel ─── */
             #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
             #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
@@ -89,23 +94,6 @@
                 <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.04);border-radius:8px;padding:5px 11px;font-size:0.8rem;font-weight:600;color:#86868B;">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <span id="calHeaderDateText">—</span>
-                </div>
-                {% endif %}
-                {% if tab_activo == 'calendario' %}
-                <!-- Filtros rápidos por tipo (sólo en page mode) -->
-                <div class="cal-type-filters" style="display:flex;gap:4px;">
-                    <button type="button" class="cal-type-chip is-on" data-cal-type="tarea" onclick="calToggleTypeFilter('tarea')" title="Tareas">
-                        <span class="cal-type-dot" style="background:#FF9500;"></span><span>Tareas</span>
-                    </button>
-                    <button type="button" class="cal-type-chip is-on" data-cal-type="actividad" onclick="calToggleTypeFilter('actividad')" title="Actividades">
-                        <span class="cal-type-dot" style="background:#0052D4;"></span><span>Actividades</span>
-                    </button>
-                    <button type="button" class="cal-type-chip is-on" data-cal-type="evento" onclick="calToggleTypeFilter('evento')" title="Eventos">
-                        <span class="cal-type-dot" style="background:#8B5CF6;"></span><span>Eventos</span>
-                    </button>
-                    <button type="button" class="cal-type-chip is-on" data-cal-type="curso" onclick="calToggleTypeFilter('curso')" title="Cursos">
-                        <span class="cal-type-dot" style="background:#10B981;"></span><span>Cursos</span>
-                    </button>
                 </div>
                 {% endif %}
                 <div style="display:flex;align-items:center;gap:6px;">
@@ -476,7 +464,7 @@
     var _calViewMode = 'month';
     var _calCurrentDay = new Date();
     var _calNowInterval = null;
-    var CAL_HOUR_H = 64;
+    var CAL_HOUR_H = 48;
     // Recurrencia (estado del formulario "Nueva Actividad")
     // dias: ISO weekday (1=Lun … 7=Dom). Default L–V.
     var _calRecurDiasSel = [1,2,3,4,5];
@@ -634,6 +622,13 @@
         setTimeout(function () {
             if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
             calUpdateNavTitle();
+            // Restaurar la última vista usada (mes/semana/día) si difiere de la actual
+            try {
+                var savedV = localStorage.getItem('_crm_cal_view');
+                if (savedV && savedV !== _calViewMode && (savedV === 'week' || savedV === 'day')) {
+                    window.calSwitchView(savedV);
+                }
+            } catch (e) {}
         }, 80);
 
         calGlobalRefetch();
@@ -703,6 +698,7 @@
 
     window.calSwitchView = function (mode) {
         _calViewMode = mode;
+        try { localStorage.setItem('_crm_cal_view', mode); } catch (e) {}
         var fcRoot = document.getElementById('fullCalendarRoot');
         var dayRoot = document.getElementById('calDayViewRoot');
         var weekRoot = document.getElementById('calWeekViewRoot');
@@ -863,7 +859,7 @@
         if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
         calRenderWeekHeader(weekStart);
 
-        var CAL_HOUR_H = 64;
+        var CAL_HOUR_H = 48;
         var now = new Date();
         var nowMs = now.getTime();
         var pad = function(n){ return String(n).padStart(2,'0'); };
@@ -1124,7 +1120,9 @@
             var startMins = startD.getHours()*60+startD.getMinutes();
             var endMins = endD.getHours()*60+endD.getMinutes();
             var evTop = (startMins/60)*CAL_HOUR_H;
-            var evH = Math.max(((Math.max(endMins-startMins,45))/60)*CAL_HOUR_H, 36);
+            // Altura proporcional al tiempo real del evento (sin forzar 45min mínimos).
+            // Solo 20px de altura mínima visual para que se vea clickable.
+            var evH = Math.max(((endMins-startMins)/60)*CAL_HOUR_H, 22);
             var safeId = String(ev.id).replace(/'/g,'');
 
             var bg = hasOpp ? 'linear-gradient(135deg,#EEF3FF 0%,#E8EFFF 100%)' : 'linear-gradient(135deg,#F5F5F7 0%,#EFEFEF 100%)';
@@ -1156,7 +1154,8 @@
             var titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
 
             var wkCompOpacity = ep.completada ? 'opacity:0.38;' : '';
-            html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'"' +
+            var isCompact = evH < 42;
+            html += '<div class="cal-day-evt'+(isCompact?' is-compact':'')+'" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'"' +
                 ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
                 titleHTML+
                 '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' – '+endFmt+'</div>'+
@@ -1949,38 +1948,8 @@
     function calApplyFilter(filterVal) {
         var events = window._calAllEvents || _globalEvents;
         var filtered = _calFilterEventsForSelection(events, filterVal);
-        filtered = _calApplyTypeFilters(filtered);
         if (_globalCalendar) { _globalCalendar.removeAllEventSources(); _globalCalendar.addEventSource(filtered); }
     }
-
-    /* ─── Filtros rápidos por tipo (Tareas / Actividades / Eventos / Cursos) ─── */
-    window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true };
-    function _calClassifyType(ev) {
-        // Devuelve uno de: 'tarea', 'evento', 'curso', 'actividad'
-        var ep = ev.extendedProps || {};
-        if (ep.tipo_actividad === 'tarea' || String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
-        if (ep.evento) return 'evento';
-        if (ep.curso) return 'curso';
-        return 'actividad';
-    }
-    function _calApplyTypeFilters(events) {
-        var f = window._calTypeFilters || {};
-        return events.filter(function (ev) {
-            var t = _calClassifyType(ev);
-            return f[t] !== false;
-        });
-    }
-    window.calToggleTypeFilter = function (tipo) {
-        if (!window._calTypeFilters.hasOwnProperty(tipo)) return;
-        window._calTypeFilters[tipo] = !window._calTypeFilters[tipo];
-        // Marcar visual en el chip
-        document.querySelectorAll('.cal-type-chip[data-cal-type="' + tipo + '"]').forEach(function (b) {
-            b.classList.toggle('is-on', !!window._calTypeFilters[tipo]);
-        });
-        // Reaplicar el filtro completo (incluye el filtro de usuario actual)
-        var inp = document.getElementById('calUserFilter');
-        calApplyFilter(inp ? inp.value : 'all');
-    };
 
     /* ─── CREAR ACTIVIDAD ─── */
     window.calGlobalAbrirCrearActividad = function (preDate) {
