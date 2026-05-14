@@ -81,19 +81,31 @@
             var sugerida = escapeHTML(r.descripcion_sugerida || '');
             html += '' +
                 '<div class="wae-item" data-regla-id="' + rid + '" style="margin-bottom:18px;padding:14px 16px;border:1.5px solid #E5E7EB;border-radius:12px;background:#fff;transition:border-color 0.15s;">' +
-                '  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
-                '    <div style="font-weight:600;color:#0F172A;font-size:0.92rem;">' + (idx + 1) + '. ' + titulo + '</div>' +
-                '    <span class="wae-status" data-regla-id="' + rid + '" style="font-size:0.7rem;color:#DC2626;font-weight:600;">Falta descripción</span>' +
+                '  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+                '    <span style="font-weight:700;color:#94A3B8;font-size:0.78rem;flex-shrink:0;">' + (idx + 1) + '.</span>' +
+                '    <input class="wae-titulo" data-regla-id="' + rid + '" type="text" value="' + titulo + '" placeholder="Título de la tarea" style="flex:1;border:none;border-bottom:1.5px dashed transparent;background:transparent;font-weight:600;color:#0F172A;font-size:0.92rem;padding:2px 4px;outline:none;font-family:inherit;transition:border-color 0.15s,background 0.15s;">' +
+                '    <span class="wae-status" data-regla-id="' + rid + '" style="font-size:0.7rem;color:#DC2626;font-weight:600;flex-shrink:0;">Falta descripción</span>' +
                 '  </div>' +
                 '  <textarea class="wae-desc" data-regla-id="' + rid + '" rows="3" placeholder="Describe esta tarea (requerido)…" style="width:100%;box-sizing:border-box;border:1.5px solid #E5E7EB;border-radius:9px;padding:10px 12px;font-size:0.85rem;font-family:inherit;resize:vertical;outline:none;color:#1D1D1F;background:#FAFBFC;">' + sugerida + '</textarea>' +
                 '</div>';
         });
         cont.innerHTML = html;
 
-        // Listeners para validar
+        // Listeners para validar y para feedback visual del input título
         cont.querySelectorAll('textarea.wae-desc').forEach(function (ta) {
             ta.addEventListener('input', validar);
             ta.addEventListener('blur', validar);
+        });
+        cont.querySelectorAll('input.wae-titulo').forEach(function (inp) {
+            inp.addEventListener('focus', function () {
+                inp.style.borderBottomColor = '#3b82f6';
+                inp.style.background = '#f8fafc';
+            });
+            inp.addEventListener('blur', function () {
+                inp.style.borderBottomColor = 'transparent';
+                inp.style.background = 'transparent';
+            });
+            inp.addEventListener('input', validar);
         });
         validar();
     }
@@ -105,12 +117,18 @@
         var todoOk = true;
         textareas.forEach(function (ta) {
             var rid = ta.getAttribute('data-regla-id');
-            var ok = (ta.value || '').trim().length > 0;
+            var tituloEl = cont.querySelector('input.wae-titulo[data-regla-id="' + rid + '"]');
+            var descOk = (ta.value || '').trim().length > 0;
+            var titOk = tituloEl ? (tituloEl.value || '').trim().length > 0 : true;
+            var ok = descOk && titOk;
             var status = cont.querySelector('span.wae-status[data-regla-id="' + rid + '"]');
             if (status) {
                 if (ok) {
                     status.textContent = 'Listo';
                     status.style.color = '#15803d';
+                } else if (!titOk) {
+                    status.textContent = 'Falta título';
+                    status.style.color = '#DC2626';
                 } else {
                     status.textContent = 'Falta descripción';
                     status.style.color = '#DC2626';
@@ -167,6 +185,18 @@
         return out;
     }
 
+    function recolectarTitulos() {
+        var out = {};
+        var cont = $('waeListContainer');
+        if (!cont) return out;
+        cont.querySelectorAll('input.wae-titulo').forEach(function (inp) {
+            var rid = inp.getAttribute('data-regla-id');
+            if (!rid) return;
+            out[rid] = (inp.value || '').trim();
+        });
+        return out;
+    }
+
     function confirmar() {
         if (!_currentPendiente || !validar()) return;
         var btn = $('waeConfirmBtn');
@@ -180,7 +210,10 @@
                 'Content-Type': 'application/json',
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ descripciones: recolectarDescripciones() }),
+            body: JSON.stringify({
+                descripciones: recolectarDescripciones(),
+                titulos: recolectarTitulos(),
+            }),
         })
             .then(function (r) { return r.json(); })
             .then(function (resp) {

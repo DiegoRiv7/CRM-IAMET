@@ -191,44 +191,78 @@
                         </label>
                         <input class="wco-info-id-input" id="wciMapaUrl" type="url" placeholder="https://maps.google.com/…">
                     </div>
+
+                    {# ── Horarios de trabajo: días + rango ── #}
                     <div class="wco-info-id-field">
-                        <label class="wco-info-id-lbl" for="wciHorarios">
+                        <label class="wco-info-id-lbl">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             Horarios de trabajo
                         </label>
-                        <textarea class="wco-info-id-input" id="wciHorarios" rows="2" placeholder="Ej. Lun–Vie 8:00–17:00"></textarea>
+                        <div class="wci-days" data-wci-days="trabajo">
+                            <button type="button" class="wci-day" data-day="L">L</button>
+                            <button type="button" class="wci-day" data-day="M">M</button>
+                            <button type="button" class="wci-day" data-day="X">M</button>
+                            <button type="button" class="wci-day" data-day="J">J</button>
+                            <button type="button" class="wci-day" data-day="V">V</button>
+                            <button type="button" class="wci-day" data-day="S">S</button>
+                            <button type="button" class="wci-day" data-day="D">D</button>
+                        </div>
+                        <div class="wci-range">
+                            <input type="time" class="wci-time" id="wciTrabajoDesde">
+                            <span class="wci-range-sep">–</span>
+                            <input type="time" class="wci-time" id="wciTrabajoHasta">
+                        </div>
+                    </div>
+
+                    {# ── Horarios de entrega: días + rango ── #}
+                    <div class="wco-info-id-field">
+                        <label class="wco-info-id-lbl">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                            Horarios de entrega
+                        </label>
+                        <div class="wci-days" data-wci-days="entrega">
+                            <button type="button" class="wci-day" data-day="L">L</button>
+                            <button type="button" class="wci-day" data-day="M">M</button>
+                            <button type="button" class="wci-day" data-day="X">M</button>
+                            <button type="button" class="wci-day" data-day="J">J</button>
+                            <button type="button" class="wci-day" data-day="V">V</button>
+                            <button type="button" class="wci-day" data-day="S">S</button>
+                            <button type="button" class="wci-day" data-day="D">D</button>
+                        </div>
+                        <div class="wci-range">
+                            <input type="time" class="wci-time" id="wciEntregaDesde">
+                            <span class="wci-range-sep">–</span>
+                            <input type="time" class="wci-time" id="wciEntregaHasta">
+                        </div>
+                    </div>
+
+                    {# ── Días de facturación: chips numéricos ── #}
+                    <div class="wco-info-id-field">
+                        <label class="wco-info-id-lbl">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            Días de facturación
+                        </label>
+                        <div class="wci-fact-chips" id="wciFactChips">
+                            <button type="button" class="wci-fact-chip" data-fact="5">5</button>
+                            <button type="button" class="wci-fact-chip" data-fact="10">10</button>
+                            <button type="button" class="wci-fact-chip" data-fact="15">15</button>
+                            <button type="button" class="wci-fact-chip" data-fact="20">20</button>
+                            <button type="button" class="wci-fact-chip" data-fact="25">25</button>
+                            <button type="button" class="wci-fact-chip" data-fact="30">30</button>
+                            <button type="button" class="wci-fact-chip" data-fact="ultimo">Último</button>
+                        </div>
                     </div>
                 </aside>
 
                 <!-- Columna derecha: campos operativos -->
                 <section class="wco-info-fields">
-                    <div class="wco-info-row-2">
-                        <div class="wco-info-card">
-                            <div class="wco-info-card-icon">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                            </div>
-                            <div class="wco-info-card-body">
-                                <label class="wco-info-lbl" for="wciDiasEntrega">Días de entrega</label>
-                                <textarea class="wco-info-input" id="wciDiasEntrega" rows="2" placeholder="Ej. Lunes, Miércoles y Viernes 9:00–13:00"></textarea>
-                            </div>
-                        </div>
-                        <div class="wco-info-card">
-                            <div class="wco-info-card-icon">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            </div>
-                            <div class="wco-info-card-body">
-                                <label class="wco-info-lbl" for="wciDiasFact">Días de facturación</label>
-                                <textarea class="wco-info-input" id="wciDiasFact" rows="2" placeholder="Ej. Facturan los días 15 y 30"></textarea>
-                            </div>
-                        </div>
-                    </div>
                     <div class="wco-info-card">
                         <div class="wco-info-card-icon">
                             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                         </div>
                         <div class="wco-info-card-body">
                             <label class="wco-info-lbl" for="wciCobro">Proceso de cobro</label>
-                            <textarea class="wco-info-input" id="wciCobro" rows="2" placeholder="Ej. Pago a 30 días, requiere OC previa"></textarea>
+                            <textarea class="wco-info-input" id="wciCobro" rows="3" placeholder="Ej. Pago a 30 días, requiere OC previa"></textarea>
                         </div>
                     </div>
                     <div class="wco-info-card">

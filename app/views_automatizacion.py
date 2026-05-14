@@ -430,7 +430,7 @@ def previsualizar_avance_etapa(tarea):
     }
 
 
-def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_por_regla=None):
+def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_por_regla=None, titulos_por_regla=None):
     """
     Busca reglas activas para la etapa dada y crea las tareas correspondientes.
     Llamar desde views_crm.py cuando se cambia la etapa de una oportunidad.
@@ -442,18 +442,24 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
         descripciones_por_regla: dict opcional {regla_id (int|str): str} con
             descripciones provistas por el usuario que reemplazan la
             descripción predeterminada de la regla.
+        titulos_por_regla: dict opcional {regla_id (int|str): str} con títulos
+            editados por el usuario que reemplazan el titulo_tarea de la regla
+            en la tarea creada.
     """
     # Buscar reglas activas para esta etapa
     reglas = _reglas_para_etapa(oportunidad, nueva_etapa)
 
     descripciones_por_regla = descripciones_por_regla or {}
-    # Normalizar claves a int para tolerar JSON con strings
-    descripciones_norm = {}
-    for k, v in descripciones_por_regla.items():
-        try:
-            descripciones_norm[int(k)] = v
-        except (TypeError, ValueError):
-            continue
+    titulos_por_regla = titulos_por_regla or {}
+
+    def _norm(d):
+        out = {}
+        for k, v in (d or {}).items():
+            try: out[int(k)] = v
+            except (TypeError, ValueError): pass
+        return out
+    descripciones_norm = _norm(descripciones_por_regla)
+    titulos_norm = _norm(titulos_por_regla)
 
     tareas_creadas = []
 
@@ -479,9 +485,12 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
             descripcion_final = descripciones_norm.get(regla.id, None)
             if descripcion_final is None or not str(descripcion_final).strip():
                 descripcion_final = regla.descripcion_tarea
+            titulo_final = titulos_norm.get(regla.id, None)
+            if titulo_final is None or not str(titulo_final).strip():
+                titulo_final = regla.titulo_tarea
             tarea = Tarea.objects.create(
                 oportunidad=oportunidad,
-                titulo=regla.titulo_tarea,
+                titulo=titulo_final,
                 descripcion=descripcion_final,
                 prioridad=regla.prioridad_tarea if regla.prioridad_tarea in ['normal', 'alta'] else 'normal',
                 estado='pendiente',
@@ -572,7 +581,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
 MAX_AVANCES_CADENA = 10  # Proteccion contra loops infinitos
 
 
-def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None):
+def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None, titulos_por_regla=None):
     """
     Al completar una tarea creada por automatizacion, verifica si la regla
     tiene avanzar_etapa_al_completar=True. Si es asi, avanza la oportunidad
@@ -583,6 +592,8 @@ def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None):
         usuario: User que disparó el avance
         descripciones_por_regla: dict opcional {regla_id: str} con descripciones
             que reemplazan la descripción default al crear las nuevas tareas.
+        titulos_por_regla: dict opcional {regla_id: str} con títulos editados
+            que reemplazan el titulo_tarea default al crear las nuevas tareas.
 
     Retorna dict con info de lo que sucedio, o None si no aplica.
     """
@@ -631,6 +642,7 @@ def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None):
         nuevas_tareas = ejecutar_automatizaciones(
             oportunidad, siguiente, usuario,
             descripciones_por_regla=descripciones_por_regla,
+            titulos_por_regla=titulos_por_regla,
         )
         resultado['tareas_creadas'].extend(nuevas_tareas)
 
@@ -691,6 +703,9 @@ def api_confirmar_avance_etapa(request, pendiente_id):
     descripciones = data.get('descripciones') or {}
     if not isinstance(descripciones, dict):
         descripciones = {}
+    titulos = data.get('titulos') or {}
+    if not isinstance(titulos, dict):
+        titulos = {}
 
     tarea = pendiente.tarea
     if tarea is None:
@@ -710,7 +725,9 @@ def api_confirmar_avance_etapa(request, pendiente_id):
                 }, status=400)
 
     resultado = procesar_cadena_reactiva(
-        tarea, request.user, descripciones_por_regla=descripciones,
+        tarea, request.user,
+        descripciones_por_regla=descripciones,
+        titulos_por_regla=titulos,
     )
 
     pendiente.estado = 'confirmado'

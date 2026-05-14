@@ -1025,7 +1025,7 @@
     }
     .wco-info-grid {
         display: grid;
-        grid-template-columns: 320px 1fr;
+        grid-template-columns: 380px 1fr;
         gap: 24px;
         align-items: start;
     }
@@ -1112,6 +1112,80 @@
     }
     .wco-info-id-input::placeholder { color: #b6bfcc; font-weight: 400; }
     .wco-info-id-input:focus { outline: none; }
+
+    /* ── Day picker (L M M J V S D) ── */
+    .wci-days {
+        display: flex; gap: 4px;
+        margin-top: 6px;
+    }
+    .wci-day {
+        flex: 1; height: 28px;
+        border: 1px solid rgba(15,23,42,0.12);
+        background: #ffffff;
+        border-radius: 50%;
+        font-size: 12px; font-weight: 700;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.16s ease;
+        font-family: inherit;
+        line-height: 1;
+        aspect-ratio: 1 / 1;
+    }
+    .wci-day:hover { border-color: #0052D4; color: #0052D4; }
+    .wci-day.is-on {
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        border-color: transparent;
+        color: #ffffff;
+        box-shadow: 0 4px 10px -4px rgba(0,82,212,0.6);
+    }
+
+    /* ── Time range (desde – hasta) ── */
+    .wci-range {
+        display: flex; align-items: center; gap: 8px;
+        margin-top: 8px;
+    }
+    .wci-time {
+        flex: 1;
+        padding: 6px 10px;
+        border: 1px solid rgba(15,23,42,0.12);
+        background: #ffffff;
+        border-radius: 8px;
+        font-size: 12.5px;
+        color: #1D1D1F;
+        font-family: inherit;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .wci-time:focus {
+        outline: none;
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    .wci-range-sep { color: #86868B; font-weight: 600; font-size: 12px; }
+
+    /* ── Chips de días de facturación ── */
+    .wci-fact-chips {
+        display: flex; flex-wrap: wrap; gap: 5px;
+        margin-top: 6px;
+    }
+    .wci-fact-chip {
+        padding: 5px 10px;
+        border: 1px solid rgba(15,23,42,0.12);
+        background: #ffffff;
+        border-radius: 999px;
+        font-size: 12px; font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.16s ease;
+        font-family: inherit;
+        min-width: 32px;
+    }
+    .wci-fact-chip:hover { border-color: #0052D4; color: #0052D4; }
+    .wci-fact-chip.is-on {
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        border-color: transparent;
+        color: #ffffff;
+        box-shadow: 0 4px 10px -4px rgba(0,82,212,0.6);
+    }
 
     /* ── Columna derecha: campos operativos ── */
     .wco-info-fields {

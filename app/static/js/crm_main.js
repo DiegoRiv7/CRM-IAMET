@@ -4746,6 +4746,53 @@
                     if (empty) empty.style.display = 'flex';
                 }
             }
+            // ── Helpers para selectores inteligentes ──
+            // Day picker: convierte una serialización JSON {dias:[],desde:'',hasta:''}
+            // (o un string plano legacy) a los botones marcados + horas.
+            function _wciSetSchedule(scope, raw){
+                var parsed = null;
+                if (raw) { try { parsed = JSON.parse(raw); } catch(e) { parsed = null; } }
+                var dias = (parsed && Array.isArray(parsed.dias)) ? parsed.dias : [];
+                var desde = (parsed && parsed.desde) || '';
+                var hasta = (parsed && parsed.hasta) || '';
+                document.querySelectorAll('.wci-days[data-wci-days="' + scope + '"] .wci-day').forEach(function(btn){
+                    btn.classList.toggle('is-on', dias.indexOf(btn.dataset.day) >= 0);
+                });
+                var dEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoDesde' : 'wciEntregaDesde');
+                var hEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta');
+                if (dEl) dEl.value = desde;
+                if (hEl) hEl.value = hasta;
+            }
+            function _wciGetSchedule(scope){
+                var dias = [];
+                document.querySelectorAll('.wci-days[data-wci-days="' + scope + '"] .wci-day.is-on').forEach(function(b){
+                    dias.push(b.dataset.day);
+                });
+                var dEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoDesde' : 'wciEntregaDesde');
+                var hEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta');
+                var payload = { dias: dias, desde: (dEl && dEl.value) || '', hasta: (hEl && hEl.value) || '' };
+                if (!dias.length && !payload.desde && !payload.hasta) return '';
+                return JSON.stringify(payload);
+            }
+            // Facturación: chips numéricos (+ 'ultimo')
+            function _wciSetFact(raw){
+                var parsed = null;
+                if (raw) { try { parsed = JSON.parse(raw); } catch(e) { parsed = null; } }
+                var set = {};
+                if (parsed && Array.isArray(parsed.dias)) parsed.dias.forEach(function(d){ set[String(d)] = true; });
+                document.querySelectorAll('#wciFactChips .wci-fact-chip').forEach(function(c){
+                    c.classList.toggle('is-on', !!set[c.dataset.fact]);
+                });
+            }
+            function _wciGetFact(){
+                var dias = [];
+                document.querySelectorAll('#wciFactChips .wci-fact-chip.is-on').forEach(function(c){
+                    dias.push(c.dataset.fact);
+                });
+                if (!dias.length) return '';
+                return JSON.stringify({ dias: dias });
+            }
+
             function _cargarClienteInfo(){
                 var saved = document.getElementById('wciSavedHint');
                 if (saved) saved.textContent = 'Cargando…';
@@ -4756,13 +4803,12 @@
                         var c = data.cliente || {};
                         _wciSetText('wciNombre', c.nombre || '—');
                         _wciSetText('wciRfc', c.rfc || '', true);
-                        _wciSetText('wciCategoria', c.categoria || '', true);
                         _wciRenderLogo(c.logo_url);
                         _wciSetField('wciUbicacion', c.ubicacion);
                         _wciSetField('wciMapaUrl', c.mapa_url);
-                        _wciSetField('wciDiasEntrega', c.dias_entrega);
-                        _wciSetField('wciHorarios', c.horarios_trabajo);
-                        _wciSetField('wciDiasFact', c.dias_facturacion);
+                        _wciSetSchedule('trabajo', c.horarios_trabajo);
+                        _wciSetSchedule('entrega', c.dias_entrega);
+                        _wciSetFact(c.dias_facturacion);
                         _wciSetField('wciCobro', c.proceso_cobro);
                         _wciSetField('wciReglas', c.reglas_acceso);
                         _wciSetField('wciInfoExtra', c.info_adicional);
@@ -4775,6 +4821,10 @@
             function _wciBindOnce(){
                 if (_wciSaveBtnBound) return;
                 _wciSaveBtnBound = true;
+                // Toggle pills/chips
+                document.querySelectorAll('#widgetClienteOportunidades .wci-day, #widgetClienteOportunidades .wci-fact-chip').forEach(function(btn){
+                    btn.addEventListener('click', function(){ btn.classList.toggle('is-on'); });
+                });
                 var saveBtn = document.getElementById('wciSaveBtn');
                 var fileInput = document.getElementById('wciLogoFile');
                 if (saveBtn) {
@@ -4783,9 +4833,9 @@
                         var fd = new FormData();
                         fd.append('ubicacion', (document.getElementById('wciUbicacion') || {}).value || '');
                         fd.append('mapa_url', (document.getElementById('wciMapaUrl') || {}).value || '');
-                        fd.append('dias_entrega', (document.getElementById('wciDiasEntrega') || {}).value || '');
-                        fd.append('horarios_trabajo', (document.getElementById('wciHorarios') || {}).value || '');
-                        fd.append('dias_facturacion', (document.getElementById('wciDiasFact') || {}).value || '');
+                        fd.append('horarios_trabajo', _wciGetSchedule('trabajo'));
+                        fd.append('dias_entrega', _wciGetSchedule('entrega'));
+                        fd.append('dias_facturacion', _wciGetFact());
                         fd.append('proceso_cobro', (document.getElementById('wciCobro') || {}).value || '');
                         fd.append('reglas_acceso', (document.getElementById('wciReglas') || {}).value || '');
                         fd.append('info_adicional', (document.getElementById('wciInfoExtra') || {}).value || '');
