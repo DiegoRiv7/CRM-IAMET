@@ -34,13 +34,19 @@
 #cliPage .cli-kpi-lbl{ font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
 #cliPage .cli-kpi-val{ font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
 
-/* ── Filtro "Mostrar" en la barra superior (junto a la dynamic island) ── */
+/* ── Filtro "Mostrar" en la barra superior (esquina superior izquierda) ── */
+.crm-page-sidebar .crm-bar.crm-bar--dashboard{ position: relative; }
 .cli-filter-island{
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex; align-items: center; gap: 6px;
     background: rgba(15,23,42,0.04);
     border-radius: 999px;
     padding: 4px;
     border: 1px solid rgba(15,23,42,0.06);
+    z-index: 2;
 }
 .cli-filter-island .cli-filter-btn{
     padding: 7px 14px;
