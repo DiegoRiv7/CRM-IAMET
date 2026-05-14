@@ -3129,6 +3129,15 @@ def api_cliente_prospecciones(request, cliente_id):
         Prospecto.objects.select_related('contacto', 'usuario')
         .filter(cliente=cliente).order_by('-fecha_actualizacion')
     )
+    # Filtros opcionales mes / año (por fecha_creacion)
+    mes_p = (request.GET.get('mes') or '').strip()
+    anio_p = (request.GET.get('anio') or '').strip()
+    if mes_p and mes_p != 'todos':
+        try: qs = qs.filter(fecha_creacion__month=int(mes_p))
+        except ValueError: pass
+    if anio_p and anio_p != 'todos':
+        try: qs = qs.filter(fecha_creacion__year=int(anio_p))
+        except ValueError: pass
     ETAPA_LBL = {
         'identificado': 'Identificado', 'calificado': 'Calificado',
         'reunion': 'Reunión', 'en_progreso': 'En Progreso', 'procesado': 'Procesado',

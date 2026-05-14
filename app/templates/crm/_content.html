@@ -3577,6 +3577,10 @@
 
     // Render inicial (tras crm_main.js para que los selects estén poblados)
     setTimeout(function(){
+        // renderPeriodPills siempre: no depende de la facet bar y se ve en
+        // tabs que no la tienen (Dashboard, Clientes…). renderChips después
+        // sale temprano si no hay chips, pero pills ya quedan correctos.
+        try { renderPeriodPills(); } catch(e){ console.error('[FacetBar] renderPeriodPills error:', e); }
         try { renderChips(); } catch(e){ console.error('[FacetBar] renderChips error:', e); }
         try {
             if (typeof window._applyFiltersToCards === 'function') window._applyFiltersToCards();

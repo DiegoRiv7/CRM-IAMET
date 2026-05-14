@@ -4516,6 +4516,18 @@
             var clienteOppSearch = document.getElementById('clienteOppSearch');
             var clienteOppFilterArea = document.getElementById('clienteOppFilterArea');
             var clienteOppFilterProducto = document.getElementById('clienteOppFilterProducto');
+            var clienteOppFilterMes = document.getElementById('clienteOppFilterMes');
+            var clienteOppFilterAnio = document.getElementById('clienteOppFilterAnio');
+            // Llena los años disponibles (3 años atrás + actual)
+            if (clienteOppFilterAnio && clienteOppFilterAnio.options.length <= 1) {
+                var nowY = new Date().getFullYear();
+                for (var y = nowY; y >= nowY - 3; y--) {
+                    var opt = document.createElement('option');
+                    opt.value = String(y);
+                    opt.textContent = String(y);
+                    clienteOppFilterAnio.appendChild(opt);
+                }
+            }
             var clienteOppClearFilters = document.getElementById('clienteOppClearFilters');
             var clienteOppFiltersOpp = document.getElementById('clienteOppFiltersOpp');
             var clienteOppHeadOpp = document.getElementById('clienteOppHeadOpp');
@@ -4592,13 +4604,24 @@
             }
             function _cargarTabActivo(){
                 if (!currentClienteId) return;
+                // Periodo del modal — se aplica a los 3 tabs (op/cot/prosp).
+                var mesQ = clienteOppFilterMes ? (clienteOppFilterMes.value || '') : '';
+                var anioQ = clienteOppFilterAnio ? (clienteOppFilterAnio.value || '') : '';
+                function _withPeriodo(url){
+                    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+                    var q = '';
+                    if (mesQ) q += 'mes=' + encodeURIComponent(mesQ);
+                    if (anioQ) q += (q ? '&' : '') + 'anio=' + encodeURIComponent(anioQ);
+                    return q ? url + sep + q : url;
+                }
                 var url;
                 if (currentMode === 'cotizado') {
-                    url = '/app/api/cliente-cotizaciones/' + currentClienteId + '/';
+                    url = _withPeriodo('/app/api/cliente-cotizaciones/' + currentClienteId + '/');
                 } else if (currentMode === 'prospecciones') {
-                    url = '/app/api/cliente-prospecciones/' + currentClienteId + '/';
+                    url = _withPeriodo('/app/api/cliente-prospecciones/' + currentClienteId + '/');
                 } else {
                     url = '/app/api/cliente-oportunidades/' + currentClienteId + '/' + (currentMode === 'cobrado' ? '?tipo=cobrado' : '');
+                    url = _withPeriodo(url);
                 }
                 clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty">Cargando…</td></tr>';
                 fetch(url)
@@ -4610,6 +4633,9 @@
                         clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
                     });
             }
+            // Listeners de periodo: recargan el tab actual al cambiar
+            if (clienteOppFilterMes) clienteOppFilterMes.addEventListener('change', _cargarTabActivo);
+            if (clienteOppFilterAnio) clienteOppFilterAnio.addEventListener('change', _cargarTabActivo);
 
             // ── Abrir widget (también expuesta globalmente para que otras
             //    vistas — ej. el tab Clientes del Dashboard — la usen) ──
@@ -4626,6 +4652,9 @@
                 if (clienteOppSearch) clienteOppSearch.value = '';
                 if (clienteOppFilterArea) clienteOppFilterArea.value = '';
                 if (clienteOppFilterProducto) clienteOppFilterProducto.value = '';
+                // Periodo arranca en "Todos" al abrir el modal
+                if (clienteOppFilterMes) clienteOppFilterMes.value = 'todos';
+                if (clienteOppFilterAnio) clienteOppFilterAnio.value = 'todos';
                 setWidgetMode(mode);
 
                 var colspan = '6';
