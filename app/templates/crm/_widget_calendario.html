@@ -35,16 +35,16 @@
             .cal-now-line { position:absolute; left:56px; right:0; height:2px; background:#FF3B30; z-index:10; pointer-events:none; }
             .cal-now-dot { position:absolute; left:48px; width:8px; height:8px; border-radius:50%; background:#FF3B30; z-index:11; pointer-events:none; margin-top:-3px; }
             /* ─── Day view events ─── */
-            .cal-day-evt { position:absolute; border-radius:8px; padding:4px 8px; cursor:pointer; box-sizing:border-box; overflow:hidden; transition:filter 0.15s, box-shadow 0.15s; min-height:22px; z-index:5; border-left-width:3px; border-left-style:solid; }
-            .cal-day-evt:hover { filter:brightness(0.96); box-shadow:0 4px 16px rgba(0,0,0,0.14) !important; z-index:7; }
+            .cal-day-evt { position:absolute; border-radius:8px; padding:4px 8px; cursor:pointer; box-sizing:border-box; overflow:hidden !important; transition:filter 0.15s, box-shadow 0.15s; min-height:22px; z-index:5; border-left-width:3px; border-left-style:solid; }
+            .cal-day-evt:hover { filter:brightness(0.96); box-shadow:0 4px 16px rgba(0,0,0,0.14) !important; z-index:7; overflow:visible !important; }
             .cal-day-evt-title { font-size:0.78rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
-            .cal-day-evt-time { font-size:0.7rem; font-weight:500; margin-top:1px; line-height:1.2; }
+            .cal-day-evt-time { font-size:0.7rem; font-weight:500; margin-top:1px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
             .cal-day-evt-badge { font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap; color:#fff; }
             .cal-day-evt-status { display:inline-block; font-size:0.66rem; font-weight:700; padding:1px 6px; border-radius:20px; margin-top:2px; }
-            /* Eventos cortos (<40px): título y hora en una línea horizontal, sin badge */
-            .cal-day-evt.is-compact { padding:2px 8px; display:flex; align-items:center; gap:8px; }
-            .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; flex:1; }
-            .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.8; }
+            /* Compact (<64px de alto): título y hora en una línea, sin badge */
+            .cal-day-evt.is-compact { padding:3px 8px; display:flex; flex-direction:column; gap:0; justify-content:center; }
+            .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; }
+            .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.85; }
             .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
             /* ─── Right panel ─── */
             #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
@@ -1187,7 +1187,11 @@
             var titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
 
             var wkCompOpacity = ep.completada ? 'opacity:0.38;' : '';
-            var isCompact = evH < 42;
+            // Compact: si el evento mide menos de 64px (1h y media de slot), ocultamos
+            // el badge ("Vencido" / "En curso") y ponemos título + hora en una sola
+            // línea. Antes el badge se desbordaba y se veía encimado con el card
+            // siguiente cuando los eventos estaban juntos.
+            var isCompact = evH < 64;
             html += '<div class="cal-day-evt'+(isCompact?' is-compact':'')+'" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'"' +
                 ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
                 titleHTML+
