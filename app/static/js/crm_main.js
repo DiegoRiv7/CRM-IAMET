@@ -4728,6 +4728,25 @@
                 return '';
             }
             function _wciSetField(id, val){ var el = document.getElementById(id); if (el) el.value = val || ''; }
+            function _wciPaintMapaLink(){
+                var inp = document.getElementById('wciMapaUrl');
+                var a = document.getElementById('wciMapaLink');
+                var empty = document.getElementById('wciMapaLinkEmpty');
+                var url = (inp && inp.value || '').trim();
+                if (url) {
+                    var href = url;
+                    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+                    if (a) {
+                        a.href = href;
+                        a.textContent = url;
+                        a.style.display = 'inline-block';
+                    }
+                    if (empty) empty.style.display = 'none';
+                } else {
+                    if (a) { a.style.display = 'none'; a.removeAttribute('href'); a.textContent = ''; }
+                    if (empty) empty.style.display = 'inline-block';
+                }
+            }
             function _wciSetText(id, val, hideIfEmpty){
                 var el = document.getElementById(id); if (!el) return;
                 el.textContent = val || '';
@@ -4879,6 +4898,7 @@
                         _wciRenderLogo(c.logo_url);
                         _wciSetField('wciUbicacion', c.ubicacion);
                         _wciSetField('wciMapaUrl', c.mapa_url);
+                        _wciPaintMapaLink();
                         _wciSetSchedule('trabajo', c.horarios_trabajo);
                         // dias_entrega ahora es texto libre. Si por compatibilidad viejo
                         // venía como JSON, lo limpiamos para que el user lo reescriba.
@@ -4927,21 +4947,37 @@
                 var panel = document.getElementById('clienteOppInfoPanel');
                 if (panel) {
                     panel.addEventListener('click', function(e){
-                        if (e.target.closest('.wci-contactos')) return;  // contactos: CRUD propio
+                        if (e.target.closest('.wci-contactos')) return;
                         if (e.target.closest('.wco-info-savebar')) return;
-                        // El field más cercano: card de la derecha, field de la credencial, o la foto
                         var field = e.target.closest('.wco-info-card, .wco-info-id-field, .wco-info-id-photo');
                         if (!field) return;
-                        if (field.classList.contains('is-editing')) return;  // ya está en edición
+                        if (field.classList.contains('is-editing')) return;
+                        // Fields con data-no-edit no entran en edición por click directo.
+                        if (field.hasAttribute('data-no-edit')) return;
                         _wciActivateField(field);
                         var input = e.target.closest('input, textarea');
                         if (input) {
                             setTimeout(function(){ input.focus(); }, 0);
                         } else {
-                            // dale foco al primer input del field para edición rápida
                             var first = field.querySelector('textarea, input:not([type=file])');
                             if (first) setTimeout(function(){ first.focus(); }, 0);
                         }
+                    });
+                }
+                // Repinta el link cuando se edita el input
+                var mapaInp = document.getElementById('wciMapaUrl');
+                if (mapaInp) mapaInp.addEventListener('input', _wciPaintMapaLink);
+
+                // Lápiz "editar link" en el field de Google Maps
+                var mapaEditBtn = document.getElementById('wciMapaEditBtn');
+                if (mapaEditBtn) {
+                    mapaEditBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        var field = mapaEditBtn.closest('.wco-info-id-field');
+                        if (!field || field.classList.contains('is-editing')) return;
+                        _wciActivateField(field);
+                        var inp = document.getElementById('wciMapaUrl');
+                        if (inp) setTimeout(function(){ inp.focus(); inp.select(); }, 0);
                     });
                 }
                 // Botón Cancelar

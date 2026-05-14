@@ -1089,6 +1089,50 @@
         outline-offset: 4px;
     }
 
+    /* Field "Link a Google Maps": click sobre el link abre la url, no edita.
+       Edición se activa con el mini lápiz al lado del label. */
+    .wco-info-id-lblrow {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 6px;
+    }
+    .wci-id-edit-btn {
+        width: 22px; height: 22px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: #ffffff;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .wci-id-edit-btn:hover { color: #0052D4; border-color: #0052D4; background: #EEF3FF; }
+    .wco-info-id-field.is-editing .wci-id-edit-btn { display: none; }
+
+    .wci-id-link {
+        display: inline-block;
+        font-size: 13px;
+        color: #0052D4;
+        font-weight: 500;
+        text-decoration: none;
+        word-break: break-all;
+        padding: 4px 0 2px;
+        line-height: 1.4;
+    }
+    .wci-id-link:hover { text-decoration: underline; }
+    .wci-id-link-empty {
+        font-size: 13px;
+        color: #cbd5e1;
+        font-weight: 400;
+        padding: 4px 0 2px;
+        display: inline-block;
+    }
+
+    /* Modo lectura: ocultar input, mostrar link/empty */
+    .wci-id-field--link:not(.is-editing) #wciMapaUrl { display: none; }
+    /* Modo edición: ocultar link, mostrar input */
+    .wci-id-field--link.is-editing .wci-id-link,
+    .wci-id-field--link.is-editing .wci-id-link-empty { display: none !important; }
+
     .wci-range-read {
         font-size: 14px;
         color: #1D1D1F;
