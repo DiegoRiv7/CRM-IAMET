@@ -47,12 +47,12 @@
         <table class="cli-table">
             <thead>
                 <tr>
-                    <th class="cli-th-cli">Cliente</th>
+                    <th class="cli-th-cli" id="cliTableMarcasHead">Cliente</th>
                     {% for m in meta.marcas_col %}<th class="cli-th-marca">{{ m.label }}</th>{% endfor %}
                     <th class="cli-th-marca">Otros</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="cliTbodyClientes">
                 {% for c in clientes_tabla %}
                 <tr class="cli-row" data-cliente-id="{{ c.id }}" data-cliente-nombre="{{ c.nombre }}">
                     <td class="cli-td-cli">
@@ -74,44 +74,24 @@
                 <tr><td colspan="{{ meta.marcas_col|length|add:2 }}" class="cli-empty">No hay clientes para mostrar con los filtros actuales.</td></tr>
                 {% endfor %}
             </tbody>
+            {# tbody alternativo para "Solo Prospectos": filas = ClientePotencial #}
+            <tbody id="cliTbodyPotenciales" style="display:none;">
+                {% for p in potenciales_lista %}
+                <tr class="cli-row cli-row-pot" data-pot-id="{{ p.id }}" data-pot-nombre="{{ p.nombre }}">
+                    <td class="cli-td-cli">
+                        <span class="cli-cliente-name">{{ p.nombre }}</span>
+                        <div class="cli-cliente-rfc">{{ p.asignado_nombre }}</div>
+                    </td>
+                    {% for m in meta.marcas_col %}<td class="cli-td-cell cli-td-zero">0</td>{% endfor %}
+                    <td class="cli-td-cell cli-td-zero">0</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ meta.marcas_col|length|add:2 }}" class="cli-empty">No hay clientes potenciales aún.</td></tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 
-    {# ── Bloque adicional: ClientePotencial (potenciales sin marca aún) ──
-       Aparece al final de la tabla, colapsable. Útil para ver leads
-       crudos que aún no se han convertido en cliente ni se les ha
-       creado una prospección con marca. #}
-    {% if potenciales_lista %}
-    <div class="cli-pot-block" id="cliPotBlock">
-        <div class="cli-pot-head" id="cliPotHead">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="cli-pot-chevron"><polyline points="6 9 12 15 18 9"/></svg>
-            <span>Clientes potenciales sin prospección registrada · {{ potenciales_lista|length }}</span>
-            <span class="cli-pot-hint">leads aún sin marca</span>
-        </div>
-        <div class="cli-pot-body" id="cliPotBody">
-            <table class="cli-table">
-                <thead>
-                    <tr>
-                        <th class="cli-th-cli">Potencial</th>
-                        <th>Asignado a</th>
-                        <th>Notas</th>
-                        <th>Creado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in potenciales_lista %}
-                    <tr class="cli-row-pot" data-pot-id="{{ p.id }}">
-                        <td class="cli-td-cli">{{ p.nombre }}</td>
-                        <td style="color:#6B7280;">{{ p.asignado_nombre }}</td>
-                        <td style="color:#6B7280;font-size:0.78rem;">{{ p.notas|default:'—'|truncatechars:80 }}</td>
-                        <td style="color:#9CA3AF;font-size:0.78rem;">{{ p.fecha }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endwith %}
 
@@ -120,30 +100,32 @@
     // ── Toggle Ambos / Solo Clientes / Solo Prospectos ──
     var mode = 'ambos';
     try { mode = localStorage.getItem('cliShow') || 'ambos'; } catch (e) {}
+    var tbodyClientes = document.getElementById('cliTbodyClientes');
+    var tbodyPotenciales = document.getElementById('cliTbodyPotenciales');
+    var headPrimera = document.getElementById('cliTableMarcasHead');
+
     function applyMode(){
         document.querySelectorAll('.cli-filter-btn').forEach(function(b){
             b.classList.toggle('cli-filter-active', b.dataset.cliShow === mode);
         });
-        // Cada celda muestra op/pr/total según el modo, en cero estilo "tenue".
-        // El bloque ClientePotencial se mantiene visible siempre al final.
-        document.querySelectorAll('.cli-td-cell').forEach(function(td){
+        // "Solo Prospectos" muestra las filas de ClientePotencial; cualquier
+        // otro modo muestra los Cliente regulares.
+        if (mode === 'prospectos') {
+            if (tbodyClientes) tbodyClientes.style.display = 'none';
+            if (tbodyPotenciales) tbodyPotenciales.style.display = '';
+            if (headPrimera) headPrimera.textContent = 'Prospectos';
+            return;
+        }
+        if (tbodyClientes) tbodyClientes.style.display = '';
+        if (tbodyPotenciales) tbodyPotenciales.style.display = 'none';
+        if (headPrimera) headPrimera.textContent = 'Cliente';
+        // Cada celda muestra op/total según el modo en filas de Cliente.
+        document.querySelectorAll('#cliTbodyClientes .cli-td-cell').forEach(function(td){
             var op = parseInt(td.dataset.op || 0);
-            var pr = parseInt(td.dataset.pr || 0);
             var total = parseInt(td.dataset.total || 0);
-            var val;
-            if (mode === 'clientes') val = op;
-            else if (mode === 'prospectos') val = pr;
-            else val = total;
+            var val = mode === 'clientes' ? op : total;
             td.textContent = val;
             td.classList.toggle('cli-td-zero', val === 0);
-        });
-    }
-    // Bloque ClientePotencial: colapsable
-    var potHead = document.getElementById('cliPotHead');
-    var potBlock = document.getElementById('cliPotBlock');
-    if (potHead && potBlock) {
-        potHead.addEventListener('click', function(){
-            potBlock.classList.toggle('is-collapsed');
         });
     }
     document.querySelectorAll('.cli-filter-btn').forEach(function(b){
