@@ -8634,6 +8634,11 @@
                 if (e.key === 'Escape') crmTaskCancelarEdicion();
                 if (e.key === 'Enter' && e.ctrlKey) crmTaskGuardar();
             });
+            // Soporte invisible para pegar/arrastrar imágenes en la descripción.
+            // Sin UI nueva: la imagen se sube como adjunto silenciosamente.
+            if (typeof window._crmTaskAttachImageHandlers === 'function') {
+                window._crmTaskAttachImageHandlers(ta, { mode: 'edit' });
+            }
         }
 
         function crmTaskEditarTitulo() {
@@ -9730,6 +9735,11 @@
                 if (typeof crmCreateUpdateOppLabel === 'function') crmCreateUpdateOppLabel();
                 var titleInput = document.getElementById('crmTaskTitleInput');
                 if (titleInput) titleInput.focus();
+                // Soporte invisible para pegar/arrastrar imágenes en la descripción.
+                var descEditor = document.getElementById('crmTaskDescEditor');
+                if (descEditor && typeof window._crmTaskAttachImageHandlers === 'function') {
+                    window._crmTaskAttachImageHandlers(descEditor, { mode: 'create' });
+                }
             }
         }
 
@@ -9922,6 +9932,13 @@
         };
         window._crmCreateGetFiles = function () { return _crmCreateFiles.slice(); };
         window._crmCreateClearFiles = function () { _crmCreateFiles = []; _crmCreateRenderFiles(); };
+        // Permite empujar archivos al buffer sin pasar por el <input type=file>
+        // (lo usan los handlers invisibles de paste/drop en la descripción).
+        window._crmCreateAddFile = function (f) {
+            if (!f) return;
+            _crmCreateFiles.push(f);
+            _crmCreateRenderFiles();
+        };
 
         // ── Header: fetch nombre de oportunidad (si oppId presente) ──
         window.crmCreateUpdateOppLabel = function () {
@@ -10847,3 +10864,180 @@
             dd.innerHTML = ''; dd.classList.remove('active');
         }
     });
+/* ──────────────────────────────────────────────────────────────────
+ * Paste/Drop invisible de imágenes en la descripción de tareas
+ * ──────────────────────────────────────────────────────────────────
+ * Reglas:
+ *  - NO se muestra UI nueva (sin tooltips, sin badges, sin dropzones)
+ *  - Solo se intercepta paste cuando hay un blob de imagen
+ *  - En modo 'create': se acumula en _crmCreateFiles (subida diferida)
+ *  - En modo 'edit':   sube al endpoint de comentarios como adjunto
+ *  - Inserta una marca textual discreta en el cursor para que el usuario
+ *    sepa que su captura quedó vinculada a ese punto del texto
+ *  - Si falla: console.error, nada visible al usuario
+ * ──────────────────────────────────────────────────────────────────*/
+(function () {
+    function _pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function _genFilename(file) {
+        var d = new Date();
+        var ext = 'png';
+        if (file && file.type) {
+            var m = file.type.match(/^image\/([a-z0-9+.\-]+)/i);
+            if (m) {
+                ext = m[1].toLowerCase();
+                if (ext === 'jpeg') ext = 'jpg';
+                if (ext === 'svg+xml') ext = 'svg';
+            }
+        } else if (file && file.name && file.name.indexOf('.') !== -1) {
+            ext = file.name.split('.').pop().toLowerCase();
+        }
+        return 'captura-' + d.getFullYear() + '-' + _pad(d.getMonth() + 1) + '-' +
+            _pad(d.getDate()) + '-' + _pad(d.getHours()) + _pad(d.getMinutes()) +
+            _pad(d.getSeconds()) + '.' + ext;
+    }
+
+    function _insertAtCursor(ta, text) {
+        try {
+            var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+            var end = ta.selectionEnd != null ? ta.selectionEnd : start;
+            var v = ta.value || '';
+            var prefix = (start > 0 && v.charAt(start - 1) && !/\s/.test(v.charAt(start - 1))) ? ' ' : '';
+            var inserted = prefix + text;
+            ta.value = v.slice(0, start) + inserted + v.slice(end);
+            var cursor = start + inserted.length;
+            ta.selectionStart = ta.selectionEnd = cursor;
+            var ev;
+            try { ev = new Event('input', { bubbles: true }); }
+            catch (e) { ev = document.createEvent('Event'); ev.initEvent('input', true, true); }
+            ta.dispatchEvent(ev);
+        } catch (e) {
+            console.error('paste-img insertAtCursor:', e);
+        }
+    }
+
+    function _uploadInEditMode(file, niceName) {
+        try {
+            if (typeof _crmCurrentTaskId === 'undefined' || !_crmCurrentTaskId) {
+                console.error('paste-img: sin _crmCurrentTaskId');
+                return;
+            }
+            var fd = new FormData();
+            fd.append('contenido', '📎 Captura pegada en la descripción: ' + niceName);
+            var toSend = file;
+            try {
+                if (!file.name || file.name === 'image.png') {
+                    toSend = new File([file], niceName, { type: file.type || 'image/png' });
+                }
+            } catch (e) { /* navegadores antiguos */ }
+            fd.append('archivo_0', toSend, niceName);
+            var csrf = (typeof getCsrf === 'function') ? getCsrf() : '';
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/comentarios/agregar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+                body: fd,
+                credentials: 'same-origin'
+            }).then(function (r) {
+                if (!r.ok) { console.error('paste-img upload status', r.status); }
+            }).catch(function (err) {
+                console.error('paste-img upload error', err);
+            });
+        } catch (e) {
+            console.error('paste-img upload exception', e);
+        }
+    }
+
+    function _handleImageFile(ta, file, mode) {
+        if (!file) return;
+        var niceName = _genFilename(file);
+        _insertAtCursor(ta, '[📎 ' + niceName + ']');
+        if (mode === 'create') {
+            var toBuffer = file;
+            try {
+                if (!file.name || file.name === 'image.png') {
+                    toBuffer = new File([file], niceName, { type: file.type || 'image/png' });
+                }
+            } catch (e) { /* fallback */ }
+            if (typeof window._crmCreateAddFile === 'function') {
+                window._crmCreateAddFile(toBuffer);
+            } else {
+                console.error('paste-img: _crmCreateAddFile no disponible');
+            }
+        } else {
+            _uploadInEditMode(file, niceName);
+        }
+    }
+
+    function _onPaste(ev) {
+        try {
+            var cd = ev.clipboardData || window.clipboardData;
+            if (!cd) return;
+            var items = cd.items;
+            if (!items || !items.length) return;
+            var imageFile = null;
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
+                if (it && it.kind === 'file' && it.type && it.type.indexOf('image/') === 0) {
+                    var f = it.getAsFile();
+                    if (f) { imageFile = f; break; }
+                }
+            }
+            if (!imageFile) return;
+            ev.preventDefault();
+            var ta = ev.currentTarget;
+            var mode = ta._crmPasteMode || 'create';
+            _handleImageFile(ta, imageFile, mode);
+        } catch (e) {
+            console.error('paste-img onPaste:', e);
+        }
+    }
+
+    function _onDragOver(ev) {
+        try {
+            var dt = ev.dataTransfer;
+            if (!dt) return;
+            var hasImg = false;
+            if (dt.items && dt.items.length) {
+                for (var i = 0; i < dt.items.length; i++) {
+                    var it = dt.items[i];
+                    if (it && it.kind === 'file' && it.type && it.type.indexOf('image/') === 0) { hasImg = true; break; }
+                }
+            } else if (dt.types) {
+                for (var j = 0; j < dt.types.length; j++) {
+                    if (String(dt.types[j]).toLowerCase() === 'files') { hasImg = true; break; }
+                }
+            }
+            if (hasImg) { ev.preventDefault(); }
+        } catch (e) { /* silencioso */ }
+    }
+
+    function _onDrop(ev) {
+        try {
+            var dt = ev.dataTransfer;
+            if (!dt || !dt.files || !dt.files.length) return;
+            var imageFile = null;
+            for (var i = 0; i < dt.files.length; i++) {
+                var f = dt.files[i];
+                if (f && f.type && f.type.indexOf('image/') === 0) { imageFile = f; break; }
+            }
+            if (!imageFile) return;
+            ev.preventDefault();
+            var ta = ev.currentTarget;
+            var mode = ta._crmPasteMode || 'create';
+            _handleImageFile(ta, imageFile, mode);
+        } catch (e) {
+            console.error('paste-img onDrop:', e);
+        }
+    }
+
+    window._crmTaskAttachImageHandlers = function (ta, opts) {
+        if (!ta) return;
+        var mode = (opts && opts.mode) || 'create';
+        ta._crmPasteMode = mode;
+        if (ta._crmPasteWired) return;
+        ta._crmPasteWired = true;
+        ta.addEventListener('paste', _onPaste);
+        ta.addEventListener('dragover', _onDragOver);
+        ta.addEventListener('drop', _onDrop);
+    };
+})();
