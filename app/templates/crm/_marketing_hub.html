@@ -2,10 +2,12 @@
 MARKETING HUB — Centro de marketing por marcas. Permite que el vendedor
 busque material de venta (brochures, landings, propuestas, certificaciones,
 videos, banners, casos de éxito) filtrado por marca (Zebra, Panduit,
-Avigilion, Genetec, Axis, APC, Cisco, IAMET) y arme un "kit" para enviar
-por correo al cliente. Mock data por ahora — el backend (subida +
-persistencia) se conecta después. Inspirado en el diseño v2 (claude.ai/design)
-pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne).
+Avigilion, Genetec, Axis, APC, Cisco, IAMET). Desde cada recurso puede
+abrir el preview o compartirlo por correo — el botón "Compartir por correo"
+delega al módulo de correo del CRM (window.mailAbrir + mailRedactar) y
+prellena asunto y cuerpo HTML con la info del recurso. Si el módulo no está
+cargado en la página, fallback a mailto:. Mock data por ahora — el backend
+(subida + persistencia) se conecta después.
 {% endcomment %}
 
 <style>
@@ -23,7 +25,7 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     color: var(--mkthub-ink);
     background: var(--mkthub-bg);
     min-height: calc(100vh - 120px);
-    padding: 28px 24px 120px;
+    padding: 28px 24px 48px;
     margin: -12px -8px 0;
     border-radius: 18px;
     position: relative;
@@ -186,11 +188,11 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     flex-shrink: 0;
 }
 
-/* ── Brand cards (idle state) ──
-   Layout 4×2 en desktop. Cards grandes con header de color + body con
-   contadores y desglose por tipo. Estética editorial (sin float, sin
-   rotation) — peso visual viene del color y la tipografía, no de la
-   animación. */
+/* ── Brand cards (idle state) — Apple-minimalist ──
+   Cards blancas con borde 1px gris-claro y sombra muy sutil. El logo de
+   la marca es el protagonista absoluto en el centro. Hover: lift discreto
+   tipo Apple (translateY + shadow más profunda), sin colores estridentes
+   en el fondo. */
 .mkthub-brands {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -204,127 +206,87 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
 
 .mkthub-brand-card {
     background: #FFFFFF;
-    border-radius: 20px;
-    border: 2px solid var(--mkthub-line-strong);
-    box-shadow: 3px 3px 0 var(--brand-color);
+    border-radius: 18px;
+    border: 1px solid #E8E5DC;
+    box-shadow: 0 1px 2px rgba(20, 20, 18, 0.04);
     cursor: pointer;
     overflow: hidden;
     display: flex; flex-direction: column;
     padding: 0;
-    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
-                box-shadow 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.18s ease;
     font-family: inherit;
     text-align: left;
     position: relative;
-    min-height: 220px;
+    min-height: 240px;
+    outline: none;
 }
 .mkthub-brand-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 5px 8px 0 var(--brand-color);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px -10px rgba(20, 20, 18, 0.14),
+                0 4px 10px -4px rgba(20, 20, 18, 0.06);
+    border-color: #DDD9CC;
 }
-.mkthub-brand-card:active { transform: translateY(-2px); }
+.mkthub-brand-card:active { transform: translateY(-1px); }
+.mkthub-brand-card:focus-visible {
+    border-color: var(--brand-color);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-color) 14%, transparent);
+}
 
-.mkthub-brand-card-head {
-    background: var(--brand-color);
-    color: #FFFFFF;
-    padding: 16px 18px 14px;
-    display: flex; align-items: flex-start; justify-content: space-between;
-    gap: 10px;
-    position: relative;
-    min-height: 84px;
-}
-/* Letra gigante decorativa de fondo (estilo editorial) */
-.mkthub-brand-card-head::before {
-    content: var(--brand-letter, '');
-    position: absolute;
-    right: 14px; bottom: -32px;
-    font-size: 7.5rem; font-weight: 900;
-    line-height: 1;
-    color: rgba(255,255,255,0.13);
-    letter-spacing: -0.04em;
-    pointer-events: none;
-    z-index: 0;
-}
-.mkthub-brand-card-name {
-    font-size: 1rem; font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #FFFFFF;
-    z-index: 1;
+/* Logo central — protagonista visual de cada card. El wordmark se renderiza
+   con la tipografía y color de cada marca para evocar su identidad. */
+.mkthub-brand-card-logo {
     flex: 1;
-    line-height: 1.1;
-}
-.mkthub-brand-card-badge {
-    background: rgba(255,255,255,0.22);
-    border: 1.5px solid rgba(255,255,255,0.4);
-    padding: 4px 9px;
-    border-radius: 999px;
-    font-size: 0.66rem; font-weight: 700;
-    color: #FFFFFF;
-    letter-spacing: 0.04em;
-    flex-shrink: 0;
-    z-index: 1;
-}
-.mkthub-brand-card-body {
-    background: #FFFFFF;
-    padding: 14px 18px 16px;
-    flex: 1;
-    display: flex; flex-direction: column;
-    justify-content: space-between;
-    gap: 14px;
-}
-.mkthub-brand-card-stats {
-    display: flex; flex-direction: column; gap: 6px;
-}
-.mkthub-brand-card-stat {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 0.78rem;
-    color: var(--mkthub-soft);
-}
-.mkthub-brand-card-stat-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--stat-color, var(--brand-color));
-    flex-shrink: 0;
-}
-.mkthub-brand-card-stat-count {
-    font-weight: 700;
-    color: var(--mkthub-ink);
-    min-width: 18px;
-}
-.mkthub-brand-card-stat-name {
-    flex: 1;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mkthub-brand-card-foot {
-    display: flex; align-items: center; justify-content: space-between;
-    padding-top: 12px;
-    border-top: 1.5px solid var(--mkthub-line);
-}
-.mkthub-brand-card-total {
-    display: flex; align-items: baseline; gap: 6px;
-}
-.mkthub-brand-card-count {
-    font-size: 1.6rem; font-weight: 800;
-    color: var(--brand-color);
-    letter-spacing: -0.02em;
-    line-height: 1;
-}
-.mkthub-brand-card-count-label {
-    font-size: 0.72rem;
-    color: var(--mkthub-soft);
-    font-weight: 500;
-}
-.mkthub-brand-card-arrow {
-    width: 28px; height: 28px;
-    border-radius: 9px;
-    background: color-mix(in srgb, var(--brand-color) 10%, transparent);
-    color: var(--brand-color);
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.18s ease, transform 0.18s ease;
+    padding: 28px 18px 16px;
+    min-height: 130px;
+    position: relative;
+}
+.mkthub-brand-wordmark {
+    font-size: 1.85rem;
+    font-weight: var(--brand-weight, 800);
+    letter-spacing: var(--brand-tracking, -0.02em);
+    color: var(--brand-color);
+    text-transform: var(--brand-case, none);
+    font-family: var(--brand-font, 'Inter', system-ui, sans-serif);
+    line-height: 1;
+    text-align: center;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mkthub-brand-card:hover .mkthub-brand-wordmark {
+    transform: scale(1.03);
+}
+
+/* Footer — meta info discreta */
+.mkthub-brand-card-meta {
+    padding: 14px 20px 16px;
+    border-top: 1px solid #F0EDE4;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #FAFAF6;
+}
+.mkthub-brand-card-meta-left {
+    display: flex; flex-direction: column; gap: 1px;
+}
+.mkthub-brand-card-meta-name {
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--mkthub-ink);
+    letter-spacing: -0.005em;
+}
+.mkthub-brand-card-meta-count {
+    font-size: 0.72rem; font-weight: 500;
+    color: var(--mkthub-soft);
+}
+.mkthub-brand-card-meta-arrow {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: rgba(20,20,18,0.04);
+    color: var(--mkthub-soft);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
     flex-shrink: 0;
 }
-.mkthub-brand-card:hover .mkthub-brand-card-arrow {
+.mkthub-brand-card:hover .mkthub-brand-card-meta-arrow {
     background: var(--brand-color);
     color: #FFFFFF;
     transform: translateX(2px);
@@ -443,18 +405,6 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     transform: translateY(-4px);
     box-shadow: 5px 7px 0 var(--card-color, var(--mkthub-line-strong));
 }
-.mkthub-card.is-in-kit {
-    border-color: var(--card-color);
-    transform: scale(0.985);
-}
-.mkthub-card.is-in-kit::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: var(--card-color);
-    opacity: 0.04;
-    border-radius: 16px;
-    pointer-events: none;
-}
 .mkthub-card-head {
     background: var(--card-color);
     padding: 14px 14px 12px;
@@ -540,104 +490,6 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     flex-shrink: 0;
 }
 .mkthub-kit-btn:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--mkthub-line-strong); }
-.mkthub-card.is-in-kit .mkthub-kit-btn {
-    background: var(--card-color);
-    color: #FFFFFF;
-    border-color: var(--card-color);
-    box-shadow: 1px 1px 0 color-mix(in srgb, var(--card-color) 50%, black);
-}
-
-/* ── Kit Tray ── */
-.mkthub-kit-tray {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 90;
-    background: #1A1A1A;
-    border-top: 2px solid #1A1A1A;
-    padding: 10px 24px 12px;
-    display: none;
-    align-items: center;
-    gap: 14px;
-    animation: mkthubTrayUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.mkthub-kit-tray.is-open { display: flex; }
-.mkthub-kit-info {
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-}
-.mkthub-kit-bag {
-    width: 36px; height: 36px;
-    border-radius: 11px;
-    background: rgba(255,255,255,0.12);
-    border: 1.5px solid rgba(255,255,255,0.18);
-    display: flex; align-items: center; justify-content: center;
-    color: #FFFFFF;
-    position: relative;
-}
-.mkthub-kit-badge {
-    position: absolute;
-    top: -7px; right: -7px;
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: #FFFFFF;
-    border: 2px solid #1A1A1A;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.6rem; font-weight: 800;
-    color: #1A1A1A;
-}
-.mkthub-kit-label {
-    font-size: 0.82rem; font-weight: 700;
-    color: rgba(255,255,255,0.9);
-    letter-spacing: 0.01em;
-}
-.mkthub-kit-chips {
-    flex: 1;
-    display: flex; gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    min-width: 0;
-}
-.mkthub-kit-chips::-webkit-scrollbar { height: 4px; }
-.mkthub-kit-chips::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 2px; }
-.mkthub-kit-chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 8px 4px 8px;
-    background: color-mix(in srgb, var(--chip-color) 28%, transparent);
-    border: 1.5px solid var(--chip-color);
-    border-radius: 9px;
-    flex-shrink: 0;
-    animation: mkthubPopIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.mkthub-kit-chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--chip-color); flex-shrink: 0; }
-.mkthub-kit-chip-title {
-    font-size: 0.76rem;
-    color: #FFFFFF;
-    font-weight: 500;
-    max-width: 160px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mkthub-kit-chip-x {
-    background: none; border: none; cursor: pointer;
-    color: rgba(255,255,255,0.5);
-    padding: 0; display: flex; align-items: center;
-    margin-left: 2px;
-    transition: color 0.1s;
-}
-.mkthub-kit-chip-x:hover { color: rgba(255,255,255,0.95); }
-.mkthub-kit-send {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 9px 18px;
-    border-radius: 11px;
-    background: #FFFFFF;
-    border: 2px solid #FFFFFF;
-    color: #1A1A1A;
-    font-size: 0.86rem; font-weight: 800;
-    cursor: pointer;
-    font-family: inherit;
-    flex-shrink: 0;
-    transition: transform 0.14s ease;
-}
-.mkthub-kit-send:hover { transform: scale(1.025); }
 
 /* ── Modal ── */
 .mkthub-modal-overlay {
@@ -732,80 +584,10 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     color: #FFFFFF;
 }
 
-/* Email modal */
-.mkthub-email-modal { box-shadow: 5px 5px 0 var(--mkthub-line-strong); }
-.mkthub-email-head {
-    padding: 18px 22px 14px;
-    border-bottom: 1.5px solid #F0EDE5;
-}
-.mkthub-email-head-top {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 12px;
-}
-.mkthub-email-head-title {
-    display: flex; align-items: center; gap: 8px;
-}
-.mkthub-email-icon {
-    width: 32px; height: 32px;
-    border-radius: 9px;
-    background: var(--mkthub-line-strong);
-    display: flex; align-items: center; justify-content: center;
-    color: #FFFFFF;
-}
-.mkthub-email-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-.mkthub-email-tag {
-    font-size: 0.66rem; font-weight: 600;
-    color: var(--tag-color);
-    background: color-mix(in srgb, var(--tag-color) 9%, white);
-    padding: 3px 9px;
-    border-radius: 6px;
-    border: 1.5px solid color-mix(in srgb, var(--tag-color) 28%, transparent);
-}
-.mkthub-email-body { padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 12px; }
-.mkthub-field-label {
-    font-size: 0.72rem; color: var(--mkthub-soft);
-    margin-bottom: 6px; font-weight: 600;
-}
-.mkthub-input, .mkthub-textarea {
-    width: 100%;
-    border-radius: 12px;
-    border: 2px solid var(--mkthub-line);
-    padding: 10px 13px;
-    font-size: 0.82rem; color: var(--mkthub-ink);
-    font-family: inherit;
-    outline: none;
-    transition: all 0.15s;
-    background: #FFFFFF;
-}
-.mkthub-input:focus, .mkthub-textarea:focus {
-    border-color: var(--mkthub-line-strong);
-    box-shadow: 2px 2px 0 var(--mkthub-line-strong);
-}
-.mkthub-textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
-.mkthub-email-actions { display: flex; gap: 8px; margin-top: 4px; }
-.mkthub-email-success {
-    padding: 44px 28px;
-    text-align: center;
-}
-.mkthub-email-success-icon {
-    width: 56px; height: 56px;
-    border-radius: 16px;
-    border: 2px solid #007A5E;
-    box-shadow: 3px 3px 0 #007A5E;
-    background: #EDFAF4;
-    margin: 0 auto 16px;
-    display: flex; align-items: center; justify-content: center;
-    color: #007A5E;
-    animation: mkthubPopIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.mkthub-email-success-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
-.mkthub-email-success-sub { font-size: 0.82rem; color: var(--mkthub-soft); margin-bottom: 22px; }
-
 /* ── Animations ── */
 @keyframes mkthubFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes mkthubSlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes mkthubPopIn { from { opacity: 0; transform: scale(0.92) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-@keyframes mkthubTrayUp { from { transform: translateY(110%); } to { transform: translateY(0); } }
 @keyframes mkthubCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Responsive */
@@ -813,7 +595,7 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     .mkthub-title { font-size: 1.8rem; }
     .mkthub-brands { grid-template-columns: repeat(2, 1fr); }
     .mkthub-grid { grid-template-columns: 1fr; }
-    .mkthub-root { padding: 22px 14px 110px; }
+    .mkthub-root { padding: 22px 14px 36px; }
 }
 </style>
 
@@ -823,7 +605,7 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     <div class="mkthub-hero mkthub-idle-only">
         <p class="mkthub-tag">CENTRO DE MARKETING</p>
         <h1 class="mkthub-title">¿Qué quieres <span class="accent">vender hoy?</span></h1>
-        <p class="mkthub-sub">Busca, elige materiales y arma tu kit para el cliente</p>
+        <p class="mkthub-sub">Encuentra el material que necesitas y compártelo con el cliente</p>
     </div>
 
     {# ── Search bar ── #}
@@ -853,30 +635,10 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     </div>
 </div>
 
-{# Kit tray fijo (fuera del root para que el position:fixed funcione bien) #}
-<div class="mkthub-kit-tray" id="mkthubKitTray">
-    <div class="mkthub-kit-info">
-        <div class="mkthub-kit-bag">
-            <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 6h10l-1 7H4L3 6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 6V4.5a2 2 0 014 0V6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-            <span class="mkthub-kit-badge" id="mkthubKitBadge">0</span>
-        </div>
-        <span class="mkthub-kit-label">Tu kit</span>
-    </div>
-    <div class="mkthub-kit-chips" id="mkthubKitChips"></div>
-    <button type="button" class="mkthub-kit-send" id="mkthubKitSend">
-        <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M12.5 1.5l-5.5 11-1.5-5-5-1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12.5 1.5L6 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        Enviar kit →
-    </button>
-</div>
-
-{# Preview modal #}
+{# Preview modal (única superposición — botón "Compartir" delega al módulo
+   de correo del CRM, no hay flujo paralelo de kit) #}
 <div class="mkthub-modal-overlay" id="mkthubPreviewOverlay">
     <div class="mkthub-modal mkthub-preview-modal" id="mkthubPreviewModal"></div>
-</div>
-
-{# Email modal #}
-<div class="mkthub-modal-overlay" id="mkthubEmailOverlay">
-    <div class="mkthub-modal mkthub-email-modal" id="mkthubEmailModal"></div>
 </div>
 
 <script>
@@ -885,18 +647,41 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
     if (window._mkthubLoaded) return;
     window._mkthubLoaded = true;
 
-    /* ─── DATOS DE MARCAS (sincronizadas con MARCA_CHOICES del backend +
-        IAMET como marca propia para material institucional). El orden
-        define el layout 4×2 visible en la pantalla idle. ─── */
+    /* ─── DATOS DE MARCAS — incluye estilos tipográficos para componer el
+       wordmark con el aspecto característico de cada marca. Cuando se
+       tengan los logos oficiales, reemplazar el wordmark por <img> en
+       renderBrands(). Orden: layout 4×2 idle.
+
+       Campos visuales:
+       - color: color principal (logo + acciones)
+       - weight, tracking, case, font: ajustes para el wordmark
+       - displayName: texto que se renderiza como logo (puede diferir de name)
+    ─── */
     var BRANDS = [
-        { id: 'zebra',     name: 'Zebra',     color: '#E8610A', bg: '#FFF3EA', dark: '#B84C08' },
-        { id: 'panduit',   name: 'Panduit',   color: '#1D3FAA', bg: '#EEF2FF', dark: '#162E80' },
-        { id: 'avigilion', name: 'Avigilion', color: '#C4112A', bg: '#FFF0F2', dark: '#960D20' },
-        { id: 'genetec',   name: 'Genetec',   color: '#007A5E', bg: '#EDFAF4', dark: '#005C47' },
-        { id: 'axis',      name: 'Axis',      color: '#1A8FE3', bg: '#EAF5FE', dark: '#1170B8' },
-        { id: 'apc',       name: 'APC',       color: '#16A34A', bg: '#ECFDF3', dark: '#0F7D39' },
-        { id: 'cisco',     name: 'Cisco',     color: '#0EA5E9', bg: '#E8F7FE', dark: '#0876AB' },
-        { id: 'iamet',     name: 'IAMET',     color: '#0052D4', bg: '#EEF3FF', dark: '#0041A8' }
+        { id: 'zebra',     name: 'Zebra',     displayName: 'ZEBRA',     color: '#000000',
+          weight: 900, tracking: '-0.02em', case: 'uppercase',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'panduit',   name: 'Panduit',   displayName: 'PANDUIT',   color: '#1D3FAA',
+          weight: 800, tracking: '-0.01em', case: 'uppercase',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'avigilion', name: 'Avigilion', displayName: 'avigilion', color: '#C4112A',
+          weight: 700, tracking: '-0.02em', case: 'lowercase',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'genetec',   name: 'Genetec',   displayName: 'Genetec',   color: '#007A5E',
+          weight: 600, tracking: '-0.02em', case: 'none',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'axis',      name: 'Axis',      displayName: 'AXIS',      color: '#E11932',
+          weight: 800, tracking: '0.02em', case: 'uppercase',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'apc',       name: 'APC',       displayName: 'APC',       color: '#00833F',
+          weight: 900, tracking: '-0.01em', case: 'uppercase',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'cisco',     name: 'Cisco',     displayName: 'cisco',     color: '#1BA0D7',
+          weight: 400, tracking: '-0.03em', case: 'lowercase',
+          font: "'Inter', system-ui, sans-serif" },
+        { id: 'iamet',     name: 'IAMET',     displayName: 'IAMET',     color: '#0052D4',
+          weight: 800, tracking: '-0.005em', case: 'uppercase',
+          font: "'Inter', system-ui, sans-serif" }
     ];
 
     /* ─── TIPOS DE RECURSO ─── */
@@ -985,7 +770,6 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
         query: '',
         activeBrand: 'all',
         activeType: 'all',
-        kit: [],
         hintIdx: 0,
         hintTimer: null
     };
@@ -1024,46 +808,31 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
         return !!(state.query.trim() || state.activeBrand !== 'all');
     }
 
-    /* ─── Render: Brand cards (idle).
-       Cada card muestra: header de color con nombre + letra gigante decorativa,
-       badge con #tipos de recurso, body con desglose de los top 3 tipos y sus
-       conteos, footer con total + arrow → de navegación. */
+    /* ─── Render: Brand cards (idle) — Apple-minimalist.
+       Logo/wordmark grande centrado + footer discreto con nombre y total.
+       Las propiedades tipográficas se aplican via CSS custom properties
+       inline (color, font-weight, letter-spacing, case, font-family). */
     function renderBrands() {
         var html = BRANDS.map(function (b) {
-            var brandRes = RESOURCES.filter(function (r) { return r.brand === b.id; });
-            var byType = {};
-            brandRes.forEach(function (r) { byType[r.type] = (byType[r.type] || 0) + 1; });
-            // Ordenar tipos por count desc y tomar los top 3
-            var typesList = Object.keys(byType)
-                .sort(function (a, b2) { return byType[b2] - byType[a]; })
-                .slice(0, 3);
-            var statsHTML = typesList.map(function (tid) {
-                var t = TYPES[tid] || {};
-                return ''
-                    + '<div class="mkthub-brand-card-stat" style="--stat-color:' + t.color + ';">'
-                    +   '<span class="mkthub-brand-card-stat-dot"></span>'
-                    +   '<span class="mkthub-brand-card-stat-count">' + byType[tid] + '</span>'
-                    +   '<span class="mkthub-brand-card-stat-name">' + esc(t.name) + '</span>'
-                    + '</div>';
-            }).join('');
-            var nTypes = Object.keys(byType).length;
+            var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
+            var style = ''
+                + '--brand-color:' + b.color + ';'
+                + '--brand-weight:' + b.weight + ';'
+                + '--brand-tracking:' + b.tracking + ';'
+                + '--brand-case:' + b.case + ';'
+                + '--brand-font:' + b.font + ';';
             return ''
-                + '<button type="button" class="mkthub-brand-card" data-brand="' + b.id + '"'
-                +   ' style="--brand-color:' + b.color + '; --brand-letter:\'' + b.name[0] + '\';">'
-                +   '<div class="mkthub-brand-card-head">'
-                +     '<div class="mkthub-brand-card-name">' + esc(b.name) + '</div>'
-                +     '<div class="mkthub-brand-card-badge">' + nTypes + ' tipos</div>'
+                + '<button type="button" class="mkthub-brand-card" data-brand="' + b.id + '" style="' + style + '">'
+                +   '<div class="mkthub-brand-card-logo">'
+                +     '<span class="mkthub-brand-wordmark">' + esc(b.displayName) + '</span>'
                 +   '</div>'
-                +   '<div class="mkthub-brand-card-body">'
-                +     '<div class="mkthub-brand-card-stats">' + (statsHTML || '<div class="mkthub-brand-card-stat" style="opacity:0.5;">Sin material aún</div>') + '</div>'
-                +     '<div class="mkthub-brand-card-foot">'
-                +       '<div class="mkthub-brand-card-total">'
-                +         '<span class="mkthub-brand-card-count">' + brandRes.length + '</span>'
-                +         '<span class="mkthub-brand-card-count-label">recursos</span>'
-                +       '</div>'
-                +       '<div class="mkthub-brand-card-arrow">'
-                +         '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                +       '</div>'
+                +   '<div class="mkthub-brand-card-meta">'
+                +     '<div class="mkthub-brand-card-meta-left">'
+                +       '<span class="mkthub-brand-card-meta-name">' + esc(b.name) + '</span>'
+                +       '<span class="mkthub-brand-card-meta-count">' + count + ' ' + (count === 1 ? 'recurso' : 'recursos') + '</span>'
+                +     '</div>'
+                +     '<div class="mkthub-brand-card-meta-arrow">'
+                +       '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
                 +     '</div>'
                 +   '</div>'
                 + '</button>';
@@ -1142,9 +911,8 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
         var html = results.map(function (r, i) {
             var b = brandById(r.brand) || {};
             var t = TYPES[r.type] || {};
-            var inKit = state.kit.some(function (x) { return x.id === r.id; });
             return ''
-                + '<div class="mkthub-card' + (inKit ? ' is-in-kit' : '') + '" data-res-id="' + r.id + '"'
+                + '<div class="mkthub-card" data-res-id="' + r.id + '"'
                 +   ' style="--card-color:' + b.color + '; --card-delay:' + Math.min(i * 0.04, 0.45) + 's;">'
                 +   '<div class="mkthub-card-head" data-action="preview">'
                 +     '<div class="mkthub-card-meta">'
@@ -1167,41 +935,14 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
                 +       '<span class="mkthub-card-brand-name">' + esc(b.name) + '</span>'
                 +       '<span class="mkthub-card-date">' + esc(r.date) + '</span>'
                 +     '</div>'
-                +     '<button type="button" class="mkthub-kit-btn" data-action="kit-toggle">'
-                +       (inKit
-                          ? '<svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> En kit'
-                          : '<svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Kit')
+                +     '<button type="button" class="mkthub-kit-btn" data-action="share" title="Compartir por correo">'
+                +       '<svg width="12" height="12" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>'
+                +       ' Compartir'
                 +     '</button>'
                 +   '</div>'
                 + '</div>';
         }).join('');
         grid.innerHTML = html;
-    }
-
-    /* ─── Render: kit tray ─── */
-    function renderKit() {
-        var tray = document.getElementById('mkthubKitTray');
-        var badge = document.getElementById('mkthubKitBadge');
-        var chips = document.getElementById('mkthubKitChips');
-        badge.textContent = state.kit.length;
-        if (!state.kit.length) {
-            tray.classList.remove('is-open');
-            chips.innerHTML = '';
-            return;
-        }
-        tray.classList.add('is-open');
-        chips.innerHTML = state.kit.map(function (r) {
-            var b = brandById(r.brand) || {};
-            var title = r.title.split('—')[0].trim();
-            return ''
-                + '<div class="mkthub-kit-chip" style="--chip-color:' + b.color + ';">'
-                +   '<span class="mkthub-kit-chip-dot"></span>'
-                +   '<span class="mkthub-kit-chip-title">' + esc(title) + '</span>'
-                +   '<button type="button" class="mkthub-kit-chip-x" data-kit-remove="' + r.id + '" title="Quitar del kit">'
-                +     '<svg width="9" height="9" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
-                +   '</button>'
-                + '</div>';
-        }).join('');
     }
 
     /* ─── Search dropdown ─── */
@@ -1262,7 +1003,6 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
         var overlay = document.getElementById('mkthubPreviewOverlay');
         var b = brandById(res.brand) || {};
         var t = TYPES[res.type] || {};
-        var inKit = state.kit.some(function (x) { return x.id === res.id; });
         modal.style.setProperty('--modal-color', b.color);
         modal.innerHTML = ''
             + '<div class="mkthub-modal-head" style="--modal-color:' + b.color + '; background:' + b.color + ';">'
@@ -1281,8 +1021,9 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
             +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Tipo</div><div class="mkthub-modal-stat-val">' + esc(t.name) + '</div></div>'
             +   '</div>'
             +   '<div class="mkthub-modal-actions">'
-            +     '<button type="button" class="mkthub-btn ' + (inKit ? 'mkthub-btn--brand' : '') + '" data-toggle-kit="' + res.id + '" style="--btn-color:' + b.color + ';">'
-            +       (inKit ? '✓ En el kit' : '+ Agregar al kit') + '</button>'
+            +     '<button type="button" class="mkthub-btn mkthub-btn--brand" data-share="' + res.id + '" style="--btn-color:' + b.color + ';">'
+            +       '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>'
+            +       ' Compartir por correo</button>'
             +     '<button type="button" class="mkthub-btn mkthub-btn--primary">Descargar</button>'
             +   '</div>'
             + '</div>';
@@ -1292,71 +1033,57 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
         document.getElementById('mkthubPreviewOverlay').classList.remove('is-open');
     }
 
-    /* ─── Email modal ─── */
-    function openEmail() {
-        if (!state.kit.length) return;
-        var modal = document.getElementById('mkthubEmailModal');
-        var overlay = document.getElementById('mkthubEmailOverlay');
-        var defaultMsg = 'Hola,\n\nTe comparto este material que preparé para ti:\n\n'
-            + state.kit.map(function (r) { return '• ' + r.title; }).join('\n')
-            + '\n\nQuedo a tus órdenes.';
-        var tagsHTML = state.kit.map(function (r) {
-            var b = brandById(r.brand) || {};
-            return '<span class="mkthub-email-tag" style="--tag-color:' + b.color + ';">'
-                + esc(r.title.split('—')[0].trim()) + '</span>';
-        }).join('');
-        modal.innerHTML = ''
-            + '<div class="mkthub-email-head">'
-            +   '<div class="mkthub-email-head-top">'
-            +     '<div class="mkthub-email-head-title">'
-            +       '<div class="mkthub-email-icon"><svg width="15" height="15" fill="none" viewBox="0 0 14 14"><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M1 4.5l6 4 6-4" stroke="currentColor" stroke-width="1.6"/></svg></div>'
-            +       '<p style="font-weight:800;font-size:1rem;margin:0;">Enviar kit al cliente</p>'
-            +     '</div>'
-            +     '<button type="button" class="mkthub-modal-close" data-close style="background:#EAE6DA;color:#7A7866;width:26px;height:26px;">'
-            +       '<svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
-            +     '</button>'
-            +   '</div>'
-            +   '<div class="mkthub-email-tags">' + tagsHTML + '</div>'
+    /* ─── Compartir recurso por correo ───
+       Delega al módulo de correo del CRM (window.mailAbrir / mailRedactar):
+       abre el widget de correo, abre el panel de compose y prellena
+       asunto + cuerpo con la info del recurso. Si el módulo no está
+       disponible (página sin _widget_mail.html cargado), hace fallback a
+       mailto: para que igual se pueda enviar. */
+    function shareByEmail(res) {
+        var b = brandById(res.brand) || {};
+        var t = TYPES[res.type] || {};
+        var asunto = '[' + b.name + '] ' + res.title;
+        var lineas = [
+            'Hola,',
+            '',
+            'Te comparto este material que preparé para ti:',
+            '',
+            '• ' + res.title + ' (' + t.name + ' · ' + t.ext + ')',
+            '  ' + res.desc,
+            '',
+            'Si necesitas más información o algún material adicional, quedo a tus órdenes.'
+        ];
+        var cuerpoTexto = lineas.join('\n');
+        var cuerpoHTML = ''
+            + '<p>Hola,</p>'
+            + '<p>Te comparto este material que preparé para ti:</p>'
+            + '<div style="border-left:3px solid ' + b.color + ';padding:10px 14px;margin:14px 0;background:#F8FAFC;">'
+            +   '<p style="margin:0;font-weight:600;color:' + b.color + ';">' + esc(res.title) + '</p>'
+            +   '<p style="margin:4px 0 0;font-size:13px;color:#64748B;">' + esc(t.name) + ' · ' + esc(t.ext) + (res.size !== '—' ? ' · ' + esc(res.size) : '') + '</p>'
+            +   '<p style="margin:8px 0 0;font-size:13px;color:#334155;">' + esc(res.desc) + '</p>'
             + '</div>'
-            + '<div class="mkthub-email-body">'
-            +   '<div>'
-            +     '<p class="mkthub-field-label">Para</p>'
-            +     '<input type="email" class="mkthub-input" id="mkthubEmailTo" placeholder="correo@cliente.com" autocomplete="email">'
-            +   '</div>'
-            +   '<div>'
-            +     '<p class="mkthub-field-label">Mensaje</p>'
-            +     '<textarea class="mkthub-textarea" id="mkthubEmailMsg" rows="5">' + esc(defaultMsg) + '</textarea>'
-            +   '</div>'
-            +   '<div class="mkthub-email-actions">'
-            +     '<button type="button" class="mkthub-btn" data-close>Cancelar</button>'
-            +     '<button type="button" class="mkthub-btn mkthub-btn--primary" id="mkthubEmailSend">'
-            +       '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M12.5 1.5l-5.5 11-1.5-5-5-1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'
-            +       ' Enviar'
-            +     '</button>'
-            +   '</div>'
-            + '</div>';
-        overlay.classList.add('is-open');
-        setTimeout(function () {
-            var to = document.getElementById('mkthubEmailTo');
-            if (to) to.focus();
-        }, 50);
-    }
-    function closeEmail() {
-        document.getElementById('mkthubEmailOverlay').classList.remove('is-open');
-    }
-    function showEmailSuccess(toAddr) {
-        var modal = document.getElementById('mkthubEmailModal');
-        modal.innerHTML = ''
-            + '<div class="mkthub-email-success">'
-            +   '<div class="mkthub-email-success-icon"><svg width="22" height="22" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
-            +   '<p class="mkthub-email-success-title">¡Kit enviado!</p>'
-            +   '<p class="mkthub-email-success-sub"><strong style="color:#1A1A1A;">' + state.kit.length + '</strong> materiales enviados a <strong style="color:#1A1A1A;">' + esc(toAddr) + '</strong></p>'
-            +   '<button type="button" class="mkthub-btn mkthub-btn--primary" data-close style="max-width:180px;margin:0 auto;">Listo</button>'
-            + '</div>';
-        // Vaciar el kit después de enviar (es lo natural en este flujo)
-        state.kit = [];
-        renderKit();
-        if (isSearching()) renderGrid();
+            + '<p>Si necesitas más información o algún material adicional, quedo a tus órdenes.</p>';
+
+        // Intentar usar el módulo de correo del CRM
+        if (typeof window.mailAbrir === 'function' && typeof window.mailRedactar === 'function') {
+            window.mailAbrir();
+            // Esperar a que el widget de correo termine de montar antes de
+            // intentar prellenar (mailAbrir hace fetch async de conexiones).
+            setTimeout(function () {
+                window.mailRedactar();
+                setTimeout(function () {
+                    var asuntoEl = document.getElementById('mailCompAsunto');
+                    var editorEl = document.getElementById('mailCompEditor');
+                    if (asuntoEl) asuntoEl.value = asunto;
+                    if (editorEl) editorEl.innerHTML = cuerpoHTML;
+                }, 80);
+            }, 250);
+            return;
+        }
+        // Fallback: mailto:
+        var mailto = 'mailto:?subject=' + encodeURIComponent(asunto)
+            + '&body=' + encodeURIComponent(cuerpoTexto);
+        window.location.href = mailto;
     }
 
     /* ─── Estado global de UI (idle vs searching) ─── */
@@ -1472,14 +1199,14 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
                 updateMode();
                 return;
             }
-            // Resource card → preview o kit toggle
+            // Resource card → preview o share
             var resCard = e.target.closest('.mkthub-card');
             if (resCard) {
                 var resId = parseInt(resCard.getAttribute('data-res-id'), 10);
                 var res = RESOURCES.find(function (r) { return r.id === resId; });
                 if (!res) return;
-                if (e.target.closest('[data-action="kit-toggle"]')) {
-                    toggleKit(res);
+                if (e.target.closest('[data-action="share"]')) {
+                    shareByEmail(res);
                 } else if (e.target.closest('[data-action="preview"]')) {
                     openPreview(res);
                 }
@@ -1511,57 +1238,20 @@ pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne)
             }
         });
 
-        // Kit tray events (delegación global porque está fuera del root)
-        document.getElementById('mkthubKitTray').addEventListener('click', function (e) {
-            var rm = e.target.closest('[data-kit-remove]');
-            if (rm) {
-                var id = parseInt(rm.getAttribute('data-kit-remove'), 10);
-                state.kit = state.kit.filter(function (r) { return r.id !== id; });
-                renderKit();
-                if (isSearching()) renderGrid();
-                return;
-            }
-            if (e.target.closest('#mkthubKitSend')) {
-                openEmail();
-            }
-        });
-
-        // Modales
+        // Modal preview: cerrar o disparar share
         document.getElementById('mkthubPreviewOverlay').addEventListener('click', function (e) {
             if (e.target.id === 'mkthubPreviewOverlay' || e.target.closest('[data-close]')) {
                 closePreview();
                 return;
             }
-            var toggle = e.target.closest('[data-toggle-kit]');
-            if (toggle) {
-                var id = parseInt(toggle.getAttribute('data-toggle-kit'), 10);
+            var share = e.target.closest('[data-share]');
+            if (share) {
+                var id = parseInt(share.getAttribute('data-share'), 10);
                 var res = RESOURCES.find(function (r) { return r.id === id; });
-                if (res) toggleKit(res);
                 closePreview();
+                if (res) shareByEmail(res);
             }
         });
-        document.getElementById('mkthubEmailOverlay').addEventListener('click', function (e) {
-            if (e.target.id === 'mkthubEmailOverlay' || e.target.closest('[data-close]')) {
-                closeEmail();
-                return;
-            }
-            if (e.target.closest('#mkthubEmailSend')) {
-                var to = document.getElementById('mkthubEmailTo');
-                if (!to || !to.value || !to.value.includes('@')) {
-                    if (to) { to.focus(); to.style.borderColor = '#DC2626'; }
-                    return;
-                }
-                showEmailSuccess(to.value);
-            }
-        });
-    }
-
-    function toggleKit(res) {
-        var i = state.kit.findIndex(function (r) { return r.id === res.id; });
-        if (i >= 0) state.kit.splice(i, 1);
-        else state.kit.push(res);
-        renderKit();
-        renderGrid();
     }
 
     /* ─── Init ─── */
