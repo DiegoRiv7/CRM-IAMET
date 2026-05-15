@@ -2741,12 +2741,11 @@
         display: flex;
     }
 
-    /* Calendario en modo página: el overlay deja de serlo y vive en el flujo.
-       Background con gradient suave azul/violeta para que el glass del card
-       interior se note. */
+    /* Calendario en modo página: el overlay deja de serlo y vive en el flujo,
+       sin fondo propio (hereda el fondo gris claro de la página). */
     .widget-overlay.is-page-mode {
         position: static !important;
-        background: linear-gradient(135deg, #eef3ff 0%, #f0e9ff 50%, #fef0f8 100%) !important;
+        background: transparent !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         z-index: auto !important;
@@ -2754,27 +2753,6 @@
         animation: none !important;
         height: 100vh !important;
         overflow: hidden !important;
-    }
-    /* Manchas decorativas para que el glass tenga "sustrato" interesante */
-    .widget-overlay.is-page-mode::before,
-    .widget-overlay.is-page-mode::after {
-        content: '';
-        position: fixed;
-        pointer-events: none;
-        border-radius: 50%;
-        filter: blur(80px);
-        opacity: 0.45;
-        z-index: 0;
-    }
-    .widget-overlay.is-page-mode::before {
-        width: 480px; height: 480px;
-        background: radial-gradient(circle, rgba(0,82,212,0.4) 0%, rgba(0,82,212,0) 70%);
-        top: -120px; left: -120px;
-    }
-    .widget-overlay.is-page-mode::after {
-        width: 520px; height: 520px;
-        background: radial-gradient(circle, rgba(139,92,246,0.35) 0%, rgba(139,92,246,0) 70%);
-        bottom: -160px; right: -160px;
     }
     /* En page mode, la "card" externa pierde bordes y se vuelve un layout flex
        transparente; los hijos (header, subnav, body) se ven separados como en
@@ -2888,31 +2866,18 @@
         flex: 1;
         min-height: 0;
     }
+    /* El "card" del calendario en page-mode no tiene marco: el grid flota
+       libre sobre la página, sin border / radius / sombra exterior. Las
+       celdas y eventos son los protagonistas. */
     .widget-overlay.is-page-mode .cal-page-body > div:first-child {
-        background: rgba(255,255,255,0.55);
-        backdrop-filter: blur(40px) saturate(200%);
-        -webkit-backdrop-filter: blur(40px) saturate(200%);
-        border: 1px solid rgba(255,255,255,0.7);
-        border-radius: 22px;
-        box-shadow:
-            0 1px 0 rgba(255,255,255,0.8) inset,
-            0 0 0 1px rgba(15,23,42,0.02),
-            0 18px 50px -12px rgba(15,23,42,0.18),
-            0 4px 12px -4px rgba(15,23,42,0.08);
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
         overflow: hidden;
         width: 100% !important;
         flex: 1 1 100% !important;
         position: relative;
-        z-index: 1;
-    }
-    /* Highlight superior del glass */
-    .widget-overlay.is-page-mode .cal-page-body > div:first-child::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 10%; right: 10%;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
-        pointer-events: none;
     }
     /* Quita el scroll interno del FullCalendar (con dayMaxEvents:true ya no
        hace falta, el "+N más" maneja el overflow). */
