@@ -1072,53 +1072,171 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     border-color: var(--mkthub-accent);
     box-shadow: 0 0 0 3px rgba(0,82,212,0.12);
 }
-.mkthub-upload-file-wrap {
-    border: 1.5px dashed var(--mkthub-line);
-    border-radius: 10px;
-    padding: 12px;
+/* ── Drop zone prominente ──
+   Caja grande con borde dashed, icono central, botón explícito "Seleccionar
+   archivo" y soporte drag-and-drop. El input file real está superpuesto
+   (opacity 0) cubriendo toda el área para que el click en cualquier parte
+   abra el selector. Cuando se elige un archivo, .has-file alterna la UI
+   entre el estado vacío y el preview con nombre+tamaño+botón quitar. */
+.mkthub-upload-drop {
+    position: relative;
+    border: 2px dashed #CBD5E1;
+    border-radius: 14px;
     background: #FAFAFA;
-    transition: border-color 0.15s, background 0.15s;
+    padding: 26px 22px;
+    transition: border-color 0.18s ease, background 0.18s ease;
+    cursor: pointer;
+    min-height: 168px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.mkthub-upload-file-wrap:hover { border-color: var(--mkthub-accent); background: rgba(0,82,212,0.03); }
-.mkthub-upload-file-wrap.has-file { border-style: solid; border-color: var(--mkthub-accent); background: rgba(0,82,212,0.04); }
-.mkthub-upload-file-input { display: block; width: 100%; font-size: 0.78rem; color: var(--mkthub-soft); font-family: inherit; }
-.mkthub-upload-file-input::file-selector-button {
-    margin-right: 10px;
-    padding: 6px 12px;
-    border: 1px solid var(--mkthub-line);
-    border-radius: 8px;
-    background: #FFFFFF;
+.mkthub-upload-drop:hover {
+    border-color: var(--mkthub-accent);
+    background: rgba(0,82,212,0.03);
+}
+.mkthub-upload-drop.is-dragging {
+    border-color: var(--mkthub-accent);
+    border-style: solid;
+    background: rgba(0,82,212,0.08);
+}
+.mkthub-upload-drop-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.mkthub-upload-drop.has-file .mkthub-upload-drop-input {
+    /* Cuando ya hay archivo, deshabilitamos el clic global del input para
+       no re-abrir el selector al hacer click en el preview. El botón X y
+       el botón "Cambiar archivo" tienen sus propios handlers. */
+    pointer-events: none;
+}
+.mkthub-upload-drop-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    pointer-events: none; /* clicks van al input file de abajo */
+}
+.mkthub-upload-drop.has-file .mkthub-upload-drop-empty { display: none; }
+.mkthub-upload-drop-icon {
+    color: #94A3B8;
+    margin-bottom: 2px;
+}
+.mkthub-upload-drop-title {
+    font-size: 0.94rem;
+    font-weight: 600;
     color: var(--mkthub-ink);
-    font-family: inherit;
-    font-size: 0.78rem;
+    letter-spacing: -0.005em;
+}
+.mkthub-upload-drop-or {
+    font-size: 0.74rem;
+    color: var(--mkthub-mute);
+    margin: 2px 0;
+}
+.mkthub-upload-drop-btn {
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
+    padding: 7px 16px;
+    border: 1px solid var(--mkthub-accent);
+    background: #FFFFFF;
+    color: var(--mkthub-accent);
+    border-radius: 9px;
+    font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    font-family: inherit;
+    transition: all 0.16s ease;
 }
-.mkthub-upload-file-input::file-selector-button:hover {
+.mkthub-upload-drop-btn:hover {
     background: var(--mkthub-accent);
-    border-color: var(--mkthub-accent);
     color: #FFFFFF;
 }
-.mkthub-upload-divider {
-    text-align: center;
-    font-size: 0.72rem;
+.mkthub-upload-drop-types {
+    font-size: 0.7rem;
     color: var(--mkthub-mute);
-    font-weight: 500;
-    margin: 8px 0;
+    margin-top: 6px;
+    letter-spacing: 0.02em;
+}
+
+/* Preview de archivo seleccionado */
+.mkthub-upload-drop-file {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 4px 6px;
+}
+.mkthub-upload-drop.has-file .mkthub-upload-drop-file {
+    display: flex;
+}
+.mkthub-upload-file-ic {
+    width: 46px;
+    height: 46px;
+    border-radius: 11px;
+    background: rgba(0,82,212,0.1);
+    color: var(--mkthub-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.mkthub-upload-file-info {
+    flex: 1;
+    min-width: 0;
+}
+.mkthub-upload-file-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--mkthub-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mkthub-upload-file-size {
+    font-size: 0.74rem;
+    color: var(--mkthub-mute);
+    margin-top: 2px;
+}
+.mkthub-upload-file-clear {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(20,20,18,0.06);
+    border: none;
+    color: var(--mkthub-soft);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    pointer-events: auto;
     position: relative;
+    z-index: 2;
+    transition: all 0.15s;
 }
-.mkthub-upload-divider::before,
-.mkthub-upload-divider::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: calc(50% - 22px);
-    height: 1px;
-    background: var(--mkthub-line);
+.mkthub-upload-file-clear:hover {
+    background: #FEE2E2;
+    color: #B91C1C;
 }
-.mkthub-upload-divider::before { left: 0; }
-.mkthub-upload-divider::after { right: 0; }
+
+/* Link "Pega una URL externa" en el hint del archivo */
+.mkthub-upload-link {
+    color: var(--mkthub-accent);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+}
+.mkthub-upload-link:hover { border-bottom-color: var(--mkthub-accent); }
 .mkthub-upload-error {
     margin-top: 4px;
     padding: 8px 12px;
@@ -1276,6 +1394,48 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             </button>
         </div>
         <form class="mkthub-upload-body" id="mkthubUploadForm" autocomplete="off" novalidate>
+            {# Archivo primero (lo más importante) — drop zone prominente con drag&drop. #}
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label">Archivo <span class="req">*</span></label>
+                <div class="mkthub-upload-drop" id="mkthubUpDrop">
+                    <input type="file" id="mkthubUpArchivo" name="archivo"
+                        class="mkthub-upload-drop-input"
+                        accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.mp4,.mov,.webm,.m4v,.ppt,.pptx,.html,.htm,application/pdf,image/*,video/*,text/html">
+                    <div class="mkthub-upload-drop-empty" id="mkthubUpDropEmpty">
+                        <div class="mkthub-upload-drop-icon">
+                            <svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="mkthub-upload-drop-title">Arrastra el archivo aquí</div>
+                        <div class="mkthub-upload-drop-or">o</div>
+                        <button type="button" class="mkthub-upload-drop-btn" id="mkthubUpDropBtn">Seleccionar archivo</button>
+                        <div class="mkthub-upload-drop-types">PDF · PNG · JPG · MP4 · PPT/PPTX · HTML</div>
+                    </div>
+                    <div class="mkthub-upload-drop-file" id="mkthubUpDropFile">
+                        <div class="mkthub-upload-file-ic" id="mkthubUpFileIc">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <div class="mkthub-upload-file-info">
+                            <div class="mkthub-upload-file-name" id="mkthubUpFileName">—</div>
+                            <div class="mkthub-upload-file-size" id="mkthubUpFileSize">—</div>
+                        </div>
+                        <button type="button" class="mkthub-upload-file-clear" id="mkthubUpFileClear" title="Quitar archivo" aria-label="Quitar archivo">&times;</button>
+                    </div>
+                </div>
+                <p class="mkthub-upload-hint">¿No tienes el archivo? <a href="#" id="mkthubUpUrlToggle" class="mkthub-upload-link">Pega una URL externa</a> (landing page, video, Drive, etc.).</p>
+            </div>
+
+            {# URL externa: oculta por default. Se muestra al hacer click en el link de arriba. #}
+            <div class="mkthub-upload-field" id="mkthubUpUrlWrap" style="display:none;">
+                <label class="mkthub-upload-label" for="mkthubUpUrl">URL externa</label>
+                <input class="mkthub-upload-input" id="mkthubUpUrl" name="url" type="url" placeholder="https://...">
+                <p class="mkthub-upload-hint">Para landing pages, videos en YouTube, documentos en Drive, etc.</p>
+            </div>
+
+            {# Metadatos del material. #}
             <div class="mkthub-upload-field-row">
                 <div class="mkthub-upload-field">
                     <label class="mkthub-upload-label" for="mkthubUpBrand">Marca <span class="req">*</span></label>
@@ -1298,20 +1458,6 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                 <label class="mkthub-upload-label" for="mkthubUpTags">Tags</label>
                 <input class="mkthub-upload-input" id="mkthubUpTags" name="tags" type="text" placeholder="Ej. retail, impresoras, ZD421">
                 <p class="mkthub-upload-hint">Separa los tags con comas. Opcional.</p>
-            </div>
-            <div class="mkthub-upload-field">
-                <label class="mkthub-upload-label" for="mkthubUpArchivo">Archivo</label>
-                <div class="mkthub-upload-file-wrap" id="mkthubUpFileWrap">
-                    <input class="mkthub-upload-file-input" id="mkthubUpArchivo" name="archivo" type="file"
-                        accept="application/pdf,image/*,video/*,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
-                </div>
-                <p class="mkthub-upload-hint">PDF, imágenes, videos o presentaciones (PPT/PPTX).</p>
-            </div>
-            <div class="mkthub-upload-divider">o</div>
-            <div class="mkthub-upload-field">
-                <label class="mkthub-upload-label" for="mkthubUpUrl">URL externa</label>
-                <input class="mkthub-upload-input" id="mkthubUpUrl" name="url" type="url" placeholder="https://...">
-                <p class="mkthub-upload-hint">Pega una URL externa (landing page, video, etc.). Requerido si no subes archivo.</p>
             </div>
             <div class="mkthub-upload-error" id="mkthubUpError" role="alert"></div>
         </form>
@@ -2041,12 +2187,107 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         if (form) form.reset();
         var err = document.getElementById('mkthubUpError');
         if (err) { err.classList.remove('is-visible'); err.textContent = ''; }
-        var wrap = document.getElementById('mkthubUpFileWrap');
-        if (wrap) wrap.classList.remove('has-file');
+        var drop = document.getElementById('mkthubUpDrop');
+        if (drop) drop.classList.remove('has-file', 'is-dragging');
+        var urlWrap = document.getElementById('mkthubUpUrlWrap');
+        if (urlWrap) urlWrap.style.display = 'none';
         var submit = document.getElementById('mkthubUpSubmit');
         if (submit) {
             submit.disabled = false;
             submit.classList.remove('is-loading');
+        }
+    }
+
+    /* ─── Drop zone — drag&drop, click-to-select, preview de archivo ─── */
+    function formatFileSize(bytes) {
+        if (!bytes && bytes !== 0) return '—';
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var i = 0; var n = bytes;
+        while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+        return n.toFixed(n < 10 && i > 0 ? 1 : 0) + ' ' + units[i];
+    }
+
+    function setupUploadDropZone() {
+        var drop = document.getElementById('mkthubUpDrop');
+        var input = document.getElementById('mkthubUpArchivo');
+        var btn = document.getElementById('mkthubUpDropBtn');
+        var clearBtn = document.getElementById('mkthubUpFileClear');
+        var nameEl = document.getElementById('mkthubUpFileName');
+        var sizeEl = document.getElementById('mkthubUpFileSize');
+        if (!drop || !input) return;
+
+        function showFile(file) {
+            if (!file) return;
+            nameEl.textContent = file.name;
+            sizeEl.textContent = formatFileSize(file.size);
+            drop.classList.add('has-file');
+            // Si había URL externa visible, ocultarla — el archivo gana.
+            var urlWrap = document.getElementById('mkthubUpUrlWrap');
+            var urlEl = document.getElementById('mkthubUpUrl');
+            if (urlWrap) urlWrap.style.display = 'none';
+            if (urlEl) urlEl.value = '';
+        }
+        function clearFile(e) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            input.value = '';
+            drop.classList.remove('has-file');
+        }
+
+        input.addEventListener('change', function () {
+            if (input.files && input.files[0]) showFile(input.files[0]);
+        });
+        btn.addEventListener('click', function (e) {
+            // El botón vive ENCIMA del input (z-index:2). El click dentro
+            // del area también dispara el input por bubbling — prevenimos
+            // doble-trigger.
+            e.preventDefault();
+            e.stopPropagation();
+            input.click();
+        });
+        clearBtn.addEventListener('click', clearFile);
+
+        // Drag & drop
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            drop.addEventListener(ev, function (e) {
+                e.preventDefault(); e.stopPropagation();
+                drop.classList.add('is-dragging');
+            });
+        });
+        ['dragleave', 'dragend'].forEach(function (ev) {
+            drop.addEventListener(ev, function (e) {
+                e.preventDefault(); e.stopPropagation();
+                drop.classList.remove('is-dragging');
+            });
+        });
+        drop.addEventListener('drop', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            drop.classList.remove('is-dragging');
+            var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (!file) return;
+            // Asignar el archivo dropeado al input file vía DataTransfer.
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (err) {
+                // Fallback: no soportado en algunos browsers viejos. El
+                // backend igual recibe el archivo via FormData manualmente.
+                input._droppedFile = file;
+            }
+            showFile(file);
+        });
+
+        // Link "Pega una URL externa" → muestra el campo URL
+        var urlToggle = document.getElementById('mkthubUpUrlToggle');
+        if (urlToggle) {
+            urlToggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                var urlWrap = document.getElementById('mkthubUpUrlWrap');
+                if (!urlWrap) return;
+                urlWrap.style.display = '';
+                var urlEl = document.getElementById('mkthubUpUrl');
+                if (urlEl) setTimeout(function () { urlEl.focus(); }, 30);
+            });
         }
     }
 
@@ -2069,8 +2310,11 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         var desc = (document.getElementById('mkthubUpDesc').value || '').trim();
         var tags = (document.getElementById('mkthubUpTags').value || '').trim();
         var fileEl = document.getElementById('mkthubUpArchivo');
-        var archivo = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
-        var url = (document.getElementById('mkthubUpUrl').value || '').trim();
+        var archivo = null;
+        if (fileEl && fileEl.files && fileEl.files[0]) archivo = fileEl.files[0];
+        else if (fileEl && fileEl._droppedFile) archivo = fileEl._droppedFile;
+        var urlEl = document.getElementById('mkthubUpUrl');
+        var url = urlEl ? (urlEl.value || '').trim() : '';
 
         // Validación cliente
         if (!brand) return showUploadError('Selecciona una marca.');
@@ -2313,6 +2557,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     function init() {
         renderBrands();
         populateUploadSelects();
+        setupUploadDropZone();
         bindEvents();
         // Fetch dinámico al backend (con fallback a mocks si falla).
         // Se ejecuta async — la UI inicial usa los mocks mientras llega.
