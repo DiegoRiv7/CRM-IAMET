@@ -28,8 +28,11 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     background: transparent;
     min-height: calc(100vh - 120px);
     /* Padding-top reducido para que el hero quede más pegado a la cápsula
-       de tabs superior. Padding-bottom mantiene espacio para scroll. */
-    padding: clamp(8px, 1.2vw, 18px) clamp(16px, 3vw, 48px) clamp(40px, 5vw, 80px);
+       de tabs superior. Padding lateral 0 → coincide con la .crm-bar del
+       wrapper (que tiene padding lateral 0 en page-sidebar), de modo que
+       el back btn, el wordmark de la derecha, la search bar y la grid
+       comparten exactamente los mismos límites izq/der. */
+    padding: clamp(8px, 1.2vw, 18px) 0 clamp(40px, 5vw, 80px);
     margin: 0;
     position: relative;
 }
@@ -58,7 +61,9 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     line-height: 1.5;
 }
 
-/* ── Search ── */
+/* ── Search ──
+   En idle: max-width cómodo, centrado. En modo búsqueda: 100% del root
+   (alineado con el grid y la crm-bar superior). */
 .mkthub-search-wrap {
     max-width: clamp(560px, 70vw, 820px);
     margin: 0 auto clamp(20px, 2.4vw, 36px);
@@ -68,7 +73,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 }
 .mkthub-root.is-searching .mkthub-search-wrap {
     max-width: none;
-    margin: 0 auto clamp(14px, 1.6vw, 22px);
+    margin: 0 0 clamp(14px, 1.6vw, 22px);
     animation: none;
 }
 .mkthub-search {
@@ -174,8 +179,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: clamp(14px, 1.4vw, 24px);
-    max-width: min(1480px, 96vw);
-    margin: 0 auto;
+    margin: 0;
     animation: mkthubSlideUp 0.42s 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @media (max-width: 1100px) { .mkthub-brands { grid-template-columns: repeat(3, 1fr); } }
@@ -333,8 +337,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 
 /* ── Type segmented: control sobrio tipo iOS ── */
 .mkthub-type-segmented {
-    max-width: min(1480px, 96vw);
-    margin: 0 auto clamp(20px, 2vw, 28px);
+    margin: 0 0 clamp(20px, 2vw, 28px);
     display: inline-flex;
     padding: 4px;
     background: #F3F4F6;
@@ -376,7 +379,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     color: var(--mkthub-accent);
 }
 
-.mkthub-results-count { max-width: min(1480px, 96vw); margin-left: auto; margin-right: auto; }
+.mkthub-results-count { margin: 0 0 16px; }
 
 .mkthub-results-count {
     font-size: 0.86rem;
@@ -392,8 +395,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: clamp(14px, 1.2vw, 22px);
-    max-width: min(1480px, 96vw);
-    margin: 0 auto;
+    margin: 0;
 }
 .mkthub-empty {
     text-align: center;
@@ -1199,7 +1201,8 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             + '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
             + 'Volver a marcas</button>';
 
-        // Right: wordmark de la marca (o texto de query)
+        // Right: wordmark de la marca (sin contador — el header de results
+        // ya muestra el conteo abajo del segmented).
         if (state.activeBrand !== 'all') {
             var b = brandById(state.activeBrand);
             if (b) {
@@ -1208,10 +1211,8 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                     + '--brand-weight:' + b.weight + ';'
                     + '--brand-tracking:' + b.tracking + ';'
                     + '--brand-case:' + b.case + ';';
-                var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
                 rightEl.innerHTML = '<div class="mkthub-brand-heading" style="' + bstyle + '">'
                     + '<span class="mkthub-brand-heading-mark">' + esc(b.displayName) + '</span>'
-                    + '<span class="mkthub-brand-heading-sub">' + count + ' recursos</span>'
                     + '</div>';
             } else {
                 rightEl.innerHTML = '';
