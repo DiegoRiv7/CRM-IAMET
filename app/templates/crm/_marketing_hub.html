@@ -1,14 +1,12 @@
-{# ═══════════════════════════════════════════════════════════════════════
-   MARKETING HUB — Centro de marketing por marcas
-   Permite que el vendedor busque material de venta (brochures, landings,
-   propuestas, certificaciones, videos, banners, casos de éxito) filtrado
-   por marca (Zebra, Panduit, Avigilion, Genetec, Axis, APC, Cisco) y arme
-   un "kit" para enviar por correo al cliente.
-
-   Mock data por ahora — el backend (subida + persistencia) se conecta
-   después. Inspirado en el diseño v2 (claude.ai/design) pero con animaciones
-   suavizadas y tipografía más formal (Inter en vez de Syne).
-   ═══════════════════════════════════════════════════════════════════════ #}
+{% comment %}
+MARKETING HUB — Centro de marketing por marcas. Permite que el vendedor
+busque material de venta (brochures, landings, propuestas, certificaciones,
+videos, banners, casos de éxito) filtrado por marca (Zebra, Panduit,
+Avigilion, Genetec, Axis, APC, Cisco, IAMET) y arme un "kit" para enviar
+por correo al cliente. Mock data por ahora — el backend (subida +
+persistencia) se conecta después. Inspirado en el diseño v2 (claude.ai/design)
+pero con animaciones suavizadas y tipografía más formal (Inter en vez de Syne).
+{% endcomment %}
 
 <style>
 /* ─── MARKETING HUB — Scope: .mkthub-* ────────────────────────── */
@@ -188,70 +186,148 @@
     flex-shrink: 0;
 }
 
-/* ── Brand cards (idle state) ── */
+/* ── Brand cards (idle state) ──
+   Layout 4×2 en desktop. Cards grandes con header de color + body con
+   contadores y desglose por tipo. Estética editorial (sin float, sin
+   rotation) — peso visual viene del color y la tipografía, no de la
+   animación. */
 .mkthub-brands {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 16px;
-    max-width: 920px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    max-width: 1180px;
     margin: 0 auto;
     animation: mkthubSlideUp 0.42s 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+@media (max-width: 1100px) { .mkthub-brands { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 820px)  { .mkthub-brands { grid-template-columns: repeat(2, 1fr); } }
+
 .mkthub-brand-card {
-    aspect-ratio: 1 / 1.05;
-    border-radius: 22px;
-    border: 2px solid var(--brand-color, var(--mkthub-line-strong));
-    background: var(--brand-bg, #FFFFFF);
-    box-shadow: 3px 3px 0 var(--brand-shadow, rgba(26,26,26,0.18));
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 2px solid var(--mkthub-line-strong);
+    box-shadow: 3px 3px 0 var(--brand-color);
     cursor: pointer;
+    overflow: hidden;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 10px;
-    padding: 14px;
-    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
-                box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
-                background 0.18s ease;
+    padding: 0;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
     font-family: inherit;
+    text-align: left;
+    position: relative;
+    min-height: 220px;
 }
 .mkthub-brand-card:hover {
     transform: translateY(-4px);
-    box-shadow: 5px 7px 0 var(--brand-shadow, rgba(26,26,26,0.18));
+    box-shadow: 5px 8px 0 var(--brand-color);
+}
+.mkthub-brand-card:active { transform: translateY(-2px); }
+
+.mkthub-brand-card-head {
     background: var(--brand-color);
-}
-.mkthub-brand-card:hover .mkthub-brand-letter,
-.mkthub-brand-card:hover .mkthub-brand-name,
-.mkthub-brand-card:hover .mkthub-brand-count {
     color: #FFFFFF;
+    padding: 16px 18px 14px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px;
+    position: relative;
+    min-height: 84px;
 }
-.mkthub-brand-card:hover .mkthub-brand-letter-wrap {
-    background: rgba(255,255,255,0.22);
-    border-color: rgba(255,255,255,0.4);
+/* Letra gigante decorativa de fondo (estilo editorial) */
+.mkthub-brand-card-head::before {
+    content: var(--brand-letter, '');
+    position: absolute;
+    right: 14px; bottom: -32px;
+    font-size: 7.5rem; font-weight: 900;
+    line-height: 1;
+    color: rgba(255,255,255,0.13);
+    letter-spacing: -0.04em;
+    pointer-events: none;
+    z-index: 0;
 }
-.mkthub-brand-letter-wrap {
-    width: 56px; height: 56px;
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--brand-color) 14%, transparent);
-    border: 2px solid color-mix(in srgb, var(--brand-color) 28%, transparent);
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.18s ease;
-}
-.mkthub-brand-letter {
-    font-size: 1.5rem; font-weight: 800;
-    color: var(--brand-color);
-    transition: color 0.18s ease;
-}
-.mkthub-brand-name {
-    font-size: 0.86rem; font-weight: 700;
+.mkthub-brand-card-name {
+    font-size: 1rem; font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--brand-color);
-    text-align: center;
-    transition: color 0.18s ease;
+    color: #FFFFFF;
+    z-index: 1;
+    flex: 1;
+    line-height: 1.1;
 }
-.mkthub-brand-count {
-    font-size: 0.72rem; font-weight: 500;
-    color: color-mix(in srgb, var(--brand-color) 65%, transparent);
-    transition: color 0.18s ease;
+.mkthub-brand-card-badge {
+    background: rgba(255,255,255,0.22);
+    border: 1.5px solid rgba(255,255,255,0.4);
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.66rem; font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.mkthub-brand-card-body {
+    background: #FFFFFF;
+    padding: 14px 18px 16px;
+    flex: 1;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+}
+.mkthub-brand-card-stats {
+    display: flex; flex-direction: column; gap: 6px;
+}
+.mkthub-brand-card-stat {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.78rem;
+    color: var(--mkthub-soft);
+}
+.mkthub-brand-card-stat-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--stat-color, var(--brand-color));
+    flex-shrink: 0;
+}
+.mkthub-brand-card-stat-count {
+    font-weight: 700;
+    color: var(--mkthub-ink);
+    min-width: 18px;
+}
+.mkthub-brand-card-stat-name {
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mkthub-brand-card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1.5px solid var(--mkthub-line);
+}
+.mkthub-brand-card-total {
+    display: flex; align-items: baseline; gap: 6px;
+}
+.mkthub-brand-card-count {
+    font-size: 1.6rem; font-weight: 800;
+    color: var(--brand-color);
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+.mkthub-brand-card-count-label {
+    font-size: 0.72rem;
+    color: var(--mkthub-soft);
+    font-weight: 500;
+}
+.mkthub-brand-card-arrow {
+    width: 28px; height: 28px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--brand-color) 10%, transparent);
+    color: var(--brand-color);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s ease, transform 0.18s ease;
+    flex-shrink: 0;
+}
+.mkthub-brand-card:hover .mkthub-brand-card-arrow {
+    background: var(--brand-color);
+    color: #FFFFFF;
+    transform: translateX(2px);
 }
 
 /* ── Results view ── */
@@ -809,7 +885,9 @@
     if (window._mkthubLoaded) return;
     window._mkthubLoaded = true;
 
-    /* ─── DATOS DE MARCAS (sincronizadas con MARCA_CHOICES del backend) ─── */
+    /* ─── DATOS DE MARCAS (sincronizadas con MARCA_CHOICES del backend +
+        IAMET como marca propia para material institucional). El orden
+        define el layout 4×2 visible en la pantalla idle. ─── */
     var BRANDS = [
         { id: 'zebra',     name: 'Zebra',     color: '#E8610A', bg: '#FFF3EA', dark: '#B84C08' },
         { id: 'panduit',   name: 'Panduit',   color: '#1D3FAA', bg: '#EEF2FF', dark: '#162E80' },
@@ -817,7 +895,8 @@
         { id: 'genetec',   name: 'Genetec',   color: '#007A5E', bg: '#EDFAF4', dark: '#005C47' },
         { id: 'axis',      name: 'Axis',      color: '#1A8FE3', bg: '#EAF5FE', dark: '#1170B8' },
         { id: 'apc',       name: 'APC',       color: '#16A34A', bg: '#ECFDF3', dark: '#0F7D39' },
-        { id: 'cisco',     name: 'Cisco',     color: '#0EA5E9', bg: '#E8F7FE', dark: '#0876AB' }
+        { id: 'cisco',     name: 'Cisco',     color: '#0EA5E9', bg: '#E8F7FE', dark: '#0876AB' },
+        { id: 'iamet',     name: 'IAMET',     color: '#0052D4', bg: '#EEF3FF', dark: '#0041A8' }
     ];
 
     /* ─── TIPOS DE RECURSO ─── */
@@ -861,7 +940,12 @@
         { id: 25, title: 'APC UPS Smart — Brochure', brand: 'apc', type: 'brochure', size: '3.1 MB', date: 'Mar 2024', tags: ['UPS', 'respaldo'], desc: 'Catálogo de UPS Smart para data centers y empresa.' },
         { id: 26, title: 'Propuesta Energía Crítica APC', brand: 'apc', type: 'propuesta', size: '2.8 MB', date: 'Feb 2024', tags: ['energía', 'crítica'], desc: 'Plantilla de propuesta de respaldo de energía crítica.' },
         { id: 27, title: 'Cisco Meraki — Brochure Cloud Network', brand: 'cisco', type: 'brochure', size: '5.4 MB', date: 'Mar 2024', tags: ['cloud', 'meraki', 'redes'], desc: 'Networking en la nube para empresas con Meraki.' },
-        { id: 28, title: 'Cisco Webex — Presentación', brand: 'cisco', type: 'presentacion', size: '7.2 MB', date: 'Feb 2024', tags: ['colaboración', 'webex'], desc: 'Solución de colaboración corporativa Cisco Webex.' }
+        { id: 28, title: 'Cisco Webex — Presentación', brand: 'cisco', type: 'presentacion', size: '7.2 MB', date: 'Feb 2024', tags: ['colaboración', 'webex'], desc: 'Solución de colaboración corporativa Cisco Webex.' },
+        { id: 29, title: 'Brochure Corporativo IAMET', brand: 'iamet', type: 'brochure', size: '4.8 MB', date: 'Mar 2024', tags: ['institucional', 'empresa'], desc: 'Presentación corporativa de IAMET — quiénes somos, capacidades y casos.' },
+        { id: 30, title: 'Capacidades y Servicios IAMET', brand: 'iamet', type: 'presentacion', size: '9.2 MB', date: 'Feb 2024', tags: ['servicios', 'institucional'], desc: 'Deck ejecutivo con todas las capacidades técnicas y comerciales.' },
+        { id: 31, title: 'Landing — IAMET Soluciones Integrales', brand: 'iamet', type: 'landing', size: '—', date: 'Feb 2024', tags: ['landing', 'institucional'], desc: 'Landing principal de IAMET para captación de clientes empresariales.' },
+        { id: 32, title: 'Casos de Éxito IAMET 2024', brand: 'iamet', type: 'caso', size: '5.6 MB', date: 'Ene 2024', tags: ['casos', 'éxito'], desc: 'Compendio de los principales proyectos entregados en 2024.' },
+        { id: 33, title: 'Certificaciones y Alianzas IAMET', brand: 'iamet', type: 'certificacion', size: '1.4 MB', date: 'Ene 2024', tags: ['alianzas', 'partner'], desc: 'Documento con todas las certificaciones y partnerships activos.' }
     ];
 
     /* ─── Mapa semántico para búsquedas inteligentes ─── */
@@ -883,7 +967,9 @@
         'alpr': ['genetec'], 'placas': ['genetec'],
         'ups': ['apc'], 'respaldo': ['apc'], 'energía': ['apc'],
         'meraki': ['cisco'], 'webex': ['cisco'], 'colaboración': ['cisco'],
-        'cloud': ['cisco']
+        'cloud': ['cisco'],
+        'iamet': ['iamet'], 'institucional': ['iamet'], 'empresa': ['iamet'],
+        'corporativo': ['iamet'], 'capacidades': ['iamet'], 'casos de éxito': ['iamet']
     };
 
     var HINTS = [
@@ -938,16 +1024,48 @@
         return !!(state.query.trim() || state.activeBrand !== 'all');
     }
 
-    /* ─── Render: Brand cards (idle) ─── */
+    /* ─── Render: Brand cards (idle).
+       Cada card muestra: header de color con nombre + letra gigante decorativa,
+       badge con #tipos de recurso, body con desglose de los top 3 tipos y sus
+       conteos, footer con total + arrow → de navegación. */
     function renderBrands() {
         var html = BRANDS.map(function (b) {
-            var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
+            var brandRes = RESOURCES.filter(function (r) { return r.brand === b.id; });
+            var byType = {};
+            brandRes.forEach(function (r) { byType[r.type] = (byType[r.type] || 0) + 1; });
+            // Ordenar tipos por count desc y tomar los top 3
+            var typesList = Object.keys(byType)
+                .sort(function (a, b2) { return byType[b2] - byType[a]; })
+                .slice(0, 3);
+            var statsHTML = typesList.map(function (tid) {
+                var t = TYPES[tid] || {};
+                return ''
+                    + '<div class="mkthub-brand-card-stat" style="--stat-color:' + t.color + ';">'
+                    +   '<span class="mkthub-brand-card-stat-dot"></span>'
+                    +   '<span class="mkthub-brand-card-stat-count">' + byType[tid] + '</span>'
+                    +   '<span class="mkthub-brand-card-stat-name">' + esc(t.name) + '</span>'
+                    + '</div>';
+            }).join('');
+            var nTypes = Object.keys(byType).length;
             return ''
                 + '<button type="button" class="mkthub-brand-card" data-brand="' + b.id + '"'
-                +   ' style="--brand-color:' + b.color + '; --brand-bg:' + b.bg + '; --brand-shadow:' + b.dark + '66;">'
-                +   '<div class="mkthub-brand-letter-wrap"><span class="mkthub-brand-letter">' + b.name[0] + '</span></div>'
-                +   '<div class="mkthub-brand-name">' + esc(b.name) + '</div>'
-                +   '<div class="mkthub-brand-count">' + count + ' recursos</div>'
+                +   ' style="--brand-color:' + b.color + '; --brand-letter:\'' + b.name[0] + '\';">'
+                +   '<div class="mkthub-brand-card-head">'
+                +     '<div class="mkthub-brand-card-name">' + esc(b.name) + '</div>'
+                +     '<div class="mkthub-brand-card-badge">' + nTypes + ' tipos</div>'
+                +   '</div>'
+                +   '<div class="mkthub-brand-card-body">'
+                +     '<div class="mkthub-brand-card-stats">' + (statsHTML || '<div class="mkthub-brand-card-stat" style="opacity:0.5;">Sin material aún</div>') + '</div>'
+                +     '<div class="mkthub-brand-card-foot">'
+                +       '<div class="mkthub-brand-card-total">'
+                +         '<span class="mkthub-brand-card-count">' + brandRes.length + '</span>'
+                +         '<span class="mkthub-brand-card-count-label">recursos</span>'
+                +       '</div>'
+                +       '<div class="mkthub-brand-card-arrow">'
+                +         '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                +       '</div>'
+                +     '</div>'
+                +   '</div>'
                 + '</button>';
         }).join('');
         document.getElementById('mkthubBrands').innerHTML = html;
