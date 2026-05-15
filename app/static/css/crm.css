@@ -2798,30 +2798,44 @@
         display: flex !important;
         align-items: center !important;
     }
-    /* Dynamic island central (Mes/Semana/Día): el padding heredado de
-       .crm-page-sidebar .crm-tabs (4px) la hacía outer:46px mientras los demás
-       items eran 38px → desalineación vertical. Bajamos padding a 2px y
-       altura interna del .crm-tab a 32px → outer dynamic island = 36px,
-       igualando los demás items. */
-    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
-        padding: 2px !important;
-    }
-    /* Altura uniforme para todos los botones/pills de la barra. */
+    /* ── ALTURA UNIFORME 36px PARA TODOS LOS ITEMS DE LA BARRA ──
+       Filtro / Usuarios pill / Dynamic island Mes-Semana-Día / Nueva actividad
+       deben tener todos exactamente la misma altura outer (36px) y centro
+       vertical. Para garantizarlo:
+       - height + min/max-height fijos (impide que contenido expanda)
+       - padding-top/bottom: 0 explícito (impide que padding sume altura)
+       - box-sizing: border-box
+       - El centrado vertical interno lo da align-items:center del flex. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill,
-    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new,
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
         height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
         line-height: 1 !important;
         box-sizing: border-box !important;
         display: inline-flex !important;
         align-items: center !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    /* Dynamic island: padding lateral interno y altura de los tabs ajustados
+       para que outer dynamic island = 36px (igual que los demás items). */
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
+        padding-left: 3px !important;
+        padding-right: 3px !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
-        height: 32px !important;
+        height: 30px !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
         line-height: 1 !important;
         box-sizing: border-box !important;
         display: inline-flex !important;
         align-items: center !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar.crm-bar--dashboard::before {
         display: none !important;
@@ -2833,11 +2847,13 @@
         display: flex !important;
         align-items: center !important;
     }
-    /* Botones de la izquierda del calendario más pronunciados, en línea con
-       el tamaño de la dynamic island del centro. */
+    /* Botones de la izquierda (Filtro, Usuarios pill): estilo coherente con
+       la dynamic island. Padding solo horizontal — la altura la fija la regla
+       de altura uniforme de arriba (36px). */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill {
-        padding: 8px 16px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
         font-size: 0.86rem !important;
         font-weight: 600 !important;
         border-radius: 999px !important;
@@ -2850,19 +2866,22 @@
         background: #f8fafc !important;
         border-color: rgba(15,23,42,0.14) !important;
     }
-    /* Botón Nueva actividad: igualar tamaño con los pills, mismo color azul */
+    /* Botón Nueva actividad: misma altura/forma que los demás pills.
+       Sombra suave (similar a los pills laterales) para que no se vea
+       "levitando" arriba del resto. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
-        padding: 8px 16px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
         font-size: 0.86rem !important;
         font-weight: 600 !important;
         border-radius: 999px !important;
         background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.55) !important;
+        box-shadow: 0 1px 2px rgba(0,82,212,0.18) !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
-        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0,82,212,0.28) !important;
     }
     /* Mini-barra de navegación del mes (debajo del header).
        Mismo padding lateral que .cal-page-bar y wrapper del calendario. */
