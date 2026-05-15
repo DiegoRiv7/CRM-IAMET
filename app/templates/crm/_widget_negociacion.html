@@ -1,6 +1,5 @@
     <!-- ═══ WIDGET: NUEVA OPORTUNIDAD (composer style) ═══ -->
-    <div class="widget-overlay wn-overlay" id="widgetNegociacion" style="z-index:10100;"
-        onclick="if(event.target===this){this.classList.add('closing');var self=this;setTimeout(function(){self.classList.remove('active','closing');},220);}"><!-- CAPA 1 -->
+    <div class="widget-overlay wn-overlay" id="widgetNegociacion" style="z-index:10100;"><!-- CAPA 1: solo cierra con la × del header -->
         <div class="wn-card wn-composer">
 
             <form id="formNegociacion" autocomplete="off" novalidate style="display:contents;">
@@ -14,7 +13,7 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                         <span class="wn-ctw-crumb-current">Nueva oportunidad</span>
                     </div>
-                    <button type="button" class="wn-ctw-close" id="widgetClose" title="Cerrar (Esc)"
+                    <button type="button" class="wn-ctw-close" id="widgetClose" title="Cerrar"
                         onclick="var w=document.getElementById('widgetNegociacion');w.classList.add('closing');setTimeout(function(){w.classList.remove('active','closing');},220);">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>

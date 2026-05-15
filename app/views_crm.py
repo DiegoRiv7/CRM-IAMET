@@ -3028,6 +3028,7 @@ def api_cliente_kpis(request, cliente_id):
     """KPIs del cliente en el periodo seleccionado: facturado, oportunidades,
     cotizaciones y prospecciones. Se usan en la fila flotante del tab Clientes.
     """
+    from datetime import datetime
     try:
         cliente = Cliente.objects.get(id=cliente_id)
     except Cliente.DoesNotExist:
@@ -3075,20 +3076,54 @@ def api_cliente_kpis(request, cliente_id):
                     qs = qs.filter(**{f'{fecha_field}__month__in': meses_int})
         return qs
 
-    # Facturado: suma de monto de oportunidades en estado 'facturado' o por
-    # mes_facturacion. El sistema tiene FacturasIamet que es la fuente real;
-    # aquí usamos TodoItem.estado_facturacion como proxy (consistente con KPIs).
-    op_qs = _aplicar_periodo(TodoItem.objects.filter(cliente=cliente))
-    op_count = op_qs.count()
-    # Facturado: oportunidades con estado_facturacion='facturado' o 'cobrado'
-    try:
-        from django.db.models import Sum, Q as _Q
-        facturadas = op_qs.filter(_Q(estado_facturacion__in=['facturado', 'cobrado']))
-        facturado_total = facturadas.aggregate(t=Sum('monto'))['t'] or 0
-    except Exception:
-        facturado_total = 0
+    from django.db.models import Sum
+    from decimal import Decimal as _Dec
 
-    # Cotizaciones (modelo Cotizacion vinculado a cliente)
+    # ── Facturado: misma fuente que el Dashboard (ArchivoFacturacion del XLS),
+    #    mapeado por nombre como en tab_activo='facturado'. ──
+    facturado_total = _Dec('0')
+    try:
+        afs_qs = ArchivoFacturacion.objects.all()
+        if anios_list is not None:
+            afs_qs = afs_qs.filter(anio__in=anios_list)
+        if meses_list is not None:
+            afs_qs = afs_qs.filter(mes__in=[str(m).zfill(2) for m in meses_list])
+        c_upper = (cliente.nombre_empresa or '').upper().strip()
+        c_palabras = [w for w in c_upper.split() if len(w) > 2 and w not in (
+            'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO'
+        )]
+        for af in afs_qs:
+            for cname_xls, val in (af.datos_json or {}).items():
+                if cname_xls == 'datos':
+                    continue
+                try:
+                    monto = _Dec(str(val['monto'])) if isinstance(val, dict) and 'monto' in val else _Dec(str(val))
+                except Exception:
+                    continue
+                cn_upper = str(cname_xls).upper().strip()
+                # 1) Exact match
+                hit = (cn_upper == c_upper)
+                # 2) Substring match (en cualquier dirección)
+                if not hit and c_upper and (c_upper in cn_upper or cn_upper in c_upper):
+                    hit = True
+                # 3) Primeras 2 palabras significativas
+                if not hit and len(c_palabras) >= 2:
+                    if c_palabras[0] in cn_upper and c_palabras[1] in cn_upper:
+                        hit = True
+                elif not hit and len(c_palabras) == 1 and len(c_palabras[0]) >= 4:
+                    if c_palabras[0] in cn_upper:
+                        hit = True
+                if hit:
+                    facturado_total += monto
+    except Exception:
+        pass
+
+    # ── Oportunidades: monto total ($) de oportunidades del cliente en el
+    #    periodo. Igual que Dashboard: Sum(monto) de TodoItem. ──
+    op_qs = _aplicar_periodo(TodoItem.objects.filter(cliente=cliente))
+    op_monto = op_qs.aggregate(t=Sum('monto'))['t'] or _Dec('0')
+
+    # ── Cotizaciones: count de Cotizacion del cliente en el periodo. ──
     cot_count = 0
     try:
         from .models import Cotizacion
@@ -3097,11 +3132,10 @@ def api_cliente_kpis(request, cliente_id):
     except Exception:
         pass
 
-    # Prospecciones activas en el periodo
+    # ── Prospecciones: total CREADAS en el periodo (mismo criterio que el
+    #    Dashboard de Prospectos: data.total_prospectos, sin excluir cerrados). ──
     from .models import Prospecto
-    pr_qs = _aplicar_periodo(Prospecto.objects.filter(cliente=cliente)).exclude(
-        etapa__in=['cerrado_ganado', 'cerrado_perdido']
-    )
+    pr_qs = _aplicar_periodo(Prospecto.objects.filter(cliente=cliente))
     pr_count = pr_qs.count()
 
     return JsonResponse({
@@ -3109,7 +3143,7 @@ def api_cliente_kpis(request, cliente_id):
         'cliente': {'id': cliente.id, 'nombre': cliente.nombre_empresa or '—'},
         'kpis': {
             'facturado': float(facturado_total or 0),
-            'oportunidades': op_count,
+            'oportunidades': float(op_monto or 0),
             'cotizaciones': cot_count,
             'prospecciones': pr_count,
         },
@@ -3158,6 +3192,105 @@ def api_cliente_prospecciones(request, cliente_id):
             'fecha_creacion': p.fecha_creacion.strftime('%d %b %Y') if p.fecha_creacion else '',
         })
     return JsonResponse({'ok': True, 'rows': rows, 'total': len(rows)})
+
+
+@login_required
+def api_cliente_info(request, cliente_id):
+    """GET → devuelve la carátula (logo + campos editables) del cliente.
+    POST (multipart) → actualiza los campos y opcionalmente el logo.
+    """
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    CAMPOS = [
+        'ubicacion', 'mapa_url', 'dias_entrega', 'horarios_trabajo',
+        'dias_facturacion', 'proceso_cobro', 'reglas_acceso', 'info_adicional',
+    ]
+
+    if request.method == 'POST':
+        for f in CAMPOS:
+            if f in request.POST:
+                setattr(cliente, f, request.POST.get(f, '') or '')
+        if 'logo' in request.FILES:
+            cliente.logo = request.FILES['logo']
+        if request.POST.get('logo_clear') in ('1', 'true', 'on'):
+            if cliente.logo:
+                try: cliente.logo.delete(save=False)
+                except Exception: pass
+            cliente.logo = None
+        cliente.save()
+
+    data = {f: getattr(cliente, f, '') or '' for f in CAMPOS}
+    data['nombre'] = cliente.nombre_empresa or ''
+    data['rfc'] = cliente.rfc or ''
+    data['categoria'] = cliente.get_categoria_display() if cliente.categoria else ''
+    data['logo_url'] = cliente.logo.url if cliente.logo else ''
+    return JsonResponse({'ok': True, 'cliente': data})
+
+
+@login_required
+def api_cliente_contactos(request, cliente_id):
+    """GET → lista los contactos del cliente. POST → crea uno nuevo."""
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre', '') or '').strip()
+        if not nombre:
+            return JsonResponse({'ok': False, 'error': 'Nombre requerido'}, status=400)
+        c = Contacto.objects.create(
+            cliente=cliente,
+            nombre=nombre,
+            apellido=(request.POST.get('apellido', '') or '').strip(),
+            email=(request.POST.get('email', '') or '').strip(),
+            telefono=(request.POST.get('telefono', '') or '').strip(),
+            puesto=(request.POST.get('puesto', '') or '').strip(),
+        )
+        return JsonResponse({'ok': True, 'contacto': {
+            'id': c.id, 'nombre': c.nombre, 'apellido': c.apellido or '',
+            'email': c.email or '', 'telefono': c.telefono or '', 'puesto': c.puesto or '',
+        }})
+
+    rows = []
+    for c in cliente.contactos.all().order_by('nombre', 'apellido'):
+        rows.append({
+            'id': c.id,
+            'nombre': c.nombre or '',
+            'apellido': c.apellido or '',
+            'email': c.email or '',
+            'telefono': c.telefono or '',
+            'puesto': c.puesto or '',
+        })
+    return JsonResponse({'ok': True, 'contactos': rows})
+
+
+@login_required
+def api_cliente_contacto_detail(request, contacto_id):
+    """PUT/POST → actualiza un contacto. DELETE → lo elimina."""
+    try:
+        c = Contacto.objects.get(id=contacto_id)
+    except Contacto.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Contacto no encontrado'}, status=404)
+
+    if request.method == 'DELETE':
+        c.delete()
+        return JsonResponse({'ok': True})
+
+    if request.method == 'POST':
+        for f in ('nombre', 'apellido', 'email', 'telefono', 'puesto'):
+            if f in request.POST:
+                setattr(c, f, (request.POST.get(f, '') or '').strip())
+        c.save()
+        return JsonResponse({'ok': True, 'contacto': {
+            'id': c.id, 'nombre': c.nombre, 'apellido': c.apellido or '',
+            'email': c.email or '', 'telefono': c.telefono or '', 'puesto': c.puesto or '',
+        }})
+
+    return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
 
 
 @login_required

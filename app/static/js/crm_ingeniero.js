@@ -1339,6 +1339,9 @@
         fetch('/app/api/tareas/' + id + '/completar/', { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } })
             .then(function (r) { return r.json(); })
             .then(function (resp) {
+                if (resp && resp.requiere_descripcion && window.crmAvanceEtapa) {
+                    window.crmAvanceEtapa.handleCompletarResponse(resp);
+                }
                 if (resp.ok || resp.success) {
                     var row = btn.closest('div[style*="border-bottom"]');
                     if (row) {
@@ -1362,7 +1365,7 @@
     }
     window.wpdCompletarTarea = wpdCompletarTarea;
 
-    function ingenieroCompletarTarea(key, id, tipo) { if (!confirm('¿Marcar como completada?')) return; var url = tipo === 'tarea_opp' ? '/app/api/tareas-oportunidad/' + id + '/completar/' : '/app/api/tareas/' + id + '/completar/'; fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } }).then(function (r) { return r.json(); }).then(function (resp) { if (resp.ok || resp.success) { _dashAllItems = _dashAllItems.filter(function (i) { return i.key !== key; }); dashRenderTable(); dashFetchStats(); } }); }
+    function ingenieroCompletarTarea(key, id, tipo) { if (!confirm('¿Marcar como completada?')) return; var url = tipo === 'tarea_opp' ? '/app/api/tareas-oportunidad/' + id + '/completar/' : '/app/api/tareas/' + id + '/completar/'; fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } }).then(function (r) { return r.json(); }).then(function (resp) { if (resp && resp.requiere_descripcion && window.crmAvanceEtapa) { window.crmAvanceEtapa.handleCompletarResponse(resp); } if (resp.ok || resp.success) { _dashAllItems = _dashAllItems.filter(function (i) { return i.key !== key; }); dashRenderTable(); dashFetchStats(); } }); }
     window.ingenieroCompletarTarea = ingenieroCompletarTarea;
 
     document.addEventListener('DOMContentLoaded', function () { var ob = new MutationObserver(function () { if (!window.ES_INGENIERO) return; var d = document.getElementById('detalleContent'); if (d && !d.dataset.ingBound) { d.dataset.ingBound = '1'; window._ingenieroModeActive = true; } }); var ov = document.getElementById('widgetDetalle'); if (ov) ob.observe(ov, { attributes: true, attributeFilter: ['class'] }); });

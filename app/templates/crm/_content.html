@@ -1,6 +1,7 @@
 {% load app_filters %}{% load l10n %}
 <div class="widget-toast" id="widgetToast"></div> <!-- ═══ CONTENT ═══ -->
-<div class="crm-content" id="crmContentSection"{% if es_ingeniero or es_administrador %} style="display:none;"{% endif %}>
+{# Si tab=calendario, ocultamos #crmContentSection y el widget de calendario (renderizado más abajo) se vuelve la página completa. #}
+<div class="crm-content" id="crmContentSection"{% if es_ingeniero or es_administrador or tab_activo == 'calendario' %} style="display:none;"{% endif %}>
 
     {% if tab_activo == 'crm' %}
     <!-- ═══════════════════════════════════════════════════════════
@@ -1697,7 +1698,7 @@
 </div>
 
 <!-- Aplica estado inicial antes del primer paint para evitar flash -->
-<script>(function(){var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t=document.getElementById('tareasSection');if(t)t.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>
+<script>(function(){try{var u=new URL(window.location.href);if(u.searchParams.get('tab')==='calendario')return;}catch(e){}var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t=document.getElementById('tareasSection');if(t)t.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>
 
 {% if tab_activo == 'crm' %}
 <!-- ═══════════════════════════════════════════════════════════

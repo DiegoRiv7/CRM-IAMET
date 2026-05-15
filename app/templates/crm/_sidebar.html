@@ -49,7 +49,8 @@
         <div class="crm-sb-divider"></div>
 
         <!-- Tareas -->
-        <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}">
+        <button type="button" class="crm-sb-btn" id="btnTareas" data-tooltip="{% if request.user.userprofile.language == 'en' %}Tasks{% else %}Tareas{% endif %}"
+            {% if tab_activo == 'calendario' %}onclick="try{localStorage.setItem('crmView','tareas');}catch(e){};window.location.href='?'"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
             </svg>
@@ -57,7 +58,8 @@
         </button>
 
         <!-- Proyectos -->
-        <button type="button" class="crm-sb-btn" id="btnProyectos" onclick="proyectosAbrir()" data-tooltip="Proyectos">
+        <button type="button" class="crm-sb-btn" id="btnProyectos" data-tooltip="Proyectos"
+            {% if tab_activo == 'calendario' %}onclick="try{localStorage.setItem('crmView','proyectos');}catch(e){};window.location.href='?'"{% else %}onclick="proyectosAbrir()"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
@@ -67,12 +69,12 @@
         <div class="crm-sb-divider"></div>
 
         <!-- Calendario -->
-        <button type="button" class="crm-sb-btn" id="btnCalendario" onclick="calendarioAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+        <a href="?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}</span>
-        </button>
+        </a>
 
         <!-- Correo -->
         <button type="button" class="crm-sb-btn" id="btnMail" onclick="mailAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
@@ -135,8 +137,8 @@
         </button>
         {% else %}
         <!-- CRM -->
-        <button type="button" class="crm-sb-btn {% if tab_activo != 'clientes' %}active{% endif %}" id="btnCRM" data-tooltip="CRM"
-            {% if tab_activo == 'clientes' %}onclick="try{localStorage.setItem('crmView','crm');}catch(e){};window.location.href='?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}'"{% endif %}>
+        <button type="button" class="crm-sb-btn {% if tab_activo != 'clientes' and tab_activo != 'calendario' %}active{% endif %}" id="btnCRM" data-tooltip="CRM"
+            {% if tab_activo == 'clientes' or tab_activo == 'calendario' %}onclick="try{localStorage.setItem('crmView','crm');}catch(e){};window.location.href='?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}'"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/>
             </svg>
@@ -182,12 +184,12 @@
         {% endif %}
 
         <!-- Calendario -->
-        <button type="button" class="crm-sb-btn" id="btnCalendario" onclick="calendarioAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+        <a href="?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
             <span class="crm-sb-label">{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}</span>
-        </button>
+        </a>
 
         <!-- Correo -->
         <button type="button" class="crm-sb-btn" id="btnMail" onclick="mailAbrir()" data-tooltip="{% if request.user.userprofile.language == 'en' %}Mail{% else %}Correo{% endif %}">
@@ -259,6 +261,12 @@
 
 <script>
 (function(){
+    // Si la URL define tab=calendario, ignoramos el crmView persistido: la
+    // página activa la marca el server-render (btnCalendario).
+    try {
+        var _u = new URL(window.location.href);
+        if (_u.searchParams.get('tab') === 'calendario') return;
+    } catch(e) { /* defensivo */ }
     var v = localStorage.getItem('crmView');
     if (v === 'tareas' || v === 'proyectos') {
         var c = document.getElementById('btnCRM'); if (c) c.classList.remove('active');

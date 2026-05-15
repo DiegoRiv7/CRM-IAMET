@@ -1017,6 +1017,640 @@
     .wco-prosp-etapa--cerrado_perdido { background: #FEE2E2; color: #991B1B; }
     .wco-prosp-etapa--en_progreso, .wco-prosp-etapa--procesado { background: #FEF3C7; color: #92400E; }
 
+    /* ── Tab "Información" (carátula del cliente) ── */
+    .wco-info-panel {
+        padding: 18px 28px 40px;
+        overflow-y: auto;
+        overflow-x: hidden;   /* el scroll horizontal vive en el track de contactos, no aquí */
+        max-height: calc(100% - 80px);
+        position: relative;
+    }
+    .wco-info-grid { min-width: 0; }
+    .wco-info-right { min-width: 0; }
+    .wci-contactos { min-width: 0; }
+
+    /* ── EDICIÓN FIELD-BY-FIELD: cada bloque entra en edición de forma independiente.
+       Cuando alguno está en .is-editing, el panel recibe .has-editing y muestra
+       la savebar de Guardar/Cancelar al fondo. ── */
+
+    /* Hover sugiere editabilidad sólo en los bloques que NO están en edición */
+    .wco-info-card:not(.is-editing),
+    .wco-info-id-field:not(.is-editing),
+    .wco-info-id-photo:not(.is-editing) {
+        cursor: text;
+        transition: background 0.15s ease;
+    }
+    .wco-info-card:not(.is-editing):hover { background: #fafbff; }
+    .wco-info-id-field:not(.is-editing):hover { background: rgba(0,82,212,0.02); border-radius: 6px; }
+
+    /* Inputs/textareas: no interactivos hasta que su field esté en edición */
+    .wco-info-card:not(.is-editing) .wco-info-input,
+    .wco-info-id-field:not(.is-editing) .wco-info-id-input {
+        pointer-events: none;
+        background: transparent !important;
+        color: #1D1D1F;
+    }
+    .wco-info-card:not(.is-editing) .wco-info-input:placeholder-shown,
+    .wco-info-id-field:not(.is-editing) .wco-info-id-input:placeholder-shown {
+        color: #cbd5e1;
+    }
+
+    /* Day picker: en lectura ocultamos TODO el track de pills — la frase del
+       resumen (wci-range-read) ya describe los días seleccionados. */
+    .wco-info-id-field:not(.is-editing) .wci-days {
+        display: none;
+    }
+    /* Chips no usados actualmente, pero por si quedan: */
+    .wco-info-id-field:not(.is-editing) .wci-fact-chip:not(.is-on) {
+        display: none;
+    }
+    .wco-info-id-field:not(.is-editing) .wci-fact-chip.is-on {
+        pointer-events: none;
+    }
+
+    /* Time range: oculto en lectura, visible en edición; el read-text es lo contrario */
+    .wco-info-id-field:not(.is-editing) .wci-range { display: none; }
+    .wco-info-id-field.is-editing .wci-range-read { display: none; }
+
+    /* Foto del logo: cta visible sólo cuando esa caja está en edición */
+    .wco-info-id-photo:not(.is-editing) .wco-info-logo-cta { display: none !important; }
+    .wco-info-id-photo { border-style: solid; border-color: rgba(15,23,42,0.06); cursor: pointer; }
+
+    /* Indicador visual del field en edición */
+    .wco-info-card.is-editing {
+        background: #ffffff;
+        border-color: rgba(0,82,212,0.30);
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    .wco-info-id-field.is-editing {
+        background: rgba(0,82,212,0.03);
+        border-radius: 8px;
+        outline: 2px solid rgba(0,82,212,0.12);
+        outline-offset: 4px;
+    }
+
+    /* Field "Link a Google Maps": click sobre el link abre la url, no edita.
+       Edición se activa con el mini lápiz al lado del label. */
+    .wco-info-id-lblrow {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 6px;
+    }
+    .wci-id-edit-btn {
+        width: 22px; height: 22px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: #ffffff;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .wci-id-edit-btn:hover { color: #0052D4; border-color: #0052D4; background: #EEF3FF; }
+    .wco-info-id-field.is-editing .wci-id-edit-btn { display: none; }
+
+    .wci-id-link {
+        display: inline-block;
+        font-size: 13px;
+        color: #0052D4;
+        font-weight: 500;
+        text-decoration: none;
+        word-break: break-all;
+        padding: 4px 0 2px;
+        line-height: 1.4;
+    }
+    .wci-id-link:hover { text-decoration: underline; }
+    .wci-id-link-empty {
+        font-size: 13px;
+        color: #cbd5e1;
+        font-weight: 400;
+        padding: 4px 0 2px;
+        display: inline-block;
+    }
+
+    /* Modo lectura: ocultar input, mostrar link/empty */
+    .wci-id-field--link:not(.is-editing) #wciMapaUrl { display: none; }
+    /* Modo edición: ocultar link, mostrar input */
+    .wci-id-field--link.is-editing .wci-id-link,
+    .wci-id-field--link.is-editing .wci-id-link-empty { display: none !important; }
+
+    .wci-range-read {
+        font-size: 14px;
+        color: #1D1D1F;
+        font-weight: 500;
+        margin-top: 6px;
+        padding: 4px 0;
+        letter-spacing: 0.01em;
+    }
+    .wci-range-read:empty::before {
+        content: '—';
+        color: #cbd5e1;
+        font-weight: 400;
+    }
+
+    /* ── Save/Cancel: botones flotantes (sólo visibles en modo edición) ── */
+    .wco-info-savebar {
+        position: sticky; bottom: 16px;
+        margin: 16px 0 0;
+        display: none;
+        align-items: center; gap: 10px;
+        justify-content: flex-end;
+        pointer-events: none;  /* deja pasar clicks fuera de los botones */
+        z-index: 5;
+    }
+    .wco-info-panel.has-editing .wco-info-savebar { display: flex; }
+    .wco-info-savebar .wco-info-saved {
+        display: none;  /* eliminamos el texto "estás editando..." que pedía el user */
+    }
+    .wco-info-btn-cancel,
+    .wco-info-savebar .wco-info-btn {
+        pointer-events: auto;
+    }
+    .wco-info-btn-cancel {
+        padding: 10px 18px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px) saturate(160%);
+        color: #475569;
+        border-radius: 999px;
+        font-weight: 600; font-size: 13px;
+        cursor: pointer;
+        font-family: inherit;
+        box-shadow: 0 8px 20px -8px rgba(15,23,42,0.25);
+        transition: all 0.16s ease;
+    }
+    .wco-info-btn-cancel:hover { background: #ffffff; color: #0f172a; transform: translateY(-1px); }
+    .wco-info-savebar .wco-info-btn {
+        padding: 10px 22px;
+        border-radius: 999px;
+        box-shadow: 0 10px 24px -8px rgba(0,82,212,0.55);
+    }
+    .wco-info-grid {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 24px;
+        align-items: stretch;
+    }
+
+    /* ── Credencial del cliente (columna izquierda) ── */
+    .wco-info-id {
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 18px;
+        padding: 22px 22px 18px;
+        box-shadow: 0 10px 30px -22px rgba(15,23,42,0.22), 0 2px 6px -3px rgba(15,23,42,0.05);
+    }
+    .wco-info-id-photo {
+        width: 100%; aspect-ratio: 1 / 1;
+        max-width: 240px; margin: 0 auto 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px dashed rgba(15,23,42,0.12);
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .wco-info-id-photo img {
+        width: 100%; height: 100%; object-fit: contain; padding: 10px;
+    }
+    .wco-info-logo-empty {
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        font-size: 11px; color: #94a3b8;
+        text-align: center;
+    }
+    .wco-info-logo-cta {
+        position: absolute; bottom: 8px; left: 8px; right: 8px;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 7px 10px;
+        border-radius: 10px;
+        background: rgba(15,23,42,0.86);
+        color: #fff;
+        font-size: 11px; font-weight: 600;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.18s ease;
+    }
+    .wco-info-id-photo:hover .wco-info-logo-cta { opacity: 1; }
+    .wco-info-id-name {
+        font-size: 17px; font-weight: 700; color: #1D1D1F;
+        letter-spacing: -0.01em; text-align: center;
+        word-break: break-word;
+    }
+    .wco-info-id-rfc {
+        display: block;
+        font-size: 11.5px; color: #86868B;
+        text-align: center; margin-top: 3px;
+        font-weight: 500; letter-spacing: 0.02em;
+        width: 100%;
+    }
+    .wco-info-id-rfc span { display: inline-block; }
+    .wco-info-id-divider {
+        height: 1px;
+        background: rgba(15,23,42,0.06);
+        margin: 16px 0 14px;
+    }
+    .wco-info-id-field {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(15,23,42,0.05);
+    }
+    .wco-info-id-field:last-child { border-bottom: none; }
+    .wco-info-id-lbl {
+        display: flex; align-items: center; gap: 5px;
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: #86868B;
+    }
+    .wco-info-id-lbl svg { color: #0052D4; }
+    .wco-info-id-input {
+        width: 100%;
+        padding: 4px 0 2px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        color: #1D1D1F;
+        font-family: inherit;
+        resize: vertical;
+        line-height: 1.45;
+    }
+    .wco-info-id-input::placeholder { color: #b6bfcc; font-weight: 400; }
+    .wco-info-id-input:focus { outline: none; }
+
+    /* ── Day picker (L M M J V S D) ── */
+    .wci-days {
+        display: flex; gap: 4px;
+        margin-top: 6px;
+    }
+    .wci-day {
+        flex: 1; height: 28px;
+        border: 1px solid rgba(15,23,42,0.12);
+        background: #ffffff;
+        border-radius: 50%;
+        font-size: 12px; font-weight: 700;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.16s ease;
+        font-family: inherit;
+        line-height: 1;
+        aspect-ratio: 1 / 1;
+    }
+    .wci-day:hover { border-color: #0052D4; color: #0052D4; }
+    .wci-day.is-on {
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        border-color: transparent;
+        color: #ffffff;
+        box-shadow: 0 4px 10px -4px rgba(0,82,212,0.6);
+    }
+
+    /* ── Time range (desde – hasta) ── */
+    .wci-range {
+        display: flex; align-items: center; gap: 8px;
+        margin-top: 8px;
+    }
+    .wci-time {
+        flex: 1;
+        padding: 6px 10px;
+        border: 1px solid rgba(15,23,42,0.12);
+        background: #ffffff;
+        border-radius: 8px;
+        font-size: 12.5px;
+        color: #1D1D1F;
+        font-family: inherit;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .wci-time:focus {
+        outline: none;
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    .wci-range-sep { color: #86868B; font-weight: 600; font-size: 12px; }
+
+    /* ── Días de facturación: rango "del X al Y de cada mes" ── */
+    .wci-fact-range {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+        margin-top: 8px;
+        font-size: 13px; color: #475569;
+    }
+    .wci-fact-prefix, .wci-fact-sep, .wci-fact-suffix {
+        font-weight: 500;
+    }
+    .wci-fact-num {
+        width: 54px;
+        padding: 6px 8px;
+        border: 1px solid rgba(15,23,42,0.12);
+        background: #ffffff;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #1D1D1F;
+        font-family: inherit;
+        text-align: center;
+        font-weight: 600;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .wci-fact-num:focus {
+        outline: none;
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    /* Spinner numérico discreto */
+    .wci-fact-num::-webkit-outer-spin-button,
+    .wci-fact-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .wci-fact-num { -moz-appearance: textfield; }
+
+    /* Lectura: resumen legible "Del 5 al 25 de cada mes" */
+    .wci-fact-read {
+        font-size: 14px;
+        color: #1D1D1F;
+        font-weight: 500;
+        margin-top: 6px;
+        padding: 4px 0;
+    }
+    .wci-fact-read:empty::before {
+        content: '—';
+        color: #cbd5e1;
+        font-weight: 400;
+    }
+    /* En lectura: ocultar inputs, mostrar texto resumido */
+    .wco-info-id-field:not(.is-editing) .wci-fact-range { display: none; }
+    .wco-info-id-field.is-editing .wci-fact-read { display: none; }
+
+    /* ── Columna derecha: contactos + campos operativos ── */
+    .wco-info-right {
+        display: flex; flex-direction: column; gap: 16px;
+        min-height: 0;
+    }
+    .wco-info-right > .wco-info-card {
+        flex: 1 1 0;   /* las 3 cards operativas reparten el alto restante */
+        min-height: 130px;
+    }
+    .wco-info-right > .wco-info-card .wco-info-input {
+        flex: 1 1 auto;
+        min-height: 100px;
+    }
+    .wco-info-right > .wco-info-card .wco-info-card-body {
+        flex: 1 1 auto;
+        display: flex; flex-direction: column;
+    }
+    .wco-info-fields {
+        display: flex; flex-direction: column; gap: 14px;
+    }
+    .wco-info-row-2 {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+
+    /* ── Tablero de contactos ── */
+    .wci-contactos {
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 16px;
+        padding: 14px 16px 16px;
+        box-shadow: 0 4px 14px -10px rgba(15,23,42,0.18);
+    }
+    .wci-contactos-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .wci-contactos-title {
+        display: flex; align-items: center; gap: 8px;
+        color: #1D1D1F; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .wci-contactos-title svg { color: #0052D4; }
+    .wci-contactos-count {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 22px; height: 20px;
+        padding: 0 6px; border-radius: 999px;
+        background: #EEF3FF; color: #0052D4;
+        font-size: 11px; font-weight: 700;
+    }
+    .wci-contactos-add {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 6px 12px;
+        border: 1px solid rgba(0,82,212,0.18);
+        background: #EEF3FF;
+        color: #0052D4;
+        border-radius: 9px;
+        font-size: 12px; font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.16s ease;
+    }
+    .wci-contactos-add:hover { background: #DDE7FF; }
+    .wci-contactos-track {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 300px;
+        grid-template-rows: repeat(2, auto);
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        padding-bottom: 6px;
+        /* Aísla el scroll horizontal a este contenedor */
+        overscroll-behavior-x: contain;
+    }
+    .wci-contactos-track.is-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 110px;
+    }
+    .wci-contactos-track::-webkit-scrollbar { height: 6px; }
+    .wci-contactos-track::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.18); border-radius: 999px; }
+    .wci-contacto-card {
+        background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex; flex-direction: column; gap: 4px;
+        position: relative;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        min-width: 0;
+    }
+    .wci-contacto-card:hover {
+        border-color: rgba(0,82,212,0.20);
+        box-shadow: 0 8px 18px -10px rgba(0,82,212,0.20);
+    }
+    .wci-contacto-name {
+        font-size: 13.5px; font-weight: 700; color: #1D1D1F;
+        letter-spacing: -0.005em;
+    }
+    .wci-contacto-puesto {
+        font-size: 11px; color: #0052D4; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .wci-contacto-meta {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 12px; color: #475569;
+        word-break: break-all;
+    }
+    .wci-contacto-meta svg { color: #94a3b8; flex-shrink: 0; }
+    .wci-contacto-actions {
+        display: flex; gap: 4px;
+        position: absolute; top: 8px; right: 8px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+    .wci-contacto-card:hover .wci-contacto-actions { opacity: 1; }
+    .wci-contacto-act {
+        width: 24px; height: 24px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: #ffffff;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: #64748b; cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .wci-contacto-act:hover { color: #0052D4; border-color: #0052D4; }
+    .wci-contacto-act.is-del:hover { color: #DC2626; border-color: #FCA5A5; background: #FEE2E2; }
+    .wci-contactos-empty {
+        color: #94a3b8;
+        font-size: 13px;
+        font-style: italic;
+        padding: 28px 16px;
+        text-align: center;
+        width: 100%;
+    }
+
+    /* ── Modal de contacto ── */
+    .wci-cont-card {
+        width: min(520px, 92vw);
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 30px 80px -10px rgba(15,23,42,0.4);
+        overflow: hidden;
+        font-family: inherit;
+    }
+    .wci-cont-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(15,23,42,0.06);
+    }
+    .wci-cont-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1D1D1F; }
+    .wci-cont-close {
+        background: none; border: none;
+        font-size: 22px; color: #94a3b8; cursor: pointer;
+        line-height: 1;
+    }
+    .wci-cont-body { padding: 20px 22px; }
+    .wci-cont-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .wci-cont-field { display: flex; flex-direction: column; gap: 5px; }
+    .wci-cont-field label {
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: #64748b;
+    }
+    .wci-cont-field input {
+        padding: 9px 12px;
+        border: 1px solid rgba(15,23,42,0.10);
+        border-radius: 9px;
+        font-size: 13.5px; color: #1D1D1F;
+        font-family: inherit;
+        transition: all 0.15s ease;
+    }
+    .wci-cont-field input:focus {
+        outline: none;
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+    .wci-cont-foot {
+        display: flex; gap: 10px; justify-content: flex-end;
+        padding: 14px 22px;
+        background: #fafbff;
+        border-top: 1px solid rgba(15,23,42,0.05);
+    }
+    .wci-cont-btn-cancel,
+    .wci-cont-btn-save {
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.16s ease;
+    }
+    .wci-cont-btn-cancel {
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #ffffff; color: #475569;
+    }
+    .wci-cont-btn-cancel:hover { background: #f1f5f9; }
+    .wci-cont-btn-save {
+        border: none;
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        color: #fff;
+        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.6);
+    }
+    .wci-cont-btn-save:hover { transform: translateY(-1px); }
+
+    .wco-info-card {
+        display: flex; align-items: flex-start; gap: 14px;
+        padding: 14px 16px;
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px -10px rgba(15,23,42,0.18);
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .wco-info-card:focus-within {
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    }
+
+    .wco-info-card-icon {
+        flex: 0 0 auto;
+        width: 34px; height: 34px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        background: #EEF3FF;
+        color: #0052D4;
+    }
+
+    .wco-info-card-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .wco-info-lbl {
+        font-size: 10.5px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.07em;
+        color: #86868B;
+    }
+    .wco-info-input {
+        width: 100%;
+        padding: 4px 0 2px;
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        color: #1D1D1F;
+        font-family: inherit;
+        resize: vertical;
+        line-height: 1.5;
+        min-height: 60px;
+    }
+    .wco-info-input::placeholder { color: #b6bfcc; font-weight: 400; }
+    .wco-info-input:focus { outline: none; }
+    .wco-info-actions {
+        display: flex; align-items: center; justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(15,23,42,0.06);
+    }
+    .wco-info-saved {
+        font-size: 12px; color: #64748b; font-weight: 500;
+    }
+    .wco-info-btn {
+        padding: 9px 18px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%);
+        color: #fff; font-weight: 600; font-size: 13px;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.18s ease;
+        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.6);
+    }
+    .wco-info-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -8px rgba(0,82,212,0.65); }
+    .wco-info-btn:disabled { opacity: 0.6; cursor: wait; transform: none; box-shadow: none; }
+    @media (max-width: 880px){
+        .wco-info-grid { grid-template-columns: 1fr; }
+        .wco-info-row-2 { grid-template-columns: 1fr; }
+        .wco-info-id { position: static; }
+    }
+
     /* ── Pill de periodo (en el modal del cliente) ──────────────── */
     .wco-period-wrap { position: relative; }
     .wco-period-pill {
@@ -2105,6 +2739,461 @@
 
     .widget-overlay.active {
         display: flex;
+    }
+
+    /* Calendario en modo página: el overlay deja de serlo y vive en el flujo,
+       sin fondo propio. Scroll de la página activa cuando el contenido excede. */
+    .widget-overlay.is-page-mode {
+        position: static !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        z-index: auto !important;
+        padding: 0;
+        animation: none !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    /* En page mode, la "card" externa pierde bordes y se vuelve un layout flex
+       transparente; los hijos (header, subnav, body) se ven separados como en
+       las secciones de Tareas/Proyectos */
+    .widget-overlay.is-page-mode .cal-card--page {
+        margin: 0;
+        max-width: none;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 18px 24px !important;
+        gap: 6px;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow: visible !important;
+    }
+    /* Sub-nav viejo (cal-subnav-default): siempre oculto en page-mode */
+    .widget-overlay.is-page-mode .cal-subnav-default { display: none !important; }
+    /* Header en page-mode = crm-bar — su estilo viene de .crm-bar y
+       .crm-bar--dashboard ya definidos arriba. Solo aseguramos el margen
+       y forzamos que .crm-bar-left quede pegado a la esquina izquierda
+       (anulando el ::before spacer que centra contenido en otras vistas). */
+    .widget-overlay.is-page-mode .cal-page-bar {
+        margin-bottom: 10px;
+        flex-shrink: 0;
+        padding: 10px 4px !important;   /* mismo padding-left que la mini-nav */
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(248,250,252,0.85);
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        align-items: center !important;
+    }
+    /* Forzar centrado vertical y altura uniforme en TODOS los items de la barra */
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-left,
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-right,
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
+        display: flex !important;
+        align-items: center !important;
+    }
+    /* Altura uniforme para todos los botones/pills de la barra. */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
+        height: 38px !important;
+        line-height: 1 !important;
+        box-sizing: border-box !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar.crm-bar--dashboard::before {
+        display: none !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-left {
+        flex: 1 1 0 !important;
+        justify-content: flex-start !important;
+        gap: 10px;
+        display: flex !important;
+        align-items: center !important;
+    }
+    /* Botones de la izquierda del calendario más pronunciados, en línea con
+       el tamaño de la dynamic island del centro. */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill {
+        padding: 8px 16px !important;
+        font-size: 0.86rem !important;
+        font-weight: 600 !important;
+        border-radius: 999px !important;
+        background: #ffffff !important;
+        border: 1px solid rgba(15,23,42,0.08) !important;
+        box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:hover,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
+        background: #f8fafc !important;
+        border-color: rgba(15,23,42,0.14) !important;
+    }
+    /* Botón Nueva actividad: igualar tamaño con los pills, mismo color azul */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
+        padding: 8px 16px !important;
+        font-size: 0.86rem !important;
+        font-weight: 600 !important;
+        border-radius: 999px !important;
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.55) !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
+        transform: translateY(-1px);
+    }
+    /* Mini-barra de navegación del mes (debajo del header) */
+    .widget-overlay.is-page-mode .cal-page-monthnav {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 4px 8px;
+        flex-shrink: 0;
+    }
+    .cal-monthnav-arrow {
+        width: 32px; height: 32px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(20px);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #1D1D1F;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .cal-monthnav-arrow:hover { background: #ffffff; transform: scale(1.04); }
+    .cal-monthnav-today {
+        padding: 0 14px; height: 32px;
+        border: 1px solid rgba(15,23,42,0.08);
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(20px);
+        border-radius: 10px;
+        font-size: 0.82rem; font-weight: 600;
+        color: #1D1D1F;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+    }
+    .cal-monthnav-today:hover { background: #ffffff; }
+    .cal-monthnav-title {
+        font-size: 1.3rem; font-weight: 700;
+        color: #1D1D1F;
+        letter-spacing: -0.02em;
+        margin-left: 10px;
+    }
+
+    /* Body (calendar grid): ocupa todo el ancho (sin panel derecho) */
+    .widget-overlay.is-page-mode .cal-page-body {
+        gap: 0;
+        flex: 1;
+        min-height: 0;
+    }
+    /* El calendario en page-mode flota libre sobre la página — sin card
+       contenedor, sin border, sin radius, sin sombra. Las líneas entre
+       celdas dan toda la estructura. */
+    .widget-overlay.is-page-mode .cal-page-body > div:first-child {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: visible;
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        position: relative;
+        min-height: 0;
+    }
+    /* La página debe scrollear cuando hay muchos eventos */
+    .widget-overlay.is-page-mode .cal-page-body {
+        overflow: visible !important;
+        min-height: 0;
+    }
+    /* Sin scroll interno del FullCalendar — todos los eventos siempre visibles.
+       Las filas crecen según contenido y la página scrolea si excede. */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-scroller {
+        overflow: visible !important;
+        height: auto !important;
+    }
+    .widget-overlay.is-page-mode #fullCalendarRoot {
+        height: auto !important;
+    }
+    /* En page-mode las tablas internas del grid crecen con el contenido */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-body,
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-body table,
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-scrollgrid-sync-table {
+        height: auto !important;
+    }
+    /* Día actual: fondo azul muy sutil + borde lateral azul para destacar */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
+        background: rgba(0,82,212,0.05) !important;
+        box-shadow: inset 3px 0 0 #0052D4;
+    }
+    /* "+N más" link estilizado */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-more-link {
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        color: #0052D4 !important;
+        padding: 1px 6px !important;
+        border-radius: 999px;
+        background: rgba(0,82,212,0.08);
+        margin-top: 2px;
+        display: inline-block;
+        transition: background 0.15s ease;
+    }
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-more-link:hover {
+        background: rgba(0,82,212,0.18);
+    }
+    /* Header de días (LUN MAR ...) más sutil */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-col-header-cell {
+        background: transparent !important;
+        padding: 10px 0 6px !important;
+    }
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-col-header-cell-cushion {
+        color: #475569 !important;
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.08em;
+    }
+    /* Celdas con fondo levemente más blanco al pasar el cursor */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-day {
+        transition: background 0.18s ease;
+    }
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-day:hover {
+        background: rgba(255,255,255,0.4);
+    }
+    /* En page mode, el panel derecho se OCULTA: el calendario ocupa todo el ancho */
+    .widget-overlay.is-page-mode #calRightPanel { display: none !important; }
+    /* Bordes internos del FullCalendar: marcados para que cada día se vea claro */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard td,
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard th {
+        border-color: rgba(15,23,42,0.16) !important;
+        border-width: 1px !important;
+    }
+    /* Un solo scroll: el de la página. El sidebar rompe su height:100vh fijo
+       para que el cuerpo del documento pueda scrollear cuando el grid crece. */
+    body:has(.widget-overlay.is-page-mode) .crm-page-sidebar {
+        height: auto !important;
+        min-height: 100vh !important;
+    }
+    body:has(.widget-overlay.is-page-mode) .crm-main,
+    body:has(.widget-overlay.is-page-mode) .crm-content {
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    /* Popover de hover preview de evento del calendario */
+    .cal-hover-popover {
+        position: fixed;
+        width: 380px;
+        max-width: calc(100vw - 16px);
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        background: rgba(255,255,255,0.94);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        border: 1px solid rgba(255,255,255,0.65);
+        border-radius: 14px;
+        box-shadow: 0 24px 60px rgba(15,23,42,0.22), 0 1px 0 rgba(255,255,255,0.7) inset;
+        z-index: 11000;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        animation: calHoverFadeIn 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes calHoverFadeIn {
+        from { opacity: 0; transform: translateY(4px) scale(0.985); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .cal-hover-head {
+        height: 22px;
+        display: flex; align-items: center;
+        padding: 0 14px;
+    }
+    .cal-hover-type {
+        color: #ffffff;
+        font-size: 0.62rem; font-weight: 800;
+        text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .cal-hover-body {
+        padding: 14px 16px;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(15,23,42,0.18) transparent;
+    }
+    .cal-hover-body::-webkit-scrollbar { width: 5px; }
+    .cal-hover-body::-webkit-scrollbar-track { background: transparent; }
+    .cal-hover-body::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.16); border-radius: 999px; }
+    .cal-hover-title {
+        font-size: 15px; font-weight: 700;
+        color: #1D1D1F;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+    }
+    .cal-hover-when {
+        font-size: 12px; color: #64748b;
+        margin-top: 3px;
+        font-weight: 500;
+    }
+    .cal-hover-desc {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: #334155;
+        line-height: 1.5;
+        background: rgba(15,23,42,0.04);
+        border-radius: 8px;
+        padding: 10px 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .cal-hover-meta {
+        margin-top: 8px;
+        display: flex; gap: 8px;
+        font-size: 12px;
+        color: #1D1D1F;
+        line-height: 1.4;
+    }
+    .cal-hover-meta-lbl {
+        color: #86868B;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+        min-width: 86px;
+        padding-top: 1px;
+    }
+    .cal-hover-related {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(15,23,42,0.06);
+        display: flex; gap: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #0052D4;
+    }
+    .cal-hover-related .cal-hover-meta-lbl { color: #86868B; font-weight: 700; }
+
+    /* Eventos del calendario (mes): hover suave con elevación */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-event {
+        transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 0.18s ease,
+                    filter 0.15s ease;
+    }
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-event:hover {
+        transform: translateY(-1px) scale(1.01);
+        filter: brightness(0.98);
+        z-index: 100;
+    }
+    /* Día actual: fondo azul suave (más allá del círculo del número) */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
+        background: rgba(0,82,212,0.025) !important;
+    }
+    /* Animación al cargar el grid */
+    @keyframes calGridFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .widget-overlay.is-page-mode .cal-page-body {
+        animation: calGridFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    /* Popover de filtro de tipos en el header del calendario (page mode) */
+    .cal-filter-pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.08);
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(15,23,42,0.18);
+        padding: 8px;
+        min-width: 200px;
+        z-index: 200;
+    }
+    .cal-filter-pop-lbl {
+        font-size: 10.5px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: #86868B;
+        padding: 6px 8px 4px;
+    }
+    .cal-filter-pop-item {
+        display: flex; align-items: center; gap: 9px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        font-size: 13px; font-weight: 500;
+        color: #1D1D1F;
+        cursor: pointer;
+        transition: background 0.12s ease;
+    }
+    .cal-filter-pop-item:hover { background: rgba(15,23,42,0.04); }
+    .cal-filter-pop-item input[type="checkbox"] {
+        width: 14px; height: 14px;
+        accent-color: #0052D4;
+        cursor: pointer;
+    }
+    .cal-filter-dot {
+        width: 9px; height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* Chips de filtro de tipo en el header del calendario (page mode) */
+    .cal-type-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #ffffff;
+        color: #64748b;
+        border-radius: 999px;
+        font-size: 12px; font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .cal-type-chip:hover { color: #0f172a; border-color: rgba(15,23,42,0.18); }
+    .cal-type-chip .cal-type-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .cal-type-chip:not(.is-on) {
+        background: #f8fafc;
+        color: #94a3b8;
+        text-decoration: line-through;
+    }
+    .cal-type-chip:not(.is-on) .cal-type-dot {
+        opacity: 0.35;
+    }
+    .cal-type-chip.is-on {
+        background: #ffffff;
+        color: #1D1D1F;
+        border-color: rgba(15,23,42,0.14);
+        box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+    }
+
+    /* Listas compactas del panel derecho (Tareas de hoy / Actividades de hoy):
+       muestra ~3 items y desliza el resto con un scrollbar muy discreto */
+    .cal-side-mini-list {
+        max-height: 190px;          /* ~3 items con su sub-texto */
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(15,23,42,0.18) transparent;
+        padding-right: 4px;
+    }
+    .cal-side-mini-list::-webkit-scrollbar { width: 4px; }
+    .cal-side-mini-list::-webkit-scrollbar-track { background: transparent; }
+    .cal-side-mini-list::-webkit-scrollbar-thumb {
+        background: rgba(15,23,42,0.14);
+        border-radius: 999px;
+    }
+    .cal-side-mini-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(15,23,42,0.30);
     }
 
     @keyframes overlayIn {

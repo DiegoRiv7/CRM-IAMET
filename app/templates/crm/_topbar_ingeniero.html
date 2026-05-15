@@ -26,7 +26,7 @@
                 <button type="button" class="island-nav-btn" id="btnTareas">TAREAS</button>
                 <button type="button" class="island-nav-btn" id="btnProyectos" onclick="proyectosAbrir()">PROYECTOS</button>
                 <button type="button" class="island-nav-btn" id="btnMuro" onclick="muroAbrir()">MURO</button>
-                <button type="button" class="island-nav-btn" id="btnCalendario" onclick="calendarioAbrir()">CALENDARIO</button>
+                <a href="?tab=calendario" class="island-nav-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" style="text-decoration:none;display:inline-flex;align-items:center;">CALENDARIO</a>
                 <button type="button" class="island-nav-btn" id="btnCorreo" onclick="mailAbrir()">
                     &#9993; CORREO
                 </button>

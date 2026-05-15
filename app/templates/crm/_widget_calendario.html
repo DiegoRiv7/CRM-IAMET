@@ -1,6 +1,6 @@
-<!-- ═══ WIDGET: CALENDARIO OVERLAY MASTER ═══ -->
-<div class="widget-overlay" id="widgetCalendarioMaster" style="z-index:10100;display:none;"><!-- CAPA 1 -->
-    <div style="width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.85);overflow:hidden;">
+<!-- ═══ CALENDARIO: widget overlay (default) o sección de página (cuando tab=calendario) ═══ -->
+<div class="widget-overlay{% if tab_activo == 'calendario' %} is-page-mode{% endif %}" id="widgetCalendarioMaster" style="z-index:10100;{% if tab_activo == 'calendario' %}display:flex;position:static;background:transparent;align-items:stretch;justify-content:stretch;{% else %}display:none;{% endif %}">
+    <div class="cal-card{% if tab_activo == 'calendario' %} cal-card--page{% endif %}" style="{% if tab_activo == 'calendario' %}width:100%;height:auto;min-height:100vh;max-width:none;background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;{% else %}width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(15,23,42,0.06);{% endif %}display:flex;flex-direction:column;overflow:hidden;">
         <style>
             /* ─── FullCalendar base ─── */
             #fullCalendarRoot {
@@ -28,19 +28,25 @@
             .cal-view-btn { background:transparent; border:none; border-radius:7px; padding:0.4rem 1.1rem; font-size:0.88rem; font-weight:600; color:#86868B; cursor:pointer; transition:all 0.15s; font-family:inherit; }
             .cal-view-btn.active { background:#fff; color:#1D1D1F; box-shadow:0 1px 5px rgba(0,0,0,0.1); }
             /* ─── Day timeline ─── */
-            #calDayTimeline { overflow-y:auto; flex:1; min-height:0; }
+            #calDayTimeline { overflow-y:auto; flex:1; min-height:0; padding-top:8px; }
             .cal-hour-row { display:flex; align-items:flex-start; height:64px; border-bottom:1px solid rgba(0,0,0,0.05); position:relative; }
             .cal-hour-label { width:56px; min-width:56px; font-size:0.7rem; font-weight:600; color:#AEAEB2; padding:0 10px 0 0; text-align:right; line-height:1; margin-top:-9px; }
             .cal-hour-area { flex:1; }
             .cal-now-line { position:absolute; left:56px; right:0; height:2px; background:#FF3B30; z-index:10; pointer-events:none; }
             .cal-now-dot { position:absolute; left:48px; width:8px; height:8px; border-radius:50%; background:#FF3B30; z-index:11; pointer-events:none; margin-top:-3px; }
             /* ─── Day view events ─── */
-            .cal-day-evt { position:absolute; border-radius:10px; padding:7px 10px; cursor:pointer; box-sizing:border-box; overflow:hidden; transition:filter 0.15s, box-shadow 0.15s; min-height:36px; z-index:5; border-left-width:3px; border-left-style:solid; }
-            .cal-day-evt:hover { filter:brightness(0.96); box-shadow:0 4px 16px rgba(0,0,0,0.14) !important; }
-            .cal-day-evt-title { font-size:0.82rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-            .cal-day-evt-time { font-size:0.72rem; font-weight:500; margin-top:2px; }
+            .cal-day-evt { position:absolute; border-radius:8px; padding:4px 8px; cursor:grab; box-sizing:border-box; overflow:hidden !important; transition:filter 0.15s, box-shadow 0.15s; min-height:22px; z-index:5; border-left-width:3px; border-left-style:solid; user-select:none; }
+            .cal-day-evt:active { cursor:grabbing; }
+            .cal-day-evt:hover { filter:brightness(0.96); box-shadow:0 4px 16px rgba(0,0,0,0.14) !important; z-index:7; overflow:visible !important; }
+            .cal-day-evt-title { font-size:0.78rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
+            .cal-day-evt-time { font-size:0.7rem; font-weight:500; margin-top:1px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
             .cal-day-evt-badge { font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap; color:#fff; }
-            .cal-day-evt-status { display:inline-block; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-top:3px; }
+            .cal-day-evt-status { display:inline-block; font-size:0.66rem; font-weight:700; padding:1px 6px; border-radius:20px; margin-top:2px; }
+            /* Compact (<64px de alto): título y hora en una línea, sin badge */
+            .cal-day-evt.is-compact { padding:3px 8px; display:flex; flex-direction:column; gap:0; justify-content:center; }
+            .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; }
+            .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.85; }
+            .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
             /* ─── Right panel ─── */
             #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
             #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
@@ -74,7 +80,68 @@
             .cal-recur-chip.active:hover { background:#0041A8; border-color:#0041A8; }
         </style>
 
-        <!-- ── Outer header ── -->
+        {% if tab_activo == 'calendario' %}
+        <!-- ── Outer header (page mode): estilo .crm-bar.crm-bar--dashboard para
+             mantener armonía con Oportunidades/Prospección/Proyectos ── -->
+        <div class="crm-bar crm-bar--dashboard cal-page-bar">
+            <div class="crm-bar-left">
+                <!-- Filtro de tipos (Tareas / Actividades / Eventos / Cursos) -->
+                <div class="cal-filter-wrap" style="position:relative;">
+                    <button type="button" class="crm-facet-btn crm-facet-add" id="calFiltroBtn" onclick="calFiltroToggle(event)" title="Filtro">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        <span>Filtro</span>
+                    </button>
+                    <div class="cal-filter-pop" id="calFiltroPop" style="display:none;">
+                        <div class="cal-filter-pop-lbl">Mostrar</div>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="tarea" checked><span class="cal-filter-dot" style="background:#FF9500;"></span><span>Tareas</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="actividad" checked><span class="cal-filter-dot" style="background:#0052D4;"></span><span>Actividades</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="evento" checked><span class="cal-filter-dot" style="background:#8B5CF6;"></span><span>Eventos</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="curso" checked><span class="cal-filter-dot" style="background:#10B981;"></span><span>Cursos</span></label>
+                    </div>
+                </div>
+                <!-- Selector de usuario (mismo estilo que el pill "Vendedores Todos" del CRM) -->
+                <div id="calUserPickerWrap" class="cal-userpick-wrap" style="position:relative;">
+                    <button type="button" id="calUserPickerBtn" class="crm-period-pill" onclick="calUserPickerToggle(event)" aria-haspopup="listbox" aria-expanded="false">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span id="calUserPickerLabel">Usuarios</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6;"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div id="calUserPickerMenu" class="cal-userpick-menu" role="listbox" style="display:none;">
+                        <div class="cal-userpick-search">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" id="calUserPickerSearch" placeholder="Buscar usuario…" autocomplete="off" oninput="calUserPickerFilter(this.value)" onkeydown="calUserPickerKey(event)">
+                        </div>
+                        <div id="calUserPickerList" class="cal-userpick-list"></div>
+                    </div>
+                    <input type="hidden" id="calUserFilter" value="all">
+                </div>
+            </div>
+            <!-- Dynamic island central: Mes / Semana / Día -->
+            <div class="crm-tabs crm-tabs--dashboard">
+                <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
+                <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
+                <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
+            </div>
+            <div class="crm-bar-right">
+                <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nueva actividad</span>
+                </button>
+            </div>
+        </div>
+        <!-- Mini-barra de navegación del mes (page mode) -->
+        <div class="cal-page-monthnav">
+            <button type="button" class="cal-monthnav-arrow" onclick="calNavPrev()" title="Anterior">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="cal-monthnav-arrow" onclick="calNavNext()" title="Siguiente">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button type="button" class="cal-monthnav-today" onclick="calNavToday()">Hoy</button>
+            <span id="calNavTitlePage" class="cal-monthnav-title">—</span>
+        </div>
+        {% else %}
+        <!-- ── Outer header (widget mode tradicional) ── -->
         <div style="padding:1rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
             <div style="display:flex;align-items:center;gap:1rem;">
                 <div style="font-size:1.5rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.03em;">Calendario CRM</div>
@@ -109,9 +176,10 @@
                 <button type="button" onclick="calendarioCerrar()" style="color:#86868B;background:none;border:none;font-size:1.8rem;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;font-family:inherit;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'">&times;</button>
             </div>
         </div>
+        {% endif %}
 
-        <!-- ── Sub-nav: arrows + title + Mes/Día toggle ── -->
-        <div style="padding:0.65rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <!-- ── Sub-nav: arrows + title + Mes/Día toggle (sólo en modo widget, en page-mode estos controles viven dentro del panel derecho y al pie del calendario) ── -->
+        <div class="cal-subnav-default" style="padding:0.65rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;{% if tab_activo == 'calendario' %}display:none;{% endif %}">
             <div style="display:flex;align-items:center;gap:6px;">
                 <button onclick="calNavPrev()" title="Anterior" style="background:#F2F2F7;border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">
                     <svg width="13" height="13" fill="none" stroke="#1D1D1F" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -130,7 +198,7 @@
         </div>
 
         <!-- ── Body: left + right ── -->
-        <div style="flex:1;display:flex;overflow:hidden;min-height:0;">
+        <div class="cal-page-body" style="flex:1;display:flex;overflow:hidden;min-height:0;">
 
             <!-- Left: calendar views -->
             <div style="flex:1;padding:0.8rem 0.8rem 0.8rem 1.4rem;overflow:hidden;display:flex;flex-direction:column;min-width:0;">
@@ -193,7 +261,7 @@
                     <!-- Tareas de hoy -->
                     <div>
                         <div class="cal-section-label">Tareas de hoy</div>
-                        <div id="calSideTareasList" style="display:flex;flex-direction:column;margin-top:8px;">
+                        <div id="calSideTareasList" class="cal-side-mini-list" style="display:flex;flex-direction:column;margin-top:8px;">
                             <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
                         </div>
                     </div>
@@ -201,7 +269,7 @@
                     <!-- Actividades de hoy -->
                     <div>
                         <div class="cal-section-label">Actividades de hoy</div>
-                        <div id="calSideActividadesList" style="display:flex;flex-direction:column;margin-top:8px;">
+                        <div id="calSideActividadesList" class="cal-side-mini-list" style="display:flex;flex-direction:column;margin-top:8px;">
                             <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
                         </div>
                     </div>
@@ -432,7 +500,7 @@
     var _calViewMode = 'month';
     var _calCurrentDay = new Date();
     var _calNowInterval = null;
-    var CAL_HOUR_H = 64;
+    var CAL_HOUR_H = 48;
     // Recurrencia (estado del formulario "Nueva Actividad")
     // dias: ISO weekday (1=Lun … 7=Dom). Default L–V.
     var _calRecurDiasSel = [1,2,3,4,5];
@@ -445,13 +513,18 @@
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
         var ov = document.getElementById('widgetCalendarioMaster');
-        ov.style.display = 'flex';
-        var _scrollY = window.scrollY;
-        document.body.style.position = 'fixed';
-        document.body.style.top = '-' + _scrollY + 'px';
-        document.body.style.width = '100%';
-        document.body.dataset.calScrollY = _scrollY;
-        try { sessionStorage.setItem('_crm_cal_open', '1'); } catch (e) {}
+        // En modo página (tab=calendario), el contenedor ya está visible y no
+        // bloqueamos el scroll del body (no es modal).
+        var isPageMode = ov && ov.classList.contains('is-page-mode');
+        if (!isPageMode) {
+            ov.style.display = 'flex';
+            var _scrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + _scrollY + 'px';
+            document.body.style.width = '100%';
+            document.body.dataset.calScrollY = _scrollY;
+            try { sessionStorage.setItem('_crm_cal_open', '1'); } catch (e) {}
+        }
 
         _calCurrentDay = new Date();
         calUpdateNavTitle();
@@ -465,13 +538,20 @@
                     initialDate: new Date(),
                     locale: 'es',
                     firstDay: 1,
-                    height: '100%',
-                    expandRows: true,
+                    height: isPageMode ? 'auto' : '100%',
+                    expandRows: !isPageMode,
                     headerToolbar: false,
                     buttonText: { today: 'Hoy' },
                     eventInteractive: true,
                     views: {
                         dayGridMonth: { eventDisplay: 'list-item' }
+                    },
+                    // Click en una celda vacía abre el formulario con la fecha pre-llenada
+                    dateClick: function (info) {
+                        var d = info.date || (info.dateStr ? new Date(info.dateStr) : null);
+                        if (typeof window.calGlobalAbrirCrearActividad === 'function') {
+                            window.calGlobalAbrirCrearActividad(d);
+                        }
                     },
                     datesSet: function () {
                         calUpdateNavTitle();
@@ -538,7 +618,22 @@
                         }).catch(function(){info.revert();});
                     },
                     eventClick: function (info) {
-                        calShowEventDetail(String(info.event.id));
+                        // Click directo → modal completo (oportunidad/curso/evento/actividad/tarea)
+                        _calOpenFull(String(info.event.id));
+                    },
+                    eventDidMount: function (info) {
+                        // Hover preview con popover
+                        var elId = String(info.event.id);
+                        info.el.addEventListener('mouseenter', function (e) {
+                            clearTimeout(window._calHoverTimer);
+                            window._calHoverTimer = setTimeout(function () {
+                                _calShowHoverPreview(elId, info.el);
+                            }, 280);
+                        });
+                        info.el.addEventListener('mouseleave', function () {
+                            clearTimeout(window._calHoverTimer);
+                            _calHideHoverPreview();
+                        });
                     },
                     selectable: true,
                     select: function (info) {
@@ -575,6 +670,14 @@
         setTimeout(function () {
             if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
             calUpdateNavTitle();
+            // Restaurar la última vista usada (mes/semana/día) si difiere de la actual
+            try {
+                var savedV = localStorage.getItem('_crm_cal_view');
+                if (savedV && savedV !== _calViewMode && (savedV === 'week' || savedV === 'day')) {
+                    window.calSwitchView(savedV);
+                }
+            } catch (e) {}
+            if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
         }, 80);
 
         calGlobalRefetch();
@@ -644,32 +747,40 @@
 
     window.calSwitchView = function (mode) {
         _calViewMode = mode;
+        try { localStorage.setItem('_crm_cal_view', mode); } catch (e) {}
         var fcRoot = document.getElementById('fullCalendarRoot');
         var dayRoot = document.getElementById('calDayViewRoot');
         var weekRoot = document.getElementById('calWeekViewRoot');
         var btnMes = document.getElementById('calBtnMes');
         var btnDia = document.getElementById('calBtnDia');
         var btnSemana = document.getElementById('calBtnSemana');
+        // Duplicados en page-mode (al pie del calendario)
+        var btnMesP = document.getElementById('calBtnMesPage');
+        var btnDiaP = document.getElementById('calBtnDiaPage');
+        var btnSemanaP = document.getElementById('calBtnSemanaPage');
         // Hide all
         fcRoot.style.display = 'none';
         dayRoot.style.display = 'none';
         weekRoot.style.display = 'none';
-        [btnMes, btnDia, btnSemana].forEach(function(b){ if(b) b.classList.remove('active'); });
+        [btnMes, btnDia, btnSemana, btnMesP, btnDiaP, btnSemanaP].forEach(function(b){ if(b) b.classList.remove('active'); });
 
         if (mode === 'month') {
             fcRoot.style.display = '';
             if (btnMes) btnMes.classList.add('active');
+            if (btnMesP) btnMesP.classList.add('active');
             if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
         } else if (mode === 'week') {
             weekRoot.style.display = 'flex';
             weekRoot.style.flexDirection = 'column';
             if (btnSemana) btnSemana.classList.add('active');
+            if (btnSemanaP) btnSemanaP.classList.add('active');
             _calWeekStart = calGetWeekStart(new Date());
             calRenderWeekView(_calWeekStart);
         } else {
             dayRoot.style.display = 'flex';
             dayRoot.style.flexDirection = 'column';
             if (btnDia) btnDia.classList.add('active');
+            if (btnDiaP) btnDiaP.classList.add('active');
             _calCurrentDay = new Date();
             calRenderDayView(_calCurrentDay);
         }
@@ -680,7 +791,12 @@
 
     function calUpdateNavTitle() {
         var titleEl = document.getElementById('calNavTitle');
+        var titleElPage = document.getElementById('calNavTitlePage');
         var headerDateEl = document.getElementById('calHeaderDateText');
+        function _setTitle(txt) {
+            if (titleEl) titleEl.textContent = txt;
+            if (titleElPage) titleElPage.textContent = txt;
+        }
         var now = new Date();
         var MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         var MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -690,7 +806,7 @@
             var view = _globalCalendar.view;
             if (view) {
                 var viewDate = view.currentStart;
-                if (titleEl) titleEl.textContent = MONTHS[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
+                _setTitle(MONTHS[viewDate.getMonth()] + ' ' + viewDate.getFullYear());
             }
         } else if (_calViewMode === 'week' && _calWeekStart) {
             var ws = _calWeekStart;
@@ -701,12 +817,12 @@
             } else {
                 rangeStr = ws.getDate() + ' de ' + MONTHS_ES[ws.getMonth()] + ' – ' + we.getDate() + ' de ' + MONTHS_ES[we.getMonth()] + ', ' + we.getFullYear();
             }
-            if (titleEl) titleEl.textContent = rangeStr;
+            _setTitle(rangeStr);
         } else if (_calViewMode === 'day') {
             var d = _calCurrentDay;
             var dayName = DAYS_ES[d.getDay()];
             var capDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-            if (titleEl) titleEl.textContent = capDay + ', ' + d.getDate() + ' de ' + MONTHS_ES[d.getMonth()];
+            _setTitle(capDay + ', ' + d.getDate() + ' de ' + MONTHS_ES[d.getMonth()]);
         }
 
         if (headerDateEl) {
@@ -792,7 +908,7 @@
         if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
         calRenderWeekHeader(weekStart);
 
-        var CAL_HOUR_H = 64;
+        var CAL_HOUR_H = 48;
         var now = new Date();
         var nowMs = now.getTime();
         var pad = function(n){ return String(n).padStart(2,'0'); };
@@ -919,7 +1035,7 @@
                 if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
                 else if (isOvAct) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:1px;"></div>';
 
-                html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                     '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
                     '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
                     '</div>'+
@@ -947,7 +1063,7 @@
 
                     html += '<div style="position:absolute;top:'+evTop+'px;left:'+taskX+'px;width:'+(taskLaneW-2)+'px;height:1px;background:'+tColor+';opacity:0.25;pointer-events:none;"></div>';
                     html += '<div style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);'+tOpacity+'"' +
-                        ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                        ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                         '<div style="font-size:0.68rem;font-weight:700;color:'+tColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
                         '<div style="font-size:0.6rem;color:'+tColor+';opacity:0.75;">'+deadlineFmt+'</div>'+
                         '</div>';
@@ -987,14 +1103,17 @@
             return ev.start && ev.start.substring(0,10) === dateStr;
         }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
 
-        // Build inner wrapper (position:relative, tall enough for 24 hours)
-        var totalH = 24 * CAL_HOUR_H;
-        var html = '<div style="position:relative;min-height:'+totalH+'px;">';
+        // Vista día: ventana visible de 06:00 a 23:00 (oculta noche).
+        // El offset CAL_DAY_OFFSET_H se resta del top para que 06:00 quede en y=0.
+        var CAL_DAY_START_H = 6;
+        var CAL_DAY_END_H = 23;
+        var totalH = (CAL_DAY_END_H - CAL_DAY_START_H + 1) * CAL_HOUR_H;
+        var html = '<div style="position:relative;min-height:'+totalH+'px;" data-cal-day-start="'+CAL_DAY_START_H+'">';
 
         // Hour rows (background grid) + media hora punteada
-        for (var h = 0; h < 24; h++) {
-            var label = h > 0 ? calFmtHour(h) : '';
-            var topPx = h * CAL_HOUR_H;
+        for (var h = CAL_DAY_START_H; h <= CAL_DAY_END_H; h++) {
+            var label = calFmtHour(h);
+            var topPx = (h - CAL_DAY_START_H) * CAL_HOUR_H;
             html += '<div class="cal-hour-row" style="position:absolute;top:'+topPx+'px;left:0;right:0;height:'+CAL_HOUR_H+'px;" data-hour="'+h+'" onclick="calDayHourClick(event,'+h+')">' +
                 '<div class="cal-hour-label">'+label+'</div>' +
                 '<div class="cal-hour-area"></div>' +
@@ -1007,9 +1126,11 @@
         // Now line
         if (isToday) {
             var nowMins = now.getHours()*60+now.getMinutes();
-            var nowTop = (nowMins/60)*CAL_HOUR_H;
-            html += '<div class="cal-now-dot" style="top:'+(nowTop-4)+'px;"></div>';
-            html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
+            var nowTop = (nowMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
+            if (nowTop >= 0 && nowTop <= totalH) {
+                html += '<div class="cal-now-dot" style="top:'+(nowTop-4)+'px;"></div>';
+                html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
+            }
         }
 
         // ── Column-split layout (ancho en píxeles reales) ──
@@ -1024,7 +1145,7 @@
         var actItems = actEvts.map(function(ev){
             var sD = new Date(ev.start);
             var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
-            return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1 };
+            return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1, groupTop:null };
         });
         var colEnds = [];
         actItems.forEach(function(it){
@@ -1042,6 +1163,30 @@
             });
             it.numCols = maxC + 1;
         });
+        // Calcular el "grupo de solapamiento" transitivo: si A se solapa con B
+        // y B con C, entonces A, B, C son un grupo. Para cada item, su top
+        // visual = min(sMs) del grupo. Eso los alinea al lado en lugar de
+        // escalonados según el start exacto de cada uno.
+        actItems.forEach(function(it){
+            if (it.groupTop !== null) return;  // ya procesado
+            var group = [it];
+            var changed = true;
+            while (changed) {
+                changed = false;
+                actItems.forEach(function(other){
+                    if (group.indexOf(other) >= 0) return;
+                    var overlapsGroup = group.some(function(m){ return m.sMs < other.eMs && m.eMs > other.sMs; });
+                    if (overlapsGroup) { group.push(other); changed = true; }
+                });
+            }
+            // Solo aplicar groupTop si hay más de uno (es decir, hay solapamiento real)
+            if (group.length > 1) {
+                var minS = Math.min.apply(null, group.map(function(g){ return g.sMs; }));
+                group.forEach(function(g){ g.groupTop = minS; });
+            } else {
+                group[0].groupTop = group[0].sMs;
+            }
+        });
         // Renderizar actividades
         actItems.forEach(function(item){
             var ev = item.ev;
@@ -1052,8 +1197,15 @@
             var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
             var startMins = startD.getHours()*60+startD.getMinutes();
             var endMins = endD.getHours()*60+endD.getMinutes();
-            var evTop = (startMins/60)*CAL_HOUR_H;
-            var evH = Math.max(((Math.max(endMins-startMins,45))/60)*CAL_HOUR_H, 36);
+            // Usar el inicio del grupo de solapamiento para alinear los eventos
+            // que se solapan: así se ven todos al lado en lugar de escalonados.
+            var topMs = item.groupTop != null ? item.groupTop : startD.getTime();
+            var topD = new Date(topMs);
+            var topMins = topD.getHours()*60+topD.getMinutes();
+            var evTop = (topMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
+            // Altura proporcional al tiempo real del evento (sin forzar 45min mínimos).
+            // Restamos 3px para crear un gap visual entre cards consecutivos.
+            var evH = Math.max(((endMins-startMins)/60)*CAL_HOUR_H - 3, 22);
             var safeId = String(ev.id).replace(/'/g,'');
 
             var bg = hasOpp ? 'linear-gradient(135deg,#EEF3FF 0%,#E8EFFF 100%)' : 'linear-gradient(135deg,#F5F5F7 0%,#EFEFEF 100%)';
@@ -1066,12 +1218,16 @@
             var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
             var endFmt   = pad(endD.getHours())+':'+pad(endD.getMinutes());
 
-            // Posición en píxeles exactos (dentro del carril de actividades)
+            // Posición en píxeles: cada evento ocupa una "card" de ~240px de ancho.
+            // Si hay solapamiento (varios en la misma hora), se ponen al lado.
             var n = item.numCols, c = item.col;
-            var gap = n > 1 ? 4 : 0;
-            var colW = Math.floor((areaW - gap*(n-1)) / n);
-            var leftPx = 64 + c * (colW + gap);
-            var widthPx = colW;
+            var gap = n > 1 ? 6 : 0;
+            var CARD_W = 240;
+            // Si hay tantos eventos solapados que no caben con 240px cada uno, se reducen al
+            // ancho disponible.
+            var maxByArea = Math.floor((areaW - gap*(n-1)) / n);
+            var widthPx = Math.max(140, Math.min(CARD_W, maxByArea));
+            var leftPx = 64 + c * (widthPx + gap);
 
             var statusHTML = '';
             if (isNow) statusHTML='<div class="cal-day-evt-status" style="background:rgba(52,199,89,0.15);color:#34C759;">En curso</div>';
@@ -1085,8 +1241,12 @@
             var titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
 
             var wkCompOpacity = ep.completada ? 'opacity:0.38;' : '';
-            html += '<div class="cal-day-evt" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'"' +
-                ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+            // Compact: si el evento mide menos de 64px (1h y media de slot), ocultamos
+            // el badge ("Vencido" / "En curso") y ponemos título + hora en una sola
+            // línea. Antes el badge se desbordaba y se veía encimado con el card
+            // siguiente cuando los eventos estaban juntos.
+            var isCompact = evH < 64;
+            html += '<div class="cal-day-evt'+(isCompact?' is-compact':'')+'" data-evt-id="'+safeId+'" data-draggable="1" title="Click para abrir · Arrastra para mover de hora" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'">'+
                 titleHTML+
                 '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' – '+endFmt+'</div>'+
                 statusHTML+'</div>';
@@ -1106,7 +1266,7 @@
         taskEvts.forEach(function(ev){
             var startD = new Date(ev.start);
             var startMins = startD.getHours()*60+startD.getMinutes();
-            var evTop = (startMins/60)*CAL_HOUR_H;
+            var evTop = (startMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
             var safeId = String(ev.id).replace(/'/g,'');
             var tEp = ev.extendedProps || {};
             var tCompletada = tEp.estado === 'completada';
@@ -1121,7 +1281,7 @@
             html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
             // Bloque de tarea (más alto, como una tarjeta)
             html += '<div style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
-                ' onclick="event.stopPropagation();calShowEventDetail(\''+safeId+'\')">'+
+                ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                 '<div style="display:flex;align-items:center;gap:5px;">'+
                 '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
                 '<div style="font-size:0.77rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
@@ -1133,11 +1293,142 @@
         html += '</div>';
         container.innerHTML = html;
 
-        // Auto-scroll to 7am
-        setTimeout(function(){ if(container) container.scrollTop = 7*CAL_HOUR_H; }, 50);
+        // El día arranca a las 06:00 (top 0), así que no requerimos auto-scroll.
+        setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
+
+        // Asegura los handlers de drag (idempotente)
+        _calDayBindDragHandlers();
+        if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
 
         calUpdateSidePanel();
     }
+
+    /* ─── DRAG & DROP de eventos en vista Día ───
+       Bindeado al container #calDayTimeline cada vez que se renderiza
+       (no global) para evitar conflictos con otros handlers. */
+    var _calDayDrag = null;
+
+    function _calDayBindDragHandlers() {
+        // Bindea mousedown a cada card individualmente (más confiable que delegation)
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-draggable="1"]');
+        console.log('[cal-drag-day] binding to', cards.length, 'cards');
+        cards.forEach(function (card) {
+            if (card._calDragBound) return;
+            card._calDragBound = true;
+            card.addEventListener('mousedown', _calDayCardMouseDown);
+        });
+    }
+
+    function _calDayCardMouseDown(ev) {
+        if (ev.button !== 0) return;
+        var card = ev.currentTarget;
+        var evtId = card.getAttribute('data-evt-id');
+        console.log('[cal-drag-day] mousedown on', evtId);
+        if (!evtId) return;
+        var stored = _globalEvents.find(function(x){ return String(x.id) === String(evtId); });
+        if (!stored) {
+            console.warn('[cal-drag-day] stored event not found for id', evtId);
+            return;
+        }
+        var sD = new Date(stored.start);
+        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
+        _calDayDrag = {
+            card: card,
+            evtId: evtId,
+            startY: ev.clientY,
+            startTop: parseFloat(card.style.top) || 0,
+            originalStartMs: sD.getTime(),
+            originalEndMs: eD.getTime(),
+            moved: false,
+            stored: stored,
+            lastDeltaMin: 0,
+        };
+        ev.preventDefault();
+        ev.stopPropagation();
+    }
+
+    function _calDayDragMoveGlobal(ev) {
+        if (!_calDayDrag) return;
+        var dy = ev.clientY - _calDayDrag.startY;
+        // Threshold bajo a 2px: si el usuario apretó el botón con la intención de
+        // arrastrar, casi siempre se mueve al menos 2px en el primer frame.
+        if (!_calDayDrag.moved && Math.abs(dy) > 2) {
+            _calDayDrag.moved = true;
+            _calDayDrag.card.style.opacity = '0.7';
+            _calDayDrag.card.style.zIndex = '30';
+            _calDayDrag.card.style.cursor = 'grabbing';
+            _calDayDrag.card.style.boxShadow = '0 8px 24px rgba(0,82,212,0.35), 0 0 0 2px #0052D4';
+            console.log('[cal-drag-day] dragging started, dy=', dy);
+        }
+        if (!_calDayDrag.moved) return;
+        var pxPerMin = CAL_HOUR_H / 60;
+        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;
+        _calDayDrag.lastDeltaMin = deltaMin;
+        _calDayDrag.card.style.top = (_calDayDrag.startTop + deltaMin * pxPerMin) + 'px';
+    }
+
+    function _calDayDragUpGlobal(ev) {
+        if (!_calDayDrag) return;
+        var drag = _calDayDrag;
+        _calDayDrag = null;
+        drag.card.style.opacity = '';
+        drag.card.style.zIndex = '';
+        drag.card.style.cursor = '';
+        drag.card.style.boxShadow = '';
+        if (!drag.moved) {
+            // Click puro → abrir detalle
+            console.log('[cal-drag-day] click (no drag), opening detail for', drag.evtId);
+            if (typeof window._calOpenFull === 'function') window._calOpenFull(drag.evtId);
+            else if (typeof window.calShowEventDetail === 'function') window.calShowEventDetail(drag.evtId);
+            return;
+        }
+        var deltaMin = drag.lastDeltaMin || 0;
+        if (deltaMin === 0) {
+            drag.card.style.top = drag.startTop + 'px';
+            return;
+        }
+        var newStart = new Date(drag.originalStartMs + deltaMin * 60000);
+        var newEnd = new Date(drag.originalEndMs + deltaMin * 60000);
+        var pad = function(n){return String(n).padStart(2,'0');};
+        function localIso(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
+        var ep = drag.stored.extendedProps || {};
+        var csrf = (function(){ var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; })();
+        console.log('[cal-drag-day] PUT new dates', localIso(newStart), localIso(newEnd));
+        fetch('/app/api/actividades/' + drag.evtId + '/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                title: drag.stored.title,
+                start: localIso(newStart),
+                end: localIso(newEnd),
+                description: drag.stored.description || '',
+                tipo: ep.tipo_actividad || 'otro',
+                color: drag.stored.color || '#1D1D1F',
+                participants: (ep.participants || []).map(function(p){ return p.id; }),
+                opportunity: ep.opportunity ? ep.opportunity.id : null,
+            })
+        }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function () {
+            drag.stored.start = localIso(newStart);
+            drag.stored.end = localIso(newEnd);
+            if (_globalCalendar) {
+                var fcEv = _globalCalendar.getEventById(drag.evtId);
+                if (fcEv) fcEv.setDates(newStart, newEnd);
+            }
+            calRenderDayView(_calCurrentDay);
+        }).catch(function (err) {
+            console.error('[cal-drag-day] PUT failed:', err);
+            drag.card.style.top = drag.startTop + 'px';
+            alert('No se pudo mover el evento: ' + (err.message || 'error desconocido'));
+        });
+    }
+
+    // Handlers globales para move/up — siempre activos (cheap, solo verifican _calDayDrag)
+    document.addEventListener('mousemove', _calDayDragMoveGlobal);
+    document.addEventListener('mouseup', _calDayDragUpGlobal);
 
     window.calDayHourClick = function(e, hour) {
         if (e.target && e.target.closest && e.target.closest('.cal-day-evt')) return;
@@ -1875,18 +2166,189 @@
         });
     }
 
+    /* ─── Hover preview de eventos del calendario ─── */
+    function _ensureHoverPopover() {
+        var pop = document.getElementById('calHoverPopover');
+        if (pop) return pop;
+        pop = document.createElement('div');
+        pop.id = 'calHoverPopover';
+        pop.className = 'cal-hover-popover';
+        pop.style.display = 'none';
+        document.body.appendChild(pop);
+        // Mantener visible si el mouse entra al popover
+        pop.addEventListener('mouseenter', function () { clearTimeout(window._calHoverHideTimer); });
+        pop.addEventListener('mouseleave', _calHideHoverPreview);
+        return pop;
+    }
+    function _calEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function _calShowHoverPreview(id, anchorEl) {
+        var evt = _globalEvents.find(function (x) { return String(x.id) === String(id); });
+        if (!evt) return;
+        var ep = evt.extendedProps || {};
+        var pop = _ensureHoverPopover();
+        // Construir contenido
+        var startD = new Date(evt.start);
+        var endD = evt.end ? new Date(evt.end) : null;
+        var pad = function(n){return String(n).padStart(2,'0');};
+        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var fechaStr = startD.getDate() + ' ' + MESES[startD.getMonth()] + ' ' + startD.getFullYear() +
+            ' · ' + pad(startD.getHours()) + ':' + pad(startD.getMinutes()) +
+            (endD ? ' – ' + pad(endD.getHours()) + ':' + pad(endD.getMinutes()) : '');
+        var esTarea = String(evt.id).indexOf('tarea-') === 0;
+        var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
+        var tipo = esTarea ? 'Tarea' : (ep.evento ? 'Evento' : (ep.curso ? 'Curso' : 'Actividad'));
+        // Respeta el color real del evento (mismo cálculo que el grid del calendario):
+        // - color custom si está definido (incluye negro #1D1D1F, café, etc.)
+        // - tareas: naranja
+        // - con oportunidad: azul
+        // - sin opp: gris oscuro
+        var evColor = evt.color || null;
+        if (evColor === '#8B5CF6') evColor = '#B45309'; // migración legacy
+        var tipoColor = evColor || (esTarea ? '#FF9500' : (hasOpp ? '#0052D4' : '#3A3A3C'));
+        var participantes = (ep.participants || []).map(function (p) { return p.nombre || p.name || ''; }).filter(Boolean);
+        var creador = ep.creado_por ? (ep.creado_por.nombre || ep.creado_por.name || '') : '';
+        var oppHTML = '';
+        if (ep.opportunity && ep.opportunity.id) {
+            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Oportunidad</span><span>' + _calEsc(ep.opportunity.title || ep.opportunity.titulo || '—') + '</span></div>';
+        } else if (ep.curso) {
+            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Curso</span><span>' + _calEsc(ep.curso.titulo || ep.curso.title || '—') + '</span></div>';
+        } else if (ep.evento) {
+            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Evento</span><span>' + _calEsc(ep.evento.titulo || ep.evento.title || '—') + '</span></div>';
+        }
+        var descHTML = '';
+        var desc = evt.description || ep.description || '';
+        if (desc) descHTML = '<div class="cal-hover-desc">' + _calEsc(desc) + '</div>';
+        pop.innerHTML =
+            '<div class="cal-hover-head" style="background:linear-gradient(135deg,'+tipoColor+'CC 0%,'+tipoColor+' 100%);">'+
+            '  <span class="cal-hover-type">'+tipo+'</span>'+
+            '</div>'+
+            '<div class="cal-hover-body">'+
+            '  <div class="cal-hover-title">'+_calEsc(evt.title)+'</div>'+
+            '  <div class="cal-hover-when">'+fechaStr+'</div>'+
+            descHTML +
+            (creador ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Creador</span><span>'+_calEsc(creador)+'</span></div>' : '') +
+            (participantes.length ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Participantes</span><span>'+_calEsc(participantes.join(', '))+'</span></div>' : '') +
+            oppHTML +
+            '</div>';
+        // Posicionar cerca del anchor
+        var rect = anchorEl.getBoundingClientRect();
+        pop.style.visibility = 'hidden';
+        pop.style.display = 'block';
+        var pW = pop.offsetWidth;
+        var pH = pop.offsetHeight;
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var left = rect.right + 10;
+        if (left + pW + 8 > vw) left = rect.left - pW - 10;
+        if (left < 8) left = 8;
+        var top = rect.top;
+        if (top + pH + 8 > vh) top = vh - pH - 8;
+        if (top < 8) top = 8;
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+        pop.style.visibility = '';
+    }
+    function _calHideHoverPreview() {
+        clearTimeout(window._calHoverHideTimer);
+        window._calHoverHideTimer = setTimeout(function () {
+            var pop = document.getElementById('calHoverPopover');
+            if (pop) pop.style.display = 'none';
+        }, 80);
+    }
+
+    /* ─── Abrir modal completo del evento ─── */
+    window._calOpenFull = function (id) {
+        var evt = _globalEvents.find(function (x) { return String(x.id) === String(id); });
+        if (!evt) return;
+        var ep = evt.extendedProps || {};
+        if (ep.evento && ep.evento.id && typeof window.eventoDetalleAbrir === 'function') {
+            window.eventoDetalleAbrir(ep.evento.id); return;
+        }
+        if (ep.curso && ep.curso.id && typeof window.cursoDetalleAbrir === 'function') {
+            window.cursoDetalleAbrir(ep.curso.id); return;
+        }
+        if (String(id).indexOf('tarea-') === 0) {
+            var tareaId = parseInt(String(id).slice(6), 10);
+            if (tareaId && typeof window.crmTaskVerDetalle === 'function') {
+                window.crmTaskVerDetalle(tareaId); return;
+            }
+        }
+        if (typeof window.woVerActividadGenerica === 'function') {
+            window.woVerActividadGenerica(id);
+        } else if (typeof window.calShowEventDetail === 'function') {
+            window.calShowEventDetail(id);
+        }
+    };
+
     function calApplyFilter(filterVal) {
         var events = window._calAllEvents || _globalEvents;
         var filtered = _calFilterEventsForSelection(events, filterVal);
+        filtered = _calApplyTypeFilters(filtered);
         if (_globalCalendar) { _globalCalendar.removeAllEventSources(); _globalCalendar.addEventSource(filtered); }
     }
 
+    /* ─── Filtro de tipos (Tareas / Actividades / Eventos / Cursos) ─── */
+    window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true };
+    function _calClassifyType(ev) {
+        // Solo es "Tarea" si el id viene con prefijo 'tarea-' (tareas reales).
+        // El extendedProps.tipo_actividad puede ser 'tarea' como categoría visual
+        // de una actividad del calendario, pero NO la hace una tarea real.
+        if (String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
+        var ep = ev.extendedProps || {};
+        if (ep.evento) return 'evento';
+        if (ep.curso) return 'curso';
+        return 'actividad';
+    }
+    function _calApplyTypeFilters(events) {
+        var f = window._calTypeFilters || {};
+        return events.filter(function (ev) { return f[_calClassifyType(ev)] !== false; });
+    }
+    window.calFiltroToggle = function (e) {
+        e.stopPropagation();
+        var pop = document.getElementById('calFiltroPop');
+        if (!pop) return;
+        pop.style.display = (pop.style.display === 'none' || !pop.style.display) ? 'block' : 'none';
+        if (pop.style.display === 'block') {
+            // Click-fuera cierra el popover
+            setTimeout(function(){
+                document.addEventListener('click', _calFiltroCloseOnOutside, { once: true });
+            }, 0);
+        }
+    };
+    function _calFiltroCloseOnOutside(e) {
+        var pop = document.getElementById('calFiltroPop');
+        var btn = document.getElementById('calFiltroBtn');
+        if (!pop) return;
+        if (pop.contains(e.target) || (btn && btn.contains(e.target))) {
+            document.addEventListener('click', _calFiltroCloseOnOutside, { once: true });
+            return;
+        }
+        pop.style.display = 'none';
+    }
+    // Bindear checkboxes (idempotente; el popover puede no existir en widget mode)
+    function _calFiltroBindCheckboxes() {
+        var pop = document.getElementById('calFiltroPop');
+        if (!pop || pop._wired) return;
+        pop._wired = true;
+        pop.querySelectorAll('input[type="checkbox"][data-cal-type]').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var tipo = cb.getAttribute('data-cal-type');
+                window._calTypeFilters[tipo] = cb.checked;
+                var inp = document.getElementById('calUserFilter');
+                calApplyFilter(inp ? inp.value : 'all');
+            });
+        });
+    }
+
     /* ─── CREAR ACTIVIDAD ─── */
-    window.calGlobalAbrirCrearActividad = function () {
+    window.calGlobalAbrirCrearActividad = function (preDate) {
         document.getElementById('calFormActNombre').value = '';
-        var d=new Date(); var pad=function(n){return String(n).padStart(2,'0');};
+        var pad=function(n){return String(n).padStart(2,'0');};
+        // Si vino con fecha (click en celda del calendario), usa esa fecha pero con hora actual.
+        var d = (preDate instanceof Date) ? preDate : new Date();
+        var now = new Date();
         document.getElementById('calFormActFecha').value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-        var startH=d.getHours(), startM=d.getMinutes();
+        var startH=now.getHours(), startM=now.getMinutes();
         document.getElementById('calFormActInicio').value = pad(startH)+':'+pad(startM);
         var endH=startH+1; if(endH>=24) endH=23;
         document.getElementById('calFormActFin').value = pad(endH)+':'+pad(startM);
@@ -2347,6 +2809,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         try { if (sessionStorage.getItem('_crm_cal_open')==='1') setTimeout(function(){calendarioAbrir();},500); } catch(e){}
+        // Modo página: si el contenedor ya tiene is-page-mode (renderizado por
+        // Django cuando tab=calendario), inicializamos el calendario automáticamente.
+        var ovPage = document.getElementById('widgetCalendarioMaster');
+        if (ovPage && ovPage.classList.contains('is-page-mode')) {
+            setTimeout(function(){ try { calendarioAbrir(); } catch(e){ console.error('calendario page init:', e); } }, 80);
+        }
         var inicioEl=document.getElementById('calFormActInicio');
         var finEl=document.getElementById('calFormActFin');
         if (inicioEl&&finEl) {

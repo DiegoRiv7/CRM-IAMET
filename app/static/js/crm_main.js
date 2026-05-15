@@ -507,17 +507,9 @@
             if (btnClose) btnClose.addEventListener('click', closeWidget);
             if (btnCancel) btnCancel.addEventListener('click', closeWidget);
 
-            // Close on overlay background click
-            if (overlay) {
-                overlay.addEventListener('click', function (e) {
-                    if (e.target === overlay) closeWidget();
-                });
-            }
-
-            // Close on Escape
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && overlay && overlay.classList.contains('active')) closeWidget();
-            });
+            // Nota: el modal de Nueva Oportunidad solo se cierra con el botón ×
+            // (o el "Cancelar" del footer). El click sobre el backdrop y ESC están
+            // deshabilitados a propósito para evitar perder un draft por accidente.
 
             // ── Autocomplete: Cliente ──
             var clienteInput = document.getElementById('wfCliente');
@@ -828,6 +820,33 @@
                             if (typeof crmTaskVerDetalle === 'function') crmTaskVerDetalle(_openTaskClean);
                         }, 600);
                         _urlParams.delete('open_task');
+                        _cleanParams = true;
+                    }
+                }
+                // Deep-link a cliente: abre el widget de cliente en la pestaña Información
+                var _openClienteId = _urlParams.get('open_cliente');
+                if (_openClienteId) {
+                    var _openClienteClean = parseInt(_openClienteId, 10);
+                    if (_openClienteClean) {
+                        setTimeout(function () {
+                            if (typeof window.openClienteModal === 'function') {
+                                window.openClienteModal(_openClienteClean, '', 'info');
+                            }
+                        }, 600);
+                        _urlParams.delete('open_cliente');
+                        _cleanParams = true;
+                    }
+                }
+                // Deep-link a proyecto: cambia a la vista Proyectos y abre el detalle
+                var _openProyId = _urlParams.get('open_proyecto');
+                if (_openProyId) {
+                    var _openProyClean = parseInt(_openProyId, 10);
+                    if (_openProyClean) {
+                        setTimeout(function () {
+                            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
+                            if (typeof window.proyectosVerDetalle === 'function') window.proyectosVerDetalle(_openProyClean);
+                        }, 600);
+                        _urlParams.delete('open_proyecto');
                         _cleanParams = true;
                     }
                 }
@@ -4649,10 +4668,18 @@
                 currentMode = mode;
                 var isCot = (mode === 'cotizado');
                 var isProsp = (mode === 'prospecciones');
-                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp) ? 'none' : '';
+                var isInfo = (mode === 'info');
+                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp || isInfo) ? 'none' : '';
                 if (clienteOppHeadCot) clienteOppHeadCot.style.display = isCot ? '' : 'none';
                 if (clienteOppHeadProsp) clienteOppHeadProsp.style.display = isProsp ? '' : 'none';
-                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp) ? 'none' : '';
+                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp || isInfo) ? 'none' : '';
+                // En modo "info" ocultamos los filters/búsqueda/periodo y la tabla; mostramos el panel.
+                var infoPanel = document.getElementById('clienteOppInfoPanel');
+                var listWrap = document.getElementById('clienteOppListWrap');
+                var filtersBar = document.querySelector('#widgetClienteOportunidades .wco-filters');
+                if (listWrap) listWrap.style.display = isInfo ? 'none' : '';
+                if (filtersBar) filtersBar.style.display = isInfo ? 'none' : '';
+                if (infoPanel) infoPanel.style.display = isInfo ? 'block' : 'none';
                 // Marcar tab activo
                 if (clienteOppTabs) {
                     var tabKey = mode === 'cobrado' ? 'oportunidades' : mode;
@@ -4674,6 +4701,11 @@
             }
             function _cargarTabActivo(){
                 if (!currentClienteId) return;
+                // Tab "Información" — no usa la tabla; carga la carátula del cliente.
+                if (currentMode === 'info') {
+                    _cargarClienteInfo();
+                    return;
+                }
                 // Periodo del modal — se aplica a los 3 tabs (op/cot/prosp).
                 var mesQ = _clienteOppMes || '';
                 var anioQ = _clienteOppAnio || '';
@@ -4704,15 +4736,454 @@
                     });
             }
 
+            // ── Tab "Información" (carátula del cliente) ──
+            var _wciSaveBtnBound = false;
+            function _wciCsrf(){
+                var name = 'csrftoken=';
+                var parts = (document.cookie || '').split('; ');
+                for (var i = 0; i < parts.length; i++) {
+                    if (parts[i].indexOf(name) === 0) return parts[i].substring(name.length);
+                }
+                return '';
+            }
+            function _wciSetField(id, val){ var el = document.getElementById(id); if (el) el.value = val || ''; }
+            function _wciPaintMapaLink(){
+                var inp = document.getElementById('wciMapaUrl');
+                var a = document.getElementById('wciMapaLink');
+                var empty = document.getElementById('wciMapaLinkEmpty');
+                var url = (inp && inp.value || '').trim();
+                if (url) {
+                    var href = url;
+                    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+                    if (a) {
+                        a.href = href;
+                        a.textContent = url;
+                        a.style.display = 'inline-block';
+                    }
+                    if (empty) empty.style.display = 'none';
+                } else {
+                    if (a) { a.style.display = 'none'; a.removeAttribute('href'); a.textContent = ''; }
+                    if (empty) empty.style.display = 'inline-block';
+                }
+            }
+            function _wciSetText(id, val, hideIfEmpty){
+                var el = document.getElementById(id); if (!el) return;
+                el.textContent = val || '';
+                var row = id === 'wciRfc' ? document.getElementById('wciRfcRow') :
+                          id === 'wciCategoria' ? document.getElementById('wciCatRow') : null;
+                if (row) row.style.display = (hideIfEmpty && !val) ? 'none' : 'block';
+            }
+            function _wciRenderLogo(url){
+                var img = document.getElementById('wciLogoImg');
+                var empty = document.getElementById('wciLogoEmpty');
+                if (url) {
+                    if (img) { img.src = url; img.style.display = 'block'; }
+                    if (empty) empty.style.display = 'none';
+                } else {
+                    if (img) { img.src = ''; img.style.display = 'none'; }
+                    if (empty) empty.style.display = 'flex';
+                }
+            }
+            // ── Helpers para selectores inteligentes ──
+            // Day picker: convierte una serialización JSON {dias:[],desde:'',hasta:''}
+            // (o un string plano legacy) a los botones marcados + horas.
+            // Día → nombre (capitalizado)
+            var _WCI_DAY_ORDER = ['L','M','X','J','V','S','D'];
+            var _WCI_DAY_NAMES = { L:'Lunes', M:'Martes', X:'Miércoles', J:'Jueves', V:'Viernes', S:'Sábado', D:'Domingo' };
+            function _wciDiasFrase(dias){
+                if (!dias || !dias.length) return '';
+                // Ordenar según L,M,X,J,V,S,D
+                var orden = dias.slice().sort(function(a, b){ return _WCI_DAY_ORDER.indexOf(a) - _WCI_DAY_ORDER.indexOf(b); });
+                // Detectar si son consecutivos en _WCI_DAY_ORDER
+                var idxs = orden.map(function(d){ return _WCI_DAY_ORDER.indexOf(d); });
+                var consecutivos = idxs.length >= 2 && idxs.every(function(v, i){ return i === 0 || v === idxs[i-1] + 1; });
+                if (consecutivos) {
+                    return 'De ' + _WCI_DAY_NAMES[orden[0]] + ' a ' + _WCI_DAY_NAMES[orden[orden.length-1]];
+                }
+                if (orden.length === 1) return _WCI_DAY_NAMES[orden[0]];
+                var nombres = orden.map(function(d){ return _WCI_DAY_NAMES[d]; });
+                return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length-1];
+            }
+            function _wciHoraFrase(desde, hasta){
+                if (desde && hasta) return ' de ' + desde + ' a ' + hasta;
+                if (desde) return ' a partir de ' + desde;
+                if (hasta) return ' hasta ' + hasta;
+                return '';
+            }
+            function _wciPaintScheduleRead(scope){
+                var readEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoRead' : 'wciEntregaRead');
+                if (!readEl) return;
+                var dias = [];
+                document.querySelectorAll('.wci-days[data-wci-days="' + scope + '"] .wci-day.is-on').forEach(function(b){
+                    dias.push(b.dataset.day);
+                });
+                var d = (document.getElementById(scope === 'trabajo' ? 'wciTrabajoDesde' : 'wciEntregaDesde') || {}).value || '';
+                var h = (document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta') || {}).value || '';
+                var frase = _wciDiasFrase(dias) + _wciHoraFrase(d, h);
+                readEl.textContent = frase.trim();
+            }
+            function _wciSetSchedule(scope, raw){
+                var parsed = null;
+                if (raw) { try { parsed = JSON.parse(raw); } catch(e) { parsed = null; } }
+                var dias = (parsed && Array.isArray(parsed.dias)) ? parsed.dias : [];
+                var desde = (parsed && parsed.desde) || '';
+                var hasta = (parsed && parsed.hasta) || '';
+                document.querySelectorAll('.wci-days[data-wci-days="' + scope + '"] .wci-day').forEach(function(btn){
+                    btn.classList.toggle('is-on', dias.indexOf(btn.dataset.day) >= 0);
+                });
+                var dEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoDesde' : 'wciEntregaDesde');
+                var hEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta');
+                if (dEl) dEl.value = desde;
+                if (hEl) hEl.value = hasta;
+                _wciPaintScheduleRead(scope);
+            }
+            function _wciGetSchedule(scope){
+                var dias = [];
+                document.querySelectorAll('.wci-days[data-wci-days="' + scope + '"] .wci-day.is-on').forEach(function(b){
+                    dias.push(b.dataset.day);
+                });
+                var dEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoDesde' : 'wciEntregaDesde');
+                var hEl = document.getElementById(scope === 'trabajo' ? 'wciTrabajoHasta' : 'wciEntregaHasta');
+                var payload = { dias: dias, desde: (dEl && dEl.value) || '', hasta: (hEl && hEl.value) || '' };
+                if (!dias.length && !payload.desde && !payload.hasta) return '';
+                return JSON.stringify(payload);
+            }
+            // Facturación: rango "del día X al día Y de cada mes"
+            function _wciFactPaintRead(desde, hasta){
+                var el = document.getElementById('wciFactRead');
+                if (!el) return;
+                if (desde && hasta) el.textContent = 'Del ' + desde + ' al ' + hasta + ' de cada mes';
+                else if (desde) el.textContent = 'Día ' + desde + ' de cada mes';
+                else if (hasta) el.textContent = 'Hasta el ' + hasta + ' de cada mes';
+                else el.textContent = '';
+            }
+            function _wciSetFact(raw){
+                var parsed = null;
+                if (raw) { try { parsed = JSON.parse(raw); } catch(e) { parsed = null; } }
+                var desde = '', hasta = '';
+                if (parsed) {
+                    if (parsed.desde != null) desde = String(parsed.desde);
+                    if (parsed.hasta != null) hasta = String(parsed.hasta);
+                    // Compat con formato viejo {dias:[5,15,30]}: tomar min/max
+                    if (!desde && !hasta && Array.isArray(parsed.dias) && parsed.dias.length) {
+                        var nums = parsed.dias.map(function(d){ var n = parseInt(d, 10); return isNaN(n) ? null : n; }).filter(function(n){ return n != null; });
+                        if (nums.length) { desde = String(Math.min.apply(null, nums)); hasta = String(Math.max.apply(null, nums)); }
+                    }
+                }
+                var dEl = document.getElementById('wciFactDesde');
+                var hEl = document.getElementById('wciFactHasta');
+                if (dEl) dEl.value = desde;
+                if (hEl) hEl.value = hasta;
+                _wciFactPaintRead(desde, hasta);
+            }
+            function _wciGetFact(){
+                var dEl = document.getElementById('wciFactDesde');
+                var hEl = document.getElementById('wciFactHasta');
+                var desde = (dEl && dEl.value) || '';
+                var hasta = (hEl && hEl.value) || '';
+                if (!desde && !hasta) return '';
+                var payload = {};
+                if (desde) payload.desde = parseInt(desde, 10);
+                if (hasta) payload.hasta = parseInt(hasta, 10);
+                return JSON.stringify(payload);
+            }
+
+            function _wciClearEditing(){
+                var panel = document.getElementById('clienteOppInfoPanel');
+                if (!panel) return;
+                panel.classList.remove('has-editing');
+                panel.querySelectorAll('.wco-info-card.is-editing, .wco-info-id-field.is-editing, .wco-info-id-photo.is-editing')
+                    .forEach(function(el){ el.classList.remove('is-editing'); });
+            }
+            function _wciActivateField(field){
+                if (!field) return;
+                var panel = document.getElementById('clienteOppInfoPanel');
+                if (panel) panel.classList.add('has-editing');
+                field.classList.add('is-editing');
+            }
+
+            function _cargarClienteInfo(){
+                var saved = document.getElementById('wciSavedHint');
+                if (saved) saved.textContent = 'Cargando…';
+                // Siempre vuelve a modo lectura al recargar.
+                _wciClearEditing();
+                fetch('/app/api/cliente-info/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if (!data || !data.ok) { if (saved) saved.textContent = 'Error al cargar'; return; }
+                        var c = data.cliente || {};
+                        _wciSetText('wciNombre', c.nombre || '—');
+                        _wciSetText('wciRfc', c.rfc || '', true);
+                        _wciRenderLogo(c.logo_url);
+                        _wciSetField('wciUbicacion', c.ubicacion);
+                        _wciSetField('wciMapaUrl', c.mapa_url);
+                        _wciPaintMapaLink();
+                        _wciSetSchedule('trabajo', c.horarios_trabajo);
+                        // dias_entrega ahora es texto libre. Si por compatibilidad viejo
+                        // venía como JSON, lo limpiamos para que el user lo reescriba.
+                        var instrTxt = c.dias_entrega || '';
+                        if (instrTxt && instrTxt.charAt(0) === '{') instrTxt = '';
+                        _wciSetField('wciInstruccionesEntrega', instrTxt);
+                        _wciSetFact(c.dias_facturacion);
+                        _wciSetField('wciCobro', c.proceso_cobro);
+                        _wciSetField('wciReglas', c.reglas_acceso);
+                        _wciSetField('wciInfoExtra', c.info_adicional);
+                        if (saved) saved.textContent = 'Estás editando información';
+                    }).catch(function(){
+                        if (saved) saved.textContent = 'Error de red';
+                    });
+                _wciCargarContactos();
+                _wciBindOnce();
+            }
+            function _wciBindOnce(){
+                if (_wciSaveBtnBound) return;
+                _wciSaveBtnBound = true;
+                // Toggle pills de días (sólo cuando el field está en edición) + repinte frase
+                document.querySelectorAll('#widgetClienteOportunidades .wci-day').forEach(function(btn){
+                    btn.addEventListener('click', function(){
+                        var field = btn.closest('.wco-info-id-field');
+                        if (!field || !field.classList.contains('is-editing')) return;
+                        btn.classList.toggle('is-on');
+                        var scope = btn.closest('.wci-days').dataset.wciDays;
+                        if (scope) _wciPaintScheduleRead(scope);
+                    });
+                });
+                // Repintar el resumen "Del X al Y" cuando cambian los inputs del rango
+                ['wciFactDesde','wciFactHasta'].forEach(function(id){
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('input', function(){
+                        var d = (document.getElementById('wciFactDesde')||{}).value || '';
+                        var h = (document.getElementById('wciFactHasta')||{}).value || '';
+                        _wciFactPaintRead(d, h);
+                    });
+                });
+                // Cuando cambia un input de tiempo, repinta el resumen legible
+                ['wciTrabajoDesde','wciTrabajoHasta'].forEach(function(id){
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('input', function(){ _wciPaintScheduleRead('trabajo'); });
+                });
+                // Click-to-edit: cada bloque entra en edición de forma independiente.
+                var panel = document.getElementById('clienteOppInfoPanel');
+                if (panel) {
+                    panel.addEventListener('click', function(e){
+                        if (e.target.closest('.wci-contactos')) return;
+                        if (e.target.closest('.wco-info-savebar')) return;
+                        var field = e.target.closest('.wco-info-card, .wco-info-id-field, .wco-info-id-photo');
+                        if (!field) return;
+                        if (field.classList.contains('is-editing')) return;
+                        // Fields con data-no-edit no entran en edición por click directo.
+                        if (field.hasAttribute('data-no-edit')) return;
+                        _wciActivateField(field);
+                        var input = e.target.closest('input, textarea');
+                        if (input) {
+                            setTimeout(function(){ input.focus(); }, 0);
+                        } else {
+                            var first = field.querySelector('textarea, input:not([type=file])');
+                            if (first) setTimeout(function(){ first.focus(); }, 0);
+                        }
+                    });
+                }
+                // Repinta el link cuando se edita el input
+                var mapaInp = document.getElementById('wciMapaUrl');
+                if (mapaInp) mapaInp.addEventListener('input', _wciPaintMapaLink);
+
+                // Lápiz "editar link" en el field de Google Maps
+                var mapaEditBtn = document.getElementById('wciMapaEditBtn');
+                if (mapaEditBtn) {
+                    mapaEditBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        var field = mapaEditBtn.closest('.wco-info-id-field');
+                        if (!field || field.classList.contains('is-editing')) return;
+                        _wciActivateField(field);
+                        var inp = document.getElementById('wciMapaUrl');
+                        if (inp) setTimeout(function(){ inp.focus(); inp.select(); }, 0);
+                    });
+                }
+                // Botón Cancelar
+                var cancelBtn = document.getElementById('wciCancelBtn');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function(){
+                        _cargarClienteInfo();
+                    });
+                }
+                var saveBtn = document.getElementById('wciSaveBtn');
+                var fileInput = document.getElementById('wciLogoFile');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function(){
+                        if (!currentClienteId) return;
+                        var fd = new FormData();
+                        fd.append('ubicacion', (document.getElementById('wciUbicacion') || {}).value || '');
+                        fd.append('mapa_url', (document.getElementById('wciMapaUrl') || {}).value || '');
+                        fd.append('horarios_trabajo', _wciGetSchedule('trabajo'));
+                        fd.append('dias_entrega', (document.getElementById('wciInstruccionesEntrega') || {}).value || '');
+                        fd.append('dias_facturacion', _wciGetFact());
+                        fd.append('proceso_cobro', (document.getElementById('wciCobro') || {}).value || '');
+                        fd.append('reglas_acceso', (document.getElementById('wciReglas') || {}).value || '');
+                        fd.append('info_adicional', (document.getElementById('wciInfoExtra') || {}).value || '');
+                        if (fileInput && fileInput.files && fileInput.files[0]) {
+                            fd.append('logo', fileInput.files[0]);
+                        }
+                        var saved = document.getElementById('wciSavedHint');
+                        if (saved) saved.textContent = 'Guardando…';
+                        saveBtn.disabled = true;
+                        fetch('/app/api/cliente-info/' + currentClienteId + '/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': _wciCsrf() },
+                            body: fd,
+                        }).then(function(r){ return r.json(); }).then(function(data){
+                            saveBtn.disabled = false;
+                            if (data && data.ok) {
+                                if (saved) saved.textContent = 'Guardado';
+                                if (data.cliente && data.cliente.logo_url) _wciRenderLogo(data.cliente.logo_url);
+                                if (fileInput) fileInput.value = '';
+                                // Vuelve a modo lectura tras guardar
+                                _wciClearEditing();
+                                setTimeout(function(){ if (saved && saved.textContent === 'Guardado') saved.textContent = ''; }, 2200);
+                            } else {
+                                if (saved) saved.textContent = 'Error al guardar';
+                            }
+                        }).catch(function(){
+                            saveBtn.disabled = false;
+                            if (saved) saved.textContent = 'Error de red';
+                        });
+                    });
+                }
+                if (fileInput) {
+                    fileInput.addEventListener('change', function(){
+                        if (fileInput.files && fileInput.files[0]) {
+                            var reader = new FileReader();
+                            reader.onload = function(e){ _wciRenderLogo(e.target.result); };
+                            reader.readAsDataURL(fileInput.files[0]);
+                        }
+                    });
+                }
+
+                // ── Tablero de contactos ──
+                var contactoAddBtn = document.getElementById('wciContactoAdd');
+                if (contactoAddBtn) {
+                    contactoAddBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        _wciContactoOpenModal(null);
+                    });
+                }
+                var contClose = document.getElementById('wciContClose');
+                var contCancel = document.getElementById('wciContCancel');
+                var contSave = document.getElementById('wciContSave');
+                var contOverlay = document.getElementById('widgetContacto');
+                function _closeContModal(){ if (contOverlay) contOverlay.classList.remove('active'); }
+                if (contClose) contClose.addEventListener('click', _closeContModal);
+                if (contCancel) contCancel.addEventListener('click', _closeContModal);
+                if (contOverlay) contOverlay.addEventListener('click', function(e){
+                    if (e.target === contOverlay) _closeContModal();
+                });
+                if (contSave) {
+                    contSave.addEventListener('click', function(){
+                        var id = (document.getElementById('wciContId')||{}).value || '';
+                        var nombre = (document.getElementById('wciContNombre')||{}).value.trim();
+                        if (!nombre) { document.getElementById('wciContNombre').focus(); return; }
+                        var fd = new FormData();
+                        fd.append('nombre', nombre);
+                        fd.append('apellido', (document.getElementById('wciContApellido')||{}).value || '');
+                        fd.append('puesto', (document.getElementById('wciContPuesto')||{}).value || '');
+                        fd.append('email', (document.getElementById('wciContEmail')||{}).value || '');
+                        fd.append('telefono', (document.getElementById('wciContTel')||{}).value || '');
+                        var url = id
+                            ? '/app/api/cliente-contacto/' + id + '/'
+                            : '/app/api/cliente-info/' + currentClienteId + '/contactos/';
+                        contSave.disabled = true;
+                        fetch(url, { method: 'POST', headers: { 'X-CSRFToken': _wciCsrf() }, body: fd })
+                            .then(function(r){ return r.json(); })
+                            .then(function(data){
+                                contSave.disabled = false;
+                                if (data && data.ok) {
+                                    _closeContModal();
+                                    _wciCargarContactos();
+                                }
+                            }).catch(function(){ contSave.disabled = false; });
+                    });
+                }
+            }
+
+            function _wciContactoOpenModal(c){
+                document.getElementById('wciContTitle').textContent = c ? 'Editar contacto' : 'Nuevo contacto';
+                document.getElementById('wciContId').value = c ? c.id : '';
+                document.getElementById('wciContNombre').value = c ? (c.nombre || '') : '';
+                document.getElementById('wciContApellido').value = c ? (c.apellido || '') : '';
+                document.getElementById('wciContPuesto').value = c ? (c.puesto || '') : '';
+                document.getElementById('wciContEmail').value = c ? (c.email || '') : '';
+                document.getElementById('wciContTel').value = c ? (c.telefono || '') : '';
+                document.getElementById('widgetContacto').classList.add('active');
+                setTimeout(function(){ document.getElementById('wciContNombre').focus(); }, 50);
+            }
+
+            function _escapeHTML(s){
+                return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            }
+
+            function _wciRenderContactos(rows){
+                var track = document.getElementById('wciContactosTrack');
+                var count = document.getElementById('wciContactosCount');
+                if (!track) return;
+                rows = rows || [];
+                if (count) count.textContent = rows.length;
+                track.classList.toggle('is-empty', rows.length === 0);
+                if (!rows.length) {
+                    track.innerHTML = '<div class="wci-contactos-empty" id="wciContactosEmpty">No hay contactos para este cliente. Agrega el primero.</div>';
+                    return;
+                }
+                var html = '';
+                rows.forEach(function(c){
+                    var nombre = _escapeHTML((c.nombre || '') + (c.apellido ? ' ' + c.apellido : ''));
+                    html += '<div class="wci-contacto-card" data-cid="' + c.id + '">' +
+                        (c.puesto ? '<div class="wci-contacto-puesto">' + _escapeHTML(c.puesto) + '</div>' : '') +
+                        '<div class="wci-contacto-name">' + (nombre || '—') + '</div>' +
+                        (c.email ? '<div class="wci-contacto-meta"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:' + _escapeHTML(c.email) + '" style="color:inherit;text-decoration:none;">' + _escapeHTML(c.email) + '</a></div>' : '') +
+                        (c.telefono ? '<div class="wci-contacto-meta"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' + _escapeHTML(c.telefono) + '</div>' : '') +
+                        '<div class="wci-contacto-actions">' +
+                        '  <button type="button" class="wci-contacto-act is-edit" title="Editar"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+                        '  <button type="button" class="wci-contacto-act is-del" title="Eliminar"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>' +
+                        '</div>' +
+                        '</div>';
+                });
+                track.innerHTML = html;
+                // Bind actions
+                track.querySelectorAll('.wci-contacto-card').forEach(function(card){
+                    var cid = card.dataset.cid;
+                    var c = rows.find(function(x){ return String(x.id) === String(cid); });
+                    var editBtn = card.querySelector('.wci-contacto-act.is-edit');
+                    var delBtn = card.querySelector('.wci-contacto-act.is-del');
+                    if (editBtn) editBtn.addEventListener('click', function(e){ e.stopPropagation(); _wciContactoOpenModal(c); });
+                    if (delBtn) delBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        if (!confirm('¿Eliminar el contacto "' + (c.nombre || '') + '"?')) return;
+                        fetch('/app/api/cliente-contacto/' + cid + '/', {
+                            method: 'DELETE',
+                            headers: { 'X-CSRFToken': _wciCsrf() },
+                        }).then(function(r){ return r.json(); }).then(function(d){
+                            if (d && d.ok) _wciCargarContactos();
+                        });
+                    });
+                });
+            }
+
+            function _wciCargarContactos(){
+                if (!currentClienteId) return;
+                fetch('/app/api/cliente-info/' + currentClienteId + '/contactos/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if (data && data.ok) _wciRenderContactos(data.contactos || []);
+                    });
+            }
+
             // ── Abrir widget (también expuesta globalmente para que otras
             //    vistas — ej. el tab Clientes del Dashboard — la usen) ──
             window.openClienteModal = openClienteModal;
             function openClienteModal(clienteId, clienteNombre, tab, porCreacion) {
                 currentClienteId = clienteId;
                 allClienteData = [];
-                var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado' };
+                var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado', info: 'info', prospecciones: 'prospecciones' };
                 var mode = modeMap[tab] || 'oportunidades';
-                var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones' };
+                var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones', info: 'Información', prospecciones: 'Prospecciones' };
                 clienteOppTitle.textContent = labelMap[mode] + ' — ' + clienteNombre;
                 widgetClienteOpp.style.display = 'flex';
 
@@ -4723,6 +5194,13 @@
                 _clienteOppMes = ''; _clienteOppAnio = '';
                 _refreshPeriodActives(); _refreshPeriodLabel();
                 setWidgetMode(mode);
+
+                // Si entramos directo al tab Información, carga la carátula del cliente
+                // (no la tabla de oportunidades).
+                if (mode === 'info') {
+                    if (typeof _cargarTabActivo === 'function') _cargarTabActivo();
+                    return;
+                }
 
                 var colspan = '6';
                 clienteOppTbody.innerHTML = '<tr><td colspan="' + colspan + '" class="wco-empty">Cargando...</td></tr>';
@@ -5566,6 +6044,22 @@
                 'btnCRM'
             );
             if (activeBtn) activeBtn.classList.add('active');
+            // Si el calendario está renderizado como página completa (porque el
+            // user llegó desde ?tab=calendario), al cambiar a CRM/Tareas/Proyectos
+            // hay que ocultarlo o se queda visible debajo del nuevo contenido.
+            var calOv = document.getElementById('widgetCalendarioMaster');
+            if (calOv && calOv.classList.contains('is-page-mode')) {
+                calOv.style.display = 'none';
+                calOv.classList.remove('is-page-mode');
+                // Limpia ?tab=calendario de la URL para que un refresh no reabra el calendario
+                try {
+                    var url = new URL(window.location.href);
+                    if (url.searchParams.get('tab') === 'calendario') {
+                        url.searchParams.delete('tab');
+                        window.history.replaceState({}, '', url.toString());
+                    }
+                } catch (e) { /* defensivo */ }
+            }
             // Al salir del CRM (tareas/proyectos) quitar el scroll-lock que el
             // kanban del CRM pudo haber dejado — si no, el body/main quedan con
             // height:100vh + overflow:hidden y el scroll de la lista de tareas
@@ -5833,16 +6327,20 @@
 
         // ── Renderizar tabla de tareas ──
 
-        // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint)
+        // Restaurar tab desde localStorage (HTML + topbar ya aplicaron estilos antes del paint).
+        // Si la URL trae ?tab=calendario, el server-render marca btnCalendario activo y
+        // NO debemos sobrescribir con el crmView persistido (eso causaba doble-active).
+        var _urlTab = null;
+        try { _urlTab = new URL(window.location.href).searchParams.get('tab'); } catch (e) {}
         var _savedView = localStorage.getItem('crmView');
-        if (_savedView === 'tareas') {
+        if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
             // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             cargarTareasCRM();
-        } else if (_savedView === 'proyectos') {
+        } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
@@ -8184,6 +8682,11 @@
                 if (e.key === 'Escape') crmTaskCancelarEdicion();
                 if (e.key === 'Enter' && e.ctrlKey) crmTaskGuardar();
             });
+            // Soporte invisible para pegar/arrastrar imágenes en la descripción.
+            // Sin UI nueva: la imagen se sube como adjunto silenciosamente.
+            if (typeof window._crmTaskAttachImageHandlers === 'function') {
+                window._crmTaskAttachImageHandlers(ta, { mode: 'edit' });
+            }
         }
 
         function crmTaskEditarTitulo() {
@@ -8700,6 +9203,12 @@
 
                         var estadoEl = document.getElementById('crm-task-estado');
                         if (estadoEl) estadoEl.innerHTML = getEstadoBadgeCRM('completada');
+
+                        // Avance de etapa con descripcion requerida (modal bloqueante)
+                        if (data.requiere_descripcion && window.crmAvanceEtapa) {
+                            window.crmAvanceEtapa.handleCompletarResponse(data);
+                        }
+
                         if (data.cadena_reactiva && data.cadena_reactiva.mensaje) {
                             showToast('Tarea completada — ' + data.cadena_reactiva.mensaje, 'success', 5000);
                         } else {
@@ -9274,6 +9783,11 @@
                 if (typeof crmCreateUpdateOppLabel === 'function') crmCreateUpdateOppLabel();
                 var titleInput = document.getElementById('crmTaskTitleInput');
                 if (titleInput) titleInput.focus();
+                // Soporte invisible para pegar/arrastrar imágenes en la descripción.
+                var descEditor = document.getElementById('crmTaskDescEditor');
+                if (descEditor && typeof window._crmTaskAttachImageHandlers === 'function') {
+                    window._crmTaskAttachImageHandlers(descEditor, { mode: 'create' });
+                }
             }
         }
 
@@ -9466,6 +9980,13 @@
         };
         window._crmCreateGetFiles = function () { return _crmCreateFiles.slice(); };
         window._crmCreateClearFiles = function () { _crmCreateFiles = []; _crmCreateRenderFiles(); };
+        // Permite empujar archivos al buffer sin pasar por el <input type=file>
+        // (lo usan los handlers invisibles de paste/drop en la descripción).
+        window._crmCreateAddFile = function (f) {
+            if (!f) return;
+            _crmCreateFiles.push(f);
+            _crmCreateRenderFiles();
+        };
 
         // ── Header: fetch nombre de oportunidad (si oppId presente) ──
         window.crmCreateUpdateOppLabel = function () {
@@ -10391,3 +10912,180 @@
             dd.innerHTML = ''; dd.classList.remove('active');
         }
     });
+/* ──────────────────────────────────────────────────────────────────
+ * Paste/Drop invisible de imágenes en la descripción de tareas
+ * ──────────────────────────────────────────────────────────────────
+ * Reglas:
+ *  - NO se muestra UI nueva (sin tooltips, sin badges, sin dropzones)
+ *  - Solo se intercepta paste cuando hay un blob de imagen
+ *  - En modo 'create': se acumula en _crmCreateFiles (subida diferida)
+ *  - En modo 'edit':   sube al endpoint de comentarios como adjunto
+ *  - Inserta una marca textual discreta en el cursor para que el usuario
+ *    sepa que su captura quedó vinculada a ese punto del texto
+ *  - Si falla: console.error, nada visible al usuario
+ * ──────────────────────────────────────────────────────────────────*/
+(function () {
+    function _pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function _genFilename(file) {
+        var d = new Date();
+        var ext = 'png';
+        if (file && file.type) {
+            var m = file.type.match(/^image\/([a-z0-9+.\-]+)/i);
+            if (m) {
+                ext = m[1].toLowerCase();
+                if (ext === 'jpeg') ext = 'jpg';
+                if (ext === 'svg+xml') ext = 'svg';
+            }
+        } else if (file && file.name && file.name.indexOf('.') !== -1) {
+            ext = file.name.split('.').pop().toLowerCase();
+        }
+        return 'captura-' + d.getFullYear() + '-' + _pad(d.getMonth() + 1) + '-' +
+            _pad(d.getDate()) + '-' + _pad(d.getHours()) + _pad(d.getMinutes()) +
+            _pad(d.getSeconds()) + '.' + ext;
+    }
+
+    function _insertAtCursor(ta, text) {
+        try {
+            var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+            var end = ta.selectionEnd != null ? ta.selectionEnd : start;
+            var v = ta.value || '';
+            var prefix = (start > 0 && v.charAt(start - 1) && !/\s/.test(v.charAt(start - 1))) ? ' ' : '';
+            var inserted = prefix + text;
+            ta.value = v.slice(0, start) + inserted + v.slice(end);
+            var cursor = start + inserted.length;
+            ta.selectionStart = ta.selectionEnd = cursor;
+            var ev;
+            try { ev = new Event('input', { bubbles: true }); }
+            catch (e) { ev = document.createEvent('Event'); ev.initEvent('input', true, true); }
+            ta.dispatchEvent(ev);
+        } catch (e) {
+            console.error('paste-img insertAtCursor:', e);
+        }
+    }
+
+    function _uploadInEditMode(file, niceName) {
+        try {
+            if (typeof _crmCurrentTaskId === 'undefined' || !_crmCurrentTaskId) {
+                console.error('paste-img: sin _crmCurrentTaskId');
+                return;
+            }
+            var fd = new FormData();
+            fd.append('contenido', '📎 Captura pegada en la descripción: ' + niceName);
+            var toSend = file;
+            try {
+                if (!file.name || file.name === 'image.png') {
+                    toSend = new File([file], niceName, { type: file.type || 'image/png' });
+                }
+            } catch (e) { /* navegadores antiguos */ }
+            fd.append('archivo_0', toSend, niceName);
+            var csrf = (typeof getCsrf === 'function') ? getCsrf() : '';
+            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/comentarios/agregar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+                body: fd,
+                credentials: 'same-origin'
+            }).then(function (r) {
+                if (!r.ok) { console.error('paste-img upload status', r.status); }
+            }).catch(function (err) {
+                console.error('paste-img upload error', err);
+            });
+        } catch (e) {
+            console.error('paste-img upload exception', e);
+        }
+    }
+
+    function _handleImageFile(ta, file, mode) {
+        if (!file) return;
+        var niceName = _genFilename(file);
+        _insertAtCursor(ta, '[📎 ' + niceName + ']');
+        if (mode === 'create') {
+            var toBuffer = file;
+            try {
+                if (!file.name || file.name === 'image.png') {
+                    toBuffer = new File([file], niceName, { type: file.type || 'image/png' });
+                }
+            } catch (e) { /* fallback */ }
+            if (typeof window._crmCreateAddFile === 'function') {
+                window._crmCreateAddFile(toBuffer);
+            } else {
+                console.error('paste-img: _crmCreateAddFile no disponible');
+            }
+        } else {
+            _uploadInEditMode(file, niceName);
+        }
+    }
+
+    function _onPaste(ev) {
+        try {
+            var cd = ev.clipboardData || window.clipboardData;
+            if (!cd) return;
+            var items = cd.items;
+            if (!items || !items.length) return;
+            var imageFile = null;
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
+                if (it && it.kind === 'file' && it.type && it.type.indexOf('image/') === 0) {
+                    var f = it.getAsFile();
+                    if (f) { imageFile = f; break; }
+                }
+            }
+            if (!imageFile) return;
+            ev.preventDefault();
+            var ta = ev.currentTarget;
+            var mode = ta._crmPasteMode || 'create';
+            _handleImageFile(ta, imageFile, mode);
+        } catch (e) {
+            console.error('paste-img onPaste:', e);
+        }
+    }
+
+    function _onDragOver(ev) {
+        try {
+            var dt = ev.dataTransfer;
+            if (!dt) return;
+            var hasImg = false;
+            if (dt.items && dt.items.length) {
+                for (var i = 0; i < dt.items.length; i++) {
+                    var it = dt.items[i];
+                    if (it && it.kind === 'file' && it.type && it.type.indexOf('image/') === 0) { hasImg = true; break; }
+                }
+            } else if (dt.types) {
+                for (var j = 0; j < dt.types.length; j++) {
+                    if (String(dt.types[j]).toLowerCase() === 'files') { hasImg = true; break; }
+                }
+            }
+            if (hasImg) { ev.preventDefault(); }
+        } catch (e) { /* silencioso */ }
+    }
+
+    function _onDrop(ev) {
+        try {
+            var dt = ev.dataTransfer;
+            if (!dt || !dt.files || !dt.files.length) return;
+            var imageFile = null;
+            for (var i = 0; i < dt.files.length; i++) {
+                var f = dt.files[i];
+                if (f && f.type && f.type.indexOf('image/') === 0) { imageFile = f; break; }
+            }
+            if (!imageFile) return;
+            ev.preventDefault();
+            var ta = ev.currentTarget;
+            var mode = ta._crmPasteMode || 'create';
+            _handleImageFile(ta, imageFile, mode);
+        } catch (e) {
+            console.error('paste-img onDrop:', e);
+        }
+    }
+
+    window._crmTaskAttachImageHandlers = function (ta, opts) {
+        if (!ta) return;
+        var mode = (opts && opts.mode) || 'create';
+        ta._crmPasteMode = mode;
+        if (ta._crmPasteWired) return;
+        ta._crmPasteWired = true;
+        ta.addEventListener('paste', _onPaste);
+        ta.addEventListener('dragover', _onDragOver);
+        ta.addEventListener('drop', _onDrop);
+    };
+})();

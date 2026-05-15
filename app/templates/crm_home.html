@@ -111,6 +111,7 @@
     {% endif %}
     {% include "crm/_content.html" %}
 
+    {% include "crm/_widget_avance_etapa.html" %}
     {% include "crm/_widget_muro.html" %}
     {% include "crm/_widget_calendario.html" %}
     {% if mis_grupos %}
@@ -123,6 +124,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% include "crm/_scripts_main.html" %}
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260514-cli-smart"></script>
 {% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}

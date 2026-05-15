@@ -248,6 +248,21 @@ class Cliente(models.Model):
     # Se usa para los KPIs del dashboard de prospectos ("convertidos este mes").
     convertido_de_potencial_at = models.DateTimeField(null=True, blank=True, verbose_name="Convertido desde Prospecto")
 
+    # ── Carátula del cliente (tab "Información" del widget) ────────────────
+    # Campos libres que cualquier miembro puede llenar y consultar para tener
+    # contexto operativo del cliente (logo, ubicación, reglas internas, etc.)
+    def _cliente_logo_path(instance, filename):
+        return f'clientes/{instance.id}/logo/{filename}'
+    logo = models.ImageField(upload_to=_cliente_logo_path, blank=True, null=True, verbose_name="Logo")
+    ubicacion = models.TextField(blank=True, default='', verbose_name="Ubicación / Dirección completa")
+    mapa_url = models.URLField(max_length=500, blank=True, default='', verbose_name="Link a Google Maps")
+    dias_entrega = models.TextField(blank=True, default='', verbose_name="Días de entrega")
+    horarios_trabajo = models.TextField(blank=True, default='', verbose_name="Horarios de trabajo")
+    dias_facturacion = models.TextField(blank=True, default='', verbose_name="Días de facturación")
+    proceso_cobro = models.TextField(blank=True, default='', verbose_name="Proceso de cobro")
+    reglas_acceso = models.TextField(blank=True, default='', verbose_name="Reglas para acceder a la planta")
+    info_adicional = models.TextField(blank=True, default='', verbose_name="Información adicional")
+
     class Meta:
         """
         Metadatos del modelo Cliente.
@@ -403,6 +418,9 @@ class Contacto(models.Model):
     bitrix_contact_id = models.IntegerField(unique=True, null=True, blank=True, verbose_name="ID de Contacto en Bitrix24")
     company_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Compañía en Bitrix24") # To link with Bitrix Company
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True, related_name='contactos', verbose_name="Cliente Asociado")
+    email = models.EmailField(blank=True, default='', verbose_name="Correo")
+    telefono = models.CharField(max_length=30, blank=True, default='', verbose_name="Teléfono")
+    puesto = models.CharField(max_length=120, blank=True, default='', verbose_name="Puesto / Cargo")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
 
@@ -5301,3 +5319,70 @@ class CursoArchivo(models.Model):
 
     def __str__(self):
         return self.nombre or self.archivo.name
+
+
+class AvanceEtapaPendiente(models.Model):
+    """
+    Cuando una tarea de automatización se completa Y su regla tiene
+    `avanzar_etapa_al_completar=True`, NO avanzamos la oportunidad
+    automáticamente: dejamos un AvanceEtapaPendiente abierto para que el
+    responsable de la oportunidad describa cada nueva tarea antes de
+    confirmar el avance.
+
+    Si el avance no requiere descripción (no hay reglas en la siguiente
+    etapa), no se crea pendiente y la cadena reactiva corre de inmediato.
+    """
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('confirmado', 'Confirmado'),
+        ('descartado', 'Descartado'),
+    ]
+
+    tarea = models.ForeignKey(
+        'Tarea',
+        on_delete=models.CASCADE,
+        related_name='avances_pendientes',
+        verbose_name='Tarea completada que dispara el avance',
+    )
+    oportunidad = models.ForeignKey(
+        'TodoItem',
+        on_delete=models.CASCADE,
+        related_name='avances_etapa_pendientes',
+        verbose_name='Oportunidad',
+    )
+    responsable = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='avances_etapa_pendientes',
+        verbose_name='Usuario que debe describir las próximas tareas',
+        help_text='Normalmente el dueño de la oportunidad',
+    )
+    etapa_actual = models.CharField(max_length=100, blank=True, default='')
+    etapa_siguiente = models.CharField(max_length=100, blank=True, default='')
+    estado = models.CharField(
+        max_length=12,
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+    )
+    descripciones_json = models.JSONField(blank=True, null=True, default=dict)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True)
+    confirmado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='avances_etapa_confirmados',
+    )
+
+    class Meta:
+        verbose_name = 'Avance de Etapa Pendiente'
+        verbose_name_plural = 'Avances de Etapa Pendientes'
+        ordering = ['fecha_creacion']
+        indexes = [
+            models.Index(fields=['responsable', 'estado']),
+            models.Index(fields=['oportunidad', 'estado']),
+        ]
+
+    def __str__(self):
+        return f"Avance {self.etapa_actual} → {self.etapa_siguiente} ({self.estado})"
