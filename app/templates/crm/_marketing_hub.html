@@ -27,7 +27,9 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     color: var(--mkthub-ink);
     background: transparent;
     min-height: calc(100vh - 120px);
-    padding: clamp(28px, 4vw, 56px) clamp(16px, 3vw, 48px) clamp(40px, 5vw, 80px);
+    /* Padding-top reducido para que el hero quede más pegado a la cápsula
+       de tabs superior. Padding-bottom mantiene espacio para scroll. */
+    padding: clamp(8px, 1.2vw, 18px) clamp(16px, 3vw, 48px) clamp(40px, 5vw, 80px);
     margin: 0;
     position: relative;
 }
@@ -36,7 +38,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 .mkthub-hero {
     text-align: center;
     max-width: 900px;
-    margin: 0 auto clamp(36px, 4vw, 60px);
+    margin: 0 auto clamp(20px, 2.4vw, 36px);
     animation: mkthubSlideUp 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .mkthub-title {
@@ -59,14 +61,14 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 /* ── Search ── */
 .mkthub-search-wrap {
     max-width: clamp(560px, 70vw, 820px);
-    margin: 0 auto clamp(32px, 4vw, 56px);
+    margin: 0 auto clamp(20px, 2.4vw, 36px);
     position: relative;
     transition: max-width 0.25s ease;
     animation: mkthubSlideUp 0.42s 0.06s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .mkthub-root.is-searching .mkthub-search-wrap {
     max-width: none;
-    margin-bottom: clamp(18px, 2vw, 24px);
+    margin: 0 auto clamp(14px, 1.6vw, 22px);
     animation: none;
 }
 .mkthub-search {
@@ -96,16 +98,9 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     min-width: 0;
 }
 .mkthub-search input::placeholder { color: var(--mkthub-mute); font-weight: 400; }
-.mkthub-search-kbd {
-    font-family: 'SF Mono', ui-monospace, monospace;
-    font-size: 0.66rem; color: var(--mkthub-mute);
-    background: #F5F3EB;
-    border: 1.5px solid var(--mkthub-line);
-    border-radius: 6px;
-    padding: 2px 7px;
-    font-weight: 500;
-    flex-shrink: 0;
-}
+/* .mkthub-search-kbd: el badge ⌘K ya no se muestra (clase oculta).
+   El atajo de teclado sigue funcional desde el handler global. */
+.mkthub-search-kbd { display: none; }
 .mkthub-search-clear {
     width: 22px; height: 22px;
     border-radius: 50%;
@@ -280,50 +275,60 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 /* ── Results view ── */
 .mkthub-results { display: none; }
 .mkthub-root.is-searching .mkthub-results { display: block; animation: mkthubFade 0.2s ease both; }
+/* En modo búsqueda no necesitamos espacio para el hero, así que reducimos
+   el padding-top al mínimo para que los filtros suban más. */
+.mkthub-root.is-searching { padding-top: clamp(6px, 1vw, 12px); }
 .mkthub-root.is-searching .mkthub-idle-only { display: none !important; }
 
-/* ── Results header: back + brand heading (NO pills de otras marcas) ── */
-.mkthub-results-header {
-    max-width: min(1480px, 96vw);
-    margin: 0 auto clamp(20px, 2vw, 32px);
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
+/* ── Results header: el back btn + brand heading se inyectan en los
+   slots de la crm-bar superior (#mkthubBarLeft / #mkthubBarRight) cuando
+   hay una marca seleccionada — así quedan en la misma fila que los tabs
+   del CRM y se ahorra espacio vertical. */
+.mkthub-bar-slot {
+    display: flex; align-items: center;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
+.mkthub-bar-slot--left { gap: 8px; min-width: 0; }
+.mkthub-bar-slot--left:empty { display: none; }
+.mkthub-bar-slot--right { gap: 12px; min-width: 0; }
+.mkthub-bar-slot--right:empty { display: none; }
+
 .mkthub-back-btn {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 8px 16px;
-    border: 1px solid var(--mkthub-line);
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--mkthub-line, #E5E7EB);
     background: #FFFFFF;
-    color: var(--mkthub-soft);
+    color: #6B7280;
     border-radius: 999px;
-    font-size: 0.84rem; font-weight: 500;
+    font-size: 0.78rem; font-weight: 500;
     cursor: pointer;
     transition: all 0.16s ease;
     font-family: inherit;
 }
 .mkthub-back-btn:hover {
     background: #FAFAFA;
-    border-color: var(--mkthub-soft);
-    color: var(--mkthub-ink);
+    border-color: #9CA3AF;
+    color: #1A1A1A;
 }
 .mkthub-brand-heading {
-    display: flex; align-items: center; gap: 14px;
-    margin-left: auto;
+    display: flex; align-items: center; gap: 12px;
+    min-width: 0;
 }
 .mkthub-brand-heading-mark {
-    font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+    font-size: clamp(1.05rem, 1.4vw, 1.35rem);
     font-weight: var(--brand-weight, 800);
     letter-spacing: var(--brand-tracking, -0.02em);
     text-transform: var(--brand-case, none);
     color: var(--brand-color);
     line-height: 1;
+    white-space: nowrap;
 }
 .mkthub-brand-heading-sub {
-    font-size: 0.82rem; font-weight: 500;
-    color: var(--mkthub-soft);
-    border-left: 1px solid var(--mkthub-line);
-    padding-left: 14px;
+    font-size: 0.74rem; font-weight: 500;
+    color: #6B7280;
+    border-left: 1px solid #E5E7EB;
+    padding-left: 12px;
+    white-space: nowrap;
 }
 
 /* ── Type segmented: control sobrio tipo iOS ── */
@@ -955,9 +960,10 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     {# ── Idle: brand cards ── #}
     <div class="mkthub-brands mkthub-idle-only" id="mkthubBrands"></div>
 
-    {# ── Results: header con back + brand heading + type segmented + grid ── #}
+    {# ── Results: type segmented + count + grid. El back btn y el
+       wordmark de la marca se inyectan en los slots de la crm-bar
+       superior (ver _content.html). #}
     <div class="mkthub-results" id="mkthubResults">
-        <div class="mkthub-results-header" id="mkthubResultsHeader"></div>
         <div class="mkthub-type-segmented" id="mkthubTypeChips"></div>
         <p class="mkthub-results-count" id="mkthubResultsCount"></p>
         <div class="mkthub-grid" id="mkthubGrid"></div>
@@ -1178,14 +1184,24 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         document.getElementById('mkthubBrands').innerHTML = html;
     }
 
-    /* ─── Render: results header (back + brand wordmark heading) ───
-       Sin pills de otras marcas. Si hay una marca activa, mostramos su
-       wordmark con la tipografía característica. Si solo hay query, solo
-       el back. */
+    /* ─── Render: back btn + brand wordmark en los slots de la crm-bar ───
+       El back btn va a #mkthubBarLeft (izquierda de la cápsula de tabs)
+       y el wordmark de la marca a #mkthubBarRight (derecha). Si solo hay
+       query (sin marca), el back btn aún se muestra y a la derecha sale
+       el texto "Resultados para ...". Cuando se vuelve a idle, ambos
+       slots se vacían y desaparecen (CSS `:empty { display:none }`). */
     function renderResultsHeader() {
-        var html = '<button type="button" class="mkthub-back-btn" data-action="clear">'
-            + '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        var leftEl = document.getElementById('mkthubBarLeft');
+        var rightEl = document.getElementById('mkthubBarRight');
+        if (!leftEl || !rightEl) return; // sin slots → nada que hacer
+
+        // Left: botón "Volver a marcas"
+        leftEl.innerHTML = ''
+            + '<button type="button" class="mkthub-back-btn" data-action="clear">'
+            + '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
             + 'Volver a marcas</button>';
+
+        // Right: wordmark de la marca (o texto de query)
         if (state.activeBrand !== 'all') {
             var b = brandById(state.activeBrand);
             if (b) {
@@ -1195,18 +1211,29 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                     + '--brand-tracking:' + b.tracking + ';'
                     + '--brand-case:' + b.case + ';';
                 var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
-                html += '<div class="mkthub-brand-heading" style="' + bstyle + '">'
+                rightEl.innerHTML = '<div class="mkthub-brand-heading" style="' + bstyle + '">'
                     + '<span class="mkthub-brand-heading-mark">' + esc(b.displayName) + '</span>'
-                    + '<span class="mkthub-brand-heading-sub">' + count + ' recursos disponibles</span>'
+                    + '<span class="mkthub-brand-heading-sub">' + count + ' recursos</span>'
                     + '</div>';
+            } else {
+                rightEl.innerHTML = '';
             }
         } else if (state.query.trim()) {
-            html += '<div class="mkthub-brand-heading">'
-                + '<span class="mkthub-brand-heading-sub" style="border:none;padding:0;font-size:0.92rem;color:var(--mkthub-ink);font-weight:500;">'
-                + 'Resultados para "<strong style="color:var(--mkthub-accent);">' + esc(state.query.trim()) + '</strong>"</span>'
+            rightEl.innerHTML = '<div class="mkthub-brand-heading">'
+                + '<span class="mkthub-brand-heading-sub" style="border:none;padding:0;font-size:0.84rem;color:#1A1A1A;font-weight:500;">'
+                + '"<strong style="color:var(--mkthub-accent);">' + esc(state.query.trim()) + '</strong>"</span>'
                 + '</div>';
+        } else {
+            rightEl.innerHTML = '';
         }
-        document.getElementById('mkthubResultsHeader').innerHTML = html;
+    }
+
+    /* Vaciar los slots cuando volvemos al idle. */
+    function clearBarSlots() {
+        var leftEl = document.getElementById('mkthubBarLeft');
+        var rightEl = document.getElementById('mkthubBarRight');
+        if (leftEl) leftEl.innerHTML = '';
+        if (rightEl) rightEl.innerHTML = '';
     }
 
     /* ─── Render: type segmented (iOS-style)
@@ -1517,6 +1544,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             renderGrid();
         } else {
             root.classList.remove('is-searching');
+            clearBarSlots();
         }
     }
 
@@ -1581,6 +1609,18 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             }
         });
 
+        // Back btn vive en la crm-bar (fuera del mkthubRoot) — handler global.
+        document.addEventListener('click', function (e) {
+            var backBtn = e.target.closest('.mkthub-back-btn');
+            if (!backBtn) return;
+            state.query = '';
+            state.activeBrand = 'all';
+            state.activeType = 'all';
+            input.value = '';
+            clear.classList.remove('is-visible');
+            updateMode();
+        });
+
         // Delegación de eventos en el root
         document.getElementById('mkthubRoot').addEventListener('click', function (e) {
             // Brand card (idle)
@@ -1599,18 +1639,8 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                 renderGrid();
                 return;
             }
-            // Back / clear (action="clear" en el botón "Volver a marcas")
-            var backBtn = e.target.closest('[data-action="clear"]');
-            if (backBtn && backBtn.classList.contains('mkthub-back-btn')) {
-                state.query = '';
-                state.activeBrand = 'all';
-                state.activeType = 'all';
-                input.value = '';
-                clear.classList.remove('is-visible');
-                kbd.style.display = '';
-                updateMode();
-                return;
-            }
+            // Back btn — handler global ya registrado fuera del root porque
+            // el botón vive en la crm-bar superior (no dentro de mkthubRoot).
             // Resource card → preview o share
             var resCard = e.target.closest('.mkthub-card');
             if (resCard) {

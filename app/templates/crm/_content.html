@@ -204,6 +204,10 @@
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
         <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' or tab_activo == 'cli' %} crm-bar--dashboard{% endif %}">
+            {% if tab_activo == 'marketing' %}
+            {# Slots para que el Marketing Hub inyecte back btn + wordmark de la marca en la misma fila que los tabs cuando hay una marca seleccionada. Vacíos por default; el JS los llena/oculta. #}
+            <div class="crm-bar-left mkthub-bar-slot mkthub-bar-slot--left" id="mkthubBarLeft"></div>
+            {% endif %}
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -291,6 +295,9 @@
             {% endif %}
             {% endif %}
             <div class="crm-bar-right">
+                {% if tab_activo == 'marketing' %}
+                <div class="mkthub-bar-slot mkthub-bar-slot--right" id="mkthubBarRight"></div>
+                {% endif %}
                 {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'cli' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
                 <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
