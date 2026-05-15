@@ -4669,17 +4669,21 @@
                 var isCot = (mode === 'cotizado');
                 var isProsp = (mode === 'prospecciones');
                 var isInfo = (mode === 'info');
-                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = (isCot || isProsp || isInfo) ? 'none' : '';
+                var isFact = (mode === 'facturacion');
+                var hideTable = (isCot || isProsp || isInfo || isFact);
+                if (clienteOppHeadOpp) clienteOppHeadOpp.style.display = hideTable ? 'none' : '';
                 if (clienteOppHeadCot) clienteOppHeadCot.style.display = isCot ? '' : 'none';
                 if (clienteOppHeadProsp) clienteOppHeadProsp.style.display = isProsp ? '' : 'none';
-                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp || isInfo) ? 'none' : '';
-                // En modo "info" ocultamos los filters/búsqueda/periodo y la tabla; mostramos el panel.
+                if (clienteOppFiltersOpp) clienteOppFiltersOpp.style.display = (isCot || isProsp || isInfo || isFact) ? 'none' : '';
+                // En modo "info" / "facturacion" ocultamos filters/búsqueda/periodo y la tabla; mostramos el panel correspondiente.
                 var infoPanel = document.getElementById('clienteOppInfoPanel');
+                var factPanel = document.getElementById('clienteOppFactPanel');
                 var listWrap = document.getElementById('clienteOppListWrap');
                 var filtersBar = document.querySelector('#widgetClienteOportunidades .wco-filters');
-                if (listWrap) listWrap.style.display = isInfo ? 'none' : '';
-                if (filtersBar) filtersBar.style.display = isInfo ? 'none' : '';
+                if (listWrap) listWrap.style.display = (isInfo || isFact) ? 'none' : '';
+                if (filtersBar) filtersBar.style.display = (isInfo || isFact) ? 'none' : '';
                 if (infoPanel) infoPanel.style.display = isInfo ? 'block' : 'none';
+                if (factPanel) factPanel.style.display = isFact ? 'block' : 'none';
                 // Marcar tab activo
                 if (clienteOppTabs) {
                     var tabKey = mode === 'cobrado' ? 'oportunidades' : mode;
@@ -4704,6 +4708,11 @@
                 // Tab "Información" — no usa la tabla; carga la carátula del cliente.
                 if (currentMode === 'info') {
                     _cargarClienteInfo();
+                    return;
+                }
+                // Tab "Facturación" — lista facturas (archivos) de todas las opps del cliente.
+                if (currentMode === 'facturacion') {
+                    _cargarClienteFacturas();
                     return;
                 }
                 // Periodo del modal — se aplica a los 3 tabs (op/cot/prosp).
@@ -4733,6 +4742,78 @@
                         renderClienteData();
                     }).catch(function(){
                         clienteOppTbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
+                    });
+            }
+
+            // ── Tab "Facturación" (facturas de las opps del cliente) ──
+            function _escapeFactHtml(s){
+                if (s === undefined || s === null) return '';
+                return String(s)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+            function _cargarClienteFacturas(){
+                var tbody = document.getElementById('clienteOppFactTbody');
+                var empty = document.getElementById('clienteOppFactEmpty');
+                var table = document.getElementById('clienteOppFactTable');
+                var count = document.getElementById('clienteOppFactCount');
+                if (!tbody) return;
+                if (count) count.textContent = '…';
+                if (empty) empty.style.display = 'none';
+                if (table) table.style.display = '';
+                tbody.innerHTML = '<tr><td colspan="6" class="wco-empty">Cargando…</td></tr>';
+                fetch('/app/api/cliente-facturas/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        var rows = (data && data.rows) || [];
+                        if (count) count.textContent = String(rows.length);
+                        if (!rows.length) {
+                            tbody.innerHTML = '';
+                            if (table) table.style.display = 'none';
+                            if (empty) empty.style.display = 'flex';
+                            return;
+                        }
+                        if (table) table.style.display = '';
+                        if (empty) empty.style.display = 'none';
+                        var html = '';
+                        for (var i = 0; i < rows.length; i++) {
+                            var r = rows[i];
+                            var nombre = _escapeFactHtml(r.nombre || '—');
+                            var oppTit = _escapeFactHtml(r.oportunidad_titulo || '—');
+                            var oppHtml = oppTit;
+                            if (r.oportunidad_id && r.oportunidad_url) {
+                                oppHtml = '<a class="wco-fact-opp-link" href="' + _escapeFactHtml(r.oportunidad_url) + '">' + oppTit + '<span class="wco-fact-opp-id"> · #' + r.oportunidad_id + '</span></a>';
+                            }
+                            var fecha = _escapeFactHtml(r.fecha_subida_legible || '—');
+                            var tamano = _escapeFactHtml(r.tamano_legible || '—');
+                            var subido = _escapeFactHtml(r.subido_por || '—');
+                            var dl = _escapeFactHtml(r.download_url || '#');
+                            var pv = _escapeFactHtml(r.preview_url || '#');
+                            html += '<tr class="wco-fact-row">' +
+                                '<td class="wco-fact-name"><span class="wco-fact-ic">' +
+                                    '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                                '</span><span class="wco-fact-name-t" title="' + nombre + '">' + nombre + '</span></td>' +
+                                '<td class="wco-fact-opp">' + oppHtml + '</td>' +
+                                '<td class="wco-fact-fecha">' + fecha + '</td>' +
+                                '<td class="wco-fact-size">' + tamano + '</td>' +
+                                '<td class="wco-fact-by">' + subido + '</td>' +
+                                '<td class="wco-fact-acts" style="text-align:right;">' +
+                                    '<a class="wco-fact-act" href="' + pv + '" target="_blank" rel="noopener" title="Ver">' +
+                                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+                                    '</a>' +
+                                    '<a class="wco-fact-act wco-fact-act--dl" href="' + dl + '" title="Descargar">' +
+                                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                                    '</a>' +
+                                '</td>' +
+                            '</tr>';
+                        }
+                        tbody.innerHTML = html;
+                    }).catch(function(){
+                        if (count) count.textContent = '0';
+                        tbody.innerHTML = '<tr><td colspan="6" class="wco-empty" style="color:#FF3B30;">Error al cargar</td></tr>';
                     });
             }
 
@@ -5181,9 +5262,9 @@
             function openClienteModal(clienteId, clienteNombre, tab, porCreacion) {
                 currentClienteId = clienteId;
                 allClienteData = [];
-                var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado', info: 'info', prospecciones: 'prospecciones' };
+                var modeMap = { crm: 'oportunidades', cobrado: 'cobrado', cotizado: 'cotizado', info: 'info', prospecciones: 'prospecciones', facturacion: 'facturacion' };
                 var mode = modeMap[tab] || 'oportunidades';
-                var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones', info: 'Información', prospecciones: 'Prospecciones' };
+                var labelMap = { oportunidades: 'Oportunidades', cobrado: 'Cobrado', cotizado: 'Cotizaciones', info: 'Información', prospecciones: 'Prospecciones', facturacion: 'Facturación' };
                 clienteOppTitle.textContent = labelMap[mode] + ' — ' + clienteNombre;
                 widgetClienteOpp.style.display = 'flex';
 
@@ -5195,9 +5276,9 @@
                 _refreshPeriodActives(); _refreshPeriodLabel();
                 setWidgetMode(mode);
 
-                // Si entramos directo al tab Información, carga la carátula del cliente
+                // Si entramos directo al tab Información o Facturación, carga su panel propio
                 // (no la tabla de oportunidades).
-                if (mode === 'info') {
+                if (mode === 'info' || mode === 'facturacion') {
                     if (typeof _cargarTabActivo === 'function') _cargarTabActivo();
                     return;
                 }

@@ -1719,5 +1719,88 @@ def api_verificar_empleado_mes(request):
             imagen=foto_ganador
         )
         return JsonResponse({'status': 'announced', 'winner': ganador_em.usuario.username})
-    
+
     return JsonResponse({'status': 'no_eligible_data'})
+
+
+@login_required
+def api_cliente_facturas(request, cliente_id):
+    """
+    Lista de archivos de tipo "factura" para todas las oportunidades de un cliente.
+
+    Heurística: cualquier `OportunidadArchivo` cuyo `nombre_original` contenga
+    "factura" (case-insensitive) — esto cubre tanto los nombres que arrancan
+    con "Factura …" como los que la traen al interior del nombre.
+
+    Permisos: si el usuario no es supervisor, se limita a las oportunidades
+    cuyos dueños están dentro de su grupo de trabajo (usa
+    `get_usuarios_visibles_ids`).
+    """
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    qs = (
+        OportunidadArchivo.objects
+        .filter(
+            oportunidad__cliente_id=cliente.id,
+            nombre_original__icontains='factura',
+        )
+        .select_related('oportunidad', 'oportunidad__cliente', 'usuario')
+        .order_by('-fecha_subida')
+    )
+
+    # Permisos: vendedores solo ven facturas de oportunidades visibles para ellos.
+    if not is_supervisor(request.user):
+        from .views_grupos import get_usuarios_visibles_ids
+        _gids = get_usuarios_visibles_ids(request.user)
+        if _gids and len(_gids) > 1:
+            qs = qs.filter(oportunidad__usuario_id__in=_gids)
+        else:
+            qs = qs.filter(oportunidad__usuario=request.user)
+
+    rows = []
+    for a in qs:
+        opp = a.oportunidad
+        opp_id = opp.id if opp else None
+        opp_titulo = opp.oportunidad if opp else '—'
+        # Año para URL al kanban
+        try:
+            anio_opp = (opp.anio_cierre or opp.fecha_creacion.year) if opp else ''
+        except Exception:
+            anio_opp = ''
+        # Quién subió
+        usr = a.usuario
+        if usr:
+            subido_por = (usr.get_full_name() or usr.username or '').strip() or usr.username
+        else:
+            subido_por = '—'
+        # URL al archivo (sirve a través del endpoint de descarga existente)
+        download_url = f'/app/api/descargar-archivo-oportunidad/{a.id}/'
+        preview_url = f'/app/api/vista-previa-archivo-oportunidad/{a.id}/'
+        # URL para abrir la oportunidad en el CRM
+        opp_url = ''
+        if opp_id:
+            opp_url = f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_opp={opp_id}'
+        rows.append({
+            'id': a.id,
+            'nombre': a.nombre_original or '',
+            'tipo': a.tipo or '',
+            'oportunidad_id': opp_id,
+            'oportunidad_titulo': opp_titulo,
+            'oportunidad_url': opp_url,
+            'fecha_subida_iso': a.fecha_subida.isoformat() if a.fecha_subida else '',
+            'fecha_subida_legible': a.fecha_subida.strftime('%d %b %Y') if a.fecha_subida else '',
+            'tamano_legible': a.tamaño_legible if a.tamaño else '—',
+            'subido_por': subido_por,
+            'download_url': download_url,
+            'preview_url': preview_url,
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'cliente': {'id': cliente.id, 'nombre': cliente.nombre_empresa or '—'},
+        'rows': rows,
+        'total': len(rows),
+    })

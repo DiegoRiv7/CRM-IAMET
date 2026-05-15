@@ -43,6 +43,7 @@
             <button type="button" class="wco-tab" data-cli-tab="cotizado">Cotizaciones</button>
             <button type="button" class="wco-tab" data-cli-tab="prospecciones">Prospecciones</button>
             <button type="button" class="wco-tab" data-cli-tab="info">Información</button>
+            <button type="button" class="wco-tab" data-cli-tab="facturacion">Facturación</button>
         </div>
 
         <!-- Filters -->
@@ -305,6 +306,40 @@
                 <span class="wco-info-saved" id="wciSavedHint">Estás editando información</span>
                 <button type="button" class="wco-info-btn-cancel" id="wciCancelBtn">Cancelar</button>
                 <button type="button" class="wco-info-btn" id="wciSaveBtn">Guardar cambios</button>
+            </div>
+        </div>
+
+        <!-- Panel "Facturación" — facturas (archivos) de TODAS las oportunidades del cliente -->
+        <div class="wco-fact-panel" id="clienteOppFactPanel" style="display:none;">
+            <div class="wco-fact-head">
+                <div class="wco-fact-title">
+                    <svg width="16" height="16" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span>Facturas del cliente</span>
+                    <span class="wco-fact-count" id="clienteOppFactCount">0</span>
+                </div>
+                <div class="wco-fact-hint">Archivos cuyo nombre contiene "factura" en cualquier oportunidad de este cliente</div>
+            </div>
+            <div class="wco-fact-listwrap" id="clienteOppFactListWrap">
+                <div class="wco-fact-empty" id="clienteOppFactEmpty" style="display:none;">
+                    <div class="wco-fact-empty-ic">
+                        <svg width="36" height="36" fill="none" stroke="#94a3b8" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <div class="wco-fact-empty-t">Sin facturas para este cliente todavía</div>
+                    <div class="wco-fact-empty-s">Al subir un archivo cuyo nombre contenga "factura" en cualquier oportunidad de este cliente, aparecerá aquí.</div>
+                </div>
+                <table class="wco-fact-table" id="clienteOppFactTable">
+                    <thead>
+                        <tr>
+                            <th>Factura</th>
+                            <th>Oportunidad</th>
+                            <th>Fecha</th>
+                            <th>Tamaño</th>
+                            <th>Subido por</th>
+                            <th style="text-align:right;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="clienteOppFactTbody"></tbody>
+                </table>
             </div>
         </div>
     </div>
