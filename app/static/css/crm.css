@@ -2861,7 +2861,10 @@
         border: 1px solid rgba(15,23,42,0.08) !important;
         box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
     }
-    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:hover,
+    /* Hover de los pills laterales (Filtro, Usuarios). EXCLUYE .crm-facet-new
+       porque ese botón también tiene la clase .crm-facet-btn — sin el :not()
+       el hover se ponía blanco encima del azul. */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:not(.crm-facet-new):hover,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
         background: #f8fafc !important;
         border-color: rgba(15,23,42,0.14) !important;
@@ -2879,9 +2882,16 @@
         color: #ffffff !important;
         border: none !important;
         box-shadow: 0 1px 2px rgba(0,82,212,0.18) !important;
+        transform: none !important;
     }
+    /* Hover: solo oscurecer el gradient (mantener azul, NO blanco) y
+       sin transform para que no se mueva. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
+        background: linear-gradient(135deg, #0041A8 0%, #2F4FE0 100%) !important;
         box-shadow: 0 2px 6px rgba(0,82,212,0.28) !important;
+        color: #ffffff !important;
+        border: none !important;
+        transform: none !important;
     }
     /* Mini-barra de navegación del mes (debajo del header).
        Mismo padding lateral que .cal-page-bar y wrapper del calendario. */
@@ -2968,10 +2978,13 @@
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-scrollgrid-sync-table {
         height: auto !important;
     }
-    /* Día actual: fondo azul muy sutil + borde lateral azul para destacar */
+    /* Día actual: fondo azul sutil, SIN barra lateral.
+       El número del día ya viene con badge azul del FullCalendar (.fc-daygrid-day-number
+       cuando es today queda en círculo azul) → con el tinte de fondo basta para
+       destacar sin meter una barra vertical fea. */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
-        background: rgba(0,82,212,0.05) !important;
-        box-shadow: inset 3px 0 0 #0052D4;
+        background: rgba(0,82,212,0.07) !important;
+        box-shadow: none !important;
     }
     /* "+N más" link estilizado */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-more-link {

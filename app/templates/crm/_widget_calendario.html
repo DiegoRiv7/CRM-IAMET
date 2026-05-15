@@ -1279,8 +1279,10 @@
             var tOpacity = tCompletada ? 'opacity:0.38;' : '';
             // Línea deadline sutil — solo en el carril de tareas
             html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
-            // Bloque de tarea (más alto, como una tarjeta)
-            html += '<div style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
+            // Bloque de tarea (más alto, como una tarjeta).
+            // class="cal-day-task" + data-evt-id permiten enganchar el hover preview
+            // (igual que las cards .cal-day-evt de actividades).
+            html += '<div class="cal-day-task" data-evt-id="'+safeId+'" style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
                 ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                 '<div style="display:flex;align-items:center;gap:5px;">'+
                 '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
@@ -1298,9 +1300,35 @@
 
         // Asegura los handlers de drag (idempotente)
         _calDayBindDragHandlers();
+        // Hover preview en cards de evento y de tarea de la vista día.
+        _calDayBindHoverHandlers();
         if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
 
         calUpdateSidePanel();
+    }
+
+    /* ─── Hover preview en vista Día ───
+       Engancha mouseenter/mouseleave a las cards de evento (.cal-day-evt) y
+       de tarea (.cal-day-task) para mostrar el popover (mismo mecanismo que
+       FullCalendar en vista Mes via eventDidMount). Idempotente: se llama en
+       cada render y solo añade el listener si la card aún no fue bindeada. */
+    function _calDayBindHoverHandlers() {
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id]');
+        cards.forEach(function (card) {
+            if (card._calHoverBound) return;
+            card._calHoverBound = true;
+            var evtId = card.getAttribute('data-evt-id');
+            card.addEventListener('mouseenter', function () {
+                clearTimeout(window._calHoverTimer);
+                window._calHoverTimer = setTimeout(function () {
+                    _calShowHoverPreview(evtId, card);
+                }, 280);
+            });
+            card.addEventListener('mouseleave', function () {
+                clearTimeout(window._calHoverTimer);
+                _calHideHoverPreview();
+            });
+        });
     }
 
     /* ─── DRAG & DROP de eventos en vista Día ───
