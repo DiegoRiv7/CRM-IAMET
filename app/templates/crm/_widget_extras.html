@@ -317,7 +317,10 @@
                     <span>Facturas del cliente</span>
                     <span class="wco-fact-count" id="clienteOppFactCount">0</span>
                 </div>
-                <div class="wco-fact-hint">Archivos cuyo nombre contiene "factura" en cualquier oportunidad de este cliente</div>
+                <button type="button" class="wco-fact-add-btn" id="clienteOppFactAddBtn" title="Subir una factura manualmente y asociarla a una oportunidad del cliente">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Subir factura</span>
+                </button>
             </div>
             <div class="wco-fact-listwrap" id="clienteOppFactListWrap">
                 <div class="wco-fact-empty" id="clienteOppFactEmpty" style="display:none;">
@@ -341,6 +344,59 @@
                     <tbody id="clienteOppFactTbody"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: Subir factura manualmente ═══ -->
+<div class="widget-overlay" id="widgetSubirFactura" style="z-index:11500; align-items:center; justify-content:center;">
+    <div class="wco-upload-card">
+        <div class="wco-upload-head">
+            <div class="wco-upload-head-title">
+                <svg width="18" height="18" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                <h3>Subir factura</h3>
+            </div>
+            <button type="button" class="wco-upload-close" id="wcoUploadClose" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="wco-upload-body">
+            <div class="wco-upload-field">
+                <label class="wco-upload-lbl" for="wcoUploadOppSelect">Asociar a oportunidad</label>
+                <select class="wco-upload-select" id="wcoUploadOppSelect">
+                    <option value="">Cargando oportunidades…</option>
+                </select>
+                <div class="wco-upload-help">Selecciona la oportunidad del cliente a la que pertenece esta factura.</div>
+            </div>
+
+            <div class="wco-upload-field">
+                <label class="wco-upload-lbl">Archivo</label>
+                <div class="wco-upload-drop" id="wcoUploadDrop">
+                    <input type="file" id="wcoUploadFile" class="wco-upload-file" accept=".pdf,.xls,.xlsx,.doc,.docx,.csv,image/*,application/pdf">
+                    <div class="wco-upload-drop-empty" id="wcoUploadDropEmpty">
+                        <svg width="32" height="32" fill="none" stroke="#94a3b8" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <div class="wco-upload-drop-t">Arrastra el archivo aquí o haz clic para seleccionar</div>
+                        <div class="wco-upload-drop-s">PDF, Excel, Word o imagen</div>
+                    </div>
+                    <div class="wco-upload-drop-file" id="wcoUploadDropFile" style="display:none;">
+                        <div class="wco-upload-file-ic">
+                            <svg width="20" height="20" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <div class="wco-upload-file-info">
+                            <div class="wco-upload-file-name" id="wcoUploadFileName">—</div>
+                            <div class="wco-upload-file-size" id="wcoUploadFileSize">—</div>
+                        </div>
+                        <button type="button" class="wco-upload-file-clear" id="wcoUploadFileClear" title="Quitar archivo">&times;</button>
+                    </div>
+                </div>
+                <div class="wco-upload-help">Si el nombre no contiene "factura", se etiquetará automáticamente como "Factura — …".</div>
+            </div>
+
+            <div class="wco-upload-error" id="wcoUploadError" style="display:none;"></div>
+        </div>
+        <div class="wco-upload-foot">
+            <button type="button" class="wco-upload-btn-cancel" id="wcoUploadCancel">Cancelar</button>
+            <button type="button" class="wco-upload-btn-submit" id="wcoUploadSubmit">
+                <span class="wco-upload-btn-label">Subir</span>
+            </button>
         </div>
     </div>
 </div>

@@ -4817,6 +4817,249 @@
                     });
             }
 
+            // ── Modal: Subir factura manualmente ──
+            var _wcoUploadBound = false;
+            var _wcoUploadFileRef = null; // archivo seleccionado actualmente
+
+            function _wcoUploadGetCsrf(){
+                var name = 'csrftoken=';
+                var parts = (document.cookie || '').split('; ');
+                for (var i = 0; i < parts.length; i++) {
+                    if (parts[i].indexOf(name) === 0) return parts[i].substring(name.length);
+                }
+                return '';
+            }
+            function _wcoUploadFormatSize(bytes){
+                if (!bytes && bytes !== 0) return '—';
+                var b = Number(bytes);
+                if (isNaN(b) || b <= 0) return '—';
+                var units = ['B','KB','MB','GB'];
+                var i = 0;
+                while (b >= 1024 && i < units.length - 1) { b /= 1024; i++; }
+                return b.toFixed(1) + ' ' + units[i];
+            }
+            function _wcoUploadShowError(msg){
+                var el = document.getElementById('wcoUploadError');
+                if (!el) return;
+                if (!msg) {
+                    el.style.display = 'none';
+                    el.textContent = '';
+                    return;
+                }
+                el.textContent = msg;
+                el.style.display = 'block';
+            }
+            function _wcoUploadResetFile(){
+                _wcoUploadFileRef = null;
+                var input = document.getElementById('wcoUploadFile');
+                if (input) input.value = '';
+                var empty = document.getElementById('wcoUploadDropEmpty');
+                var filebox = document.getElementById('wcoUploadDropFile');
+                if (empty) empty.style.display = '';
+                if (filebox) filebox.style.display = 'none';
+            }
+            function _wcoUploadSetFile(file){
+                _wcoUploadFileRef = file || null;
+                var empty = document.getElementById('wcoUploadDropEmpty');
+                var filebox = document.getElementById('wcoUploadDropFile');
+                var nameEl = document.getElementById('wcoUploadFileName');
+                var sizeEl = document.getElementById('wcoUploadFileSize');
+                if (!file) {
+                    if (empty) empty.style.display = '';
+                    if (filebox) filebox.style.display = 'none';
+                    return;
+                }
+                if (empty) empty.style.display = 'none';
+                if (filebox) filebox.style.display = 'flex';
+                if (nameEl) nameEl.textContent = file.name || '—';
+                if (sizeEl) sizeEl.textContent = _wcoUploadFormatSize(file.size);
+            }
+            function _wcoUploadCloseModal(){
+                var overlay = document.getElementById('widgetSubirFactura');
+                if (overlay) overlay.classList.remove('active');
+                _wcoUploadResetFile();
+                _wcoUploadShowError('');
+                var btn = document.getElementById('wcoUploadSubmit');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('is-loading');
+                    var lbl = btn.querySelector('.wco-upload-btn-label');
+                    if (lbl) lbl.textContent = 'Subir';
+                }
+            }
+            function _wcoUploadCargarOpps(){
+                var sel = document.getElementById('wcoUploadOppSelect');
+                if (!sel || !currentClienteId) return;
+                sel.innerHTML = '<option value="">Cargando oportunidades…</option>';
+                sel.disabled = true;
+                fetch('/app/api/cliente-oportunidades/' + currentClienteId + '/')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        var rows = (data && data.rows) || [];
+                        if (!rows.length) {
+                            sel.innerHTML = '<option value="">— Sin oportunidades —</option>';
+                            sel.disabled = true;
+                            return;
+                        }
+                        var html = '<option value="">— Selecciona una oportunidad —</option>';
+                        for (var i = 0; i < rows.length; i++) {
+                            var r = rows[i];
+                            var titulo = (r.oportunidad || '—');
+                            var monto = r.monto ? ' · $' + r.monto : '';
+                            var fecha = r.fecha ? ' · ' + r.fecha : '';
+                            var label = titulo + monto + fecha;
+                            // Escape minimal para option text
+                            label = label.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            html += '<option value="' + r.id + '">' + label + '</option>';
+                        }
+                        sel.innerHTML = html;
+                        sel.disabled = false;
+                    })
+                    .catch(function(){
+                        sel.innerHTML = '<option value="">Error al cargar oportunidades</option>';
+                        sel.disabled = true;
+                    });
+            }
+            function _wcoUploadOpen(){
+                if (!currentClienteId) return;
+                _wcoUploadShowError('');
+                _wcoUploadResetFile();
+                var overlay = document.getElementById('widgetSubirFactura');
+                if (overlay) overlay.classList.add('active');
+                _wcoUploadCargarOpps();
+            }
+            function _wcoUploadToast(msg){
+                var t = document.createElement('div');
+                t.className = 'wco-upload-toast';
+                t.innerHTML = '<svg width="16" height="16" fill="none" stroke="#34D399" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span></span>';
+                t.querySelector('span').textContent = msg || 'Factura subida';
+                document.body.appendChild(t);
+                requestAnimationFrame(function(){ t.classList.add('is-visible'); });
+                setTimeout(function(){
+                    t.classList.remove('is-visible');
+                    setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+                }, 2200);
+            }
+            function _wcoUploadSubmit(){
+                var sel = document.getElementById('wcoUploadOppSelect');
+                var btn = document.getElementById('wcoUploadSubmit');
+                if (!sel || !btn) return;
+                var oppId = (sel.value || '').trim();
+                if (!oppId) {
+                    _wcoUploadShowError('Selecciona una oportunidad para asociar la factura.');
+                    return;
+                }
+                if (!_wcoUploadFileRef) {
+                    _wcoUploadShowError('Selecciona un archivo para subir.');
+                    return;
+                }
+                if (!currentClienteId) {
+                    _wcoUploadShowError('Cliente no identificado.');
+                    return;
+                }
+                _wcoUploadShowError('');
+                btn.disabled = true;
+                btn.classList.add('is-loading');
+                var lbl = btn.querySelector('.wco-upload-btn-label');
+                if (lbl) lbl.textContent = 'Subiendo';
+
+                var fd = new FormData();
+                fd.append('oportunidad_id', oppId);
+                fd.append('archivo', _wcoUploadFileRef);
+
+                fetch('/app/api/cliente-facturas/' + currentClienteId + '/subir/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': _wcoUploadGetCsrf() },
+                    body: fd,
+                    credentials: 'same-origin'
+                })
+                .then(function(r){ return r.json().then(function(j){ return { status: r.status, body: j }; }); })
+                .then(function(res){
+                    if (res.status >= 200 && res.status < 300 && res.body && res.body.ok) {
+                        _wcoUploadCloseModal();
+                        _wcoUploadToast('Factura subida');
+                        if (typeof _cargarClienteFacturas === 'function') _cargarClienteFacturas();
+                    } else {
+                        var err = (res.body && res.body.error) || ('Error ' + res.status);
+                        _wcoUploadShowError(err);
+                        btn.disabled = false;
+                        btn.classList.remove('is-loading');
+                        if (lbl) lbl.textContent = 'Subir';
+                    }
+                })
+                .catch(function(){
+                    _wcoUploadShowError('Error de red al subir el archivo.');
+                    btn.disabled = false;
+                    btn.classList.remove('is-loading');
+                    if (lbl) lbl.textContent = 'Subir';
+                });
+            }
+            function _wcoUploadBindOnce(){
+                if (_wcoUploadBound) return;
+                _wcoUploadBound = true;
+
+                var addBtn = document.getElementById('clienteOppFactAddBtn');
+                if (addBtn) addBtn.addEventListener('click', _wcoUploadOpen);
+
+                var closeBtn = document.getElementById('wcoUploadClose');
+                var cancelBtn = document.getElementById('wcoUploadCancel');
+                if (closeBtn) closeBtn.addEventListener('click', _wcoUploadCloseModal);
+                if (cancelBtn) cancelBtn.addEventListener('click', _wcoUploadCloseModal);
+
+                var overlay = document.getElementById('widgetSubirFactura');
+                if (overlay) {
+                    overlay.addEventListener('click', function(e){
+                        if (e.target === overlay) _wcoUploadCloseModal();
+                    });
+                }
+
+                var submitBtn = document.getElementById('wcoUploadSubmit');
+                if (submitBtn) submitBtn.addEventListener('click', _wcoUploadSubmit);
+
+                var fileInput = document.getElementById('wcoUploadFile');
+                if (fileInput) {
+                    fileInput.addEventListener('change', function(e){
+                        var f = e.target.files && e.target.files[0];
+                        if (f) _wcoUploadSetFile(f);
+                    });
+                }
+
+                var clearBtn = document.getElementById('wcoUploadFileClear');
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        e.preventDefault();
+                        _wcoUploadResetFile();
+                    });
+                }
+
+                // Drag & drop
+                var drop = document.getElementById('wcoUploadDrop');
+                if (drop) {
+                    ['dragenter','dragover'].forEach(function(ev){
+                        drop.addEventListener(ev, function(e){
+                            e.preventDefault();
+                            e.stopPropagation();
+                            drop.classList.add('is-dragover');
+                        });
+                    });
+                    ['dragleave','drop'].forEach(function(ev){
+                        drop.addEventListener(ev, function(e){
+                            e.preventDefault();
+                            e.stopPropagation();
+                            drop.classList.remove('is-dragover');
+                        });
+                    });
+                    drop.addEventListener('drop', function(e){
+                        var dt = e.dataTransfer;
+                        if (dt && dt.files && dt.files.length) {
+                            _wcoUploadSetFile(dt.files[0]);
+                        }
+                    });
+                }
+            }
+            _wcoUploadBindOnce();
+
             // ── Tab "Información" (carátula del cliente) ──
             var _wciSaveBtnBound = false;
             function _wciCsrf(){

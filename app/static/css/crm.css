@@ -16695,3 +16695,310 @@ body.cert-d-lock {
     max-width: 360px;
     line-height: 1.4;
 }
+
+/* Botón "+ Subir factura" en el head del panel */
+.wco-fact-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #0052D4;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18);
+}
+.wco-fact-add-btn:hover {
+    background: #0041AB;
+    box-shadow: 0 2px 6px rgba(0,82,212,0.28);
+}
+.wco-fact-add-btn:active {
+    transform: translateY(1px);
+}
+.wco-fact-add-btn svg {
+    flex: 0 0 14px;
+}
+
+/* ═══ Modal: Subir factura ═══ */
+.wco-upload-card {
+    width: 480px;
+    max-width: 92vw;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 6px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.wco-upload-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #F2F2F4;
+}
+.wco-upload-head-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+.wco-upload-head-title h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+}
+.wco-upload-close {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #8E8E93;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    transition: background 0.12s, color 0.12s;
+}
+.wco-upload-close:hover {
+    background: #F5F5F7;
+    color: #1A1A1A;
+}
+.wco-upload-body {
+    padding: 18px 20px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.wco-upload-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.wco-upload-lbl {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6B7280;
+}
+.wco-upload-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    background: #FAFAFA;
+    font-size: 0.88rem;
+    color: #1A1A1A;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 36px;
+}
+.wco-upload-select:focus {
+    border-color: #0052D4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.12);
+}
+.wco-upload-help {
+    font-size: 0.7rem;
+    color: #8E8E93;
+    font-weight: 500;
+    line-height: 1.4;
+}
+.wco-upload-drop {
+    position: relative;
+    border: 1.5px dashed #D1D5DB;
+    border-radius: 12px;
+    background: #FAFAFA;
+    padding: 18px;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+}
+.wco-upload-drop:hover {
+    border-color: #0052D4;
+    background: rgba(0,82,212,0.03);
+}
+.wco-upload-drop.is-dragover {
+    border-color: #0052D4;
+    background: rgba(0,82,212,0.06);
+}
+.wco-upload-file {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.wco-upload-drop-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    pointer-events: none;
+}
+.wco-upload-drop-t {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1A1A1A;
+    margin-top: 6px;
+}
+.wco-upload-drop-s {
+    font-size: 0.72rem;
+    color: #8E8E93;
+    font-weight: 500;
+}
+.wco-upload-drop-file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 10px 12px;
+    position: relative;
+    z-index: 2;
+}
+.wco-upload-file-ic {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(0,82,212,0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wco-upload-file-info {
+    flex: 1;
+    min-width: 0;
+}
+.wco-upload-file-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1A1A1A;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wco-upload-file-size {
+    font-size: 0.72rem;
+    color: #8E8E93;
+    margin-top: 2px;
+}
+.wco-upload-file-clear {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: #F5F5F7;
+    color: #6B7280;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    position: relative;
+    z-index: 3;
+}
+.wco-upload-file-clear:hover {
+    background: #FFE4E6;
+    color: #DC2626;
+}
+.wco-upload-error {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #B91C1C;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+.wco-upload-foot {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px 18px;
+    border-top: 1px solid #F2F2F4;
+}
+.wco-upload-btn-cancel,
+.wco-upload-btn-submit {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s, color 0.15s, transform 0.1s, box-shadow 0.15s;
+    letter-spacing: -0.01em;
+}
+.wco-upload-btn-cancel {
+    background: #F5F5F7;
+    color: #3C3C43;
+}
+.wco-upload-btn-cancel:hover {
+    background: #E5E5EA;
+}
+.wco-upload-btn-submit {
+    background: #0052D4;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18);
+    min-width: 90px;
+}
+.wco-upload-btn-submit:hover:not(:disabled) {
+    background: #0041AB;
+    box-shadow: 0 2px 6px rgba(0,82,212,0.28);
+}
+.wco-upload-btn-submit:active:not(:disabled) {
+    transform: translateY(1px);
+}
+.wco-upload-btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.wco-upload-btn-submit.is-loading .wco-upload-btn-label::after {
+    content: '…';
+}
+
+/* Toast simple para "Factura subida" */
+.wco-upload-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #1A1A1A;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+.wco-upload-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}

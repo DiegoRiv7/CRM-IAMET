@@ -137,6 +137,7 @@ urlpatterns = [
     path('api/cliente-prospecciones/<int:cliente_id>/', views.api_cliente_prospecciones, name='api_cliente_prospecciones'),
     path('api/cliente-cotizaciones/<int:cliente_id>/', views.api_cliente_cotizaciones, name='api_cliente_cotizaciones'),
     path('api/cliente-facturas/<int:cliente_id>/', views.api_cliente_facturas, name='api_cliente_facturas'),
+    path('api/cliente-facturas/<int:cliente_id>/subir/', views.api_subir_factura_cliente, name='api_subir_factura_cliente'),
     path('api/cliente-info/<int:cliente_id>/', views.api_cliente_info, name='api_cliente_info'),
     path('api/cliente-info/<int:cliente_id>/contactos/', views.api_cliente_contactos, name='api_cliente_contactos'),
     path('api/cliente-contacto/<int:contacto_id>/', views.api_cliente_contacto_detail, name='api_cliente_contacto_detail'),
