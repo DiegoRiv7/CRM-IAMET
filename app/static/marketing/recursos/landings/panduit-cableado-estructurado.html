@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panduit — Cableado estructurado e infraestructura de Data Center | IAMET</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --brand:#1D3FAA; --brand-2:#3A66D6; --brand-dark:#142D7A;
+    --ink:#0B0F1F; --ink-2:#2C334A; --muted:#6B7185; --line:#E4E6EF;
+    --bg:#fff; --bg-soft:#F7F8FC;
+  }
+  html,body{background:#fff;color:var(--ink);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 28px}
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line)}
+  .nav-row{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em;font-size:18px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1D3FAA,#3A66D6)}
+  .nav-mid{font-size:13px;color:var(--muted)}.nav-mid b{color:var(--ink);font-weight:600}
+  .cta{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;border:1px solid var(--ink);transition:.2s}
+  .cta:hover{transform:translateY(-1px)}
+  .cta.outline{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .cta.brand{background:var(--brand);border-color:var(--brand)}
+  .hero{padding:84px 0 64px;background:linear-gradient(180deg,rgba(29,63,170,.10),rgba(29,63,170,.04) 40%,#fff)}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--brand);background:rgba(29,63,170,.08);padding:6px 12px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--brand)}
+  h1{font-size:clamp(2.2rem,4.4vw,3.6rem);line-height:1.05;letter-spacing:-.025em;font-weight:800;margin:18px 0 16px}
+  h1 .accent{color:var(--brand)}
+  .sub{font-size:1.15rem;color:var(--ink-2);max-width:560px;margin-bottom:28px}
+  .hero-ctas{display:flex;gap:12px;flex-wrap:wrap}
+  .hero-meta{margin-top:26px;display:flex;gap:22px;color:var(--muted);font-size:13px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:6px}
+  /* hero visual: rack */
+  .hero-vis{position:relative;height:480px;display:flex;align-items:center;justify-content:center}
+  .rack{width:300px;height:420px;background:#0F1322;border:1px solid #1E2440;border-radius:16px;padding:16px;box-shadow:0 30px 80px rgba(20,30,80,.20);position:relative}
+  .rack:before,.rack:after{content:"";position:absolute;width:8px;height:60px;background:#1E2440;border-radius:4px;top:24px}
+  .rack:before{left:-12px}.rack:after{right:-12px}
+  .u{height:30px;border-radius:4px;margin-bottom:6px;display:flex;align-items:center;padding:0 10px;font-size:10px;color:#a8aac8;letter-spacing:.05em;text-transform:uppercase}
+  .u.sw{background:#13182E;border:1px solid #2a3158}
+  .u.sw:before{content:"";display:inline-block;width:8px;height:8px;background:#3FE07A;border-radius:50%;margin-right:8px;box-shadow:0 0 6px #3FE07A}
+  .u.pp{background:linear-gradient(90deg,#1D3FAA,#3A66D6);color:#fff}
+  .u.pp .ports{margin-left:auto;display:flex;gap:2px}
+  .u.pp .ports i{width:5px;height:14px;background:#fff;opacity:.5;border-radius:1px;display:inline-block}
+  .u.cm{background:#13182E;border:1px solid #2a3158;height:14px;margin-bottom:6px}
+  .u.fiber{background:#13182E;border:1px solid #2a3158}.u.fiber:before{content:"";display:inline-block;width:8px;height:8px;background:#FFC857;border-radius:50%;margin-right:8px;box-shadow:0 0 6px #FFC857}
+  .floater{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 36px rgba(20,30,80,.10);padding:12px 14px;font-size:12px;display:flex;align-items:center;gap:10px}
+  .floater.f1{left:0;top:50px}.floater.f2{right:0;bottom:40px}
+  .ic{width:28px;height:28px;border-radius:8px;background:rgba(29,63,170,.10);color:var(--brand);display:flex;align-items:center;justify-content:center}
+  .logos{padding:48px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg-soft)}
+  .logos p{text-align:center;color:var(--muted);font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:24px}
+  .logo-row{display:grid;grid-template-columns:repeat(6,1fr);gap:24px;align-items:center}
+  .logo-row span{text-align:center;color:#8a8a98;font-weight:700;font-size:18px;letter-spacing:-.01em;opacity:.78}
+  section{padding:100px 0}
+  .section-head{max-width:680px;margin:0 auto 56px;text-align:center}
+  .section-head h2{font-size:clamp(1.8rem,3vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  .section-head p{color:var(--muted);font-size:1.05rem;margin-top:14px}
+  .kicker{font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.16em;text-transform:uppercase;margin-bottom:14px}
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .feature{padding:32px;border:1px solid var(--line);border-radius:18px;background:#fff;transition:.25s}
+  .feature:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(20,30,80,.06);border-color:#d6d8e2}
+  .feat-ic{width:48px;height:48px;border-radius:12px;background:rgba(29,63,170,.08);color:var(--brand);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+  .feature h3{font-size:1.25rem;font-weight:700;margin-bottom:10px;letter-spacing:-.01em}
+  .feature p{color:var(--ink-2);font-size:.95rem;margin-bottom:10px}.feature p+p{color:var(--muted)}
+  .steps-band{background:var(--bg-soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+  .step{padding:28px;background:#fff;border:1px solid var(--line);border-radius:16px}
+  .step .n{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:16px}
+  .step h4{font-size:1.05rem;font-weight:700;margin-bottom:6px}
+  .step p{font-size:.9rem;color:var(--muted)}
+  .stats{background:#0B0F1F;color:#fff;padding:72px 0;position:relative;overflow:hidden}
+  .stats:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 50%,rgba(29,63,170,.30),transparent 50%)}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;position:relative}
+  .stat .num{font-size:3rem;font-weight:800;letter-spacing:-.03em}
+  .stat .num span{color:var(--brand-2)}
+  .stat .lbl{color:#a8aac8;margin-top:6px;font-size:.95rem}
+  .testimonial{display:grid;grid-template-columns:120px 1fr;gap:32px;max-width:880px;margin:0 auto;padding:48px;border:1px solid var(--line);border-radius:24px;background:#fff;align-items:center}
+  .avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#1D3FAA,#3A66D6);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:32px}
+  .quote{font-size:1.3rem;line-height:1.45;letter-spacing:-.01em;color:var(--ink);font-weight:500}
+  .who{margin-top:14px;color:var(--muted);font-size:.9rem}.who b{color:var(--ink)}
+  .final{background:linear-gradient(135deg,#1D3FAA 0%,#142D7A 100%);color:#fff;padding:96px 0;text-align:center;position:relative;overflow:hidden}
+  .final:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 30%,rgba(255,255,255,.18),transparent 40%),radial-gradient(circle at 80% 70%,rgba(0,0,0,.20),transparent 40%)}
+  .final-in{position:relative;max-width:760px;margin:0 auto}
+  .final h2{font-size:clamp(2rem,3.4vw,2.8rem);font-weight:800;letter-spacing:-.02em;margin-bottom:14px}
+  .final p{font-size:1.1rem;opacity:.92;margin-bottom:28px}
+  .final .cta{background:#fff;color:#000;border-color:#fff}
+  .final .cta.outline{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+  footer{background:#0B0F1F;color:#a8aac8;padding:64px 0 32px}
+  .ft-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+  footer h5{color:#fff;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+  footer ul{list-style:none}footer li{padding:5px 0;font-size:.92rem}
+  footer .brandblock{color:#fff;font-size:.95rem;line-height:1.6}
+  .ft-bot{border-top:1px solid #1f2440;padding-top:24px;display:flex;justify-content:space-between;font-size:.82rem;color:#7a7e94;flex-wrap:wrap;gap:12px}
+  .socials{display:flex;gap:10px}
+  .socials a{width:34px;height:34px;border:1px solid #2a3158;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#a8aac8}
+  @media (max-width:920px){.hero-grid,.features,.steps,.stat-grid,.ft-grid,.logo-row,.testimonial{grid-template-columns:1fr}.logo-row{grid-template-columns:repeat(3,1fr)}.hero-vis{height:420px}.nav-mid{display:none}}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <a class="logo"><span class="mark"></span>IAMET</a>
+    <div class="nav-mid">Distribuidor autorizado <b>Panduit</b></div>
+    <a class="cta brand" href="#cotizar">Solicitar cotización
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>Panduit Certified Installer</span>
+      <h1>Infraestructura de red <span class="accent">certificada Panduit</span>, garantizada 25 años.</h1>
+      <p class="sub">Cableado estructurado Cat6/Cat6A, fibra OM4/OS2, racks Net-Access y DCIM SmartZone G5 para data centers Tier III y IV. Diseño, instalación y certificación con ingenieros Panduit-certificados.</p>
+      <div class="hero-ctas">
+        <a class="cta brand" href="#cotizar">Cotizar mi data center</a>
+        <a class="cta outline" href="#features">Ver portafolio</a>
+      </div>
+      <div class="hero-meta">
+        <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D3FAA" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Garantía Panduit 25 años</span>
+        <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D3FAA" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Tier III / IV listo</span>
+      </div>
+    </div>
+    <div class="hero-vis">
+      <div class="floater f1"><span class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></span><div><b>Net-Access Cabinet</b><br><span style="color:var(--muted);font-size:11px">42U · 800x1200mm</span></div></div>
+      <div class="rack">
+        <div class="u sw">SmartZone G5 PDU · 32A</div>
+        <div class="u cm"></div>
+        <div class="u sw">Cisco 9300 · 48p</div>
+        <div class="u cm"></div>
+        <div class="u pp">Panel Cat6A 24p <span class="ports"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+        <div class="u pp">Panel Cat6A 24p <span class="ports"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+        <div class="u cm"></div>
+        <div class="u fiber">Bandeja fibra OS2 · 96F</div>
+        <div class="u sw">Switch core · 100GbE</div>
+        <div class="u cm"></div>
+        <div class="u sw">UPS bypass</div>
+        <div class="u sw">Servidor R750</div>
+      </div>
+      <div class="floater f2"><span class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><div><b>Monitoreo en vivo</b><br><span style="color:var(--muted);font-size:11px">SmartZone G5 DCIM</span></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="logos">
+  <div class="wrap">
+    <p>Confían en IAMET para su infraestructura crítica</p>
+    <div class="logo-row">
+      <span>Foxconn BC</span><span>Plantronics</span><span>UABC</span><span>Hospital Hispano</span><span>CESPT</span><span>Costco Wholesale</span>
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Solución integral</div>
+      <h2>De la roseta al data center, todo Panduit</h2>
+      <p>Un solo fabricante, una sola garantía, una sola responsabilidad técnica.</p>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="feat-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 16M20 4L4 20"/></svg></div>
+        <h3>Cableado cobre Cat6 / Cat6A</h3>
+        <p>UTP y F/UTP MaTriX Cat6A 10GBASE-T hasta 100m. Conectores TX6A keystone con tecnología GIGA-TX y patch panels modulares de alta densidad para racks de 19".</p>
+        <p>Certificación Fluke Networks DSX-8000 entregable como documento de garantía Panduit por 25 años en componentes y aplicaciones.</p>
+      </div>
+      <div class="feature">
+        <div class="feat-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg></div>
+        <h3>Fibra óptica OM4 / OS2</h3>
+        <p>Sistemas QuickNet pre-terminados MTP/MPO para enlaces 40/100/400G en spine-leaf. OM4 multimodo hasta 150m a 100GBASE-SR4 y OS2 monomodo para WAN y campus.</p>
+        <p>Bandejas FAP/FRME, paneles HD Flex 2.0 y conectores LC-Duplex con polaridad gestionable. Splicing en sitio con OTDR documentado por enlace.</p>
+      </div>
+      <div class="feature">
+        <div class="feat-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M9 13h6M9 17h4"/></svg></div>
+        <h3>Racks Net-Access y SmartZone G5</h3>
+        <p>Gabinetes Net-Access N-Series 42U/48U con contención de aire frío/caliente, accesorios de manejo de cable horizontal/vertical y PDUs inteligentes monitoreables por puerto.</p>
+        <p>DCIM SmartZone G5 con visibilidad de potencia, temperatura, humedad y capacidad por rack. Alertas e integración con BMS y plataformas DCIM corporativas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps-band">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Metodología</div>
+      <h2>4 fases, cero sorpresas</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h4>Levantamiento</h4><p>Site survey, planos AutoCAD, cálculo de canalización y BoM con códigos Panduit.</p></div>
+      <div class="step"><div class="n">2</div><h4>Diseño</h4><p>Topología, polaridad de fibra, etiquetado ANSI/TIA-606-C y plan de migración.</p></div>
+      <div class="step"><div class="n">3</div><h4>Instalación</h4><p>Cuadrilla certificada PCI, peinado profesional, pruebas Fluke y memoria fotográfica.</p></div>
+      <div class="step"><div class="n">4</div><h4>Certificación</h4><p>Entrega de garantía Panduit 25 años + documentación as-built y handover formal.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="wrap">
+    <div class="stat-grid">
+      <div class="stat"><div class="num">+200<span>k</span></div><div class="lbl">Puntos certificados instalados</div></div>
+      <div class="stat"><div class="num">25<span> años</span></div><div class="lbl">Garantía Panduit por sistema</div></div>
+      <div class="stat"><div class="num">12<span></span></div><div class="lbl">Data centers Tier III entregados</div></div>
+      <div class="stat"><div class="num">0<span></span></div><div class="lbl">Reclamaciones de garantía</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="testimonial">
+      <div class="avatar">IR</div>
+      <div>
+        <div class="quote">"Construir el data center Tier III de nuestra planta exigía un solo responsable end-to-end. IAMET diseñó, instaló y certificó toda la infraestructura Panduit con cero retrabajos. El acta de entrega se firmó dos semanas antes de plan."</div>
+        <div class="who"><b>Ing. Ricardo Ortega</b> · Gerente de IT · Grupo Industrial Norte</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="cotizar">
+  <div class="wrap final-in">
+    <h2>Diseñemos tu próxima red</h2>
+    <p>Levantamiento sin costo y propuesta técnica detallada en menos de 24 horas.</p>
+    <div class="hero-ctas" style="justify-content:center">
+      <a class="cta" href="mailto:ventas@iamet.mx">ventas@iamet.mx</a>
+      <a class="cta outline" href="tel:+526646100000">+52 (664) 610 0000</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="ft-grid">
+      <div>
+        <div class="logo" style="color:#fff;margin-bottom:14px"><span class="mark"></span>IAMET</div>
+        <div class="brandblock">Integradores de infraestructura para data centers, manufactura, salud y gobierno desde 2005.</div>
+      </div>
+      <div>
+        <h5>Oficinas</h5>
+        <ul><li>Tijuana, B.C.</li><li>Mexicali, B.C.</li><li>+52 (664) 610 0000</li><li>ventas@iamet.mx</li></ul>
+      </div>
+      <div>
+        <h5>Soluciones</h5>
+        <ul><li>Cableado estructurado</li><li>Data center DCIM</li><li>Fibra óptica</li><li>Racks y PDUs</li></ul>
+      </div>
+      <div>
+        <h5>Síguenos</h5>
+        <div class="socials">
+          <a><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM0 8h5v16H0V8zm7.98 0H13v2.2h.1c.7-1.3 2.4-2.7 5-2.7 5.4 0 6.4 3.5 6.4 8V24h-5v-7.6c0-1.8 0-4.2-2.6-4.2s-3 2-3 4.1V24h-5V8z"/></svg></a>
+          <a><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 10-11.6 9.9v-7H8v-2.9h2.4V9.8c0-2.4 1.4-3.7 3.6-3.7 1 0 2.1.2 2.1.2v2.3h-1.2c-1.2 0-1.6.7-1.6 1.5V12h2.7l-.4 2.9h-2.3v7A10 10 0 0022 12z"/></svg></a>
+          <a><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 002.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg></a>
+        </div>
+      </div>
+    </div>
+    <div class="ft-bot">
+      <div>(c) 2025 IAMET. Todos los derechos reservados.</div>
+      <div>Panduit y los nombres de producto Panduit son marcas registradas de Panduit Corp.</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
