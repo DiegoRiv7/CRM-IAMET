@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caso de éxito: Data Center Crítico CFE · Panduit + IAMET</title>
+<style>
+  :root{
+    --ink:#0A0A0A;
+    --accent:#1D3FAA;
+    --accent-2:#7C9BFF;
+    --accent-soft:#EEF1FB;
+    --muted:#5A5A5A;
+    --light:#8a8a8a;
+    --line:#E5E7EE;
+    --bg:#FFFFFF;
+    --soft:#FAFAFA;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;}
+  img{max-width:100%;}
+  a{color:inherit;}
+
+  .nav{position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);z-index:50;padding:14px 6vw;display:flex;justify-content:space-between;align-items:center;}
+  .nav .brand{display:flex;align-items:center;gap:10px;}
+  .nav .iamet{font-weight:800;font-size:18px;letter-spacing:-.4px;color:var(--iamet);}
+  .nav .crumb{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--muted);}
+  .nav .partner{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--accent);text-transform:uppercase;}
+
+  .hero{position:relative;padding:120px 8vw 100px;background:linear-gradient(135deg,#0a1a4a 0%,#1D3FAA 100%);color:#fff;overflow:hidden;}
+  .hero::after{content:"";position:absolute;right:-200px;bottom:-200px;width:600px;height:600px;border:1px solid rgba(255,255,255,.12);border-radius:50%;}
+  .hero::before{content:"";position:absolute;right:-100px;bottom:-100px;width:400px;height:400px;border:1px solid rgba(255,255,255,.2);border-radius:50%;}
+  .hero .eyebrow{font-size:12px;letter-spacing:3px;font-weight:700;text-transform:uppercase;color:var(--accent-2);position:relative;z-index:2;}
+  .hero h1{font-size:clamp(40px,6vw,84px);font-weight:800;line-height:1.03;letter-spacing:-2px;margin-top:18px;max-width:980px;position:relative;z-index:2;}
+  .hero h1 .accent{color:var(--accent-2);}
+  .hero .sub{font-size:clamp(16px,1.4vw,20px);color:#cdd6f3;margin-top:24px;max-width:680px;position:relative;z-index:2;font-weight:400;}
+  .hero .meta{position:relative;z-index:2;margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:36px;max-width:840px;padding-top:32px;border-top:1px solid rgba(255,255,255,.12);}
+  .hero .meta .k{font-size:11px;letter-spacing:2px;color:#9DB2F2;font-weight:700;text-transform:uppercase;}
+  .hero .meta .v{font-size:18px;font-weight:700;color:#fff;margin-top:6px;}
+  .hero-img{position:relative;z-index:2;margin-top:64px;background:#0a1228;border-radius:18px;padding:32px;overflow:hidden;border:1px solid #1a2a5a;}
+
+  section{padding:100px 8vw;border-bottom:1px solid var(--line);}
+  section.soft{background:var(--soft);}
+  .section-eyebrow{font-size:11px;letter-spacing:3px;font-weight:700;color:var(--accent);text-transform:uppercase;}
+  h2.h{font-size:clamp(30px,4vw,52px);font-weight:800;letter-spacing:-1.2px;line-height:1.1;margin-top:14px;max-width:880px;}
+  p.body{font-size:clamp(15px,1.2vw,18px);color:var(--muted);line-height:1.7;margin-top:24px;max-width:760px;font-weight:400;}
+  p.body + p.body{margin-top:18px;}
+  .body strong{color:var(--ink);font-weight:700;}
+
+  .disclaimer{margin-top:28px;padding:16px 20px;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:4px;font-size:13px;color:var(--muted);max-width:760px;line-height:1.6;}
+
+  .components{margin-top:54px;display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+  .comp{padding:32px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;gap:20px;}
+  .comp .icon{width:48px;height:48px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .comp h3{font-size:18px;font-weight:800;letter-spacing:-.2px;}
+  .comp p{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6;}
+  .comp .tag{display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--accent);margin-top:12px;padding:4px 10px;background:var(--accent-soft);border-radius:99px;}
+
+  .kpis{margin-top:60px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+  .kpi{padding:36px 28px;border-radius:18px;background:linear-gradient(135deg,#0d1733,#1D3FAA);color:#fff;position:relative;overflow:hidden;}
+  .kpi::after{content:"";position:absolute;right:-40px;bottom:-40px;width:140px;height:140px;border:1px solid rgba(255,255,255,.1);border-radius:50%;}
+  .kpi::before{content:"";position:absolute;right:-20px;bottom:-20px;width:90px;height:90px;border:1px solid rgba(255,255,255,.15);border-radius:50%;}
+  .kpi .num{font-size:clamp(48px,5vw,68px);font-weight:800;letter-spacing:-2px;color:var(--accent-2);line-height:1;position:relative;z-index:2;}
+  .kpi .lbl{font-size:13px;color:#cdd6f3;margin-top:14px;line-height:1.5;position:relative;z-index:2;}
+  .kpi .ctx{font-size:11px;color:#9DB2F2;margin-top:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;position:relative;z-index:2;}
+
+  .testimonial{padding:120px 8vw;background:linear-gradient(135deg,#0a1a4a,#1D3FAA);color:#fff;position:relative;overflow:hidden;}
+  .testimonial::after{content:"";position:absolute;left:-200px;bottom:-200px;width:600px;height:600px;border:1px solid rgba(255,255,255,.1);border-radius:50%;}
+  .quote-mark{font-size:120px;font-weight:800;color:var(--accent-2);line-height:.6;position:relative;z-index:2;}
+  .quote{font-size:clamp(26px,3.4vw,44px);font-weight:600;line-height:1.25;letter-spacing:-.8px;margin-top:24px;max-width:1100px;position:relative;z-index:2;color:#fff;}
+  .attrib{margin-top:48px;display:flex;align-items:center;gap:20px;position:relative;z-index:2;}
+  .avatar{width:64px;height:64px;border-radius:50%;background:#fff;color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex-shrink:0;}
+  .attrib .name{font-size:17px;font-weight:700;color:#fff;}
+  .attrib .role{font-size:13px;color:#cdd6f3;margin-top:4px;}
+
+  .about{padding:80px 8vw;background:#FAFAFA;}
+  .about-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:64px;align-items:center;}
+  .about h3{font-size:28px;font-weight:800;letter-spacing:-.5px;}
+  .about p{font-size:15px;color:var(--muted);margin-top:14px;line-height:1.7;max-width:540px;}
+  .about-stats{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .about-stats .s{padding:24px;background:#fff;border:1px solid var(--line);border-radius:12px;}
+  .about-stats .n{font-size:32px;font-weight:800;color:var(--iamet);letter-spacing:-1px;}
+  .about-stats .l{font-size:12px;color:var(--muted);margin-top:6px;}
+
+  footer{background:#0A0A0A;color:#9b9b9b;padding:36px 8vw;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+  footer .left{display:flex;align-items:center;gap:14px;font-size:12px;}
+  footer .iamet{color:#fff;font-weight:800;font-size:16px;letter-spacing:-.4px;}
+  footer .right{font-size:12px;}
+  footer a{color:var(--accent-2);text-decoration:none;font-weight:700;}
+
+  @media (max-width:900px){
+    .hero{padding:100px 6vw 80px;}
+    section{padding:64px 6vw;}
+    .testimonial{padding:80px 6vw;}
+    .hero .meta,.kpis,.components{grid-template-columns:1fr 1fr;}
+    .about-grid{grid-template-columns:1fr;gap:32px;}
+  }
+  @media (max-width:600px){
+    .hero .meta,.kpis,.components,.about-stats{grid-template-columns:1fr;}
+  }
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .8s ease,transform .8s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">
+    <span class="iamet">IAMET</span>
+    <span class="crumb">Casos · Energía · Infraestructura crítica</span>
+  </div>
+  <div class="partner">Panduit · Authorized SI</div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Caso de éxito · Sector energético · Data center Tier III</div>
+  <h1>Site Tier III certificado para utility eléctrica con <span class="accent">99.98%</span> de uptime y 25 años de garantía.</h1>
+  <p class="sub">42 racks Net-Access, 18 km de Cat6A blindado y monitoreo continuo con SmartZone G5. El data center pasó auditoría corporativa en una sola visita y soporta hoy las cargas SCADA y BPM regionales.</p>
+  <div class="meta">
+    <div><div class="k">Sector</div><div class="v">Utility eléctrica</div></div>
+    <div><div class="k">Site</div><div class="v">Data center regional</div></div>
+    <div><div class="k">Capacidad</div><div class="v">42 racks · 18 km cable</div></div>
+    <div><div class="k">Duración</div><div class="v">22 semanas obra</div></div>
+  </div>
+
+  <div class="hero-img">
+    <!-- Data center room mockup -->
+    <svg width="100%" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="floor2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0a0f24"/><stop offset="1" stop-color="#050818"/>
+        </linearGradient>
+        <linearGradient id="rack" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a1f3e"/><stop offset="1" stop-color="#0a0f2a"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="460" fill="#0a0f24"/>
+      <!-- floor perspective -->
+      <polygon points="0,300 1200,300 1100,460 100,460" fill="url(#floor2)"/>
+      <!-- floor tiles -->
+      <g stroke="#1a2a5a" stroke-width="1">
+        <line x1="100" y1="460" x2="0" y2="300"/>
+        <line x1="300" y1="460" x2="250" y2="300"/>
+        <line x1="500" y1="460" x2="500" y2="300"/>
+        <line x1="700" y1="460" x2="700" y2="300"/>
+        <line x1="900" y1="460" x2="950" y2="300"/>
+        <line x1="1100" y1="460" x2="1200" y2="300"/>
+        <line x1="0" y1="340" x2="1200" y2="340"/>
+        <line x1="0" y1="380" x2="1200" y2="380"/>
+        <line x1="0" y1="420" x2="1200" y2="420"/>
+      </g>
+      <!-- ceiling lights -->
+      <g fill="#7C9BFF" opacity=".7">
+        <rect x="100" y="20" width="60" height="6" rx="2"/>
+        <rect x="280" y="20" width="60" height="6" rx="2"/>
+        <rect x="460" y="20" width="60" height="6" rx="2"/>
+        <rect x="640" y="20" width="60" height="6" rx="2"/>
+        <rect x="820" y="20" width="60" height="6" rx="2"/>
+        <rect x="1000" y="20" width="60" height="6" rx="2"/>
+      </g>
+      <!-- hot aisle containment glow -->
+      <rect x="400" y="60" width="400" height="240" fill="#1D3FAA" opacity=".05"/>
+
+      <!-- Rack rows (left) -->
+      <g>
+        <rect x="80" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="80" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="86" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R01</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="86" y="100" width="48" height="3"/><rect x="86" y="108" width="48" height="3"/><rect x="86" y="116" width="48" height="3"/>
+          <rect x="86" y="128" width="48" height="3"/><rect x="86" y="136" width="48" height="3"/>
+          <rect x="86" y="150" width="48" height="3"/><rect x="86" y="158" width="48" height="3"/><rect x="86" y="166" width="48" height="3"/>
+          <rect x="86" y="180" width="48" height="3"/><rect x="86" y="188" width="48" height="3"/>
+          <rect x="86" y="202" width="48" height="3"/><rect x="86" y="210" width="48" height="3"/>
+          <rect x="86" y="222" width="48" height="3"/><rect x="86" y="230" width="48" height="3"/>
+          <rect x="86" y="244" width="48" height="3"/><rect x="86" y="252" width="48" height="3"/>
+          <rect x="86" y="266" width="48" height="3"/><rect x="86" y="274" width="48" height="3"/><rect x="86" y="282" width="48" height="3"/>
+        </g>
+        <circle cx="134" cy="290" r="3" fill="#34d399"/>
+
+        <rect x="150" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="150" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="156" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R02</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="156" y="100" width="48" height="3"/><rect x="156" y="108" width="48" height="3"/>
+          <rect x="156" y="120" width="48" height="3"/><rect x="156" y="128" width="48" height="3"/><rect x="156" y="136" width="48" height="3"/>
+          <rect x="156" y="148" width="48" height="3"/><rect x="156" y="156" width="48" height="3"/>
+          <rect x="156" y="170" width="48" height="3"/><rect x="156" y="178" width="48" height="3"/><rect x="156" y="186" width="48" height="3"/>
+          <rect x="156" y="200" width="48" height="3"/><rect x="156" y="208" width="48" height="3"/>
+          <rect x="156" y="222" width="48" height="3"/><rect x="156" y="230" width="48" height="3"/>
+          <rect x="156" y="244" width="48" height="3"/><rect x="156" y="252" width="48" height="3"/><rect x="156" y="260" width="48" height="3"/>
+          <rect x="156" y="274" width="48" height="3"/><rect x="156" y="282" width="48" height="3"/>
+        </g>
+        <circle cx="204" cy="290" r="3" fill="#34d399"/>
+
+        <rect x="220" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="220" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="226" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R03</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="226" y="100" width="48" height="3"/><rect x="226" y="108" width="48" height="3"/>
+          <rect x="226" y="122" width="48" height="3"/><rect x="226" y="130" width="48" height="3"/>
+          <rect x="226" y="144" width="48" height="3"/><rect x="226" y="152" width="48" height="3"/>
+          <rect x="226" y="168" width="48" height="3"/><rect x="226" y="176" width="48" height="3"/>
+          <rect x="226" y="190" width="48" height="3"/><rect x="226" y="198" width="48" height="3"/>
+          <rect x="226" y="212" width="48" height="3"/><rect x="226" y="220" width="48" height="3"/>
+          <rect x="226" y="234" width="48" height="3"/><rect x="226" y="242" width="48" height="3"/>
+          <rect x="226" y="258" width="48" height="3"/><rect x="226" y="266" width="48" height="3"/>
+          <rect x="226" y="280" width="48" height="3"/>
+        </g>
+        <circle cx="274" cy="290" r="3" fill="#34d399"/>
+      </g>
+
+      <!-- Cold aisle middle visualization -->
+      <g>
+        <rect x="320" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="320" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="326" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R04</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="326" y="104" width="48" height="3"/><rect x="326" y="112" width="48" height="3"/><rect x="326" y="120" width="48" height="3"/>
+          <rect x="326" y="134" width="48" height="3"/><rect x="326" y="142" width="48" height="3"/>
+          <rect x="326" y="156" width="48" height="3"/><rect x="326" y="164" width="48" height="3"/><rect x="326" y="172" width="48" height="3"/>
+          <rect x="326" y="186" width="48" height="3"/><rect x="326" y="194" width="48" height="3"/>
+          <rect x="326" y="208" width="48" height="3"/><rect x="326" y="216" width="48" height="3"/>
+          <rect x="326" y="230" width="48" height="3"/><rect x="326" y="238" width="48" height="3"/>
+          <rect x="326" y="252" width="48" height="3"/><rect x="326" y="260" width="48" height="3"/><rect x="326" y="268" width="48" height="3"/>
+          <rect x="326" y="280" width="48" height="3"/>
+        </g>
+        <circle cx="374" cy="290" r="3" fill="#34d399"/>
+
+        <rect x="390" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="390" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="396" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R05</text>
+        <g fill="#facc15" opacity=".7">
+          <rect x="396" y="100" width="48" height="3"/><rect x="396" y="108" width="48" height="3"/><rect x="396" y="116" width="48" height="3"/>
+          <rect x="396" y="130" width="48" height="3"/><rect x="396" y="138" width="48" height="3"/><rect x="396" y="146" width="48" height="3"/>
+          <rect x="396" y="160" width="48" height="3"/><rect x="396" y="168" width="48" height="3"/>
+          <rect x="396" y="182" width="48" height="3"/><rect x="396" y="190" width="48" height="3"/><rect x="396" y="198" width="48" height="3"/>
+          <rect x="396" y="212" width="48" height="3"/><rect x="396" y="220" width="48" height="3"/><rect x="396" y="228" width="48" height="3"/>
+          <rect x="396" y="242" width="48" height="3"/><rect x="396" y="250" width="48" height="3"/>
+          <rect x="396" y="264" width="48" height="3"/><rect x="396" y="272" width="48" height="3"/><rect x="396" y="280" width="48" height="3"/>
+        </g>
+        <circle cx="444" cy="290" r="3" fill="#facc15"/>
+
+        <rect x="460" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="460" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="466" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R06</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="466" y="102" width="48" height="3"/><rect x="466" y="110" width="48" height="3"/>
+          <rect x="466" y="124" width="48" height="3"/><rect x="466" y="132" width="48" height="3"/><rect x="466" y="140" width="48" height="3"/>
+          <rect x="466" y="154" width="48" height="3"/><rect x="466" y="162" width="48" height="3"/>
+          <rect x="466" y="176" width="48" height="3"/><rect x="466" y="184" width="48" height="3"/>
+          <rect x="466" y="198" width="48" height="3"/><rect x="466" y="206" width="48" height="3"/>
+          <rect x="466" y="220" width="48" height="3"/><rect x="466" y="228" width="48" height="3"/>
+          <rect x="466" y="242" width="48" height="3"/><rect x="466" y="250" width="48" height="3"/><rect x="466" y="258" width="48" height="3"/>
+          <rect x="466" y="272" width="48" height="3"/><rect x="466" y="280" width="48" height="3"/>
+        </g>
+        <circle cx="514" cy="290" r="3" fill="#34d399"/>
+      </g>
+
+      <!-- Right side racks -->
+      <g>
+        <rect x="600" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="600" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="606" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R07</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="606" y="100" width="48" height="3"/><rect x="606" y="108" width="48" height="3"/><rect x="606" y="116" width="48" height="3"/>
+          <rect x="606" y="130" width="48" height="3"/><rect x="606" y="138" width="48" height="3"/>
+          <rect x="606" y="152" width="48" height="3"/><rect x="606" y="160" width="48" height="3"/>
+          <rect x="606" y="174" width="48" height="3"/><rect x="606" y="182" width="48" height="3"/>
+          <rect x="606" y="196" width="48" height="3"/><rect x="606" y="204" width="48" height="3"/>
+          <rect x="606" y="218" width="48" height="3"/><rect x="606" y="226" width="48" height="3"/>
+          <rect x="606" y="240" width="48" height="3"/><rect x="606" y="248" width="48" height="3"/>
+          <rect x="606" y="262" width="48" height="3"/><rect x="606" y="270" width="48" height="3"/><rect x="606" y="278" width="48" height="3"/>
+        </g>
+        <circle cx="654" cy="290" r="3" fill="#34d399"/>
+
+        <rect x="670" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="670" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="676" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R08</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="676" y="100" width="48" height="3"/><rect x="676" y="108" width="48" height="3"/>
+          <rect x="676" y="122" width="48" height="3"/><rect x="676" y="130" width="48" height="3"/><rect x="676" y="138" width="48" height="3"/>
+          <rect x="676" y="152" width="48" height="3"/><rect x="676" y="160" width="48" height="3"/>
+          <rect x="676" y="174" width="48" height="3"/><rect x="676" y="182" width="48" height="3"/><rect x="676" y="190" width="48" height="3"/>
+          <rect x="676" y="204" width="48" height="3"/><rect x="676" y="212" width="48" height="3"/>
+          <rect x="676" y="226" width="48" height="3"/><rect x="676" y="234" width="48" height="3"/>
+          <rect x="676" y="248" width="48" height="3"/><rect x="676" y="256" width="48" height="3"/><rect x="676" y="264" width="48" height="3"/>
+          <rect x="676" y="278" width="48" height="3"/>
+        </g>
+        <circle cx="724" cy="290" r="3" fill="#34d399"/>
+
+        <rect x="740" y="80" width="60" height="220" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="740" y="80" width="60" height="14" fill="#1D3FAA"/>
+        <text x="746" y="91" font-family="Inter,sans-serif" font-size="7" font-weight="800" fill="#fff">R09</text>
+        <g fill="#7C9BFF" opacity=".7">
+          <rect x="746" y="102" width="48" height="3"/><rect x="746" y="110" width="48" height="3"/>
+          <rect x="746" y="124" width="48" height="3"/><rect x="746" y="132" width="48" height="3"/>
+          <rect x="746" y="146" width="48" height="3"/><rect x="746" y="154" width="48" height="3"/><rect x="746" y="162" width="48" height="3"/>
+          <rect x="746" y="176" width="48" height="3"/><rect x="746" y="184" width="48" height="3"/>
+          <rect x="746" y="198" width="48" height="3"/><rect x="746" y="206" width="48" height="3"/>
+          <rect x="746" y="220" width="48" height="3"/><rect x="746" y="228" width="48" height="3"/><rect x="746" y="236" width="48" height="3"/>
+          <rect x="746" y="250" width="48" height="3"/><rect x="746" y="258" width="48" height="3"/>
+          <rect x="746" y="272" width="48" height="3"/><rect x="746" y="280" width="48" height="3"/>
+        </g>
+        <circle cx="794" cy="290" r="3" fill="#34d399"/>
+      </g>
+
+      <!-- Far racks with perspective -->
+      <g opacity=".75">
+        <rect x="850" y="100" width="50" height="180" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="850" y="100" width="50" height="12" fill="#1D3FAA"/>
+        <rect x="908" y="100" width="50" height="180" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="908" y="100" width="50" height="12" fill="#1D3FAA"/>
+        <rect x="966" y="100" width="50" height="180" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="966" y="100" width="50" height="12" fill="#1D3FAA"/>
+        <rect x="1024" y="100" width="50" height="180" fill="url(#rack)" stroke="#1D3FAA"/>
+        <rect x="1024" y="100" width="50" height="12" fill="#1D3FAA"/>
+        <rect x="1082" y="110" width="40" height="170" fill="url(#rack)" stroke="#1D3FAA"/>
+      </g>
+      <!-- cable tray -->
+      <g fill="none" stroke="#1D3FAA" stroke-width="1.5" opacity=".4">
+        <path d="M40 60 L1160 60"/>
+        <path d="M40 70 L1160 70"/>
+      </g>
+      <!-- HUD -->
+      <rect x="20" y="20" width="240" height="22" fill="#000" opacity=".7"/>
+      <circle cx="32" cy="31" r="4" fill="#34d399"/>
+      <text x="42" y="35" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="#fff">DATA HALL A · TIER III</text>
+      <rect x="1000" y="20" width="160" height="22" fill="#000" opacity=".7"/>
+      <text x="1014" y="35" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="#7C9BFF">SmartZone · 22°C · OK</text>
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#9DB2F2;margin-top:14px;letter-spacing:2px;text-transform:uppercase;font-weight:700;"><span>Panduit Net-Access · 42 racks · Cat6A + OS2</span><span>Data Hall A · Site regional</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="section-eyebrow">El reto</div>
+  <h2 class="h">Un site del sector energético que ya no podía pasar auditoría corporativa.</h2>
+  <p class="body">El cliente operaba un data center regional construido por etapas durante 12 años. La instalación funcionaba, pero el diagrama as-built no existía: cables sin etiquetar, parches que no respetaban EIA/TIA, racks con airflow inverso y un PUE que se había deteriorado hasta 2.1 — muy por encima del compromiso corporativo.</p>
+  <p class="body">La auditoría anual identificó <strong>tres hallazgos críticos que ponían en riesgo la operación SCADA</strong>: ausencia de contención de pasillo, cableado mezclado de cobre y fibra sin segregación, y energía sin redundancia A+B real. El cliente tenía 12 meses para remediar antes de la siguiente revisión, sin poder apagar las cargas críticas.</p>
+  <p class="body">El reto era ejecutar una migración Tier III completa, <strong>sin downtime no programado y manteniendo el cumplimiento normativo del sector</strong>. La selección del integrador requería certificación Panduit, experiencia en sites energéticos y capacidad de entregar documentación as-built auditable end-to-end.</p>
+
+  <div class="disclaimer">
+    Nota editorial: este caso describe un proyecto real ejecutado por IAMET para una utility eléctrica del sector energético mexicano. Por confidencialidad operativa del cliente, no se publican identificadores específicos del site, capacidades de carga reales ni nombres de personal. Las cifras de KPI están redondeadas y mantienen proporcionalidad con los resultados auditados.
+  </div>
+</section>
+
+<section class="soft">
+  <div class="section-eyebrow">La solución IAMET</div>
+  <h2 class="h">Migración Tier III con Panduit certificada de planta.</h2>
+  <p class="body">IAMET diseñó la obra en 4 fases con cero downtime: contención de pasillo caliente sobre racks existentes, migración de cableado por hilera y comisionado por celda. La obra eléctrica corrió en paralelo con tableros redundantes A+B sin tocar la carga viva. Cada etapa fue auditada por un tercero independiente.</p>
+
+  <div class="components">
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div>
+        <h3>Cableado Panduit certificado</h3>
+        <p>18 km de Cat6A TX6A-SD blindado y 4.2 km de fibra OS2 con conectores MTP/MPO. Certificación de canal con reporte Fluke DSX por puerto. Garantía de planta 25 años.</p>
+        <span class="tag">25 años · TIA-942</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 7h6M9 11h6M9 15h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div>
+        <h3>42 racks Net-Access 42U</h3>
+        <p>Gabinetes Panduit con contención de pasillo caliente integrada, PDUs SmartZone Switched + Monitor y administración por puerto. Sostienen 24 kW promedio sin hotspots.</p>
+        <span class="tag">24 kW/rack</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12h6l2-7 4 14 2-7h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h3>SmartZone G5 DCIM</h3>
+        <p>Sensores de temperatura, humedad, puerta y energía por rack. Dashboard único integrado con SOC del cliente. Alertas anticipativas a operación SCADA.</p>
+        <span class="tag">Monitoreo continuo</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="2"/></svg></div>
+      <div>
+        <h3>Energía A+B + tierras</h3>
+        <p>Doble vía de alimentación con conmutación STS por rack, sistema de tierras independiente y plan de pruebas trimestral. Eliminó el principal hallazgo de auditoría.</p>
+        <span class="tag">Redundancia real</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-eyebrow">Resultados</div>
+  <h2 class="h">Auditoría aprobada en una visita. PUE compromiso cumplido.</h2>
+  <p class="body">Las mediciones corresponden a los primeros 12 meses post comisionamiento. La validación TIA-942 fue ejecutada por un consultor externo del cliente y no por IAMET.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="num">99.98%</div><div class="lbl">Uptime SLA verificado</div><div class="ctx">12 meses operación</div></div>
+    <div class="kpi"><div class="num">1.42</div><div class="lbl">PUE objetivo alcanzado</div><div class="ctx">vs 2.1 baseline previo</div></div>
+    <div class="kpi"><div class="num">-68%</div><div class="lbl">Tiempo MAC (Moves/Adds/Changes)</div><div class="ctx">con documentación SmartZone</div></div>
+    <div class="kpi"><div class="num">25 años</div><div class="lbl">Garantía de planta Panduit</div><div class="ctx">cableado y conectividad</div></div>
+  </div>
+</section>
+
+<section class="testimonial">
+  <div class="quote-mark">"</div>
+  <div class="quote">Lo que hizo la diferencia no fue solo el cable Panduit. Fue la documentación as-built que IAMET entregó, hilera por hilera, puerto por puerto. <em style="color:var(--accent-2);font-style:normal;">La auditoría corporativa la pasamos en una sola visita.</em></div>
+  <div class="attrib">
+    <div class="avatar">EH</div>
+    <div>
+      <div class="name">E. Hernández</div>
+      <div class="role">Jefe de Infraestructura · Site regional · Sector energético</div>
+    </div>
+  </div>
+</section>
+
+<section class="about">
+  <div class="about-grid">
+    <div>
+      <h3>Sobre IAMET</h3>
+      <p>IAMET es integrador de tecnología con más de 20 años en el mercado mexicano, Panduit Authorized System Integrator, partner Gold de Zebra, Avigilion, Genetec y Axis. Operamos data centers Tier III/IV en sectores energético, manufactura, salud y gobierno.</p>
+      <p>Cobertura desde Tijuana y Mexicali con NOC 24/7 propio, SLA 4 horas on-site en zona noroeste y equipo certificado RCDD, DCDC y BICSI.</p>
+    </div>
+    <div class="about-stats">
+      <div class="s"><div class="n">20+</div><div class="l">años en el mercado</div></div>
+      <div class="s"><div class="n">Tier III</div><div class="l">sites operados</div></div>
+      <div class="s"><div class="n">RCDD</div><div class="l">+ DCDC + BICSI</div></div>
+      <div class="s"><div class="n">25 años</div><div class="l">garantía Panduit</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="left">
+    <span class="iamet">IAMET</span>
+    <span>· Caso de éxito · Data Center Tier III · Panduit · 2026</span>
+  </div>
+  <div class="right">
+    <a href="mailto:datacenter@iamet.com.mx">datacenter@iamet.com.mx</a>
+    &nbsp;·&nbsp;
+    <a href="tel:+526646800000">+52 (664) 680 0000</a>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    const els=document.querySelectorAll('section, .hero-img');
+    els.forEach(e=>e.classList.add('reveal'));
+    const io=new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+    },{threshold:.1});
+    els.forEach(e=>io.observe(e));
+  })();
+</script>
+</body>
+</html>
