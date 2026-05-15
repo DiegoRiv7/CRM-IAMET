@@ -1,0 +1,1462 @@
+{# ═══════════════════════════════════════════════════════════════════════
+   MARKETING HUB — Centro de marketing por marcas
+   Permite que el vendedor busque material de venta (brochures, landings,
+   propuestas, certificaciones, videos, banners, casos de éxito) filtrado
+   por marca (Zebra, Panduit, Avigilion, Genetec, Axis, APC, Cisco) y arme
+   un "kit" para enviar por correo al cliente.
+
+   Mock data por ahora — el backend (subida + persistencia) se conecta
+   después. Inspirado en el diseño v2 (claude.ai/design) pero con animaciones
+   suavizadas y tipografía más formal (Inter en vez de Syne).
+   ═══════════════════════════════════════════════════════════════════════ #}
+
+<style>
+/* ─── MARKETING HUB — Scope: .mkthub-* ────────────────────────── */
+.mkthub-root {
+    --mkthub-bg: #F5F3EE;
+    --mkthub-paper: #FFFFFF;
+    --mkthub-ink: #1A1A1A;
+    --mkthub-soft: #7A7866;
+    --mkthub-mute: #AEAB9C;
+    --mkthub-line: #E4E1D5;
+    --mkthub-line-strong: #1A1A1A;
+    --mkthub-accent: #0052D4;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--mkthub-ink);
+    background: var(--mkthub-bg);
+    min-height: calc(100vh - 120px);
+    padding: 28px 24px 120px;
+    margin: -12px -8px 0;
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+}
+/* Fondo: dot-grid sutil estilo Ben-Day (cómic editorial) */
+.mkthub-root::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(26,26,26,0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    pointer-events: none; z-index: 0;
+}
+.mkthub-root > * { position: relative; z-index: 1; }
+
+/* ── Hero ── */
+.mkthub-hero {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 28px;
+    animation: mkthubSlideUp 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.mkthub-tag {
+    display: inline-block;
+    font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--mkthub-soft);
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border: 1.5px solid var(--mkthub-line-strong);
+    border-radius: 999px;
+    background: #FFFFFF;
+    margin-bottom: 14px;
+}
+.mkthub-title {
+    font-size: 2.4rem; font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    color: var(--mkthub-ink);
+    margin: 0 0 8px;
+}
+.mkthub-title .accent { color: var(--mkthub-accent); }
+.mkthub-sub {
+    font-size: 1rem;
+    color: var(--mkthub-soft);
+    margin: 0;
+    font-weight: 400;
+}
+
+/* ── Search ── */
+.mkthub-search-wrap {
+    max-width: 620px;
+    margin: 0 auto 28px;
+    position: relative;
+    transition: max-width 0.25s ease;
+    animation: mkthubSlideUp 0.42s 0.06s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.mkthub-root.is-searching .mkthub-search-wrap {
+    max-width: none;
+    margin-bottom: 18px;
+    animation: none;
+}
+.mkthub-search {
+    width: 100%;
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    background: #FFFFFF;
+    border: 2px solid var(--mkthub-line);
+    border-radius: 18px;
+    box-shadow: 0 1px 0 var(--mkthub-line), 3px 3px 0 rgba(26,26,26,0.04);
+    cursor: text;
+    transition: all 0.18s ease;
+}
+.mkthub-search:focus-within {
+    border-color: var(--mkthub-accent);
+    box-shadow: 0 0 0 4px rgba(0,82,212,0.10), 3px 3px 0 rgba(0,82,212,0.18);
+}
+.mkthub-search-icon { color: var(--mkthub-mute); display: flex; flex-shrink: 0; }
+.mkthub-search:focus-within .mkthub-search-icon { color: var(--mkthub-accent); }
+.mkthub-search input {
+    flex: 1;
+    border: none; outline: none; background: transparent;
+    font-family: inherit;
+    font-size: 0.95rem; font-weight: 500;
+    color: var(--mkthub-ink);
+    min-width: 0;
+}
+.mkthub-search input::placeholder { color: var(--mkthub-mute); font-weight: 400; }
+.mkthub-search-kbd {
+    font-family: 'SF Mono', ui-monospace, monospace;
+    font-size: 0.66rem; color: var(--mkthub-mute);
+    background: #F5F3EB;
+    border: 1.5px solid var(--mkthub-line);
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+.mkthub-search-clear {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #EAE6DA; border: none;
+    color: var(--mkthub-soft);
+    cursor: pointer; flex-shrink: 0;
+    display: none; align-items: center; justify-content: center;
+}
+.mkthub-search-clear.is-visible { display: flex; }
+
+/* Dropdown sugerencias */
+.mkthub-search-dd {
+    position: absolute;
+    top: calc(100% + 8px); left: 0; right: 0;
+    background: #FFFFFF;
+    border: 2px solid var(--mkthub-line-strong);
+    border-radius: 16px;
+    box-shadow: 4px 4px 0 var(--mkthub-line-strong);
+    overflow: hidden; z-index: 100;
+    display: none;
+    animation: mkthubPopIn 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mkthub-search-dd.is-open { display: block; }
+.mkthub-dd-section {
+    padding: 8px 14px;
+    background: rgba(0,82,212,0.05);
+    border-bottom: 1.5px solid #F0EDE5;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; font-weight: 600;
+    color: var(--mkthub-accent);
+}
+.mkthub-dd-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #F5F2EA;
+    font-size: 0.84rem;
+    transition: background 0.1s;
+}
+.mkthub-dd-item:last-child { border-bottom: none; }
+.mkthub-dd-item:hover { background: #F7F5ED; }
+.mkthub-dd-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.mkthub-dd-ext {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 800;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+}
+.mkthub-dd-text {
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mkthub-dd-meta {
+    font-size: 0.7rem;
+    color: var(--mkthub-mute);
+    flex-shrink: 0;
+}
+
+/* ── Brand cards (idle state) ── */
+.mkthub-brands {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    max-width: 920px;
+    margin: 0 auto;
+    animation: mkthubSlideUp 0.42s 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.mkthub-brand-card {
+    aspect-ratio: 1 / 1.05;
+    border-radius: 22px;
+    border: 2px solid var(--brand-color, var(--mkthub-line-strong));
+    background: var(--brand-bg, #FFFFFF);
+    box-shadow: 3px 3px 0 var(--brand-shadow, rgba(26,26,26,0.18));
+    cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                background 0.18s ease;
+    font-family: inherit;
+}
+.mkthub-brand-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 5px 7px 0 var(--brand-shadow, rgba(26,26,26,0.18));
+    background: var(--brand-color);
+}
+.mkthub-brand-card:hover .mkthub-brand-letter,
+.mkthub-brand-card:hover .mkthub-brand-name,
+.mkthub-brand-card:hover .mkthub-brand-count {
+    color: #FFFFFF;
+}
+.mkthub-brand-card:hover .mkthub-brand-letter-wrap {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.4);
+}
+.mkthub-brand-letter-wrap {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--brand-color) 14%, transparent);
+    border: 2px solid color-mix(in srgb, var(--brand-color) 28%, transparent);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s ease;
+}
+.mkthub-brand-letter {
+    font-size: 1.5rem; font-weight: 800;
+    color: var(--brand-color);
+    transition: color 0.18s ease;
+}
+.mkthub-brand-name {
+    font-size: 0.86rem; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-color);
+    text-align: center;
+    transition: color 0.18s ease;
+}
+.mkthub-brand-count {
+    font-size: 0.72rem; font-weight: 500;
+    color: color-mix(in srgb, var(--brand-color) 65%, transparent);
+    transition: color 0.18s ease;
+}
+
+/* ── Results view ── */
+.mkthub-results { display: none; }
+.mkthub-root.is-searching .mkthub-results { display: block; animation: mkthubFade 0.2s ease both; }
+.mkthub-root.is-searching .mkthub-idle-only { display: none !important; }
+
+.mkthub-brand-pills, .mkthub-type-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 12px;
+}
+.mkthub-type-chips { margin-bottom: 16px; }
+.mkthub-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 13px;
+    border: 1.5px solid var(--mkthub-line);
+    background: #FFFFFF;
+    color: var(--mkthub-soft);
+    border-radius: 999px;
+    font-size: 0.78rem; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.14s ease;
+    font-family: inherit;
+}
+.mkthub-pill:hover {
+    background: #FAFAF5;
+    border-color: var(--mkthub-soft);
+    color: var(--mkthub-ink);
+}
+.mkthub-pill.is-active {
+    border-color: var(--mkthub-line-strong);
+    background: var(--mkthub-line-strong);
+    color: #FFFFFF;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 rgba(26,26,26,0.25);
+}
+.mkthub-pill--brand.is-active {
+    border-color: var(--pill-color);
+    background: var(--pill-color);
+    box-shadow: 2px 2px 0 color-mix(in srgb, var(--pill-color) 55%, transparent);
+}
+.mkthub-pill--type.is-active {
+    border-color: var(--pill-color);
+    background: var(--pill-color);
+    box-shadow: 2px 2px 0 color-mix(in srgb, var(--pill-color) 55%, transparent);
+}
+.mkthub-pill-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--pill-color, currentColor);
+    flex-shrink: 0;
+}
+.mkthub-pill.is-active .mkthub-pill-dot { background: rgba(255,255,255,0.8); }
+.mkthub-pill-count {
+    font-size: 0.72rem;
+    opacity: 0.72;
+    font-weight: 500;
+}
+.mkthub-pill--clear {
+    border-color: var(--mkthub-line-strong);
+    background: var(--mkthub-line-strong);
+    color: #FFFFFF;
+    font-weight: 700;
+}
+.mkthub-pill--clear:hover { background: #2D2D2D; color: #FFFFFF; }
+
+.mkthub-results-count {
+    font-size: 0.86rem;
+    color: var(--mkthub-soft);
+    margin: 0 0 16px;
+    animation: mkthubFade 0.2s ease both;
+}
+.mkthub-results-count strong { color: var(--mkthub-ink); font-weight: 700; }
+.mkthub-results-count .accent { color: var(--mkthub-accent); font-weight: 700; }
+
+/* ── Grid de recursos ── */
+.mkthub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(252px, 1fr));
+    gap: 16px;
+}
+.mkthub-empty {
+    text-align: center;
+    padding: 56px 20px;
+}
+.mkthub-empty-icon {
+    width: 62px; height: 62px;
+    border-radius: 18px;
+    border: 2px solid var(--mkthub-line);
+    box-shadow: 3px 3px 0 var(--mkthub-line);
+    margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--mkthub-mute);
+}
+.mkthub-empty-title { font-size: 1.05rem; font-weight: 800; color: var(--mkthub-ink); margin-bottom: 5px; }
+.mkthub-empty-sub { font-size: 0.86rem; color: var(--mkthub-soft); }
+
+/* Card de recurso */
+.mkthub-card {
+    background: #FFFFFF;
+    border-radius: 18px;
+    border: 2px solid var(--mkthub-line-strong);
+    box-shadow: 3px 3px 0 var(--card-color, var(--mkthub-line-strong));
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation: mkthubCardIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) var(--card-delay, 0s) both;
+}
+.mkthub-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 5px 7px 0 var(--card-color, var(--mkthub-line-strong));
+}
+.mkthub-card.is-in-kit {
+    border-color: var(--card-color);
+    transform: scale(0.985);
+}
+.mkthub-card.is-in-kit::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--card-color);
+    opacity: 0.04;
+    border-radius: 16px;
+    pointer-events: none;
+}
+.mkthub-card-head {
+    background: var(--card-color);
+    padding: 14px 14px 12px;
+    min-height: 92px;
+    display: flex; flex-direction: column; justify-content: space-between;
+}
+.mkthub-card-meta {
+    display: flex; justify-content: space-between; align-items: flex-start;
+}
+.mkthub-card-type {
+    font-size: 0.62rem; font-weight: 700;
+    color: rgba(255,255,255,0.78);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+.mkthub-card-ext {
+    background: rgba(255,255,255,0.28);
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.62rem; font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: 0.04em;
+}
+.mkthub-card-title {
+    font-size: 0.92rem; font-weight: 700;
+    color: #FFFFFF;
+    line-height: 1.3;
+    margin: 6px 0 0;
+}
+.mkthub-card-body {
+    padding: 11px 14px 10px;
+    flex: 1;
+}
+.mkthub-card-desc {
+    font-size: 0.78rem; color: #6E6C5C;
+    line-height: 1.5;
+    margin: 0 0 9px;
+}
+.mkthub-card-tags {
+    display: flex; flex-wrap: wrap; gap: 4px;
+}
+.mkthub-card-tag {
+    font-size: 0.7rem;
+    color: #8E8C78;
+    background: #F1EFE7;
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+.mkthub-card-foot {
+    padding: 0 14px 13px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+}
+.mkthub-card-brand {
+    display: flex; align-items: center; gap: 5px;
+    min-width: 0;
+}
+.mkthub-card-brand-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--card-color);
+    flex-shrink: 0;
+}
+.mkthub-card-brand-name {
+    font-size: 0.72rem; font-weight: 600;
+    color: var(--card-color);
+}
+.mkthub-card-date {
+    font-size: 0.72rem; color: var(--mkthub-mute);
+}
+.mkthub-kit-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px;
+    border-radius: 9px;
+    border: 1.5px solid var(--mkthub-line-strong);
+    background: #FFFFFF;
+    color: var(--mkthub-ink);
+    font-size: 0.76rem; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 1px 1px 0 var(--mkthub-line-strong);
+    transition: all 0.14s ease;
+    flex-shrink: 0;
+}
+.mkthub-kit-btn:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--mkthub-line-strong); }
+.mkthub-card.is-in-kit .mkthub-kit-btn {
+    background: var(--card-color);
+    color: #FFFFFF;
+    border-color: var(--card-color);
+    box-shadow: 1px 1px 0 color-mix(in srgb, var(--card-color) 50%, black);
+}
+
+/* ── Kit Tray ── */
+.mkthub-kit-tray {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 90;
+    background: #1A1A1A;
+    border-top: 2px solid #1A1A1A;
+    padding: 10px 24px 12px;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    animation: mkthubTrayUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mkthub-kit-tray.is-open { display: flex; }
+.mkthub-kit-info {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+}
+.mkthub-kit-bag {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    color: #FFFFFF;
+    position: relative;
+}
+.mkthub-kit-badge {
+    position: absolute;
+    top: -7px; right: -7px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 2px solid #1A1A1A;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 800;
+    color: #1A1A1A;
+}
+.mkthub-kit-label {
+    font-size: 0.82rem; font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.01em;
+}
+.mkthub-kit-chips {
+    flex: 1;
+    display: flex; gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    min-width: 0;
+}
+.mkthub-kit-chips::-webkit-scrollbar { height: 4px; }
+.mkthub-kit-chips::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 2px; }
+.mkthub-kit-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 8px 4px 8px;
+    background: color-mix(in srgb, var(--chip-color) 28%, transparent);
+    border: 1.5px solid var(--chip-color);
+    border-radius: 9px;
+    flex-shrink: 0;
+    animation: mkthubPopIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mkthub-kit-chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--chip-color); flex-shrink: 0; }
+.mkthub-kit-chip-title {
+    font-size: 0.76rem;
+    color: #FFFFFF;
+    font-weight: 500;
+    max-width: 160px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mkthub-kit-chip-x {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    padding: 0; display: flex; align-items: center;
+    margin-left: 2px;
+    transition: color 0.1s;
+}
+.mkthub-kit-chip-x:hover { color: rgba(255,255,255,0.95); }
+.mkthub-kit-send {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px;
+    border-radius: 11px;
+    background: #FFFFFF;
+    border: 2px solid #FFFFFF;
+    color: #1A1A1A;
+    font-size: 0.86rem; font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    transition: transform 0.14s ease;
+}
+.mkthub-kit-send:hover { transform: scale(1.025); }
+
+/* ── Modal ── */
+.mkthub-modal-overlay {
+    position: fixed; inset: 0;
+    z-index: 200;
+    background: rgba(20,20,18,0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    animation: mkthubFade 0.16s ease;
+}
+.mkthub-modal-overlay.is-open { display: flex; }
+.mkthub-modal {
+    background: #FFFFFF;
+    border-radius: 22px;
+    border: 2px solid var(--mkthub-line-strong);
+    width: 100%; max-width: 480px;
+    overflow: hidden;
+    animation: mkthubPopIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mkthub-preview-modal { box-shadow: 6px 6px 0 var(--modal-color, var(--mkthub-line-strong)); }
+.mkthub-modal-head {
+    background: var(--modal-color);
+    padding: 22px 22px 20px;
+    position: relative;
+    color: #FFFFFF;
+}
+.mkthub-modal-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.22);
+    border: none; cursor: pointer;
+    color: #FFFFFF;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+}
+.mkthub-modal-close:hover { background: rgba(255,255,255,0.36); }
+.mkthub-modal-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px;
+    background: rgba(255,255,255,0.24);
+    border-radius: 7px;
+    margin-bottom: 10px;
+    font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.1em;
+}
+.mkthub-modal-title { font-size: 1.1rem; font-weight: 800; line-height: 1.3; }
+.mkthub-modal-body { padding: 20px 22px 22px; }
+.mkthub-modal-desc { font-size: 0.82rem; color: #5C5A4C; line-height: 1.6; margin-bottom: 16px; }
+.mkthub-modal-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 9px; margin-bottom: 16px;
+}
+.mkthub-modal-stat {
+    background: #F5F3EB;
+    border-radius: 11px;
+    padding: 8px 12px;
+    border: 1.5px solid #EAE8E0;
+}
+.mkthub-modal-stat-label {
+    font-size: 0.62rem; color: var(--mkthub-mute);
+    margin-bottom: 3px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+.mkthub-modal-stat-val { font-size: 0.82rem; font-weight: 500; color: var(--mkthub-ink); }
+.mkthub-modal-actions { display: flex; gap: 8px; }
+.mkthub-btn {
+    flex: 1;
+    padding: 11px 0;
+    border-radius: 12px;
+    border: 2px solid var(--mkthub-line);
+    background: #FFFFFF;
+    color: var(--mkthub-soft);
+    font-size: 0.82rem; font-weight: 700;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    font-family: inherit;
+    transition: all 0.14s ease;
+}
+.mkthub-btn--primary {
+    background: var(--mkthub-line-strong);
+    border-color: var(--mkthub-line-strong);
+    color: #FFFFFF;
+}
+.mkthub-btn--brand {
+    background: var(--btn-color);
+    border-color: var(--btn-color);
+    color: #FFFFFF;
+}
+
+/* Email modal */
+.mkthub-email-modal { box-shadow: 5px 5px 0 var(--mkthub-line-strong); }
+.mkthub-email-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1.5px solid #F0EDE5;
+}
+.mkthub-email-head-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+}
+.mkthub-email-head-title {
+    display: flex; align-items: center; gap: 8px;
+}
+.mkthub-email-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--mkthub-line-strong);
+    display: flex; align-items: center; justify-content: center;
+    color: #FFFFFF;
+}
+.mkthub-email-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.mkthub-email-tag {
+    font-size: 0.66rem; font-weight: 600;
+    color: var(--tag-color);
+    background: color-mix(in srgb, var(--tag-color) 9%, white);
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1.5px solid color-mix(in srgb, var(--tag-color) 28%, transparent);
+}
+.mkthub-email-body { padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 12px; }
+.mkthub-field-label {
+    font-size: 0.72rem; color: var(--mkthub-soft);
+    margin-bottom: 6px; font-weight: 600;
+}
+.mkthub-input, .mkthub-textarea {
+    width: 100%;
+    border-radius: 12px;
+    border: 2px solid var(--mkthub-line);
+    padding: 10px 13px;
+    font-size: 0.82rem; color: var(--mkthub-ink);
+    font-family: inherit;
+    outline: none;
+    transition: all 0.15s;
+    background: #FFFFFF;
+}
+.mkthub-input:focus, .mkthub-textarea:focus {
+    border-color: var(--mkthub-line-strong);
+    box-shadow: 2px 2px 0 var(--mkthub-line-strong);
+}
+.mkthub-textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
+.mkthub-email-actions { display: flex; gap: 8px; margin-top: 4px; }
+.mkthub-email-success {
+    padding: 44px 28px;
+    text-align: center;
+}
+.mkthub-email-success-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    border: 2px solid #007A5E;
+    box-shadow: 3px 3px 0 #007A5E;
+    background: #EDFAF4;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    color: #007A5E;
+    animation: mkthubPopIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mkthub-email-success-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+.mkthub-email-success-sub { font-size: 0.82rem; color: var(--mkthub-soft); margin-bottom: 22px; }
+
+/* ── Animations ── */
+@keyframes mkthubFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mkthubSlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes mkthubPopIn { from { opacity: 0; transform: scale(0.92) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes mkthubTrayUp { from { transform: translateY(110%); } to { transform: translateY(0); } }
+@keyframes mkthubCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Responsive */
+@media (max-width: 720px) {
+    .mkthub-title { font-size: 1.8rem; }
+    .mkthub-brands { grid-template-columns: repeat(2, 1fr); }
+    .mkthub-grid { grid-template-columns: 1fr; }
+    .mkthub-root { padding: 22px 14px 110px; }
+}
+</style>
+
+<div class="mkthub-root" id="mkthubRoot">
+
+    {# ── Hero (idle only) ── #}
+    <div class="mkthub-hero mkthub-idle-only">
+        <p class="mkthub-tag">CENTRO DE MARKETING</p>
+        <h1 class="mkthub-title">¿Qué quieres <span class="accent">vender hoy?</span></h1>
+        <p class="mkthub-sub">Busca, elige materiales y arma tu kit para el cliente</p>
+    </div>
+
+    {# ── Search bar ── #}
+    <div class="mkthub-search-wrap">
+        <div class="mkthub-search" id="mkthubSearchBox">
+            <span class="mkthub-search-icon">
+                <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="2"/><line x1="12" y1="12" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <input type="text" id="mkthubSearchInput" placeholder="Busca materiales por marca, tipo o palabra clave…" autocomplete="off">
+            <kbd class="mkthub-search-kbd" id="mkthubSearchKbd">⌘K</kbd>
+            <button type="button" class="mkthub-search-clear" id="mkthubSearchClear" title="Limpiar">
+                <svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <div class="mkthub-search-dd" id="mkthubSearchDD"></div>
+    </div>
+
+    {# ── Idle: brand cards ── #}
+    <div class="mkthub-brands mkthub-idle-only" id="mkthubBrands"></div>
+
+    {# ── Results: brand pills + type chips + grid ── #}
+    <div class="mkthub-results" id="mkthubResults">
+        <div class="mkthub-brand-pills" id="mkthubBrandPills"></div>
+        <div class="mkthub-type-chips" id="mkthubTypeChips"></div>
+        <p class="mkthub-results-count" id="mkthubResultsCount"></p>
+        <div class="mkthub-grid" id="mkthubGrid"></div>
+    </div>
+</div>
+
+{# Kit tray fijo (fuera del root para que el position:fixed funcione bien) #}
+<div class="mkthub-kit-tray" id="mkthubKitTray">
+    <div class="mkthub-kit-info">
+        <div class="mkthub-kit-bag">
+            <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 6h10l-1 7H4L3 6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 6V4.5a2 2 0 014 0V6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span class="mkthub-kit-badge" id="mkthubKitBadge">0</span>
+        </div>
+        <span class="mkthub-kit-label">Tu kit</span>
+    </div>
+    <div class="mkthub-kit-chips" id="mkthubKitChips"></div>
+    <button type="button" class="mkthub-kit-send" id="mkthubKitSend">
+        <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M12.5 1.5l-5.5 11-1.5-5-5-1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12.5 1.5L6 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Enviar kit →
+    </button>
+</div>
+
+{# Preview modal #}
+<div class="mkthub-modal-overlay" id="mkthubPreviewOverlay">
+    <div class="mkthub-modal mkthub-preview-modal" id="mkthubPreviewModal"></div>
+</div>
+
+{# Email modal #}
+<div class="mkthub-modal-overlay" id="mkthubEmailOverlay">
+    <div class="mkthub-modal mkthub-email-modal" id="mkthubEmailModal"></div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    if (window._mkthubLoaded) return;
+    window._mkthubLoaded = true;
+
+    /* ─── DATOS DE MARCAS (sincronizadas con MARCA_CHOICES del backend) ─── */
+    var BRANDS = [
+        { id: 'zebra',     name: 'Zebra',     color: '#E8610A', bg: '#FFF3EA', dark: '#B84C08' },
+        { id: 'panduit',   name: 'Panduit',   color: '#1D3FAA', bg: '#EEF2FF', dark: '#162E80' },
+        { id: 'avigilion', name: 'Avigilion', color: '#C4112A', bg: '#FFF0F2', dark: '#960D20' },
+        { id: 'genetec',   name: 'Genetec',   color: '#007A5E', bg: '#EDFAF4', dark: '#005C47' },
+        { id: 'axis',      name: 'Axis',      color: '#1A8FE3', bg: '#EAF5FE', dark: '#1170B8' },
+        { id: 'apc',       name: 'APC',       color: '#16A34A', bg: '#ECFDF3', dark: '#0F7D39' },
+        { id: 'cisco',     name: 'Cisco',     color: '#0EA5E9', bg: '#E8F7FE', dark: '#0876AB' }
+    ];
+
+    /* ─── TIPOS DE RECURSO ─── */
+    var TYPES = {
+        brochure:      { name: 'Brochure',       ext: 'PDF', color: '#7C3AED' },
+        landing:       { name: 'Landing Page',   ext: 'URL', color: '#0066CC' },
+        presentacion:  { name: 'Presentación',   ext: 'PPT', color: '#059669' },
+        certificacion: { name: 'Certificación',  ext: 'PDF', color: '#D97706' },
+        video:         { name: 'Video',          ext: 'MP4', color: '#DC2626' },
+        banner:        { name: 'Banner',         ext: 'PNG', color: '#DB2777' },
+        propuesta:     { name: 'Propuesta',      ext: 'PDF', color: '#0891B2' },
+        caso:          { name: 'Caso de éxito',  ext: 'PDF', color: '#4F46E5' }
+    };
+
+    /* ─── MOCK DATA (mientras no hay backend) ─── */
+    var RESOURCES = [
+        { id: 1, title: 'ZD421 — Brochure Impresora', brand: 'zebra', type: 'brochure', size: '2.4 MB', date: 'Mar 2024', tags: ['impresoras', 'ZD421'], desc: 'Especificaciones y ventajas del ZD421 para punto de venta.' },
+        { id: 2, title: 'Soluciones Retail Zebra', brand: 'zebra', type: 'presentacion', size: '8.1 MB', date: 'Feb 2024', tags: ['retail', 'ventas'], desc: 'Deck ejecutivo de soluciones para el sector retail.' },
+        { id: 3, title: 'Landing — Impresoras de Etiquetas', brand: 'zebra', type: 'landing', size: '—', date: 'Ene 2024', tags: ['landing', 'etiquetas'], desc: 'Landing optimizada para captación en impresoras industriales.' },
+        { id: 4, title: 'Certificación Partner Gold 2024', brand: 'zebra', type: 'certificacion', size: '1.1 MB', date: 'Ene 2024', tags: ['certificación', 'gold'], desc: 'Certificado oficial de partner nivel Gold vigente 2024.' },
+        { id: 5, title: 'Demo TC52 — Video en Campo', brand: 'zebra', type: 'video', size: '145 MB', date: 'Dic 2023', tags: ['demo', 'TC52', 'handheld'], desc: 'Demostración del handheld TC52 en operación de campo.' },
+        { id: 6, title: 'Caso Éxito — Logística Express', brand: 'zebra', type: 'caso', size: '3.2 MB', date: 'Nov 2023', tags: ['logística', 'trazabilidad'], desc: 'Implementación exitosa de trazabilidad en empresa de logística.' },
+        { id: 7, title: 'Catálogo Infraestructura de Red', brand: 'panduit', type: 'brochure', size: '12.3 MB', date: 'Mar 2024', tags: ['redes', 'cableado'], desc: 'Catálogo completo de cableado estructurado certificado.' },
+        { id: 8, title: 'Propuesta Data Center Panduit', brand: 'panduit', type: 'propuesta', size: '5.8 MB', date: 'Feb 2024', tags: ['data center'], desc: 'Plantilla ejecutiva para proyectos de infraestructura.' },
+        { id: 9, title: 'Landing — Cableado Estructurado', brand: 'panduit', type: 'landing', size: '—', date: 'Ene 2024', tags: ['landing', 'cableado'], desc: 'Landing de captación para soluciones de cableado.' },
+        { id: 10, title: 'Gestión Inteligente de Red', brand: 'panduit', type: 'presentacion', size: '6.4 MB', date: 'Ene 2024', tags: ['gestión', 'SmartZone G5'], desc: 'Deck ejecutivo para gestión de red inteligente.' },
+        { id: 11, title: 'Banner Digital SmartZone G5', brand: 'panduit', type: 'banner', size: '4.2 MB', date: 'Dic 2023', tags: ['banner', 'SmartZone'], desc: 'Set de banners en múltiples formatos para SmartZone.' },
+        { id: 12, title: 'Videovigilancia IP — Brochure', brand: 'avigilion', type: 'brochure', size: '7.6 MB', date: 'Mar 2024', tags: ['cámaras', 'seguridad'], desc: 'Soluciones de videovigilancia con inteligencia artificial.' },
+        { id: 13, title: 'Landing — Cámaras IA Avigilion', brand: 'avigilion', type: 'landing', size: '—', date: 'Feb 2024', tags: ['cámaras', 'IA'], desc: 'Landing de alta conversión para cámaras con IA.' },
+        { id: 14, title: 'Demo Avigilion Control Center 7', brand: 'avigilion', type: 'video', size: '280 MB', date: 'Feb 2024', tags: ['VMS', 'demo'], desc: 'Demostración completa del software ACC7 para gerentes.' },
+        { id: 15, title: 'Certificación Avigilion Specialist', brand: 'avigilion', type: 'certificacion', size: '0.9 MB', date: 'Ene 2024', tags: ['certificación'], desc: 'Certificado oficial para integradores autorizados.' },
+        { id: 16, title: 'Caso Retail — Cadena Nacional', brand: 'avigilion', type: 'caso', size: '4.1 MB', date: 'Dic 2023', tags: ['retail', 'caso'], desc: 'Vigilancia inteligente en cadena de tiendas.' },
+        { id: 17, title: 'Propuesta Sistema Integral', brand: 'avigilion', type: 'propuesta', size: '3.7 MB', date: 'Nov 2023', tags: ['propuesta', 'seguridad'], desc: 'Plantilla ejecutiva para sistemas de seguridad integral.' },
+        { id: 18, title: 'Security Center — Brochure', brand: 'genetec', type: 'brochure', size: '5.2 MB', date: 'Mar 2024', tags: ['seguridad unificada'], desc: 'Plataforma unificada de seguridad física corporativa.' },
+        { id: 19, title: 'Landing — Control de Acceso', brand: 'genetec', type: 'landing', size: '—', date: 'Feb 2024', tags: ['landing', 'acceso'], desc: 'Landing para control de acceso unificado con video.' },
+        { id: 20, title: 'Genetec para Gobierno', brand: 'genetec', type: 'presentacion', size: '9.8 MB', date: 'Feb 2024', tags: ['gobierno', 'smart city'], desc: 'Soluciones de seguridad para gobierno y ciudad inteligente.' },
+        { id: 21, title: 'Ciudad Inteligente — Caso de Éxito', brand: 'genetec', type: 'caso', size: '6.2 MB', date: 'Ene 2024', tags: ['smart city', 'CCTV'], desc: 'Implementación de Genetec en proyecto de gran escala.' },
+        { id: 22, title: 'AutoVu ALPR — Brochure', brand: 'genetec', type: 'brochure', size: '3.8 MB', date: 'Dic 2023', tags: ['ALPR', 'placas'], desc: 'Sistema de reconocimiento automático de placas vehiculares.' },
+        { id: 23, title: 'Axis Q-Line — Brochure Cámaras Premium', brand: 'axis', type: 'brochure', size: '4.6 MB', date: 'Feb 2024', tags: ['cámaras', 'IP'], desc: 'Línea premium de cámaras IP Axis para entornos críticos.' },
+        { id: 24, title: 'Landing — Axis Analítica', brand: 'axis', type: 'landing', size: '—', date: 'Ene 2024', tags: ['landing', 'analítica'], desc: 'Landing para soluciones de analítica de video Axis.' },
+        { id: 25, title: 'APC UPS Smart — Brochure', brand: 'apc', type: 'brochure', size: '3.1 MB', date: 'Mar 2024', tags: ['UPS', 'respaldo'], desc: 'Catálogo de UPS Smart para data centers y empresa.' },
+        { id: 26, title: 'Propuesta Energía Crítica APC', brand: 'apc', type: 'propuesta', size: '2.8 MB', date: 'Feb 2024', tags: ['energía', 'crítica'], desc: 'Plantilla de propuesta de respaldo de energía crítica.' },
+        { id: 27, title: 'Cisco Meraki — Brochure Cloud Network', brand: 'cisco', type: 'brochure', size: '5.4 MB', date: 'Mar 2024', tags: ['cloud', 'meraki', 'redes'], desc: 'Networking en la nube para empresas con Meraki.' },
+        { id: 28, title: 'Cisco Webex — Presentación', brand: 'cisco', type: 'presentacion', size: '7.2 MB', date: 'Feb 2024', tags: ['colaboración', 'webex'], desc: 'Solución de colaboración corporativa Cisco Webex.' }
+    ];
+
+    /* ─── Mapa semántico para búsquedas inteligentes ─── */
+    var SEMANTIC_MAP = {
+        'camara': ['avigilion', 'axis'], 'camaras': ['avigilion', 'axis'],
+        'cámara': ['avigilion', 'axis'], 'cámaras': ['avigilion', 'axis'],
+        'seguridad': ['avigilion', 'genetec'], 'vigilancia': ['avigilion', 'genetec', 'axis'],
+        'cctv': ['avigilion', 'genetec', 'axis'],
+        'control de acceso': ['genetec'], 'acceso': ['genetec'],
+        'smart city': ['genetec'], 'gobierno': ['genetec'],
+        'ia': ['avigilion'], 'analítica': ['avigilion', 'axis'],
+        'impresora': ['zebra'], 'impresoras': ['zebra'],
+        'etiqueta': ['zebra'], 'etiquetas': ['zebra'],
+        'handheld': ['zebra'], 'scanner': ['zebra'], 'retail': ['zebra'],
+        'red': ['panduit', 'cisco'], 'redes': ['panduit', 'cisco'],
+        'cable': ['panduit'], 'cables': ['panduit'], 'cableado': ['panduit'],
+        'data center': ['panduit', 'apc'],
+        'infraestructura': ['panduit'],
+        'alpr': ['genetec'], 'placas': ['genetec'],
+        'ups': ['apc'], 'respaldo': ['apc'], 'energía': ['apc'],
+        'meraki': ['cisco'], 'webex': ['cisco'], 'colaboración': ['cisco'],
+        'cloud': ['cisco']
+    };
+
+    var HINTS = [
+        'Busca "cámaras para retail"…',
+        'Busca "brochure Zebra"…',
+        'Busca "propuesta data center"…',
+        'Busca "landing seguridad"…',
+        'Busca "caso de éxito logística"…'
+    ];
+
+    /* ─── Estado global ─── */
+    var state = {
+        query: '',
+        activeBrand: 'all',
+        activeType: 'all',
+        kit: [],
+        hintIdx: 0,
+        hintTimer: null
+    };
+
+    /* ─── Helpers ─── */
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function brandById(id) { return BRANDS.find(function (b) { return b.id === id; }); }
+    function semBrands(q) {
+        var set = new Set();
+        Object.keys(SEMANTIC_MAP).forEach(function (k) {
+            if (q.includes(k)) SEMANTIC_MAP[k].forEach(function (b) { set.add(b); });
+        });
+        return Array.from(set);
+    }
+    function filterResources() {
+        var q = state.query.toLowerCase().trim();
+        var sem = q ? semBrands(q) : [];
+        return RESOURCES.filter(function (r) {
+            if (state.activeBrand !== 'all' && r.brand !== state.activeBrand) return false;
+            if (state.activeType !== 'all' && r.type !== state.activeType) return false;
+            if (!q) return true;
+            var bn = (brandById(r.brand) || {}).name || '';
+            var tn = (TYPES[r.type] || {}).name || '';
+            return r.title.toLowerCase().includes(q)
+                || r.tags.some(function (t) { return t.toLowerCase().includes(q); })
+                || bn.toLowerCase().includes(q)
+                || tn.toLowerCase().includes(q)
+                || sem.indexOf(r.brand) !== -1;
+        });
+    }
+    function isSearching() {
+        return !!(state.query.trim() || state.activeBrand !== 'all');
+    }
+
+    /* ─── Render: Brand cards (idle) ─── */
+    function renderBrands() {
+        var html = BRANDS.map(function (b) {
+            var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
+            return ''
+                + '<button type="button" class="mkthub-brand-card" data-brand="' + b.id + '"'
+                +   ' style="--brand-color:' + b.color + '; --brand-bg:' + b.bg + '; --brand-shadow:' + b.dark + '66;">'
+                +   '<div class="mkthub-brand-letter-wrap"><span class="mkthub-brand-letter">' + b.name[0] + '</span></div>'
+                +   '<div class="mkthub-brand-name">' + esc(b.name) + '</div>'
+                +   '<div class="mkthub-brand-count">' + count + ' recursos</div>'
+                + '</button>';
+        }).join('');
+        document.getElementById('mkthubBrands').innerHTML = html;
+    }
+
+    /* ─── Render: pills de marca en results ─── */
+    function renderBrandPills() {
+        var html = '<button type="button" class="mkthub-pill mkthub-pill--clear" data-action="clear">'
+            + '<svg width="10" height="10" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Limpiar</button>';
+        BRANDS.forEach(function (b) {
+            var on = state.activeBrand === b.id;
+            var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
+            html += '<button type="button" class="mkthub-pill mkthub-pill--brand' + (on ? ' is-active' : '') + '"'
+                + ' style="--pill-color:' + b.color + ';" data-brand="' + b.id + '">'
+                + '<span class="mkthub-pill-dot"></span>'
+                + esc(b.name)
+                + ' <span class="mkthub-pill-count">' + count + '</span>'
+                + '</button>';
+        });
+        document.getElementById('mkthubBrandPills').innerHTML = html;
+    }
+
+    /* ─── Render: type chips ─── */
+    function renderTypeChips() {
+        var resInBrandAndQuery = filterResources.bind(null);
+        // Conteos por tipo dentro del subset actual (brand+query, ignorando type filter)
+        var savedType = state.activeType;
+        state.activeType = 'all';
+        var subset = filterResources();
+        state.activeType = savedType;
+
+        var counts = { all: subset.length };
+        subset.forEach(function (r) { counts[r.type] = (counts[r.type] || 0) + 1; });
+
+        var html = '<button type="button" class="mkthub-pill mkthub-pill--type' + (state.activeType === 'all' ? ' is-active' : '') + '"'
+            + ' style="--pill-color:#1A1A1A;" data-type="all">Todo <span class="mkthub-pill-count">' + counts.all + '</span></button>';
+        Object.keys(TYPES).forEach(function (tid) {
+            if (!counts[tid]) return;
+            var t = TYPES[tid];
+            var on = state.activeType === tid;
+            html += '<button type="button" class="mkthub-pill mkthub-pill--type' + (on ? ' is-active' : '') + '"'
+                + ' style="--pill-color:' + t.color + ';" data-type="' + tid + '">'
+                + esc(t.name) + ' <span class="mkthub-pill-count">' + counts[tid] + '</span>'
+                + '</button>';
+        });
+        document.getElementById('mkthubTypeChips').innerHTML = html;
+    }
+
+    /* ─── Render: results count ─── */
+    function renderCount(results) {
+        var cnt = document.getElementById('mkthubResultsCount');
+        var html = '<strong>' + results.length + '</strong> recurso' + (results.length === 1 ? '' : 's');
+        if (state.query.trim()) html += ' para "<span class="accent">' + esc(state.query.trim()) + '</span>"';
+        if (state.activeBrand !== 'all') {
+            var b = brandById(state.activeBrand);
+            if (b) html += ' en <strong style="color:' + b.color + '">' + esc(b.name) + '</strong>';
+        }
+        cnt.innerHTML = html;
+    }
+
+    /* ─── Render: grid ─── */
+    function renderGrid() {
+        var grid = document.getElementById('mkthubGrid');
+        var results = filterResources();
+        renderCount(results);
+        if (!results.length) {
+            grid.innerHTML = '<div class="mkthub-empty" style="grid-column:1/-1;">'
+                + '<div class="mkthub-empty-icon"><svg width="22" height="22" fill="none" viewBox="0 0 22 22"><circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="2"/><line x1="15" y1="15" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>'
+                + '<p class="mkthub-empty-title">Sin resultados</p>'
+                + '<p class="mkthub-empty-sub">Prueba con otro término o cambia los filtros</p>'
+                + '</div>';
+            return;
+        }
+        var html = results.map(function (r, i) {
+            var b = brandById(r.brand) || {};
+            var t = TYPES[r.type] || {};
+            var inKit = state.kit.some(function (x) { return x.id === r.id; });
+            return ''
+                + '<div class="mkthub-card' + (inKit ? ' is-in-kit' : '') + '" data-res-id="' + r.id + '"'
+                +   ' style="--card-color:' + b.color + '; --card-delay:' + Math.min(i * 0.04, 0.45) + 's;">'
+                +   '<div class="mkthub-card-head" data-action="preview">'
+                +     '<div class="mkthub-card-meta">'
+                +       '<span class="mkthub-card-type">' + esc(t.name) + '</span>'
+                +       '<span class="mkthub-card-ext">' + esc(t.ext) + '</span>'
+                +     '</div>'
+                +     '<p class="mkthub-card-title">' + esc(r.title) + '</p>'
+                +   '</div>'
+                +   '<div class="mkthub-card-body" data-action="preview">'
+                +     '<p class="mkthub-card-desc">' + esc(r.desc) + '</p>'
+                +     '<div class="mkthub-card-tags">'
+                +       r.tags.slice(0, 3).map(function (tag) {
+                          return '<span class="mkthub-card-tag">' + esc(tag) + '</span>';
+                        }).join('')
+                +     '</div>'
+                +   '</div>'
+                +   '<div class="mkthub-card-foot">'
+                +     '<div class="mkthub-card-brand">'
+                +       '<span class="mkthub-card-brand-dot"></span>'
+                +       '<span class="mkthub-card-brand-name">' + esc(b.name) + '</span>'
+                +       '<span class="mkthub-card-date">' + esc(r.date) + '</span>'
+                +     '</div>'
+                +     '<button type="button" class="mkthub-kit-btn" data-action="kit-toggle">'
+                +       (inKit
+                          ? '<svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> En kit'
+                          : '<svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Kit')
+                +     '</button>'
+                +   '</div>'
+                + '</div>';
+        }).join('');
+        grid.innerHTML = html;
+    }
+
+    /* ─── Render: kit tray ─── */
+    function renderKit() {
+        var tray = document.getElementById('mkthubKitTray');
+        var badge = document.getElementById('mkthubKitBadge');
+        var chips = document.getElementById('mkthubKitChips');
+        badge.textContent = state.kit.length;
+        if (!state.kit.length) {
+            tray.classList.remove('is-open');
+            chips.innerHTML = '';
+            return;
+        }
+        tray.classList.add('is-open');
+        chips.innerHTML = state.kit.map(function (r) {
+            var b = brandById(r.brand) || {};
+            var title = r.title.split('—')[0].trim();
+            return ''
+                + '<div class="mkthub-kit-chip" style="--chip-color:' + b.color + ';">'
+                +   '<span class="mkthub-kit-chip-dot"></span>'
+                +   '<span class="mkthub-kit-chip-title">' + esc(title) + '</span>'
+                +   '<button type="button" class="mkthub-kit-chip-x" data-kit-remove="' + r.id + '" title="Quitar del kit">'
+                +     '<svg width="9" height="9" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+                +   '</button>'
+                + '</div>';
+        }).join('');
+    }
+
+    /* ─── Search dropdown ─── */
+    function renderSearchDD() {
+        var dd = document.getElementById('mkthubSearchDD');
+        var q = state.query.toLowerCase().trim();
+        if (!q) { dd.classList.remove('is-open'); dd.innerHTML = ''; return; }
+        var sem = semBrands(q);
+        var brandHits = BRANDS.filter(function (b) { return b.name.toLowerCase().includes(q); });
+        var itemHits = RESOURCES
+            .filter(function (r) {
+                return r.title.toLowerCase().includes(q)
+                    || r.tags.some(function (t) { return t.toLowerCase().includes(q); });
+            }).slice(0, 5);
+
+        if (!sem.length && !brandHits.length && !itemHits.length) {
+            dd.classList.remove('is-open');
+            dd.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        if (sem.length) {
+            html += '<div class="mkthub-dd-section">'
+                + '<svg width="12" height="12" fill="none" viewBox="0 0 13 13"><path d="M6.5 1l2 4.5H13l-3.5 2.5 1 4-4-2.5-4 2.5 1-4L0 5.5h4.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>'
+                + 'Inteligente — relacionado con ' + sem.map(function (id) { return esc(brandById(id).name); }).join(' y ')
+                + '</div>';
+        }
+        brandHits.forEach(function (b) {
+            var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
+            html += '<div class="mkthub-dd-item" data-dd-brand="' + b.id + '">'
+                + '<span class="mkthub-dd-dot" style="background:' + b.color + ';"></span>'
+                + '<span class="mkthub-dd-text">' + esc(b.name) + '</span>'
+                + '<span class="mkthub-dd-meta">' + count + ' recursos</span>'
+                + '</div>';
+        });
+        itemHits.forEach(function (r) {
+            var t = TYPES[r.type] || {};
+            var b = brandById(r.brand) || {};
+            html += '<div class="mkthub-dd-item" data-dd-query="' + esc(r.title.split('—')[0].trim()) + '">'
+                + '<span class="mkthub-dd-ext" style="background:' + t.color + '18; border:1.5px solid ' + t.color + '30; color:' + t.color + ';">' + esc(t.ext) + '</span>'
+                + '<span class="mkthub-dd-text">' + esc(r.title) + '</span>'
+                + '<span class="mkthub-dd-meta" style="color:' + b.color + '; font-weight:600;">' + esc(b.name) + '</span>'
+                + '</div>';
+        });
+        html += '<div class="mkthub-dd-item" data-dd-query="' + esc(state.query) + '" style="color:var(--mkthub-accent); font-weight:600;">'
+            + '<svg width="14" height="14" fill="none" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.8"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+            + '<span class="mkthub-dd-text">Ver todos: "' + esc(state.query) + '"</span>'
+            + '</div>';
+
+        dd.innerHTML = html;
+        dd.classList.add('is-open');
+    }
+
+    /* ─── Preview modal ─── */
+    function openPreview(res) {
+        var modal = document.getElementById('mkthubPreviewModal');
+        var overlay = document.getElementById('mkthubPreviewOverlay');
+        var b = brandById(res.brand) || {};
+        var t = TYPES[res.type] || {};
+        var inKit = state.kit.some(function (x) { return x.id === res.id; });
+        modal.style.setProperty('--modal-color', b.color);
+        modal.innerHTML = ''
+            + '<div class="mkthub-modal-head" style="--modal-color:' + b.color + '; background:' + b.color + ';">'
+            +   '<button type="button" class="mkthub-modal-close" data-close>'
+            +     '<svg width="13" height="13" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+            +   '</button>'
+            +   '<div class="mkthub-modal-tag">' + esc(t.ext) + ' · ' + esc(t.name) + '</div>'
+            +   '<h3 class="mkthub-modal-title">' + esc(res.title) + '</h3>'
+            + '</div>'
+            + '<div class="mkthub-modal-body">'
+            +   '<p class="mkthub-modal-desc">' + esc(res.desc) + '</p>'
+            +   '<div class="mkthub-modal-stats">'
+            +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Marca</div><div class="mkthub-modal-stat-val" style="color:' + b.color + '; font-weight:700;">' + esc(b.name) + '</div></div>'
+            +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Tamaño</div><div class="mkthub-modal-stat-val">' + esc(res.size) + '</div></div>'
+            +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Actualizado</div><div class="mkthub-modal-stat-val">' + esc(res.date) + '</div></div>'
+            +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Tipo</div><div class="mkthub-modal-stat-val">' + esc(t.name) + '</div></div>'
+            +   '</div>'
+            +   '<div class="mkthub-modal-actions">'
+            +     '<button type="button" class="mkthub-btn ' + (inKit ? 'mkthub-btn--brand' : '') + '" data-toggle-kit="' + res.id + '" style="--btn-color:' + b.color + ';">'
+            +       (inKit ? '✓ En el kit' : '+ Agregar al kit') + '</button>'
+            +     '<button type="button" class="mkthub-btn mkthub-btn--primary">Descargar</button>'
+            +   '</div>'
+            + '</div>';
+        overlay.classList.add('is-open');
+    }
+    function closePreview() {
+        document.getElementById('mkthubPreviewOverlay').classList.remove('is-open');
+    }
+
+    /* ─── Email modal ─── */
+    function openEmail() {
+        if (!state.kit.length) return;
+        var modal = document.getElementById('mkthubEmailModal');
+        var overlay = document.getElementById('mkthubEmailOverlay');
+        var defaultMsg = 'Hola,\n\nTe comparto este material que preparé para ti:\n\n'
+            + state.kit.map(function (r) { return '• ' + r.title; }).join('\n')
+            + '\n\nQuedo a tus órdenes.';
+        var tagsHTML = state.kit.map(function (r) {
+            var b = brandById(r.brand) || {};
+            return '<span class="mkthub-email-tag" style="--tag-color:' + b.color + ';">'
+                + esc(r.title.split('—')[0].trim()) + '</span>';
+        }).join('');
+        modal.innerHTML = ''
+            + '<div class="mkthub-email-head">'
+            +   '<div class="mkthub-email-head-top">'
+            +     '<div class="mkthub-email-head-title">'
+            +       '<div class="mkthub-email-icon"><svg width="15" height="15" fill="none" viewBox="0 0 14 14"><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M1 4.5l6 4 6-4" stroke="currentColor" stroke-width="1.6"/></svg></div>'
+            +       '<p style="font-weight:800;font-size:1rem;margin:0;">Enviar kit al cliente</p>'
+            +     '</div>'
+            +     '<button type="button" class="mkthub-modal-close" data-close style="background:#EAE6DA;color:#7A7866;width:26px;height:26px;">'
+            +       '<svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+            +     '</button>'
+            +   '</div>'
+            +   '<div class="mkthub-email-tags">' + tagsHTML + '</div>'
+            + '</div>'
+            + '<div class="mkthub-email-body">'
+            +   '<div>'
+            +     '<p class="mkthub-field-label">Para</p>'
+            +     '<input type="email" class="mkthub-input" id="mkthubEmailTo" placeholder="correo@cliente.com" autocomplete="email">'
+            +   '</div>'
+            +   '<div>'
+            +     '<p class="mkthub-field-label">Mensaje</p>'
+            +     '<textarea class="mkthub-textarea" id="mkthubEmailMsg" rows="5">' + esc(defaultMsg) + '</textarea>'
+            +   '</div>'
+            +   '<div class="mkthub-email-actions">'
+            +     '<button type="button" class="mkthub-btn" data-close>Cancelar</button>'
+            +     '<button type="button" class="mkthub-btn mkthub-btn--primary" id="mkthubEmailSend">'
+            +       '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M12.5 1.5l-5.5 11-1.5-5-5-1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'
+            +       ' Enviar'
+            +     '</button>'
+            +   '</div>'
+            + '</div>';
+        overlay.classList.add('is-open');
+        setTimeout(function () {
+            var to = document.getElementById('mkthubEmailTo');
+            if (to) to.focus();
+        }, 50);
+    }
+    function closeEmail() {
+        document.getElementById('mkthubEmailOverlay').classList.remove('is-open');
+    }
+    function showEmailSuccess(toAddr) {
+        var modal = document.getElementById('mkthubEmailModal');
+        modal.innerHTML = ''
+            + '<div class="mkthub-email-success">'
+            +   '<div class="mkthub-email-success-icon"><svg width="22" height="22" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+            +   '<p class="mkthub-email-success-title">¡Kit enviado!</p>'
+            +   '<p class="mkthub-email-success-sub"><strong style="color:#1A1A1A;">' + state.kit.length + '</strong> materiales enviados a <strong style="color:#1A1A1A;">' + esc(toAddr) + '</strong></p>'
+            +   '<button type="button" class="mkthub-btn mkthub-btn--primary" data-close style="max-width:180px;margin:0 auto;">Listo</button>'
+            + '</div>';
+        // Vaciar el kit después de enviar (es lo natural en este flujo)
+        state.kit = [];
+        renderKit();
+        if (isSearching()) renderGrid();
+    }
+
+    /* ─── Estado global de UI (idle vs searching) ─── */
+    function updateMode() {
+        var root = document.getElementById('mkthubRoot');
+        if (isSearching()) {
+            root.classList.add('is-searching');
+            renderBrandPills();
+            renderTypeChips();
+            renderGrid();
+        } else {
+            root.classList.remove('is-searching');
+        }
+    }
+
+    /* ─── Typing hint placeholder ─── */
+    function cycleHint() {
+        var input = document.getElementById('mkthubSearchInput');
+        if (!input || input.value || document.activeElement === input) return;
+        state.hintIdx = (state.hintIdx + 1) % HINTS.length;
+        input.placeholder = HINTS[state.hintIdx];
+    }
+
+    /* ─── Wiring de eventos ─── */
+    function bindEvents() {
+        var input = document.getElementById('mkthubSearchInput');
+        var clear = document.getElementById('mkthubSearchClear');
+        var kbd = document.getElementById('mkthubSearchKbd');
+
+        input.placeholder = HINTS[0];
+        // Rota el hint cada 4s mientras está vacío
+        state.hintTimer = setInterval(cycleHint, 4000);
+
+        input.addEventListener('input', function (e) {
+            state.query = e.target.value;
+            clear.classList.toggle('is-visible', !!state.query);
+            kbd.style.display = state.query ? 'none' : '';
+            renderSearchDD();
+            updateMode();
+        });
+        input.addEventListener('focus', function () { renderSearchDD(); });
+
+        clear.addEventListener('click', function () {
+            state.query = '';
+            input.value = '';
+            clear.classList.remove('is-visible');
+            kbd.style.display = '';
+            renderSearchDD();
+            updateMode();
+            input.focus();
+        });
+
+        // Ctrl/Cmd + K → focus en búsqueda
+        document.addEventListener('keydown', function (e) {
+            // Solo si el marketing hub está visible
+            var root = document.getElementById('mkthubRoot');
+            if (!root || !root.offsetParent) return;
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                input.focus();
+                renderSearchDD();
+            }
+            if (e.key === 'Escape') {
+                document.getElementById('mkthubSearchDD').classList.remove('is-open');
+                input.blur();
+            }
+        });
+
+        // Click fuera del dropdown → cerrarlo
+        document.addEventListener('click', function (e) {
+            var wrap = document.querySelector('.mkthub-search-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('mkthubSearchDD').classList.remove('is-open');
+            }
+        });
+
+        // Delegación de eventos en el root
+        document.getElementById('mkthubRoot').addEventListener('click', function (e) {
+            // Brand card (idle)
+            var brandCard = e.target.closest('.mkthub-brand-card');
+            if (brandCard) {
+                state.activeBrand = brandCard.getAttribute('data-brand');
+                state.activeType = 'all';
+                updateMode();
+                return;
+            }
+            // Brand pill (results)
+            var pillBrand = e.target.closest('.mkthub-pill--brand');
+            if (pillBrand) {
+                var bid = pillBrand.getAttribute('data-brand');
+                state.activeBrand = (state.activeBrand === bid) ? 'all' : bid;
+                state.activeType = 'all';
+                updateMode();
+                return;
+            }
+            // Type pill
+            var pillType = e.target.closest('.mkthub-pill--type');
+            if (pillType) {
+                state.activeType = pillType.getAttribute('data-type');
+                renderTypeChips();
+                renderGrid();
+                return;
+            }
+            // Clear pill
+            var pillClear = e.target.closest('.mkthub-pill--clear');
+            if (pillClear) {
+                state.query = '';
+                state.activeBrand = 'all';
+                state.activeType = 'all';
+                input.value = '';
+                clear.classList.remove('is-visible');
+                kbd.style.display = '';
+                updateMode();
+                return;
+            }
+            // Resource card → preview o kit toggle
+            var resCard = e.target.closest('.mkthub-card');
+            if (resCard) {
+                var resId = parseInt(resCard.getAttribute('data-res-id'), 10);
+                var res = RESOURCES.find(function (r) { return r.id === resId; });
+                if (!res) return;
+                if (e.target.closest('[data-action="kit-toggle"]')) {
+                    toggleKit(res);
+                } else if (e.target.closest('[data-action="preview"]')) {
+                    openPreview(res);
+                }
+                return;
+            }
+            // Search dropdown items
+            var ddBrand = e.target.closest('[data-dd-brand]');
+            if (ddBrand) {
+                state.activeBrand = ddBrand.getAttribute('data-dd-brand');
+                state.query = '';
+                input.value = '';
+                clear.classList.remove('is-visible');
+                kbd.style.display = '';
+                document.getElementById('mkthubSearchDD').classList.remove('is-open');
+                state.activeType = 'all';
+                updateMode();
+                return;
+            }
+            var ddQuery = e.target.closest('[data-dd-query]');
+            if (ddQuery) {
+                state.query = ddQuery.getAttribute('data-dd-query');
+                input.value = state.query;
+                clear.classList.add('is-visible');
+                kbd.style.display = 'none';
+                document.getElementById('mkthubSearchDD').classList.remove('is-open');
+                state.activeType = 'all';
+                updateMode();
+                return;
+            }
+        });
+
+        // Kit tray events (delegación global porque está fuera del root)
+        document.getElementById('mkthubKitTray').addEventListener('click', function (e) {
+            var rm = e.target.closest('[data-kit-remove]');
+            if (rm) {
+                var id = parseInt(rm.getAttribute('data-kit-remove'), 10);
+                state.kit = state.kit.filter(function (r) { return r.id !== id; });
+                renderKit();
+                if (isSearching()) renderGrid();
+                return;
+            }
+            if (e.target.closest('#mkthubKitSend')) {
+                openEmail();
+            }
+        });
+
+        // Modales
+        document.getElementById('mkthubPreviewOverlay').addEventListener('click', function (e) {
+            if (e.target.id === 'mkthubPreviewOverlay' || e.target.closest('[data-close]')) {
+                closePreview();
+                return;
+            }
+            var toggle = e.target.closest('[data-toggle-kit]');
+            if (toggle) {
+                var id = parseInt(toggle.getAttribute('data-toggle-kit'), 10);
+                var res = RESOURCES.find(function (r) { return r.id === id; });
+                if (res) toggleKit(res);
+                closePreview();
+            }
+        });
+        document.getElementById('mkthubEmailOverlay').addEventListener('click', function (e) {
+            if (e.target.id === 'mkthubEmailOverlay' || e.target.closest('[data-close]')) {
+                closeEmail();
+                return;
+            }
+            if (e.target.closest('#mkthubEmailSend')) {
+                var to = document.getElementById('mkthubEmailTo');
+                if (!to || !to.value || !to.value.includes('@')) {
+                    if (to) { to.focus(); to.style.borderColor = '#DC2626'; }
+                    return;
+                }
+                showEmailSuccess(to.value);
+            }
+        });
+    }
+
+    function toggleKit(res) {
+        var i = state.kit.findIndex(function (r) { return r.id === res.id; });
+        if (i >= 0) state.kit.splice(i, 1);
+        else state.kit.push(res);
+        renderKit();
+        renderGrid();
+    }
+
+    /* ─── Init ─── */
+    function init() {
+        renderBrands();
+        bindEvents();
+    }
+
+    // El template puede inyectarse después del page load (si la navegación es AJAX)
+    if (document.getElementById('mkthubRoot')) {
+        init();
+    } else {
+        document.addEventListener('DOMContentLoaded', init);
+    }
+})();
+</script>
