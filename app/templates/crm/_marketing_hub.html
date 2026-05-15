@@ -927,16 +927,307 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 @keyframes mkthubPopIn { from { opacity: 0; transform: scale(0.92) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes mkthubCardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── Upload button (idle only, top-right) ──
+   Pill azul Apple-minimalist. Solo visible si window._mkthubCanEdit y en idle.
+   Posición absoluta dentro del root para que quede en la esquina superior
+   derecha, alineada con la parte alta del hero. */
+.mkthub-upload-btn {
+    position: absolute;
+    top: clamp(8px, 1.2vw, 18px);
+    right: 0;
+    z-index: 5;
+    display: none; /* default oculto; JS lo muestra cuando can_edit=true */
+    align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: none;
+    background: #0052D4;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18), 0 6px 16px -8px rgba(0,82,212,0.35);
+    transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    animation: mkthubSlideUp 0.42s 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.mkthub-upload-btn.is-visible { display: inline-flex; }
+.mkthub-upload-btn:hover {
+    background: #0041A8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,82,212,0.22), 0 10px 22px -10px rgba(0,82,212,0.45);
+}
+.mkthub-upload-btn:active { transform: translateY(0); }
+.mkthub-upload-btn svg { flex-shrink: 0; }
+/* Ocultar durante búsqueda (modo results) */
+.mkthub-root.is-searching .mkthub-upload-btn { display: none !important; }
+
+/* ── Upload Modal ── */
+.mkthub-upload-overlay {
+    position: fixed; inset: 0;
+    z-index: 220;
+    background: rgba(20,20,18,0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    animation: mkthubFade 0.16s ease;
+}
+.mkthub-upload-overlay.is-open { display: flex; }
+.mkthub-upload-modal {
+    background: #FFFFFF;
+    border-radius: 18px;
+    width: 100%; max-width: 540px;
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 30px 80px -20px rgba(20,20,18,0.35),
+                0 10px 30px -10px rgba(20,20,18,0.18);
+    animation: mkthubPopIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+.mkthub-upload-head {
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--mkthub-line);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.mkthub-upload-head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--mkthub-ink);
+    letter-spacing: -0.01em;
+}
+.mkthub-upload-close {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(20,20,18,0.06);
+    color: var(--mkthub-soft);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+.mkthub-upload-close:hover { background: rgba(20,20,18,0.12); color: var(--mkthub-ink); }
+.mkthub-upload-body {
+    padding: 18px 22px 4px;
+    overflow-y: auto;
+    flex: 1;
+}
+.mkthub-upload-field { margin-bottom: 14px; }
+.mkthub-upload-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.mkthub-upload-label {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--mkthub-ink);
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+}
+.mkthub-upload-label .req { color: #DC2626; margin-left: 2px; }
+.mkthub-upload-hint {
+    font-size: 0.7rem;
+    color: var(--mkthub-mute);
+    margin-top: 5px;
+    line-height: 1.4;
+}
+.mkthub-upload-input,
+.mkthub-upload-select,
+.mkthub-upload-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--mkthub-line);
+    border-radius: 10px;
+    background: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.86rem;
+    color: var(--mkthub-ink);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+.mkthub-upload-select { cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+}
+.mkthub-upload-textarea {
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.45;
+}
+.mkthub-upload-input:focus,
+.mkthub-upload-select:focus,
+.mkthub-upload-textarea:focus {
+    border-color: var(--mkthub-accent);
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.12);
+}
+.mkthub-upload-file-wrap {
+    border: 1.5px dashed var(--mkthub-line);
+    border-radius: 10px;
+    padding: 12px;
+    background: #FAFAFA;
+    transition: border-color 0.15s, background 0.15s;
+}
+.mkthub-upload-file-wrap:hover { border-color: var(--mkthub-accent); background: rgba(0,82,212,0.03); }
+.mkthub-upload-file-wrap.has-file { border-style: solid; border-color: var(--mkthub-accent); background: rgba(0,82,212,0.04); }
+.mkthub-upload-file-input { display: block; width: 100%; font-size: 0.78rem; color: var(--mkthub-soft); font-family: inherit; }
+.mkthub-upload-file-input::file-selector-button {
+    margin-right: 10px;
+    padding: 6px 12px;
+    border: 1px solid var(--mkthub-line);
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: var(--mkthub-ink);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.mkthub-upload-file-input::file-selector-button:hover {
+    background: var(--mkthub-accent);
+    border-color: var(--mkthub-accent);
+    color: #FFFFFF;
+}
+.mkthub-upload-divider {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--mkthub-mute);
+    font-weight: 500;
+    margin: 8px 0;
+    position: relative;
+}
+.mkthub-upload-divider::before,
+.mkthub-upload-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 22px);
+    height: 1px;
+    background: var(--mkthub-line);
+}
+.mkthub-upload-divider::before { left: 0; }
+.mkthub-upload-divider::after { right: 0; }
+.mkthub-upload-error {
+    margin-top: 4px;
+    padding: 8px 12px;
+    background: rgba(220,38,38,0.08);
+    border: 1px solid rgba(220,38,38,0.25);
+    border-radius: 8px;
+    color: #B91C1C;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    display: none;
+}
+.mkthub-upload-error.is-visible { display: block; }
+.mkthub-upload-foot {
+    padding: 14px 22px 18px;
+    border-top: 1px solid var(--mkthub-line);
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 8px;
+    background: #FAFAFA;
+    flex-shrink: 0;
+}
+.mkthub-upload-btn-cancel,
+.mkthub-upload-btn-submit {
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.mkthub-upload-btn-cancel {
+    background: #FFFFFF;
+    border-color: var(--mkthub-line);
+    color: var(--mkthub-soft);
+}
+.mkthub-upload-btn-cancel:hover { background: #F5F5F5; color: var(--mkthub-ink); }
+.mkthub-upload-btn-submit {
+    background: #0052D4;
+    color: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18);
+}
+.mkthub-upload-btn-submit:hover:not(:disabled) {
+    background: #0041A8;
+    box-shadow: 0 2px 4px rgba(0,82,212,0.22), 0 6px 14px -8px rgba(0,82,212,0.4);
+}
+.mkthub-upload-btn-submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.mkthub-upload-spinner {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    animation: mkthubSpin 0.7s linear infinite;
+    display: none;
+}
+.mkthub-upload-btn-submit.is-loading .mkthub-upload-spinner { display: inline-block; }
+@keyframes mkthubSpin { to { transform: rotate(360deg); } }
+
+/* Toast notificación */
+.mkthub-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 240;
+    background: #1A1A1A;
+    color: #FFFFFF;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.84rem;
+    font-weight: 600;
+    box-shadow: 0 10px 30px -8px rgba(0,0,0,0.35), 0 4px 12px -4px rgba(0,0,0,0.18);
+    display: flex; align-items: center; gap: 8px;
+    transform: translateX(calc(100% + 30px));
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+}
+.mkthub-toast.is-visible { transform: translateX(0); pointer-events: auto; }
+.mkthub-toast-check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #16A34A;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+
 /* Responsive */
 @media (max-width: 720px) {
     .mkthub-title { font-size: 1.8rem; }
     .mkthub-brands { grid-template-columns: repeat(2, 1fr); }
     .mkthub-grid { grid-template-columns: 1fr; }
     .mkthub-root { padding: 22px 14px 36px; }
+    .mkthub-upload-btn { top: 14px; right: 14px; padding: 7px 13px; font-size: 0.8rem; }
+    .mkthub-upload-field-row { grid-template-columns: 1fr; }
+    .mkthub-toast { top: 14px; right: 14px; left: 14px; }
 }
 </style>
 
 <div class="mkthub-root" id="mkthubRoot">
+
+    {# Botón "+ Subir material" — solo visible si window._mkthubCanEdit y en idle #}
+    <button type="button" class="mkthub-upload-btn mkthub-idle-only" id="mkthubUploadBtn" title="Subir material de marketing">
+        <svg width="14" height="14" fill="none" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Subir material
+    </button>
 
     {# ── Hero (idle only) ── #}
     <div class="mkthub-hero mkthub-idle-only">
@@ -973,6 +1264,73 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 {# Preview modal: el botón "Compartir" delega al módulo de correo del CRM #}
 <div class="mkthub-modal-overlay" id="mkthubPreviewOverlay">
     <div class="mkthub-modal mkthub-preview-modal" id="mkthubPreviewModal"></div>
+</div>
+
+{# Upload modal — solo visible cuando window._mkthubCanEdit y se hace click en el botón #}
+<div class="mkthub-upload-overlay" id="mkthubUploadOverlay">
+    <div class="mkthub-upload-modal" role="dialog" aria-labelledby="mkthubUploadTitle">
+        <div class="mkthub-upload-head">
+            <h3 id="mkthubUploadTitle">Subir material de marketing</h3>
+            <button type="button" class="mkthub-upload-close" id="mkthubUploadClose" title="Cerrar">
+                <svg width="13" height="13" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <form class="mkthub-upload-body" id="mkthubUploadForm" autocomplete="off" novalidate>
+            <div class="mkthub-upload-field-row">
+                <div class="mkthub-upload-field">
+                    <label class="mkthub-upload-label" for="mkthubUpBrand">Marca <span class="req">*</span></label>
+                    <select class="mkthub-upload-select" id="mkthubUpBrand" name="brand" required></select>
+                </div>
+                <div class="mkthub-upload-field">
+                    <label class="mkthub-upload-label" for="mkthubUpTipo">Tipo <span class="req">*</span></label>
+                    <select class="mkthub-upload-select" id="mkthubUpTipo" name="tipo" required></select>
+                </div>
+            </div>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubUpTitulo">Título <span class="req">*</span></label>
+                <input class="mkthub-upload-input" id="mkthubUpTitulo" name="titulo" type="text" maxlength="200" required placeholder="Ej. Brochure ZD421 Impresora">
+            </div>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubUpDesc">Descripción <span class="req">*</span></label>
+                <textarea class="mkthub-upload-textarea" id="mkthubUpDesc" name="descripcion" rows="3" required placeholder="Resumen breve del contenido del material"></textarea>
+            </div>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubUpTags">Tags</label>
+                <input class="mkthub-upload-input" id="mkthubUpTags" name="tags" type="text" placeholder="Ej. retail, impresoras, ZD421">
+                <p class="mkthub-upload-hint">Separa los tags con comas. Opcional.</p>
+            </div>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubUpArchivo">Archivo</label>
+                <div class="mkthub-upload-file-wrap" id="mkthubUpFileWrap">
+                    <input class="mkthub-upload-file-input" id="mkthubUpArchivo" name="archivo" type="file"
+                        accept="application/pdf,image/*,video/*,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+                </div>
+                <p class="mkthub-upload-hint">PDF, imágenes, videos o presentaciones (PPT/PPTX).</p>
+            </div>
+            <div class="mkthub-upload-divider">o</div>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubUpUrl">URL externa</label>
+                <input class="mkthub-upload-input" id="mkthubUpUrl" name="url" type="url" placeholder="https://...">
+                <p class="mkthub-upload-hint">Pega una URL externa (landing page, video, etc.). Requerido si no subes archivo.</p>
+            </div>
+            <div class="mkthub-upload-error" id="mkthubUpError" role="alert"></div>
+        </form>
+        <div class="mkthub-upload-foot">
+            <button type="button" class="mkthub-upload-btn-cancel" id="mkthubUpCancel">Cancelar</button>
+            <button type="button" class="mkthub-upload-btn-submit" id="mkthubUpSubmit">
+                <span class="mkthub-upload-spinner" aria-hidden="true"></span>
+                <span class="mkthub-upload-btn-label">Subir material</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{# Toast de confirmación #}
+<div class="mkthub-toast" id="mkthubToast" role="status" aria-live="polite">
+    <span class="mkthub-toast-check">
+        <svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2.5 6.2l2.4 2.4 4.6-5.2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <span id="mkthubToastMsg">Material subido</span>
 </div>
 
 <script>
@@ -1555,6 +1913,216 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         input.placeholder = HINTS[state.hintIdx];
     }
 
+    /* ─── Backend integration ────────────────────────────────────────
+       Endpoint: GET /app/api/marketing/recursos/
+       → { ok, can_edit, recursos: [{id, brand, tipo, titulo, descripcion,
+                                    tags, url_efectiva, tamano_legible,
+                                    fecha_iso, fecha_legible, subido_por_nombre}] }
+       Mapeamos al shape interno {id, title, brand, type, size, date, tags, desc, url}
+       y conservamos el mock como fallback si el fetch falla. */
+    var MOCK_RESOURCES = RESOURCES.slice(); // snapshot del mock para fallback
+
+    function mapBackendResource(r) {
+        return {
+            id: r.id,
+            title: r.titulo || '',
+            brand: r.brand || '',
+            type: r.tipo || '',
+            size: r.tamano_legible || '—',
+            date: r.fecha_legible || '',
+            tags: Array.isArray(r.tags) ? r.tags : [],
+            desc: r.descripcion || '',
+            url: r.url_efectiva || ''
+        };
+    }
+
+    function fetchRecursos() {
+        return fetch('/app/api/marketing/recursos/', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        }).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        }).then(function (data) {
+            if (!data || data.ok !== true || !Array.isArray(data.recursos)) {
+                throw new Error('Respuesta inválida');
+            }
+            // Reemplazamos contenidos del array RESOURCES manteniendo la
+            // misma referencia (otros closures lo referencian directo).
+            RESOURCES.length = 0;
+            data.recursos.forEach(function (r) { RESOURCES.push(mapBackendResource(r)); });
+            window._mkthubCanEdit = !!data.can_edit;
+            updateUploadBtnVisibility();
+            renderBrands();
+            // Si estamos en modo búsqueda, re-renderizar el grid/chips
+            if (isSearching()) { renderTypeChips(); renderGrid(); }
+            return data;
+        }).catch(function (err) {
+            console.warn('[mkthub] Fetch /api/marketing/recursos/ falló, usando mocks:', err);
+            // Fallback al mock — ya está en RESOURCES por defecto.
+            // Aseguramos que can_edit quede false para no mostrar el botón.
+            if (typeof window._mkthubCanEdit === 'undefined') {
+                window._mkthubCanEdit = false;
+            }
+            updateUploadBtnVisibility();
+            return null;
+        });
+    }
+
+    function updateUploadBtnVisibility() {
+        var btn = document.getElementById('mkthubUploadBtn');
+        if (!btn) return;
+        if (window._mkthubCanEdit === true) {
+            btn.classList.add('is-visible');
+        } else {
+            btn.classList.remove('is-visible');
+        }
+    }
+
+    /* ─── CSRF helper ─── */
+    function getCsrfToken() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (el && el.value) return el.value;
+        var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    /* ─── Toast ─── */
+    function showToast(msg) {
+        var toast = document.getElementById('mkthubToast');
+        var msgEl = document.getElementById('mkthubToastMsg');
+        if (!toast) return;
+        if (msgEl && msg) msgEl.textContent = msg;
+        toast.classList.add('is-visible');
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(function () {
+            toast.classList.remove('is-visible');
+        }, 2600);
+    }
+
+    /* ─── Upload modal ─── */
+    function populateUploadSelects() {
+        var brandSel = document.getElementById('mkthubUpBrand');
+        var tipoSel = document.getElementById('mkthubUpTipo');
+        if (!brandSel || !tipoSel) return;
+        // Marcas — mismo orden que BRANDS
+        brandSel.innerHTML = '<option value="" disabled selected>Selecciona marca…</option>'
+            + BRANDS.map(function (b) {
+                return '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
+            }).join('');
+        // Tipos — mismo orden que TYPES (Object.keys preserva orden de declaración)
+        tipoSel.innerHTML = '<option value="" disabled selected>Selecciona tipo…</option>'
+            + Object.keys(TYPES).map(function (tid) {
+                return '<option value="' + esc(tid) + '">' + esc(TYPES[tid].name) + '</option>';
+            }).join('');
+    }
+
+    function openUploadModal() {
+        if (window._mkthubCanEdit !== true) return;
+        var overlay = document.getElementById('mkthubUploadOverlay');
+        if (!overlay) return;
+        resetUploadForm();
+        overlay.classList.add('is-open');
+        // Focus en el primer select
+        setTimeout(function () {
+            var first = document.getElementById('mkthubUpBrand');
+            if (first) first.focus();
+        }, 30);
+    }
+
+    function closeUploadModal() {
+        var overlay = document.getElementById('mkthubUploadOverlay');
+        if (overlay) overlay.classList.remove('is-open');
+    }
+
+    function resetUploadForm() {
+        var form = document.getElementById('mkthubUploadForm');
+        if (form) form.reset();
+        var err = document.getElementById('mkthubUpError');
+        if (err) { err.classList.remove('is-visible'); err.textContent = ''; }
+        var wrap = document.getElementById('mkthubUpFileWrap');
+        if (wrap) wrap.classList.remove('has-file');
+        var submit = document.getElementById('mkthubUpSubmit');
+        if (submit) {
+            submit.disabled = false;
+            submit.classList.remove('is-loading');
+        }
+    }
+
+    function showUploadError(msg) {
+        var err = document.getElementById('mkthubUpError');
+        if (!err) return;
+        err.textContent = msg;
+        err.classList.add('is-visible');
+    }
+
+    function submitUpload() {
+        var form = document.getElementById('mkthubUploadForm');
+        var submitBtn = document.getElementById('mkthubUpSubmit');
+        var errEl = document.getElementById('mkthubUpError');
+        if (errEl) { errEl.classList.remove('is-visible'); errEl.textContent = ''; }
+
+        var brand = document.getElementById('mkthubUpBrand').value;
+        var tipo = document.getElementById('mkthubUpTipo').value;
+        var titulo = (document.getElementById('mkthubUpTitulo').value || '').trim();
+        var desc = (document.getElementById('mkthubUpDesc').value || '').trim();
+        var tags = (document.getElementById('mkthubUpTags').value || '').trim();
+        var fileEl = document.getElementById('mkthubUpArchivo');
+        var archivo = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
+        var url = (document.getElementById('mkthubUpUrl').value || '').trim();
+
+        // Validación cliente
+        if (!brand) return showUploadError('Selecciona una marca.');
+        if (!tipo) return showUploadError('Selecciona un tipo.');
+        if (!titulo) return showUploadError('El título es obligatorio.');
+        if (!desc) return showUploadError('La descripción es obligatoria.');
+        if (!archivo && !url) return showUploadError('Sube un archivo o pega una URL externa.');
+
+        var fd = new FormData();
+        fd.append('brand', brand);
+        fd.append('tipo', tipo);
+        fd.append('titulo', titulo);
+        fd.append('descripcion', desc);
+        fd.append('tags', tags);
+        if (archivo) fd.append('archivo', archivo);
+        if (url) fd.append('url', url);
+
+        submitBtn.disabled = true;
+        submitBtn.classList.add('is-loading');
+
+        fetch('/app/api/marketing/recursos/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'X-CSRFToken': getCsrfToken() },
+            body: fd
+        }).then(function (resp) {
+            return resp.json().then(function (data) {
+                return { ok: resp.ok, status: resp.status, data: data };
+            }).catch(function () {
+                return { ok: resp.ok, status: resp.status, data: null };
+            });
+        }).then(function (res) {
+            if (!res.ok || !res.data || res.data.ok !== true) {
+                var msg = (res.data && (res.data.error || res.data.detail)) || ('Error al subir el material (HTTP ' + res.status + ').');
+                showUploadError(msg);
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('is-loading');
+                return;
+            }
+            // OK
+            closeUploadModal();
+            showToast('Material subido');
+            // Refrescar lista
+            fetchRecursos();
+        }).catch(function (err) {
+            console.warn('[mkthub] Error en upload:', err);
+            showUploadError('No se pudo conectar con el servidor. Intenta de nuevo.');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('is-loading');
+        });
+    }
+
     /* ─── Wiring de eventos ─── */
     function bindEvents() {
         var input = document.getElementById('mkthubSearchInput');
@@ -1693,12 +2261,62 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                 if (res) shareByEmail(res);
             }
         });
+
+        /* ── Upload: botón abre modal ── */
+        var uploadBtn = document.getElementById('mkthubUploadBtn');
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', function () { openUploadModal(); });
+        }
+
+        /* ── Upload modal: close handlers ── */
+        var upOverlay = document.getElementById('mkthubUploadOverlay');
+        if (upOverlay) {
+            upOverlay.addEventListener('click', function (e) {
+                if (e.target.id === 'mkthubUploadOverlay') closeUploadModal();
+            });
+        }
+        var upCloseBtn = document.getElementById('mkthubUploadClose');
+        if (upCloseBtn) upCloseBtn.addEventListener('click', closeUploadModal);
+        var upCancelBtn = document.getElementById('mkthubUpCancel');
+        if (upCancelBtn) upCancelBtn.addEventListener('click', closeUploadModal);
+
+        /* ── Upload modal: submit ── */
+        var upSubmit = document.getElementById('mkthubUpSubmit');
+        if (upSubmit) {
+            upSubmit.addEventListener('click', function (e) { e.preventDefault(); submitUpload(); });
+        }
+        var upForm = document.getElementById('mkthubUploadForm');
+        if (upForm) {
+            upForm.addEventListener('submit', function (e) { e.preventDefault(); submitUpload(); });
+        }
+
+        /* ── Upload: archivo seleccionado → marcar wrapper ── */
+        var upFile = document.getElementById('mkthubUpArchivo');
+        var upFileWrap = document.getElementById('mkthubUpFileWrap');
+        if (upFile && upFileWrap) {
+            upFile.addEventListener('change', function () {
+                if (upFile.files && upFile.files.length) upFileWrap.classList.add('has-file');
+                else upFileWrap.classList.remove('has-file');
+            });
+        }
+
+        /* ── Escape: cerrar modal de upload si está abierto ── */
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var ov = document.getElementById('mkthubUploadOverlay');
+                if (ov && ov.classList.contains('is-open')) closeUploadModal();
+            }
+        });
     }
 
     /* ─── Init ─── */
     function init() {
         renderBrands();
+        populateUploadSelects();
         bindEvents();
+        // Fetch dinámico al backend (con fallback a mocks si falla).
+        // Se ejecuta async — la UI inicial usa los mocks mientras llega.
+        fetchRecursos();
     }
 
     // El template puede inyectarse después del page load (si la navegación es AJAX)
