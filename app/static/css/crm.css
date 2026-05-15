@@ -2779,7 +2779,10 @@
     .widget-overlay.is-page-mode .cal-page-bar {
         margin-bottom: 10px;
         flex-shrink: 0;
-        padding: 10px 4px !important;   /* mismo padding-left que la mini-nav */
+        /* Mismo padding lateral que mini-nav y wrapper interno del calendario
+           → Filtro alinea con "‹" y con la columna LUN del grid; Nueva
+           actividad alinea con la columna DOM. */
+        padding: 10px 12px !important;
         position: sticky;
         top: 0;
         z-index: 10;
@@ -2795,12 +2798,26 @@
         display: flex !important;
         align-items: center !important;
     }
+    /* Dynamic island central (Mes/Semana/Día): el padding heredado de
+       .crm-page-sidebar .crm-tabs (4px) la hacía outer:46px mientras los demás
+       items eran 38px → desalineación vertical. Bajamos padding a 2px y
+       altura interna del .crm-tab a 32px → outer dynamic island = 36px,
+       igualando los demás items. */
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
+        padding: 2px !important;
+    }
     /* Altura uniforme para todos los botones/pills de la barra. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill,
-    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new,
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
+        height: 36px !important;
+        line-height: 1 !important;
+        box-sizing: border-box !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
     .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
-        height: 38px !important;
+        height: 32px !important;
         line-height: 1 !important;
         box-sizing: border-box !important;
         display: inline-flex !important;
@@ -2847,12 +2864,13 @@
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
         transform: translateY(-1px);
     }
-    /* Mini-barra de navegación del mes (debajo del header) */
+    /* Mini-barra de navegación del mes (debajo del header).
+       Mismo padding lateral que .cal-page-bar y wrapper del calendario. */
     .widget-overlay.is-page-mode .cal-page-monthnav {
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 0 4px 8px;
+        padding: 0 12px 8px;
         flex-shrink: 0;
     }
     .cal-monthnav-arrow {
@@ -2895,7 +2913,10 @@
     }
     /* El calendario en page-mode flota libre sobre la página — sin card
        contenedor, sin border, sin radius, sin sombra. Las líneas entre
-       celdas dan toda la estructura. */
+       celdas dan toda la estructura.
+       Padding lateral 12px = misma X que .cal-page-bar y .cal-page-monthnav
+       → la columna LUN alinea con "Filtro"/"‹", y DOM alinea con "+Nueva
+       actividad". Anula el inline-style 0.8rem/1.4rem del template. */
     .widget-overlay.is-page-mode .cal-page-body > div:first-child {
         background: transparent;
         border: none;
@@ -2906,6 +2927,7 @@
         flex: 1 1 100% !important;
         position: relative;
         min-height: 0;
+        padding: 0 12px !important;
     }
     /* La página debe scrollear cuando hay muchos eventos */
     .widget-overlay.is-page-mode .cal-page-body {
