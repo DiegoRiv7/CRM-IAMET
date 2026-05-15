@@ -274,9 +274,12 @@
                     Prospección
                 </a>
                 {% if not es_ingeniero %}
+                {# Tab "Recursos" oculto temporalmente — pendiente de autorización del módulo.
+                   La URL (?tab=prospeccion) sigue funcional para deep links existentes. #}
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
-                    class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
+                    class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}"
+                    style="display:none;">
                     Recursos
                 </a>
                 <a href="?tab=marketing&mes={{ mes_filter }}&anio={{ anio_filter }}"

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Brochure Axis Cámaras Q-Line | IAMET</title>
+<style>
+  :root{
+    --red:#E11932;
+    --red-deep:#A20F22;
+    --ink:#141416;
+    --muted:#5C5C66;
+    --line:#E8E4E5;
+    --bg:#F1EEEF;
+    --soft:#F8F5F5;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .stage{padding:48px 24px;display:flex;justify-content:center;}
+  .sheet{
+    width:816px;background:#fff;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.25),0 8px 20px -10px rgba(0,0,0,.15);
+    border-radius:2px;overflow:hidden;
+  }
+  /* HEADER — Axis identity: minimal, white field with red rule, premium */
+  .header{background:#fff;color:var(--ink);padding:36px 56px 32px;position:relative;border-bottom:1px solid var(--line);}
+  .header::before{content:"";position:absolute;left:0;top:0;width:8px;height:100%;background:var(--red);}
+  .brand-row{display:flex;align-items:center;gap:14px;}
+  .brand-logo{font-weight:800;letter-spacing:1px;font-size:22px;color:var(--red);}
+  .partner-tag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);background:#F4F1F1;padding:6px 12px;border-radius:99px;}
+  .hero{margin-top:36px;display:grid;grid-template-columns:1.5fr 1fr;gap:32px;align-items:end;}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--red);}
+  .h1{font-size:48px;font-weight:800;line-height:1.05;margin-top:10px;letter-spacing:-1.2px;color:var(--ink);}
+  .tagline{margin-top:14px;font-size:15px;color:var(--muted);max-width:520px;line-height:1.55;font-weight:400;}
+  .camera-art{display:flex;justify-content:flex-end;align-items:flex-end;}
+  /* SECTION */
+  .section{padding:42px 56px;border-bottom:1px solid var(--line);}
+  .section-dark{background:var(--ink);color:#fff;border-bottom:0;}
+  .section-dark .section-title{color:#9C9CA8;}
+  .section-dark .section-h2{color:#fff;}
+  .section-dark .section-lead{color:#B4B4BE;}
+  .section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .section-h2{font-size:26px;font-weight:800;letter-spacing:-.4px;color:var(--ink);}
+  .section-lead{margin-top:8px;font-size:14px;color:var(--muted);max-width:580px;line-height:1.55;}
+  /* FEATURES */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:28px;}
+  .feature{padding:0;}
+  .feature .icon{width:42px;height:42px;border-radius:10px;background:#FCE7EA;color:var(--red);display:flex;align-items:center;justify-content:center;}
+  .feature h3{font-size:14px;font-weight:700;margin-top:14px;color:var(--ink);}
+  .feature p{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:6px;}
+  /* SPECS */
+  .specs{margin-top:24px;width:100%;border-collapse:collapse;font-size:13px;}
+  .specs tr{border-bottom:1px solid rgba(255,255,255,.08);}
+  .specs td{padding:13px 0;vertical-align:top;}
+  .specs td.k{width:42%;color:#9C9CA8;font-weight:500;}
+  .specs td.v{color:#fff;font-weight:600;}
+  /* USE CASES */
+  .uses{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px;}
+  .use{border-radius:10px;padding:18px;background:var(--soft);border:1px solid var(--line);}
+  .use .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;color:var(--red);background:#FCE7EA;padding:5px 10px;border-radius:99px;}
+  .use h4{font-size:15px;font-weight:700;margin-top:12px;color:var(--ink);}
+  .use p{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  /* CTA */
+  .cta{padding:36px 56px;background:var(--soft);display:flex;justify-content:space-between;align-items:center;gap:24px;}
+  .cta .copy h4{font-size:18px;font-weight:800;color:var(--ink);}
+  .cta .copy p{font-size:13px;color:var(--muted);margin-top:4px;}
+  .iamet-wordmark{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--iamet);}
+  .iamet-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  /* FOOTER */
+  .footer{background:var(--ink);color:#9DA5C2;font-size:11px;padding:18px 56px;display:flex;justify-content:space-between;align-items:center;}
+  .footer .dot{display:inline-block;width:6px;height:6px;border-radius:99px;background:var(--red);margin:0 8px;vertical-align:middle;}
+  @page{size:letter;margin:0;}
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{box-shadow:none;width:100%;border-radius:0;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+    <header class="header">
+      <div class="brand-row">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#E11932"/><text x="16" y="22" font-family="Inter,sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">AXIS</text></svg>
+        <div class="brand-logo">AXIS COMMUNICATIONS</div>
+        <div class="partner-tag">Distribuidor autorizado IAMET</div>
+      </div>
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Cámaras IP premium · Q-Line</div>
+          <h1 class="h1">Detalle forense, incluso en la oscuridad total.</h1>
+          <p class="tagline">La línea Q fija el estándar de imagen profesional para misiones críticas: Lightfinder 2.0, Forensic WDR, OptimizedIR y Zipstream para reducir el ancho de banda hasta 50% sin sacrificar evidencia.</p>
+        </div>
+        <div class="camera-art">
+          <svg width="180" height="120" viewBox="0 0 180 120" fill="none">
+            <rect x="40" y="40" width="100" height="50" rx="8" fill="#141416"/>
+            <circle cx="90" cy="65" r="22" fill="#1f1f23" stroke="#E11932" stroke-width="2"/>
+            <circle cx="90" cy="65" r="12" fill="#000"/>
+            <circle cx="90" cy="65" r="6" fill="#2a2a2f"/>
+            <rect x="36" y="86" width="108" height="6" rx="2" fill="#0a0a0c"/>
+            <rect x="60" y="92" width="60" height="10" rx="2" fill="#141416"/>
+            <circle cx="74" cy="55" r="2" fill="#E11932"/>
+          </svg>
+        </div>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="section-title">Tecnologías Axis</div>
+      <h2 class="section-h2">Innovación que cambia la imagen, no solo el sensor.</h2>
+      <p class="section-lead">Cada cámara Q incorpora tecnologías propietarias que combinan ópticas premium, procesamiento ARTPEC y firmware AXIS OS con soporte extendido (LTS).</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></div>
+          <h3>Lightfinder 2.0</h3>
+          <p>Imagen a color en condiciones de iluminación tan bajas como 0.06 lux. Conserva fidelidad de color para identificación.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/></svg></div>
+          <h3>Forensic WDR</h3>
+          <p>Compensación de luz extrema (120 dB) para escenas con contraluz y zonas de sombra: rostros legibles en accesos.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M12 19v3M5 12H2M22 12h-3"/><circle cx="12" cy="12" r="5"/></svg></div>
+          <h3>OptimizedIR</h3>
+          <p>Iluminación infrarroja adaptable que ajusta intensidad y ángulo según el zoom para evitar saturación de imagen.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></div>
+          <h3>Zipstream con H.265</h3>
+          <p>Reduce ancho de banda y almacenamiento hasta 50% manteniendo detalle en áreas de interés (ROI dinámico).</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 1-4.5 4.5L18 21l-6-3-6 3 1.5-7.5L3 9l6-1z"/></svg></div>
+          <h3>AXIS OS &amp; LTS firmware</h3>
+          <p>Plataforma de software con releases LTS hasta 5 años para entornos críticos que requieren estabilidad.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v6c0 5-4 9-9 9s-9-4-9-9V7z"/><path d="M12 8v8M8 12h8"/></svg></div>
+          <h3>Ciberseguridad Edge</h3>
+          <p>Secure boot, Signed firmware, TPM 2.0 y soporte 802.1X. Cumplimiento NDAA y compatibilidad ONVIF Profile T.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark">
+      <div class="section-title">Especificaciones técnicas</div>
+      <h2 class="section-h2">Hoja técnica · Familia Q-Line.</h2>
+      <table class="specs">
+        <tr><td class="k">Resolución</td><td class="v">4K UHD / 8MP / 4MP / 2MP según modelo</td></tr>
+        <tr><td class="k">Sensor</td><td class="v">CMOS 1/1.8" hasta 1/2.5" con Lightfinder 2.0</td></tr>
+        <tr><td class="k">WDR</td><td class="v">Forensic WDR hasta 120 dB</td></tr>
+        <tr><td class="k">Procesador</td><td class="v">ARTPEC-8 con motor de deep learning embebido</td></tr>
+        <tr><td class="k">Compresión</td><td class="v">H.264, H.265, Motion JPEG con AXIS Zipstream</td></tr>
+        <tr><td class="k">Audio</td><td class="v">Bidireccional con cancelación de eco y compresión AAC</td></tr>
+        <tr><td class="k">Carcasa</td><td class="v">IP66 / IP67 / NEMA 4X / IK10 anti-vandalismo</td></tr>
+        <tr><td class="k">Temperatura operativa</td><td class="v">-50 °C a +60 °C (modelos extremos)</td></tr>
+        <tr><td class="k">Alimentación</td><td class="v">PoE IEEE 802.3at (Tipo 2) / Hi-PoE en PTZ</td></tr>
+        <tr><td class="k">Almacenamiento edge</td><td class="v">microSDXC hasta 1 TB, soporte iSCSI y exportación firmada</td></tr>
+        <tr><td class="k">Integraciones</td><td class="v">AXIS Camera Station, Genetec, Milestone, Avigilon, ONVIF</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Casos de uso</div>
+      <h2 class="section-h2">Para escenas donde no hay segunda oportunidad.</h2>
+      <div class="uses">
+        <div class="use">
+          <span class="pill">Aeroportuario</span>
+          <h4>Pistas y áreas restringidas</h4>
+          <p>Cámaras térmicas y PTZ Q-Series con clasificación a kilómetros para perímetros aeroportuarios.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Bancario</span>
+          <h4>Sucursales y cajeros</h4>
+          <p>Forensic WDR para identificación clara de rostros en accesos, contraluces y vestíbulos.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Crítica</span>
+          <h4>Energía y subestaciones</h4>
+          <p>Carcasas hardened, comunicación cifrada y firmware LTS para infraestructura crítica nacional.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta">
+      <div class="copy">
+        <h4>Pruebe una cámara Q-Line en su sitio real.</h4>
+        <p>Programa de demo loaner por 14 días con instalación y configuración por equipo IAMET certificado.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="iamet-wordmark">IAMET</div>
+        <div class="iamet-tag">Distribuidor autorizado</div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div>IAMET <span class="dot"></span> Tijuana / Mexicali, México <span class="dot"></span> ventas@iamet.mx</div>
+      <div>Brochure Axis Q-Line / 2026</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

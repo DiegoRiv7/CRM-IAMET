@@ -282,66 +282,96 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 .mkthub-root.is-searching .mkthub-results { display: block; animation: mkthubFade 0.2s ease both; }
 .mkthub-root.is-searching .mkthub-idle-only { display: none !important; }
 
-.mkthub-brand-pills, .mkthub-type-chips {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    margin: 0 auto 12px;
+/* ── Results header: back + brand heading (NO pills de otras marcas) ── */
+.mkthub-results-header {
     max-width: min(1480px, 96vw);
+    margin: 0 auto clamp(20px, 2vw, 32px);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
 }
-.mkthub-type-chips { margin-bottom: 16px; }
-.mkthub-results-count { max-width: min(1480px, 96vw); margin-left: auto; margin-right: auto; }
-.mkthub-pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 6px 13px;
-    border: 1.5px solid var(--mkthub-line);
+.mkthub-back-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px;
+    border: 1px solid var(--mkthub-line);
     background: #FFFFFF;
     color: var(--mkthub-soft);
     border-radius: 999px;
-    font-size: 0.78rem; font-weight: 500;
+    font-size: 0.84rem; font-weight: 500;
     cursor: pointer;
-    transition: all 0.14s ease;
+    transition: all 0.16s ease;
     font-family: inherit;
 }
-.mkthub-pill:hover {
-    background: #FAFAF5;
+.mkthub-back-btn:hover {
+    background: #FAFAFA;
     border-color: var(--mkthub-soft);
     color: var(--mkthub-ink);
 }
-.mkthub-pill.is-active {
-    border-color: var(--mkthub-line-strong);
-    background: var(--mkthub-line-strong);
-    color: #FFFFFF;
-    font-weight: 700;
-    box-shadow: 2px 2px 0 rgba(26,26,26,0.25);
+.mkthub-brand-heading {
+    display: flex; align-items: center; gap: 14px;
+    margin-left: auto;
 }
-.mkthub-pill--brand.is-active {
-    border-color: var(--pill-color);
-    background: var(--pill-color);
-    box-shadow: 2px 2px 0 color-mix(in srgb, var(--pill-color) 55%, transparent);
+.mkthub-brand-heading-mark {
+    font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+    font-weight: var(--brand-weight, 800);
+    letter-spacing: var(--brand-tracking, -0.02em);
+    text-transform: var(--brand-case, none);
+    color: var(--brand-color);
+    line-height: 1;
 }
-.mkthub-pill--type.is-active {
-    border-color: var(--pill-color);
-    background: var(--pill-color);
-    box-shadow: 2px 2px 0 color-mix(in srgb, var(--pill-color) 55%, transparent);
+.mkthub-brand-heading-sub {
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--mkthub-soft);
+    border-left: 1px solid var(--mkthub-line);
+    padding-left: 14px;
 }
-.mkthub-pill-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--pill-color, currentColor);
-    flex-shrink: 0;
+
+/* ── Type segmented: control sobrio tipo iOS ── */
+.mkthub-type-segmented {
+    max-width: min(1480px, 96vw);
+    margin: 0 auto clamp(20px, 2vw, 28px);
+    display: inline-flex;
+    padding: 4px;
+    background: #F3F4F6;
+    border-radius: 12px;
+    gap: 2px;
+    flex-wrap: wrap;
 }
-.mkthub-pill.is-active .mkthub-pill-dot { background: rgba(255,255,255,0.8); }
-.mkthub-pill-count {
+.mkthub-type-seg {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border: none;
+    background: transparent;
+    color: var(--mkthub-soft);
+    border-radius: 9px;
+    font-size: 0.84rem; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+}
+.mkthub-type-seg:hover { color: var(--mkthub-ink); background: rgba(255,255,255,0.6); }
+.mkthub-type-seg.is-active {
+    background: #FFFFFF;
+    color: var(--mkthub-ink);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(20,20,18,0.06), 0 0 0 1px rgba(20,20,18,0.05);
+}
+.mkthub-type-seg-count {
     font-size: 0.72rem;
-    opacity: 0.72;
+    color: var(--mkthub-mute);
     font-weight: 500;
+    background: rgba(20,20,18,0.05);
+    padding: 1px 6px;
+    border-radius: 999px;
+    min-width: 18px;
+    text-align: center;
 }
-.mkthub-pill--clear {
-    border-color: var(--mkthub-line-strong);
-    background: var(--mkthub-line-strong);
-    color: #FFFFFF;
-    font-weight: 700;
+.mkthub-type-seg.is-active .mkthub-type-seg-count {
+    background: rgba(0,82,212,0.1);
+    color: var(--mkthub-accent);
 }
-.mkthub-pill--clear:hover { background: #2D2D2D; color: #FFFFFF; }
+
+.mkthub-results-count { max-width: min(1480px, 96vw); margin-left: auto; margin-right: auto; }
 
 .mkthub-results-count {
     font-size: 0.86rem;
@@ -376,79 +406,386 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 .mkthub-empty-title { font-size: 1.05rem; font-weight: 800; color: var(--mkthub-ink); margin-bottom: 5px; }
 .mkthub-empty-sub { font-size: 0.86rem; color: var(--mkthub-soft); }
 
-/* Card de recurso */
+/* ── Card de recurso — Apple-minimalist con thumbnail visual ──
+   Estructura:
+   .mkthub-card
+     .mkthub-card-thumb (visual mockup según tipo: PDF/landing/video/etc.)
+     .mkthub-card-body (tipo + título + desc)
+     .mkthub-card-foot (meta + acción)
+*/
 .mkthub-card {
     background: #FFFFFF;
     border-radius: 18px;
-    border: 2px solid var(--mkthub-line-strong);
-    box-shadow: 3px 3px 0 var(--card-color, var(--mkthub-line-strong));
+    border: 1px solid var(--mkthub-line);
+    box-shadow: 0 1px 2px rgba(20, 20, 18, 0.04);
     overflow: hidden;
     display: flex; flex-direction: column;
     cursor: pointer;
     position: relative;
-    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
-                box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-    animation: mkthubCardIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) var(--card-delay, 0s) both;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.18s ease;
+    animation: mkthubCardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) var(--card-delay, 0s) both;
 }
 .mkthub-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 5px 7px 0 var(--card-color, var(--mkthub-line-strong));
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px -10px rgba(20, 20, 18, 0.14),
+                0 4px 10px -4px rgba(20, 20, 18, 0.06);
+    border-color: var(--card-color);
 }
-.mkthub-card-head {
-    background: var(--card-color);
-    padding: 14px 14px 12px;
-    min-height: 92px;
-    display: flex; flex-direction: column; justify-content: space-between;
+
+/* ── Thumbnail visual — base ── */
+.mkthub-card-thumb {
+    position: relative;
+    height: clamp(150px, 16vh, 200px);
+    background: #FAFAFA;
+    border-bottom: 1px solid var(--mkthub-line);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
 }
-.mkthub-card-meta {
-    display: flex; justify-content: space-between; align-items: flex-start;
-}
-.mkthub-card-type {
+.mkthub-card-thumb-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(20,20,18,0.7);
+    color: #FFFFFF;
+    padding: 3px 9px;
+    border-radius: 999px;
     font-size: 0.62rem; font-weight: 700;
-    color: rgba(255,255,255,0.78);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
-.mkthub-card-ext {
-    background: rgba(255,255,255,0.28);
-    padding: 2px 7px;
+
+/* PDF / Brochure / Certificación / Caso / Propuesta — página de documento */
+.mkthub-thumb-doc {
+    width: 60%; height: 80%;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px -6px rgba(20,20,18,0.18);
+    display: flex; flex-direction: column;
+    padding: 12px 10px 10px;
+    gap: 5px;
+    overflow: hidden;
+    position: relative;
+}
+.mkthub-thumb-doc::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 18px;
+    background: var(--card-color);
+}
+.mkthub-thumb-doc-line {
+    height: 4px;
+    background: #E5E7EB;
+    border-radius: 2px;
+    margin-top: 12px;
+}
+.mkthub-thumb-doc-line:nth-child(1) { width: 60%; margin-top: 16px; background: var(--card-color); opacity: 0.65; }
+.mkthub-thumb-doc-line:nth-child(2) { width: 90%; }
+.mkthub-thumb-doc-line:nth-child(3) { width: 85%; }
+.mkthub-thumb-doc-line:nth-child(4) { width: 75%; }
+.mkthub-thumb-doc-line:nth-child(5) { width: 95%; }
+.mkthub-thumb-doc-line:nth-child(6) { width: 65%; }
+
+/* Landing page — mockup de browser */
+.mkthub-thumb-browser {
+    width: 80%; height: 80%;
+    background: #FFFFFF;
     border-radius: 6px;
-    font-size: 0.62rem; font-weight: 800;
-    color: #FFFFFF;
-    letter-spacing: 0.04em;
+    box-shadow: 0 4px 16px -6px rgba(20,20,18,0.18);
+    border: 1px solid #E5E7EB;
+    overflow: hidden;
+    display: flex; flex-direction: column;
 }
-.mkthub-card-title {
-    font-size: 0.92rem; font-weight: 700;
-    color: #FFFFFF;
-    line-height: 1.3;
-    margin: 6px 0 0;
+.mkthub-thumb-browser-bar {
+    height: 18px;
+    background: #F3F4F6;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex; align-items: center;
+    padding: 0 8px;
+    gap: 5px;
 }
-.mkthub-card-body {
-    padding: 11px 14px 10px;
+.mkthub-thumb-browser-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #D1D5DB;
+}
+.mkthub-thumb-browser-body {
+    flex: 1;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--card-color) 10%, #FFFFFF) 0%, #FFFFFF 60%);
+    padding: 12px 14px;
+    display: flex; flex-direction: column;
+    gap: 6px;
+}
+.mkthub-thumb-browser-h {
+    height: 8px;
+    width: 70%;
+    background: var(--card-color);
+    border-radius: 3px;
+}
+.mkthub-thumb-browser-l {
+    height: 4px;
+    background: #E5E7EB;
+    border-radius: 2px;
+}
+.mkthub-thumb-browser-l:nth-of-type(1) { width: 90%; }
+.mkthub-thumb-browser-l:nth-of-type(2) { width: 75%; }
+.mkthub-thumb-browser-cta {
+    height: 12px;
+    width: 32%;
+    background: var(--card-color);
+    border-radius: 4px;
+    margin-top: 4px;
+}
+
+/* Video — dark thumbnail con play button */
+.mkthub-thumb-video {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+}
+.mkthub-thumb-video::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--card-color) 28%, transparent) 0%, transparent 50%);
+}
+.mkthub-thumb-video-play {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 1;
+}
+.mkthub-thumb-video-play::after {
+    content: '';
+    width: 0; height: 0;
+    border-left: 14px solid var(--card-color);
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    margin-left: 3px;
+}
+.mkthub-thumb-video-bar {
+    position: absolute;
+    bottom: 16px; left: 16px; right: 16px;
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.mkthub-thumb-video-bar::after {
+    content: '';
+    display: block;
+    width: 35%; height: 100%;
+    background: var(--card-color);
+    border-radius: 2px;
+}
+
+/* Presentación — slide mockup */
+.mkthub-thumb-slide {
+    width: 80%; height: 75%;
+    background: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px -6px rgba(20,20,18,0.18);
+    border: 1px solid #E5E7EB;
+    padding: 18px 18px;
+    display: flex; flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+.mkthub-thumb-slide::before {
+    content: '';
+    position: absolute;
+    bottom: 8px; right: 12px;
+    font-size: 0.6rem;
+    color: #9CA3AF;
+    content: '1 / 8';
+}
+.mkthub-thumb-slide-h {
+    height: 10px;
+    width: 65%;
+    background: var(--card-color);
+    border-radius: 3px;
+    margin-bottom: 4px;
+}
+.mkthub-thumb-slide-sub {
+    height: 5px;
+    width: 45%;
+    background: #D1D5DB;
+    border-radius: 2px;
+    margin-bottom: 8px;
+}
+.mkthub-thumb-slide-b {
+    display: flex; align-items: center; gap: 6px;
+}
+.mkthub-thumb-slide-b::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--card-color);
+    flex-shrink: 0;
+}
+.mkthub-thumb-slide-b-line {
+    height: 4px;
+    background: #E5E7EB;
+    border-radius: 2px;
     flex: 1;
 }
-.mkthub-card-desc {
-    font-size: 0.78rem; color: #6E6C5C;
-    line-height: 1.5;
-    margin: 0 0 9px;
+
+/* Banner — formatos publicitarios */
+.mkthub-thumb-banner {
+    width: 90%; height: 80%;
+    display: flex; flex-direction: column;
+    gap: 8px;
+    justify-content: center;
 }
-.mkthub-card-tags {
-    display: flex; flex-wrap: wrap; gap: 4px;
+.mkthub-thumb-banner-728 {
+    width: 100%; height: 18%;
+    background: var(--card-color);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
 }
-.mkthub-card-tag {
+.mkthub-thumb-banner-728::after {
+    content: '728×90';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.55rem; font-weight: 700;
+    color: rgba(255,255,255,0.7);
+}
+.mkthub-thumb-banner-row {
+    display: flex; gap: 8px;
+    flex: 1;
+}
+.mkthub-thumb-banner-300 {
+    flex: 1;
+    background: var(--card-color);
+    border-radius: 4px;
+    position: relative;
+    opacity: 0.85;
+}
+.mkthub-thumb-banner-300::after {
+    content: '300×250';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.55rem; font-weight: 700;
+    color: rgba(255,255,255,0.7);
+}
+.mkthub-thumb-banner-250 {
+    width: 38%;
+    background: var(--card-color);
+    border-radius: 4px;
+    position: relative;
+    opacity: 0.7;
+}
+.mkthub-thumb-banner-250::after {
+    content: '250×250';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.55rem; font-weight: 700;
+    color: rgba(255,255,255,0.7);
+}
+
+/* Certificación — sello/medalla */
+.mkthub-thumb-cert {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--card-color) 18%, #FFFFFF) 0%, #FFFFFF 75%);
+    border: 4px solid var(--card-color);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: 0 6px 20px -8px var(--card-color);
+}
+.mkthub-thumb-cert::before {
+    content: '';
+    position: absolute;
+    width: 90px; height: 90px;
+    border: 1.5px dashed var(--card-color);
+    border-radius: 50%;
+    opacity: 0.4;
+}
+.mkthub-thumb-cert-inner {
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+}
+.mkthub-thumb-cert-icon {
+    font-size: 1.6rem;
+    color: var(--card-color);
+    font-weight: 800;
+    line-height: 1;
+}
+.mkthub-thumb-cert-text {
+    font-size: 0.5rem; font-weight: 700;
+    color: var(--card-color);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+.mkthub-thumb-cert-ribbon {
+    position: absolute;
+    bottom: -8px;
+    width: 30px; height: 36px;
+    background: var(--card-color);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
+    z-index: -1;
+}
+
+/* ── Body de la card ── */
+.mkthub-card-body {
+    padding: 14px 16px 8px;
+    flex: 1;
+    display: flex; flex-direction: column;
+    gap: 6px;
+}
+.mkthub-card-type-row {
+    display: flex; align-items: center; gap: 8px;
+}
+.mkthub-card-type {
+    font-size: 0.66rem; font-weight: 700;
+    color: var(--card-color);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+.mkthub-card-type-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--mkthub-mute);
+}
+.mkthub-card-date {
     font-size: 0.7rem;
-    color: #8E8C78;
-    background: #F1EFE7;
-    padding: 2px 7px;
-    border-radius: 6px;
+    color: var(--mkthub-mute);
+    font-weight: 500;
 }
+.mkthub-card-title {
+    font-size: 0.98rem; font-weight: 700;
+    color: var(--mkthub-ink);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+.mkthub-card-desc {
+    font-size: 0.82rem;
+    color: var(--mkthub-soft);
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Footer de la card ── */
 .mkthub-card-foot {
-    padding: 0 14px 13px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid var(--mkthub-line);
     display: flex; align-items: center; justify-content: space-between;
     gap: 8px;
+    background: #FAFAFA;
 }
 .mkthub-card-brand {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 6px;
     min-width: 0;
 }
 .mkthub-card-brand-dot {
@@ -458,27 +795,31 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     flex-shrink: 0;
 }
 .mkthub-card-brand-name {
-    font-size: 0.72rem; font-weight: 600;
-    color: var(--card-color);
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--mkthub-ink);
 }
-.mkthub-card-date {
-    font-size: 0.72rem; color: var(--mkthub-mute);
+.mkthub-card-size {
+    font-size: 0.7rem;
+    color: var(--mkthub-mute);
 }
 .mkthub-kit-btn {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 11px;
-    border-radius: 9px;
-    border: 1.5px solid var(--mkthub-line-strong);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--mkthub-line);
     background: #FFFFFF;
     color: var(--mkthub-ink);
-    font-size: 0.76rem; font-weight: 700;
+    font-size: 0.74rem; font-weight: 600;
     cursor: pointer;
     font-family: inherit;
-    box-shadow: 1px 1px 0 var(--mkthub-line-strong);
-    transition: all 0.14s ease;
+    transition: all 0.18s ease;
     flex-shrink: 0;
 }
-.mkthub-kit-btn:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--mkthub-line-strong); }
+.mkthub-kit-btn:hover {
+    background: var(--card-color);
+    border-color: var(--card-color);
+    color: #FFFFFF;
+}
 
 /* ── Modal ── */
 .mkthub-modal-overlay {
@@ -614,10 +955,10 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     {# ── Idle: brand cards ── #}
     <div class="mkthub-brands mkthub-idle-only" id="mkthubBrands"></div>
 
-    {# ── Results: brand pills + type chips + grid ── #}
+    {# ── Results: header con back + brand heading + type segmented + grid ── #}
     <div class="mkthub-results" id="mkthubResults">
-        <div class="mkthub-brand-pills" id="mkthubBrandPills"></div>
-        <div class="mkthub-type-chips" id="mkthubTypeChips"></div>
+        <div class="mkthub-results-header" id="mkthubResultsHeader"></div>
+        <div class="mkthub-type-segmented" id="mkthubTypeChips"></div>
         <p class="mkthub-results-count" id="mkthubResultsCount"></p>
         <div class="mkthub-grid" id="mkthubGrid"></div>
     </div>
@@ -827,27 +1168,41 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         document.getElementById('mkthubBrands').innerHTML = html;
     }
 
-    /* ─── Render: pills de marca en results ─── */
-    function renderBrandPills() {
-        var html = '<button type="button" class="mkthub-pill mkthub-pill--clear" data-action="clear">'
-            + '<svg width="10" height="10" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Limpiar</button>';
-        BRANDS.forEach(function (b) {
-            var on = state.activeBrand === b.id;
-            var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
-            html += '<button type="button" class="mkthub-pill mkthub-pill--brand' + (on ? ' is-active' : '') + '"'
-                + ' style="--pill-color:' + b.color + ';" data-brand="' + b.id + '">'
-                + '<span class="mkthub-pill-dot"></span>'
-                + esc(b.name)
-                + ' <span class="mkthub-pill-count">' + count + '</span>'
-                + '</button>';
-        });
-        document.getElementById('mkthubBrandPills').innerHTML = html;
+    /* ─── Render: results header (back + brand wordmark heading) ───
+       Sin pills de otras marcas. Si hay una marca activa, mostramos su
+       wordmark con la tipografía característica. Si solo hay query, solo
+       el back. */
+    function renderResultsHeader() {
+        var html = '<button type="button" class="mkthub-back-btn" data-action="clear">'
+            + '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            + 'Volver a marcas</button>';
+        if (state.activeBrand !== 'all') {
+            var b = brandById(state.activeBrand);
+            if (b) {
+                var bstyle = ''
+                    + '--brand-color:' + b.color + ';'
+                    + '--brand-weight:' + b.weight + ';'
+                    + '--brand-tracking:' + b.tracking + ';'
+                    + '--brand-case:' + b.case + ';';
+                var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
+                html += '<div class="mkthub-brand-heading" style="' + bstyle + '">'
+                    + '<span class="mkthub-brand-heading-mark">' + esc(b.displayName) + '</span>'
+                    + '<span class="mkthub-brand-heading-sub">' + count + ' recursos disponibles</span>'
+                    + '</div>';
+            }
+        } else if (state.query.trim()) {
+            html += '<div class="mkthub-brand-heading">'
+                + '<span class="mkthub-brand-heading-sub" style="border:none;padding:0;font-size:0.92rem;color:var(--mkthub-ink);font-weight:500;">'
+                + 'Resultados para "<strong style="color:var(--mkthub-accent);">' + esc(state.query.trim()) + '</strong>"</span>'
+                + '</div>';
+        }
+        document.getElementById('mkthubResultsHeader').innerHTML = html;
     }
 
-    /* ─── Render: type chips ─── */
+    /* ─── Render: type segmented (iOS-style)
+       Solo muestra tipos que tienen al menos 1 recurso en el subset
+       actual (marca + query). */
     function renderTypeChips() {
-        var resInBrandAndQuery = filterResources.bind(null);
-        // Conteos por tipo dentro del subset actual (brand+query, ignorando type filter)
         var savedType = state.activeType;
         state.activeType = 'all';
         var subset = filterResources();
@@ -856,15 +1211,15 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         var counts = { all: subset.length };
         subset.forEach(function (r) { counts[r.type] = (counts[r.type] || 0) + 1; });
 
-        var html = '<button type="button" class="mkthub-pill mkthub-pill--type' + (state.activeType === 'all' ? ' is-active' : '') + '"'
-            + ' style="--pill-color:#1A1A1A;" data-type="all">Todo <span class="mkthub-pill-count">' + counts.all + '</span></button>';
+        var html = '<button type="button" class="mkthub-type-seg' + (state.activeType === 'all' ? ' is-active' : '') + '"'
+            + ' data-type="all">Todo <span class="mkthub-type-seg-count">' + counts.all + '</span></button>';
         Object.keys(TYPES).forEach(function (tid) {
             if (!counts[tid]) return;
             var t = TYPES[tid];
             var on = state.activeType === tid;
-            html += '<button type="button" class="mkthub-pill mkthub-pill--type' + (on ? ' is-active' : '') + '"'
-                + ' style="--pill-color:' + t.color + ';" data-type="' + tid + '">'
-                + esc(t.name) + ' <span class="mkthub-pill-count">' + counts[tid] + '</span>'
+            html += '<button type="button" class="mkthub-type-seg' + (on ? ' is-active' : '') + '"'
+                + ' data-type="' + tid + '">'
+                + esc(t.name) + ' <span class="mkthub-type-seg-count">' + counts[tid] + '</span>'
                 + '</button>';
         });
         document.getElementById('mkthubTypeChips').innerHTML = html;
@@ -901,26 +1256,24 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             return ''
                 + '<div class="mkthub-card" data-res-id="' + r.id + '"'
                 +   ' style="--card-color:' + b.color + '; --card-delay:' + Math.min(i * 0.04, 0.45) + 's;">'
-                +   '<div class="mkthub-card-head" data-action="preview">'
-                +     '<div class="mkthub-card-meta">'
-                +       '<span class="mkthub-card-type">' + esc(t.name) + '</span>'
-                +       '<span class="mkthub-card-ext">' + esc(t.ext) + '</span>'
-                +     '</div>'
-                +     '<p class="mkthub-card-title">' + esc(r.title) + '</p>'
+                +   '<div class="mkthub-card-thumb" data-action="preview">'
+                +     buildThumb(r, t)
+                +     '<span class="mkthub-card-thumb-badge">' + esc(t.ext) + '</span>'
                 +   '</div>'
                 +   '<div class="mkthub-card-body" data-action="preview">'
-                +     '<p class="mkthub-card-desc">' + esc(r.desc) + '</p>'
-                +     '<div class="mkthub-card-tags">'
-                +       r.tags.slice(0, 3).map(function (tag) {
-                          return '<span class="mkthub-card-tag">' + esc(tag) + '</span>';
-                        }).join('')
+                +     '<div class="mkthub-card-type-row">'
+                +       '<span class="mkthub-card-type">' + esc(t.name) + '</span>'
+                +       '<span class="mkthub-card-type-dot"></span>'
+                +       '<span class="mkthub-card-date">' + esc(r.date) + '</span>'
                 +     '</div>'
+                +     '<p class="mkthub-card-title">' + esc(r.title) + '</p>'
+                +     '<p class="mkthub-card-desc">' + esc(r.desc) + '</p>'
                 +   '</div>'
                 +   '<div class="mkthub-card-foot">'
                 +     '<div class="mkthub-card-brand">'
                 +       '<span class="mkthub-card-brand-dot"></span>'
                 +       '<span class="mkthub-card-brand-name">' + esc(b.name) + '</span>'
-                +       '<span class="mkthub-card-date">' + esc(r.date) + '</span>'
+                +       (r.size && r.size !== '—' ? '<span class="mkthub-card-size"> · ' + esc(r.size) + '</span>' : '')
                 +     '</div>'
                 +     '<button type="button" class="mkthub-kit-btn" data-action="share" title="Compartir por correo">'
                 +       '<svg width="12" height="12" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>'
@@ -930,6 +1283,73 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                 + '</div>';
         }).join('');
         grid.innerHTML = html;
+    }
+
+    /* ─── Builder de thumbnail visual según el tipo ─── */
+    function buildThumb(r, t) {
+        switch (r.type) {
+            case 'landing':
+                return ''
+                    + '<div class="mkthub-thumb-browser">'
+                    +   '<div class="mkthub-thumb-browser-bar">'
+                    +     '<span class="mkthub-thumb-browser-dot"></span>'
+                    +     '<span class="mkthub-thumb-browser-dot"></span>'
+                    +     '<span class="mkthub-thumb-browser-dot"></span>'
+                    +   '</div>'
+                    +   '<div class="mkthub-thumb-browser-body">'
+                    +     '<div class="mkthub-thumb-browser-h"></div>'
+                    +     '<div class="mkthub-thumb-browser-l"></div>'
+                    +     '<div class="mkthub-thumb-browser-l"></div>'
+                    +     '<div class="mkthub-thumb-browser-cta"></div>'
+                    +   '</div>'
+                    + '</div>';
+            case 'video':
+                return ''
+                    + '<div class="mkthub-thumb-video">'
+                    +   '<div class="mkthub-thumb-video-play"></div>'
+                    +   '<div class="mkthub-thumb-video-bar"></div>'
+                    + '</div>';
+            case 'presentacion':
+                return ''
+                    + '<div class="mkthub-thumb-slide">'
+                    +   '<div class="mkthub-thumb-slide-h"></div>'
+                    +   '<div class="mkthub-thumb-slide-sub"></div>'
+                    +   '<div class="mkthub-thumb-slide-b"><div class="mkthub-thumb-slide-b-line"></div></div>'
+                    +   '<div class="mkthub-thumb-slide-b"><div class="mkthub-thumb-slide-b-line"></div></div>'
+                    +   '<div class="mkthub-thumb-slide-b"><div class="mkthub-thumb-slide-b-line"></div></div>'
+                    + '</div>';
+            case 'banner':
+                return ''
+                    + '<div class="mkthub-thumb-banner">'
+                    +   '<div class="mkthub-thumb-banner-728"></div>'
+                    +   '<div class="mkthub-thumb-banner-row">'
+                    +     '<div class="mkthub-thumb-banner-300"></div>'
+                    +     '<div class="mkthub-thumb-banner-250"></div>'
+                    +   '</div>'
+                    + '</div>';
+            case 'certificacion':
+                return ''
+                    + '<div class="mkthub-thumb-cert">'
+                    +   '<div class="mkthub-thumb-cert-inner">'
+                    +     '<div class="mkthub-thumb-cert-icon">✓</div>'
+                    +     '<div class="mkthub-thumb-cert-text">Partner<br>Gold</div>'
+                    +   '</div>'
+                    +   '<div class="mkthub-thumb-cert-ribbon"></div>'
+                    + '</div>';
+            case 'brochure':
+            case 'caso':
+            case 'propuesta':
+            default:
+                return ''
+                    + '<div class="mkthub-thumb-doc">'
+                    +   '<div class="mkthub-thumb-doc-line"></div>'
+                    +   '<div class="mkthub-thumb-doc-line"></div>'
+                    +   '<div class="mkthub-thumb-doc-line"></div>'
+                    +   '<div class="mkthub-thumb-doc-line"></div>'
+                    +   '<div class="mkthub-thumb-doc-line"></div>'
+                    +   '<div class="mkthub-thumb-doc-line"></div>'
+                    + '</div>';
+        }
     }
 
     /* ─── Search dropdown ─── */
@@ -1078,7 +1498,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         var root = document.getElementById('mkthubRoot');
         if (isSearching()) {
             root.classList.add('is-searching');
-            renderBrandPills();
+            renderResultsHeader();
             renderTypeChips();
             renderGrid();
         } else {
@@ -1157,26 +1577,17 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
                 updateMode();
                 return;
             }
-            // Brand pill (results)
-            var pillBrand = e.target.closest('.mkthub-pill--brand');
-            if (pillBrand) {
-                var bid = pillBrand.getAttribute('data-brand');
-                state.activeBrand = (state.activeBrand === bid) ? 'all' : bid;
-                state.activeType = 'all';
-                updateMode();
-                return;
-            }
-            // Type pill
-            var pillType = e.target.closest('.mkthub-pill--type');
-            if (pillType) {
-                state.activeType = pillType.getAttribute('data-type');
+            // Type segmented control
+            var typeSeg = e.target.closest('.mkthub-type-seg');
+            if (typeSeg) {
+                state.activeType = typeSeg.getAttribute('data-type');
                 renderTypeChips();
                 renderGrid();
                 return;
             }
-            // Clear pill
-            var pillClear = e.target.closest('.mkthub-pill--clear');
-            if (pillClear) {
+            // Back / clear (action="clear" en el botón "Volver a marcas")
+            var backBtn = e.target.closest('[data-action="clear"]');
+            if (backBtn && backBtn.classList.contains('mkthub-back-btn')) {
                 state.query = '';
                 state.activeBrand = 'all';
                 state.activeType = 'all';

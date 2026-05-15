@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Brochure Avigilion Vigilancia con IA | IAMET</title>
+<style>
+  :root{
+    --red:#C4112A;
+    --red-deep:#8E0A1F;
+    --ink:#181012;
+    --muted:#5F5760;
+    --line:#ECE4E5;
+    --bg:#F2EFEF;
+    --soft:#FAF6F6;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .stage{padding:48px 24px;display:flex;justify-content:center;}
+  .sheet{
+    width:816px;background:#fff;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.25),0 8px 20px -10px rgba(0,0,0,.15);
+    border-radius:2px;overflow:hidden;
+  }
+  /* HEADER */
+  .header{background:#181012;color:#fff;padding:0;position:relative;overflow:hidden;}
+  .header-inner{padding:36px 56px 40px;position:relative;z-index:2;}
+  .header::before{content:"";position:absolute;inset:0;background:radial-gradient(900px 400px at 110% -10%,rgba(196,17,42,.55),transparent 60%),radial-gradient(700px 300px at -10% 110%,rgba(196,17,42,.25),transparent 60%);}
+  .scan-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:32px 32px;}
+  .brand-row{display:flex;align-items:center;gap:14px;position:relative;}
+  .brand-logo{font-weight:800;letter-spacing:.5px;font-size:22px;}
+  .brand-logo span{color:var(--red);}
+  .partner-tag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.12);padding:6px 12px;border-radius:99px;}
+  .hero{margin-top:42px;}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#FF8090;display:inline-flex;align-items:center;gap:8px;}
+  .eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(196,17,42,.25);}
+  .h1{font-size:50px;font-weight:800;line-height:1.04;margin-top:12px;letter-spacing:-1.2px;}
+  .h1 em{font-style:normal;color:var(--red);}
+  .tagline{margin-top:14px;font-size:16px;color:#C9C0C2;max-width:560px;line-height:1.55;font-weight:400;}
+  /* SECTION */
+  .section{padding:42px 56px;border-bottom:1px solid var(--line);}
+  .section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .section-h2{font-size:26px;font-weight:800;letter-spacing:-.4px;color:var(--ink);}
+  .section-lead{margin-top:8px;font-size:14px;color:var(--muted);max-width:580px;line-height:1.55;}
+  /* FEATURES */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:28px;}
+  .feature{padding:18px;border:1px solid var(--line);border-radius:10px;background:#fff;position:relative;}
+  .feature .icon{width:42px;height:42px;border-radius:10px;background:#FDECEE;color:var(--red);display:flex;align-items:center;justify-content:center;}
+  .feature h3{font-size:14px;font-weight:700;margin-top:14px;color:var(--ink);}
+  .feature p{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:6px;}
+  /* SPECS */
+  .specs{margin-top:24px;width:100%;border-collapse:collapse;font-size:13px;}
+  .specs tr{border-bottom:1px solid var(--line);}
+  .specs td{padding:13px 0;vertical-align:top;}
+  .specs td.k{width:42%;color:var(--muted);font-weight:500;}
+  .specs td.v{color:var(--ink);font-weight:600;}
+  /* USE CASES */
+  .uses{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px;}
+  .use{border-radius:10px;padding:18px;background:var(--soft);border:1px solid var(--line);}
+  .use .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;color:var(--red);background:#FDECEE;padding:5px 10px;border-radius:99px;}
+  .use h4{font-size:15px;font-weight:700;margin-top:12px;color:var(--ink);}
+  .use p{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  /* CTA */
+  .cta{padding:36px 56px;background:var(--soft);display:flex;justify-content:space-between;align-items:center;gap:24px;}
+  .cta .copy h4{font-size:18px;font-weight:800;color:var(--ink);}
+  .cta .copy p{font-size:13px;color:var(--muted);margin-top:4px;}
+  .iamet-wordmark{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--iamet);}
+  .iamet-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  /* FOOTER */
+  .footer{background:var(--ink);color:#9DA5C2;font-size:11px;padding:18px 56px;display:flex;justify-content:space-between;align-items:center;}
+  .footer .dot{display:inline-block;width:6px;height:6px;border-radius:99px;background:var(--red);margin:0 8px;vertical-align:middle;}
+  @page{size:letter;margin:0;}
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{box-shadow:none;width:100%;border-radius:0;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+    <header class="header">
+      <div class="scan-grid"></div>
+      <div class="header-inner">
+        <div class="brand-row">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#C4112A"/><circle cx="16" cy="16" r="6" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="2" fill="#fff"/></svg>
+          <div class="brand-logo">AVIGILON<span>.</span></div>
+          <div class="partner-tag">Distribuidor autorizado IAMET</div>
+        </div>
+        <div class="hero">
+          <div class="eyebrow">Videovigilancia con inteligencia artificial</div>
+          <h1 class="h1">Ven más,<br><em>investiguen menos.</em></h1>
+          <p class="tagline">Cámaras 4K hasta 8MP con analítica embebida, plataforma Avigilon Control Center 7 y motor de IA que aprende patrones del sitio. Appearance Search y Unusual Motion Detection reducen tiempos de investigación de horas a segundos.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="section-title">Capacidades de la plataforma</div>
+      <h2 class="section-h2">Inteligencia que prioriza lo que importa.</h2>
+      <p class="section-lead">La analítica corre en la cámara, no en el servidor: alertas en tiempo real con baja latencia y un VMS que escala desde 1 hasta 100,000 cámaras sin perder velocidad.</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12a3 3 0 116 0 3 3 0 01-6 0z"/></svg></div>
+          <h3>Self-Learning Video Analytics</h3>
+          <p>La cámara aprende el comportamiento normal del entorno y dispara alertas solo en lo verdaderamente inusual.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg></div>
+          <h3>Appearance Search</h3>
+          <p>Encuentra a una persona por descripción visual (ropa, color, género) en horas de video en segundos.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 2-7h8"/></svg></div>
+          <h3>Unusual Motion Detection</h3>
+          <p>Detecta movimiento atípico (dirección, hora, zona) sin reglas manuales ni mantenimiento del operador.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="12" rx="1"/><path d="M17 10l4-2v8l-4-2z"/></svg></div>
+          <h3>Cámaras 4K / 8MP HDR</h3>
+          <p>Sensores LightCatcher de alta sensibilidad y compresión HDSM para reducir ancho de banda y almacenamiento.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h6"/></svg></div>
+          <h3>ACC 7 (Avigilon Control Center)</h3>
+          <p>VMS unificado con cliente Web, móvil y estación de trabajo. Federación de sitios y grabación failover N+1.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>Integración con Control de Acceso</h3>
+          <p>Vinculación nativa con Access Control Manager (ACM) y Genetec para correlación evento-video.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Especificaciones técnicas</div>
+      <h2 class="section-h2">Línea H5A / H5M y plataforma ACC 7.</h2>
+      <table class="specs">
+        <tr><td class="k">Resolución de cámaras</td><td class="v">2MP, 4K (8MP), 4MP Multisensor (panorámicas 4x4MP)</td></tr>
+        <tr><td class="k">Sensor</td><td class="v">LightCatcher con HDR y True Day/Night</td></tr>
+        <tr><td class="k">Compresión</td><td class="v">H.264 / H.265 con HDSM SmartCodec™</td></tr>
+        <tr><td class="k">Analítica embebida</td><td class="v">Sí, clasificación de personas y vehículos en cámara</td></tr>
+        <tr><td class="k">Iluminación IR</td><td class="v">IR adaptable hasta 30m / 50m según modelo</td></tr>
+        <tr><td class="k">Protección</td><td class="v">IP66/IP67 / IK10 (anti-vandalismo)</td></tr>
+        <tr><td class="k">Alimentación</td><td class="v">PoE IEEE 802.3af / 802.3at</td></tr>
+        <tr><td class="k">VMS</td><td class="v">Avigilon Control Center 7 (Core, Standard, Enterprise)</td></tr>
+        <tr><td class="k">Almacenamiento</td><td class="v">NVR HD Video Appliance, HD Recorder o servidor propio</td></tr>
+        <tr><td class="k">Cumplimiento</td><td class="v">NDAA Section 889 compliant</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Casos de uso</div>
+      <h2 class="section-h2">Donde la IA cambia el resultado.</h2>
+      <div class="uses">
+        <div class="use">
+          <span class="pill">Retail</span>
+          <h4>Prevención de pérdidas</h4>
+          <p>Detecta comportamientos sospechosos, conteo de personas y mapas de calor para optimizar tiendas.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Gobierno</span>
+          <h4>Seguridad urbana</h4>
+          <p>Cámaras multisensor en cruces críticos con Appearance Search para investigaciones expeditas.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Industria</span>
+          <h4>Perímetros y zonas críticas</h4>
+          <p>Detección de intrusión sin falsas alarmas en patios, naves y bodegas de alto valor.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta">
+      <div class="copy">
+        <h4>Demo en vivo en nuestro showroom IAMET.</h4>
+        <p>Pruebe Appearance Search con su propio video. Agende sesión técnica de 60 minutos sin costo.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="iamet-wordmark">IAMET</div>
+        <div class="iamet-tag">Distribuidor autorizado</div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div>IAMET <span class="dot"></span> Tijuana / Mexicali, México <span class="dot"></span> ventas@iamet.mx</div>
+      <div>Brochure Avigilon / 2026</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>
