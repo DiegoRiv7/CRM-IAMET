@@ -2742,7 +2742,7 @@
     }
 
     /* Calendario en modo página: el overlay deja de serlo y vive en el flujo,
-       sin fondo propio (hereda el fondo gris claro de la página). */
+       sin fondo propio. Scroll de la página activa cuando el contenido excede. */
     .widget-overlay.is-page-mode {
         position: static !important;
         background: transparent !important;
@@ -2751,8 +2751,9 @@
         z-index: auto !important;
         padding: 0;
         animation: none !important;
-        height: 100vh !important;
-        overflow: hidden !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        overflow: visible !important;
     }
     /* En page mode, la "card" externa pierde bordes y se vuelve un layout flex
        transparente; los hijos (header, subnav, body) se ven separados como en
@@ -2763,9 +2764,11 @@
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 0 18px 12px !important;
+        padding: 0 18px 24px !important;
         gap: 6px;
-        height: 100vh !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow: visible !important;
     }
     /* Sub-nav viejo (cal-subnav-default): siempre oculto en page-mode */
     .widget-overlay.is-page-mode .cal-subnav-default { display: none !important; }
@@ -2777,6 +2780,18 @@
         margin-bottom: 10px;
         flex-shrink: 0;
         padding: 10px 14px !important;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(248,250,252,0.85);
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        align-items: center !important;
+    }
+    /* Forzar centrado vertical del botón Nueva actividad */
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-right {
+        display: flex !important;
+        align-items: center !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar.crm-bar--dashboard::before {
         display: none !important;
@@ -2866,27 +2881,34 @@
         flex: 1;
         min-height: 0;
     }
-    /* El "card" del calendario en page-mode no tiene marco: el grid flota
-       libre sobre la página, sin border / radius / sombra exterior. Las
-       celdas y eventos son los protagonistas. */
+    /* El "card" del calendario en page-mode: losa flotante blanca con sombra
+       grande que da sensación de elevarse de la página. */
     .widget-overlay.is-page-mode .cal-page-body > div:first-child {
-        background: transparent;
-        border: none;
-        border-radius: 0;
-        box-shadow: none;
-        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid rgba(15,23,42,0.06);
+        border-radius: 16px;
+        box-shadow:
+            0 24px 64px -16px rgba(15,23,42,0.15),
+            0 8px 20px -8px rgba(15,23,42,0.08);
+        overflow: visible;
         width: 100% !important;
         flex: 1 1 100% !important;
         position: relative;
+        min-height: 0;
     }
-    /* Quita el scroll interno del FullCalendar (con dayMaxEvents:true ya no
-       hace falta, el "+N más" maneja el overflow). */
+    /* La página debe scrollear cuando hay muchos eventos */
+    .widget-overlay.is-page-mode .cal-page-body {
+        overflow: visible !important;
+        min-height: 0;
+    }
+    /* Sin scroll interno del FullCalendar — todos los eventos siempre visibles.
+       Las filas crecen según contenido y la página scrolea si excede. */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-scroller {
-        overflow: hidden !important;
+        overflow: visible !important;
+        height: auto !important;
     }
-    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-body,
-    .widget-overlay.is-page-mode #fullCalendarRoot .fc-scrollgrid-sync-table {
-        height: 100% !important;
+    .widget-overlay.is-page-mode #fullCalendarRoot {
+        height: auto !important;
     }
     /* Día actual: fondo azul muy sutil + borde lateral azul para destacar */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
@@ -2928,10 +2950,10 @@
     }
     /* En page mode, el panel derecho se OCULTA: el calendario ocupa todo el ancho */
     .widget-overlay.is-page-mode #calRightPanel { display: none !important; }
-    /* Bordes internos del FullCalendar más sutiles en page-mode */
+    /* Bordes internos del FullCalendar: más marcados para diferenciar días */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard td,
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-theme-standard th {
-        border-color: rgba(15,23,42,0.04) !important;
+        border-color: rgba(15,23,42,0.10) !important;
     }
     /* Restringir scroll: solo el panel derecho cuando es necesario, no la
        página completa ni el card externo. */
@@ -2942,11 +2964,14 @@
     .widget-overlay.is-page-mode > div.cal-card--page {
         overflow: hidden !important;
     }
-    /* La página principal (.crm-content/.crm-main) no debe scrollear: el
-       calendario ocupa exactamente 100vh */
+    /* Scroll permitido en la página cuando hay muchos eventos. El calendario
+       se expande según contenido y la página scrolea si excede. */
     body:has(.widget-overlay.is-page-mode) .crm-main,
     body:has(.widget-overlay.is-page-mode) .crm-content {
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100vh !important;
     }
 
     /* Popover de hover preview de evento del calendario */
