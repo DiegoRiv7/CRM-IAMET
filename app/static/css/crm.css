@@ -2827,7 +2827,6 @@
         background: #ffffff !important;
         border: 1px solid rgba(15,23,42,0.08) !important;
         box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
-        height: auto !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:hover,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
@@ -2922,6 +2921,12 @@
     .widget-overlay.is-page-mode #fullCalendarRoot {
         height: auto !important;
     }
+    /* En page-mode las tablas internas del grid crecen con el contenido */
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-body,
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-body table,
+    .widget-overlay.is-page-mode #fullCalendarRoot .fc-scrollgrid-sync-table {
+        height: auto !important;
+    }
     /* Día actual: fondo azul muy sutil + borde lateral azul para destacar */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
         background: rgba(0,82,212,0.05) !important;
@@ -2968,23 +2973,16 @@
         border-color: rgba(15,23,42,0.16) !important;
         border-width: 1px !important;
     }
-    /* Restringir scroll: solo el panel derecho cuando es necesario, no la
-       página completa ni el card externo. */
-    .widget-overlay.is-page-mode .cal-page-body {
-        overflow: hidden !important;
-    }
-    /* Sin scroll en el body de la card */
-    .widget-overlay.is-page-mode > div.cal-card--page {
-        overflow: hidden !important;
-    }
-    /* Scroll permitido en la página cuando hay muchos eventos. El calendario
-       se expande según contenido y la página scrolea si excede. */
-    body:has(.widget-overlay.is-page-mode) .crm-main,
-    body:has(.widget-overlay.is-page-mode) .crm-content {
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
+    /* Un solo scroll: el de la página. El sidebar rompe su height:100vh fijo
+       para que el cuerpo del documento pueda scrollear cuando el grid crece. */
+    body:has(.widget-overlay.is-page-mode) .crm-page-sidebar {
         height: auto !important;
         min-height: 100vh !important;
+    }
+    body:has(.widget-overlay.is-page-mode) .crm-main,
+    body:has(.widget-overlay.is-page-mode) .crm-content {
+        overflow: visible !important;
+        height: auto !important;
     }
 
     /* Popover de hover preview de evento del calendario */
