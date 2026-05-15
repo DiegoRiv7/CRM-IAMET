@@ -14,6 +14,7 @@ from . import views_levantamientos_app
 from . import views_compras
 from . import views_certificaciones
 from . import views_cursos
+from . import views_marketing
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -172,6 +173,11 @@ urlpatterns = [
     path('api/admin/contactos/', views.api_admin_contactos, name='api_admin_contactos'),
     path('api/admin/metas/', views.api_admin_metas, name='api_admin_metas'),
     path('api/admin/permisos/<int:user_id>/', views.api_admin_permisos, name='api_admin_permisos'),
+
+    # ── APIs Marketing Hub ────────────────────────────────────────────────────
+    path('api/marketing/recursos/', views_marketing.api_marketing_recursos_list, name='api_marketing_recursos_list'),
+    path('api/marketing/recursos/<int:rid>/', views_marketing.api_marketing_recurso_detalle, name='api_marketing_recurso_detalle'),
+
     path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),
     path('api/admin/etapas-pipeline/', views.api_admin_etapas_pipeline, name='api_admin_etapas_pipeline'),
