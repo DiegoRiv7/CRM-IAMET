@@ -11,91 +11,72 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 {% endcomment %}
 
 <style>
-/* ─── MARKETING HUB — Scope: .mkthub-* ────────────────────────── */
+/* ─── MARKETING HUB — Scope: .mkthub-* ──────────────────────────
+   Root transparente — hereda el fondo blanco/gris claro de la página.
+   El tamaño escala con clamp() para que funcione bien desde 1280px
+   hasta monitores ultra-anchos. */
 .mkthub-root {
-    --mkthub-bg: #F5F3EE;
     --mkthub-paper: #FFFFFF;
     --mkthub-ink: #1A1A1A;
-    --mkthub-soft: #7A7866;
-    --mkthub-mute: #AEAB9C;
-    --mkthub-line: #E4E1D5;
-    --mkthub-line-strong: #1A1A1A;
+    --mkthub-soft: #6B7280;
+    --mkthub-mute: #9CA3AF;
+    --mkthub-line: #E5E7EB;
+    --mkthub-line-strong: #111827;
     --mkthub-accent: #0052D4;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--mkthub-ink);
-    background: var(--mkthub-bg);
+    background: transparent;
     min-height: calc(100vh - 120px);
-    padding: 28px 24px 48px;
-    margin: -12px -8px 0;
-    border-radius: 18px;
+    padding: clamp(28px, 4vw, 56px) clamp(16px, 3vw, 48px) clamp(40px, 5vw, 80px);
+    margin: 0;
     position: relative;
-    overflow: hidden;
 }
-/* Fondo: dot-grid sutil estilo Ben-Day (cómic editorial) */
-.mkthub-root::before {
-    content: '';
-    position: absolute; inset: 0;
-    background-image: radial-gradient(circle, rgba(26,26,26,0.05) 1px, transparent 1px);
-    background-size: 22px 22px;
-    pointer-events: none; z-index: 0;
-}
-.mkthub-root > * { position: relative; z-index: 1; }
 
 /* ── Hero ── */
 .mkthub-hero {
     text-align: center;
-    max-width: 720px;
-    margin: 0 auto 28px;
+    max-width: 900px;
+    margin: 0 auto clamp(36px, 4vw, 60px);
     animation: mkthubSlideUp 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.mkthub-tag {
-    display: inline-block;
-    font-size: 0.66rem; font-weight: 700;
-    letter-spacing: 0.18em;
-    color: var(--mkthub-soft);
-    text-transform: uppercase;
-    padding: 5px 12px;
-    border: 1.5px solid var(--mkthub-line-strong);
-    border-radius: 999px;
-    background: #FFFFFF;
-    margin-bottom: 14px;
-}
 .mkthub-title {
-    font-size: 2.4rem; font-weight: 800;
-    line-height: 1.12;
-    letter-spacing: -0.025em;
+    font-size: clamp(2.2rem, 4.4vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
     color: var(--mkthub-ink);
-    margin: 0 0 8px;
+    margin: 0 0 12px;
 }
 .mkthub-title .accent { color: var(--mkthub-accent); }
 .mkthub-sub {
-    font-size: 1rem;
+    font-size: clamp(1rem, 1.2vw, 1.18rem);
     color: var(--mkthub-soft);
     margin: 0;
     font-weight: 400;
+    line-height: 1.5;
 }
 
 /* ── Search ── */
 .mkthub-search-wrap {
-    max-width: 620px;
-    margin: 0 auto 28px;
+    max-width: clamp(560px, 70vw, 820px);
+    margin: 0 auto clamp(32px, 4vw, 56px);
     position: relative;
     transition: max-width 0.25s ease;
     animation: mkthubSlideUp 0.42s 0.06s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .mkthub-root.is-searching .mkthub-search-wrap {
     max-width: none;
-    margin-bottom: 18px;
+    margin-bottom: clamp(18px, 2vw, 24px);
     animation: none;
 }
 .mkthub-search {
     width: 100%;
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    padding: clamp(15px, 1.4vw, 19px) clamp(18px, 1.8vw, 24px);
     background: #FFFFFF;
-    border: 2px solid var(--mkthub-line);
-    border-radius: 18px;
-    box-shadow: 0 1px 0 var(--mkthub-line), 3px 3px 0 rgba(26,26,26,0.04);
+    border: 1px solid var(--mkthub-line);
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(20,20,18,0.04), 0 10px 30px -16px rgba(20,20,18,0.08);
     cursor: text;
     transition: all 0.18s ease;
 }
@@ -109,7 +90,8 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     flex: 1;
     border: none; outline: none; background: transparent;
     font-family: inherit;
-    font-size: 0.95rem; font-weight: 500;
+    font-size: clamp(0.95rem, 1.05vw, 1.1rem);
+    font-weight: 500;
     color: var(--mkthub-ink);
     min-width: 0;
 }
@@ -196,8 +178,8 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 .mkthub-brands {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    max-width: 1180px;
+    gap: clamp(14px, 1.4vw, 24px);
+    max-width: min(1480px, 96vw);
     margin: 0 auto;
     animation: mkthubSlideUp 0.42s 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -206,8 +188,8 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 
 .mkthub-brand-card {
     background: #FFFFFF;
-    border-radius: 18px;
-    border: 1px solid #E8E5DC;
+    border-radius: 22px;
+    border: 1px solid var(--mkthub-line);
     box-shadow: 0 1px 2px rgba(20, 20, 18, 0.04);
     cursor: pointer;
     overflow: hidden;
@@ -219,7 +201,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     font-family: inherit;
     text-align: left;
     position: relative;
-    min-height: 240px;
+    min-height: clamp(240px, 26vh, 320px);
     outline: none;
 }
 .mkthub-brand-card:hover {
@@ -239,12 +221,12 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 .mkthub-brand-card-logo {
     flex: 1;
     display: flex; align-items: center; justify-content: center;
-    padding: 28px 18px 16px;
-    min-height: 130px;
+    padding: clamp(28px, 3vw, 44px) clamp(16px, 2vw, 28px) clamp(16px, 2vw, 24px);
+    min-height: clamp(140px, 16vh, 200px);
     position: relative;
 }
 .mkthub-brand-wordmark {
-    font-size: 1.85rem;
+    font-size: clamp(1.7rem, 2.4vw, 2.6rem);
     font-weight: var(--brand-weight, 800);
     letter-spacing: var(--brand-tracking, -0.02em);
     color: var(--brand-color);
@@ -260,26 +242,29 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 
 /* Footer — meta info discreta */
 .mkthub-brand-card-meta {
-    padding: 14px 20px 16px;
-    border-top: 1px solid #F0EDE4;
+    padding: clamp(14px, 1.4vw, 20px) clamp(18px, 1.8vw, 26px);
+    border-top: 1px solid var(--mkthub-line);
     display: flex; align-items: center; justify-content: space-between;
-    background: #FAFAF6;
+    background: #FAFAFA;
 }
 .mkthub-brand-card-meta-left {
-    display: flex; flex-direction: column; gap: 1px;
+    display: flex; flex-direction: column; gap: 2px;
 }
 .mkthub-brand-card-meta-name {
-    font-size: 0.78rem; font-weight: 600;
+    font-size: clamp(0.82rem, 0.9vw, 0.95rem);
+    font-weight: 600;
     color: var(--mkthub-ink);
     letter-spacing: -0.005em;
 }
 .mkthub-brand-card-meta-count {
-    font-size: 0.72rem; font-weight: 500;
+    font-size: clamp(0.72rem, 0.8vw, 0.82rem);
+    font-weight: 500;
     color: var(--mkthub-soft);
 }
 .mkthub-brand-card-meta-arrow {
-    width: 26px; height: 26px;
-    border-radius: 8px;
+    width: clamp(28px, 2vw, 34px);
+    height: clamp(28px, 2vw, 34px);
+    border-radius: 9px;
     background: rgba(20,20,18,0.04);
     color: var(--mkthub-soft);
     display: flex; align-items: center; justify-content: center;
@@ -299,9 +284,11 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 
 .mkthub-brand-pills, .mkthub-type-chips {
     display: flex; flex-wrap: wrap; gap: 6px;
-    margin-bottom: 12px;
+    margin: 0 auto 12px;
+    max-width: min(1480px, 96vw);
 }
 .mkthub-type-chips { margin-bottom: 16px; }
+.mkthub-results-count { max-width: min(1480px, 96vw); margin-left: auto; margin-right: auto; }
 .mkthub-pill {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 13px;
@@ -368,8 +355,10 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 /* ── Grid de recursos ── */
 .mkthub-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(252px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: clamp(14px, 1.2vw, 22px);
+    max-width: min(1480px, 96vw);
+    margin: 0 auto;
 }
 .mkthub-empty {
     text-align: center;
@@ -603,7 +592,6 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 
     {# ── Hero (idle only) ── #}
     <div class="mkthub-hero mkthub-idle-only">
-        <p class="mkthub-tag">CENTRO DE MARKETING</p>
         <h1 class="mkthub-title">¿Qué quieres <span class="accent">vender hoy?</span></h1>
         <p class="mkthub-sub">Encuentra el material que necesitas y compártelo con el cliente</p>
     </div>
