@@ -309,26 +309,7 @@
                             <span id="mailDetailDate" style="font-size:0.72rem;margin-top:1px;"></span>
                         </div>
                     </div>
-                    <!-- Quick action buttons (visible labels) -->
-                    <div class="mail-detail-actions">
-                        <button class="mail-detail-action primary" onclick="mailResponder(false)" title="Responder">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                            Responder
-                        </button>
-                        <button class="mail-detail-action outline" onclick="mailResponder(true)" title="Responder a todos">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 2 12 7 7"/><polyline points="11 17 6 12 11 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H6"/></svg>
-                            Responder a todos
-                        </button>
-                        <button class="mail-detail-action outline" onclick="mailAbrirReenvio()" title="Reenviar">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
-                            Reenviar
-                        </button>
-                        <div style="flex:1;"></div>
-                        <button class="mail-detail-action danger" onclick="mailEliminar()" title="Eliminar">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                            Borrar
-                        </button>
-                    </div>
+                    {% comment %}Barra de acciones con etiquetas removida — duplicaba los iconos compactos del header del detalle.{% endcomment %}
                     <!-- Attachments -->
                     <div id="mailDetailAdj"
                         style="display:none;flex-wrap:wrap;gap:6px;padding:8px 16px;border-bottom:1px solid #F0F2F5;flex-shrink:0;"></div>
@@ -858,45 +839,5 @@
             margin: 2px;
             user-select: none;
         }
-        /* Detail action buttons (Responder / Reenviar / Borrar) */
-        .mail-detail-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px 10px;
-            border-bottom: 1px solid #F0F2F5;
-            flex-shrink: 0;
-            background: #FAFAFA;
-        }
-        .mail-detail-action {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            transition: background 0.12s, color 0.12s, border-color 0.12s;
-        }
-        .mail-detail-action.primary {
-            background: #007AFF;
-            color: #fff;
-            border: 1px solid #007AFF;
-        }
-        .mail-detail-action.primary:hover { background: #0066D6; border-color: #0066D6; }
-        .mail-detail-action.outline {
-            background: #fff;
-            color: #374151;
-            border: 1px solid #D1D5DB;
-        }
-        .mail-detail-action.outline:hover { background: #F3F4F8; border-color: #9CA3AF; }
-        .mail-detail-action.danger {
-            background: #fff;
-            color: #DC2626;
-            border: 1px solid #FCA5A5;
-        }
-        .mail-detail-action.danger:hover { background: #FEF2F2; border-color: #DC2626; }
     </style>
 </div>
