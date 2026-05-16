@@ -7,12 +7,16 @@ import ssl
 import json
 import base64
 import re
+import mimetypes
 import email as email_lib
 import email.header
 import email.utils
 import email.mime.multipart
 import email.mime.text
 import email.mime.base
+from email.mime.image import MIMEImage
+from email.mime.application import MIMEApplication
+from email.mime.audio import MIMEAudio
 import logging
 from email.encoders import encode_base64
 from datetime import datetime, timezone
@@ -607,6 +611,107 @@ def api_mail_detalle(request, correo_id):
     })
 
 
+# Tamaños máximos para adjuntos (en bytes)
+MAX_ADJUNTO_SIZE = 25 * 1024 * 1024  # 25 MB por archivo
+MAX_ADJUNTOS_TOTAL_SIZE = 50 * 1024 * 1024  # 50 MB total
+
+
+def _validar_tamanios_adjuntos(archivos):
+    """
+    Valida que ningún archivo exceda 25 MB y que el total no exceda 50 MB.
+    Retorna un mensaje de error (str) si excede; None si todo OK.
+    """
+    if not archivos:
+        return None
+    total = 0
+    for f in archivos:
+        size = getattr(f, 'size', None)
+        if size is None:
+            # Fallback: medir leyendo (no debería pasar con UploadedFile de Django)
+            try:
+                pos = f.tell()
+                f.seek(0, 2)
+                size = f.tell()
+                f.seek(pos)
+            except Exception:
+                size = 0
+        if size > MAX_ADJUNTO_SIZE:
+            mb = MAX_ADJUNTO_SIZE // (1024 * 1024)
+            return f'Archivo "{f.name}" excede tamaño máximo de {mb} MB'
+        total += size
+    if total > MAX_ADJUNTOS_TOTAL_SIZE:
+        mb = MAX_ADJUNTOS_TOTAL_SIZE // (1024 * 1024)
+        return f'El total de adjuntos excede el máximo de {mb} MB'
+    return None
+
+
+def _build_attachment_part(file_obj):
+    """
+    Construye un MIME part con el Content-Type correcto según la extensión/MIME
+    del archivo, y codifica el filename usando RFC 2231 para soportar acentos y
+    espacios. Compatibilidad legacy: también incluye `name=` en Content-Type.
+    """
+    payload = file_obj.read()
+    filename = file_obj.name or 'adjunto'
+
+    # Detectar tipo: primero usar lo que reporte el cliente (django UploadedFile),
+    # luego mimetypes.guess_type, finalmente fallback.
+    content_type = getattr(file_obj, 'content_type', None) or ''
+    if not content_type or content_type == 'application/octet-stream':
+        guessed, _enc = mimetypes.guess_type(filename)
+        if guessed:
+            content_type = guessed
+    if not content_type:
+        content_type = 'application/octet-stream'
+
+    maintype, _, subtype = content_type.partition('/')
+    if not subtype:
+        maintype, subtype = 'application', 'octet-stream'
+
+    # Crear el subtype MIME apropiado
+    if maintype == 'image':
+        try:
+            part = MIMEImage(payload, _subtype=subtype)
+        except Exception:
+            part = email.mime.base.MIMEBase(maintype, subtype)
+            part.set_payload(payload)
+            encode_base64(part)
+    elif maintype == 'text':
+        # Para texto necesitamos decodificar; si falla, tratar como binario
+        try:
+            text = payload.decode('utf-8')
+            part = email.mime.text.MIMEText(text, _subtype=subtype, _charset='utf-8')
+        except UnicodeDecodeError:
+            part = email.mime.base.MIMEBase(maintype, subtype)
+            part.set_payload(payload)
+            encode_base64(part)
+    elif maintype == 'audio':
+        try:
+            part = MIMEAudio(payload, _subtype=subtype)
+        except Exception:
+            part = email.mime.base.MIMEBase(maintype, subtype)
+            part.set_payload(payload)
+            encode_base64(part)
+    elif maintype == 'application':
+        part = MIMEApplication(payload, _subtype=subtype)
+    else:
+        part = email.mime.base.MIMEBase(maintype, subtype)
+        part.set_payload(payload)
+        encode_base64(part)
+
+    # Content-Disposition con filename codificado RFC 2231 (tuple activa la codificación)
+    part.add_header(
+        'Content-Disposition', 'attachment',
+        filename=('utf-8', '', filename),
+    )
+    # Compatibilidad legacy: agregar name= al Content-Type
+    try:
+        part.set_param('name', filename, header='Content-Type', charset='utf-8')
+    except Exception:
+        pass
+    return part
+
+
 def _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos):
     """Build a MIMEMultipart message with text/html body and optional file attachments."""
     if archivos:
@@ -617,10 +722,19 @@ def _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos):
         body_part.attach(email.mime.text.MIMEText(cuerpo_html or cuerpo_texto, 'html', 'utf-8'))
         msg.attach(body_part)
         for f in archivos:
-            part = email.mime.base.MIMEBase('application', 'octet-stream')
-            part.set_payload(f.read())
-            encode_base64(part)
-            part.add_header('Content-Disposition', 'attachment', filename=f.name)
+            try:
+                part = _build_attachment_part(f)
+            except Exception as exc:
+                logger.exception('Error armando adjunto %s: %s', getattr(f, 'name', '?'), exc)
+                # Fallback al comportamiento original para no perder el adjunto
+                f.seek(0)
+                part = email.mime.base.MIMEBase('application', 'octet-stream')
+                part.set_payload(f.read())
+                encode_base64(part)
+                part.add_header(
+                    'Content-Disposition', 'attachment',
+                    filename=('utf-8', '', f.name),
+                )
             msg.attach(part)
     else:
         msg = email.mime.multipart.MIMEMultipart('alternative')
@@ -673,6 +787,11 @@ def api_mail_enviar(request):
     if not para or not asunto:
         return JsonResponse({'ok': False, 'error': 'Destinatario y asunto son requeridos'}, status=400)
 
+    # Validación de tamaño de adjuntos antes de tocar SMTP (evita errores crípticos del provider)
+    err_size = _validar_tamanios_adjuntos(archivos)
+    if err_size:
+        return JsonResponse({'ok': False, 'error': err_size}, status=400)
+
     # Generamos un Message-ID propio antes de enviar para poder detectar
     # respuestas (vía In-Reply-To / References) y propagar la vinculación
     # con la oportunidad al hilo completo.
@@ -695,6 +814,7 @@ def api_mail_enviar(request):
         smtp.sendmail(conexion.correo_electronico, recipients, msg.as_bytes())
         smtp.quit()
     except Exception as e:
+        logger.exception('SMTP enviar falló: %s', e)
         return JsonResponse({'ok': False, 'error': f'Error al enviar: {e}'}, status=500)
 
     # Vínculo opcional con una Oportunidad — cuando el envío viene del chat
@@ -774,6 +894,11 @@ def api_mail_responder(request, correo_id):
     asunto = f"Re: {original.asunto}" if not original.asunto.startswith('Re:') else original.asunto
     para = original.remitente_email
 
+    # Validación de tamaño antes de SMTP
+    err_size = _validar_tamanios_adjuntos(archivos)
+    if err_size:
+        return JsonResponse({'ok': False, 'error': err_size}, status=400)
+
     msg = _build_msg_with_attachments(cuerpo_html, cuerpo_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
@@ -794,6 +919,7 @@ def api_mail_responder(request, correo_id):
         smtp.sendmail(conexion.correo_electronico, recipients, msg.as_bytes())
         smtp.quit()
     except Exception as e:
+        logger.exception('SMTP responder falló: %s', e)
         return JsonResponse({'ok': False, 'error': f'Error al enviar respuesta: {e}'}, status=500)
 
     # Save sent reply
@@ -1229,6 +1355,11 @@ def api_mail_reenviar(request, correo_id):
     full_html = (cuerpo_html or cuerpo_texto) + fwd_header_html + orig_html
     full_texto = (cuerpo_texto or '') + fwd_header_txt + orig_texto
 
+    # Validación de tamaño antes de SMTP
+    err_size = _validar_tamanios_adjuntos(archivos)
+    if err_size:
+        return JsonResponse({'ok': False, 'error': err_size}, status=400)
+
     msg = _build_msg_with_attachments(full_html, full_texto, archivos)
     msg['Subject'] = asunto
     msg['From'] = conexion.correo_electronico
@@ -1239,6 +1370,7 @@ def api_mail_reenviar(request, correo_id):
         smtp.sendmail(conexion.correo_electronico, [a.strip() for a in para.split(',')], msg.as_bytes())
         smtp.quit()
     except Exception as e:
+        logger.exception('SMTP reenviar falló: %s', e)
         return JsonResponse({'ok': False, 'error': f'Error al reenviar: {e}'}, status=500)
 
     correo_fwd = MailCorreo.objects.create(
