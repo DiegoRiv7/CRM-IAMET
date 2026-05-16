@@ -209,14 +209,20 @@
                     </div>
                     <!-- Fields -->
                     <div style="flex-shrink:0;border-bottom:1px solid #F0F2F5;">
-                        <div style="display:flex;align-items:center;gap:10px;padding:8px 18px;border-bottom:1px solid #F3F4F8;">
-                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;">Para</span>
-                            <input type="email" id="mailCompPara" placeholder="destinatario@dominio.com" style="flex:1;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 18px;border-bottom:1px solid #F3F4F8;position:relative;">
+                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;padding-top:4px;">Para</span>
+                            <div id="mailCompParaWrap" class="mail-recip-wrap" style="flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:22px;position:relative;">
+                                <input type="text" id="mailCompPara" autocomplete="off" placeholder="destinatario@dominio.com" style="flex:1;min-width:120px;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                                <div id="mailCompParaDropdown" class="mail-recip-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,30,0.12);max-height:230px;overflow-y:auto;z-index:30;margin-top:3px;"></div>
+                            </div>
                             <button onclick="mailToggleComposeCc()" style="font-size:0.7rem;color:#6B7280;background:none;border:1px solid #D1D5DB;border-radius:5px;padding:2px 8px;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;">CC / CCO</button>
                         </div>
-                        <div id="mailComposeCcRow" style="display:none;align-items:center;gap:10px;padding:7px 18px;border-bottom:1px solid #F3F4F8;">
-                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;">CC</span>
-                            <input type="email" id="mailCompCc" placeholder="copia@dominio.com (opcional)" style="flex:1;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                        <div id="mailComposeCcRow" style="display:none;align-items:flex-start;gap:10px;padding:7px 18px;border-bottom:1px solid #F3F4F8;position:relative;">
+                            <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;padding-top:4px;">CC</span>
+                            <div id="mailCompCcWrap" class="mail-recip-wrap" style="flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:22px;position:relative;">
+                                <input type="text" id="mailCompCc" autocomplete="off" placeholder="copia@dominio.com (opcional)" style="flex:1;min-width:120px;border:none;outline:none;font-size:0.87rem;color:#1A1A2E;font-family:inherit;background:transparent;">
+                                <div id="mailCompCcDropdown" class="mail-recip-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,30,0.12);max-height:230px;overflow-y:auto;z-index:30;margin-top:3px;"></div>
+                            </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;padding:8px 18px;">
                             <span style="font-size:0.72rem;font-weight:600;color:#9CA3AF;min-width:48px;text-transform:uppercase;letter-spacing:0.04em;">Asunto</span>
@@ -231,9 +237,12 @@
                         <div style="width:1px;height:16px;background:#EBEBED;margin:0 3px;flex-shrink:0;"></div>
                         <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" class="mail-toolbar-btn" title="Lista">&#8801;</button>
                     </div>
-                    <!-- Rich editor -->
-                    <div id="mailCompEditor" contenteditable="true" data-placeholder="Escribe tu mensaje..."
-                        style="flex:1;padding:14px 18px;outline:none;font-size:0.87rem;line-height:1.65;color:#1A1A2E;overflow-y:auto;font-family:inherit;"></div>
+                    <!-- Rich editor + drop overlay -->
+                    <div style="flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;">
+                        <div id="mailCompEditor" contenteditable="true" data-placeholder="Escribe tu mensaje..."
+                            style="flex:1;padding:14px 18px;outline:none;font-size:0.87rem;line-height:1.65;color:#1A1A2E;overflow-y:auto;font-family:inherit;"></div>
+                        <div id="mailCompDropOverlay" class="mail-drop-overlay">Suelta los archivos para adjuntar</div>
+                    </div>
                     <!-- Attached files chips -->
                     <div id="mailComposeAttachChips"
                         style="display:none;flex-wrap:wrap;gap:5px;padding:6px 14px;border-top:1px solid #F0F2F5;flex-shrink:0;"></div>
@@ -299,6 +308,26 @@
                             <span>Para: <span id="mailDetailTo"></span></span>
                             <span id="mailDetailDate" style="font-size:0.72rem;margin-top:1px;"></span>
                         </div>
+                    </div>
+                    <!-- Quick action buttons (visible labels) -->
+                    <div class="mail-detail-actions">
+                        <button class="mail-detail-action primary" onclick="mailResponder(false)" title="Responder">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                            Responder
+                        </button>
+                        <button class="mail-detail-action outline" onclick="mailResponder(true)" title="Responder a todos">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 2 12 7 7"/><polyline points="11 17 6 12 11 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H6"/></svg>
+                            Responder a todos
+                        </button>
+                        <button class="mail-detail-action outline" onclick="mailAbrirReenvio()" title="Reenviar">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
+                            Reenviar
+                        </button>
+                        <div style="flex:1;"></div>
+                        <button class="mail-detail-action danger" onclick="mailEliminar()" title="Eliminar">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                            Borrar
+                        </button>
                     </div>
                     <!-- Attachments -->
                     <div id="mailDetailAdj"
@@ -397,9 +426,12 @@
                                 </label>
                             </div>
                             <!-- Editor -->
-                            <div id="mailRespEditor" contenteditable="true"
-                                data-placeholder="Escribe tu respuesta..."
-                                style="flex:1;padding:12px 16px;outline:none;font-size:0.87rem;line-height:1.65;color:#1A1A2E;overflow-y:auto;min-height:70px;font-family:inherit;">
+                            <div style="flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;min-height:70px;">
+                                <div id="mailRespEditor" contenteditable="true"
+                                    data-placeholder="Escribe tu respuesta..."
+                                    style="flex:1;padding:12px 16px;outline:none;font-size:0.87rem;line-height:1.65;color:#1A1A2E;overflow-y:auto;min-height:70px;font-family:inherit;">
+                                </div>
+                                <div id="mailRespDropOverlay" class="mail-drop-overlay">Suelta los archivos para adjuntar</div>
                             </div>
                             <!-- Attached files chips -->
                             <div id="mailReplyAttachChips"
@@ -702,5 +734,169 @@
             line-height: 1;
         }
         .mail-attach-chip button:hover { color: #DC2626; }
+        /* Recipient chips (compose Para/CC) */
+        .mail-recip-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #EEF3FF;
+            border: 1px solid #C7D7F5;
+            border-radius: 12px;
+            padding: 1px 4px 1px 10px;
+            font-size: 0.79rem;
+            color: #1A1A2E;
+            line-height: 1.4;
+            max-width: 100%;
+        }
+        .mail-recip-chip.invalid {
+            background: #FEF2F2;
+            border-color: #FCA5A5;
+            color: #B91C1C;
+        }
+        .mail-recip-chip-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 240px;
+        }
+        .mail-recip-chip button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6B7280;
+            font-size: 0.85rem;
+            line-height: 1;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .mail-recip-chip button:hover { background: rgba(0,0,30,0.08); color: #DC2626; }
+        .mail-recip-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #F3F4F6;
+            font-family: inherit;
+        }
+        .mail-recip-dropdown-item:last-child { border-bottom: none; }
+        .mail-recip-dropdown-item:hover,
+        .mail-recip-dropdown-item.active { background: #F0F7FF; }
+        .mail-recip-dropdown-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            color: #6B7280;
+            font-size: 0.72rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+        .mail-recip-dropdown-body { min-width: 0; flex: 1; }
+        .mail-recip-dropdown-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #1A1A2E;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mail-recip-dropdown-email {
+            font-size: 0.72rem;
+            color: #6B7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mail-recip-dropdown-section {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 8px 12px 4px;
+            background: #FAFBFC;
+        }
+        /* Drag-and-drop overlay */
+        .mail-drop-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,122,255,0.06);
+            border: 2px dashed #007AFF;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #007AFF;
+            pointer-events: none;
+            z-index: 25;
+            backdrop-filter: blur(1px);
+        }
+        .mail-drop-overlay.show { display: flex; }
+        /* Inline image chip in editor (pasted screenshots) */
+        .mail-inline-img-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #F0F7FF;
+            border: 1px solid #C7D7F5;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.78rem;
+            color: #0052D4;
+            margin: 2px;
+            user-select: none;
+        }
+        /* Detail action buttons (Responder / Reenviar / Borrar) */
+        .mail-detail-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px 10px;
+            border-bottom: 1px solid #F0F2F5;
+            flex-shrink: 0;
+            background: #FAFAFA;
+        }
+        .mail-detail-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+        }
+        .mail-detail-action.primary {
+            background: #007AFF;
+            color: #fff;
+            border: 1px solid #007AFF;
+        }
+        .mail-detail-action.primary:hover { background: #0066D6; border-color: #0066D6; }
+        .mail-detail-action.outline {
+            background: #fff;
+            color: #374151;
+            border: 1px solid #D1D5DB;
+        }
+        .mail-detail-action.outline:hover { background: #F3F4F8; border-color: #9CA3AF; }
+        .mail-detail-action.danger {
+            background: #fff;
+            color: #DC2626;
+            border: 1px solid #FCA5A5;
+        }
+        .mail-detail-action.danger:hover { background: #FEF2F2; border-color: #DC2626; }
     </style>
 </div>

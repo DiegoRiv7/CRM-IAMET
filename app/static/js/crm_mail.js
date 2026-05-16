@@ -16,6 +16,40 @@
         var _mailConexionId = null;
         var _mailConexiones = [];
 
+        /* ── Recipient autocomplete state ──────────────────
+         * Cada wrap (Para/CC) tiene un array de chips {nombre, email}.
+         * Las sugerencias salen de:
+         *   1) /app/api/buscar-contactos/?q=… (puede no devolver email; fallback ok)
+         *   2) localStorage._mailRecentRecipients (8 más recientes)
+         */
+        var _mailRecips = { para: [], cc: [] };
+        var _mailRecipSearchTO = null;
+        var _mailRecipActiveIdx = -1;
+        var _mailRecipCurrentField = null;
+        var EMAIL_RE = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
+
+        function _mailLoadRecentRecips() {
+            try {
+                var raw = localStorage.getItem('_mailRecentRecipients');
+                if (!raw) return [];
+                var arr = JSON.parse(raw);
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) { return []; }
+        }
+
+        function _mailSaveRecentRecips(recips) {
+            try {
+                var existing = _mailLoadRecentRecips();
+                recips.forEach(function (r) {
+                    if (!r || !r.email) return;
+                    existing = existing.filter(function (x) { return x.email.toLowerCase() !== r.email.toLowerCase(); });
+                    existing.unshift({ nombre: r.nombre || '', email: r.email });
+                });
+                existing = existing.slice(0, 8);
+                localStorage.setItem('_mailRecentRecipients', JSON.stringify(existing));
+            } catch (e) { }
+        }
+
         window.mailCambiarConexion = function () {
             var sel = document.getElementById('mailWidgetEmailSelect');
             if (sel) {
@@ -43,6 +77,7 @@
         window.mailAbrir = function () {
             var w = document.getElementById('widgetMail');
             if (!w) return;
+            _mailWidgetInitOnce();
             w.classList.add('active');
             w.classList.remove('closing');
             _mailPendingBadge = 0;
@@ -501,13 +536,19 @@
             var content = document.getElementById('mailDetailContent');
             var editor = document.getElementById('mailCompEditor');
             var para = document.getElementById('mailCompPara');
+            var cc = document.getElementById('mailCompCc');
             var asunto = document.getElementById('mailCompAsunto');
             if (empty) empty.style.display = 'none';
             if (content) content.style.display = 'none';
             if (panel) panel.style.display = 'flex';
             if (editor) editor.innerHTML = '';
             if (para) para.value = '';
+            if (cc) cc.value = '';
             if (asunto) asunto.value = '';
+            _mailRecips.para = [];
+            _mailRecips.cc = [];
+            _renderRecipChips('para');
+            _renderRecipChips('cc');
         };
 
         window.mailCerrarCompose = function () {
@@ -519,6 +560,11 @@
             if (chips) { chips.innerHTML = ''; chips.style.display = 'none'; }
             var fi = document.getElementById('mailComposeFileInput');
             if (fi) fi.value = '';
+            _mailRecips.para = [];
+            _mailRecips.cc = [];
+            _renderRecipChips('para');
+            _renderRecipChips('cc');
+            _hideRecipDropdown();
             if (_mailCorreoActual) {
                 var content = document.getElementById('mailDetailContent');
                 if (content) content.style.display = 'flex';
@@ -533,19 +579,55 @@
             row.style.display = row.style.display === 'flex' ? 'none' : 'flex';
         };
 
+        function _resetEnviarBtn(btn) {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar';
+        }
+
         window.mailEnviarCorreo = function () {
-            var para = document.getElementById('mailCompPara').value.trim();
+            var paraInput = document.getElementById('mailCompPara');
+            var ccInput = document.getElementById('mailCompCc');
             var asunto = document.getElementById('mailCompAsunto').value.trim();
             var editor = document.getElementById('mailCompEditor');
-            var cuerpo_html = editor ? editor.innerHTML.trim() : '';
-            var cuerpo_texto = editor ? (editor.innerText || editor.textContent || '').trim() : '';
             var btn = document.getElementById('mailBtnEnviar');
 
-            if (!para || !asunto) return;
+            // Auto-confirmar lo que esté escrito en los inputs (sin haber pulsado Enter)
+            _commitRecipInput('para');
+            _commitRecipInput('cc');
+
+            var paraRecips = _mailRecips.para.slice();
+            var ccRecips = _mailRecips.cc.slice();
+
+            // Fallback: si el array está vacío, leer lo que esté en el input
+            if (!paraRecips.length && paraInput && paraInput.value.trim()) {
+                paraRecips = _splitRecips(paraInput.value);
+            }
+            if (!ccRecips.length && ccInput && ccInput.value.trim()) {
+                ccRecips = _splitRecips(ccInput.value);
+            }
+
+            var para = _formatRecipList(paraRecips);
+            var cc = _formatRecipList(ccRecips);
+
+            if (!para) { _showToastMail('Falta el destinatario', false); return; }
+            if (!asunto) { _showToastMail('Falta el asunto', false); return; }
+
+            // Validar emails básicos
+            var invalid = paraRecips.concat(ccRecips).filter(function (r) { return !EMAIL_RE.test(r.email); });
+            if (invalid.length) {
+                _showToastMail('Email inválido: ' + invalid[0].email, false);
+                return;
+            }
+
+            var cuerpo_html = editor ? editor.innerHTML.trim() : '';
+            var cuerpo_texto = editor ? (editor.innerText || editor.textContent || '').trim() : '';
+
             if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
             var fd = new FormData();
             fd.append('para', para);
+            if (cc) fd.append('cc', cc);
             fd.append('asunto', asunto);
             fd.append('cuerpo_html', cuerpo_html);
             fd.append('cuerpo_texto', cuerpo_texto);
@@ -562,38 +644,47 @@
                 headers: { 'X-CSRFToken': csrf() },
                 body: fd
             })
-                .then(function (r) { return r.json(); })
+                .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'HTTP ' + r.status }; }); })
                 .then(function (data) {
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar'; }
-                    if (data.ok) {
-                        // Si el envío estaba ligado a una oportunidad (desde su chat),
-                        // refrescar la conversación para que aparezca la tarjeta.
-                        if (window._mailCorreoContextoOppId) {
-                            var oppId = window._mailCorreoContextoOppId;
-                            window._mailCorreoContextoOppId = null;
-                            window._mailCorreoContextoOppNombre = null;
-                            if (typeof window.woCargarNotas === 'function') {
-                                try { window.woCargarNotas(oppId); } catch(_){}
-                            }
-                        }
-                        // If this was a campaign email, register it
-                        if (window._campanaEnvioContext && window._campanaEnvioContext.templateId) {
-                            var ctx = window._campanaEnvioContext;
-                            fetch('/app/api/campana/registrar-envio/', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                                body: JSON.stringify({
-                                    template_id: ctx.templateId,
-                                    contacto_email: para,
-                                    message_id: data.message_id || ''
-                                })
-                            }).catch(function() {});
-                            window._campanaEnvioContext = null;
-                        }
-                        _mailComposeAttachments = [];
-                        mailCerrarCompose();
-                        _showToastMail('Correo enviado', true);
+                    _resetEnviarBtn(btn);
+                    if (!data || !data.ok) {
+                        _showToastMail((data && data.error) || 'Error al enviar el correo', false);
+                        return;
                     }
+                    // Guardar en historial los destinatarios usados
+                    _mailSaveRecentRecips(paraRecips.concat(ccRecips));
+
+                    // Si el envío estaba ligado a una oportunidad (desde su chat),
+                    // refrescar la conversación para que aparezca la tarjeta.
+                    if (window._mailCorreoContextoOppId) {
+                        var oppId = window._mailCorreoContextoOppId;
+                        window._mailCorreoContextoOppId = null;
+                        window._mailCorreoContextoOppNombre = null;
+                        if (typeof window.woCargarNotas === 'function') {
+                            try { window.woCargarNotas(oppId); } catch (_) { }
+                        }
+                    }
+                    // If this was a campaign email, register it
+                    if (window._campanaEnvioContext && window._campanaEnvioContext.templateId) {
+                        var ctx = window._campanaEnvioContext;
+                        fetch('/app/api/campana/registrar-envio/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                            body: JSON.stringify({
+                                template_id: ctx.templateId,
+                                contacto_email: paraRecips[0] ? paraRecips[0].email : '',
+                                message_id: data.message_id || ''
+                            })
+                        }).catch(function () { });
+                        window._campanaEnvioContext = null;
+                    }
+                    _mailComposeAttachments = [];
+                    mailCerrarCompose();
+                    _showToastMail('Correo enviado', true);
+                })
+                .catch(function (err) {
+                    _resetEnviarBtn(btn);
+                    _showToastMail('Error de conexión al enviar', false);
                 });
         };
 
@@ -1091,19 +1182,24 @@
         // Forward attach handler
         window.mailHandleFwdAttach = function (files) { _handleAttachFiles(files, 'fwd'); };
 
-        function _setupDropZone(editorId, panelId, context) {
+        function _setupDropZone(editorId, panelId, context, overlayId) {
             var editor = document.getElementById(editorId);
             if (!editor) return;
+            var overlay = overlayId ? document.getElementById(overlayId) : null;
+            var dragCounter = 0;
+            function show() { if (overlay) overlay.classList.add('show'); }
+            function hide() { if (overlay) overlay.classList.remove('show'); }
+
             editor.addEventListener('dragover', function (e) {
                 e.preventDefault();
-                editor.style.background = '#F0F9FF';
+                if (!overlay) editor.style.background = '#F0F9FF';
             });
             editor.addEventListener('dragleave', function () {
-                editor.style.background = '';
+                if (!overlay) editor.style.background = '';
             });
             editor.addEventListener('drop', function (e) {
                 e.preventDefault();
-                editor.style.background = '';
+                if (!overlay) editor.style.background = '';
                 var files = e.dataTransfer.files;
                 if (files && files.length) {
                     _handleAttachFiles(files, context);
@@ -1113,9 +1209,21 @@
             if (panelId) {
                 var panel = document.getElementById(panelId);
                 if (panel) {
+                    panel.addEventListener('dragenter', function (e) {
+                        if (e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) {
+                            dragCounter++;
+                            show();
+                        }
+                    });
+                    panel.addEventListener('dragleave', function () {
+                        dragCounter = Math.max(0, dragCounter - 1);
+                        if (dragCounter === 0) hide();
+                    });
                     panel.addEventListener('dragover', function (e) { e.preventDefault(); });
                     panel.addEventListener('drop', function (e) {
                         e.preventDefault();
+                        dragCounter = 0;
+                        hide();
                         var files = e.dataTransfer.files;
                         if (files && files.length) _handleAttachFiles(files, context);
                     });
@@ -1123,10 +1231,322 @@
             }
         }
 
+        /* ── Paste handler: capture pasted images as attachments ──
+         * Cuando el user pega un screenshot (Cmd+V), el browser tiende a
+         * insertar un <img src="data:..."> que infla el body y a veces
+         * lo descartan los receptores. Aquí lo convertimos en adjunto real.
+         */
+        function _setupPasteToAttach(editorId, context) {
+            var editor = document.getElementById(editorId);
+            if (!editor) return;
+            editor.addEventListener('paste', function (e) {
+                if (!e.clipboardData) return;
+                var items = e.clipboardData.items || [];
+                var imageFiles = [];
+                for (var i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    if (it.kind === 'file') {
+                        var f = it.getAsFile();
+                        if (f) imageFiles.push(f);
+                    }
+                }
+                if (!imageFiles.length) return; // dejar el paste normal de texto
+                e.preventDefault();
+                // Adjuntar archivos
+                _handleAttachFiles(imageFiles, context);
+                // Insertar un chip visual en el editor en la posición del cursor
+                try {
+                    var sel = window.getSelection();
+                    imageFiles.forEach(function (f) {
+                        var chip = document.createElement('span');
+                        chip.contentEditable = 'false';
+                        chip.className = 'mail-inline-img-chip';
+                        chip.textContent = '📎 ' + (f.name || 'imagen') + ' adjuntada';
+                        if (sel && sel.rangeCount > 0) {
+                            var range = sel.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(chip);
+                            // Mover cursor después del chip
+                            range.setStartAfter(chip);
+                            range.setEndAfter(chip);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        } else {
+                            editor.appendChild(chip);
+                        }
+                    });
+                } catch (_) { }
+            });
+        }
+
         function _setupReplyDropZone() {
-            _setupDropZone('mailRespEditor', 'mailReplyPanel', 'reply');
-            _setupDropZone('mailCompEditor', 'mailComposePanel', 'compose');
-            _setupDropZone('mailFwdEditor', 'mailFwdPanel', 'fwd');
+            _setupDropZone('mailRespEditor', 'mailReplyPanel', 'reply', 'mailRespDropOverlay');
+            _setupDropZone('mailCompEditor', 'mailComposePanel', 'compose', 'mailCompDropOverlay');
+            _setupDropZone('mailFwdEditor', 'mailForwardPanel', 'fwd');
+            _setupPasteToAttach('mailCompEditor', 'compose');
+            _setupPasteToAttach('mailRespEditor', 'reply');
+            _setupPasteToAttach('mailFwdEditor', 'fwd');
+        }
+
+        /* ══════ Recipient autocomplete (compose Para/CC) ══════ */
+        function _recipFieldRefs(field) {
+            var prefix = field === 'cc' ? 'mailCompCc' : 'mailCompPara';
+            return {
+                input: document.getElementById(prefix),
+                wrap: document.getElementById(prefix + 'Wrap'),
+                dropdown: document.getElementById(prefix + 'Dropdown')
+            };
+        }
+
+        function _renderRecipChips(field) {
+            var refs = _recipFieldRefs(field);
+            if (!refs.wrap || !refs.input) return;
+            // Remover chips actuales (todo lo que no sea el input ni el dropdown)
+            var children = Array.prototype.slice.call(refs.wrap.children);
+            children.forEach(function (c) {
+                if (c.id === refs.input.id || (refs.dropdown && c.id === refs.dropdown.id)) return;
+                refs.wrap.removeChild(c);
+            });
+            var arr = _mailRecips[field] || [];
+            arr.forEach(function (r, idx) {
+                var chip = document.createElement('span');
+                chip.className = 'mail-recip-chip' + (EMAIL_RE.test(r.email) ? '' : ' invalid');
+                chip.title = (r.nombre ? r.nombre + ' ' : '') + '<' + r.email + '>';
+                var label = r.nombre ? (r.nombre + ' <' + r.email + '>') : r.email;
+                var textSpan = document.createElement('span');
+                textSpan.className = 'mail-recip-chip-text';
+                textSpan.textContent = label;
+                chip.appendChild(textSpan);
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.setAttribute('aria-label', 'Quitar');
+                btn.textContent = '×';
+                btn.onclick = function () { _removeRecip(field, idx); };
+                chip.appendChild(btn);
+                refs.wrap.insertBefore(chip, refs.input);
+            });
+        }
+
+        function _removeRecip(field, idx) {
+            _mailRecips[field].splice(idx, 1);
+            _renderRecipChips(field);
+        }
+
+        function _splitRecips(text) {
+            // Devuelve [{nombre, email}, ...]
+            if (!text) return [];
+            return text.split(/[,;]/).map(function (raw) {
+                raw = (raw || '').trim();
+                if (!raw) return null;
+                // Formato "Nombre <email>"
+                var m = raw.match(/^\s*([^<]*?)\s*<([^>]+)>\s*$/);
+                if (m) return { nombre: m[1].trim(), email: m[2].trim() };
+                return { nombre: '', email: raw };
+            }).filter(function (x) { return x && x.email; });
+        }
+
+        function _formatRecipList(arr) {
+            return (arr || []).map(function (r) {
+                if (r.nombre) return r.nombre + ' <' + r.email + '>';
+                return r.email;
+            }).join(', ');
+        }
+
+        function _addRecip(field, recip) {
+            if (!recip || !recip.email) return;
+            var exists = _mailRecips[field].some(function (r) { return r.email.toLowerCase() === recip.email.toLowerCase(); });
+            if (exists) return;
+            _mailRecips[field].push({ nombre: recip.nombre || '', email: recip.email });
+            _renderRecipChips(field);
+        }
+
+        function _commitRecipInput(field) {
+            var refs = _recipFieldRefs(field);
+            if (!refs.input) return;
+            var val = refs.input.value.trim();
+            if (!val) return;
+            _splitRecips(val).forEach(function (r) { _addRecip(field, r); });
+            refs.input.value = '';
+            _hideRecipDropdown();
+        }
+
+        function _hideRecipDropdown() {
+            ['para', 'cc'].forEach(function (f) {
+                var refs = _recipFieldRefs(f);
+                if (refs.dropdown) refs.dropdown.style.display = 'none';
+            });
+            _mailRecipActiveIdx = -1;
+        }
+
+        function _showRecipDropdown(field, items) {
+            var refs = _recipFieldRefs(field);
+            if (!refs.dropdown) return;
+            if (!items || !items.length) { refs.dropdown.style.display = 'none'; return; }
+            _mailRecipCurrentField = field;
+            _mailRecipActiveIdx = -1;
+            var h = '';
+            var sectionLabel = items._sectionLabel;
+            if (sectionLabel) {
+                h += '<div class="mail-recip-dropdown-section">' + _esc(sectionLabel) + '</div>';
+            }
+            items.forEach(function (it, idx) {
+                var initial = (it.nombre || it.email || '?').trim().charAt(0).toUpperCase();
+                var sub = it.cargo || it.cliente_nombre || it.email;
+                h += '<div class="mail-recip-dropdown-item" data-idx="' + idx + '" onclick="mailPickRecip(\'' + field + '\',' + idx + ')">';
+                h += '<div class="mail-recip-dropdown-avatar">' + _esc(initial) + '</div>';
+                h += '<div class="mail-recip-dropdown-body">';
+                h += '<div class="mail-recip-dropdown-name">' + _esc(it.nombre || it.email) + '</div>';
+                h += '<div class="mail-recip-dropdown-email">' + _esc(sub) + '</div>';
+                h += '</div>';
+                h += '</div>';
+            });
+            refs.dropdown.innerHTML = h;
+            refs.dropdown.style.display = 'block';
+            refs.dropdown.dataset.items = JSON.stringify(items);
+        }
+
+        window.mailPickRecip = function (field, idx) {
+            var refs = _recipFieldRefs(field);
+            if (!refs.dropdown) return;
+            var items = [];
+            try { items = JSON.parse(refs.dropdown.dataset.items || '[]'); } catch (e) { }
+            var it = items[idx];
+            if (!it) return;
+            _addRecip(field, { nombre: it.nombre || '', email: it.email });
+            refs.input.value = '';
+            _hideRecipDropdown();
+            refs.input.focus();
+        };
+
+        function _fetchRecipSuggestions(field, q) {
+            var refs = _recipFieldRefs(field);
+            if (!refs.input) return;
+            q = (q || '').trim();
+            if (q.length === 0) {
+                // Mostrar recientes
+                var recent = _mailLoadRecentRecips();
+                if (recent.length) {
+                    recent._sectionLabel = 'Recientes';
+                    _showRecipDropdown(field, recent);
+                } else {
+                    _hideRecipDropdown();
+                }
+                return;
+            }
+            if (q.length < 2) {
+                _hideRecipDropdown();
+                return;
+            }
+            // Buscar primero en recientes localmente (rápido)
+            var recent = _mailLoadRecentRecips();
+            var localMatches = recent.filter(function (r) {
+                var s = (r.nombre + ' ' + r.email).toLowerCase();
+                return s.indexOf(q.toLowerCase()) !== -1;
+            });
+            // Lanzar fetch a contactos en paralelo (puede no devolver email si no
+            // hay cliente_id; en ese caso simplemente cae al fallback de recientes)
+            fetch('/app/api/buscar-contactos/?q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(function (r) { return r.ok ? r.json() : { contactos: [] }; })
+                .then(function (data) {
+                    var apiHits = (data && data.contactos) || [];
+                    var normalized = apiHits.map(function (c) {
+                        return {
+                            nombre: c.nombre_completo || c.nombre || '',
+                            email: c.email || '',
+                            cargo: c.puesto || c.cargo || '',
+                            cliente_nombre: c.cliente_nombre || ''
+                        };
+                    }).filter(function (c) { return c.email; });
+                    // Combinar locales + API, deduplicar por email
+                    var combined = [];
+                    var seen = {};
+                    localMatches.concat(normalized).forEach(function (r) {
+                        var k = (r.email || '').toLowerCase();
+                        if (!k || seen[k]) return;
+                        seen[k] = true;
+                        combined.push(r);
+                    });
+                    if (combined.length) {
+                        _showRecipDropdown(field, combined);
+                    } else {
+                        _hideRecipDropdown();
+                    }
+                })
+                .catch(function () {
+                    if (localMatches.length) _showRecipDropdown(field, localMatches);
+                    else _hideRecipDropdown();
+                });
+        }
+
+        function _setupRecipField(field) {
+            var refs = _recipFieldRefs(field);
+            if (!refs.input) return;
+
+            refs.input.addEventListener('input', function () {
+                clearTimeout(_mailRecipSearchTO);
+                var val = refs.input.value;
+                _mailRecipSearchTO = setTimeout(function () {
+                    _fetchRecipSuggestions(field, val);
+                }, 250);
+            });
+
+            refs.input.addEventListener('focus', function () {
+                _fetchRecipSuggestions(field, refs.input.value);
+            });
+
+            refs.input.addEventListener('keydown', function (e) {
+                var dd = refs.dropdown;
+                var items = dd && dd.style.display !== 'none' ? dd.querySelectorAll('.mail-recip-dropdown-item') : [];
+                if (e.key === 'ArrowDown' && items.length) {
+                    e.preventDefault();
+                    _mailRecipActiveIdx = (_mailRecipActiveIdx + 1) % items.length;
+                    _highlightRecipItem(items, _mailRecipActiveIdx);
+                } else if (e.key === 'ArrowUp' && items.length) {
+                    e.preventDefault();
+                    _mailRecipActiveIdx = (_mailRecipActiveIdx - 1 + items.length) % items.length;
+                    _highlightRecipItem(items, _mailRecipActiveIdx);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (_mailRecipActiveIdx >= 0 && items[_mailRecipActiveIdx]) {
+                        items[_mailRecipActiveIdx].click();
+                    } else {
+                        _commitRecipInput(field);
+                    }
+                } else if (e.key === ',' || e.key === ';' || e.key === 'Tab') {
+                    if (refs.input.value.trim()) {
+                        e.preventDefault();
+                        _commitRecipInput(field);
+                    }
+                } else if (e.key === 'Backspace' && !refs.input.value && _mailRecips[field].length) {
+                    e.preventDefault();
+                    _mailRecips[field].pop();
+                    _renderRecipChips(field);
+                } else if (e.key === 'Escape') {
+                    _hideRecipDropdown();
+                }
+            });
+
+            refs.input.addEventListener('blur', function () {
+                // Delay para permitir click en el dropdown
+                setTimeout(function () {
+                    _commitRecipInput(field);
+                    _hideRecipDropdown();
+                }, 200);
+            });
+        }
+
+        function _highlightRecipItem(items, idx) {
+            for (var i = 0; i < items.length; i++) {
+                items[i].classList.toggle('active', i === idx);
+            }
+            if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+        }
+
+        function _setupRecipAutocomplete() {
+            _setupRecipField('para');
+            _setupRecipField('cc');
         }
 
         /* ── Account menu ────────────────────────────── */
@@ -1318,15 +1738,21 @@
             if (e.key === 'Escape') mailCerrar();
         });
 
-        document.addEventListener('DOMContentLoaded', function () {
+        function _mailWidgetInitOnce() {
+            if (window._mailWidgetWired) return;
             var w = document.getElementById('widgetMail');
-            if (w) {
-                w.addEventListener('click', function (e) {
-                    if (e.target === w) mailCerrar();
-                });
-            }
-            _mailPollUnreadCount();
+            if (!w) return;
+            window._mailWidgetWired = true;
+            w.addEventListener('click', function (e) {
+                if (e.target === w) mailCerrar();
+            });
             _setupReplyDropZone();
+            _setupRecipAutocomplete();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            _mailWidgetInitOnce();
+            _mailPollUnreadCount();
         });
 
     })();
