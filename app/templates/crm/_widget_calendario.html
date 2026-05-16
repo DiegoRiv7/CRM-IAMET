@@ -2431,6 +2431,32 @@
         var esTarea=!!e.esTarea;
         window._calCurrentActividadId=esTarea?null:id;
         window._calCurrentOppId=(e.opportunity&&e.opportunity.id)?e.opportunity.id:null;
+        // ── Estado para "Reprogramar" desde el modal de actividad genérica ──
+        // (sin esto, woGuardarNuevaFecha intentaba pegarle a /tarea-oportunidad/ y fallaba en silencio.)
+        if (!esTarea) {
+            window._woCurrentViewingActividadId = id;
+            window._woCurrentViewingActividadFecha = evt.start || null;
+            window._woCurrentViewingActividadData = {
+                title: evt.title || '',
+                start: evt.start || null,
+                end: evt.end || evt.start || null,
+                description: evt.description || (e ? e.description : '') || '',
+                tipo: e.tipo_actividad || 'otro',
+                color: evt.color || '#1D1D1F',
+                participants: (e.participants || []).map(function(p){ return p.id; }),
+                opportunity: (e.opportunity && e.opportunity.id) ? e.opportunity.id : null,
+            };
+        } else {
+            window._woCurrentViewingActividadId = null;
+            window._woCurrentViewingActividadFecha = null;
+            window._woCurrentViewingActividadData = null;
+        }
+        // Limpiar estado de tarea-oportunidad para que woGuardarNuevaFecha
+        // use la rama de actividad genérica. Las variables viven en un IIFE
+        // de _widget_oportunidad.html, así que usamos el helper expuesto.
+        if (typeof window.woResetCurrentViewingTask === 'function') {
+            window.woResetCurrentViewingTask();
+        }
         var verPop=document.getElementById('woVerActNombre');
         if (!verPop) return;
         verPop.textContent=evt.title||'Actividad';
@@ -2438,7 +2464,14 @@
         var fEl=document.getElementById('woVerActFecha');
         var fmtT=function(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
         var fmtD=function(d){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
-        if (fEl) fEl.textContent=fmtD(d1)+' '+fmtT(d1)+(evt.end?' – '+fmtT(d2):'');
+        if (fEl) {
+            var fechaTxt = fmtD(d1)+' '+fmtT(d1)+(evt.end?' – '+fmtT(d2):'');
+            // Incluir el icono de lápiz que activa el editor inline (woToggleFechaEdit).
+            fEl.innerHTML = fechaTxt + ' <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;opacity:0.5;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+        }
+        // Asegurar que el editor inline esté cerrado al abrir.
+        var editDiv = document.getElementById('woVerActFechaEdit');
+        if (editDiv) editDiv.style.display = 'none';
         var creadorNombre='';
         if (e.creado_por&&typeof e.creado_por==='object') creadorNombre=e.creado_por.text||e.creado_por.nombre||'';
         else creadorNombre=e.creado_por||'';
