@@ -204,6 +204,10 @@
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
         <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' or tab_activo == 'cli' %} crm-bar--dashboard{% endif %}">
+            {% if tab_activo == 'marketing' %}
+            {# Slots para que el Marketing Hub inyecte back btn + wordmark de la marca en la misma fila que los tabs cuando hay una marca seleccionada. Vacíos por default; el JS los llena/oculta. #}
+            <div class="crm-bar-left mkthub-bar-slot mkthub-bar-slot--left" id="mkthubBarLeft"></div>
+            {% endif %}
             {% if tab_activo == 'crm' %}
             <!-- Acciones izquierda: filtro / ordenar / exportar / vista (antes en .crm-facet-bar) -->
             <div class="crm-bar-left" id="crmBarLeft">
@@ -274,9 +278,16 @@
                     Prospección
                 </a>
                 {% if not es_ingeniero %}
+                {% comment %}Tab "Recursos" oculto temporalmente — pendiente de autorización del módulo. La URL (?tab=prospeccion) sigue funcional para deep links existentes.{% endcomment %}
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
-                    class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}">
+                    class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}"
+                    style="display:none;">
+                    Recursos
+                </a>
+                <a href="?tab=marketing&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    class="crm-tab {% if tab_activo == 'marketing' %}active{% endif %}">
                     Marketing
                 </a>
                 {% endif %}
@@ -284,6 +295,9 @@
             {% endif %}
             {% endif %}
             <div class="crm-bar-right">
+                {% if tab_activo == 'marketing' %}
+                <div class="mkthub-bar-slot mkthub-bar-slot--right" id="mkthubBarRight"></div>
+                {% endif %}
                 {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'cli' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
                 <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
@@ -718,13 +732,13 @@
         {% elif request.GET.vista != 'campanas' %}
         {% include "crm/_widget_marketing.html" %}
         {% else %}
-        <!-- Breadcrumb de regreso al dashboard de Marketing -->
+        <!-- Breadcrumb de regreso al dashboard de Recursos -->
         <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
             <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
                style="display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:600;color:#0052D4;text-decoration:none;padding:6px 12px;border-radius:18px;background:#0052D40D;transition:background 0.18s;"
                onmouseover="this.style.background='#0052D418'" onmouseout="this.style.background='#0052D40D'">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                Marketing
+                Recursos
             </a>
             <span style="color:#C7C7CC;font-size:0.78rem;">/</span>
             <span style="font-size:0.78rem;font-weight:600;color:#1D1D1F;">Campañas</span>
@@ -811,6 +825,8 @@
         </table>
         <div class="crm-table-footer" id="prospeccionFooter"></div>
         {% endif %}
+        {% elif tab_activo == 'marketing' %}
+        {% include "crm/_marketing_hub.html" %}
         {% elif tab_activo == 'clientes' %}
         <!-- KPI Cards (dashboard: toggle modo y period pills ya están arriba en crm-bar) -->
         <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
@@ -1076,8 +1092,8 @@
         {% endif %}
     </div>
     <!-- Footer (oculto en tab=prospectos para que el kanban ocupe toda la pantalla,
-         y en tab=prospeccion/Marketing para no robar espacio al dashboard) -->
-    {% if tab_activo != 'prospectos' and tab_activo != 'prospeccion' %}
+         y en tab=prospeccion/Recursos + tab=marketing para no robar espacio al dashboard) -->
+    {% if tab_activo != 'prospectos' and tab_activo != 'prospeccion' and tab_activo != 'marketing' %}
     <div class="crm-footer">
         <div class="footer-left" id="footerLeft">
             {% if tab_activo == 'cotizado' %}

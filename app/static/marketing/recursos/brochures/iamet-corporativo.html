@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Brochure Corporativo IAMET</title>
+<style>
+  :root{
+    --blue:#0052D4;
+    --blue-deep:#003696;
+    --blue-soft:#E6EFFF;
+    --ink:#0B1A33;
+    --muted:#5B6779;
+    --line:#E1E7F0;
+    --bg:#EDF0F5;
+    --soft:#F4F7FB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .stage{padding:48px 24px;display:flex;justify-content:center;}
+  .sheet{
+    width:816px;background:#fff;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.25),0 8px 20px -10px rgba(0,0,0,.15);
+    border-radius:2px;overflow:hidden;
+  }
+  /* HEADER */
+  .header{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-deep) 60%,#001E5C 100%);color:#fff;padding:40px 56px 44px;position:relative;overflow:hidden;}
+  .header::before{content:"";position:absolute;right:-100px;top:-100px;width:380px;height:380px;background:radial-gradient(closest-side,rgba(255,255,255,.18),transparent);border-radius:50%;}
+  .header::after{content:"";position:absolute;left:-60px;bottom:-60px;width:220px;height:220px;background:rgba(255,255,255,.05);border-radius:50%;}
+  .brand-row{display:flex;align-items:center;gap:14px;position:relative;z-index:2;}
+  .brand-logo{font-weight:800;letter-spacing:-.5px;font-size:30px;display:flex;align-items:center;gap:10px;}
+  .brand-logo .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#7CB1FF;}
+  .partner-tag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.14);padding:6px 12px;border-radius:99px;}
+  .hero{margin-top:44px;position:relative;z-index:2;}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9FC0FF;}
+  .h1{font-size:54px;font-weight:800;line-height:1.02;margin-top:12px;letter-spacing:-1.5px;max-width:680px;}
+  .h1 em{font-style:normal;color:#7CB1FF;}
+  .tagline{margin-top:16px;font-size:16px;color:#CFDDF5;max-width:560px;line-height:1.6;font-weight:400;}
+  .hero-stats{margin-top:32px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;position:relative;z-index:2;}
+  .stat{padding:14px 0;border-top:1px solid rgba(255,255,255,.18);}
+  .stat .num{font-size:26px;font-weight:800;letter-spacing:-.5px;}
+  .stat .lbl{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#9FC0FF;margin-top:2px;}
+  /* SECTION */
+  .section{padding:42px 56px;border-bottom:1px solid var(--line);}
+  .section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .section-h2{font-size:28px;font-weight:800;letter-spacing:-.4px;color:var(--ink);}
+  .section-lead{margin-top:8px;font-size:14px;color:var(--muted);max-width:580px;line-height:1.6;}
+  /* CAPACIDADES — feature grid */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:28px;}
+  .feature{padding:20px;border:1px solid var(--line);border-radius:12px;background:#fff;transition:none;}
+  .feature .icon{width:44px;height:44px;border-radius:10px;background:var(--blue-soft);color:var(--blue);display:flex;align-items:center;justify-content:center;}
+  .feature h3{font-size:14px;font-weight:700;margin-top:14px;color:var(--ink);}
+  .feature p{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:6px;}
+  /* PARTNERS */
+  .partners{margin-top:22px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .partner{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:88px;}
+  .partner .pname{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.3px;}
+  .partner .ptag{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  /* SPECS / capacities */
+  .specs{margin-top:24px;width:100%;border-collapse:collapse;font-size:13px;}
+  .specs tr{border-bottom:1px solid var(--line);}
+  .specs td{padding:14px 0;vertical-align:top;}
+  .specs td.k{width:42%;color:var(--muted);font-weight:500;}
+  .specs td.v{color:var(--ink);font-weight:600;}
+  /* INDUSTRIAS */
+  .uses{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px;}
+  .use{border-radius:10px;padding:18px;background:var(--soft);border:1px solid var(--line);}
+  .use .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:5px 10px;border-radius:99px;}
+  .use h4{font-size:15px;font-weight:700;margin-top:12px;color:var(--ink);}
+  .use p{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  /* TIMELINE */
+  .timeline{margin-top:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .tl{padding:14px;border-left:3px solid var(--blue);background:var(--soft);border-radius:0 8px 8px 0;}
+  .tl .year{font-size:18px;font-weight:800;color:var(--blue);letter-spacing:-.3px;}
+  .tl .desc{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45;}
+  /* CTA */
+  .cta{padding:40px 56px;background:linear-gradient(135deg,var(--blue) 0%,var(--blue-deep) 100%);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:24px;}
+  .cta .copy h4{font-size:22px;font-weight:800;}
+  .cta .copy p{font-size:13.5px;color:#CFDDF5;margin-top:6px;max-width:480px;line-height:1.55;}
+  .cta .contact{display:flex;flex-direction:column;gap:6px;font-size:13px;text-align:right;}
+  .cta .contact strong{font-size:14px;letter-spacing:.2px;}
+  /* FOOTER */
+  .footer{background:var(--ink);color:#9DA5C2;font-size:11px;padding:18px 56px;display:flex;justify-content:space-between;align-items:center;}
+  .footer .dot{display:inline-block;width:6px;height:6px;border-radius:99px;background:var(--blue);margin:0 8px;vertical-align:middle;}
+  @page{size:letter;margin:0;}
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{box-shadow:none;width:100%;border-radius:0;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+    <header class="header">
+      <div class="brand-row">
+        <div class="brand-logo">IAMET<span class="dot"></span></div>
+        <div class="partner-tag">Integrador tecnológico · Desde 2005</div>
+      </div>
+      <div class="hero">
+        <div class="eyebrow">Ingeniería · Instalación · Operación</div>
+        <h1 class="h1">Tecnología que <em>opera</em>, no solo que se instala.</h1>
+        <p class="tagline">Diseñamos, integramos y operamos infraestructura tecnológica crítica para empresa, gobierno y manufactura en el noroeste de México. Partner certificado de las marcas líderes del sector.</p>
+        <div class="hero-stats">
+          <div class="stat"><div class="num">20+</div><div class="lbl">Años de operación</div></div>
+          <div class="stat"><div class="num">5</div><div class="lbl">Partners Gold</div></div>
+          <div class="stat"><div class="num">2</div><div class="lbl">Oficinas regionales</div></div>
+          <div class="stat"><div class="num">24/7</div><div class="lbl">Soporte y RMA</div></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Capacidades -->
+    <section class="section">
+      <div class="section-title">Nuestras capacidades</div>
+      <h2 class="section-h2">Un solo equipo, desde el plano hasta el centro de monitoreo.</h2>
+      <p class="section-lead">Cubrimos el ciclo completo del proyecto: levantamiento, ingeniería de detalle, instalación certificada, puesta en marcha, capacitación y soporte continuo.</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg></div>
+          <h3>Ingeniería y diseño</h3>
+          <p>Levantamiento técnico, planos AutoCAD, memorias de cálculo y diseño de redes punto a punto.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l3-3 6 6M14 4l6 6-9 9H5v-6z"/></svg></div>
+          <h3>Instalación certificada</h3>
+          <p>Cuadrillas certificadas Panduit PCI, Axis ACE y Genetec. Trabajo limpio con bitácora fotográfica.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg></div>
+          <h3>Centro de operaciones</h3>
+          <p>NOC/SOC para monitoreo de cámaras, accesos y red. SLAs configurables por cliente.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div>
+          <h3>Soporte 24/7 y RMA</h3>
+          <p>Mesa de servicio bilingüe con tickets, escalamiento y gestión directa con fabricantes.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M3 9v6l9 5 9-5V9"/></svg></div>
+          <h3>Capacitación a usuarios</h3>
+          <p>Programa de entrenamiento para operadores y administradores, en sitio o en showroom IAMET.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v6c0 5-4 9-9 9s-9-4-9-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Cumplimiento y garantía</h3>
+          <p>Documentación, certificación de planta física y respaldo de garantía extendida del fabricante.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Partners -->
+    <section class="section">
+      <div class="section-title">Partners certificados</div>
+      <h2 class="section-h2">Las marcas líderes, integradas por un solo equipo.</h2>
+      <p class="section-lead">Operamos como Gold/Authorized Partner. Esto se traduce en mejores condiciones comerciales, acceso a producto y soporte preferente con el fabricante.</p>
+
+      <div class="partners">
+        <div class="partner">
+          <div class="pname">ZEBRA</div>
+          <div class="ptag">Premier Partner</div>
+        </div>
+        <div class="partner">
+          <div class="pname">PANDUIT</div>
+          <div class="ptag">Certified Installer</div>
+        </div>
+        <div class="partner">
+          <div class="pname">AVIGILON</div>
+          <div class="ptag">Gold Partner</div>
+        </div>
+        <div class="partner">
+          <div class="pname">GENETEC</div>
+          <div class="ptag">Certified Integrator</div>
+        </div>
+        <div class="partner">
+          <div class="pname">AXIS</div>
+          <div class="ptag">Solution Gold</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Datos clave -->
+    <section class="section">
+      <div class="section-title">Información clave</div>
+      <h2 class="section-h2">Quiénes somos en cifras.</h2>
+      <table class="specs">
+        <tr><td class="k">Años de operación</td><td class="v">20+ años en el mercado mexicano</td></tr>
+        <tr><td class="k">Cobertura</td><td class="v">Tijuana, Mexicali y región Noroeste / Norte de México</td></tr>
+        <tr><td class="k">Áreas de práctica</td><td class="v">Seguridad electrónica, redes, AIDC, data center, AV corporativo</td></tr>
+        <tr><td class="k">Marcas certificadas</td><td class="v">Zebra, Panduit, Avigilon, Genetec, Axis Communications</td></tr>
+        <tr><td class="k">Modelo de servicio</td><td class="v">Llave en mano · Por etapas · Operación administrada</td></tr>
+        <tr><td class="k">Soporte</td><td class="v">Mesa de servicio 24/7, RMA gestionado y mantenimiento preventivo</td></tr>
+        <tr><td class="k">Cumplimiento</td><td class="v">Documentación fiscal y técnica completa, alta en padrón de proveedores</td></tr>
+      </table>
+    </section>
+
+    <!-- Industrias -->
+    <section class="section">
+      <div class="section-title">Industrias a las que servimos</div>
+      <h2 class="section-h2">Donde nuestros clientes confían en IAMET.</h2>
+      <div class="uses">
+        <div class="use">
+          <span class="pill">Manufactura</span>
+          <h4>Planta industrial maquiladora</h4>
+          <p>Cableado estructurado, AIDC, videovigilancia perimetral y control de acceso para operaciones cross-border.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Gobierno</span>
+          <h4>Seguridad pública municipal</h4>
+          <p>Centros C4 y proyectos de smart city con plataformas unificadas Genetec y cámaras Axis/Avigilon.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Corporativo</span>
+          <h4>Retail, banca y oficinas</h4>
+          <p>Implementaciones llave en mano de seguridad, conectividad PoE++ y AV corporativo.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trayectoria -->
+    <section class="section">
+      <div class="section-title">Trayectoria</div>
+      <h2 class="section-h2">Dos décadas construyendo confianza.</h2>
+      <div class="timeline">
+        <div class="tl">
+          <div class="year">2005</div>
+          <div class="desc">Fundación de IAMET en Tijuana como integrador de redes.</div>
+        </div>
+        <div class="tl">
+          <div class="year">2012</div>
+          <div class="desc">Certificación Panduit PCI y expansión a seguridad electrónica.</div>
+        </div>
+        <div class="tl">
+          <div class="year">2018</div>
+          <div class="desc">Apertura de oficina Mexicali y partner Gold Avigilon.</div>
+        </div>
+        <div class="tl">
+          <div class="year">2025</div>
+          <div class="desc">Centro de operaciones 24/7 con clientes en 3 estados.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="cta">
+      <div class="copy">
+        <h4>Conversemos su próximo proyecto.</h4>
+        <p>Diagnóstico técnico y propuesta sin costo. Recibirá una arquitectura ejecutiva, presupuesto detallado y cronograma realista de implementación.</p>
+      </div>
+      <div class="contact">
+        <strong>ventas@iamet.mx</strong>
+        <span>+52 (664) — Tijuana</span>
+        <span>+52 (686) — Mexicali</span>
+        <span style="color:#7CB1FF;margin-top:4px;">iamet.mx</span>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div>IAMET <span class="dot"></span> Distribuidor autorizado · Integrador tecnológico</div>
+      <div>Brochure corporativo / 2026</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

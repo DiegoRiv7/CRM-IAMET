@@ -811,6 +811,8 @@ def crm_home(request):
             ('AVIGILION', 'avigilon', 'Avigilon'),
             ('GENETEC',   'genetec',  'Genetec'),
             ('AXIS',      'axis',     'Axis'),
+            ('CISCO',     'cisco',    'Cisco'),
+            ('SERVICIO',  'servicio', 'Serv.'),
             ('SOFTWARE',  'software', 'Soft.'),
             ('RUNRATE',   'runrate',  'RR'),
             ('PÓLIZA',    'poliza',   'Pól.'),

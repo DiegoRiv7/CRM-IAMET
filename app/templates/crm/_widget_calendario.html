@@ -909,6 +909,10 @@
         calRenderWeekHeader(weekStart);
 
         var CAL_HOUR_H = 48;
+        // Vista semana: misma ventana visible que vista día (06:00 a 23:00).
+        // Ahorra ~6 horas de scroll inútil de madrugada.
+        var CAL_WEEK_START_H = 6;
+        var CAL_WEEK_END_H = 23;
         var now = new Date();
         var nowMs = now.getTime();
         var pad = function(n){ return String(n).padStart(2,'0'); };
@@ -924,14 +928,14 @@
         var hoursW = 56;
         var availW = container.offsetWidth - hoursW;
         var dayW = Math.floor(availW / 7);
-        var totalH = 24 * CAL_HOUR_H;
+        var totalH = (CAL_WEEK_END_H - CAL_WEEK_START_H + 1) * CAL_HOUR_H;
 
         var html = '<div style="position:relative;min-height:'+totalH+'px;">';
 
-        // Hour grid + half-hour marks
-        for (var h = 0; h < 24; h++) {
-            var topPx = h * CAL_HOUR_H;
-            var label = h > 0 ? calFmtHour(h) : '';
+        // Hour grid + half-hour marks (06:00–23:00)
+        for (var h = CAL_WEEK_START_H; h <= CAL_WEEK_END_H; h++) {
+            var topPx = (h - CAL_WEEK_START_H) * CAL_HOUR_H;
+            var label = h > CAL_WEEK_START_H ? calFmtHour(h) : '';
             html += '<div class="cal-hour-row" style="position:absolute;top:'+topPx+'px;left:0;right:0;height:'+CAL_HOUR_H+'px;" data-hour="'+h+'">' +
                 '<div class="cal-hour-label">'+label+'</div>' +
                 '<div class="cal-hour-area"></div></div>';
@@ -949,7 +953,7 @@
         if (todayIdx >= 0) {
             html += '<div style="position:absolute;top:0;bottom:0;left:'+(hoursW+todayIdx*dayW)+'px;width:'+dayW+'px;background:rgba(0,82,212,0.025);pointer-events:none;z-index:1;"></div>';
             var nowMinsW = now.getHours()*60+now.getMinutes();
-            var nowTopW = (nowMinsW/60)*CAL_HOUR_H;
+            var nowTopW = (nowMinsW/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
             var nowLineLeft = hoursW + todayIdx * dayW;
             html += '<div style="position:absolute;top:'+(nowTopW-4)+'px;left:'+(nowLineLeft-4)+'px;width:8px;height:8px;border-radius:50%;background:#FF3B30;z-index:11;pointer-events:none;"></div>';
             html += '<div style="position:absolute;top:'+nowTopW+'px;left:'+nowLineLeft+'px;width:'+dayW+'px;height:2px;background:#FF3B30;z-index:10;pointer-events:none;"></div>';
@@ -1009,7 +1013,7 @@
                 var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
                 var startMins = startD.getHours()*60+startD.getMinutes();
                 var endMins = endD.getHours()*60+endD.getMinutes();
-                var evTop = (startMins/60)*CAL_HOUR_H;
+                var evTop = (startMins/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
                 var evH = Math.max(((Math.max(endMins-startMins,30))/60)*CAL_HOUR_H, 28);
                 var safeId = String(ev.id).replace(/'/g,'');
 
@@ -1035,7 +1039,7 @@
                 if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
                 else if (isOvAct) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:1px;"></div>';
 
-                html += '<div style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
+                html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                     '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
                     '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
                     '</div>'+
@@ -1050,7 +1054,7 @@
                 taskEvts.forEach(function(ev){
                     var startD = new Date(ev.start);
                     var startMins = startD.getHours()*60+startD.getMinutes();
-                    var evTop = (startMins/60)*CAL_HOUR_H;
+                    var evTop = (startMins/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
                     var safeId = String(ev.id).replace(/'/g,'');
                     var tEp = ev.extendedProps || {};
                     var tCompletada = tEp.estado === 'completada';
@@ -1062,7 +1066,7 @@
                     var tOpacity = tCompletada ? 'opacity:0.38;' : '';
 
                     html += '<div style="position:absolute;top:'+evTop+'px;left:'+taskX+'px;width:'+(taskLaneW-2)+'px;height:1px;background:'+tColor+';opacity:0.25;pointer-events:none;"></div>';
-                    html += '<div style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);'+tOpacity+'"' +
+                    html += '<div class="cal-week-task" data-evt-id="'+safeId+'" style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);'+tOpacity+'"' +
                         ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                         '<div style="font-size:0.68rem;font-weight:700;color:'+tColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
                         '<div style="font-size:0.6rem;color:'+tColor+';opacity:0.75;">'+deadlineFmt+'</div>'+
@@ -1073,8 +1077,34 @@
 
         html += '</div>';
         container.innerHTML = html;
-        setTimeout(function(){ if(container) container.scrollTop = 7*CAL_HOUR_H; }, 50);
+        // Ya no necesitamos auto-scroll a las 7am porque el grid arranca en 06:00.
+        setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
+        // Hover preview en cards de evento y tarea de la vista semana.
+        _calWeekBindHoverHandlers();
         calUpdateSidePanel();
+    }
+
+    /* ─── Hover preview en vista Semana ───
+       Mismo patrón que _calDayBindHoverHandlers (idempotente). Engancha
+       mouseenter/mouseleave a .cal-week-evt y .cal-week-task para mostrar
+       el popover compartido (_calShowHoverPreview). */
+    function _calWeekBindHoverHandlers() {
+        var cards = document.querySelectorAll('#calWeekTimeline .cal-week-evt[data-evt-id], #calWeekTimeline .cal-week-task[data-evt-id]');
+        cards.forEach(function (card) {
+            if (card._calHoverBound) return;
+            card._calHoverBound = true;
+            var evtId = card.getAttribute('data-evt-id');
+            card.addEventListener('mouseenter', function () {
+                clearTimeout(window._calHoverTimer);
+                window._calHoverTimer = setTimeout(function () {
+                    _calShowHoverPreview(evtId, card);
+                }, 280);
+            });
+            card.addEventListener('mouseleave', function () {
+                clearTimeout(window._calHoverTimer);
+                _calHideHoverPreview();
+            });
+        });
     }
 
     /* ─── DAY VIEW RENDER ─── */
@@ -1279,8 +1309,10 @@
             var tOpacity = tCompletada ? 'opacity:0.38;' : '';
             // Línea deadline sutil — solo en el carril de tareas
             html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
-            // Bloque de tarea (más alto, como una tarjeta)
-            html += '<div style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
+            // Bloque de tarea (más alto, como una tarjeta).
+            // class="cal-day-task" + data-evt-id permiten enganchar el hover preview
+            // (igual que las cards .cal-day-evt de actividades).
+            html += '<div class="cal-day-task" data-evt-id="'+safeId+'" style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
                 ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                 '<div style="display:flex;align-items:center;gap:5px;">'+
                 '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
@@ -1298,9 +1330,35 @@
 
         // Asegura los handlers de drag (idempotente)
         _calDayBindDragHandlers();
+        // Hover preview en cards de evento y de tarea de la vista día.
+        _calDayBindHoverHandlers();
         if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
 
         calUpdateSidePanel();
+    }
+
+    /* ─── Hover preview en vista Día ───
+       Engancha mouseenter/mouseleave a las cards de evento (.cal-day-evt) y
+       de tarea (.cal-day-task) para mostrar el popover (mismo mecanismo que
+       FullCalendar en vista Mes via eventDidMount). Idempotente: se llama en
+       cada render y solo añade el listener si la card aún no fue bindeada. */
+    function _calDayBindHoverHandlers() {
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id]');
+        cards.forEach(function (card) {
+            if (card._calHoverBound) return;
+            card._calHoverBound = true;
+            var evtId = card.getAttribute('data-evt-id');
+            card.addEventListener('mouseenter', function () {
+                clearTimeout(window._calHoverTimer);
+                window._calHoverTimer = setTimeout(function () {
+                    _calShowHoverPreview(evtId, card);
+                }, 280);
+            });
+            card.addEventListener('mouseleave', function () {
+                clearTimeout(window._calHoverTimer);
+                _calHideHoverPreview();
+            });
+        });
     }
 
     /* ─── DRAG & DROP de eventos en vista Día ───
@@ -2373,6 +2431,32 @@
         var esTarea=!!e.esTarea;
         window._calCurrentActividadId=esTarea?null:id;
         window._calCurrentOppId=(e.opportunity&&e.opportunity.id)?e.opportunity.id:null;
+        // ── Estado para "Reprogramar" desde el modal de actividad genérica ──
+        // (sin esto, woGuardarNuevaFecha intentaba pegarle a /tarea-oportunidad/ y fallaba en silencio.)
+        if (!esTarea) {
+            window._woCurrentViewingActividadId = id;
+            window._woCurrentViewingActividadFecha = evt.start || null;
+            window._woCurrentViewingActividadData = {
+                title: evt.title || '',
+                start: evt.start || null,
+                end: evt.end || evt.start || null,
+                description: evt.description || (e ? e.description : '') || '',
+                tipo: e.tipo_actividad || 'otro',
+                color: evt.color || '#1D1D1F',
+                participants: (e.participants || []).map(function(p){ return p.id; }),
+                opportunity: (e.opportunity && e.opportunity.id) ? e.opportunity.id : null,
+            };
+        } else {
+            window._woCurrentViewingActividadId = null;
+            window._woCurrentViewingActividadFecha = null;
+            window._woCurrentViewingActividadData = null;
+        }
+        // Limpiar estado de tarea-oportunidad para que woGuardarNuevaFecha
+        // use la rama de actividad genérica. Las variables viven en un IIFE
+        // de _widget_oportunidad.html, así que usamos el helper expuesto.
+        if (typeof window.woResetCurrentViewingTask === 'function') {
+            window.woResetCurrentViewingTask();
+        }
         var verPop=document.getElementById('woVerActNombre');
         if (!verPop) return;
         verPop.textContent=evt.title||'Actividad';
@@ -2380,7 +2464,14 @@
         var fEl=document.getElementById('woVerActFecha');
         var fmtT=function(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
         var fmtD=function(d){return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
-        if (fEl) fEl.textContent=fmtD(d1)+' '+fmtT(d1)+(evt.end?' – '+fmtT(d2):'');
+        if (fEl) {
+            var fechaTxt = fmtD(d1)+' '+fmtT(d1)+(evt.end?' – '+fmtT(d2):'');
+            // Incluir el icono de lápiz que activa el editor inline (woToggleFechaEdit).
+            fEl.innerHTML = fechaTxt + ' <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;opacity:0.5;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+        }
+        // Asegurar que el editor inline esté cerrado al abrir.
+        var editDiv = document.getElementById('woVerActFechaEdit');
+        if (editDiv) editDiv.style.display = 'none';
         var creadorNombre='';
         if (e.creado_por&&typeof e.creado_por==='object') creadorNombre=e.creado_por.text||e.creado_por.nombre||'';
         else creadorNombre=e.creado_por||'';

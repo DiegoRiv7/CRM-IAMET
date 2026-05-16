@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Caso de éxito: Cadena Nacional · Avigilion + IAMET</title>
+<style>
+  :root{
+    --ink:#0A0A0A;
+    --accent:#C4112A;
+    --accent-2:#E83A52;
+    --accent-soft:#FCE9EC;
+    --muted:#5A5A5A;
+    --light:#8a8a8a;
+    --line:#E5E5E5;
+    --bg:#FFFFFF;
+    --soft:#FAFAFA;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;}
+  img{max-width:100%;}
+  a{color:inherit;}
+
+  /* TOP NAV */
+  .nav{position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);z-index:50;padding:14px 6vw;display:flex;justify-content:space-between;align-items:center;}
+  .nav .brand{display:flex;align-items:center;gap:10px;}
+  .nav .iamet{font-weight:800;font-size:18px;letter-spacing:-.4px;color:var(--iamet);}
+  .nav .crumb{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--muted);}
+  .nav .partner{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--accent);text-transform:uppercase;}
+
+  /* HERO */
+  .hero{position:relative;padding:120px 8vw 100px;background:#0A0A0A;color:#fff;overflow:hidden;}
+  .hero::after{content:"";position:absolute;left:-200px;top:-200px;width:600px;height:600px;background:radial-gradient(circle,var(--accent) 0%,transparent 70%);opacity:.4;}
+  .hero .eyebrow{font-size:12px;letter-spacing:3px;font-weight:700;text-transform:uppercase;color:var(--accent-2);position:relative;z-index:2;}
+  .hero h1{font-size:clamp(40px,6vw,84px);font-weight:800;line-height:1.03;letter-spacing:-2px;margin-top:18px;max-width:980px;position:relative;z-index:2;}
+  .hero h1 .accent{color:var(--accent-2);}
+  .hero .sub{font-size:clamp(16px,1.4vw,20px);color:#cfcfcf;margin-top:24px;max-width:680px;position:relative;z-index:2;font-weight:400;}
+  .hero .meta{position:relative;z-index:2;margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:36px;max-width:840px;padding-top:32px;border-top:1px solid rgba(255,255,255,.12);}
+  .hero .meta .k{font-size:11px;letter-spacing:2px;color:#9b9b9b;font-weight:700;text-transform:uppercase;}
+  .hero .meta .v{font-size:18px;font-weight:700;color:#fff;margin-top:6px;}
+  .hero-img{position:relative;z-index:2;margin-top:64px;background:#1a1a1a;border-radius:18px;padding:24px;border:1px solid #222;overflow:hidden;}
+
+  /* SECTIONS */
+  section{padding:100px 8vw;border-bottom:1px solid var(--line);}
+  section.soft{background:var(--soft);}
+  .section-eyebrow{font-size:11px;letter-spacing:3px;font-weight:700;color:var(--accent);text-transform:uppercase;}
+  h2.h{font-size:clamp(30px,4vw,52px);font-weight:800;letter-spacing:-1.2px;line-height:1.1;margin-top:14px;max-width:880px;}
+  p.body{font-size:clamp(15px,1.2vw,18px);color:var(--muted);line-height:1.7;margin-top:24px;max-width:760px;font-weight:400;}
+  p.body + p.body{margin-top:18px;}
+  .body strong{color:var(--ink);font-weight:700;}
+
+  /* SOLUCIÓN: components */
+  .components{margin-top:54px;display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+  .comp{padding:32px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;gap:20px;}
+  .comp .icon{width:48px;height:48px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .comp h3{font-size:18px;font-weight:800;letter-spacing:-.2px;}
+  .comp p{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6;}
+  .comp .tag{display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--accent);margin-top:12px;padding:4px 10px;background:var(--accent-soft);border-radius:99px;}
+
+  /* RESULTADOS / KPIs */
+  .kpis{margin-top:60px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+  .kpi{padding:36px 28px;border-radius:18px;background:#0A0A0A;color:#fff;position:relative;overflow:hidden;}
+  .kpi::after{content:"";position:absolute;right:-40px;bottom:-40px;width:140px;height:140px;background:radial-gradient(circle,var(--accent) 0%,transparent 70%);opacity:.4;}
+  .kpi .num{font-size:clamp(48px,5vw,68px);font-weight:800;letter-spacing:-2px;color:var(--accent-2);line-height:1;position:relative;z-index:2;}
+  .kpi .lbl{font-size:13px;color:#cfcfcf;margin-top:14px;line-height:1.5;position:relative;z-index:2;}
+  .kpi .ctx{font-size:11px;color:#7a7a7a;margin-top:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;position:relative;z-index:2;}
+
+  /* TESTIMONIAL */
+  .testimonial{padding:120px 8vw;background:#0A0A0A;color:#fff;position:relative;overflow:hidden;}
+  .testimonial::after{content:"";position:absolute;right:-200px;bottom:-200px;width:600px;height:600px;background:radial-gradient(circle,var(--accent) 0%,transparent 70%);opacity:.3;}
+  .quote-mark{font-size:120px;font-weight:800;color:var(--accent);line-height:.6;position:relative;z-index:2;}
+  .quote{font-size:clamp(26px,3.4vw,44px);font-weight:600;line-height:1.25;letter-spacing:-.8px;margin-top:24px;max-width:1100px;position:relative;z-index:2;color:#fff;}
+  .attrib{margin-top:48px;display:flex;align-items:center;gap:20px;position:relative;z-index:2;}
+  .avatar{width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;flex-shrink:0;}
+  .attrib .name{font-size:17px;font-weight:700;color:#fff;}
+  .attrib .role{font-size:13px;color:#cfcfcf;margin-top:4px;}
+
+  /* SOBRE IAMET */
+  .about{padding:80px 8vw;background:#FAFAFA;}
+  .about-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:64px;align-items:center;}
+  .about h3{font-size:28px;font-weight:800;letter-spacing:-.5px;}
+  .about p{font-size:15px;color:var(--muted);margin-top:14px;line-height:1.7;max-width:540px;}
+  .about-stats{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .about-stats .s{padding:24px;background:#fff;border:1px solid var(--line);border-radius:12px;}
+  .about-stats .n{font-size:32px;font-weight:800;color:var(--iamet);letter-spacing:-1px;}
+  .about-stats .l{font-size:12px;color:var(--muted);margin-top:6px;}
+
+  /* FOOTER */
+  footer{background:#0A0A0A;color:#9b9b9b;padding:36px 8vw;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+  footer .left{display:flex;align-items:center;gap:14px;font-size:12px;}
+  footer .iamet{color:#fff;font-weight:800;font-size:16px;letter-spacing:-.4px;}
+  footer .right{font-size:12px;}
+  footer a{color:var(--accent-2);text-decoration:none;font-weight:700;}
+
+  @media (max-width:900px){
+    .hero{padding:100px 6vw 80px;}
+    section{padding:64px 6vw;}
+    .testimonial{padding:80px 6vw;}
+    .hero .meta,.kpis,.components{grid-template-columns:1fr 1fr;}
+    .about-grid{grid-template-columns:1fr;gap:32px;}
+  }
+  @media (max-width:600px){
+    .hero .meta,.kpis,.components,.about-stats{grid-template-columns:1fr;}
+  }
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .8s ease,transform .8s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">
+    <span class="iamet">IAMET</span>
+    <span class="crumb">Casos · Retail</span>
+  </div>
+  <div class="partner">Avigilion · Gold Partner</div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow">Caso de éxito · Retail · 38 sucursales</div>
+  <h1>Cadena nacional de moda recupera <span class="accent">$14.7M MXN</span> al año con video IA Avigilion.</h1>
+  <p class="sub">Pérdida en piso de venta cae 45%, casos resueltos suben 74% y el equipo de prevención reduce su tiempo de investigación de 8 horas a 12 segundos por evento.</p>
+  <div class="meta">
+    <div><div class="k">Cliente</div><div class="v">Cadena retail moda</div></div>
+    <div><div class="k">Industria</div><div class="v">Retail · Fashion</div></div>
+    <div><div class="k">Cobertura</div><div class="v">38 sucursales · BC + Son</div></div>
+    <div><div class="k">Duración</div><div class="v">Q4 2025 - Q2 2026</div></div>
+  </div>
+
+  <div class="hero-img">
+    <!-- Mockup of store with cameras + Avigilion HUD -->
+    <svg width="100%" viewBox="0 0 1200 480" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a1a1a"/><stop offset="1" stop-color="#0a0a0a"/>
+        </linearGradient>
+        <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#222"/><stop offset="1" stop-color="#161616"/>
+        </linearGradient>
+      </defs>
+      <!-- store backdrop -->
+      <rect x="0" y="0" width="1200" height="320" fill="url(#wall)"/>
+      <rect x="0" y="320" width="1200" height="160" fill="url(#floor)"/>
+      <!-- floor lines (perspective) -->
+      <g stroke="#222" stroke-width="1">
+        <line x1="0" y1="370" x2="1200" y2="370"/>
+        <line x1="0" y1="420" x2="1200" y2="420"/>
+        <line x1="200" y1="480" x2="450" y2="320"/>
+        <line x1="1000" y1="480" x2="750" y2="320"/>
+      </g>
+      <!-- racks of clothes -->
+      <g>
+        <rect x="80" y="240" width="180" height="20" fill="#2a2a2a"/>
+        <rect x="84" y="260" width="14" height="100" fill="#C4112A" opacity=".7"/>
+        <rect x="104" y="260" width="14" height="100" fill="#E83A52" opacity=".6"/>
+        <rect x="124" y="260" width="14" height="100" fill="#9b9b9b" opacity=".4"/>
+        <rect x="144" y="260" width="14" height="100" fill="#C4112A" opacity=".5"/>
+        <rect x="164" y="260" width="14" height="100" fill="#facc15" opacity=".5"/>
+        <rect x="184" y="260" width="14" height="100" fill="#9b9b9b" opacity=".4"/>
+        <rect x="204" y="260" width="14" height="100" fill="#E83A52" opacity=".5"/>
+        <rect x="224" y="260" width="14" height="100" fill="#C4112A" opacity=".6"/>
+
+        <rect x="940" y="240" width="180" height="20" fill="#2a2a2a"/>
+        <rect x="944" y="260" width="14" height="100" fill="#9b9b9b" opacity=".4"/>
+        <rect x="964" y="260" width="14" height="100" fill="#C4112A" opacity=".5"/>
+        <rect x="984" y="260" width="14" height="100" fill="#facc15" opacity=".5"/>
+        <rect x="1004" y="260" width="14" height="100" fill="#9b9b9b" opacity=".4"/>
+        <rect x="1024" y="260" width="14" height="100" fill="#E83A52" opacity=".6"/>
+        <rect x="1044" y="260" width="14" height="100" fill="#C4112A" opacity=".7"/>
+        <rect x="1064" y="260" width="14" height="100" fill="#9b9b9b" opacity=".4"/>
+        <rect x="1084" y="260" width="14" height="100" fill="#facc15" opacity=".5"/>
+      </g>
+      <!-- cashier / counter -->
+      <rect x="500" y="300" width="200" height="60" fill="#2a2a2a" stroke="#3a3a3a"/>
+      <rect x="510" y="280" width="80" height="20" fill="#C4112A"/>
+      <text x="514" y="294" font-family="Inter,sans-serif" font-size="9" font-weight="800" fill="#fff">CAJA · POS-04</text>
+      <!-- people -->
+      <g>
+        <circle cx="380" cy="350" r="14" fill="#3a3a3a"/>
+        <rect x="368" y="362" width="24" height="50" fill="#C4112A"/>
+        <rect x="370" y="412" width="8" height="30" fill="#1a1a1a"/>
+        <rect x="382" y="412" width="8" height="30" fill="#1a1a1a"/>
+
+        <circle cx="820" cy="345" r="14" fill="#3a3a3a"/>
+        <rect x="808" y="357" width="24" height="50" fill="#facc15"/>
+        <rect x="810" y="407" width="8" height="30" fill="#1a1a1a"/>
+        <rect x="822" y="407" width="8" height="30" fill="#1a1a1a"/>
+      </g>
+      <!-- cameras (corner) -->
+      <g transform="translate(60 60)">
+        <rect x="-6" y="-6" width="40" height="20" fill="#1a1a1a" stroke="#C4112A"/>
+        <circle cx="14" cy="4" r="6" fill="#000" stroke="#C4112A"/>
+        <circle cx="14" cy="4" r="3" fill="#1a1a1a"/>
+        <circle cx="14" cy="4" r="1.5" fill="#C4112A"/>
+        <text x="-6" y="-12" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#C4112A">CAM-01 · H6A</text>
+      </g>
+      <g transform="translate(1090 60)">
+        <rect x="-6" y="-6" width="40" height="20" fill="#1a1a1a" stroke="#C4112A"/>
+        <circle cx="14" cy="4" r="6" fill="#000" stroke="#C4112A"/>
+        <circle cx="14" cy="4" r="3" fill="#1a1a1a"/>
+        <circle cx="14" cy="4" r="1.5" fill="#C4112A"/>
+        <text x="-6" y="-12" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#C4112A">CAM-02 · H6A</text>
+      </g>
+      <g transform="translate(580 30)">
+        <rect x="-6" y="-6" width="40" height="20" fill="#1a1a1a" stroke="#C4112A"/>
+        <circle cx="14" cy="4" r="6" fill="#000" stroke="#C4112A"/>
+        <circle cx="14" cy="4" r="3" fill="#1a1a1a"/>
+        <circle cx="14" cy="4" r="1.5" fill="#C4112A"/>
+        <text x="-6" y="-12" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#C4112A">CAM-03 · H6A</text>
+      </g>
+      <!-- view cones -->
+      <g fill="#C4112A" opacity=".08">
+        <polygon points="74,76 200,360 0,360"/>
+        <polygon points="1104,76 1200,360 1000,360"/>
+        <polygon points="594,46 800,360 400,360"/>
+      </g>
+      <!-- detection box -->
+      <rect x="356" y="328" width="48" height="118" stroke="#C4112A" stroke-width="2" fill="none" rx="3"/>
+      <rect x="354" y="318" width="80" height="14" fill="#C4112A"/>
+      <text x="358" y="328" font-family="Inter,sans-serif" font-size="9" font-weight="800" fill="#fff">PERSONA · 98%</text>
+      <rect x="796" y="323" width="48" height="118" stroke="#facc15" stroke-width="2" fill="none" rx="3"/>
+      <rect x="794" y="313" width="80" height="14" fill="#facc15"/>
+      <text x="798" y="323" font-family="Inter,sans-serif" font-size="9" font-weight="800" fill="#000">PERSONA · 94%</text>
+      <!-- HUD -->
+      <rect x="20" y="30" width="200" height="20" fill="#000" opacity=".7"/>
+      <circle cx="32" cy="40" r="4" fill="#C4112A"/>
+      <text x="42" y="44" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="#fff">REC · CADENA RETAIL · TIJUANA</text>
+      <text x="1080" y="44" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="#fff">14:32:08</text>
+    </svg>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#7a7a7a;margin-top:14px;letter-spacing:2px;text-transform:uppercase;font-weight:700;"><span>Avigilion Control Center 7 · live view</span><span>Sucursal Plaza Río · Tijuana</span></div>
+  </div>
+</header>
+
+<!-- RETO -->
+<section>
+  <div class="section-eyebrow">El reto</div>
+  <h2 class="h">38 tiendas, 600 cámaras y nadie con tiempo para revisar nada.</h2>
+  <p class="body">La cadena venía operando con un CCTV legacy de cámaras analógicas y DVRs locales por sucursal. Sin analítica, sin búsqueda y sin federación. Cada incidente significaba que un coordinador regional viajaba físicamente a la tienda, descargaba un disco y revisaba horas de video frame por frame en una laptop.</p>
+  <p class="body">El equipo de prevención de pérdidas <strong>resolvía menos del 12% de los robos hormiga reportados</strong>, mientras que el shrinkage anual estaba 38% por encima del benchmark del sector. La dirección comercial pidió una solución que no solo grabara, sino que ayudara activamente a investigar.</p>
+  <p class="body">El reto técnico era doble: <strong>migrar 600 cámaras sin frenar la operación de tienda</strong> y entregar al equipo de prevención una herramienta que pudiera usar un coordinador no técnico desde el celular o una laptop estándar.</p>
+</section>
+
+<!-- SOLUCIÓN -->
+<section class="soft">
+  <div class="section-eyebrow">La solución IAMET</div>
+  <h2 class="h">Migración a Avigilion ACC7 con cámaras H6A y Appearance Search.</h2>
+  <p class="body">IAMET diseñó un despliegue por olas de 6 tiendas por mes con servidor central federado en oficinas corporativas. Cada sucursal mantuvo continuidad de grabación mientras se reemplazaba el cableado coaxial por UTP Cat6A y se montaban las nuevas H6A en altura técnica certificada.</p>
+
+  <div class="components">
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg></div>
+      <div>
+        <h3>Cámaras Avigilion H6A 4K</h3>
+        <p>Bullet y dome de 8 MP con HDR e IR adaptativo. Analítica self-learning a bordo para reducir ancho de banda y falsos positivos. 14-18 cámaras por tienda según planta.</p>
+        <span class="tag">600 unidades</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M12 3v18" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/></svg></div>
+      <div>
+        <h3>ACC7 + Appearance Search</h3>
+        <p>VMS centralizado con búsqueda por descripción ("hombre playera roja almacén 14:32") que cruza eventos en las 38 tiendas en segundos. Retención 30 días primaria, 90 días forensics.</p>
+        <span class="tag">VMS Enterprise</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 8h12l4 4-4 4H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h3>Integración POS + alertas</h3>
+        <p>Conector con el sistema POS para asociar cada transacción con video. Alertas automáticas en operaciones sospechosas (cancelaciones, devoluciones sin cliente, voids excesivos).</p>
+        <span class="tag">POS Bridge</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="12" r="2" stroke="currentColor" stroke-width="2"/><path d="M14 10h4M14 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div>
+        <h3>NOC + monitoreo SLA</h3>
+        <p>Monitoreo de salud por cámara desde NOC IAMET, garantías Gold Avigilion y onsite 4 horas BC. Reportes ejecutivos mensuales con KPIs operativos al área de prevención.</p>
+        <span class="tag">SLA 24/7</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTADOS -->
+<section>
+  <div class="section-eyebrow">Resultados</div>
+  <h2 class="h">Seis meses después del rollout completo.</h2>
+  <p class="body">Las mediciones se tomaron contra baseline de los 12 meses anteriores y se validaron en auditoría interna del área de prevención y finanzas.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="num">-45%</div><div class="lbl">Pérdida en piso de venta</div><div class="ctx">vs baseline 12 meses</div></div>
+    <div class="kpi"><div class="num">-92%</div><div class="lbl">Tiempo de investigación por caso</div><div class="ctx">8 h → 12 s con Appearance Search</div></div>
+    <div class="kpi"><div class="num">+74%</div><div class="lbl">Casos resueltos por mes</div><div class="ctx">de 28 a 49 promedio</div></div>
+    <div class="kpi"><div class="num">11 mo</div><div class="lbl">Retorno de inversión</div><div class="ctx">payback Avigilion + servicios</div></div>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial">
+  <div class="quote-mark">"</div>
+  <div class="quote">Antes pasaba un día completo buscando un robo en el video de una sola tienda. Ahora escribo <em style="color:var(--accent-2);font-style:normal;">"hombre con mochila azul, Plaza Río, 14:30"</em> y el sistema me da el clip en menos de un minuto, con eventos correlacionados de otras tres sucursales.</div>
+  <div class="attrib">
+    <div class="avatar">JC</div>
+    <div>
+      <div class="name">J. Castañeda</div>
+      <div class="role">Coordinador de Prevención de Pérdidas · Cadena Retail Moda</div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT IAMET -->
+<section class="about">
+  <div class="about-grid">
+    <div>
+      <h3>Sobre IAMET</h3>
+      <p>IAMET es integrador de tecnología con más de 20 años en el mercado mexicano, partner Gold de Zebra, Panduit, Avigilion, Genetec y Axis. Operamos desde Tijuana y Mexicali con cobertura nacional, showroom propio y NOC 24/7 para soporte en sitio y remoto.</p>
+      <p>Diseñamos, desplegamos y operamos infraestructura crítica: data center, video IA, control de acceso, captura de datos y redes empresariales.</p>
+    </div>
+    <div class="about-stats">
+      <div class="s"><div class="n">20+</div><div class="l">años en el mercado</div></div>
+      <div class="s"><div class="n">5</div><div class="l">partner Gold de marca</div></div>
+      <div class="s"><div class="n">24/7</div><div class="l">NOC propio</div></div>
+      <div class="s"><div class="n">BC · Son</div><div class="l">cobertura noroeste</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="left">
+    <span class="iamet">IAMET</span>
+    <span>· Caso de éxito · Cadena Retail · Avigilion · 2026</span>
+  </div>
+  <div class="right">
+    <a href="mailto:ventas@iamet.com.mx">ventas@iamet.com.mx</a>
+    &nbsp;·&nbsp;
+    <a href="tel:+526646800000">+52 (664) 680 0000</a>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    const els=document.querySelectorAll('section, .hero-img');
+    els.forEach(e=>e.classList.add('reveal'));
+    const io=new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+    },{threshold:.1});
+    els.forEach(e=>io.observe(e));
+  })();
+</script>
+</body>
+</html>

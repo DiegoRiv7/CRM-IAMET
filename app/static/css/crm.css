@@ -2779,7 +2779,10 @@
     .widget-overlay.is-page-mode .cal-page-bar {
         margin-bottom: 10px;
         flex-shrink: 0;
-        padding: 10px 4px !important;   /* mismo padding-left que la mini-nav */
+        /* Mismo padding lateral que mini-nav y wrapper interno del calendario
+           → Filtro alinea con "‹" y con la columna LUN del grid; Nueva
+           actividad alinea con la columna DOM. */
+        padding: 10px 12px !important;
         position: sticky;
         top: 0;
         z-index: 10;
@@ -2795,16 +2798,44 @@
         display: flex !important;
         align-items: center !important;
     }
-    /* Altura uniforme para todos los botones/pills de la barra. */
+    /* ── ALTURA UNIFORME 36px PARA TODOS LOS ITEMS DE LA BARRA ──
+       Filtro / Usuarios pill / Dynamic island Mes-Semana-Día / Nueva actividad
+       deben tener todos exactamente la misma altura outer (36px) y centro
+       vertical. Para garantizarlo:
+       - height + min/max-height fijos (impide que contenido expanda)
+       - padding-top/bottom: 0 explícito (impide que padding sume altura)
+       - box-sizing: border-box
+       - El centrado vertical interno lo da align-items:center del flex. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill,
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new,
-    .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
-        height: 38px !important;
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
+        height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
         line-height: 1 !important;
         box-sizing: border-box !important;
         display: inline-flex !important;
         align-items: center !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    /* Dynamic island: padding lateral interno y altura de los tabs ajustados
+       para que outer dynamic island = 36px (igual que los demás items). */
+    .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
+        padding-left: 3px !important;
+        padding-right: 3px !important;
+    }
+    .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
+        height: 30px !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
+        line-height: 1 !important;
+        box-sizing: border-box !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
     }
     .widget-overlay.is-page-mode .cal-page-bar.crm-bar--dashboard::before {
         display: none !important;
@@ -2816,11 +2847,13 @@
         display: flex !important;
         align-items: center !important;
     }
-    /* Botones de la izquierda del calendario más pronunciados, en línea con
-       el tamaño de la dynamic island del centro. */
+    /* Botones de la izquierda (Filtro, Usuarios pill): estilo coherente con
+       la dynamic island. Padding solo horizontal — la altura la fija la regla
+       de altura uniforme de arriba (36px). */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill {
-        padding: 8px 16px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
         font-size: 0.86rem !important;
         font-weight: 600 !important;
         border-radius: 999px !important;
@@ -2828,31 +2861,45 @@
         border: 1px solid rgba(15,23,42,0.08) !important;
         box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
     }
-    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:hover,
+    /* Hover de los pills laterales (Filtro, Usuarios). EXCLUYE .crm-facet-new
+       porque ese botón también tiene la clase .crm-facet-btn — sin el :not()
+       el hover se ponía blanco encima del azul. */
+    .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:not(.crm-facet-new):hover,
     .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
         background: #f8fafc !important;
         border-color: rgba(15,23,42,0.14) !important;
     }
-    /* Botón Nueva actividad: igualar tamaño con los pills, mismo color azul */
+    /* Botón Nueva actividad: misma altura/forma que los demás pills.
+       Sombra suave (similar a los pills laterales) para que no se vea
+       "levitando" arriba del resto. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
-        padding: 8px 16px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
         font-size: 0.86rem !important;
         font-weight: 600 !important;
         border-radius: 999px !important;
         background: linear-gradient(135deg, #0052D4 0%, #4364F7 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        box-shadow: 0 6px 14px -6px rgba(0,82,212,0.55) !important;
+        box-shadow: 0 1px 2px rgba(0,82,212,0.18) !important;
+        transform: none !important;
     }
+    /* Hover: solo oscurecer el gradient (mantener azul, NO blanco) y
+       sin transform para que no se mueva. */
     .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #0041A8 0%, #2F4FE0 100%) !important;
+        box-shadow: 0 2px 6px rgba(0,82,212,0.28) !important;
+        color: #ffffff !important;
+        border: none !important;
+        transform: none !important;
     }
-    /* Mini-barra de navegación del mes (debajo del header) */
+    /* Mini-barra de navegación del mes (debajo del header).
+       Mismo padding lateral que .cal-page-bar y wrapper del calendario. */
     .widget-overlay.is-page-mode .cal-page-monthnav {
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 0 4px 8px;
+        padding: 0 12px 8px;
         flex-shrink: 0;
     }
     .cal-monthnav-arrow {
@@ -2895,7 +2942,10 @@
     }
     /* El calendario en page-mode flota libre sobre la página — sin card
        contenedor, sin border, sin radius, sin sombra. Las líneas entre
-       celdas dan toda la estructura. */
+       celdas dan toda la estructura.
+       Padding lateral 12px = misma X que .cal-page-bar y .cal-page-monthnav
+       → la columna LUN alinea con "Filtro"/"‹", y DOM alinea con "+Nueva
+       actividad". Anula el inline-style 0.8rem/1.4rem del template. */
     .widget-overlay.is-page-mode .cal-page-body > div:first-child {
         background: transparent;
         border: none;
@@ -2906,6 +2956,7 @@
         flex: 1 1 100% !important;
         position: relative;
         min-height: 0;
+        padding: 0 12px !important;
     }
     /* La página debe scrollear cuando hay muchos eventos */
     .widget-overlay.is-page-mode .cal-page-body {
@@ -2927,10 +2978,13 @@
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-scrollgrid-sync-table {
         height: auto !important;
     }
-    /* Día actual: fondo azul muy sutil + borde lateral azul para destacar */
+    /* Día actual: fondo azul sutil, SIN barra lateral.
+       El número del día ya viene con badge azul del FullCalendar (.fc-daygrid-day-number
+       cuando es today queda en círculo azul) → con el tinte de fondo basta para
+       destacar sin meter una barra vertical fea. */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-day-today {
-        background: rgba(0,82,212,0.05) !important;
-        box-shadow: inset 3px 0 0 #0052D4;
+        background: rgba(0,82,212,0.07) !important;
+        box-shadow: none !important;
     }
     /* "+N más" link estilizado */
     .widget-overlay.is-page-mode #fullCalendarRoot .fc-daygrid-more-link {
@@ -16462,3 +16516,489 @@ body.cert-d-lock {
     margin-top: 2px;
 }
 .mkt-cert-card-stat--warn .mkt-cert-card-stat-num { color: #DC2626; }
+
+/* ═══ Widget Cliente → Tab "Facturación" ═══ */
+.wco-fact-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 24px 24px;
+    background: #fff;
+    scrollbar-width: thin;
+}
+.wco-fact-panel::-webkit-scrollbar { width: 5px; }
+.wco-fact-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+.wco-fact-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 4px 14px;
+    border-bottom: 1px solid #E5E7EB;
+    margin-bottom: 12px;
+}
+.wco-fact-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+}
+.wco-fact-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: rgba(0,82,212,0.10);
+    color: #0052D4;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+.wco-fact-hint {
+    font-size: 0.72rem;
+    color: #6B7280;
+    font-weight: 500;
+    text-align: right;
+    max-width: 50%;
+}
+.wco-fact-listwrap {
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.wco-fact-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.wco-fact-table thead th {
+    padding: 10px 16px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8E8E93;
+    text-align: left;
+    background: #FAFAFA;
+    border-bottom: 1px solid #E5E7EB;
+}
+.wco-fact-table tbody tr.wco-fact-row {
+    transition: background 0.12s;
+}
+.wco-fact-table tbody tr.wco-fact-row:hover {
+    background: rgba(0,82,212,0.04);
+}
+.wco-fact-table tbody td {
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: #3C3C43;
+    border-bottom: 1px solid #F2F2F4;
+    vertical-align: middle;
+}
+.wco-fact-table tbody tr:last-child td { border-bottom: none; }
+.wco-fact-name {
+    max-width: 280px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.wco-fact-ic {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: rgba(0,82,212,0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wco-fact-name-t {
+    font-weight: 600;
+    color: #1A1A1A;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 240px;
+}
+.wco-fact-opp { max-width: 240px; }
+.wco-fact-opp-link {
+    color: #0052D4;
+    text-decoration: none;
+    font-weight: 600;
+}
+.wco-fact-opp-link:hover { text-decoration: underline; }
+.wco-fact-opp-id {
+    color: #94A3B8;
+    font-weight: 500;
+    font-size: 0.74rem;
+}
+.wco-fact-fecha, .wco-fact-size, .wco-fact-by {
+    color: #6B7280;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.wco-fact-acts {
+    white-space: nowrap;
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.wco-fact-act {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    color: #6B7280;
+    background: #F5F5F7;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+.wco-fact-act:hover {
+    background: rgba(0,82,212,0.10);
+    color: #0052D4;
+}
+.wco-fact-act--dl:hover {
+    background: rgba(16,185,129,0.10);
+    color: #059669;
+}
+.wco-fact-empty {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 48px 24px;
+    text-align: center;
+}
+.wco-fact-empty-ic {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: #F5F5F7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+.wco-fact-empty-t {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1A1A1A;
+}
+.wco-fact-empty-s {
+    font-size: 0.78rem;
+    color: #6B7280;
+    max-width: 360px;
+    line-height: 1.4;
+}
+
+/* Botón "+ Subir factura" en el head del panel */
+.wco-fact-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #0052D4;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18);
+}
+.wco-fact-add-btn:hover {
+    background: #0041AB;
+    box-shadow: 0 2px 6px rgba(0,82,212,0.28);
+}
+.wco-fact-add-btn:active {
+    transform: translateY(1px);
+}
+.wco-fact-add-btn svg {
+    flex: 0 0 14px;
+}
+
+/* ═══ Modal: Subir factura ═══ */
+.wco-upload-card {
+    width: 480px;
+    max-width: 92vw;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 6px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.wco-upload-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #F2F2F4;
+}
+.wco-upload-head-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+.wco-upload-head-title h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+}
+.wco-upload-close {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #8E8E93;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    transition: background 0.12s, color 0.12s;
+}
+.wco-upload-close:hover {
+    background: #F5F5F7;
+    color: #1A1A1A;
+}
+.wco-upload-body {
+    padding: 18px 20px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.wco-upload-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.wco-upload-lbl {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6B7280;
+}
+.wco-upload-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    background: #FAFAFA;
+    font-size: 0.88rem;
+    color: #1A1A1A;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 36px;
+}
+.wco-upload-select:focus {
+    border-color: #0052D4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.12);
+}
+.wco-upload-help {
+    font-size: 0.7rem;
+    color: #8E8E93;
+    font-weight: 500;
+    line-height: 1.4;
+}
+.wco-upload-drop {
+    position: relative;
+    border: 1.5px dashed #D1D5DB;
+    border-radius: 12px;
+    background: #FAFAFA;
+    padding: 18px;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+}
+.wco-upload-drop:hover {
+    border-color: #0052D4;
+    background: rgba(0,82,212,0.03);
+}
+.wco-upload-drop.is-dragover {
+    border-color: #0052D4;
+    background: rgba(0,82,212,0.06);
+}
+.wco-upload-file {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.wco-upload-drop-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    pointer-events: none;
+}
+.wco-upload-drop-t {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1A1A1A;
+    margin-top: 6px;
+}
+.wco-upload-drop-s {
+    font-size: 0.72rem;
+    color: #8E8E93;
+    font-weight: 500;
+}
+.wco-upload-drop-file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 10px 12px;
+    position: relative;
+    z-index: 2;
+}
+.wco-upload-file-ic {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(0,82,212,0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wco-upload-file-info {
+    flex: 1;
+    min-width: 0;
+}
+.wco-upload-file-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1A1A1A;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wco-upload-file-size {
+    font-size: 0.72rem;
+    color: #8E8E93;
+    margin-top: 2px;
+}
+.wco-upload-file-clear {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: #F5F5F7;
+    color: #6B7280;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    position: relative;
+    z-index: 3;
+}
+.wco-upload-file-clear:hover {
+    background: #FFE4E6;
+    color: #DC2626;
+}
+.wco-upload-error {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #B91C1C;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+.wco-upload-foot {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px 18px;
+    border-top: 1px solid #F2F2F4;
+}
+.wco-upload-btn-cancel,
+.wco-upload-btn-submit {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s, color 0.15s, transform 0.1s, box-shadow 0.15s;
+    letter-spacing: -0.01em;
+}
+.wco-upload-btn-cancel {
+    background: #F5F5F7;
+    color: #3C3C43;
+}
+.wco-upload-btn-cancel:hover {
+    background: #E5E5EA;
+}
+.wco-upload-btn-submit {
+    background: #0052D4;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18);
+    min-width: 90px;
+}
+.wco-upload-btn-submit:hover:not(:disabled) {
+    background: #0041AB;
+    box-shadow: 0 2px 6px rgba(0,82,212,0.28);
+}
+.wco-upload-btn-submit:active:not(:disabled) {
+    transform: translateY(1px);
+}
+.wco-upload-btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.wco-upload-btn-submit.is-loading .wco-upload-btn-label::after {
+    content: '…';
+}
+
+/* Toast simple para "Factura subida" */
+.wco-upload-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #1A1A1A;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+.wco-upload-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}

@@ -59,6 +59,10 @@ class UserProfile(models.Model):
     rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='vendedor', verbose_name="Rol")
     oportunidades_ancladas = models.JSONField(default=list, blank=True, verbose_name="IDs de oportunidades ancladas")
     tareas_ancladas = models.JSONField(default=list, blank=True, verbose_name="IDs de tareas ancladas")
+    # Permiso granular para gestionar el módulo Marketing (subir/editar/borrar
+    # recursos). Independiente del rol — un vendedor puede tener este permiso
+    # sin ser supervisor. Se administra desde el panel admin → Permisos.
+    can_manage_marketing = models.BooleanField(default=False, verbose_name="Puede gestionar Marketing")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
@@ -5386,3 +5390,94 @@ class AvanceEtapaPendiente(models.Model):
 
     def __str__(self):
         return f"Avance {self.etapa_actual} → {self.etapa_siguiente} ({self.estado})"
+
+
+class RecursoMarketing(models.Model):
+    """
+    Material de marketing centralizado: brochures, landings, presentaciones,
+    certificaciones, videos, banners, propuestas y casos de éxito por marca.
+    Lo gestionan los usuarios con UserProfile.can_manage_marketing=True desde
+    el Marketing Hub. Cada recurso pertenece a una marca y un tipo; tiene un
+    archivo subido al disco del servidor o un URL externo (landings, videos
+    de YouTube, etc.). Soft-delete via campo `visible`.
+    """
+
+    BRAND_CHOICES = [
+        ('zebra',     'Zebra'),
+        ('panduit',   'Panduit'),
+        ('avigilion', 'Avigilion'),
+        ('genetec',   'Genetec'),
+        ('axis',      'Axis'),
+        ('apc',       'APC'),
+        ('cisco',     'Cisco'),
+        ('iamet',     'IAMET'),
+    ]
+
+    TIPO_CHOICES = [
+        ('brochure',      'Brochure'),
+        ('landing',       'Landing Page'),
+        ('presentacion',  'Presentación'),
+        ('certificacion', 'Certificación'),
+        ('video',         'Video'),
+        ('banner',        'Banner'),
+        ('propuesta',     'Propuesta'),
+        ('caso',          'Caso de éxito'),
+    ]
+
+    brand = models.CharField(max_length=20, choices=BRAND_CHOICES, db_index=True)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True)
+    titulo = models.CharField(max_length=255)
+    descripcion = models.TextField(blank=True, default='')
+    tags = models.JSONField(default=list, blank=True)
+
+    archivo = models.FileField(
+        upload_to='marketing/recursos/%Y/%m/',
+        null=True, blank=True,
+        help_text="Archivo subido (PDF, PPT, MP4, PNG…). Opcional si se usa `url`."
+    )
+    url = models.URLField(
+        max_length=500, blank=True, default='',
+        help_text="URL externa (landing page, video, doc en Drive). Opcional si se usa `archivo`."
+    )
+    tamano_bytes = models.PositiveBigIntegerField(default=0)
+
+    subido_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='recursos_marketing_subidos'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    visible = models.BooleanField(default=True, db_index=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Recurso de Marketing"
+        verbose_name_plural = "Recursos de Marketing"
+        ordering = ['brand', 'tipo', '-fecha_creacion']
+        indexes = [
+            models.Index(fields=['brand', 'tipo']),
+            models.Index(fields=['visible', '-fecha_creacion']),
+        ]
+
+    def __str__(self):
+        return f"[{self.get_brand_display()}] {self.titulo}"
+
+    @property
+    def tamano_legible(self):
+        size = self.tamano_bytes
+        if not size:
+            return '—'
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
+
+    @property
+    def url_efectiva(self):
+        """URL para abrir el recurso: prefiere `url` externa, sino `archivo`."""
+        if self.url:
+            return self.url
+        if self.archivo:
+            return self.archivo.url
+        return ''

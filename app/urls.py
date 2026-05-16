@@ -14,6 +14,7 @@ from . import views_levantamientos_app
 from . import views_compras
 from . import views_certificaciones
 from . import views_cursos
+from . import views_marketing
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -136,6 +137,8 @@ urlpatterns = [
     path('api/cliente-kpis/<int:cliente_id>/', views.api_cliente_kpis, name='api_cliente_kpis'),
     path('api/cliente-prospecciones/<int:cliente_id>/', views.api_cliente_prospecciones, name='api_cliente_prospecciones'),
     path('api/cliente-cotizaciones/<int:cliente_id>/', views.api_cliente_cotizaciones, name='api_cliente_cotizaciones'),
+    path('api/cliente-facturas/<int:cliente_id>/', views.api_cliente_facturas, name='api_cliente_facturas'),
+    path('api/cliente-facturas/<int:cliente_id>/subir/', views.api_subir_factura_cliente, name='api_subir_factura_cliente'),
     path('api/cliente-info/<int:cliente_id>/', views.api_cliente_info, name='api_cliente_info'),
     path('api/cliente-info/<int:cliente_id>/contactos/', views.api_cliente_contactos, name='api_cliente_contactos'),
     path('api/cliente-contacto/<int:contacto_id>/', views.api_cliente_contacto_detail, name='api_cliente_contacto_detail'),
@@ -170,6 +173,11 @@ urlpatterns = [
     path('api/admin/contactos/', views.api_admin_contactos, name='api_admin_contactos'),
     path('api/admin/metas/', views.api_admin_metas, name='api_admin_metas'),
     path('api/admin/permisos/<int:user_id>/', views.api_admin_permisos, name='api_admin_permisos'),
+
+    # ── APIs Marketing Hub ────────────────────────────────────────────────────
+    path('api/marketing/recursos/', views_marketing.api_marketing_recursos_list, name='api_marketing_recursos_list'),
+    path('api/marketing/recursos/<int:rid>/', views_marketing.api_marketing_recurso_detalle, name='api_marketing_recurso_detalle'),
+
     path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),
     path('api/admin/etapas-pipeline/', views.api_admin_etapas_pipeline, name='api_admin_etapas_pipeline'),

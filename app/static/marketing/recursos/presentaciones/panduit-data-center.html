@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Infraestructura Data Center Panduit · IAMET</title>
+<style>
+  :root{
+    --ink:#0A0A0A;
+    --accent:#1D3FAA;
+    --accent-2:#3A5BC7;
+    --accent-soft:#EEF1FB;
+    --muted:#5A5A5A;
+    --line:#E5E7EE;
+    --bg:#FFFFFF;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#000;color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;height:100%;}
+  .deck{position:relative;width:100vw;height:100vh;overflow:hidden;}
+  .slide{position:absolute;inset:0;width:100vw;height:100vh;background:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:8vh 9vw;opacity:0;transform:translateX(40px);transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1);pointer-events:none;overflow:hidden;}
+  .slide.active{opacity:1;transform:translateX(0);pointer-events:auto;z-index:2;}
+  .slide.prev{opacity:0;transform:translateX(-40px);z-index:1;}
+
+  .topbar{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:22px 36px;z-index:10;pointer-events:none;}
+  .topbar .left{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;color:var(--muted);}
+  .topbar .iamet{color:var(--iamet);font-weight:800;letter-spacing:-.3px;text-transform:none;font-size:14px;}
+  .topbar .dot{width:6px;height:6px;border-radius:99px;background:var(--accent);}
+  .topbar .right{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+  .nav{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;z-index:10;}
+  .nav button{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s;font-family:inherit;}
+  .nav button:hover{background:var(--accent-soft);border-color:var(--accent);}
+  .nav button:disabled{opacity:.35;cursor:not-allowed;}
+  .progress{display:flex;gap:5px;}
+  .progress span{display:block;width:18px;height:3px;border-radius:99px;background:var(--line);transition:background .3s,width .3s;}
+  .progress span.on{background:var(--accent);width:28px;}
+
+  .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;color:var(--accent);}
+  .eyebrow.muted{color:var(--muted);}
+  h1.title{font-size:clamp(40px,7vw,96px);font-weight:800;line-height:1.02;letter-spacing:-2.5px;margin-top:18px;color:var(--ink);}
+  h1.title .accent{color:var(--accent);}
+  h2.title{font-size:clamp(32px,4.5vw,56px);font-weight:800;line-height:1.05;letter-spacing:-1.2px;margin-top:14px;color:var(--ink);}
+  p.lead{font-size:clamp(15px,1.4vw,20px);color:var(--muted);max-width:680px;margin-top:22px;line-height:1.55;font-weight:400;}
+
+  /* COVER */
+  .cover{background:linear-gradient(135deg,#0a1a4a 0%,#1D3FAA 100%);color:#fff;position:relative;overflow:hidden;}
+  .cover h1{color:#fff;}
+  .cover .eyebrow{color:#9DB2F2;}
+  .cover p.lead{color:#cdd6f3;}
+  .cover::after{content:"";position:absolute;right:-200px;bottom:-200px;width:600px;height:600px;border:1px solid rgba(255,255,255,.12);border-radius:50%;}
+  .cover::before{content:"";position:absolute;right:-100px;bottom:-100px;width:400px;height:400px;border:1px solid rgba(255,255,255,.18);border-radius:50%;}
+  .cover .meta{position:relative;z-index:2;margin-top:36px;display:flex;gap:32px;font-size:13px;color:#9DB2F2;}
+  .cover .meta b{color:#fff;display:block;font-weight:700;letter-spacing:.5px;}
+  .cover .cover-body{position:relative;z-index:2;max-width:820px;}
+
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:54px;}
+  .pillar{padding:28px;border:1px solid var(--line);border-radius:14px;background:#fff;transition:border-color .25s;}
+  .pillar:hover{border-color:var(--accent);}
+  .pillar .icon{width:48px;height:48px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;}
+  .pillar h3{font-size:20px;font-weight:800;margin-top:18px;letter-spacing:-.3px;}
+  .pillar p{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.55;}
+
+  .two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center;}
+  .stat-stack{display:flex;flex-direction:column;gap:22px;}
+  .stat{padding:24px 26px;border-radius:14px;background:#0d1733;color:#fff;}
+  .stat .num{font-size:56px;font-weight:800;letter-spacing:-2px;color:#7C9BFF;line-height:1;}
+  .stat .lbl{font-size:13px;color:#b9c3e3;margin-top:10px;line-height:1.5;}
+
+  .product-slide{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;}
+  .device-frame{position:relative;background:linear-gradient(180deg,#F4F6FB,#E6EBF5);border-radius:24px;padding:32px;display:flex;align-items:center;justify-content:center;min-height:480px;}
+  .spec-list{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;}
+  .spec-list .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .spec-list .v{font-size:16px;font-weight:700;color:var(--ink);margin-top:4px;}
+
+  .roi-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;margin-top:36px;align-items:center;}
+  .bars{display:flex;flex-direction:column;gap:18px;}
+  .bar-row{display:grid;grid-template-columns:170px 1fr 80px;align-items:center;gap:16px;}
+  .bar-row .lbl{font-size:13px;color:var(--muted);font-weight:600;}
+  .bar-row .track{height:14px;background:#F2F3F5;border-radius:99px;overflow:hidden;}
+  .bar-row .fill{height:100%;background:var(--accent);border-radius:99px;width:0;transition:width 1s cubic-bezier(.2,.7,.2,1);}
+  .slide.active .bar-row .fill{width:var(--w);}
+  .bar-row .val{font-size:16px;font-weight:800;color:var(--ink);text-align:right;}
+  .case-card{background:#0d1733;color:#fff;padding:32px;border-radius:18px;}
+  .case-card .quote{font-size:18px;line-height:1.5;font-weight:500;color:#fff;}
+  .case-card .who{margin-top:18px;font-size:13px;color:#b9c3e3;}
+  .case-card .who b{color:#fff;display:block;}
+
+  .arch{margin-top:46px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;}
+  .arch-col{padding:24px;border:1px solid var(--line);border-radius:14px;background:#fff;}
+  .arch-col .layer{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--accent);}
+  .arch-col .ttl{font-size:18px;font-weight:800;margin-top:8px;letter-spacing:-.3px;}
+  .arch-col ul{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .arch-col li{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:start;}
+  .arch-col li::before{content:"";width:6px;height:6px;border-radius:99px;background:var(--accent);margin-top:7px;flex-shrink:0;}
+
+  .timeline{margin-top:48px;position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+  .timeline::before{content:"";position:absolute;left:0;right:0;top:18px;height:2px;background:var(--line);}
+  .step{position:relative;padding-top:48px;}
+  .step::before{content:"";position:absolute;top:10px;left:0;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--accent);}
+  .step .num{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700;}
+  .step h4{font-size:16px;font-weight:800;margin-top:6px;letter-spacing:-.2px;}
+  .step p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;}
+
+  .cta-slide{background:linear-gradient(135deg,#0a1a4a,#1D3FAA);color:#fff;}
+  .cta-slide h1{color:#fff;}
+  .cta-slide .eyebrow{color:#9DB2F2;}
+  .cta-slide p.lead{color:#cdd6f3;}
+  .cta-row{margin-top:48px;display:flex;gap:18px;flex-wrap:wrap;}
+  .cta-btn{display:inline-flex;align-items:center;gap:10px;padding:18px 28px;border-radius:99px;font-weight:700;font-size:15px;text-decoration:none;}
+  .cta-btn.primary{background:#fff;color:var(--accent);}
+  .cta-btn.ghost{border:1px solid rgba(255,255,255,.25);color:#fff;}
+  .contact-grid{margin-top:64px;display:grid;grid-template-columns:repeat(3,1fr);gap:32px;border-top:1px solid rgba(255,255,255,.1);padding-top:36px;}
+  .contact-grid .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9DB2F2;font-weight:700;}
+  .contact-grid .v{font-size:18px;font-weight:700;color:#fff;margin-top:6px;}
+
+  @media (max-width:900px){
+    .pillars,.contact-grid,.arch{grid-template-columns:1fr;}
+    .two-col,.product-slide,.roi-grid{grid-template-columns:1fr;gap:32px;}
+    .timeline{grid-template-columns:1fr 1fr;}
+    .slide{padding:14vh 7vw 12vh;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="left">
+    <span class="iamet">IAMET</span><span class="dot"></span><span>Panduit · Data Center</span>
+  </div>
+  <div class="right"><span id="cur">1</span> / <span id="tot">8</span></div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 COVER -->
+  <section class="slide cover active">
+    <div class="cover-body">
+      <div class="eyebrow">Presentación ejecutiva · Q2 2026</div>
+      <h1 class="title">Infraestructura crítica<br>que dura <span class="accent" style="color:#7C9BFF;">25 años.</span></h1>
+      <p class="lead">Diseñamos, certificamos y operamos data centers Tier III/IV sobre el ecosistema Panduit: cableado estructurado, racks Net-Access y DCIM SmartZone G5.</p>
+      <div class="meta">
+        <div><b>Panduit Authorized</b>System Integrator</div>
+        <div><b>Estándares</b>TIA-942 · ISO/IEC 24764</div>
+        <div><b>Garantía</b>25 años end-to-end</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 PROBLEM -->
+  <section class="slide">
+    <div class="eyebrow muted">El problema</div>
+    <h2 class="title">El data center que se queda<br>chico antes de cumplir 5 años.</h2>
+    <div class="two-col" style="margin-top:44px;">
+      <p class="lead" style="margin-top:0;">La densidad de cómputo se duplica cada 24 meses, pero el cableado y la termofluídica del cuarto se planean para hoy. El resultado: hotspots, parches improvisados, downtime no programado y auditorías reprobadas frente a SLA empresariales.</p>
+      <div class="stat-stack">
+        <div class="stat"><div class="num">$9.0K</div><div class="lbl">Costo promedio por minuto de downtime en data center crítico (Uptime Institute).</div></div>
+        <div class="stat"><div class="num">63%</div><div class="lbl">De fallas de red atribuibles a cableado mal certificado o sin etiquetar.</div></div>
+        <div class="stat"><div class="num">48 mo</div><div class="lbl">Vida útil real de instalaciones sin diseño Tier III.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 SOLUCION -->
+  <section class="slide">
+    <div class="eyebrow">La solución</div>
+    <h2 class="title">Tres capas Panduit que<br>blindan la operación.</h2>
+    <p class="lead">Cobre, fibra y monitoreo unificados bajo un solo SLA con certificación de planta independiente.</p>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <h3>Cableado estructurado</h3>
+        <p>Cat6A blindado y fibra OS2 / OM4 con conectores MTP/MPO, certificación de canal y garantía 25 años.</p>
+      </div>
+      <div class="pillar">
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 7h6M9 11h6M9 15h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <h3>Racks Net-Access</h3>
+        <p>Gabinetes con airflow contenido, PDUs inteligentes y ordenamiento que sostiene 30 kW por rack sin hotspots.</p>
+      </div>
+      <div class="pillar">
+        <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12h6l2-7 4 14 2-7h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>SmartZone G5</h3>
+        <p>DCIM con sensores de temperatura, humedad, energía y acceso por puerto. APIs hacia Splunk, Datadog y NOC propio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 PRODUCTO DESTACADO -->
+  <section class="slide">
+    <div class="product-slide">
+      <div class="device-frame">
+        <!-- Rack mockup -->
+        <svg width="280" height="400" viewBox="0 0 280 400" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="20" width="200" height="360" rx="6" fill="#0d0d0d" stroke="#1D3FAA" stroke-width="2"/>
+          <rect x="40" y="20" width="200" height="22" fill="#1D3FAA"/>
+          <text x="56" y="36" font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#fff">PANDUIT · NET-ACCESS</text>
+          <!-- U units -->
+          <g>
+            <rect x="54" y="58" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="66" width="60" height="6" fill="#3A5BC7"/>
+            <circle cx="200" cy="69" r="3" fill="#34d399"/>
+            <rect x="54" y="84" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="92" width="60" height="6" fill="#3A5BC7"/>
+            <circle cx="200" cy="95" r="3" fill="#34d399"/>
+            <rect x="54" y="110" width="172" height="36" fill="#101a3a" stroke="#1D3FAA"/>
+            <g stroke="#3A5BC7" stroke-width="1">
+              <line x1="62" y1="120" x2="218" y2="120"/>
+              <line x1="62" y1="128" x2="218" y2="128"/>
+              <line x1="62" y1="136" x2="218" y2="136"/>
+            </g>
+            <rect x="54" y="150" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="158" width="120" height="6" fill="#7C9BFF"/>
+            <rect x="54" y="176" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="184" width="100" height="6" fill="#3A5BC7"/>
+            <!-- switch -->
+            <rect x="54" y="202" width="172" height="30" fill="#0a1a4a" stroke="#1D3FAA"/>
+            <g fill="#34d399">
+              <rect x="60" y="212" width="6" height="4"/><rect x="70" y="212" width="6" height="4"/><rect x="80" y="212" width="6" height="4"/><rect x="90" y="212" width="6" height="4"/>
+              <rect x="100" y="212" width="6" height="4"/><rect x="110" y="212" width="6" height="4" fill="#facc15"/><rect x="120" y="212" width="6" height="4"/><rect x="130" y="212" width="6" height="4"/>
+              <rect x="140" y="212" width="6" height="4"/><rect x="150" y="212" width="6" height="4"/><rect x="160" y="212" width="6" height="4"/><rect x="170" y="212" width="6" height="4"/>
+            </g>
+            <rect x="60" y="220" width="160" height="6" fill="#1a2a5a"/>
+            <rect x="54" y="236" width="172" height="50" fill="#1a1a1a" stroke="#222"/>
+            <g fill="#3A5BC7">
+              <circle cx="68" cy="252" r="3"/><circle cx="84" cy="252" r="3"/><circle cx="100" cy="252" r="3"/><circle cx="116" cy="252" r="3"/><circle cx="132" cy="252" r="3"/><circle cx="148" cy="252" r="3"/><circle cx="164" cy="252" r="3"/><circle cx="180" cy="252" r="3"/><circle cx="196" cy="252" r="3"/><circle cx="212" cy="252" r="3"/>
+              <circle cx="68" cy="270" r="3"/><circle cx="84" cy="270" r="3"/><circle cx="100" cy="270" r="3"/><circle cx="116" cy="270" r="3"/><circle cx="132" cy="270" r="3"/><circle cx="148" cy="270" r="3"/><circle cx="164" cy="270" r="3"/><circle cx="180" cy="270" r="3"/><circle cx="196" cy="270" r="3"/><circle cx="212" cy="270" r="3"/>
+            </g>
+            <rect x="54" y="290" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="298" width="80" height="6" fill="#3A5BC7"/>
+            <rect x="54" y="316" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="324" width="80" height="6" fill="#3A5BC7"/>
+            <rect x="54" y="342" width="172" height="22" fill="#1a1a1a" stroke="#222"/>
+            <rect x="62" y="350" width="60" height="6" fill="#3A5BC7"/>
+            <circle cx="200" cy="353" r="3" fill="#facc15"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="eyebrow">Producto destacado</div>
+        <h2 class="title" style="font-size:clamp(32px,3.8vw,52px);">Net-Access<br><span style="color:var(--accent);">42U · 30kW.</span></h2>
+        <p class="lead" style="margin-top:18px;">El gabinete inteligente de Panduit con contención de pasillo caliente integrada, sensores de ambiente y administración por puerto. Listo para colocation, HCI y AI workloads.</p>
+        <div class="spec-list">
+          <div><div class="k">Capacidad</div><div class="v">42U · 30 kW</div></div>
+          <div><div class="k">Profundidad</div><div class="v">1200 mm</div></div>
+          <div><div class="k">Carga</div><div class="v">1361 kg estática</div></div>
+          <div><div class="k">PDU</div><div class="v">Smart Monitor + Outlet</div></div>
+          <div><div class="k">Contención</div><div class="v">Pasillo caliente HACS</div></div>
+          <div><div class="k">Sensores</div><div class="v">T° · Humedad · Puerta</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 CASO -->
+  <section class="slide">
+    <div class="eyebrow">Caso real · Site Tier III</div>
+    <h2 class="title">Maquiladora binacional<br>migra a 400G en 14 semanas.</h2>
+    <div class="roi-grid">
+      <div class="bars">
+        <div class="bar-row"><div class="lbl">Densidad por rack</div><div class="track"><div class="fill" style="--w:90%"></div></div><div class="val">28 kW</div></div>
+        <div class="bar-row"><div class="lbl">Downtime anual</div><div class="track"><div class="fill" style="--w:8%"></div></div><div class="val">26 min</div></div>
+        <div class="bar-row"><div class="lbl">PUE objetivo</div><div class="track"><div class="fill" style="--w:78%"></div></div><div class="val">1.42</div></div>
+        <div class="bar-row"><div class="lbl">MAC time</div><div class="track"><div class="fill" style="--w:68%"></div></div><div class="val">-68%</div></div>
+        <div class="bar-row"><div class="lbl">Garantía planta</div><div class="track"><div class="fill" style="--w:100%"></div></div><div class="val">25 años</div></div>
+      </div>
+      <div class="case-card">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M7 7h4v4H7zM13 7h4v4h-4z" fill="#7C9BFF"/><path d="M7 11c0 3 1 5 4 6M13 11c0 3 1 5 4 6" stroke="#7C9BFF" stroke-width="2"/></svg>
+        <div class="quote" style="margin-top:16px;">"IAMET entregó un site Tier III auditable. La certificación Panduit y la documentación as-built fueron lo que cerró la auditoría corporativa de Detroit en una sola visita."</div>
+        <div class="who"><b>Director de TI · Manufactura Automotriz</b>Site en Tijuana, headcount IT 70+</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 STACK -->
+  <section class="slide">
+    <div class="eyebrow">Stack técnico</div>
+    <h2 class="title">Una sola fuente de verdad<br>del cable al dashboard.</h2>
+    <div class="arch">
+      <div class="arch-col">
+        <div class="layer">Capa física</div>
+        <div class="ttl">Cobre · Fibra · Rack</div>
+        <ul>
+          <li>Cat6A TX6A-SD blindado</li>
+          <li>Fibra OS2 / OM4 con MPO/MTP</li>
+          <li>Racks Net-Access 42U</li>
+          <li>Pathways FiberRunner</li>
+        </ul>
+      </div>
+      <div class="arch-col">
+        <div class="layer">Energía y enfriamiento</div>
+        <div class="ttl">PDU · HACS</div>
+        <ul>
+          <li>PDUs SmartZone Monitor + Switched</li>
+          <li>Contención pasillo caliente</li>
+          <li>Sensores T° / Humedad / Puerta</li>
+          <li>Tableros redundantes A+B</li>
+        </ul>
+      </div>
+      <div class="arch-col">
+        <div class="layer">Visibilidad</div>
+        <div class="ttl">SmartZone G5</div>
+        <ul>
+          <li>DCIM con alarmado en tiempo real</li>
+          <li>APIs REST hacia Splunk / Datadog</li>
+          <li>Mapeo gemelo digital del cuarto</li>
+          <li>Reportes para auditoría TIA-942</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 IMPLEMENTACION -->
+  <section class="slide">
+    <div class="eyebrow">Implementación IAMET</div>
+    <h2 class="title">De plano arquitectónico<br>a certificación TIA-942.</h2>
+    <div class="timeline">
+      <div class="step"><div class="num">Fase 1</div><h4>Levantamiento</h4><p>Auditoría del cuarto, cálculo de cargas, BOM, layout en CAD y plan de migración por fases.</p></div>
+      <div class="step"><div class="num">Fase 2</div><h4>Obra civil</h4><p>Pathways, piso técnico, ductos, tableros A+B, sistema de tierras, contención.</p></div>
+      <div class="step"><div class="num">Fase 3</div><h4>Cableado</h4><p>Tendido Cat6A / fibra, terminado y certificación de canal con reporte Fluke por puerto.</p></div>
+      <div class="step"><div class="num">Fase 4</div><h4>Comisionado</h4><p>Pruebas Tier III, alta DCIM SmartZone, capacitación operación + handover documentado.</p></div>
+    </div>
+  </section>
+
+  <!-- 8 CTA -->
+  <section class="slide cta-slide">
+    <div class="eyebrow">Próximos pasos</div>
+    <h1 class="title">Visitamos su site<br>y entregamos diseño.</h1>
+    <p class="lead">Walk-through técnico sin costo, dictamen ejecutivo y propuesta con BOM Panduit + plan de implementación a 90 días.</p>
+    <div class="cta-row">
+      <a class="cta-btn primary" href="mailto:datacenter@iamet.com.mx">datacenter@iamet.com.mx</a>
+      <a class="cta-btn ghost" href="tel:+526646800000">+52 (664) 680 0000</a>
+    </div>
+    <div class="contact-grid">
+      <div><div class="k">Cobertura</div><div class="v">Frontera Norte · Pacífico</div></div>
+      <div><div class="k">Soporte</div><div class="v">24/7 con SLA 4h on-site</div></div>
+      <div><div class="k">Certificación</div><div class="v">Panduit Authorized SI</div></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Anterior">&larr;</button>
+  <div class="progress" id="progress"></div>
+  <button id="next" aria-label="Siguiente">&rarr;</button>
+</div>
+
+<script>
+  (function(){
+    const slides=[...document.querySelectorAll('.slide')];
+    const prev=document.getElementById('prev');
+    const next=document.getElementById('next');
+    const cur=document.getElementById('cur');
+    const tot=document.getElementById('tot');
+    const prog=document.getElementById('progress');
+    let i=0;
+    tot.textContent=slides.length;
+    slides.forEach(()=>{const s=document.createElement('span');prog.appendChild(s);});
+    const dots=[...prog.children];
+    function render(){
+      slides.forEach((s,k)=>{s.classList.remove('active','prev');if(k===i)s.classList.add('active');else if(k<i)s.classList.add('prev');});
+      dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+      cur.textContent=i+1;
+      prev.disabled=i===0;
+      next.disabled=i===slides.length-1;
+    }
+    function go(d){i=Math.max(0,Math.min(slides.length-1,i+d));render();}
+    prev.addEventListener('click',()=>go(-1));
+    next.addEventListener('click',()=>go(1));
+    document.addEventListener('keydown',e=>{
+      if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown')go(1);
+      if(e.key==='ArrowLeft'||e.key==='PageUp')go(-1);
+      if(e.key==='Home'){i=0;render();}
+      if(e.key==='End'){i=slides.length-1;render();}
+    });
+    render();
+  })();
+</script>
+</body>
+</html>

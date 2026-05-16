@@ -68,6 +68,7 @@ def api_admin_usuarios(request):
                 'meta_cotizado_numero': getattr(profile, 'meta_cotizado_numero', 0) if profile else 0,
                 'meta_cobrado': str(getattr(profile, 'meta_cobrado', 0)) if profile else '0',
                 'rol': getattr(profile, 'rol', 'vendedor') if profile else 'vendedor',
+                'can_manage_marketing': getattr(profile, 'can_manage_marketing', False) if profile else False,
             })
         return JsonResponse({'usuarios': data})
 
@@ -357,29 +358,35 @@ def api_admin_metas(request):
 def api_admin_permisos(request, user_id):
     if not is_supervisor(request.user):
         return JsonResponse({'error': 'No autorizado'}, status=403)
+    if request.method != 'PUT':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    try:
+        usuario = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
 
-    if request.method == 'PUT':
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'JSON inválido'}, status=400)
+    from django.contrib.auth.models import Group
+    response_data = {'success': True}
 
-        try:
-            usuario = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
-
-        from django.contrib.auth.models import Group
+    if 'is_supervisor' in data:
         grupo, _ = Group.objects.get_or_create(name='Supervisores')
-
-        if data.get('is_supervisor'):
+        if data['is_supervisor']:
             usuario.groups.add(grupo)
         else:
             usuario.groups.remove(grupo)
+        response_data['is_supervisor'] = bool(data['is_supervisor'])
 
-        return JsonResponse({'success': True, 'is_supervisor': data.get('is_supervisor', False)})
+    if 'can_manage_marketing' in data:
+        profile, _ = UserProfile.objects.get_or_create(user=usuario)
+        profile.can_manage_marketing = bool(data['can_manage_marketing'])
+        profile.save(update_fields=['can_manage_marketing'])
+        response_data['can_manage_marketing'] = profile.can_manage_marketing
 
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    return JsonResponse(response_data)
 
 
 @xframe_options_exempt

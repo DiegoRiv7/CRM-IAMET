@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Brochure Zebra ZD421 | IAMET</title>
+<style>
+  :root{
+    --ink:#0A0A0A;
+    --accent:#E8610A;
+    --muted:#5A5A5A;
+    --line:#E5E5E5;
+    --bg:#F2F3F5;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .stage{padding:48px 24px;display:flex;justify-content:center;}
+  .sheet{
+    width:816px;background:#fff;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.25),0 8px 20px -10px rgba(0,0,0,.15);
+    border-radius:2px;overflow:hidden;
+  }
+  /* HEADER */
+  .header{background:var(--ink);color:#fff;padding:36px 56px 28px;position:relative;overflow:hidden;}
+  .header::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;background:var(--accent);border-radius:50%;opacity:.95;}
+  .header::before{content:"";position:absolute;right:120px;bottom:-40px;width:120px;height:120px;background:#fff;opacity:.06;border-radius:50%;}
+  .brand-row{display:flex;align-items:center;gap:14px;position:relative;z-index:2;}
+  .brand-logo{font-weight:800;letter-spacing:.5px;font-size:22px;}
+  .brand-logo span{color:var(--accent);}
+  .partner-tag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.12);padding:6px 12px;border-radius:99px;backdrop-filter:blur(4px);}
+  .hero{margin-top:42px;position:relative;z-index:2;}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--accent);}
+  .h1{font-size:56px;font-weight:800;line-height:1.02;margin-top:10px;letter-spacing:-1.5px;}
+  .h1 .model{display:block;color:var(--accent);font-size:64px;}
+  .tagline{margin-top:14px;font-size:16px;color:#cfcfcf;max-width:520px;line-height:1.5;font-weight:400;}
+  /* SECTION */
+  .section{padding:42px 56px;border-bottom:1px solid var(--line);}
+  .section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .section-h2{font-size:26px;font-weight:800;letter-spacing:-.4px;color:var(--ink);}
+  .section-lead{margin-top:8px;font-size:14px;color:var(--muted);max-width:560px;line-height:1.55;}
+  /* FEATURES */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:28px;}
+  .feature{padding:0;}
+  .feature .icon{width:42px;height:42px;border-radius:10px;background:#FFF3EA;color:var(--accent);display:flex;align-items:center;justify-content:center;}
+  .feature h3{font-size:14px;font-weight:700;margin-top:14px;color:var(--ink);}
+  .feature p{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:6px;}
+  /* SPECS */
+  .specs{margin-top:24px;width:100%;border-collapse:collapse;font-size:13px;}
+  .specs tr{border-bottom:1px solid var(--line);}
+  .specs tr:last-child{border-bottom:0;}
+  .specs td{padding:14px 0;vertical-align:top;}
+  .specs td.k{width:42%;color:var(--muted);font-weight:500;}
+  .specs td.v{color:var(--ink);font-weight:600;}
+  /* USE CASES */
+  .uses{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px;}
+  .use{border:1px solid var(--line);border-radius:8px;padding:18px;background:#fff;}
+  .use .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;color:var(--accent);background:#FFF3EA;padding:5px 10px;border-radius:99px;}
+  .use h4{font-size:15px;font-weight:700;margin-top:12px;color:var(--ink);}
+  .use p{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  /* CTA */
+  .cta{padding:36px 56px;background:#FAFAFA;display:flex;justify-content:space-between;align-items:center;gap:24px;}
+  .cta .copy h4{font-size:18px;font-weight:800;color:var(--ink);}
+  .cta .copy p{font-size:13px;color:var(--muted);margin-top:4px;}
+  .cta .badge{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .iamet-wordmark{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--iamet);}
+  .iamet-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  /* FOOTER */
+  .footer{background:var(--ink);color:#9b9b9b;font-size:11px;padding:18px 56px;display:flex;justify-content:space-between;align-items:center;}
+  .footer .dot{display:inline-block;width:6px;height:6px;border-radius:99px;background:var(--accent);margin:0 8px;vertical-align:middle;}
+  /* Print */
+  @page{size:letter;margin:0;}
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{box-shadow:none;width:100%;border-radius:0;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="brand-row">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#E8610A"/><path d="M9 11h14l-9.5 10H23v0M9 21h14" stroke="#000" stroke-width="2.5" stroke-linecap="square"/></svg>
+        <div class="brand-logo">ZEBRA<span>.</span></div>
+        <div class="partner-tag">Distribuidor autorizado IAMET</div>
+      </div>
+      <div class="hero">
+        <div class="eyebrow">Impresora de etiquetas de escritorio</div>
+        <h1 class="h1">Serie ZD421<span class="model">Productividad sin pausas.</span></h1>
+        <p class="tagline">Diseñada para entornos de retail, salud, manufactura y logística donde cada etiqueta cuenta. Conectividad flexible, calidad de impresión 300dpi y arquitectura Link-OS lista para integrarse al primer día.</p>
+      </div>
+    </header>
+
+    <!-- FEATURES -->
+    <section class="section">
+      <div class="section-title">Características clave</div>
+      <h2 class="section-h2">Hardware moderno con la fiabilidad Zebra.</h2>
+      <p class="section-lead">Mantiene la línea operativa con cambio rápido de consumibles, diagnóstico LED multinivel y compatibilidad nativa con flotas existentes ZD410/ZD420.</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="10" rx="2"/><path d="M7 8V5h10v3M7 14h10"/></svg></div>
+          <h3>Térmica directa y transferencia</h3>
+          <p>Dos modelos para cubrir etiquetas de alta durabilidad o de bajo costo, según el flujo logístico.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h8"/></svg></div>
+          <h3>Resolución 203 o 300 dpi</h3>
+          <p>Texto, códigos de barra 1D/2D y etiquetas pequeñas de farmacia con nitidez profesional.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M5 6h14M5 18h14"/></svg></div>
+          <h3>Conectividad flexible</h3>
+          <p>USB, USB Host, Serial, Ethernet y Bluetooth 4.1 / Wi-Fi como opcionales modulares.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3>Link-OS y ZPL nativo</h3>
+          <p>Integración inmediata con sistemas ERP/WMS y reemplazo plug-and-play de equipos legados.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg></div>
+          <h3>Print Touch &amp; alertas</h3>
+          <p>Configuración por NFC y notificaciones inteligentes para reducir downtime operativo.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4zM4 14h16v6H4z"/><path d="M7 7h.01M7 17h.01"/></svg></div>
+          <h3>Footprint compacto</h3>
+          <p>Diseño robusto que cabe en mostradores, áreas clínicas y estaciones de packing.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPECS -->
+    <section class="section">
+      <div class="section-title">Especificaciones técnicas</div>
+      <h2 class="section-h2">Hoja técnica ZD421.</h2>
+      <table class="specs">
+        <tr><td class="k">Tecnología de impresión</td><td class="v">Térmica directa o Transferencia térmica</td></tr>
+        <tr><td class="k">Resolución</td><td class="v">203 dpi (8 dots/mm) o 300 dpi (12 dots/mm)</td></tr>
+        <tr><td class="k">Velocidad máxima</td><td class="v">Hasta 152 mm/s (6 ips)</td></tr>
+        <tr><td class="k">Ancho de impresión</td><td class="v">Hasta 104 mm (4.09")</td></tr>
+        <tr><td class="k">Memoria</td><td class="v">256 MB Flash / 512 MB RAM</td></tr>
+        <tr><td class="k">Conectividad estándar</td><td class="v">USB 2.0, USB Host, Serial, Ethernet 10/100</td></tr>
+        <tr><td class="k">Conectividad opcional</td><td class="v">Bluetooth 4.1 LE / Wi-Fi 802.11ac dual band</td></tr>
+        <tr><td class="k">Lenguaje de impresión</td><td class="v">ZPL II, EPL2, XML, soporta Link-OS</td></tr>
+        <tr><td class="k">Cabezal intercambiable</td><td class="v">Sí, sin herramientas</td></tr>
+        <tr><td class="k">Garantía estándar</td><td class="v">2 años de fábrica</td></tr>
+      </table>
+    </section>
+
+    <!-- USE CASES -->
+    <section class="section">
+      <div class="section-title">Casos de uso</div>
+      <h2 class="section-h2">Donde cada etiqueta tiene una misión.</h2>
+      <div class="uses">
+        <div class="use">
+          <span class="pill">Retail</span>
+          <h4>Etiquetado de góndola y precios</h4>
+          <p>Reduce errores en piso de venta con impresiones de alta legibilidad y reemplazo veloz desde caja o trastienda.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Salud</span>
+          <h4>Identificación de pacientes y muestras</h4>
+          <p>Etiquetas pequeñas, durables y con resolución 300dpi para códigos de muestras clínicas y brazaletes.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Logística</span>
+          <h4>Picking, packing y envíos</h4>
+          <p>Integración a WMS y compatibilidad con la flota existente ZD410/ZD420 para escalar sin reentrenar al equipo.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="cta">
+      <div class="copy">
+        <h4>Levantamiento técnico sin costo.</h4>
+        <p>Un especialista IAMET dimensiona la mejor configuración para tu operación en menos de 48 horas.</p>
+      </div>
+      <div class="badge">
+        <div class="iamet-wordmark">IAMET</div>
+        <div class="iamet-tag">Distribuidor autorizado</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div>IAMET <span class="dot"></span> Tijuana / Mexicali, México <span class="dot"></span> ventas@iamet.mx</div>
+      <div>Brochure ZD421 / 2026</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

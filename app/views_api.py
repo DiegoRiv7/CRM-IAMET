@@ -1719,5 +1719,203 @@ def api_verificar_empleado_mes(request):
             imagen=foto_ganador
         )
         return JsonResponse({'status': 'announced', 'winner': ganador_em.usuario.username})
-    
+
     return JsonResponse({'status': 'no_eligible_data'})
+
+
+@login_required
+def api_cliente_facturas(request, cliente_id):
+    """
+    Lista de archivos de tipo "factura" para todas las oportunidades de un cliente.
+
+    Heurística: cualquier `OportunidadArchivo` cuyo `nombre_original` contenga
+    "factura" (case-insensitive) — esto cubre tanto los nombres que arrancan
+    con "Factura …" como los que la traen al interior del nombre.
+
+    Permisos: si el usuario no es supervisor, se limita a las oportunidades
+    cuyos dueños están dentro de su grupo de trabajo (usa
+    `get_usuarios_visibles_ids`).
+    """
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    qs = (
+        OportunidadArchivo.objects
+        .filter(
+            oportunidad__cliente_id=cliente.id,
+            nombre_original__icontains='factura',
+        )
+        .select_related('oportunidad', 'oportunidad__cliente', 'usuario')
+        .order_by('-fecha_subida')
+    )
+
+    # Permisos: vendedores solo ven facturas de oportunidades visibles para ellos.
+    if not is_supervisor(request.user):
+        from .views_grupos import get_usuarios_visibles_ids
+        _gids = get_usuarios_visibles_ids(request.user)
+        if _gids and len(_gids) > 1:
+            qs = qs.filter(oportunidad__usuario_id__in=_gids)
+        else:
+            qs = qs.filter(oportunidad__usuario=request.user)
+
+    rows = []
+    for a in qs:
+        opp = a.oportunidad
+        opp_id = opp.id if opp else None
+        opp_titulo = opp.oportunidad if opp else '—'
+        # Año para URL al kanban
+        try:
+            anio_opp = (opp.anio_cierre or opp.fecha_creacion.year) if opp else ''
+        except Exception:
+            anio_opp = ''
+        # Quién subió
+        usr = a.usuario
+        if usr:
+            subido_por = (usr.get_full_name() or usr.username or '').strip() or usr.username
+        else:
+            subido_por = '—'
+        # URL al archivo (sirve a través del endpoint de descarga existente)
+        download_url = f'/app/api/descargar-archivo-oportunidad/{a.id}/'
+        preview_url = f'/app/api/vista-previa-archivo-oportunidad/{a.id}/'
+        # URL para abrir la oportunidad en el CRM
+        opp_url = ''
+        if opp_id:
+            opp_url = f'/app/todos/?tab=crm&anio={anio_opp}&mes=todos&open_opp={opp_id}'
+        rows.append({
+            'id': a.id,
+            'nombre': a.nombre_original or '',
+            'tipo': a.tipo or '',
+            'oportunidad_id': opp_id,
+            'oportunidad_titulo': opp_titulo,
+            'oportunidad_url': opp_url,
+            'fecha_subida_iso': a.fecha_subida.isoformat() if a.fecha_subida else '',
+            'fecha_subida_legible': a.fecha_subida.strftime('%d %b %Y') if a.fecha_subida else '',
+            'tamano_legible': a.tamaño_legible if a.tamaño else '—',
+            'subido_por': subido_por,
+            'download_url': download_url,
+            'preview_url': preview_url,
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'cliente': {'id': cliente.id, 'nombre': cliente.nombre_empresa or '—'},
+        'rows': rows,
+        'total': len(rows),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_subir_factura_cliente(request, cliente_id):
+    """
+    Sube una factura manualmente y la asocia a una oportunidad del cliente.
+
+    POST multipart:
+      - oportunidad_id: FK al TodoItem (debe pertenecer al cliente)
+      - archivo: el archivo a subir (PDF/Excel/Word/imagen)
+
+    Si el nombre del archivo no contiene "factura" (case-insensitive),
+    se prefija con "Factura — " en `nombre_original` para que aparezca
+    en el listado de facturas (que filtra por icontains='factura').
+
+    Permisos: vendedores solo pueden subir a oportunidades visibles
+    para ellos (mismo criterio que el GET).
+    """
+    # Validar cliente
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+
+    # Validar archivo
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'ok': False, 'error': 'No se recibió archivo'}, status=400)
+
+    # Validar oportunidad
+    opp_id_raw = (request.POST.get('oportunidad_id') or '').strip()
+    if not opp_id_raw:
+        return JsonResponse({'ok': False, 'error': 'Debes seleccionar una oportunidad'}, status=400)
+    try:
+        opp_id = int(opp_id_raw)
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'oportunidad_id inválido'}, status=400)
+
+    try:
+        oportunidad = TodoItem.objects.get(id=opp_id, cliente_id=cliente.id)
+    except TodoItem.DoesNotExist:
+        return JsonResponse(
+            {'ok': False, 'error': 'La oportunidad no pertenece a este cliente'},
+            status=400,
+        )
+
+    # Permisos: vendedores solo a sus oportunidades visibles
+    if not is_supervisor(request.user):
+        from .views_grupos import get_usuarios_visibles_ids
+        _gids = get_usuarios_visibles_ids(request.user)
+        visible = False
+        if _gids and len(_gids) > 1:
+            visible = (oportunidad.usuario_id in _gids)
+        else:
+            visible = (oportunidad.usuario_id == request.user.id)
+        if not visible:
+            return JsonResponse(
+                {'ok': False, 'error': 'No tienes permisos sobre esta oportunidad'},
+                status=403,
+            )
+
+    # Derivar tipo a partir del content_type (mismo patrón que views_crm.py L5312-5323)
+    content_type = (archivo.content_type or '').lower()
+    if content_type.startswith('image/'):
+        tipo_archivo = 'imagen'
+    elif content_type in ['application/pdf']:
+        tipo_archivo = 'documento'
+    elif content_type in [
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]:
+        tipo_archivo = 'documento'
+    elif content_type in [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv',
+    ]:
+        tipo_archivo = 'documento'
+    else:
+        tipo_archivo = 'otro'
+
+    # Asegurar que el nombre_original contenga "factura" para que aparezca
+    # en el listado. El archivo en disco mantiene su nombre original; solo
+    # taggeamos el campo nombre_original.
+    nombre_orig = archivo.name or 'archivo'
+    if 'factura' not in nombre_orig.lower():
+        nombre_orig = f'Factura — {nombre_orig}'
+
+    try:
+        archivo_obj = OportunidadArchivo.objects.create(
+            oportunidad=oportunidad,
+            usuario=request.user,
+            archivo=archivo,
+            nombre_original=nombre_orig,
+            tipo=tipo_archivo,
+            tamaño=archivo.size or 0,
+            descripcion='Factura subida desde el tab Facturación del widget cliente',
+        )
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': f'Error al guardar: {e}'}, status=500)
+
+    return JsonResponse({
+        'ok': True,
+        'archivo': {
+            'id': archivo_obj.id,
+            'nombre': archivo_obj.nombre_original,
+            'tipo': archivo_obj.tipo,
+            'tamano_legible': archivo_obj.tamaño_legible if archivo_obj.tamaño else '—',
+            'url': archivo_obj.archivo.url if archivo_obj.archivo else '',
+            'download_url': f'/app/api/descargar-archivo-oportunidad/{archivo_obj.id}/',
+            'preview_url': f'/app/api/vista-previa-archivo-oportunidad/{archivo_obj.id}/',
+            'oportunidad_id': oportunidad.id,
+        },
+    })

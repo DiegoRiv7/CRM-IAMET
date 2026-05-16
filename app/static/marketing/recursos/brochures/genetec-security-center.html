@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Brochure Genetec Security Center | IAMET</title>
+<style>
+  :root{
+    --teal:#007A5E;
+    --teal-deep:#005842;
+    --ink:#0D1F1A;
+    --muted:#5A6663;
+    --line:#E2EAE7;
+    --bg:#EEF1F0;
+    --soft:#F4F8F7;
+    --iamet:#0052D4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .stage{padding:48px 24px;display:flex;justify-content:center;}
+  .sheet{
+    width:816px;background:#fff;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.25),0 8px 20px -10px rgba(0,0,0,.15);
+    border-radius:2px;overflow:hidden;
+  }
+  /* HEADER */
+  .header{background:linear-gradient(120deg,var(--teal) 0%,var(--teal-deep) 100%);color:#fff;padding:36px 56px 40px;position:relative;overflow:hidden;}
+  .header::before{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;background:rgba(255,255,255,.06);border-radius:50%;}
+  .header::after{content:"";position:absolute;left:-40px;bottom:-60px;width:200px;height:200px;background:rgba(0,0,0,.18);border-radius:50%;}
+  .brand-row{display:flex;align-items:center;gap:14px;position:relative;z-index:2;}
+  .brand-logo{font-weight:800;letter-spacing:.5px;font-size:22px;}
+  .partner-tag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.16);padding:6px 12px;border-radius:99px;}
+  .hero{margin-top:42px;position:relative;z-index:2;}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9DEBD6;}
+  .h1{font-size:50px;font-weight:800;line-height:1.04;margin-top:10px;letter-spacing:-1.2px;max-width:600px;}
+  .tagline{margin-top:14px;font-size:16px;color:#CDE7DF;max-width:560px;line-height:1.55;font-weight:400;}
+  .modules{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:2;}
+  .mod{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.12);padding:8px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.18);}
+  /* SECTION */
+  .section{padding:42px 56px;border-bottom:1px solid var(--line);}
+  .section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .section-h2{font-size:26px;font-weight:800;letter-spacing:-.4px;color:var(--ink);}
+  .section-lead{margin-top:8px;font-size:14px;color:var(--muted);max-width:580px;line-height:1.55;}
+  /* FEATURES */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:28px;}
+  .feature{padding:18px;border:1px solid var(--line);border-radius:10px;background:#fff;}
+  .feature .icon{width:42px;height:42px;border-radius:10px;background:#E3F4EE;color:var(--teal);display:flex;align-items:center;justify-content:center;}
+  .feature h3{font-size:14px;font-weight:700;margin-top:14px;color:var(--ink);}
+  .feature p{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:6px;}
+  /* SPECS */
+  .specs{margin-top:24px;width:100%;border-collapse:collapse;font-size:13px;}
+  .specs tr{border-bottom:1px solid var(--line);}
+  .specs td{padding:13px 0;vertical-align:top;}
+  .specs td.k{width:42%;color:var(--muted);font-weight:500;}
+  .specs td.v{color:var(--ink);font-weight:600;}
+  /* USE CASES */
+  .uses{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px;}
+  .use{border-radius:10px;padding:18px;background:var(--soft);border:1px solid var(--line);}
+  .use .pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;color:var(--teal);background:#E3F4EE;padding:5px 10px;border-radius:99px;}
+  .use h4{font-size:15px;font-weight:700;margin-top:12px;color:var(--ink);}
+  .use p{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  /* CTA */
+  .cta{padding:36px 56px;background:var(--soft);display:flex;justify-content:space-between;align-items:center;gap:24px;}
+  .cta .copy h4{font-size:18px;font-weight:800;color:var(--ink);}
+  .cta .copy p{font-size:13px;color:var(--muted);margin-top:4px;}
+  .iamet-wordmark{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--iamet);}
+  .iamet-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  /* FOOTER */
+  .footer{background:var(--ink);color:#9DA5C2;font-size:11px;padding:18px 56px;display:flex;justify-content:space-between;align-items:center;}
+  .footer .dot{display:inline-block;width:6px;height:6px;border-radius:99px;background:var(--teal);margin:0 8px;vertical-align:middle;}
+  @page{size:letter;margin:0;}
+  @media print{
+    body{background:#fff;}
+    .stage{padding:0;}
+    .sheet{box-shadow:none;width:100%;border-radius:0;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="sheet">
+    <header class="header">
+      <div class="brand-row">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#fff"/><path d="M16 6l8 4v6c0 5-4 9-8 10-4-1-8-5-8-10v-6z" stroke="#007A5E" stroke-width="2.6" stroke-linejoin="round"/><path d="M12 16l3 3 5-5" stroke="#007A5E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="brand-logo">GENETEC</div>
+        <div class="partner-tag">Distribuidor autorizado IAMET</div>
+      </div>
+      <div class="hero">
+        <div class="eyebrow">Plataforma unificada de seguridad</div>
+        <h1 class="h1">Security Center: una plataforma, todos los sistemas.</h1>
+        <p class="tagline">Video, control de acceso, ALPR y comunicaciones en un solo entorno operativo. Diseñado para gobierno, smart cities, transporte y corporativos que exigen ciberseguridad de grado empresarial.</p>
+        <div class="modules">
+          <span class="mod">Omnicast (VMS)</span>
+          <span class="mod">Synergis (Access)</span>
+          <span class="mod">AutoVu (ALPR)</span>
+          <span class="mod">Sipelia (Intercom)</span>
+          <span class="mod">Mission Control</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="section-title">Pilares de la plataforma</div>
+      <h2 class="section-h2">Unificación real, no integración superficial.</h2>
+      <p class="section-lead">Genetec Security Center comparte un solo motor, una sola base de datos y una sola interfaz para video, accesos y placas, eliminando silos operativos.</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="12" rx="1"/><path d="M17 10l4-2v8l-4-2z"/></svg></div>
+          <h3>Omnicast — VMS empresarial</h3>
+          <p>Soporta más de 8,000 modelos de cámaras de 150+ fabricantes. Federación de hasta 10,000 sitios.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>
+          <h3>Synergis — Control de acceso</h3>
+          <p>IP-native con soporte para HID, Mercury, Axis. Cumple con OSDP y elimina cableado propietario.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="9" rx="1"/><path d="M7 12h2M11 12h6"/></svg></div>
+          <h3>AutoVu — Reconocimiento de placas</h3>
+          <p>ALPR fijo y móvil para control de estacionamientos, peajes, smart city y aplicación de la ley.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a2 2 0 012-2h4l2 4-3 2a11 11 0 005 5l2-3 4 2v4a2 2 0 01-2 2A18 18 0 013 5z"/></svg></div>
+          <h3>Sipelia — Comunicaciones SIP</h3>
+          <p>Intercomunicación bidireccional integrada al video y al acceso. Despacho asistido por evento.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v6c0 5-4 9-9 9s-9-4-9-9V7z"/></svg></div>
+          <h3>Ciberseguridad por diseño</h3>
+          <p>Cifrado AES-256, firma digital, claim-based authentication y Health Monitoring continuo.</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 10.5L15.5 7M8.5 13.5L15.5 17"/></svg></div>
+          <h3>Mission Control (PSIM)</h3>
+          <p>Gestión de incidentes con SOPs automatizados, escalamiento y bitácora forense end-to-end.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Especificaciones técnicas</div>
+      <h2 class="section-h2">Arquitectura Security Center 5.</h2>
+      <table class="specs">
+        <tr><td class="k">Modelo de licenciamiento</td><td class="v">Perpetuo, Streamvault appliance o SaaS Streamvault Edge</td></tr>
+        <tr><td class="k">Sistemas operativos</td><td class="v">Windows Server 2019/2022, Windows 10/11</td></tr>
+        <tr><td class="k">Escalamiento</td><td class="v">Federación hasta 10,000 sitios, sin límite de cámaras</td></tr>
+        <tr><td class="k">Base de datos</td><td class="v">SQL Server con replicación y alta disponibilidad</td></tr>
+        <tr><td class="k">Cifrado</td><td class="v">AES-256 in-flight y at-rest, TLS 1.2/1.3</td></tr>
+        <tr><td class="k">Compatibilidad cámaras</td><td class="v">ONVIF Profile S/T/G + 150 fabricantes nativos</td></tr>
+        <tr><td class="k">Control de acceso</td><td class="v">HID, Mercury, ASSA ABLOY, Axis A1xxx (OSDP)</td></tr>
+        <tr><td class="k">Clientes</td><td class="v">Security Desk, Config Tool, Genetec Mobile, Web Client</td></tr>
+        <tr><td class="k">Integración</td><td class="v">SDK abierto + más de 300 plugins certificados</td></tr>
+        <tr><td class="k">Cumplimiento</td><td class="v">UL 2050, FIPS 140-2, NDAA, GDPR-ready</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Casos de uso</div>
+      <h2 class="section-h2">Plataformas críticas que confían en Genetec.</h2>
+      <div class="uses">
+        <div class="use">
+          <span class="pill">Smart City</span>
+          <h4>Centros C5 / C4</h4>
+          <p>Operación unificada de video urbano, ALPR, accesos y despacho. Bitácora forense para fiscalía.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Gobierno</span>
+          <h4>Seguridad federal y estatal</h4>
+          <p>Federación de múltiples sitios con niveles de privilegio y cifrado de grado militar.</p>
+        </div>
+        <div class="use">
+          <span class="pill">Transporte</span>
+          <h4>Aeropuertos y puertos</h4>
+          <p>Convergencia de seguridad física y operación con SOPs automatizados en Mission Control.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta">
+      <div class="copy">
+        <h4>Workshop ejecutivo Security Center.</h4>
+        <p>Sesión guiada de 90 minutos con caso real construido sobre su organigrama de seguridad.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="iamet-wordmark">IAMET</div>
+        <div class="iamet-tag">Distribuidor autorizado</div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div>IAMET <span class="dot"></span> Tijuana / Mexicali, México <span class="dot"></span> ventas@iamet.mx</div>
+      <div>Brochure Genetec / 2026</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>
