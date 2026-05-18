@@ -1503,6 +1503,13 @@ button.mkthub-btn--share:hover {
 }
 </style>
 
+{% comment %}Seed inyectado server-side: marcas (con logos) y recursos del backend. Los logos se descargan junto con el HTML inicial — no hay que esperar al fetch async para verlos.{% endcomment %}
+<script>
+window._mkthubMarcasInitial = {{ marketing_marcas_seed_json|safe|default:"[]" }};
+window._mkthubRecursosInitial = {{ marketing_recursos_seed_json|safe|default:"[]" }};
+window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% endif %};
+</script>
+
 <div class="mkthub-root" id="mkthubRoot">
 
     {# Botón "+ Subir material" — solo visible si window._mkthubCanEdit y en idle #}
@@ -3141,17 +3148,48 @@ button.mkthub-btn--share:hover {
         });
     }
 
+    /* ─── Aplicar seed inyectado server-side ───
+       Las marcas (con logos) y recursos vienen embebidos en el HTML por
+       Django (ver views_crm.py). Los aplicamos al BRANDS/RESOURCES antes
+       del primer render — así los logos se descargan junto con la página
+       en lugar de esperar al fetch async (~500ms-1s perdidos). */
+    function applyServerSeed() {
+        var seedMarcas = window._mkthubMarcasInitial;
+        if (Array.isArray(seedMarcas) && seedMarcas.length) {
+            var bySlug = {};
+            seedMarcas.forEach(function (m) { bySlug[m.slug] = m; });
+            BRANDS.forEach(function (b) {
+                var m = bySlug[b.id];
+                if (m) {
+                    b.marcaId = m.id;
+                    b.name = m.nombre || b.name;
+                    b.logoUrl = m.logo_url || '';
+                }
+            });
+        }
+        var seedRecursos = window._mkthubRecursosInitial;
+        if (Array.isArray(seedRecursos) && seedRecursos.length) {
+            RESOURCES.length = 0;
+            seedRecursos.forEach(function (r) { RESOURCES.push(mapBackendResource(r)); });
+        }
+        if (typeof window._mkthubCanEditInitial === 'boolean') {
+            window._mkthubCanEdit = window._mkthubCanEditInitial;
+        }
+    }
+
     /* ─── Init ─── */
     function init() {
+        // Aplicar seed server-side primero → logos + recursos visibles ASAP
+        applyServerSeed();
         renderBrands();
         populateUploadSelects();
         setupUploadDropZone();
+        updateUploadBtnVisibility();
         bindEvents();
-        // Fetch dinámico al backend (con fallback a mocks si falla).
-        // Se ejecuta async — la UI inicial usa los mocks mientras llega.
-        // fetchRecursos llama renderBrands() al terminar, que pinta los menus
-        // de 3 puntos cuando can_edit ya está resuelto. fetchMarcas merge los
-        // nombres/logos del backend sobre el array hardcoded.
+        // Fetch async solo para refrescar en background (por si los datos
+        // cambiaron entre el render del HTML y la carga del JS, o para
+        // tener data más fresca si la página se quedó abierta mucho rato).
+        // No bloquea la UI — ya está pintada con el seed.
         fetchRecursos().then(function () { fetchMarcas(); });
     }
 
