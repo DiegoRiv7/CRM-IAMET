@@ -464,17 +464,97 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     z-index: 2;
 }
 
+/* Menu "⋯" en cada card (solo visible si can_edit). Top-left del thumb,
+   no choca con el badge de extensión a la derecha. */
+.mkthub-card-menu {
+    position: absolute;
+    top: 10px; left: 10px;
+    z-index: 3;
+}
+.mkthub-card-menu-btn {
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(20,20,18,0.7);
+    color: #FFFFFF;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.15s ease;
+}
+.mkthub-card-menu-btn:hover { background: rgba(20,20,18,0.92); }
+.mkthub-card-menu-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #FFFFFF;
+    border: 1px solid var(--mkthub-line);
+    border-radius: 12px;
+    padding: 5px;
+    min-width: 150px;
+    box-shadow: 0 10px 32px -8px rgba(20,20,18,0.18);
+    display: none;
+    z-index: 10;
+}
+.mkthub-card-menu.is-open .mkthub-card-menu-pop { display: block; }
+.mkthub-card-menu-item {
+    width: 100%;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--mkthub-ink);
+    font-size: 0.82rem; font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: background 0.12s ease;
+}
+.mkthub-card-menu-item:hover { background: #F3F4F6; }
+.mkthub-card-menu-item--danger { color: #DC2626; }
+.mkthub-card-menu-item--danger:hover { background: #FEE2E2; }
+
+/* Variante para el botón ⋯ dentro de brand cards (fondo claro) */
+.mkthub-card-menu-btn--brand {
+    background: rgba(255,255,255,0.92);
+    color: #1A1A1A;
+    border: 1px solid #E5E7EB;
+}
+.mkthub-card-menu-btn--brand:hover { background: #FFFFFF; }
+
+/* Logo de marca subido (sustituye al wordmark cuando existe) */
+.mkthub-brand-logo-img {
+    max-width: 80%;
+    max-height: clamp(80px, 9vh, 120px);
+    object-fit: contain;
+    display: block;
+}
+
 /* iframe escalado para mostrar el contenido REAL del recurso HTML
    standalone como thumbnail. El recurso interno renderiza en 1366px
    y se escala a 25% para caber en la card. pointer-events:none
    evita interacción accidental con el contenido del iframe.
-   El overlay invisible captura los clicks para el data-action="preview". */
+   El overlay invisible captura los clicks para el data-action="preview".
+   Pending: hasta que IntersectionObserver le asigne src, mostramos un
+   shimmer placeholder para no dejar el espacio en blanco crudo. */
 .mkthub-thumb-iframe-wrap {
     position: absolute;
     inset: 0;
     overflow: hidden;
     background: #FFFFFF;
 }
+.mkthub-thumb-iframe-wrap[data-iframe-pending="1"]::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(110deg, #F3F4F6 0%, #FAFAFA 50%, #F3F4F6 100%);
+    background-size: 200% 100%;
+    animation: mkthubShimmer 1.4s ease-in-out infinite;
+    z-index: 1;
+}
+@keyframes mkthubShimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 .mkthub-thumb-iframe {
     position: absolute;
     top: 0; left: 0;
@@ -1745,6 +1825,7 @@ button.mkthub-btn--share:hover {
        Las propiedades tipográficas se aplican via CSS custom properties
        inline (color, font-weight, letter-spacing, case, font-family). */
     function renderBrands() {
+        var canEdit = window._mkthubCanEdit === true;
         var html = BRANDS.map(function (b) {
             var count = RESOURCES.filter(function (r) { return r.brand === b.id; }).length;
             var style = ''
@@ -1753,10 +1834,36 @@ button.mkthub-btn--share:hover {
                 + '--brand-tracking:' + b.tracking + ';'
                 + '--brand-case:' + b.case + ';'
                 + '--brand-font:' + b.font + ';';
+            // Si la marca tiene logo (imagen subida), se renderiza en lugar
+            // del wordmark de texto. Si no, fallback al wordmark típico.
+            var logoOrWordmark = b.logoUrl
+                ? '<img class="mkthub-brand-logo-img" src="' + esc(b.logoUrl) + '" alt="' + esc(b.name) + '" loading="lazy">'
+                : '<span class="mkthub-brand-wordmark">' + esc(b.displayName) + '</span>';
             return ''
-                + '<button type="button" class="mkthub-brand-card" data-brand="' + b.id + '" style="' + style + '">'
+                + '<div class="mkthub-brand-card" data-brand="' + b.id + '" data-brand-mid="' + (b.marcaId || '') + '" style="' + style + '">'
+                + (canEdit && b.marcaId ? ''
+                    + '<div class="mkthub-card-menu" data-menu-wrap>'
+                    +   '<button type="button" class="mkthub-card-menu-btn mkthub-card-menu-btn--brand" data-menu-toggle title="Acciones" aria-label="Acciones">'
+                    +     '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>'
+                    +   '</button>'
+                    +   '<div class="mkthub-card-menu-pop" data-menu-pop>'
+                    +     '<button type="button" class="mkthub-card-menu-item" data-brand-edit="' + b.marcaId + '">'
+                    +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+                    +       'Editar nombre'
+                    +     '</button>'
+                    +     '<button type="button" class="mkthub-card-menu-item" data-brand-logo="' + b.marcaId + '">'
+                    +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>'
+                    +       'Subir logo'
+                    +     '</button>'
+                    +     '<button type="button" class="mkthub-card-menu-item mkthub-card-menu-item--danger" data-brand-delete="' + b.marcaId + '">'
+                    +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+                    +       'Eliminar'
+                    +     '</button>'
+                    +   '</div>'
+                    + '</div>'
+                  : '')
                 +   '<div class="mkthub-brand-card-logo">'
-                +     '<span class="mkthub-brand-wordmark">' + esc(b.displayName) + '</span>'
+                +     logoOrWordmark
                 +   '</div>'
                 +   '<div class="mkthub-brand-card-meta">'
                 +     '<div class="mkthub-brand-card-meta-left">'
@@ -1767,7 +1874,7 @@ button.mkthub-btn--share:hover {
                 +       '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
                 +     '</div>'
                 +   '</div>'
-                + '</button>';
+                + '</div>';
         }).join('');
         document.getElementById('mkthubBrands').innerHTML = html;
     }
@@ -1874,6 +1981,7 @@ button.mkthub-btn--share:hover {
                 + '</div>';
             return;
         }
+        var canEdit = window._mkthubCanEdit === true;
         var html = results.map(function (r, i) {
             var b = brandById(r.brand) || {};
             var t = TYPES[r.type] || {};
@@ -1883,6 +1991,19 @@ button.mkthub-btn--share:hover {
                 +   '<div class="mkthub-card-thumb" data-action="preview">'
                 +     buildThumb(r, t)
                 +     '<span class="mkthub-card-thumb-badge">' + esc(t.ext) + '</span>'
+                +     (canEdit ? ''
+                        + '<div class="mkthub-card-menu" data-menu-wrap>'
+                        +   '<button type="button" class="mkthub-card-menu-btn" data-menu-toggle title="Acciones" aria-label="Acciones">'
+                        +     '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>'
+                        +   '</button>'
+                        +   '<div class="mkthub-card-menu-pop" data-menu-pop>'
+                        +     '<button type="button" class="mkthub-card-menu-item mkthub-card-menu-item--danger" data-res-delete="' + r.id + '">'
+                        +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+                        +       'Eliminar'
+                        +     '</button>'
+                        +   '</div>'
+                        + '</div>'
+                      : '')
                 +   '</div>'
                 +   '<div class="mkthub-card-body" data-action="preview">'
                 +     '<div class="mkthub-card-type-row">'
@@ -1907,6 +2028,44 @@ button.mkthub-btn--share:hover {
                 + '</div>';
         }).join('');
         grid.innerHTML = html;
+        setupLazyThumbnails();
+    }
+
+    /* ─── Lazy load de iframes con IntersectionObserver ───
+       Los iframes arrancan sin `src`; les asignamos la URL solo cuando
+       la card entra al viewport. Esto reduce 30+ requests simultáneos
+       al render inicial a solo los visibles (≈6-8 cards). Una vez
+       cargado, dejamos de observar para no re-trigger. */
+    var _mkthubLazyObs = null;
+    function setupLazyThumbnails() {
+        var pending = document.querySelectorAll('.mkthub-thumb-iframe-wrap[data-iframe-pending="1"]');
+        if (!pending.length) return;
+        // Fallback para browsers viejos sin IntersectionObserver: cargar todo
+        if (!('IntersectionObserver' in window)) {
+            pending.forEach(function (wrap) { _loadThumbIframe(wrap); });
+            return;
+        }
+        if (!_mkthubLazyObs) {
+            _mkthubLazyObs = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        _loadThumbIframe(entry.target);
+                        _mkthubLazyObs.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '200px 0px', threshold: 0.01 });
+        }
+        pending.forEach(function (wrap) { _mkthubLazyObs.observe(wrap); });
+    }
+    function _loadThumbIframe(wrap) {
+        var iframe = wrap.querySelector('iframe.mkthub-thumb-iframe');
+        if (!iframe || !iframe.dataset.src) return;
+        iframe.src = iframe.dataset.src;
+        delete iframe.dataset.src;
+        // Quitar shimmer cuando el iframe termina de pintar
+        iframe.addEventListener('load', function () {
+            wrap.removeAttribute('data-iframe-pending');
+        }, { once: true });
     }
 
     /* ─── Builder de thumbnail visual según el tipo ───
@@ -1923,10 +2082,13 @@ button.mkthub-btn--share:hover {
     }
     function buildThumb(r, t) {
         if (isHtmlUrl(r.url)) {
+            // El iframe arranca sin src — un IntersectionObserver le pone la
+            // URL real cuando la card entra al viewport. Reduce 30+ requests
+            // simultáneos al render inicial a solo los visibles (~6-8).
             return ''
-                + '<div class="mkthub-thumb-iframe-wrap">'
-                +   '<iframe class="mkthub-thumb-iframe" src="' + esc(r.url) + '"'
-                +     ' loading="lazy" sandbox="allow-same-origin" scrolling="no"'
+                + '<div class="mkthub-thumb-iframe-wrap" data-iframe-pending="1">'
+                +   '<iframe class="mkthub-thumb-iframe" data-src="' + esc(r.url) + '"'
+                +     ' sandbox="allow-same-origin" scrolling="no"'
                 +     ' aria-hidden="true" tabindex="-1"></iframe>'
                 +   '<div class="mkthub-thumb-iframe-overlay"></div>'
                 + '</div>';
@@ -2094,6 +2256,113 @@ button.mkthub-btn--share:hover {
     }
     function closePreview() {
         document.getElementById('mkthubPreviewOverlay').classList.remove('is-open');
+    }
+
+    /* ─── Acciones sobre Marcas (PATCH/DELETE/POST logo) ───
+       Todas requieren can_manage_marketing en el backend (403 si no).
+       El menu ⋯ solo se renderiza si el frontend tiene can_edit=true. */
+    function editBrandName(marcaId) {
+        var b = BRANDS.find(function (x) { return x.marcaId === marcaId; });
+        if (!b) return;
+        var nuevo = prompt('Nuevo nombre para "' + b.name + '":', b.name);
+        if (nuevo == null) return;
+        nuevo = nuevo.trim();
+        if (!nuevo || nuevo === b.name) return;
+        fetch('/app/api/marketing/marcas/' + marcaId + '/', {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ nombre: nuevo })
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (res) {
+            if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
+            showToast('Nombre actualizado');
+            fetchMarcas();
+          }).catch(function (err) {
+            console.warn('[mkthub] editBrandName:', err);
+            alert('No se pudo actualizar el nombre.');
+          });
+    }
+
+    function uploadBrandLogo(marcaId) {
+        var b = BRANDS.find(function (x) { return x.marcaId === marcaId; });
+        if (!b) return;
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/svg+xml,image/webp';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            document.body.removeChild(input);
+            if (!file) return;
+            var fd = new FormData();
+            fd.append('logo', file);
+            fetch('/app/api/marketing/marcas/' + marcaId + '/logo/', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+                body: fd
+            }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+              .then(function (res) {
+                if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
+                showToast('Logo actualizado');
+                fetchMarcas();
+              }).catch(function (err) {
+                console.warn('[mkthub] uploadBrandLogo:', err);
+                alert('No se pudo subir el logo. Verifica que sea PNG/JPG/SVG/WebP y menor a 5 MB.');
+              });
+        });
+        input.click();
+    }
+
+    function deleteBrand(marcaId) {
+        var b = BRANDS.find(function (x) { return x.marcaId === marcaId; });
+        if (!b) return;
+        if (!confirm('¿Eliminar la marca "' + b.name + '"? Se ocultará del hub.')) return;
+        fetch('/app/api/marketing/marcas/' + marcaId + '/eliminar/', {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'X-CSRFToken': getCsrfToken() }
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (res) {
+            if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
+            // Sacamos la marca eliminada del array local + re-render
+            var idx = BRANDS.findIndex(function (x) { return x.marcaId === marcaId; });
+            if (idx >= 0) BRANDS.splice(idx, 1);
+            showToast('Marca eliminada');
+            renderBrands();
+          }).catch(function (err) {
+            console.warn('[mkthub] deleteBrand:', err);
+            alert('No se pudo eliminar la marca.');
+          });
+    }
+
+    /* ─── Eliminar recurso (soft-delete) ───
+       Pide confirmación, llama DELETE al endpoint y refresca el grid.
+       Solo se invoca si can_edit (el menu ⋯ ni se renderiza si no). */
+    function deleteResource(rid) {
+        var res = RESOURCES.find(function (r) { return r.id === rid; });
+        if (!res) return;
+        if (!confirm('¿Eliminar "' + res.title + '"? Se ocultará de la lista.')) return;
+        fetch('/app/api/marketing/recursos/' + rid + '/', {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'X-CSRFToken': getCsrfToken() }
+        }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function (data) {
+            if (data.ok !== true) throw new Error(data.error || 'Error al eliminar');
+            // Cerrar cualquier menu abierto
+            document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
+            showToast('Recurso eliminado');
+            // Refrescar la lista desde el backend
+            fetchRecursos();
+        }).catch(function (err) {
+            console.warn('[mkthub] Error eliminando recurso:', err);
+            alert('No se pudo eliminar el recurso. Intenta de nuevo.');
+        });
     }
 
     /* ─── Compartir recurso por correo ───
@@ -2279,6 +2548,44 @@ button.mkthub-btn--share:hover {
         } else {
             btn.classList.remove('is-visible');
         }
+    }
+
+    /* ─── Fetch marcas del backend ───
+       Trae las MarcaMarketing desde /app/api/marketing/marcas/ y mergea
+       con el array BRANDS hardcoded: mantenemos los estilos tipográficos
+       (color/weight/font) que el frontend conoce, pero el nombre y el
+       logo vienen del backend (editables por el user). El campo marcaId
+       (PK de BD) se usa para los endpoints PATCH/DELETE/logo. */
+    function fetchMarcas() {
+        return fetch('/app/api/marketing/marcas/', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        }).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        }).then(function (data) {
+            if (!data || data.ok !== true || !Array.isArray(data.marcas)) {
+                throw new Error('Respuesta inválida');
+            }
+            // Map slug → { id, nombre, logo_url } del backend
+            var bySlug = {};
+            data.marcas.forEach(function (m) { bySlug[m.slug] = m; });
+            // Mergear sobre BRANDS hardcoded
+            BRANDS.forEach(function (b) {
+                var m = bySlug[b.id];
+                if (m) {
+                    b.marcaId = m.id;
+                    b.name = m.nombre || b.name;
+                    b.logoUrl = m.logo_url || '';
+                }
+            });
+            renderBrands();
+            return data;
+        }).catch(function (err) {
+            console.warn('[mkthub] Fetch /api/marketing/marcas/ falló, usando hardcoded:', err);
+            return null;
+        });
     }
 
     /* ─── CSRF helper ─── */
@@ -2573,6 +2880,10 @@ button.mkthub-btn--share:hover {
             if (wrap && !wrap.contains(e.target)) {
                 document.getElementById('mkthubSearchDD').classList.remove('is-open');
             }
+            // Cerrar menus de 3 puntos abiertos al click fuera
+            document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) {
+                if (!w.contains(e.target)) w.classList.remove('is-open');
+            });
         });
 
         // Back btn vive en la crm-bar (fuera del mkthubRoot) — handler global.
@@ -2589,9 +2900,55 @@ button.mkthub-btn--share:hover {
 
         // Delegación de eventos en el root
         document.getElementById('mkthubRoot').addEventListener('click', function (e) {
+            // Menu "⋯" en card de recurso: toggle del popover.
+            var menuToggle = e.target.closest('[data-menu-toggle]');
+            if (menuToggle) {
+                e.stopPropagation();
+                var wrap = menuToggle.closest('[data-menu-wrap]');
+                if (!wrap) return;
+                var isOpen = wrap.classList.contains('is-open');
+                // Cerrar todos los demás menus abiertos
+                document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) {
+                    if (w !== wrap) w.classList.remove('is-open');
+                });
+                wrap.classList.toggle('is-open', !isOpen);
+                return;
+            }
+            // Eliminar recurso
+            var resDelBtn = e.target.closest('[data-res-delete]');
+            if (resDelBtn) {
+                e.stopPropagation();
+                var rid = parseInt(resDelBtn.getAttribute('data-res-delete'), 10);
+                deleteResource(rid);
+                return;
+            }
+            // Acciones sobre marca: editar / logo / eliminar
+            var brandEditBtn = e.target.closest('[data-brand-edit]');
+            if (brandEditBtn) {
+                e.stopPropagation();
+                editBrandName(parseInt(brandEditBtn.getAttribute('data-brand-edit'), 10));
+                document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
+                return;
+            }
+            var brandLogoBtn = e.target.closest('[data-brand-logo]');
+            if (brandLogoBtn) {
+                e.stopPropagation();
+                uploadBrandLogo(parseInt(brandLogoBtn.getAttribute('data-brand-logo'), 10));
+                document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
+                return;
+            }
+            var brandDelBtn = e.target.closest('[data-brand-delete]');
+            if (brandDelBtn) {
+                e.stopPropagation();
+                deleteBrand(parseInt(brandDelBtn.getAttribute('data-brand-delete'), 10));
+                document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
+                return;
+            }
             // Brand card (idle)
             var brandCard = e.target.closest('.mkthub-brand-card');
             if (brandCard) {
+                // Ignorar clicks dentro del menu de 3 puntos
+                if (e.target.closest('[data-menu-wrap]')) return;
                 state.activeBrand = brandCard.getAttribute('data-brand');
                 state.activeType = 'all';
                 updateMode();
@@ -2610,6 +2967,8 @@ button.mkthub-btn--share:hover {
             // Resource card → preview o share
             var resCard = e.target.closest('.mkthub-card');
             if (resCard) {
+                // Si el click fue en el menu ⋯ o en sus items, ya lo manejamos arriba
+                if (e.target.closest('[data-menu-wrap]')) return;
                 var resId = parseInt(resCard.getAttribute('data-res-id'), 10);
                 var res = RESOURCES.find(function (r) { return r.id === resId; });
                 if (!res) return;
@@ -2716,7 +3075,10 @@ button.mkthub-btn--share:hover {
         bindEvents();
         // Fetch dinámico al backend (con fallback a mocks si falla).
         // Se ejecuta async — la UI inicial usa los mocks mientras llega.
-        fetchRecursos();
+        // fetchRecursos llama renderBrands() al terminar, que pinta los menus
+        // de 3 puntos cuando can_edit ya está resuelto. fetchMarcas merge los
+        // nombres/logos del backend sobre el array hardcoded.
+        fetchRecursos().then(function () { fetchMarcas(); });
     }
 
     // El template puede inyectarse después del page load (si la navegación es AJAX)
