@@ -968,10 +968,21 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     font-family: inherit;
     transition: all 0.14s ease;
 }
-.mkthub-btn--primary {
-    background: var(--mkthub-line-strong);
-    border-color: var(--mkthub-line-strong);
-    color: #FFFFFF;
+/* Botón principal (Abrir recurso / Descargar): negro corporativo.
+   !important para vencer reglas globales de `a { color: ... }` heredadas
+   del crm.css y de los user-agent styles. */
+.mkthub-btn--primary,
+a.mkthub-btn--primary {
+    background: #111827 !important;
+    border-color: #111827 !important;
+    color: #FFFFFF !important;
+    text-decoration: none !important;
+}
+.mkthub-btn--primary:hover,
+a.mkthub-btn--primary:hover {
+    background: #1F2937 !important;
+    border-color: #1F2937 !important;
+    color: #FFFFFF !important;
 }
 .mkthub-btn--brand {
     background: var(--btn-color);
@@ -979,15 +990,19 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     color: #FFFFFF;
 }
 /* Botón "Compartir por correo": azul corporativo siempre, independiente
-   de la marca, para garantizar contraste legible en todos los casos. */
-.mkthub-btn--share {
-    background: var(--mkthub-accent);
-    border-color: var(--mkthub-accent);
-    color: #FFFFFF;
+   de la marca. !important porque el footer gris compite con el bg
+   blanco default de .mkthub-btn (mismo nivel de especificidad). */
+.mkthub-btn--share,
+button.mkthub-btn--share {
+    background: #0052D4 !important;
+    border-color: #0052D4 !important;
+    color: #FFFFFF !important;
 }
-.mkthub-btn--share:hover {
-    background: #0041A8;
-    border-color: #0041A8;
+.mkthub-btn--share:hover,
+button.mkthub-btn--share:hover {
+    background: #0041A8 !important;
+    border-color: #0041A8 !important;
+    color: #FFFFFF !important;
 }
 
 /* ── Animations ── */
