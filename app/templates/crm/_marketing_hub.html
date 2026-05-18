@@ -1481,6 +1481,14 @@ button.mkthub-btn--share:hover {
 .mkthub-upload-btn-submit.is-loading .mkthub-upload-spinner { display: inline-block; }
 @keyframes mkthubSpin { to { transform: rotate(360deg); } }
 
+/* Variante destructiva del botón submit (para confirmaciones de borrado). */
+.mkthub-upload-btn-submit.is-danger {
+    background: #DC2626;
+}
+.mkthub-upload-btn-submit.is-danger:hover:not(:disabled) {
+    background: #B91C1C;
+}
+
 /* Toast notificación.
    Estado base: invisible (visibility + opacity) para evitar el "flash"
    que aparecía al recargar — antes el transition arrancaba desde un
@@ -1693,6 +1701,27 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             <button type="button" class="mkthub-upload-btn-cancel" id="mkthubBrandNameCancel">Cancelar</button>
             <button type="button" class="mkthub-upload-btn-submit" id="mkthubBrandNameSubmit">
                 <span class="mkthub-upload-btn-label">Guardar</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{# Modal genérico de confirmación (reemplaza al confirm() del navegador) #}
+<div class="mkthub-upload-overlay" id="mkthubConfirmOverlay" data-mkthub-modal="confirm">
+    <div class="mkthub-upload-modal" role="dialog" aria-labelledby="mkthubConfirmTitle" style="max-width:420px;">
+        <div class="mkthub-upload-head">
+            <h3 id="mkthubConfirmTitle">Confirmar acción</h3>
+            <button type="button" class="mkthub-upload-close" id="mkthubConfirmClose" title="Cerrar">
+                <svg width="13" height="13" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <div class="mkthub-upload-body">
+            <p id="mkthubConfirmMsg" style="margin:0;color:#1A1A1A;font-size:0.92rem;line-height:1.5;"></p>
+        </div>
+        <div class="mkthub-upload-foot">
+            <button type="button" class="mkthub-upload-btn-cancel" id="mkthubConfirmCancel">Cancelar</button>
+            <button type="button" class="mkthub-upload-btn-submit mkthub-confirm-action" id="mkthubConfirmOk">
+                <span class="mkthub-upload-btn-label" id="mkthubConfirmOkLabel">Confirmar</span>
             </button>
         </div>
     </div>
@@ -2411,52 +2440,97 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         input.click();
     }
 
+    /* ─── Modal genérico de confirmación ───
+       Reemplaza al confirm() del navegador. Acepta opts {title, message,
+       confirmLabel, danger, onConfirm}. El callback se invoca con un
+       finalizer que cierra el modal — útil para esperar a la red. */
+    var _mkthubConfirmCb = null;
+    function openConfirmModal(opts) {
+        opts = opts || {};
+        var overlay = document.getElementById('mkthubConfirmOverlay');
+        if (!overlay) { if (typeof opts.onConfirm === 'function') opts.onConfirm(function () {}); return; }
+        document.getElementById('mkthubConfirmTitle').textContent = opts.title || 'Confirmar acción';
+        document.getElementById('mkthubConfirmMsg').textContent = opts.message || '';
+        var okBtn = document.getElementById('mkthubConfirmOk');
+        var okLbl = document.getElementById('mkthubConfirmOkLabel');
+        if (okLbl) okLbl.textContent = opts.confirmLabel || 'Confirmar';
+        if (okBtn) {
+            okBtn.classList.toggle('is-danger', !!opts.danger);
+            okBtn.disabled = false;
+        }
+        _mkthubConfirmCb = typeof opts.onConfirm === 'function' ? opts.onConfirm : null;
+        overlay.classList.add('is-open');
+    }
+    function closeConfirmModal() {
+        var overlay = document.getElementById('mkthubConfirmOverlay');
+        if (overlay) overlay.classList.remove('is-open');
+        _mkthubConfirmCb = null;
+    }
+    function _mkthubConfirmAccept() {
+        var okBtn = document.getElementById('mkthubConfirmOk');
+        var cb = _mkthubConfirmCb;
+        if (!cb) { closeConfirmModal(); return; }
+        if (okBtn) okBtn.disabled = true;
+        cb(function () { closeConfirmModal(); if (okBtn) okBtn.disabled = false; });
+    }
+
     function deleteBrand(marcaId) {
         var b = BRANDS.find(function (x) { return x.marcaId === marcaId; });
         if (!b) return;
-        if (!confirm('¿Eliminar la marca "' + b.name + '"? Se ocultará del hub.')) return;
-        fetch('/app/api/marketing/marcas/' + marcaId + '/eliminar/', {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': getCsrfToken() }
-        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-          .then(function (res) {
-            if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
-            // Sacamos la marca eliminada del array local + re-render
-            var idx = BRANDS.findIndex(function (x) { return x.marcaId === marcaId; });
-            if (idx >= 0) BRANDS.splice(idx, 1);
-            showToast('Marca eliminada');
-            renderBrands();
-          }).catch(function (err) {
-            console.warn('[mkthub] deleteBrand:', err);
-            alert('No se pudo eliminar la marca.');
-          });
+        openConfirmModal({
+            title: 'Eliminar marca',
+            message: '¿Eliminar la marca "' + b.name + '"? Se ocultará del hub.',
+            confirmLabel: 'Eliminar',
+            danger: true,
+            onConfirm: function (done) {
+                fetch('/app/api/marketing/marcas/' + marcaId + '/eliminar/', {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': getCsrfToken() }
+                }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                  .then(function (res) {
+                    if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
+                    var idx = BRANDS.findIndex(function (x) { return x.marcaId === marcaId; });
+                    if (idx >= 0) BRANDS.splice(idx, 1);
+                    showToast('Marca eliminada');
+                    renderBrands();
+                  }).catch(function (err) {
+                    console.warn('[mkthub] deleteBrand:', err);
+                    showToast('No se pudo eliminar la marca');
+                  }).finally(function () { done(); });
+            }
+        });
     }
 
     /* ─── Eliminar recurso (soft-delete) ───
-       Pide confirmación, llama DELETE al endpoint y refresca el grid.
+       Pide confirmación via modal, llama DELETE al endpoint y refresca el grid.
        Solo se invoca si can_edit (el menu ⋯ ni se renderiza si no). */
     function deleteResource(rid) {
         var res = RESOURCES.find(function (r) { return r.id === rid; });
         if (!res) return;
-        if (!confirm('¿Eliminar "' + res.title + '"? Se ocultará de la lista.')) return;
-        fetch('/app/api/marketing/recursos/' + rid + '/', {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': getCsrfToken() }
-        }).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        }).then(function (data) {
-            if (data.ok !== true) throw new Error(data.error || 'Error al eliminar');
-            // Cerrar cualquier menu abierto
-            document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
-            showToast('Recurso eliminado');
-            // Refrescar la lista desde el backend
-            fetchRecursos();
-        }).catch(function (err) {
-            console.warn('[mkthub] Error eliminando recurso:', err);
-            alert('No se pudo eliminar el recurso. Intenta de nuevo.');
+        openConfirmModal({
+            title: 'Eliminar material',
+            message: '¿Eliminar "' + res.title + '"? Se ocultará de la lista.',
+            confirmLabel: 'Eliminar',
+            danger: true,
+            onConfirm: function (done) {
+                fetch('/app/api/marketing/recursos/' + rid + '/', {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': getCsrfToken() }
+                }).then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                }).then(function (data) {
+                    if (data.ok !== true) throw new Error(data.error || 'Error al eliminar');
+                    document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
+                    showToast('Recurso eliminado');
+                    fetchRecursos();
+                }).catch(function (err) {
+                    console.warn('[mkthub] Error eliminando recurso:', err);
+                    showToast('No se pudo eliminar el recurso');
+                }).finally(function () { done(); });
+            }
         });
     }
 
@@ -3255,6 +3329,20 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         var bnForm = document.getElementById('mkthubBrandNameForm');
         if (bnForm) bnForm.addEventListener('submit', function (e) { e.preventDefault(); submitBrandNameModal(); });
 
+        /* ── Confirm modal: handlers ── */
+        var cfOverlay = document.getElementById('mkthubConfirmOverlay');
+        if (cfOverlay) {
+            cfOverlay.addEventListener('click', function (e) {
+                if (e.target.id === 'mkthubConfirmOverlay') closeConfirmModal();
+            });
+        }
+        var cfClose = document.getElementById('mkthubConfirmClose');
+        if (cfClose) cfClose.addEventListener('click', closeConfirmModal);
+        var cfCancel = document.getElementById('mkthubConfirmCancel');
+        if (cfCancel) cfCancel.addEventListener('click', closeConfirmModal);
+        var cfOk = document.getElementById('mkthubConfirmOk');
+        if (cfOk) cfOk.addEventListener('click', _mkthubConfirmAccept);
+
         /* ── Escape: cerrar modales abiertos ── */
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
@@ -3262,6 +3350,8 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
                 if (ov && ov.classList.contains('is-open')) closeUploadModal();
                 var bn = document.getElementById('mkthubBrandNameOverlay');
                 if (bn && bn.classList.contains('is-open')) closeBrandNameModal();
+                var cf = document.getElementById('mkthubConfirmOverlay');
+                if (cf && cf.classList.contains('is-open')) closeConfirmModal();
             }
         });
     }
