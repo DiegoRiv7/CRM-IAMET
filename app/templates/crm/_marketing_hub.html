@@ -444,7 +444,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
 /* ── Thumbnail visual — base ── */
 .mkthub-card-thumb {
     position: relative;
-    height: clamp(150px, 16vh, 200px);
+    height: clamp(180px, 19vh, 240px);
     background: #FAFAFA;
     border-bottom: 1px solid var(--mkthub-line);
     overflow: hidden;
@@ -461,6 +461,36 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     letter-spacing: 0.08em;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    z-index: 2;
+}
+
+/* iframe escalado para mostrar el contenido REAL del recurso HTML
+   standalone como thumbnail. El recurso interno renderiza en 1366px
+   y se escala a 25% para caber en la card. pointer-events:none
+   evita interacción accidental con el contenido del iframe.
+   El overlay invisible captura los clicks para el data-action="preview". */
+.mkthub-thumb-iframe-wrap {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #FFFFFF;
+}
+.mkthub-thumb-iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1366px;
+    height: 1024px;
+    border: 0;
+    transform: scale(0.27);
+    transform-origin: 0 0;
+    pointer-events: none;
+    background: #FFFFFF;
+}
+.mkthub-thumb-iframe-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 70%, rgba(20,20,18,0.04) 100%);
+    cursor: pointer;
 }
 
 /* PDF / Brochure / Certificación / Caso / Propuesta — página de documento */
@@ -845,10 +875,27 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     background: #FFFFFF;
     border-radius: 22px;
     border: 2px solid var(--mkthub-line-strong);
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: 880px;
+    max-height: 92vh;
+    display: flex; flex-direction: column;
     overflow: hidden;
     animation: mkthubPopIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+.mkthub-preview-iframe-wrap {
+    background: #F3F4F6;
+    border-bottom: 1px solid var(--mkthub-line);
+    padding: 16px;
+    flex-shrink: 0;
+}
+.mkthub-preview-iframe {
+    width: 100%;
+    height: 420px;
+    border: 1px solid var(--mkthub-line);
+    border-radius: 10px;
+    background: #FFFFFF;
+    box-shadow: 0 8px 24px -10px rgba(20,20,18,0.18);
+}
+.mkthub-modal-body-scroll { overflow-y: auto; flex: 1; }
 .mkthub-preview-modal { box-shadow: 6px 6px 0 var(--modal-color, var(--mkthub-line-strong)); }
 .mkthub-modal-head {
     background: var(--modal-color);
@@ -919,6 +966,17 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     background: var(--btn-color);
     border-color: var(--btn-color);
     color: #FFFFFF;
+}
+/* Botón "Compartir por correo": azul corporativo siempre, independiente
+   de la marca, para garantizar contraste legible en todos los casos. */
+.mkthub-btn--share {
+    background: var(--mkthub-accent);
+    border-color: var(--mkthub-accent);
+    color: #FFFFFF;
+}
+.mkthub-btn--share:hover {
+    background: #0041A8;
+    border-color: #0041A8;
 }
 
 /* ── Animations ── */
@@ -1825,8 +1883,21 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         grid.innerHTML = html;
     }
 
-    /* ─── Builder de thumbnail visual según el tipo ─── */
+    /* ─── Builder de thumbnail visual según el tipo ───
+       Si el recurso tiene `url` (HTML standalone), mostramos un iframe
+       escalado con el contenido REAL del archivo — preview verídico en
+       vez del mockup genérico. Si no, caemos al mockup CSS por tipo. */
     function buildThumb(r, t) {
+        // Preview real cuando el recurso es un HTML local que podemos cargar
+        if (r.url && /\.html?(\?|$)/i.test(r.url)) {
+            return ''
+                + '<div class="mkthub-thumb-iframe-wrap">'
+                +   '<iframe class="mkthub-thumb-iframe" src="' + esc(r.url) + '"'
+                +     ' loading="lazy" sandbox="allow-same-origin" scrolling="no"'
+                +     ' aria-hidden="true" tabindex="-1"></iframe>'
+                +   '<div class="mkthub-thumb-iframe-overlay"></div>'
+                + '</div>';
+        }
         switch (r.type) {
             case 'landing':
                 return ''
@@ -1951,6 +2022,7 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
         var b = brandById(res.brand) || {};
         var t = TYPES[res.type] || {};
         modal.style.setProperty('--modal-color', b.color);
+        var hasHtmlPreview = res.url && /\.html?(\?|$)/i.test(res.url);
         modal.innerHTML = ''
             + '<div class="mkthub-modal-head" style="--modal-color:' + b.color + '; background:' + b.color + ';">'
             +   '<button type="button" class="mkthub-modal-close" data-close>'
@@ -1959,7 +2031,12 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             +   '<div class="mkthub-modal-tag">' + esc(t.ext) + ' · ' + esc(t.name) + '</div>'
             +   '<h3 class="mkthub-modal-title">' + esc(res.title) + '</h3>'
             + '</div>'
-            + '<div class="mkthub-modal-body">'
+            + (hasHtmlPreview
+                ? '<div class="mkthub-preview-iframe-wrap">'
+                  + '<iframe class="mkthub-preview-iframe" src="' + esc(res.url) + '" sandbox="allow-same-origin allow-scripts" loading="lazy"></iframe>'
+                  + '</div>'
+                : '')
+            + '<div class="mkthub-modal-body mkthub-modal-body-scroll">'
             +   '<p class="mkthub-modal-desc">' + esc(res.desc) + '</p>'
             +   '<div class="mkthub-modal-stats">'
             +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Marca</div><div class="mkthub-modal-stat-val" style="color:' + b.color + '; font-weight:700;">' + esc(b.name) + '</div></div>'
@@ -1968,8 +2045,10 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Tipo</div><div class="mkthub-modal-stat-val">' + esc(t.name) + '</div></div>'
             +   '</div>'
             +   '<div class="mkthub-modal-actions">'
-            +     '<button type="button" class="mkthub-btn mkthub-btn--brand" data-share="' + res.id + '" style="--btn-color:' + b.color + ';">'
-            +       '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>'
+            // Botón "Compartir por correo" siempre azul corporativo
+            // (contraste garantizado en todas las marcas, claras u oscuras).
+            +     '<button type="button" class="mkthub-btn mkthub-btn--share" data-share="' + res.id + '">'
+            +       '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>'
             +       ' Compartir por correo</button>'
             +     (res.url
                 ? '<a class="mkthub-btn mkthub-btn--primary" href="' + esc(res.url) + '" target="_blank" rel="noopener" style="text-decoration:none;">'
@@ -1985,56 +2064,99 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     }
 
     /* ─── Compartir recurso por correo ───
-       Delega al módulo de correo del CRM (window.mailAbrir / mailRedactar):
-       abre el widget de correo, abre el panel de compose y prellena
-       asunto + cuerpo con la info del recurso. Si el módulo no está
-       disponible (página sin _widget_mail.html cargado), hace fallback a
-       mailto: para que igual se pueda enviar. */
+       Delega al módulo de correo del CRM. Cuando el recurso es un HTML
+       standalone (brochure/landing/deck/caso que diseñamos), hacemos
+       FETCH del archivo y embebemos su contenido REAL en el cuerpo del
+       correo (style + body inyectados en el editor). Para recursos sin
+       url (mocks o uploads no-html), prellena un bloque informativo
+       compacto con título + tipo + descripción.
+
+       Nota: clientes de correo (Gmail, Outlook) renderizan CSS limitado.
+       El HTML de los recursos usa Inter/Flexbox/gradients — la mayoría
+       sí se ve. Lo que no soporten degradará a una vista plana legible. */
+    function buildEmailHeader(res, b, t) {
+        return ''
+            + '<p style="margin:0 0 8px;font-size:14px;color:#1A1A1A;">Hola,</p>'
+            + '<p style="margin:0 0 16px;font-size:14px;color:#1A1A1A;">Te comparto este material que preparé para ti:</p>'
+            + '<p style="margin:0 0 4px;font-size:12px;font-weight:700;color:' + b.color + ';text-transform:uppercase;letter-spacing:0.06em;">'
+            +   esc(t.name) + ' · ' + esc(b.name)
+            + '</p>'
+            + '<h2 style="margin:0 0 18px;font-size:22px;color:#1A1A1A;letter-spacing:-0.01em;">' + esc(res.title) + '</h2>'
+            + '<hr style="border:none;border-top:1px solid #E5E7EB;margin:0 0 18px;">';
+    }
+    function buildEmailFooter() {
+        return ''
+            + '<hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0 16px;">'
+            + '<p style="margin:0;font-size:13px;color:#4B5563;">Si necesitas más información o algún material adicional, quedo a tus órdenes.</p>';
+    }
+    function buildEmailFallback(res, b, t) {
+        return ''
+            + buildEmailHeader(res, b, t)
+            + '<p style="font-size:14px;color:#334155;line-height:1.55;">' + esc(res.desc) + '</p>'
+            + buildEmailFooter();
+    }
+    function extractHtmlContent(rawHtml) {
+        // Extrae <style>...</style> + el contenido de <body>...</body> del
+        // HTML standalone. Si no encuentra body, devuelve todo el HTML
+        // dentro de un wrapper neutral.
+        var styles = '';
+        var styleMatches = rawHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+        styleMatches.forEach(function (m) { styles += m; });
+        var bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        var body = bodyMatch ? bodyMatch[1] : rawHtml;
+        // Quitar <script> por seguridad (los recursos tienen JS de navegación
+        // entre slides — eso no funciona en clientes de correo de todos modos).
+        body = body.replace(/<script[\s\S]*?<\/script>/gi, '');
+        return styles + body;
+    }
     function shareByEmail(res) {
         var b = brandById(res.brand) || {};
         var t = TYPES[res.type] || {};
         var asunto = '[' + b.name + '] ' + res.title;
-        var lineas = [
-            'Hola,',
-            '',
-            'Te comparto este material que preparé para ti:',
-            '',
-            '• ' + res.title + ' (' + t.name + ' · ' + t.ext + ')',
-            '  ' + res.desc,
-            '',
-            'Si necesitas más información o algún material adicional, quedo a tus órdenes.'
-        ];
-        var cuerpoTexto = lineas.join('\n');
-        var cuerpoHTML = ''
-            + '<p>Hola,</p>'
-            + '<p>Te comparto este material que preparé para ti:</p>'
-            + '<div style="border-left:3px solid ' + b.color + ';padding:10px 14px;margin:14px 0;background:#F8FAFC;">'
-            +   '<p style="margin:0;font-weight:600;color:' + b.color + ';">' + esc(res.title) + '</p>'
-            +   '<p style="margin:4px 0 0;font-size:13px;color:#64748B;">' + esc(t.name) + ' · ' + esc(t.ext) + (res.size !== '—' ? ' · ' + esc(res.size) : '') + '</p>'
-            +   '<p style="margin:8px 0 0;font-size:13px;color:#334155;">' + esc(res.desc) + '</p>'
-            + '</div>'
-            + '<p>Si necesitas más información o algún material adicional, quedo a tus órdenes.</p>';
+        var fallbackHTML = buildEmailFallback(res, b, t);
 
-        // Intentar usar el módulo de correo del CRM
-        if (typeof window.mailAbrir === 'function' && typeof window.mailRedactar === 'function') {
-            window.mailAbrir();
-            // Esperar a que el widget de correo termine de montar antes de
-            // intentar prellenar (mailAbrir hace fetch async de conexiones).
-            setTimeout(function () {
-                window.mailRedactar();
+        function openWithBody(cuerpoHTML) {
+            if (typeof window.mailAbrir === 'function' && typeof window.mailRedactar === 'function') {
+                window.mailAbrir();
                 setTimeout(function () {
-                    var asuntoEl = document.getElementById('mailCompAsunto');
-                    var editorEl = document.getElementById('mailCompEditor');
-                    if (asuntoEl) asuntoEl.value = asunto;
-                    if (editorEl) editorEl.innerHTML = cuerpoHTML;
-                }, 80);
-            }, 250);
+                    window.mailRedactar();
+                    setTimeout(function () {
+                        var asuntoEl = document.getElementById('mailCompAsunto');
+                        var editorEl = document.getElementById('mailCompEditor');
+                        if (asuntoEl) asuntoEl.value = asunto;
+                        if (editorEl) editorEl.innerHTML = cuerpoHTML;
+                    }, 80);
+                }, 250);
+                return;
+            }
+            // Fallback mailto: sin HTML
+            var cuerpoTexto = 'Hola,\n\nTe comparto este material:\n\n'
+                + res.title + ' (' + t.name + ' · ' + t.ext + ')\n'
+                + res.desc + '\n\nQuedo a tus órdenes.';
+            window.location.href = 'mailto:?subject=' + encodeURIComponent(asunto)
+                + '&body=' + encodeURIComponent(cuerpoTexto);
+        }
+
+        // Si es HTML standalone → fetch y embebe contenido real.
+        if (res.url && /\.html?(\?|$)/i.test(res.url)) {
+            fetch(res.url, { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.text() : Promise.reject('HTTP ' + r.status); })
+                .then(function (rawHtml) {
+                    var inner = extractHtmlContent(rawHtml);
+                    var cuerpoHTML = ''
+                        + buildEmailHeader(res, b, t)
+                        + '<div class="mkthub-embed">' + inner + '</div>'
+                        + buildEmailFooter();
+                    openWithBody(cuerpoHTML);
+                })
+                .catch(function (err) {
+                    console.warn('[mkthub] No se pudo embeber el recurso, usando fallback:', err);
+                    openWithBody(fallbackHTML);
+                });
             return;
         }
-        // Fallback: mailto:
-        var mailto = 'mailto:?subject=' + encodeURIComponent(asunto)
-            + '&body=' + encodeURIComponent(cuerpoTexto);
-        window.location.href = mailto;
+        // Recurso sin url HTML → fallback simple.
+        openWithBody(fallbackHTML);
     }
 
     /* ─── Estado global de UI (idle vs searching) ─── */
