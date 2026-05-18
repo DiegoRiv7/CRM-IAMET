@@ -896,6 +896,17 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     box-shadow: 0 8px 24px -10px rgba(20,20,18,0.18);
 }
 .mkthub-modal-body-scroll { overflow-y: auto; flex: 1; }
+/* Footer del modal preview con las acciones (Compartir/Abrir) — siempre
+   visible al fondo del modal aunque haya scroll, igual que la sección
+   de botones de Gmail/Linear. */
+.mkthub-modal-footer {
+    padding: 14px 22px 18px;
+    border-top: 1px solid var(--mkthub-line);
+    background: #FAFAFA;
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+}
 .mkthub-preview-modal { box-shadow: 6px 6px 0 var(--modal-color, var(--mkthub-line-strong)); }
 .mkthub-modal-head {
     background: var(--modal-color);
@@ -2044,18 +2055,18 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
             +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Actualizado</div><div class="mkthub-modal-stat-val">' + esc(res.date) + '</div></div>'
             +     '<div class="mkthub-modal-stat"><div class="mkthub-modal-stat-label">Tipo</div><div class="mkthub-modal-stat-val">' + esc(t.name) + '</div></div>'
             +   '</div>'
-            +   '<div class="mkthub-modal-actions">'
+            + '</div>'
+            + '<div class="mkthub-modal-footer">'
             // Botón "Compartir por correo" siempre azul corporativo
             // (contraste garantizado en todas las marcas, claras u oscuras).
-            +     '<button type="button" class="mkthub-btn mkthub-btn--share" data-share="' + res.id + '">'
-            +       '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>'
-            +       ' Compartir por correo</button>'
-            +     (res.url
+            +   '<button type="button" class="mkthub-btn mkthub-btn--share" data-share="' + res.id + '">'
+            +     '<svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="1" y="3" width="12" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>'
+            +     ' Compartir por correo</button>'
+            +   (res.url
                 ? '<a class="mkthub-btn mkthub-btn--primary" href="' + esc(res.url) + '" target="_blank" rel="noopener" style="text-decoration:none;">'
                   + '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M3 11l8-8M11 3v6M11 3H5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
                   + ' Abrir recurso</a>'
                 : '<button type="button" class="mkthub-btn mkthub-btn--primary" disabled style="opacity:0.5;cursor:not-allowed;">Descargar</button>')
-            +   '</div>'
             + '</div>';
         overlay.classList.add('is-open');
     }
