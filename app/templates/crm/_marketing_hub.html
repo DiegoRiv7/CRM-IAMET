@@ -292,7 +292,16 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     display: flex; align-items: center;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
-.mkthub-bar-slot--left { gap: 8px; min-width: 0; }
+.mkthub-bar-slot--left {
+    gap: 8px; min-width: 0;
+    /* Absolute para no empujar la cápsula central — el slot derecho
+       ya es absolute (en crm.css de .crm-page-sidebar), así que
+       espejamos a la izquierda y los tabs quedan realmente centrados. */
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+}
 .mkthub-bar-slot--left:empty { display: none; }
 .mkthub-bar-slot--right { gap: 12px; min-width: 0; }
 .mkthub-bar-slot--right:empty { display: none; }
@@ -2042,6 +2051,11 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         var rightEl = document.getElementById('mkthubBarRight');
         if (!leftEl || !rightEl) return; // sin slots → nada que hacer
 
+        // Al entrar a una marca, ocultar el botón "+ Agregar marca"
+        // (no tiene sentido crear marcas estando dentro de una).
+        var addBtn = document.getElementById('mkthubAddBrandBtn');
+        if (addBtn) addBtn.style.display = 'none';
+
         // Left: botón "Volver a marcas" — se inyecta al INICIO del slot
         // para no machacar al botón "+ Agregar marca" que vive ahí
         // permanentemente cuando can_edit.
@@ -2092,6 +2106,9 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             if (oldBack) oldBack.remove();
         }
         if (rightEl) rightEl.innerHTML = '';
+        // Volver al idle: restaurar el botón "+ Agregar marca" si can_edit.
+        var addBtn = document.getElementById('mkthubAddBrandBtn');
+        if (addBtn) addBtn.style.display = '';
     }
 
     /* ─── Render: type segmented (iOS-style)
