@@ -177,6 +177,10 @@ urlpatterns = [
     # ── APIs Marketing Hub ────────────────────────────────────────────────────
     path('api/marketing/recursos/', views_marketing.api_marketing_recursos_list, name='api_marketing_recursos_list'),
     path('api/marketing/recursos/<int:rid>/', views_marketing.api_marketing_recurso_detalle, name='api_marketing_recurso_detalle'),
+    path('api/marketing/marcas/', views_marketing.api_marketing_marcas_list, name='api_marketing_marcas_list'),
+    path('api/marketing/marcas/<int:mid>/', views_marketing.api_marketing_marca_detalle, name='api_marketing_marca_detalle'),
+    path('api/marketing/marcas/<int:mid>/eliminar/', views_marketing.api_marketing_marca_eliminar, name='api_marketing_marca_eliminar'),
+    path('api/marketing/marcas/<int:mid>/logo/', views_marketing.api_marketing_marca_logo, name='api_marketing_marca_logo'),
 
     path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),

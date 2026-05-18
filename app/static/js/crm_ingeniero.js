@@ -40,7 +40,9 @@
             return (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
                    (window.innerWidth && window.innerWidth <= 768);
         };
-        if (!_isMobileViewport()) {
+        var _urlTab = '';
+        try { _urlTab = new URL(window.location.href).searchParams.get('tab') || ''; } catch (e) { _urlTab = ''; }
+        if (!_isMobileViewport() && _urlTab !== 'calendario') {
             ingenieroMostrarDashboard();
         }
         var btnTareas = document.getElementById('btnTareas');
@@ -77,7 +79,10 @@
         // Móvil:   siempre abrimos Proyectos salvo que tengan guardado 'tareas'.
         var savedView = localStorage.getItem('crmView');
         var _btnProy = document.getElementById('btnProyectos');
-        if (_isMobileViewport()) {
+        if (_urlTab === 'calendario') {
+            if (document.body) document.body.classList.remove('eng-initial-hide');
+            _dashIngHide();
+        } else if (_isMobileViewport()) {
             // Limpiar guardia anti-FOUC ANTES de activar la sección
             // (el CSS body.eng-initial-hide tiene !important y ganaría
             // sobre la clase .active si no la removemos primero).

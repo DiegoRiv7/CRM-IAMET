@@ -205,7 +205,7 @@ def api_ingeniero_proyectos(request):
 @login_required
 def api_ingeniero_proyecto_detalle(request, proyecto_id):
     """Detalle de un proyecto de ingeniería: info, tareas, carpetas y archivos raíz."""
-    from app.models import Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto
+    from app.models import Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto, ArchivoOportunidad, CarpetaOportunidad
     try:
         if is_supervisor(request.user) or is_ingeniero(request.user):
             proyecto = Proyecto.objects.get(pk=proyecto_id, es_ingenieria=True)
@@ -240,6 +240,25 @@ def api_ingeniero_proyecto_detalle(request, proyecto_id):
         ArchivoProyecto.objects.filter(proyecto=proyecto, carpeta=None)
         .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url', 'tamaño')
     )
+
+    # Drive de oportunidades ligadas: cada opp aporta una carpeta virtual
+    # con sus archivos (raíz + subcarpetas). El ingeniero ve todo el material
+    # comercial sin tener que salir al CRM.
+    for opp in proyecto.oportunidades_ligadas.all():
+        archivos_opp = list(
+            ArchivoOportunidad.objects.filter(oportunidad=opp)
+            .values('id', 'nombre_original', 'tipo_archivo', 'extension',
+                    'bitrix_download_url', 'tamaño')
+        )
+        if not archivos_opp:
+            continue
+        opp_titulo = (getattr(opp, 'oportunidad', None) or getattr(opp, 'titulo', None)
+                      or getattr(opp, 'nombre', None) or 'Oportunidad')
+        carpetas.append({
+            'id': 'opp-' + str(opp.id),
+            'nombre': '[Oportunidad] ' + str(opp_titulo),
+            'archivos': archivos_opp,
+        })
 
     creado_por = None
     if proyecto.creado_por:
@@ -4204,6 +4223,32 @@ def api_tareas_oportunidad(request, opp_id):
             elif fecha_limite is None and cal_ini is not None:
                 fecha_limite = cal_ini
 
+            # Responsable opcional: admins / supervisores / jefes de grupo
+            # pueden agendar la actividad a nombre de otro usuario. Si llega
+            # `responsable_id`, validamos contra los usuarios seleccionables
+            # (misma regla que el calendario global) y luego usamos ese user
+            # como creado_por de la Actividad — así aparece en SU calendario.
+            responsable_id_raw = data.get('responsable_id')
+            try:
+                responsable_id = int(responsable_id_raw) if responsable_id_raw else None
+            except (ValueError, TypeError):
+                responsable_id = None
+
+            actividad_owner = request.user
+            if responsable_id and responsable_id != request.user.id:
+                seleccionables_ids = set(
+                    _usuarios_seleccionables_responsable(request.user).values_list('id', flat=True)
+                )
+                if responsable_id not in seleccionables_ids:
+                    return JsonResponse(
+                        {'success': False, 'error': 'No tienes permiso para asignar la actividad a ese usuario.'},
+                        status=403,
+                    )
+                try:
+                    actividad_owner = User.objects.get(id=responsable_id, is_active=True)
+                except User.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Usuario responsable no encontrado.'}, status=404)
+
             tarea = TareaOportunidad.objects.create(
                 oportunidad=opp,
                 titulo=titulo,
@@ -4211,7 +4256,7 @@ def api_tareas_oportunidad(request, opp_id):
                 prioridad='alta' if data.get('alta_prioridad') else 'normal',
                 fecha_limite=fecha_limite,
                 creado_por=request.user,
-                responsable_id=data.get('responsable_id') or None,
+                responsable_id=responsable_id,
             )
             if data.get('participantes'):
                 tarea.participantes.set(data['participantes'])
@@ -4225,7 +4270,7 @@ def api_tareas_oportunidad(request, opp_id):
                     descripcion=tarea.descripcion or '',
                     fecha_inicio=cal_ini,
                     fecha_fin=cal_fin,
-                    creado_por=request.user,
+                    creado_por=actividad_owner,
                     color='#0052D4',  # azul
                     oportunidad=opp,
                 )

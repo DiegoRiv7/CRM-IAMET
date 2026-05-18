@@ -1306,10 +1306,57 @@ def crm_home(request):
             'filter_tipo': filter_tipo,
         }
 
+    # ── Marketing Hub: server-side seed para que los logos de marca y
+    #    las URLs de recursos viajen junto con el HTML inicial y no
+    #    haya que esperar al fetch async para verlos. ─────────────────
+    marketing_marcas_seed = []
+    marketing_recursos_seed = []
+    marketing_can_edit = False
+    if tab_activo == 'marketing':
+        try:
+            from .models import MarcaMarketing, RecursoMarketing
+            profile = getattr(user, 'userprofile', None)
+            marketing_can_edit = bool(profile and getattr(profile, 'can_manage_marketing', False))
+            for m in MarcaMarketing.objects.filter(visible=True).order_by('orden', 'nombre'):
+                marketing_marcas_seed.append({
+                    'id': m.id,
+                    'slug': m.slug,
+                    'nombre': m.nombre,
+                    'logo_url': m.logo.url if m.logo else '',
+                })
+            for r in (RecursoMarketing.objects
+                      .filter(visible=True)
+                      .select_related('subido_por')
+                      .order_by('orden', '-fecha_creacion')):
+                usr = r.subido_por
+                subido_por_nombre = ''
+                if usr:
+                    subido_por_nombre = (usr.get_full_name() or usr.username or '').strip() or usr.username
+                marketing_recursos_seed.append({
+                    'id': r.id,
+                    'brand': r.brand,
+                    'tipo': r.tipo,
+                    'titulo': r.titulo,
+                    'descripcion': r.descripcion or '',
+                    'tags': list(r.tags or []),
+                    'url_efectiva': r.url_efectiva,
+                    'tamano_legible': r.tamano_legible,
+                    'fecha_legible': r.fecha_creacion.strftime('%d %b %Y') if r.fecha_creacion else '',
+                    'subido_por_nombre': subido_por_nombre,
+                })
+        except Exception:
+            # Si MarcaMarketing/RecursoMarketing aún no migraron (rama vieja),
+            # dejamos el seed vacío y el frontend hace fallback a mocks/fetch.
+            marketing_marcas_seed = []
+            marketing_recursos_seed = []
+
     context = {
         'widget_label': widget_label,
         'widget_metric': widget_metric,
         'tab_activo': tab_activo,
+        'marketing_marcas_seed_json': json.dumps(marketing_marcas_seed),
+        'marketing_recursos_seed_json': json.dumps(marketing_recursos_seed),
+        'marketing_can_edit': marketing_can_edit,
         'marketing_kpis': marketing_kpis,
         'eventos_kpis': eventos_kpis,
         'eventos_lista': eventos_lista,

@@ -575,6 +575,19 @@
                         <div id="woFormActParticipantesContainer" class="wact-pop-chips"></div>
                     </div>
                 </div>
+                <!-- Responsable (solo admins / supervisores / jefes de grupo) -->
+                <div class="wact-popwrap" id="woResponsableWrap" style="display:none;">
+                    <button type="button" class="wact-tool-ghost" data-wact-btn="responsable" onclick="wactOpenPop('wo', 'responsable', event)" title="Asignar responsable">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span data-wact-label="responsable">Responsable: yo</span>
+                    </button>
+                    <div class="wact-pop wact-pop-wide" data-wact-pop="responsable" style="display:none; min-width: 280px;">
+                        <div class="wact-pop-title">Responsable de la actividad</div>
+                        <div style="font-size:11.5px;color:#64748B;margin:0 0 8px 0;line-height:1.4;">Asignar a otro usuario para que aparezca en su calendario.</div>
+                        <input type="text" id="woResponsableSearch" class="wact-pop-input" placeholder="Buscar usuario…" oninput="woResponsableFilter(this.value)">
+                        <div id="woResponsableLista" class="wact-pop-dropdown" style="display:block;max-height:240px;overflow:auto;margin-top:6px;border-radius:8px;border:1px solid #E5E5EA;"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="wact-actions">
@@ -2563,6 +2576,108 @@
             woRenderParticipantes();
         };
 
+        /* ─── RESPONSABLE (admins / supervisores / jefes de grupo) ─── */
+        // Mismo patrón que el composer del calendario: si el usuario tiene
+        // permiso de asignar a otra persona, el botón "Responsable" aparece.
+        // El user seleccionado pasa al backend como responsable_id; el
+        // backend usa ese usuario como creado_por de la Actividad para
+        // que la actividad aparezca en su calendario.
+        var _woResponsableUsers = null;
+        var _woResponsableMyId = null;
+        var _woResponsableSelectedId = null;
+        function woResponsableEnsureLoaded() {
+            if (_woResponsableUsers !== null) {
+                woResponsableUpdateVisibility();
+                return Promise.resolve();
+            }
+            return fetch('/app/api/calendario/seleccionables-responsable/', {credentials:'same-origin'})
+                .then(function (r) { return r.ok ? r.json() : {usuarios:[], puede_asignar:false}; })
+                .then(function (data) {
+                    _woResponsableUsers = data.usuarios || [];
+                    var meta = _woResponsableUsers.find(function (u) { return u.es_yo; });
+                    if (meta) _woResponsableMyId = meta.id;
+                    woResponsableUpdateVisibility();
+                    woResponsableRenderLista('');
+                })
+                .catch(function () { _woResponsableUsers = []; });
+        }
+        function woResponsableUpdateVisibility() {
+            var wrap = document.getElementById('woResponsableWrap');
+            if (!wrap) return;
+            var puedeAsignar = (_woResponsableUsers || []).some(function (u) { return !u.es_yo; });
+            wrap.style.display = puedeAsignar ? '' : 'none';
+        }
+        function woResponsableReset() {
+            _woResponsableSelectedId = null;
+            woResponsableUpdateLabel();
+            var sb = document.getElementById('woResponsableSearch');
+            if (sb) sb.value = '';
+            woResponsableRenderLista('');
+        }
+        function woResponsableUpdateLabel() {
+            var lbl = document.querySelector('#woResponsableWrap [data-wact-label="responsable"]');
+            var btn = document.querySelector('#woResponsableWrap [data-wact-btn="responsable"]');
+            if (!lbl) return;
+            if (!_woResponsableSelectedId || _woResponsableSelectedId === _woResponsableMyId) {
+                lbl.textContent = 'Responsable: yo';
+                if (btn) btn.style.color = '';
+            } else {
+                var u = (_woResponsableUsers || []).find(function (x) { return x.id === _woResponsableSelectedId; });
+                lbl.textContent = 'Responsable: ' + ((u && u.nombre_completo) || '#' + _woResponsableSelectedId);
+                if (btn) btn.style.color = '#0052D4';
+            }
+        }
+        window.woResponsableSelect = function (id) {
+            if (!id || id === _woResponsableMyId) {
+                _woResponsableSelectedId = null;
+            } else {
+                _woResponsableSelectedId = id;
+            }
+            woResponsableUpdateLabel();
+            var sb = document.getElementById('woResponsableSearch');
+            woResponsableRenderLista(sb ? sb.value : '');
+            var pop = document.querySelector('#woResponsableWrap [data-wact-pop="responsable"]');
+            if (pop) pop.style.display = 'none';
+        };
+        window.woResponsableFilter = function (query) {
+            woResponsableRenderLista(query || '');
+        };
+        function woResponsableRenderLista(query) {
+            var cont = document.getElementById('woResponsableLista');
+            if (!cont) return;
+            var users = _woResponsableUsers || [];
+            var q = (query || '').trim().toLowerCase();
+            if (q) {
+                users = users.filter(function (u) {
+                    return (u.nombre_completo || '').toLowerCase().indexOf(q) !== -1
+                        || (u.username || '').toLowerCase().indexOf(q) !== -1;
+                });
+            }
+            var html = '';
+            var isMine = !_woResponsableSelectedId;
+            html += '<div onclick="woResponsableSelect(null)" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;gap:10px;font-size:0.88rem;background:' + (isMine ? '#EEF4FF' : '#fff') + ';">'
+                  + '<div style="width:26px;height:26px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;">YO</div>'
+                  + '<div style="display:flex;flex-direction:column;flex:1;"><strong style="color:#1D1D1F;">Yo (sin asignar a otro)</strong><span style="color:#86868B;font-size:0.72rem;">La actividad será mía</span></div>'
+                  + (isMine ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '')
+                  + '</div>';
+            users.forEach(function (u) {
+                if (u.es_yo) return;
+                var checked = (_woResponsableSelectedId === u.id);
+                var iniciales = (function (nm) {
+                    var p = String(nm || '').trim().split(/\s+/);
+                    if (!p[0]) return '?';
+                    if (p.length === 1) return p[0].substring(0, 2).toUpperCase();
+                    return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+                })(u.nombre_completo || u.username);
+                html += '<div onclick="woResponsableSelect(' + u.id + ')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;gap:10px;font-size:0.88rem;background:' + (checked ? '#EEF4FF' : '#fff') + ';">'
+                      + '<div style="width:26px;height:26px;border-radius:50%;background:#475569;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;">' + woEscape(iniciales) + '</div>'
+                      + '<div style="display:flex;flex-direction:column;flex:1;"><strong style="color:#1D1D1F;">' + woEscape(u.nombre_completo || u.username) + '</strong><span style="color:#86868B;font-size:0.72rem;">@' + woEscape(u.username) + '</span></div>'
+                      + (checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '')
+                      + '</div>';
+            });
+            cont.innerHTML = html;
+        }
+
         window.woSearchParticipantes = function (query) {
             var dropdown = document.getElementById('woFormActParticipantesDropdown');
             query = query.trim();
@@ -2684,6 +2799,10 @@
             _woParticipantesSel = [];
             woRenderParticipantes();
 
+            // Responsable: reset al abrir y cargar la lista si aplica.
+            woResponsableReset();
+            woResponsableEnsureLoaded();
+
             document.getElementById('widgetOppCrearActividad').style.display = 'flex';
         };
 
@@ -2728,6 +2847,11 @@
                 cal_fin: cal_fin,
                 participantes: participantes
             };
+            // Si el user es admin/supervisor/jefe y eligió a alguien distinto a sí mismo,
+            // mandamos el responsable para que la actividad caiga en su calendario.
+            if (_woResponsableSelectedId && _woResponsableSelectedId !== _woResponsableMyId) {
+                payload.responsable_id = _woResponsableSelectedId;
+            }
 
             var csrf = getCsrf();
 
@@ -3097,8 +3221,33 @@
         // ────────────────────────────────────────────────────────────────────
 
         window.woCompletarActividad = function () {
-            if (!_woCurrentViewingTaskId) return;
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+            // Caso 2: actividad genérica del calendario (no tarea-opp).
+            // Cuando el modal fue abierto desde el calendario para una
+            // Actividad sin TareaOportunidad ligada, _woCurrentViewingTaskId
+            // queda en null y usamos PATCH al endpoint de actividades.
+            if (!_woCurrentViewingTaskId && window._woCurrentViewingActividadId) {
+                var actId = window._woCurrentViewingActividadId;
+                fetch('/app/api/actividades/' + actId + '/', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                    body: JSON.stringify({ completada: true })
+                }).then(function (r) { return r.json(); }).then(function (res) {
+                    if (res.error) { console.error(res.error); return; }
+                    var badge = document.getElementById('woVerActEstadoBadge');
+                    if (badge) {
+                        badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
+                        badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
+                    }
+                    var bC = document.getElementById('woVerActBtnCompletar');
+                    if (bC) bC.style.display = 'none';
+                    if (typeof calGlobalRefetch === 'function') setTimeout(calGlobalRefetch, 200);
+                }).catch(function (err) { console.error(err); });
+                return;
+            }
+
+            if (!_woCurrentViewingTaskId) return;
 
             fetch('/app/api/tarea-oportunidad/' + _woCurrentViewingTaskId + '/', {
                 method: 'PUT',
