@@ -93,6 +93,24 @@ Usa las clases del widget de oportunidad (wo-*) para mantener look & feel.
                         </div>
                     </div>
 
+                    {# Card de actividades del calendario #}
+                    <div class="wo-card" style="grid-column:1/-1;display:flex;flex-direction:column;">
+                        <div class="wo-section-header">
+                            <h3 class="wo-section-title">Actividades agendadas</h3>
+                            <button type="button" class="wo-btn-new" id="wiAddActBtn" style="background:linear-gradient(135deg,#FF3B30,#FF9500,#FFCC00,#34C759,#007AFF,#AF52DE);color:#fff;border:none;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Agendar
+                            </button>
+                        </div>
+                        <div id="wiActividadesList" style="display:flex;flex-direction:column;gap:6px;"></div>
+                        <div id="wiActividadForm" class="idea-act-add-form" style="display:none;">
+                            <input type="text" id="wiActTitulo" placeholder="¿Qué hay que hacer?" maxlength="200">
+                            <input type="date" id="wiActFecha">
+                            <input type="time" id="wiActHora">
+                            <button type="button" id="wiActGuardar">Agendar</button>
+                        </div>
+                    </div>
+
                     {# Card de comentarios #}
                     <div class="wo-card" style="grid-column:1/-1;display:flex;flex-direction:column;">
                         <div class="wo-section-header">
@@ -101,7 +119,7 @@ Usa las clases del widget de oportunidad (wo-*) para mantener look & feel.
                         <div id="wiComentariosList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;min-height:60px;"></div>
                         <div style="display:flex;gap:8px;align-items:flex-start;border-top:1px solid #F2F2F7;padding-top:10px;">
                             <textarea id="wiComentarioInput" rows="1" placeholder="Añade un comentario o nota…" style="flex:1;border:1px solid #E5E5EA;border-radius:8px;padding:8px 12px;font-size:0.86rem;font-family:inherit;resize:vertical;min-height:36px;"></textarea>
-                            <button type="button" id="wiComentarBtn" style="background:#8B5CF6;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.84rem;">Enviar</button>
+                            <button type="button" id="wiComentarBtn" style="background:linear-gradient(135deg,#FF3B30,#FF9500,#FFCC00,#34C759,#007AFF,#AF52DE);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.84rem;">Enviar</button>
                         </div>
                     </div>
                 </div>

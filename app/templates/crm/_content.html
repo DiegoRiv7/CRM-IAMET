@@ -203,7 +203,7 @@
     <!-- Table -->
     <div class="crm-table-wrap" id="crmTableWrap">
         <!-- ═══ BARRA UNIFICADA: facet-bar (izq) + tabs (centro) + period+CTA (der) ═══ -->
-        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' or tab_activo == 'cli' %} crm-bar--dashboard{% endif %}">
+        <div class="crm-bar {% if tab_activo == 'crm' or tab_activo == 'prospectos' or tab_activo == 'ideas' %}crm-bar--unified{% endif %}{% if tab_activo == 'clientes' or tab_activo == 'cli' %} crm-bar--dashboard{% endif %}">
             {% if tab_activo == 'marketing' %}
             {# Slots para que el Marketing Hub inyecte back btn + wordmark de la marca en la misma fila que los tabs cuando hay una marca seleccionada. Vacíos por default; el JS los llena/oculta. #}
             <div class="crm-bar-left mkthub-bar-slot mkthub-bar-slot--left" id="mkthubBarLeft"></div>
@@ -227,6 +227,25 @@
                     <svg id="crmViewIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
                 <button type="button" class="crm-facet-btn crm-facet-clear" id="btnFacetClear" style="display:none;">Limpiar todo</button>
+            </div>
+            {% elif tab_activo == 'ideas' %}
+            <!-- Acciones izquierda: filtro / ordenar (ideas) -->
+            <div class="crm-bar-left" id="ideasBarLeft">
+                <div class="ideas-pop-wrap" style="position:relative;">
+                    <button type="button" class="crm-facet-btn crm-facet-add" id="ideasBtnFiltro" title="Filtrar">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        <span>Filtro</span>
+                    </button>
+                    <div class="ideas-pop" id="ideasPopFilter" style="display:none;"></div>
+                </div>
+                <div class="ideas-pop-wrap" style="position:relative;">
+                    <button type="button" class="crm-facet-btn crm-facet-sort" id="ideasBtnOrdenar" title="Ordenar">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                        <span id="ideasSortLabel">Ordenar</span>
+                    </button>
+                    <div class="ideas-pop" id="ideasPopSort" style="display:none;"></div>
+                </div>
+                <button type="button" class="crm-facet-btn crm-facet-clear" id="ideasBtnClear" style="display:none;">Limpiar</button>
             </div>
             {% elif tab_activo == 'prospectos' %}
             <!-- Acciones izquierda: filtro / ordenar (prospectos) -->
@@ -303,7 +322,7 @@
                 {% if tab_activo == 'marketing' %}
                 <div class="mkthub-bar-slot mkthub-bar-slot--right" id="mkthubBarRight"></div>
                 {% endif %}
-                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'cli' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' %}
+                {% if tab_activo == 'crm' or tab_activo == 'clientes' or tab_activo == 'cli' or tab_activo == 'prospectos' or tab_activo == 'prospeccion' or tab_activo == 'ideas' %}
                 <!-- Periodo + vendedor -->
                 <div class="crm-period-pills" id="crmPeriodPills">
                     <button type="button" class="crm-period-pill crm-period-pill--periodo" data-period="periodo" id="pillPeriodo">
@@ -1101,7 +1120,7 @@
     </div>
     <!-- Footer (oculto en tab=prospectos para que el kanban ocupe toda la pantalla,
          y en tab=prospeccion/Recursos + tab=marketing para no robar espacio al dashboard) -->
-    {% if tab_activo != 'prospectos' and tab_activo != 'prospeccion' and tab_activo != 'marketing' %}
+    {% if tab_activo != 'prospectos' and tab_activo != 'prospeccion' and tab_activo != 'marketing' and tab_activo != 'ideas' %}
     <div class="crm-footer">
         <div class="footer-left" id="footerLeft">
             {% if tab_activo == 'cotizado' %}

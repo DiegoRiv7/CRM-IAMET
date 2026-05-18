@@ -182,6 +182,21 @@ def api_idea_detalle(request, idea_id):
             }
             for c in idea.comentarios.select_related('usuario').all()
         ]
+        # Actividades del calendario vinculadas a la idea (orden cronológico).
+        d['actividades'] = [
+            {
+                'id': a.id,
+                'titulo': a.titulo,
+                'tipo_actividad': a.tipo_actividad,
+                'fecha_inicio': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
+                'fecha_fin': a.fecha_fin.isoformat() if a.fecha_fin else None,
+                'descripcion': a.descripcion or '',
+                'color': a.color,
+                'completada': a.completada,
+                'creado_por': _user_short(a.creado_por) if a.creado_por_id else None,
+            }
+            for a in idea.actividades_calendario.select_related('creado_por').order_by('fecha_inicio')
+        ]
         return JsonResponse({'ok': True, 'idea': d})
 
     if request.method == 'DELETE':

@@ -2551,6 +2551,18 @@ class Actividad(models.Model):
         verbose_name="Curso Relacionado"
     )
 
+    # Enlace opcional a una Idea — cuando se agenda una actividad desde
+    # el widget de detalle de Idea, queda vinculada para que el usuario
+    # vea sus actividades programadas en el detalle de la idea.
+    idea = models.ForeignKey(
+        'Idea',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='actividades_calendario',
+        verbose_name="Idea Relacionada"
+    )
+
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
     # Agrupador opcional para actividades creadas como serie recurrente.

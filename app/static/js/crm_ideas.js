@@ -109,8 +109,23 @@
     }
 
     /* ─── Fetch + render del kanban ─── */
+    function buildKanbanQuery() {
+        // Lee user_id de la URL (cuando un supervisor mira el tablero de un
+        // vendedor específico) y los devuelve como query string.
+        var qs = new URLSearchParams();
+        try {
+            var u = new URL(window.location.href);
+            var uid = u.searchParams.get('user_id');
+            if (uid) qs.set('user_id', uid);
+        } catch (e) { /* ignore */ }
+        // Filtros locales (etapa/tipo/potencial/sort) los aplica el cliente
+        // sobre los datos ya cargados — no se mandan al backend.
+        var s = qs.toString();
+        return s ? ('?' + s) : '';
+    }
+
     function fetchKanban() {
-        return api('/app/api/ideas/').then(function (res) {
+        return api('/app/api/ideas/' + buildKanbanQuery()).then(function (res) {
             if (!res.ok || !res.data.ok) {
                 showFlash('No se pudo cargar el tablero', 'error');
                 return;
@@ -121,7 +136,11 @@
             Object.keys(STATE.ideas_por_etapa).forEach(function (k) {
                 (STATE.ideas_por_etapa[k] || []).forEach(function (i) { STATE.ideas_by_id[i.id] = i; });
             });
+            // Invalidar snapshot raw para que filtros/orden trabajen sobre los datos frescos.
+            STATE._rawByEtapa = null;
             renderKanban();
+            // Re-aplicar filtros locales (si los hay) sobre los datos nuevos.
+            if (typeof applyFiltros === 'function') applyFiltros();
         });
     }
 
@@ -419,14 +438,11 @@
             ? tags.map(function (t) { return '<span class="idea-card-tag" style="margin-right:4px;">' + esc(t) + '</span>'; }).join('')
             : '—';
 
-        // Pipeline
+        // Pipeline (Apple Intelligence gradient en la etapa activa)
         var pipe = document.getElementById('wiPipelineStages');
         pipe.innerHTML = ETAPAS.map(function (et) {
             var on = et.key === i.etapa;
-            return '<button type="button" data-set-etapa="' + esc(et.key) + '" class="wo-pipeline-stage' + (on ? ' active' : '') + '" '
-                + 'style="padding:6px 12px;border-radius:18px;border:1px solid ' + (on ? '#8B5CF6' : '#E5E7EB') + ';'
-                + 'background:' + (on ? '#8B5CF6' : '#FFFFFF') + ';color:' + (on ? '#fff' : '#475569') + ';'
-                + 'font-size:0.76rem;font-weight:600;cursor:pointer;white-space:nowrap;">'
+            return '<button type="button" data-set-etapa="' + esc(et.key) + '" class="idea-pipeline-stage' + (on ? ' active' : '') + '">'
                 + esc(et.label) + '</button>';
         }).join('');
         pipe.querySelectorAll('[data-set-etapa]').forEach(function (b) {
@@ -438,6 +454,9 @@
                 renderIdeaDetail();
             });
         });
+
+        // Actividades del calendario
+        renderActividades(i.actividades || []);
 
         // Comentarios
         var list = document.getElementById('wiComentariosList');
@@ -464,6 +483,104 @@
             document.getElementById('wiConvertirBtn').style.display = '';
             document.getElementById('wiConvertidaInfo').style.display = 'none';
         }
+    }
+
+    /* ─── Actividades del calendario ─── */
+    function renderActividades(acts) {
+        var list = document.getElementById('wiActividadesList');
+        if (!list) return;
+        if (!acts.length) {
+            list.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;padding:8px 0;">Sin actividades agendadas. Captura una desde el botón Agendar.</div>';
+            return;
+        }
+        list.innerHTML = acts.map(function (a) {
+            var d = a.fecha_inicio ? new Date(a.fecha_inicio) : null;
+            var fechaFmt = d ? d.toLocaleString('es-MX', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : 'Sin fecha';
+            return '<div class="idea-act-row' + (a.completada ? ' is-done' : '') + '">'
+                + '  <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">'
+                + '    <svg width="14" height="14" fill="none" stroke="' + (a.completada ? '#16A34A' : '#5E5CE6') + '" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'
+                + '    <div style="display:flex;flex-direction:column;min-width:0;">'
+                + '      <span style="font-weight:600;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(a.titulo) + '</span>'
+                + '      <span class="idea-act-meta">' + esc(fechaFmt) + ((a.creado_por && a.creado_por.nombre) ? ' · por ' + esc(a.creado_por.nombre) : '') + '</span>'
+                + '    </div>'
+                + '  </div>'
+                + '</div>';
+        }).join('');
+    }
+
+    function openActividadForm() {
+        var f = document.getElementById('wiActividadForm');
+        if (!f) return;
+        f.style.display = '';
+        // Defaults: fecha hoy, hora actual + 1h
+        var t = document.getElementById('wiActTitulo');
+        var d = document.getElementById('wiActFecha');
+        var h = document.getElementById('wiActHora');
+        var now = new Date();
+        if (d) d.value = now.toISOString().substring(0, 10);
+        if (h) {
+            var hh = String(now.getHours()).padStart(2, '0');
+            var mm = String(now.getMinutes()).padStart(2, '0');
+            h.value = hh + ':' + mm;
+        }
+        if (t) { t.value = ''; setTimeout(function () { t.focus(); }, 30); }
+    }
+    function submitActividad() {
+        var i = STATE.currentIdea;
+        if (!i) return;
+        var titulo = document.getElementById('wiActTitulo').value.trim();
+        var fecha = document.getElementById('wiActFecha').value;
+        var hora = document.getElementById('wiActHora').value;
+        if (!titulo || !fecha || !hora) {
+            showFlash('Título, fecha y hora son requeridos', 'error');
+            return;
+        }
+        // Construir inicio y fin (default duración = 1h).
+        var startIso = fecha + 'T' + hora + ':00';
+        var startDt = new Date(startIso);
+        var endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+        function localIso(d) {
+            var p = function (n) { return String(n).padStart(2, '0'); };
+            return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+                + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':00';
+        }
+        var payload = {
+            title: titulo,
+            description: 'Actividad ligada a idea "' + i.titulo + '"',
+            tipo: 'tarea',
+            start: localIso(startDt),
+            end: localIso(endDt),
+            color: '#5E5CE6',
+            participants: [],
+            idea: i.id,
+        };
+        var btn = document.getElementById('wiActGuardar');
+        if (btn) btn.disabled = true;
+        api('/app/api/actividades/', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        }).then(function (res) {
+            if (!res.ok || res.data.error) {
+                showFlash(res.data.error || 'No se pudo agendar', 'error');
+                return;
+            }
+            showFlash('Actividad agendada');
+            document.getElementById('wiActividadForm').style.display = 'none';
+            // Append local sin re-fetch del detalle
+            i.actividades = i.actividades || [];
+            i.actividades.push({
+                id: res.data.id,
+                titulo: res.data.title || titulo,
+                tipo_actividad: res.data.tipo || 'tarea',
+                fecha_inicio: res.data.start || startDt.toISOString(),
+                fecha_fin: res.data.end || endDt.toISOString(),
+                descripcion: res.data.description || '',
+                color: res.data.color || '#5E5CE6',
+                completada: false,
+                creado_por: res.data.creado_por || null,
+            });
+            renderActividades(i.actividades);
+        }).finally(function () { if (btn) btn.disabled = false; });
     }
 
     function comentarIdea() {
@@ -659,6 +776,11 @@
         var cBtn = document.getElementById('wiComentarBtn');
         if (cBtn) cBtn.addEventListener('click', comentarIdea);
 
+        var addActBtn = document.getElementById('wiAddActBtn');
+        if (addActBtn) addActBtn.addEventListener('click', openActividadForm);
+        var actGuardar = document.getElementById('wiActGuardar');
+        if (actGuardar) actGuardar.addEventListener('click', submitActividad);
+
         var cnvCancel = document.getElementById('wiCnvCancel');
         if (cnvCancel) cnvCancel.addEventListener('click', cerrarConvertir);
         var cnvOk = document.getElementById('wiCnvOk');
@@ -685,17 +807,145 @@
         if (valorInp) valorInp.addEventListener('input', function () { updateNiLabel('valor'); });
     }
 
-    /* ─── Boot ─── */
-    document.addEventListener('DOMContentLoaded', function () {
-        if (!document.getElementById('ideasKanbanBoard')) return;
-        injectTopbarButton();
-        wireDetailEvents();
-        fetchKanban();
-    });
-    // Si el script carga después de DOMContentLoaded (porque viene en un partial):
-    if (document.readyState !== 'loading' && document.getElementById('ideasKanbanBoard')) {
-        injectTopbarButton();
-        wireDetailEvents();
-        fetchKanban();
+    /* ─── Filtros y orden (popovers del topbar izquierdo) ─── */
+    var FILTROS = { tipo: null, potencial: null };
+    var SORT_KEY = 'recientes'; // 'recientes' | 'valor_desc' | 'valor_asc' | 'alfa'
+
+    function buildFilterPop() {
+        var pop = document.getElementById('ideasPopFilter');
+        if (!pop) return;
+        var html = '<div class="ideas-pop-section">Tipo</div>';
+        html += '<button type="button" class="ideas-pop-option' + (FILTROS.tipo == null ? ' is-on' : '') + '" data-filter-tipo="">Todos</button>';
+        TIPOS.forEach(function (t) {
+            html += '<button type="button" class="ideas-pop-option' + (FILTROS.tipo === t.id ? ' is-on' : '') + '" data-filter-tipo="' + esc(t.id) + '">' + esc(t.label) + '</button>';
+        });
+        html += '<div class="ideas-pop-section">Potencial</div>';
+        html += '<button type="button" class="ideas-pop-option' + (FILTROS.potencial == null ? ' is-on' : '') + '" data-filter-pot="">Todos</button>';
+        POTENCIAL.forEach(function (p) {
+            html += '<button type="button" class="ideas-pop-option' + (FILTROS.potencial === p.id ? ' is-on' : '') + '" data-filter-pot="' + esc(p.id) + '">' + esc(p.label) + '</button>';
+        });
+        pop.innerHTML = html;
+        pop.querySelectorAll('[data-filter-tipo]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                FILTROS.tipo = b.getAttribute('data-filter-tipo') || null;
+                applyFiltros();
+            });
+        });
+        pop.querySelectorAll('[data-filter-pot]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                FILTROS.potencial = b.getAttribute('data-filter-pot') || null;
+                applyFiltros();
+            });
+        });
     }
+    function buildSortPop() {
+        var pop = document.getElementById('ideasPopSort');
+        if (!pop) return;
+        var opts = [
+            {id: 'recientes',  label: 'Más recientes'},
+            {id: 'valor_desc', label: 'Mayor valor estimado'},
+            {id: 'valor_asc',  label: 'Menor valor estimado'},
+            {id: 'alfa',       label: 'Alfabético'},
+        ];
+        var html = opts.map(function (o) {
+            return '<button type="button" class="ideas-pop-option' + (SORT_KEY === o.id ? ' is-on' : '') + '" data-sort="' + esc(o.id) + '">' + esc(o.label) + '</button>';
+        }).join('');
+        pop.innerHTML = html;
+        pop.querySelectorAll('[data-sort]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                SORT_KEY = b.getAttribute('data-sort');
+                document.getElementById('ideasSortLabel').textContent =
+                    'Ordenar: ' + (b.textContent || '').trim();
+                applyFiltros();
+                pop.style.display = 'none';
+            });
+        });
+    }
+    function applyFiltros() {
+        // Aplica los filtros locales sobre STATE.ideas_por_etapa y re-renderea.
+        // Mantiene una copia "raw" en _rawByEtapa para no perder datos.
+        if (!STATE._rawByEtapa) STATE._rawByEtapa = JSON.parse(JSON.stringify(STATE.ideas_por_etapa));
+        var filtered = {};
+        Object.keys(STATE._rawByEtapa).forEach(function (etapa) {
+            var items = (STATE._rawByEtapa[etapa] || []).filter(function (i) {
+                if (FILTROS.tipo && i.tipo !== FILTROS.tipo) return false;
+                if (FILTROS.potencial && i.potencial_comercial !== FILTROS.potencial) return false;
+                return true;
+            });
+            // Sort
+            items.sort(function (a, b) {
+                if (SORT_KEY === 'recientes') {
+                    return (b.fecha_creacion || '').localeCompare(a.fecha_creacion || '');
+                }
+                if (SORT_KEY === 'valor_desc') return (b.valor_estimado || 0) - (a.valor_estimado || 0);
+                if (SORT_KEY === 'valor_asc') return (a.valor_estimado || 0) - (b.valor_estimado || 0);
+                if (SORT_KEY === 'alfa') return (a.titulo || '').localeCompare(b.titulo || '');
+                return 0;
+            });
+            filtered[etapa] = items;
+        });
+        STATE.ideas_por_etapa = filtered;
+        renderKanban();
+        // Mostrar "Limpiar" si hay filtros activos.
+        var clear = document.getElementById('ideasBtnClear');
+        if (clear) clear.style.display = (FILTROS.tipo || FILTROS.potencial || SORT_KEY !== 'recientes') ? '' : 'none';
+        buildFilterPop();
+        buildSortPop();
+    }
+
+    function wireTopbarFilters() {
+        var filtroBtn = document.getElementById('ideasBtnFiltro');
+        var sortBtn = document.getElementById('ideasBtnOrdenar');
+        var filtroPop = document.getElementById('ideasPopFilter');
+        var sortPop = document.getElementById('ideasPopSort');
+        var clearBtn = document.getElementById('ideasBtnClear');
+        if (filtroBtn && filtroPop) {
+            filtroBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var willOpen = filtroPop.style.display !== 'block';
+                if (sortPop) sortPop.style.display = 'none';
+                filtroPop.style.display = willOpen ? 'block' : 'none';
+                if (willOpen) buildFilterPop();
+            });
+        }
+        if (sortBtn && sortPop) {
+            sortBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var willOpen = sortPop.style.display !== 'block';
+                if (filtroPop) filtroPop.style.display = 'none';
+                sortPop.style.display = willOpen ? 'block' : 'none';
+                if (willOpen) buildSortPop();
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                FILTROS = {tipo: null, potencial: null};
+                SORT_KEY = 'recientes';
+                document.getElementById('ideasSortLabel').textContent = 'Ordenar';
+                applyFiltros();
+            });
+        }
+        // Click fuera cierra los popovers
+        document.addEventListener('click', function (e) {
+            if (filtroPop && !e.target.closest('#ideasBtnFiltro') && !e.target.closest('#ideasPopFilter')) {
+                filtroPop.style.display = 'none';
+            }
+            if (sortPop && !e.target.closest('#ideasBtnOrdenar') && !e.target.closest('#ideasPopSort')) {
+                sortPop.style.display = 'none';
+            }
+        });
+    }
+
+    /* ─── Boot ─── */
+    function boot() {
+        if (!document.getElementById('ideasKanbanBoard')) return;
+        if (window._ideasBooted) return;
+        window._ideasBooted = true;
+        injectTopbarButton();
+        wireDetailEvents();
+        wireTopbarFilters();
+        fetchKanban().then(function () { applyFiltros(); });
+    }
+    document.addEventListener('DOMContentLoaded', boot);
+    if (document.readyState !== 'loading') boot();
 })();

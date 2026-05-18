@@ -1,112 +1,220 @@
 {% load app_filters %}{% load static %}
 {% comment %}
-Kanban de Ideas — patrón espejo del kanban de Prospectos (reusa las clases
-crm-kanban-*), pero hidratado client-side desde /app/api/ideas/.
+Kanban de Ideas — paleta Apple Intelligence (rainbow gradient).
 Las etapas (capturada → ... → descartada) son fijas en el template.
+Hidratado client-side desde /app/api/ideas/.
 {% endcomment %}
 
 <style>
-/* Estilos específicos de Ideas: usamos el shell del kanban genérico
-   (crm-kanban-*) pero las cards de Idea tienen su propia paleta para
-   distinguirlas visualmente del kanban de Prospectos. */
-.crm-kanban-col--idea .crm-kanban-dot { background:#8B5CF6; }
-.crm-kanban-col--idea .crm-kanban-dot.active { box-shadow:0 0 0 3px rgba(139,92,246,0.18); }
+/* ─── Paleta Apple Intelligence ───
+   Rainbow gradient principal usada en strips, botones de acción, avatares
+   y elementos destacados del módulo Ideas. */
+:root {
+    --ai-gradient: linear-gradient(135deg, #FF3B30 0%, #FF9500 18%, #FFCC00 33%, #34C759 52%, #007AFF 72%, #AF52DE 88%, #FF2D55 100%);
+    --ai-gradient-soft: linear-gradient(135deg, #FFE4E1 0%, #FFE8CC 18%, #FFF6CC 33%, #DCFCE7 52%, #DBEAFE 72%, #EDE9FE 88%, #FFE0EC 100%);
+    --ai-gradient-strip: linear-gradient(90deg, #FF3B30 0%, #FF9500 18%, #FFCC00 33%, #34C759 52%, #007AFF 72%, #AF52DE 88%, #FF2D55 100%);
+    --ai-primary: #5E5CE6;
+    --ai-primary-soft: #EEEDFF;
+    --ai-primary-border: #C7C5FF;
+    --ai-ink: #1D1D1F;
+}
+
+.crm-kanban-col--idea .crm-kanban-dot {
+    background: var(--ai-gradient);
+}
+.crm-kanban-col--idea .crm-kanban-dot.active {
+    box-shadow: 0 0 0 3px rgba(94,92,230,0.18);
+}
+
 .idea-card {
-    background:#FFFFFF;
-    border:1px solid #E5E7EB;
-    border-radius:14px;
-    padding:14px 14px 12px;
-    cursor:pointer;
-    transition:border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-    display:flex; flex-direction:column; gap:10px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+    padding-top: 18px;
 }
 .idea-card:hover {
-    border-color:#C7C7CC;
-    transform:translateY(-1px);
-    box-shadow:0 6px 16px -10px rgba(15,23,42,0.18);
+    border-color: var(--ai-primary-border);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px -10px rgba(94,92,230,0.28);
 }
 .idea-card-strip {
-    position:absolute; top:0; left:0; right:0; height:4px;
-    background:linear-gradient(90deg, #8B5CF6 0%, #A78BFA 100%);
-    border-radius:14px 14px 0 0;
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: var(--ai-gradient-strip);
+    border-radius: 14px 14px 0 0;
 }
-.idea-card { position:relative; padding-top:18px; }
 .idea-card-title {
-    font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.3;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    font-size: 0.95rem; font-weight: 700; color: var(--ai-ink); line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .idea-card-row {
-    display:grid; grid-template-columns:1fr 1fr; gap:8px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
 .idea-card-pill {
-    background:#F5F3FF; border:1px solid #E9D5FF; border-radius:10px;
-    padding:6px 10px; display:flex; flex-direction:column; gap:2px;
+    background: var(--ai-primary-soft);
+    border: 1px solid var(--ai-primary-border);
+    border-radius: 10px;
+    padding: 6px 10px; display: flex; flex-direction: column; gap: 2px;
 }
 .idea-card-pill-label {
-    font-size:0.58rem; font-weight:700; color:#7C3AED;
-    text-transform:uppercase; letter-spacing:0.05em;
+    font-size: 0.58rem; font-weight: 700; color: var(--ai-primary);
+    text-transform: uppercase; letter-spacing: 0.05em;
 }
 .idea-card-pill-value {
-    font-size:0.82rem; font-weight:700; color:#3B0764; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis;
+    font-size: 0.82rem; font-weight: 700; color: #1E1B4B; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
 }
 .idea-card-foot {
-    display:flex; align-items:center; justify-content:space-between;
-    font-size:0.7rem; color:#6B7280;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.7rem; color: #6B7280;
 }
 .idea-card-author {
-    display:flex; align-items:center; gap:6px;
-    font-weight:600; color:#374151;
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 600; color: #374151;
 }
 .idea-card-avatar {
-    width:22px; height:22px; border-radius:50%;
-    background:#8B5CF6; color:#fff;
-    display:inline-flex; align-items:center; justify-content:center;
-    font-size:0.62rem; font-weight:700;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ai-gradient);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700;
+    box-shadow: 0 1px 2px rgba(94,92,230,0.3);
 }
 .idea-card-potencial {
-    padding:2px 8px; border-radius:8px; font-weight:700; font-size:0.66rem;
-    text-transform:uppercase; letter-spacing:0.04em;
+    padding: 2px 8px; border-radius: 8px; font-weight: 700; font-size: 0.66rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
 }
-.idea-card-potencial.is-alto { background:#DCFCE7; color:#15803D; }
-.idea-card-potencial.is-medio { background:#FEF3C7; color:#B45309; }
-.idea-card-potencial.is-bajo { background:#F3F4F6; color:#6B7280; }
-.idea-card-tags {
-    display:flex; flex-wrap:wrap; gap:4px;
-}
+.idea-card-potencial.is-alto { background: #DCFCE7; color: #15803D; }
+.idea-card-potencial.is-medio { background: #FEF3C7; color: #B45309; }
+.idea-card-potencial.is-bajo { background: #F3F4F6; color: #6B7280; }
+.idea-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .idea-card-tag {
-    font-size:0.65rem; font-weight:600; color:#6B21A8;
-    background:#F5F3FF; padding:2px 7px; border-radius:6px;
-    border:1px solid #E9D5FF;
+    font-size: 0.65rem; font-weight: 600; color: var(--ai-primary);
+    background: var(--ai-primary-soft); padding: 2px 7px; border-radius: 6px;
+    border: 1px solid var(--ai-primary-border);
 }
 .idea-kanban-empty {
-    border:1px dashed #D1D5DB; border-radius:12px;
-    padding:18px 12px; text-align:center;
-    color:#9CA3AF; font-size:0.78rem;
-    cursor:pointer; transition:border-color 0.15s, background 0.15s;
+    border: 1px dashed #D1D5DB; border-radius: 12px;
+    padding: 18px 12px; text-align: center;
+    color: #9CA3AF; font-size: 0.78rem;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
-.idea-kanban-empty:hover { border-color:#8B5CF6; background:#F5F3FF; color:#7C3AED; }
+.idea-kanban-empty:hover {
+    border-color: var(--ai-primary);
+    background: var(--ai-primary-soft);
+    color: var(--ai-primary);
+}
 
-/* Topbar action: botón "+ Nueva Idea" */
+/* Topbar action: botón "+ Nueva Idea" — gradiente Apple Intelligence */
 .idea-topbar-btn {
-    display:inline-flex; align-items:center; gap:6px;
-    padding:7px 14px; border-radius:999px; border:none;
-    background:#8B5CF6; color:#fff;
-    font-family:inherit; font-size:0.82rem; font-weight:600;
-    cursor:pointer; transition:background 0.16s ease, transform 0.16s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 999px; border: none;
+    background: var(--ai-gradient);
+    color: #FFFFFF;
+    font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px -2px rgba(94,92,230,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
-.idea-topbar-btn:hover { background:#7C3AED; }
-.idea-topbar-btn:active { transform:translateY(1px); }
+.idea-topbar-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px -2px rgba(94,92,230,0.55), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.idea-topbar-btn:active { transform: translateY(0); }
 
-/* Sentido de "en convertida" — la columna se ve más calmada */
+/* Estado especial por etapa: convertida en verde, descartada en gris, pausada ámbar. */
 .crm-kanban-col[data-stage="convertida"] .idea-card-strip {
-    background:linear-gradient(90deg, #16A34A 0%, #4ADE80 100%);
+    background: linear-gradient(90deg, #16A34A 0%, #4ADE80 100%);
 }
 .crm-kanban-col[data-stage="descartada"] .idea-card-strip {
-    background:linear-gradient(90deg, #9CA3AF 0%, #D1D5DB 100%);
+    background: linear-gradient(90deg, #9CA3AF 0%, #D1D5DB 100%);
 }
 .crm-kanban-col[data-stage="pausada"] .idea-card-strip {
-    background:linear-gradient(90deg, #F59E0B 0%, #FCD34D 100%);
+    background: linear-gradient(90deg, #F59E0B 0%, #FCD34D 100%);
+}
+
+/* ─── Popover de filtros/ordenar en el topbar ─── */
+.ideas-pop {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px;
+    padding: 8px; min-width: 220px;
+    box-shadow: 0 12px 36px -10px rgba(15,23,42,0.18);
+    z-index: 60;
+}
+.ideas-pop-section {
+    font-size: 0.66rem; font-weight: 700; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 6px 8px 4px;
+}
+.ideas-pop-option {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; border-radius: 8px;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; color: #1D1D1F;
+    text-align: left;
+}
+.ideas-pop-option:hover { background: #F8FAFC; }
+.ideas-pop-option.is-on { background: var(--ai-primary-soft); color: var(--ai-primary); font-weight: 600; }
+
+/* ─── Modal de Agendar Actividad (compacto, integrado en widget detalle) ─── */
+.idea-actividad-section {
+    border-top: 1px solid #F2F2F7;
+    padding-top: 14px;
+    margin-top: 14px;
+}
+.idea-act-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
+    padding: 8px 12px; margin-bottom: 6px;
+    font-size: 0.86rem;
+}
+.idea-act-row.is-done { opacity: 0.6; text-decoration: line-through; }
+.idea-act-meta { font-size: 0.72rem; color: #6B7280; }
+.idea-act-add-form {
+    display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px;
+    align-items: stretch;
+    background: var(--ai-primary-soft);
+    border: 1px solid var(--ai-primary-border);
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 8px;
+}
+.idea-act-add-form input,
+.idea-act-add-form select {
+    border: 1px solid #E5E7EB; border-radius: 8px;
+    padding: 7px 10px; font-size: 0.84rem; font-family: inherit;
+    background: #fff;
+}
+.idea-act-add-form input:focus,
+.idea-act-add-form select:focus {
+    outline: none; border-color: var(--ai-primary);
+    box-shadow: 0 0 0 3px rgba(94,92,230,0.12);
+}
+.idea-act-add-form button {
+    background: var(--ai-gradient); color: #fff;
+    border: none; padding: 0 14px; border-radius: 8px;
+    font-weight: 700; font-size: 0.82rem; cursor: pointer;
+    white-space: nowrap;
+}
+.idea-act-add-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Pipeline de etapas del detalle ─── */
+.idea-pipeline-stage {
+    padding: 6px 12px; border-radius: 18px; border: 1px solid #E5E7EB;
+    background: #FFFFFF; color: #475569;
+    font-size: 0.76rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.idea-pipeline-stage:hover { border-color: var(--ai-primary); color: var(--ai-primary); }
+.idea-pipeline-stage.active {
+    background: var(--ai-gradient);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 8px -2px rgba(94,92,230,0.4);
 }
 </style>
 
@@ -114,7 +222,6 @@ Las etapas (capturada → ... → descartada) son fijas en el template.
     <div class="crm-kanban-board pk-board" id="ideasKanbanBoard"></div>
 </div>
 
-{# Botón flotante para crear: el JS lo inyecta también al topbar (.crm-bar-right) #}
 <script>
 window._IDEAS_ETAPAS = [
     { key: 'capturada',      label: 'Capturada' },
@@ -142,4 +249,4 @@ window._IDEAS_POTENCIAL = [
 
 {% include "crm/_widget_nueva_idea.html" %}
 {% include "crm/_widget_idea.html" %}
-<script src="{% static 'js/crm_ideas.js' %}?v=20260518-1"></script>
+<script src="{% static 'js/crm_ideas.js' %}?v=20260518-2"></script>

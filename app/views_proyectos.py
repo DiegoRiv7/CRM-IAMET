@@ -2614,6 +2614,13 @@ def actividad_list_create(request):
                 except User.DoesNotExist:
                     return JsonResponse({'error': 'Usuario responsable no encontrado.'}, status=404)
 
+            # Enlace opcional a una Idea (desde el widget de detalle de Idea).
+            idea_id_raw = data.get('idea')
+            try:
+                idea_id = int(idea_id_raw) if idea_id_raw else None
+            except (ValueError, TypeError):
+                idea_id = None
+
             from django.db import transaction
             actividades_creadas = []
             with transaction.atomic():
@@ -2627,6 +2634,7 @@ def actividad_list_create(request):
                         creado_por=creador_obj,
                         color=color,
                         oportunidad_id=oportunidad_id,
+                        idea_id=idea_id,
                         recurrence_group_id=recurrence_group_id,
                     )
                     if participants_ids:
