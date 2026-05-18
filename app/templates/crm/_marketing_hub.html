@@ -1481,6 +1481,32 @@ button.mkthub-btn--share:hover {
 .mkthub-upload-btn-submit.is-loading .mkthub-upload-spinner { display: inline-block; }
 @keyframes mkthubSpin { to { transform: rotate(360deg); } }
 
+/* Botón "+ Agregar marca": vive en la fila del topbar (lado izquierdo).
+   Estética ghost/secondary para no competir con el botón azul de
+   "+ Subir material" del otro extremo. Oculto por default; el JS lo
+   muestra cuando window._mkthubCanEdit === true. */
+.mkthub-add-brand-btn {
+    display: none;
+    align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--mkthub-line, #E5E7EB);
+    background: #FFFFFF;
+    color: #1A1A1A;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+.mkthub-add-brand-btn.is-visible { display: inline-flex; }
+.mkthub-add-brand-btn:hover {
+    background: #FAFAFA;
+    border-color: #9CA3AF;
+}
+.mkthub-add-brand-btn svg { flex-shrink: 0; }
+
 /* Variante destructiva del botón submit (para confirmaciones de borrado). */
 .mkthub-upload-btn-submit.is-danger {
     background: #DC2626;
@@ -1555,6 +1581,12 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
     <button type="button" class="mkthub-upload-btn mkthub-idle-only" id="mkthubUploadBtn" title="Subir material de marketing">
         <svg width="14" height="14" fill="none" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Subir material
+    </button>
+
+    {# Botón "+ Agregar marca" — se mueve al topbar (lado izquierdo). #}
+    <button type="button" class="mkthub-add-brand-btn" id="mkthubAddBrandBtn" title="Agregar nueva marca">
+        <svg width="13" height="13" fill="none" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Agregar marca
     </button>
 
     {# ── Hero (idle only) ── #}
@@ -1701,6 +1733,31 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             <button type="button" class="mkthub-upload-btn-cancel" id="mkthubBrandNameCancel">Cancelar</button>
             <button type="button" class="mkthub-upload-btn-submit" id="mkthubBrandNameSubmit">
                 <span class="mkthub-upload-btn-label">Guardar</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{# Modal para crear una marca nueva #}
+<div class="mkthub-upload-overlay" id="mkthubAddBrandOverlay" data-mkthub-modal="add-brand">
+    <div class="mkthub-upload-modal" role="dialog" aria-labelledby="mkthubAddBrandTitle" style="max-width:440px;">
+        <div class="mkthub-upload-head">
+            <h3 id="mkthubAddBrandTitle">Agregar marca</h3>
+            <button type="button" class="mkthub-upload-close" id="mkthubAddBrandClose" title="Cerrar">
+                <svg width="13" height="13" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <form class="mkthub-upload-body" id="mkthubAddBrandForm" autocomplete="off" novalidate>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubAddBrandInput">Nombre de la marca <span class="req">*</span></label>
+                <input class="mkthub-upload-input" id="mkthubAddBrandInput" type="text" maxlength="80" placeholder="Ej. Aruba" required>
+                <p class="mkthub-upload-hint">Después de crearla puedes subir su logo desde el menú ⋯ de la card.</p>
+            </div>
+        </form>
+        <div class="mkthub-upload-foot">
+            <button type="button" class="mkthub-upload-btn-cancel" id="mkthubAddBrandCancel">Cancelar</button>
+            <button type="button" class="mkthub-upload-btn-submit" id="mkthubAddBrandSubmit">
+                <span class="mkthub-upload-btn-label">Crear marca</span>
             </button>
         </div>
     </div>
@@ -2735,6 +2792,77 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         }
     }
 
+    /* Mueve el botón "+ Agregar marca" al topbar (.crm-bar-left) — al
+       lado contrario del +Subir material. Vive junto al slot del back
+       button, después de éste para no estorbar cuando hay marca
+       seleccionada. */
+    function relocateAddBrandBtnToTopbar() {
+        var btn = document.getElementById('mkthubAddBrandBtn');
+        var slot = document.getElementById('mkthubBarLeft');
+        if (!btn || !slot) return;
+        var bar = slot.parentNode; // .crm-bar-left
+        if (!bar) return;
+        if (btn.parentNode !== bar) {
+            bar.appendChild(btn); // a la derecha del slot
+        }
+    }
+
+    function updateAddBrandBtnVisibility() {
+        var btn = document.getElementById('mkthubAddBrandBtn');
+        if (!btn) return;
+        if (window._mkthubCanEdit === true) btn.classList.add('is-visible');
+        else btn.classList.remove('is-visible');
+    }
+
+    /* ─── Modal Agregar marca ─── */
+    function openAddBrandModal() {
+        if (window._mkthubCanEdit !== true) return;
+        var overlay = document.getElementById('mkthubAddBrandOverlay');
+        var input = document.getElementById('mkthubAddBrandInput');
+        if (!overlay) return;
+        if (input) input.value = '';
+        overlay.classList.add('is-open');
+        setTimeout(function () { if (input) input.focus(); }, 30);
+    }
+    function closeAddBrandModal() {
+        var overlay = document.getElementById('mkthubAddBrandOverlay');
+        if (overlay) overlay.classList.remove('is-open');
+    }
+    function submitAddBrandModal() {
+        var input = document.getElementById('mkthubAddBrandInput');
+        var btn = document.getElementById('mkthubAddBrandSubmit');
+        var nombre = input ? input.value.trim() : '';
+        if (!nombre) { if (input) input.focus(); return; }
+        if (btn) btn.disabled = true;
+        fetch('/app/api/marketing/marcas/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ nombre: nombre })
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (res) {
+            if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
+            showToast('Marca creada');
+            closeAddBrandModal();
+            // Añadir al array BRANDS con estilos default y re-render.
+            var m = res.data.marca;
+            if (m && !BRANDS.some(function (x) { return x.id === m.slug; })) {
+                BRANDS.push({
+                    id: m.slug, name: m.nombre, displayName: (m.nombre || '').toUpperCase(),
+                    color: '#1A1A1A', weight: 800, tracking: '-0.02em', case: 'uppercase',
+                    font: "'Inter', system-ui, sans-serif",
+                    marcaId: m.id, logoUrl: m.logo_url || ''
+                });
+            }
+            renderBrands();
+            // Repoblamos selects del upload modal (la marca nueva debe poder elegirse).
+            populateUploadSelects();
+          }).catch(function (err) {
+            console.warn('[mkthub] addBrand:', err);
+            showToast('No se pudo crear la marca');
+          }).finally(function () { if (btn) btn.disabled = false; });
+    }
+
     /* ─── Fetch marcas del backend ───
        Trae las MarcaMarketing desde /app/api/marketing/marcas/ y mergea
        con el array BRANDS hardcoded: mantenemos los estilos tipográficos
@@ -2764,6 +2892,18 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
                     b.name = m.nombre || b.name;
                     b.logoUrl = m.logo_url || '';
                 }
+            });
+            // Backend puede traer marcas creadas desde la UI que no están en
+            // BRANDS hardcoded — las agregamos con estilos default.
+            var have = new Set(BRANDS.map(function (b) { return b.id; }));
+            data.marcas.forEach(function (m) {
+                if (have.has(m.slug)) return;
+                BRANDS.push({
+                    id: m.slug, name: m.nombre, displayName: (m.nombre || '').toUpperCase(),
+                    color: '#1A1A1A', weight: 800, tracking: '-0.02em', case: 'uppercase',
+                    font: "'Inter', system-ui, sans-serif",
+                    marcaId: m.id, logoUrl: m.logo_url || ''
+                });
             });
             renderBrands();
             return data;
@@ -3329,6 +3469,24 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         var bnForm = document.getElementById('mkthubBrandNameForm');
         if (bnForm) bnForm.addEventListener('submit', function (e) { e.preventDefault(); submitBrandNameModal(); });
 
+        /* ── Add brand: botón y modal ── */
+        var addBrandBtn = document.getElementById('mkthubAddBrandBtn');
+        if (addBrandBtn) addBrandBtn.addEventListener('click', openAddBrandModal);
+        var abOverlay = document.getElementById('mkthubAddBrandOverlay');
+        if (abOverlay) {
+            abOverlay.addEventListener('click', function (e) {
+                if (e.target.id === 'mkthubAddBrandOverlay') closeAddBrandModal();
+            });
+        }
+        var abClose = document.getElementById('mkthubAddBrandClose');
+        if (abClose) abClose.addEventListener('click', closeAddBrandModal);
+        var abCancel = document.getElementById('mkthubAddBrandCancel');
+        if (abCancel) abCancel.addEventListener('click', closeAddBrandModal);
+        var abSubmit = document.getElementById('mkthubAddBrandSubmit');
+        if (abSubmit) abSubmit.addEventListener('click', function (e) { e.preventDefault(); submitAddBrandModal(); });
+        var abForm = document.getElementById('mkthubAddBrandForm');
+        if (abForm) abForm.addEventListener('submit', function (e) { e.preventDefault(); submitAddBrandModal(); });
+
         /* ── Confirm modal: handlers ── */
         var cfOverlay = document.getElementById('mkthubConfirmOverlay');
         if (cfOverlay) {
@@ -3352,6 +3510,8 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
                 if (bn && bn.classList.contains('is-open')) closeBrandNameModal();
                 var cf = document.getElementById('mkthubConfirmOverlay');
                 if (cf && cf.classList.contains('is-open')) closeConfirmModal();
+                var ab = document.getElementById('mkthubAddBrandOverlay');
+                if (ab && ab.classList.contains('is-open')) closeAddBrandModal();
             }
         });
     }
@@ -3374,6 +3534,17 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
                     b.logoUrl = m.logo_url || '';
                 }
             });
+            // Marcas creadas desde la UI (no en BRANDS hardcoded) → push con defaults.
+            var have = new Set(BRANDS.map(function (b) { return b.id; }));
+            seedMarcas.forEach(function (m) {
+                if (have.has(m.slug)) return;
+                BRANDS.push({
+                    id: m.slug, name: m.nombre, displayName: (m.nombre || '').toUpperCase(),
+                    color: '#1A1A1A', weight: 800, tracking: '-0.02em', case: 'uppercase',
+                    font: "'Inter', system-ui, sans-serif",
+                    marcaId: m.id, logoUrl: m.logo_url || ''
+                });
+            });
         }
         var seedRecursos = window._mkthubRecursosInitial;
         if (Array.isArray(seedRecursos) && seedRecursos.length) {
@@ -3393,7 +3564,9 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         populateUploadSelects();
         setupUploadDropZone();
         relocateUploadBtnToTopbar();
+        relocateAddBrandBtnToTopbar();
         updateUploadBtnVisibility();
+        updateAddBrandBtnVisibility();
         bindEvents();
         // Fetch async solo para refrescar en background (por si los datos
         // cambiaron entre el render del HTML y la carga del JS, o para

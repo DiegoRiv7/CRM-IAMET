@@ -351,14 +351,54 @@ def _marca_to_dict(m: MarcaMarketing) -> dict:
 
 
 @login_required
-@require_http_methods(['GET'])
+@require_http_methods(['GET', 'POST'])
 def api_marketing_marcas_list(request):
-    """Lista las marcas visibles del Marketing Hub.
+    """GET  → lista las marcas visibles del Marketing Hub.
+    POST → crea una marca nueva (requiere can_manage_marketing).
 
     Lectura abierta a cualquier usuario autenticado. `can_edit` indica si
     el caller puede mutar (sirve para que el front decida si pinta o no
     los botones de editar).
     """
+    if request.method == 'POST':
+        if not _can_manage_marketing(request.user):
+            return JsonResponse(
+                {'ok': False, 'error': 'No tienes permisos para gestionar Marketing'},
+                status=403,
+            )
+        try:
+            data = json.loads(request.body or b'{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+        nombre = (data.get('nombre') or '').strip()
+        if not nombre:
+            return JsonResponse({'ok': False, 'error': 'El nombre es requerido'}, status=400)
+        # Slug: el caller puede mandarlo o se deriva del nombre.
+        # Lo normalizamos (lower, sin espacios) y truncamos a 20 chars
+        # (límite del modelo). Si choca con otro slug, le agregamos un sufijo.
+        from django.utils.text import slugify as _slugify
+        slug_raw = (data.get('slug') or '').strip() or _slugify(nombre)
+        slug = (slug_raw or 'marca').replace('-', '')[:20]
+        if not slug:
+            return JsonResponse({'ok': False, 'error': 'Slug inválido'}, status=400)
+        base_slug = slug
+        suffix = 2
+        while MarcaMarketing.objects.filter(slug=slug).exists():
+            tail = str(suffix)
+            slug = (base_slug[:20 - len(tail)] + tail)
+            suffix += 1
+            if suffix > 999:
+                return JsonResponse({'ok': False, 'error': 'No se pudo generar un slug único'}, status=500)
+        # Orden por defecto: al final.
+        max_orden = MarcaMarketing.objects.aggregate(m=Max('orden')).get('m') or 0
+        marca = MarcaMarketing.objects.create(
+            slug=slug,
+            nombre=nombre,
+            visible=True,
+            orden=max_orden + 1,
+        )
+        return JsonResponse({'ok': True, 'marca': _marca_to_dict(marca)}, status=201)
+
     qs = MarcaMarketing.objects.filter(visible=True).order_by('orden', 'nombre')
     return JsonResponse({
         'ok': True,
