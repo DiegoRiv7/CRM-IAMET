@@ -47,6 +47,35 @@
             .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; }
             .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.85; }
             .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
+            /* ─── Day view en formato LISTA (reemplaza al timeline tradicional) ─── */
+            .cal-day-list { display:flex; flex-direction:column; gap:8px; padding:8px 14px 24px; max-width:920px; margin:0 auto; }
+            .cal-day-list-empty { text-align:center; padding:80px 20px; color:#9CA3AF; }
+            .cal-day-list-empty-ic { width:68px; height:68px; border-radius:20px; background:#F3F4F6; color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+            .cal-day-list-empty-t { font-size:1.05rem; font-weight:700; color:#1D1D1F; margin-bottom:6px; }
+            .cal-day-list-empty-s { font-size:0.86rem; color:#6B7280; }
+            .cal-day-list-row { display:grid; grid-template-columns:88px 1fr auto; gap:16px; align-items:flex-start; padding:14px 16px; background:#FFFFFF; border:1px solid #E5E7EB; border-left:3px solid #9CA3AF; border-radius:14px; cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+            .cal-day-list-row:hover { transform:translateY(-1px); box-shadow:0 8px 24px -10px rgba(20,20,18,0.12); }
+            .cal-day-list-row-time { display:flex; flex-direction:column; align-items:flex-start; padding-top:2px; }
+            .cal-day-list-row-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1.1; }
+            .cal-day-list-row-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:2px; }
+            .cal-day-list-row-body { min-width:0; }
+            .cal-day-list-row-head { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+            .cal-day-list-row-kind { font-size:0.66rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+            .cal-day-list-row-dur { font-size:0.7rem; color:#9CA3AF; font-weight:500; padding:1px 7px; background:#F3F4F6; border-radius:999px; }
+            .cal-day-list-row-title { font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+            .cal-day-list-row-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
+            .cal-day-list-row-sub { font-size:0.78rem; color:#6B7280; margin-top:3px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+            .cal-day-list-row-aside { display:flex; align-items:center; }
+            .cal-day-list-status { display:inline-flex; align-items:center; font-size:0.68rem; font-weight:700; padding:3px 9px; border-radius:999px; letter-spacing:0.02em; white-space:nowrap; }
+            .cal-day-list-status.is-now { background:rgba(52,199,89,0.15); color:#34C759; }
+            .cal-day-list-status.is-over { background:rgba(255,59,48,0.1); color:#FF3B30; }
+            .cal-day-list-status.is-done { background:#F3F4F6; color:#6B7280; }
+            /* Marca "Ahora" insertada en su lugar cronológico */
+            .cal-day-list-now { display:grid; grid-template-columns:88px 1fr auto; gap:16px; align-items:center; padding:6px 16px; }
+            .cal-day-list-now-time { font-size:0.84rem; font-weight:700; color:#FF3B30; }
+            .cal-day-list-now-line { height:2px; background:#FF3B30; border-radius:2px; position:relative; }
+            .cal-day-list-now-line::before { content:''; position:absolute; left:-6px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
+            .cal-day-list-now-label { font-size:0.7rem; font-weight:700; color:#FF3B30; letter-spacing:0.06em; text-transform:uppercase; }
             /* ─── Right panel ─── */
             #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
             #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
@@ -1108,22 +1137,22 @@
     }
 
     /* ─── DAY VIEW RENDER ─── */
+    /* Vista Día — formato LISTA (no timeline tradicional).
+       Renderiza los eventos del día en una lista vertical ordenada por
+       hora, agrupada por bloque horario, con la marca "ahora" insertada
+       en su lugar cuando isToday. Cada item es una row con: hora a la
+       izq, contenido al centro, status badge a la der. */
     function calRenderDayView(date) {
         var container = document.getElementById('calDayTimeline');
         if (!container) return;
-        // Si el contenedor aún no tiene ancho (reflow pendiente tras display:flex), esperar un frame
-        if (!container.offsetWidth) {
-            requestAnimationFrame(function(){ calRenderDayView(date); });
-            return;
-        }
         if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
 
-        var pad = function(n){return String(n).padStart(2,'0');};
+        var pad = function(n){ return String(n).padStart(2,'0'); };
         var dateStr = date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate());
         var now = new Date();
         var isToday = dateStr === (now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate()));
+        var nowMs = now.getTime();
 
-        // Get filtered events
         var allEvts = window._calAllEvents || _globalEvents;
         var sel = document.getElementById('calUserFilter');
         var filterVal = sel ? sel.value : 'all';
@@ -1133,204 +1162,129 @@
             return ev.start && ev.start.substring(0,10) === dateStr;
         }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
 
-        // Vista día: ventana visible de 06:00 a 23:00 (oculta noche).
-        // El offset CAL_DAY_OFFSET_H se resta del top para que 06:00 quede en y=0.
-        var CAL_DAY_START_H = 6;
-        var CAL_DAY_END_H = 23;
-        var totalH = (CAL_DAY_END_H - CAL_DAY_START_H + 1) * CAL_HOUR_H;
-        var html = '<div style="position:relative;min-height:'+totalH+'px;" data-cal-day-start="'+CAL_DAY_START_H+'">';
-
-        // Hour rows (background grid) + media hora punteada
-        for (var h = CAL_DAY_START_H; h <= CAL_DAY_END_H; h++) {
-            var label = calFmtHour(h);
-            var topPx = (h - CAL_DAY_START_H) * CAL_HOUR_H;
-            html += '<div class="cal-hour-row" style="position:absolute;top:'+topPx+'px;left:0;right:0;height:'+CAL_HOUR_H+'px;" data-hour="'+h+'" onclick="calDayHourClick(event,'+h+')">' +
-                '<div class="cal-hour-label">'+label+'</div>' +
-                '<div class="cal-hour-area"></div>' +
-                '</div>';
-            // Media hora: línea punteada a CAL_HOUR_H/2 px debajo
-            var halfTop = topPx + CAL_HOUR_H/2;
-            html += '<div style="position:absolute;top:'+halfTop+'px;left:56px;right:0;height:1px;border-top:1px dashed rgba(0,0,0,0.04);pointer-events:none;z-index:1;"></div>';
+        // Empty state
+        if (!dayEvts.length) {
+            container.innerHTML = ''
+                + '<div class="cal-day-list-empty">'
+                +   '<div class="cal-day-list-empty-ic">'
+                +     '<svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+                +   '</div>'
+                +   '<div class="cal-day-list-empty-t">Sin actividades este día</div>'
+                +   '<div class="cal-day-list-empty-s">Disfruta el día libre o agenda algo con + Nueva actividad.</div>'
+                + '</div>';
+            _calDayBindHoverHandlers();
+            if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
+            calUpdateSidePanel();
+            return;
         }
 
-        // Now line
-        if (isToday) {
-            var nowMins = now.getHours()*60+now.getMinutes();
-            var nowTop = (nowMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
-            if (nowTop >= 0 && nowTop <= totalH) {
-                html += '<div class="cal-now-dot" style="top:'+(nowTop-4)+'px;"></div>';
-                html += '<div class="cal-now-line" style="top:'+nowTop+'px;"></div>';
-            }
+        // Marca "ahora": lo insertamos en su lugar cronológico — un row
+        // con label "Ahora · HH:MM" y línea roja.
+        var nowInserted = false;
+        var html = '<div class="cal-day-list">';
+
+        function renderNowRow() {
+            html += ''
+                + '<div class="cal-day-list-now">'
+                +   '<div class="cal-day-list-now-time">' + pad(now.getHours())+':'+pad(now.getMinutes()) + '</div>'
+                +   '<div class="cal-day-list-now-line"></div>'
+                +   '<div class="cal-day-list-now-label">Ahora</div>'
+                + '</div>';
+            nowInserted = true;
         }
 
-        // ── Column-split layout (ancho en píxeles reales) ──
-        var nowMs = now.getTime();
-        var taskEvts = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
-        var actEvts  = dayEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
-        // Carril de actividades: deja 240px a la derecha para el carril de tareas cuando hay tareas
-        var taskLane = taskEvts.length > 0 ? 244 : 8;
-        var areaW = Math.max(container.offsetWidth - 64 - taskLane, 160);
-
-        // Asignar columna a cada actividad (greedy: primera columna libre)
-        var actItems = actEvts.map(function(ev){
-            var sD = new Date(ev.start);
-            var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
-            return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1, groupTop:null };
-        });
-        var colEnds = [];
-        actItems.forEach(function(it){
-            var placed = false;
-            for (var c=0; c<colEnds.length; c++){
-                if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.eMs; placed=true; break; }
-            }
-            if (!placed){ it.col=colEnds.length; colEnds.push(it.eMs); }
-        });
-        // numCols = max columna usada entre todos los eventos que se solapan con este
-        actItems.forEach(function(it){
-            var maxC = it.col;
-            actItems.forEach(function(other){
-                if (it.sMs < other.eMs && it.eMs > other.sMs) maxC = Math.max(maxC, other.col);
-            });
-            it.numCols = maxC + 1;
-        });
-        // Calcular el "grupo de solapamiento" transitivo: si A se solapa con B
-        // y B con C, entonces A, B, C son un grupo. Para cada item, su top
-        // visual = min(sMs) del grupo. Eso los alinea al lado en lugar de
-        // escalonados según el start exacto de cada uno.
-        actItems.forEach(function(it){
-            if (it.groupTop !== null) return;  // ya procesado
-            var group = [it];
-            var changed = true;
-            while (changed) {
-                changed = false;
-                actItems.forEach(function(other){
-                    if (group.indexOf(other) >= 0) return;
-                    var overlapsGroup = group.some(function(m){ return m.sMs < other.eMs && m.eMs > other.sMs; });
-                    if (overlapsGroup) { group.push(other); changed = true; }
-                });
-            }
-            // Solo aplicar groupTop si hay más de uno (es decir, hay solapamiento real)
-            if (group.length > 1) {
-                var minS = Math.min.apply(null, group.map(function(g){ return g.sMs; }));
-                group.forEach(function(g){ g.groupTop = minS; });
-            } else {
-                group[0].groupTop = group[0].sMs;
-            }
-        });
-        // Renderizar actividades
-        actItems.forEach(function(item){
-            var ev = item.ev;
-            var ep = ev.extendedProps||{};
-            var hasOpp = ep.opportunity && ep.opportunity.id;
-            var monto = hasOpp && ep.opportunity.monto ? ep.opportunity.monto : 0;
+        dayEvts.forEach(function(ev) {
             var startD = new Date(ev.start);
             var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
-            var startMins = startD.getHours()*60+startD.getMinutes();
-            var endMins = endD.getHours()*60+endD.getMinutes();
-            // Usar el inicio del grupo de solapamiento para alinear los eventos
-            // que se solapan: así se ven todos al lado en lugar de escalonados.
-            var topMs = item.groupTop != null ? item.groupTop : startD.getTime();
-            var topD = new Date(topMs);
-            var topMins = topD.getHours()*60+topD.getMinutes();
-            var evTop = (topMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
-            // Altura proporcional al tiempo real del evento (sin forzar 45min mínimos).
-            // Restamos 3px para crear un gap visual entre cards consecutivos.
-            var evH = Math.max(((endMins-startMins)/60)*CAL_HOUR_H - 3, 22);
+
+            // Insertar marca "ahora" antes del primer evento que arranca >= now
+            if (isToday && !nowInserted && startD.getTime() >= nowMs) {
+                renderNowRow();
+            }
+
             var safeId = String(ev.id).replace(/'/g,'');
-
-            var bg = hasOpp ? 'linear-gradient(135deg,#EEF3FF 0%,#E8EFFF 100%)' : 'linear-gradient(135deg,#F5F5F7 0%,#EFEFEF 100%)';
-            var borderColor = hasOpp ? '#0052D4' : '#8E8E93';
-            var textColor = hasOpp ? '#0041A8' : '#3A3A3C';
-            var mutedColor = hasOpp ? 'rgba(0,65,168,0.55)' : 'rgba(58,58,60,0.55)';
-
-            var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
-            var isOvAct = isToday && nowMs>endD.getTime();
+            var ep = ev.extendedProps || {};
+            var isTask = String(ev.id).indexOf('tarea-') === 0;
+            var hasOpp = !isTask && ep.opportunity && ep.opportunity.id;
             var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-            var endFmt   = pad(endD.getHours())+':'+pad(endD.getMinutes());
+            var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
+            var durMins = Math.max(1, Math.round((endD - startD) / 60000));
+            var durLabel = durMins >= 60
+                ? Math.floor(durMins/60) + 'h' + (durMins%60 ? ' '+(durMins%60)+'m' : '')
+                : durMins + 'm';
 
-            // Posición en píxeles: cada evento ocupa una "card" de ~240px de ancho.
-            // Si hay solapamiento (varios en la misma hora), se ponen al lado.
-            var n = item.numCols, c = item.col;
-            var gap = n > 1 ? 6 : 0;
-            var CARD_W = 240;
-            // Si hay tantos eventos solapados que no caben con 240px cada uno, se reducen al
-            // ancho disponible.
-            var maxByArea = Math.floor((areaW - gap*(n-1)) / n);
-            var widthPx = Math.max(140, Math.min(CARD_W, maxByArea));
-            var leftPx = 64 + c * (widthPx + gap);
+            var isNowEvt = isToday && nowMs >= startD.getTime() && nowMs <= endD.getTime();
+            var isOverEvt = isToday && nowMs > endD.getTime();
+            var completada = isTask ? (ep.estado === 'completada') : !!ep.completada;
 
+            // Color por tipo (mismo criterio que el timeline anterior)
+            var stripColor, kindLabel;
+            if (isTask) {
+                kindLabel = 'Tarea';
+                stripColor = completada ? '#AEAEB2' : (isOverEvt ? '#FF3B30' : '#FF9500');
+            } else if (hasOpp) {
+                kindLabel = 'Actividad';
+                stripColor = '#0052D4';
+            } else if (ep.evento) {
+                kindLabel = 'Evento';
+                stripColor = '#8B5CF6';
+            } else if (ep.curso) {
+                kindLabel = 'Curso';
+                stripColor = '#10B981';
+            } else {
+                kindLabel = 'Actividad';
+                stripColor = '#8E8E93';
+            }
+            if (ev.color) stripColor = ev.color;
+
+            // Status badge
             var statusHTML = '';
-            if (isNow) statusHTML='<div class="cal-day-evt-status" style="background:rgba(52,199,89,0.15);color:#34C759;">En curso</div>';
-            else if (isOvAct) statusHTML='<div class="cal-day-evt-status" style="background:rgba(255,59,48,0.1);color:#FF3B30;">Vencido</div>';
-            var shadowStyle = isNow
-                ? 'box-shadow:0 0 0 2px #34C759,0 4px 16px rgba(52,199,89,0.18);'
-                : 'box-shadow:0 1px 4px rgba(0,0,0,0.07),0 2px 8px rgba(0,0,0,0.04);';
+            if (completada) {
+                statusHTML = '<span class="cal-day-list-status is-done">Completada</span>';
+            } else if (isNowEvt) {
+                statusHTML = '<span class="cal-day-list-status is-now">En curso</span>';
+            } else if (isOverEvt) {
+                statusHTML = '<span class="cal-day-list-status is-over">Vencido</span>';
+            }
 
-            // Título: el click siempre abre el panel lateral (igual que vista mes).
-            // Desde el panel se puede navegar a la oportunidad con el botón "Oportunidad".
-            var titleHTML = '<div class="cal-day-evt-title" style="color:'+textColor+';">'+woEscape(ev.title)+'</div>';
+            // Subtítulo: oportunidad ligada o descripción corta
+            var subText = '';
+            if (hasOpp) subText = ep.opportunity.title || ep.opportunity.titulo || '';
+            else if (ev.description) subText = String(ev.description).replace(/\[.*?\]/g, '').trim();
 
-            var wkCompOpacity = ep.completada ? 'opacity:0.38;' : '';
-            // Compact: si el evento mide menos de 64px (1h y media de slot), ocultamos
-            // el badge ("Vencido" / "En curso") y ponemos título + hora en una sola
-            // línea. Antes el badge se desbordaba y se veía encimado con el card
-            // siguiente cuando los eventos estaban juntos.
-            var isCompact = evH < 64;
-            html += '<div class="cal-day-evt'+(isCompact?' is-compact':'')+'" data-evt-id="'+safeId+'" data-draggable="1" title="Click para abrir · Arrastra para mover de hora" style="top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+widthPx+'px;right:auto;background:'+bg+';border-left-color:'+borderColor+';'+shadowStyle+wkCompOpacity+'">'+
-                titleHTML+
-                '<div class="cal-day-evt-time" style="color:'+mutedColor+';">'+startFmt+' – '+endFmt+'</div>'+
-                statusHTML+'</div>';
+            var rowOpacity = completada ? 'opacity:0.55;' : '';
+
+            html += ''
+                + '<div class="cal-day-list-row" data-evt-id="'+safeId+'" style="border-left-color:'+stripColor+';'+rowOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'
+                +   '<div class="cal-day-list-row-time">'
+                +     '<div class="cal-day-list-row-start">' + startFmt + '</div>'
+                +     '<div class="cal-day-list-row-end">' + endFmt + '</div>'
+                +   '</div>'
+                +   '<div class="cal-day-list-row-body">'
+                +     '<div class="cal-day-list-row-head">'
+                +       '<span class="cal-day-list-row-kind" style="color:'+stripColor+';">' + kindLabel + '</span>'
+                +       '<span class="cal-day-list-row-dur">' + durLabel + '</span>'
+                +     '</div>'
+                +     '<div class="cal-day-list-row-title' + (completada?' is-strike':'') + '">' + woEscape(ev.title) + '</div>'
+                +     (subText ? '<div class="cal-day-list-row-sub">' + woEscape(subText.substring(0,140)) + '</div>' : '')
+                +   '</div>'
+                +   '<div class="cal-day-list-row-aside">' + statusHTML + '</div>'
+                + '</div>';
         });
 
-        // Separador vertical entre carril actividades y carril tareas
-        if (taskEvts.length > 0) {
-            var sepX = container.offsetWidth - taskLane + 4;
-            html += '<div style="position:absolute;top:0;bottom:0;left:'+sepX+'px;width:1px;background:rgba(0,0,0,0.06);pointer-events:none;z-index:3;"></div>';
-            // Encabezado del carril tareas
-            html += '<div style="position:absolute;top:6px;left:'+(sepX+8)+'px;right:8px;font-size:0.62rem;font-weight:700;color:#AEAEB2;text-transform:uppercase;letter-spacing:0.07em;pointer-events:none;">Tareas</div>';
+        // Si la hora actual es DESPUÉS de todos los eventos pero seguimos
+        // en el día, marcamos "ahora" al final igual.
+        if (isToday && !nowInserted) {
+            renderNowRow();
         }
-
-        // Renderizar tareas en carril derecho (no se solapan con actividades)
-        var taskLaneLeft = container.offsetWidth - taskLane + 8;
-        var taskLaneW = taskLane - 16;
-        taskEvts.forEach(function(ev){
-            var startD = new Date(ev.start);
-            var startMins = startD.getHours()*60+startD.getMinutes();
-            var evTop = (startMins/60 - CAL_DAY_START_H)*CAL_HOUR_H;
-            var safeId = String(ev.id).replace(/'/g,'');
-            var tEp = ev.extendedProps || {};
-            var tCompletada = tEp.estado === 'completada';
-            var isOverdue = !tCompletada && isToday && nowMs > startD.getTime();
-            var tColor = tCompletada ? '#AEAEB2' : isOverdue ? '#FF3B30' : '#FF9500';
-            var tBg = tCompletada ? 'linear-gradient(135deg,rgba(174,174,178,0.1) 0%,rgba(174,174,178,0.06) 100%)' : isOverdue ? 'linear-gradient(135deg,rgba(255,59,48,0.1) 0%,rgba(255,59,48,0.06) 100%)' : 'linear-gradient(135deg,rgba(255,149,0,0.13) 0%,rgba(255,149,0,0.07) 100%)';
-            var tBorder = tCompletada ? 'rgba(174,174,178,0.3)' : isOverdue ? 'rgba(255,59,48,0.4)' : 'rgba(255,149,0,0.5)';
-            var statusTxt = tCompletada ? 'Completada' : isOverdue ? 'Vencida' : 'Pendiente';
-            var deadlineFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-            var tOpacity = tCompletada ? 'opacity:0.38;' : '';
-            // Línea deadline sutil — solo en el carril de tareas
-            html += '<div style="position:absolute;top:'+evTop+'px;left:'+(taskLaneLeft-4)+'px;right:0;height:1px;background:'+tColor+';opacity:0.3;z-index:4;pointer-events:none;"></div>';
-            // Bloque de tarea (más alto, como una tarjeta).
-            // class="cal-day-task" + data-evt-id permiten enganchar el hover preview
-            // (igual que las cards .cal-day-evt de actividades).
-            html += '<div class="cal-day-task" data-evt-id="'+safeId+'" style="position:absolute;top:'+(evTop-24)+'px;left:'+taskLaneLeft+'px;width:'+(taskLaneW)+'px;min-height:48px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;z-index:6;padding:8px 10px;border-radius:10px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 6px rgba(0,0,0,0.07);'+tOpacity+'"' +
-                ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
-                '<div style="display:flex;align-items:center;gap:5px;">'+
-                '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+tColor+'" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>'+
-                '<div style="font-size:0.77rem;font-weight:700;color:'+tColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
-                '</div>'+
-                '<div style="font-size:0.68rem;font-weight:600;color:'+tColor+';opacity:0.75;padding-left:15px;">'+deadlineFmt+' · '+statusTxt+'</div>'+
-                '</div>';
-        });
 
         html += '</div>';
         container.innerHTML = html;
 
-        // El día arranca a las 06:00 (top 0), así que no requerimos auto-scroll.
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
 
-        // Asegura los handlers de drag (idempotente)
-        _calDayBindDragHandlers();
-        // Hover preview en cards de evento y de tarea de la vista día.
+        // Drag&drop ya no aplica en lista (no hay altura representando hora).
+        // Mantener el hover preview que sí aporta valor.
         _calDayBindHoverHandlers();
         if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
 
