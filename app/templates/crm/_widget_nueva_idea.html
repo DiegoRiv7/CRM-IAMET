@@ -1,0 +1,90 @@
+{% comment %}
+Modal de creación de Idea — usa las clases del modal de "Nuevo prospecto"
+(wn-* / wn-ctw-*) para mantener consistencia visual con el resto del CRM.
+{% endcomment %}
+<div class="widget-overlay wn-overlay" id="widgetNuevaIdea" style="z-index:10310;">
+    <div class="wn-card wn-composer">
+        <header class="wn-ctw-header">
+            <div class="wn-ctw-breadcrumb">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                <span class="wn-ctw-crumb-muted">Ideas</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                <span class="wn-ctw-crumb-current">Capturar idea</span>
+            </div>
+            <button type="button" class="wn-ctw-close" id="niCloseBtn" title="Cerrar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </header>
+
+        <main class="wn-ctw-canvas">
+            <input type="text" class="wn-ctw-title" id="newIdeaTitulo" placeholder="¿Cuál es la idea? Ej. App móvil para inventario" autocomplete="off" maxlength="200">
+
+            <div class="wn-ctw-meta-row">
+                <div class="wn-ctw-popwrap">
+                    <button type="button" class="wn-ctw-pill-meta" data-niact="tipo" onclick="niOpenPop('tipo', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+                        <span data-niact-label="tipo">Tipo: Producto</span>
+                    </button>
+                    <div class="wn-ctw-pop" data-niact-pop="tipo" style="display:none;">
+                        <div class="wn-ctw-pop-title">Tipo de idea</div>
+                        <div id="newIdeaTipoList" style="display:flex;flex-direction:column;gap:4px;"></div>
+                    </div>
+                </div>
+
+                <div class="wn-ctw-popwrap">
+                    <button type="button" class="wn-ctw-pill-meta" data-niact="potencial" onclick="niOpenPop('potencial', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>
+                        <span data-niact-label="potencial">Potencial: Medio</span>
+                    </button>
+                    <div class="wn-ctw-pop" data-niact-pop="potencial" style="display:none;">
+                        <div class="wn-ctw-pop-title">Potencial comercial</div>
+                        <div id="newIdeaPotencialList" style="display:flex;flex-direction:column;gap:4px;"></div>
+                    </div>
+                </div>
+
+                <div class="wn-ctw-popwrap">
+                    <button type="button" class="wn-ctw-pill-meta" data-niact="valor" onclick="niOpenPop('valor', event)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        <span data-niact-label="valor">Valor estimado</span>
+                    </button>
+                    <div class="wn-ctw-pop" data-niact-pop="valor" style="display:none;">
+                        <div class="wn-ctw-pop-title">Valor estimado (MXN)</div>
+                        <input type="number" class="wn-ctw-pop-input" id="newIdeaValor" placeholder="100000" min="0" step="1000">
+                        <div style="font-size:11px;color:#6B7280;margin-top:6px;">Opcional. Ayuda a priorizar la idea.</div>
+                    </div>
+                </div>
+            </div>
+
+            <textarea class="wn-ctw-desc" id="newIdeaDescripcion" placeholder="Describe la idea: qué problema resuelve, cómo se ejecutaría, qué la hace diferente…" rows="4"></textarea>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+                <div>
+                    <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Mercado / cliente objetivo</label>
+                    <input class="wn-ctw-pop-input" id="newIdeaMercado" type="text" placeholder="Ej. PyMEs del sector salud, retail México…" maxlength="200">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Etiquetas (separadas por coma)</label>
+                    <input class="wn-ctw-pop-input" id="newIdeaEtiquetas" type="text" placeholder="innovación, urgente, alianza…" maxlength="300">
+                </div>
+            </div>
+
+            <div style="margin-top:10px;">
+                <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">¿De dónde salió la idea? (opcional)</label>
+                <textarea class="wn-ctw-pop-input" id="newIdeaInspiracion" rows="2" placeholder="Conversación con cliente X, evento Y, observación de mercado…" style="resize:vertical;"></textarea>
+            </div>
+        </main>
+
+        <footer class="wn-ctw-toolbar">
+            <div class="wn-ctw-tools"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+                <button type="button" class="wn-ctw-cancel" id="niCancelBtn">Cancelar</button>
+                <button type="button" class="wn-ctw-submit" id="niSubmitBtn">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Capturar idea
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>

@@ -15,6 +15,7 @@ from . import views_compras
 from . import views_certificaciones
 from . import views_cursos
 from . import views_marketing
+from . import views_ideas
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -181,6 +182,14 @@ urlpatterns = [
     path('api/marketing/marcas/<int:mid>/', views_marketing.api_marketing_marca_detalle, name='api_marketing_marca_detalle'),
     path('api/marketing/marcas/<int:mid>/eliminar/', views_marketing.api_marketing_marca_eliminar, name='api_marketing_marca_eliminar'),
     path('api/marketing/marcas/<int:mid>/logo/', views_marketing.api_marketing_marca_logo, name='api_marketing_marca_logo'),
+
+    # ── Ideas (sección creativa del CRM) ────────────────────────────────────
+    path('api/ideas/', views_ideas.api_ideas_lista, name='api_ideas_lista'),
+    path('api/ideas/crear/', views_ideas.api_idea_crear, name='api_idea_crear'),
+    path('api/ideas/<int:idea_id>/', views_ideas.api_idea_detalle, name='api_idea_detalle'),
+    path('api/ideas/<int:idea_id>/mover/', views_ideas.api_idea_mover_etapa, name='api_idea_mover_etapa'),
+    path('api/ideas/<int:idea_id>/comentar/', views_ideas.api_idea_comentar, name='api_idea_comentar'),
+    path('api/ideas/<int:idea_id>/convertir/', views_ideas.api_idea_convertir, name='api_idea_convertir'),
 
     path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),

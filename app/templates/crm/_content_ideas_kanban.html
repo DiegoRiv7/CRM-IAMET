@@ -1,0 +1,145 @@
+{% load app_filters %}{% load static %}
+{% comment %}
+Kanban de Ideas — patrón espejo del kanban de Prospectos (reusa las clases
+crm-kanban-*), pero hidratado client-side desde /app/api/ideas/.
+Las etapas (capturada → ... → descartada) son fijas en el template.
+{% endcomment %}
+
+<style>
+/* Estilos específicos de Ideas: usamos el shell del kanban genérico
+   (crm-kanban-*) pero las cards de Idea tienen su propia paleta para
+   distinguirlas visualmente del kanban de Prospectos. */
+.crm-kanban-col--idea .crm-kanban-dot { background:#8B5CF6; }
+.crm-kanban-col--idea .crm-kanban-dot.active { box-shadow:0 0 0 3px rgba(139,92,246,0.18); }
+.idea-card {
+    background:#FFFFFF;
+    border:1px solid #E5E7EB;
+    border-radius:14px;
+    padding:14px 14px 12px;
+    cursor:pointer;
+    transition:border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    display:flex; flex-direction:column; gap:10px;
+}
+.idea-card:hover {
+    border-color:#C7C7CC;
+    transform:translateY(-1px);
+    box-shadow:0 6px 16px -10px rgba(15,23,42,0.18);
+}
+.idea-card-strip {
+    position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, #8B5CF6 0%, #A78BFA 100%);
+    border-radius:14px 14px 0 0;
+}
+.idea-card { position:relative; padding-top:18px; }
+.idea-card-title {
+    font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.3;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.idea-card-row {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px;
+}
+.idea-card-pill {
+    background:#F5F3FF; border:1px solid #E9D5FF; border-radius:10px;
+    padding:6px 10px; display:flex; flex-direction:column; gap:2px;
+}
+.idea-card-pill-label {
+    font-size:0.58rem; font-weight:700; color:#7C3AED;
+    text-transform:uppercase; letter-spacing:0.05em;
+}
+.idea-card-pill-value {
+    font-size:0.82rem; font-weight:700; color:#3B0764; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+}
+.idea-card-foot {
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:0.7rem; color:#6B7280;
+}
+.idea-card-author {
+    display:flex; align-items:center; gap:6px;
+    font-weight:600; color:#374151;
+}
+.idea-card-avatar {
+    width:22px; height:22px; border-radius:50%;
+    background:#8B5CF6; color:#fff;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:0.62rem; font-weight:700;
+}
+.idea-card-potencial {
+    padding:2px 8px; border-radius:8px; font-weight:700; font-size:0.66rem;
+    text-transform:uppercase; letter-spacing:0.04em;
+}
+.idea-card-potencial.is-alto { background:#DCFCE7; color:#15803D; }
+.idea-card-potencial.is-medio { background:#FEF3C7; color:#B45309; }
+.idea-card-potencial.is-bajo { background:#F3F4F6; color:#6B7280; }
+.idea-card-tags {
+    display:flex; flex-wrap:wrap; gap:4px;
+}
+.idea-card-tag {
+    font-size:0.65rem; font-weight:600; color:#6B21A8;
+    background:#F5F3FF; padding:2px 7px; border-radius:6px;
+    border:1px solid #E9D5FF;
+}
+.idea-kanban-empty {
+    border:1px dashed #D1D5DB; border-radius:12px;
+    padding:18px 12px; text-align:center;
+    color:#9CA3AF; font-size:0.78rem;
+    cursor:pointer; transition:border-color 0.15s, background 0.15s;
+}
+.idea-kanban-empty:hover { border-color:#8B5CF6; background:#F5F3FF; color:#7C3AED; }
+
+/* Topbar action: botón "+ Nueva Idea" */
+.idea-topbar-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:7px 14px; border-radius:999px; border:none;
+    background:#8B5CF6; color:#fff;
+    font-family:inherit; font-size:0.82rem; font-weight:600;
+    cursor:pointer; transition:background 0.16s ease, transform 0.16s ease;
+}
+.idea-topbar-btn:hover { background:#7C3AED; }
+.idea-topbar-btn:active { transform:translateY(1px); }
+
+/* Sentido de "en convertida" — la columna se ve más calmada */
+.crm-kanban-col[data-stage="convertida"] .idea-card-strip {
+    background:linear-gradient(90deg, #16A34A 0%, #4ADE80 100%);
+}
+.crm-kanban-col[data-stage="descartada"] .idea-card-strip {
+    background:linear-gradient(90deg, #9CA3AF 0%, #D1D5DB 100%);
+}
+.crm-kanban-col[data-stage="pausada"] .idea-card-strip {
+    background:linear-gradient(90deg, #F59E0B 0%, #FCD34D 100%);
+}
+</style>
+
+<div class="crm-kanban-wrap pk-kanban-wrap-v2" data-module="ideas">
+    <div class="crm-kanban-board pk-board" id="ideasKanbanBoard"></div>
+</div>
+
+{# Botón flotante para crear: el JS lo inyecta también al topbar (.crm-bar-right) #}
+<script>
+window._IDEAS_ETAPAS = [
+    { key: 'capturada',      label: 'Capturada' },
+    { key: 'en_analisis',    label: 'En Análisis' },
+    { key: 'validada',       label: 'Validada' },
+    { key: 'en_seguimiento', label: 'En Seguimiento' },
+    { key: 'convertida',     label: 'Convertida' },
+    { key: 'pausada',        label: 'Pausada' },
+    { key: 'descartada',     label: 'Descartada' },
+];
+window._IDEAS_TIPOS = [
+    { id: 'producto', label: 'Producto' },
+    { id: 'servicio', label: 'Servicio' },
+    { id: 'proceso',  label: 'Proceso / Mejora interna' },
+    { id: 'mercado',  label: 'Mercado / Cliente nuevo' },
+    { id: 'alianza',  label: 'Alianza / Partnership' },
+    { id: 'otro',     label: 'Otro' },
+];
+window._IDEAS_POTENCIAL = [
+    { id: 'alto',  label: 'Alto' },
+    { id: 'medio', label: 'Medio' },
+    { id: 'bajo',  label: 'Bajo' },
+];
+</script>
+
+{% include "crm/_widget_nueva_idea.html" %}
+{% include "crm/_widget_idea.html" %}
+<script src="{% static 'js/crm_ideas.js' %}?v=20260518-1"></script>

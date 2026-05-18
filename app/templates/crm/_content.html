@@ -266,6 +266,11 @@
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
             {% if tab_activo != 'prospeccion' or not request.GET.vista %}
             <div class="crm-tabs">
+                <a href="?tab=ideas"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    class="crm-tab {% if tab_activo == 'ideas' %}active{% endif %}">
+                    Ideas
+                </a>
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
@@ -716,6 +721,9 @@
             </tbody>
         </table>
         </div>
+        {% elif tab_activo == 'ideas' %}
+        {% include "crm/_content_ideas_kanban.html" %}
+
         {% elif tab_activo == 'prospectos' %}
         {% include "crm/_content_prospectos_kanban.html" %}
 
