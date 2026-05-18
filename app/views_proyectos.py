@@ -205,7 +205,7 @@ def api_ingeniero_proyectos(request):
 @login_required
 def api_ingeniero_proyecto_detalle(request, proyecto_id):
     """Detalle de un proyecto de ingeniería: info, tareas, carpetas y archivos raíz."""
-    from app.models import Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto
+    from app.models import Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto, ArchivoOportunidad, CarpetaOportunidad
     try:
         if is_supervisor(request.user) or is_ingeniero(request.user):
             proyecto = Proyecto.objects.get(pk=proyecto_id, es_ingenieria=True)
@@ -240,6 +240,25 @@ def api_ingeniero_proyecto_detalle(request, proyecto_id):
         ArchivoProyecto.objects.filter(proyecto=proyecto, carpeta=None)
         .values('id', 'nombre_original', 'tipo_archivo', 'extension', 'bitrix_download_url', 'tamaño')
     )
+
+    # Drive de oportunidades ligadas: cada opp aporta una carpeta virtual
+    # con sus archivos (raíz + subcarpetas). El ingeniero ve todo el material
+    # comercial sin tener que salir al CRM.
+    for opp in proyecto.oportunidades_ligadas.all():
+        archivos_opp = list(
+            ArchivoOportunidad.objects.filter(oportunidad=opp)
+            .values('id', 'nombre_original', 'tipo_archivo', 'extension',
+                    'bitrix_download_url', 'tamaño')
+        )
+        if not archivos_opp:
+            continue
+        opp_titulo = (getattr(opp, 'oportunidad', None) or getattr(opp, 'titulo', None)
+                      or getattr(opp, 'nombre', None) or 'Oportunidad')
+        carpetas.append({
+            'id': 'opp-' + str(opp.id),
+            'nombre': '[Oportunidad] ' + str(opp_titulo),
+            'archivos': archivos_opp,
+        })
 
     creado_por = None
     if proyecto.creado_por:

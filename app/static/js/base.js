@@ -437,6 +437,11 @@ window.addEventListener('resize', () => {
         if (r.type === 'proyecto' && r.id) {
             var urlP = '/app/todos/?tab=crm&open_proyecto=' + r.id;
             if (newTab) { window.open(urlP, '_blank'); return; }
+            // Ingeniero usa su modal específico (widgetProyectoDetalle del dashboard).
+            if (enCRM && window.ES_INGENIERO && typeof window.ingenieroAbrirProyecto === 'function') {
+                window.ingenieroAbrirProyecto(r.id);
+                return;
+            }
             // Si estamos en el CRM, abrir el detalle del proyecto sin recargar
             if (enCRM && typeof window.proyectosVerDetalle === 'function') {
                 if (typeof window.switchCrmView === 'function') window.switchCrmView('proyectos');
