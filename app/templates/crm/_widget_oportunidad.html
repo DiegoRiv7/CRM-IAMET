@@ -3221,8 +3221,33 @@
         // ────────────────────────────────────────────────────────────────────
 
         window.woCompletarActividad = function () {
-            if (!_woCurrentViewingTaskId) return;
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+            // Caso 2: actividad genérica del calendario (no tarea-opp).
+            // Cuando el modal fue abierto desde el calendario para una
+            // Actividad sin TareaOportunidad ligada, _woCurrentViewingTaskId
+            // queda en null y usamos PATCH al endpoint de actividades.
+            if (!_woCurrentViewingTaskId && window._woCurrentViewingActividadId) {
+                var actId = window._woCurrentViewingActividadId;
+                fetch('/app/api/actividades/' + actId + '/', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                    body: JSON.stringify({ completada: true })
+                }).then(function (r) { return r.json(); }).then(function (res) {
+                    if (res.error) { console.error(res.error); return; }
+                    var badge = document.getElementById('woVerActEstadoBadge');
+                    if (badge) {
+                        badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
+                        badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
+                    }
+                    var bC = document.getElementById('woVerActBtnCompletar');
+                    if (bC) bC.style.display = 'none';
+                    if (typeof calGlobalRefetch === 'function') setTimeout(calGlobalRefetch, 200);
+                }).catch(function (err) { console.error(err); });
+                return;
+            }
+
+            if (!_woCurrentViewingTaskId) return;
 
             fetch('/app/api/tarea-oportunidad/' + _woCurrentViewingTaskId + '/', {
                 method: 'PUT',

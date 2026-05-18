@@ -2529,8 +2529,19 @@
         var btnCompletar=document.getElementById('woVerActBtnCompletar');
         var btnEditar=document.getElementById('woVerActBtnEditar');
         var btnEliminar=document.getElementById('woVerActBtnEliminar');
-        if (esTarea) { if(btnCompletar)btnCompletar.style.display='inline-flex'; if(btnEditar)btnEditar.style.display='none'; if(btnEliminar)btnEliminar.style.display='none'; }
-        else { if(btnCompletar)btnCompletar.style.display='none'; if(btnEditar)btnEditar.style.display='inline-flex'; if(btnEliminar)btnEliminar.style.display='inline-flex'; }
+        // Tareas: solo Completar (editar/eliminar viven en su propio modal).
+        // Otras actividades (calendario genérico): Completar + Editar + Eliminar.
+        // Si ya está completada, ocultamos Completar para no permitir doble-click.
+        var yaCompletada = !!e.completada;
+        if (esTarea) {
+            if (btnCompletar) btnCompletar.style.display = yaCompletada ? 'none' : 'inline-flex';
+            if (btnEditar) btnEditar.style.display = 'none';
+            if (btnEliminar) btnEliminar.style.display = 'none';
+        } else {
+            if (btnCompletar) btnCompletar.style.display = yaCompletada ? 'none' : 'inline-flex';
+            if (btnEditar) btnEditar.style.display = 'inline-flex';
+            if (btnEliminar) btnEliminar.style.display = 'inline-flex';
+        }
         document.getElementById('widgetOppVerActividad').style.display='flex';
     };
 
