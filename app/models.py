@@ -5481,3 +5481,31 @@ class RecursoMarketing(models.Model):
         if self.archivo:
             return self.archivo.url
         return ''
+
+
+class MarcaMarketing(models.Model):
+    """
+    Marca del Marketing Hub. El slug es el identificador estable que
+    matchea con RecursoMarketing.brand (zebra, panduit, etc.). Nombre,
+    logo y visibilidad son editables por usuarios con can_manage_marketing.
+    """
+    slug = models.CharField(
+        max_length=20,
+        unique=True,
+        db_index=True,
+        help_text="Identificador estable. Debe coincidir con RecursoMarketing.brand.",
+    )
+    nombre = models.CharField(max_length=80, help_text="Nombre visible.")
+    logo = models.ImageField(upload_to='marketing/marcas/', null=True, blank=True)
+    visible = models.BooleanField(default=True, db_index=True)
+    orden = models.PositiveIntegerField(default=0)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Marca de Marketing"
+        verbose_name_plural = "Marcas de Marketing"
+        ordering = ['orden', 'nombre']
+
+    def __str__(self):
+        return self.nombre
