@@ -328,12 +328,15 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     white-space: nowrap;
 }
 .mkthub-brand-heading-logo {
-    max-height: 26px;
-    max-width: 130px;
+    max-height: 38px;
+    max-width: 180px;
     width: auto;
     height: auto;
     object-fit: contain;
     display: block;
+}
+@media (min-width: 1280px) {
+    .mkthub-brand-heading-logo { max-height: 42px; max-width: 200px; }
 }
 .mkthub-brand-heading-sub {
     font-size: 0.74rem; font-weight: 500;
@@ -2039,11 +2042,15 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         var rightEl = document.getElementById('mkthubBarRight');
         if (!leftEl || !rightEl) return; // sin slots → nada que hacer
 
-        // Left: botón "Volver a marcas"
-        leftEl.innerHTML = ''
+        // Left: botón "Volver a marcas" — se inyecta al INICIO del slot
+        // para no machacar al botón "+ Agregar marca" que vive ahí
+        // permanentemente cuando can_edit.
+        var oldBack = leftEl.querySelector('.mkthub-back-btn');
+        if (oldBack) oldBack.remove();
+        leftEl.insertAdjacentHTML('afterbegin', ''
             + '<button type="button" class="mkthub-back-btn" data-action="clear">'
             + '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-            + 'Volver a marcas</button>';
+            + 'Volver a marcas</button>');
 
         // Right: logo subido (si existe) o wordmark de texto como fallback.
         // El conteo va en el header de results, no aquí.
@@ -2072,11 +2079,18 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         }
     }
 
-    /* Vaciar los slots cuando volvemos al idle. */
+    /* Vaciar los slots cuando volvemos al idle. NO machacamos el slot
+       izquierdo entero: ahí vive el botón "+ Agregar marca" permanente.
+       Sólo removemos el back btn (si existe). El slot derecho sí se
+       vacía completo — el wordmark/logo de marca sólo aparece en el
+       modo brand-selected. */
     function clearBarSlots() {
         var leftEl = document.getElementById('mkthubBarLeft');
         var rightEl = document.getElementById('mkthubBarRight');
-        if (leftEl) leftEl.innerHTML = '';
+        if (leftEl) {
+            var oldBack = leftEl.querySelector('.mkthub-back-btn');
+            if (oldBack) oldBack.remove();
+        }
         if (rightEl) rightEl.innerHTML = '';
     }
 
@@ -2792,18 +2806,17 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         }
     }
 
-    /* Mueve el botón "+ Agregar marca" al topbar (.crm-bar-left) — al
-       lado contrario del +Subir material. Vive junto al slot del back
-       button, después de éste para no estorbar cuando hay marca
-       seleccionada. */
+    /* Mueve el botón "+ Agregar marca" al slot izquierdo del topbar.
+       El slot ES .crm-bar-left (no tiene wrapper aparte), así que
+       insertamos directo adentro. El back btn (cuando hay marca
+       seleccionada) se inyecta con insertAdjacentHTML('afterbegin'),
+       así queda a la IZQUIERDA del botón "+ Agregar marca". */
     function relocateAddBrandBtnToTopbar() {
         var btn = document.getElementById('mkthubAddBrandBtn');
         var slot = document.getElementById('mkthubBarLeft');
         if (!btn || !slot) return;
-        var bar = slot.parentNode; // .crm-bar-left
-        if (!bar) return;
-        if (btn.parentNode !== bar) {
-            bar.appendChild(btn); // a la derecha del slot
+        if (btn.parentNode !== slot) {
+            slot.appendChild(btn);
         }
     }
 
