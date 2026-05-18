@@ -47,35 +47,49 @@
             .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; }
             .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.85; }
             .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
-            /* ─── Day view en formato LISTA (reemplaza al timeline tradicional) ─── */
-            .cal-day-list { display:flex; flex-direction:column; gap:8px; padding:8px 14px 24px; max-width:920px; margin:0 auto; }
+            /* ─── Day view en formato TABLA — aprovecha todo el ancho disponible ─── */
+            .cal-day-list { width:100%; padding:6px 18px 28px; }
             .cal-day-list-empty { text-align:center; padding:80px 20px; color:#9CA3AF; }
             .cal-day-list-empty-ic { width:68px; height:68px; border-radius:20px; background:#F3F4F6; color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
             .cal-day-list-empty-t { font-size:1.05rem; font-weight:700; color:#1D1D1F; margin-bottom:6px; }
             .cal-day-list-empty-s { font-size:0.86rem; color:#6B7280; }
-            .cal-day-list-row { display:grid; grid-template-columns:88px 1fr auto; gap:16px; align-items:flex-start; padding:14px 16px; background:#FFFFFF; border:1px solid #E5E7EB; border-left:3px solid #9CA3AF; border-radius:14px; cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-            .cal-day-list-row:hover { transform:translateY(-1px); box-shadow:0 8px 24px -10px rgba(20,20,18,0.12); }
-            .cal-day-list-row-time { display:flex; flex-direction:column; align-items:flex-start; padding-top:2px; }
-            .cal-day-list-row-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1.1; }
-            .cal-day-list-row-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:2px; }
-            .cal-day-list-row-body { min-width:0; }
-            .cal-day-list-row-head { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
-            .cal-day-list-row-kind { font-size:0.66rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
-            .cal-day-list-row-dur { font-size:0.7rem; color:#9CA3AF; font-weight:500; padding:1px 7px; background:#F3F4F6; border-radius:999px; }
-            .cal-day-list-row-title { font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-            .cal-day-list-row-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
-            .cal-day-list-row-sub { font-size:0.78rem; color:#6B7280; margin-top:3px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
-            .cal-day-list-row-aside { display:flex; align-items:center; }
-            .cal-day-list-status { display:inline-flex; align-items:center; font-size:0.68rem; font-weight:700; padding:3px 9px; border-radius:999px; letter-spacing:0.02em; white-space:nowrap; }
+            .cal-day-table { width:100%; border-collapse:separate; border-spacing:0; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(20,20,18,0.04); }
+            .cal-day-table thead th { background:#FAFAFA; border-bottom:1px solid #E5E7EB; padding:11px 16px; text-align:left; font-size:0.7rem; font-weight:700; color:#6B7280; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; position:sticky; top:0; z-index:2; }
+            .cal-day-table thead th.cal-day-th-time { width:120px; }
+            .cal-day-table thead th.cal-day-th-kind { width:130px; }
+            .cal-day-table thead th.cal-day-th-dur { width:90px; }
+            .cal-day-table thead th.cal-day-th-status { width:130px; text-align:right; }
+            .cal-day-table tbody td { padding:14px 16px; border-bottom:1px solid #F0F2F5; vertical-align:middle; }
+            .cal-day-table tbody tr { cursor:pointer; transition:background .12s ease; position:relative; }
+            .cal-day-table tbody tr:hover { background:#F8FAFC; }
+            .cal-day-table tbody tr:last-child td { border-bottom:none; }
+            .cal-day-table tbody tr td:first-child { border-left:3px solid #9CA3AF; padding-left:14px; }
+            /* Cell: hora */
+            .cal-day-tbl-time { white-space:nowrap; }
+            .cal-day-tbl-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1; }
+            .cal-day-tbl-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:3px; }
+            /* Cell: tipo */
+            .cal-day-tbl-kind { display:inline-flex; align-items:center; gap:6px; font-size:0.74rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+            .cal-day-tbl-kind::before { content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+            /* Cell: título + sub */
+            .cal-day-tbl-title { font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+            .cal-day-tbl-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
+            .cal-day-tbl-sub { font-size:0.78rem; color:#6B7280; margin-top:3px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+            /* Cell: duración */
+            .cal-day-tbl-dur { display:inline-block; font-size:0.72rem; color:#6B7280; font-weight:600; padding:3px 9px; background:#F3F4F6; border-radius:999px; }
+            /* Cell: status (alineada a la derecha) */
+            .cal-day-tbl-status-cell { text-align:right; }
+            .cal-day-list-status { display:inline-flex; align-items:center; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:0.02em; white-space:nowrap; }
             .cal-day-list-status.is-now { background:rgba(52,199,89,0.15); color:#34C759; }
             .cal-day-list-status.is-over { background:rgba(255,59,48,0.1); color:#FF3B30; }
             .cal-day-list-status.is-done { background:#F3F4F6; color:#6B7280; }
-            /* Marca "Ahora" insertada en su lugar cronológico */
-            .cal-day-list-now { display:grid; grid-template-columns:88px 1fr auto; gap:16px; align-items:center; padding:6px 16px; }
-            .cal-day-list-now-time { font-size:0.84rem; font-weight:700; color:#FF3B30; }
-            .cal-day-list-now-line { height:2px; background:#FF3B30; border-radius:2px; position:relative; }
-            .cal-day-list-now-line::before { content:''; position:absolute; left:-6px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
-            .cal-day-list-now-label { font-size:0.7rem; font-weight:700; color:#FF3B30; letter-spacing:0.06em; text-transform:uppercase; }
+            /* Row separador "Ahora" — TR especial entre actividades */
+            .cal-day-table tr.cal-day-now-tr td { padding:6px 16px; background:#FFFBFA; }
+            .cal-day-now-bar { display:flex; align-items:center; gap:10px; }
+            .cal-day-now-time { font-size:0.84rem; font-weight:700; color:#FF3B30; min-width:90px; }
+            .cal-day-now-line { flex:1; height:2px; background:#FF3B30; border-radius:2px; position:relative; }
+            .cal-day-now-line::before { content:''; position:absolute; left:-5px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
+            .cal-day-now-label { font-size:0.7rem; font-weight:700; color:#FF3B30; letter-spacing:0.06em; text-transform:uppercase; }
             /* ─── Right panel ─── */
             #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
             #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
@@ -1178,18 +1192,27 @@
             return;
         }
 
-        // Marca "ahora": lo insertamos en su lugar cronológico — un row
-        // con label "Ahora · HH:MM" y línea roja.
         var nowInserted = false;
-        var html = '<div class="cal-day-list">';
+        var html = '<div class="cal-day-list">'
+            + '<table class="cal-day-table">'
+            +   '<thead><tr>'
+            +     '<th class="cal-day-th-time">Hora</th>'
+            +     '<th class="cal-day-th-kind">Tipo</th>'
+            +     '<th>Actividad</th>'
+            +     '<th class="cal-day-th-dur">Duración</th>'
+            +     '<th class="cal-day-th-status">Estado</th>'
+            +   '</tr></thead>'
+            + '<tbody>';
 
         function renderNowRow() {
             html += ''
-                + '<div class="cal-day-list-now">'
-                +   '<div class="cal-day-list-now-time">' + pad(now.getHours())+':'+pad(now.getMinutes()) + '</div>'
-                +   '<div class="cal-day-list-now-line"></div>'
-                +   '<div class="cal-day-list-now-label">Ahora</div>'
-                + '</div>';
+                + '<tr class="cal-day-now-tr"><td colspan="5">'
+                +   '<div class="cal-day-now-bar">'
+                +     '<div class="cal-day-now-time">' + pad(now.getHours())+':'+pad(now.getMinutes()) + '</div>'
+                +     '<div class="cal-day-now-line"></div>'
+                +     '<div class="cal-day-now-label">Ahora</div>'
+                +   '</div>'
+                + '</td></tr>';
             nowInserted = true;
         }
 
@@ -1255,21 +1278,21 @@
             var rowOpacity = completada ? 'opacity:0.55;' : '';
 
             html += ''
-                + '<div class="cal-day-list-row" data-evt-id="'+safeId+'" style="border-left-color:'+stripColor+';'+rowOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'
-                +   '<div class="cal-day-list-row-time">'
-                +     '<div class="cal-day-list-row-start">' + startFmt + '</div>'
-                +     '<div class="cal-day-list-row-end">' + endFmt + '</div>'
-                +   '</div>'
-                +   '<div class="cal-day-list-row-body">'
-                +     '<div class="cal-day-list-row-head">'
-                +       '<span class="cal-day-list-row-kind" style="color:'+stripColor+';">' + kindLabel + '</span>'
-                +       '<span class="cal-day-list-row-dur">' + durLabel + '</span>'
+                + '<tr data-evt-id="'+safeId+'" style="'+rowOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'
+                +   '<td style="border-left-color:'+stripColor+';">'
+                +     '<div class="cal-day-tbl-time">'
+                +       '<div class="cal-day-tbl-start">' + startFmt + '</div>'
+                +       '<div class="cal-day-tbl-end">→ ' + endFmt + '</div>'
                 +     '</div>'
-                +     '<div class="cal-day-list-row-title' + (completada?' is-strike':'') + '">' + woEscape(ev.title) + '</div>'
-                +     (subText ? '<div class="cal-day-list-row-sub">' + woEscape(subText.substring(0,140)) + '</div>' : '')
-                +   '</div>'
-                +   '<div class="cal-day-list-row-aside">' + statusHTML + '</div>'
-                + '</div>';
+                +   '</td>'
+                +   '<td><span class="cal-day-tbl-kind" style="color:'+stripColor+';">' + kindLabel + '</span></td>'
+                +   '<td>'
+                +     '<div class="cal-day-tbl-title' + (completada?' is-strike':'') + '">' + woEscape(ev.title) + '</div>'
+                +     (subText ? '<div class="cal-day-tbl-sub">' + woEscape(subText.substring(0,180)) + '</div>' : '')
+                +   '</td>'
+                +   '<td><span class="cal-day-tbl-dur">' + durLabel + '</span></td>'
+                +   '<td class="cal-day-tbl-status-cell">' + statusHTML + '</td>'
+                + '</tr>';
         });
 
         // Si la hora actual es DESPUÉS de todos los eventos pero seguimos
@@ -1278,7 +1301,7 @@
             renderNowRow();
         }
 
-        html += '</div>';
+        html += '</tbody></table></div>';
         container.innerHTML = html;
 
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
@@ -1297,7 +1320,8 @@
        FullCalendar en vista Mes via eventDidMount). Idempotente: se llama en
        cada render y solo añade el listener si la card aún no fue bindeada. */
     function _calDayBindHoverHandlers() {
-        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id]');
+        // Acepta cards del timeline antiguo + filas <tr> de la vista tabla.
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id], #calDayTimeline .cal-day-table tbody tr[data-evt-id]');
         cards.forEach(function (card) {
             if (card._calHoverBound) return;
             card._calHoverBound = true;
