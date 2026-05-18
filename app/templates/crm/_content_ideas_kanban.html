@@ -7,11 +7,11 @@ Hidratado client-side desde /app/api/ideas/.
 
 <style>
 /* ─── Paleta Apple Intelligence ───
-   Rainbow gradient principal usada en strips, botones de acción, avatares
-   y elementos destacados del módulo Ideas. */
+   Rainbow gradient saturado en versiones más oscuras (Apple Intelligence
+   tipo "iluminación" sobre las cards). El "+ Nueva idea" usa azul estándar
+   del CRM (#0052D4) para no competir visualmente con las cards. */
 :root {
     --ai-gradient: linear-gradient(135deg, #FF3B30 0%, #FF9500 18%, #FFCC00 33%, #34C759 52%, #007AFF 72%, #AF52DE 88%, #FF2D55 100%);
-    --ai-gradient-soft: linear-gradient(135deg, #FFE4E1 0%, #FFE8CC 18%, #FFF6CC 33%, #DCFCE7 52%, #DBEAFE 72%, #EDE9FE 88%, #FFE0EC 100%);
     --ai-gradient-strip: linear-gradient(90deg, #FF3B30 0%, #FF9500 18%, #FFCC00 33%, #34C759 52%, #007AFF 72%, #AF52DE 88%, #FF2D55 100%);
     --ai-primary: #5E5CE6;
     --ai-primary-soft: #EEEDFF;
@@ -23,29 +23,50 @@ Hidratado client-side desde /app/api/ideas/.
     background: var(--ai-gradient);
 }
 .crm-kanban-col--idea .crm-kanban-dot.active {
-    box-shadow: 0 0 0 3px rgba(94,92,230,0.18);
+    box-shadow: 0 0 0 3px rgba(94,92,230,0.20);
 }
 
+/* ─── Card de Idea: tinte rainbow saturado + "glow" multicolor ───
+   Mismo patrón que las cards de Prospectos (que glow café), pero con
+   shadows en arcoiris. El fondo es un gradient sutil más saturado, no
+   pastel — se nota que la card está "iluminada". */
 .idea-card {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
+    background:
+        linear-gradient(135deg,
+            rgba(255, 59, 48,  0.10) 0%,
+            rgba(255, 149, 0,  0.08) 18%,
+            rgba(255, 204, 0,  0.07) 33%,
+            rgba(52, 199, 89,  0.08) 52%,
+            rgba(0, 122, 255,  0.10) 72%,
+            rgba(175, 82, 222, 0.13) 88%,
+            rgba(255, 45, 85,  0.12) 100%),
+        #FFFFFF;
+    border: 1px solid rgba(175, 82, 222, 0.28);
     border-radius: 14px;
-    padding: 14px 14px 12px;
+    padding: 18px 14px 12px;
     cursor: pointer;
-    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
     display: flex; flex-direction: column; gap: 10px;
     position: relative;
-    padding-top: 18px;
+    box-shadow:
+        0 4px 14px -6px rgba(175, 82, 222, 0.22),
+        0 2px 6px -3px rgba(255, 59, 48, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 .idea-card:hover {
-    border-color: var(--ai-primary-border);
+    border-color: rgba(94, 92, 230, 0.55);
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px -10px rgba(94,92,230,0.28);
+    box-shadow:
+        0 14px 32px -10px rgba(175, 82, 222, 0.36),
+        0 6px 14px -4px rgba(255, 59, 48, 0.16),
+        0 6px 14px -4px rgba(0, 122, 255, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .idea-card-strip {
     position: absolute; top: 0; left: 0; right: 0; height: 4px;
     background: var(--ai-gradient-strip);
     border-radius: 14px 14px 0 0;
+    box-shadow: 0 2px 8px -2px rgba(175, 82, 222, 0.4);
 }
 .idea-card-title {
     font-size: 0.95rem; font-weight: 700; color: var(--ai-ink); line-height: 1.3;
@@ -109,22 +130,21 @@ Hidratado client-side desde /app/api/ideas/.
     color: var(--ai-primary);
 }
 
-/* Topbar action: botón "+ Nueva Idea" — gradiente Apple Intelligence */
+/* Topbar action: botón "+ Nueva Idea" — azul estándar del CRM (mismo
+   estilo que +Nuevo de Oportunidades / Prospectos) para no robar
+   atención de las cards rainbow. */
 .idea-topbar-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 7px 14px; border-radius: 999px; border: none;
-    background: var(--ai-gradient);
+    background: #0052D4;
     color: #FFFFFF;
-    font-family: inherit; font-size: 0.82rem; font-weight: 700;
+    font-family: inherit; font-size: 0.82rem; font-weight: 600;
     letter-spacing: -0.005em;
     cursor: pointer;
-    box-shadow: 0 2px 8px -2px rgba(94,92,230,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
-    transition: transform 0.16s ease, box-shadow 0.16s ease;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18), 0 6px 16px -8px rgba(0,82,212,0.35);
+    transition: background 0.16s ease, transform 0.16s ease;
 }
-.idea-topbar-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px -2px rgba(94,92,230,0.55), inset 0 1px 0 rgba(255,255,255,0.3);
-}
+.idea-topbar-btn:hover { background: #0041A8; transform: translateY(-1px); }
 .idea-topbar-btn:active { transform: translateY(0); }
 
 /* Estado especial por etapa: convertida en verde, descartada en gris, pausada ámbar. */
@@ -196,11 +216,12 @@ Hidratado client-side desde /app/api/ideas/.
     box-shadow: 0 0 0 3px rgba(94,92,230,0.12);
 }
 .idea-act-add-form button {
-    background: var(--ai-gradient); color: #fff;
+    background: #0052D4; color: #fff;
     border: none; padding: 0 14px; border-radius: 8px;
-    font-weight: 700; font-size: 0.82rem; cursor: pointer;
+    font-weight: 600; font-size: 0.82rem; cursor: pointer;
     white-space: nowrap;
 }
+.idea-act-add-form button:hover:not(:disabled) { background: #0041A8; }
 .idea-act-add-form button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── Pipeline de etapas del detalle ─── */
