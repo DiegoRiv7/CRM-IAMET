@@ -57,7 +57,7 @@
             .cal-day-table thead th { background:#FAFAFA; border-bottom:1px solid #E5E7EB; padding:11px 16px; text-align:left; font-size:0.7rem; font-weight:700; color:#6B7280; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; position:sticky; top:0; z-index:2; }
             .cal-day-table thead th.cal-day-th-time { width:120px; }
             .cal-day-table thead th.cal-day-th-kind { width:130px; }
-            .cal-day-table thead th.cal-day-th-dur { width:90px; }
+            .cal-day-table thead th.cal-day-th-owner { width:200px; }
             .cal-day-table thead th.cal-day-th-status { width:130px; text-align:right; }
             .cal-day-table tbody td { padding:14px 16px; border-bottom:1px solid #F0F2F5; vertical-align:middle; }
             .cal-day-table tbody tr { cursor:pointer; transition:background .12s ease; position:relative; }
@@ -75,8 +75,10 @@
             .cal-day-tbl-title { font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
             .cal-day-tbl-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
             .cal-day-tbl-sub { font-size:0.78rem; color:#6B7280; margin-top:3px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
-            /* Cell: duración */
-            .cal-day-tbl-dur { display:inline-block; font-size:0.72rem; color:#6B7280; font-weight:600; padding:3px 9px; background:#F3F4F6; border-radius:999px; }
+            /* Cell: responsable (avatar de iniciales + nombre) */
+            .cal-day-tbl-owner { display:inline-flex; align-items:center; gap:8px; max-width:100%; min-width:0; }
+            .cal-day-tbl-owner-avatar { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:0.7rem; font-weight:700; letter-spacing:0.02em; }
+            .cal-day-tbl-owner-name { font-size:0.82rem; font-weight:600; color:#1D1D1F; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
             /* Cell: status (alineada a la derecha) */
             .cal-day-tbl-status-cell { text-align:right; }
             .cal-day-list-status { display:inline-flex; align-items:center; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:0.02em; white-space:nowrap; }
@@ -1199,7 +1201,7 @@
             +     '<th class="cal-day-th-time">Hora</th>'
             +     '<th class="cal-day-th-kind">Tipo</th>'
             +     '<th>Actividad</th>'
-            +     '<th class="cal-day-th-dur">Duración</th>'
+            +     '<th class="cal-day-th-owner">Responsable</th>'
             +     '<th class="cal-day-th-status">Estado</th>'
             +   '</tr></thead>'
             + '<tbody>';
@@ -1231,14 +1233,30 @@
             var hasOpp = !isTask && ep.opportunity && ep.opportunity.id;
             var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
             var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
-            var durMins = Math.max(1, Math.round((endD - startD) / 60000));
-            var durLabel = durMins >= 60
-                ? Math.floor(durMins/60) + 'h' + (durMins%60 ? ' '+(durMins%60)+'m' : '')
-                : durMins + 'm';
 
             var isNowEvt = isToday && nowMs >= startD.getTime() && nowMs <= endD.getTime();
             var isOverEvt = isToday && nowMs > endD.getTime();
             var completada = isTask ? (ep.estado === 'completada') : !!ep.completada;
+
+            // Responsable: primer participant (si hay) o el creador como fallback.
+            // En el modelo del calendario el "responsable" es típicamente el
+            // primer participante asignado; si no hay participants, el creador.
+            var responsable = '—';
+            var parts = ep.participants || [];
+            if (parts.length && (parts[0].nombre || parts[0].name)) {
+                responsable = parts[0].nombre || parts[0].name;
+            } else if (ep.creado_por && (ep.creado_por.nombre || ep.creado_por.name)) {
+                responsable = ep.creado_por.nombre || ep.creado_por.name;
+            }
+            // Si hay más participantes, agregamos un "+N" para mostrar que es grupo.
+            var responsableExtra = parts.length > 1 ? ' +' + (parts.length - 1) : '';
+            // Avatar de iniciales para visualizar el responsable.
+            var responsableIni = (function (full) {
+                var p = String(full).trim().split(/\s+/);
+                if (!p[0]) return '?';
+                if (p.length === 1) return p[0].substring(0, 2).toUpperCase();
+                return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+            })(responsable);
 
             // Color por tipo (mismo criterio que el timeline anterior)
             var stripColor, kindLabel;
@@ -1290,7 +1308,12 @@
                 +     '<div class="cal-day-tbl-title' + (completada?' is-strike':'') + '">' + woEscape(ev.title) + '</div>'
                 +     (subText ? '<div class="cal-day-tbl-sub">' + woEscape(subText.substring(0,180)) + '</div>' : '')
                 +   '</td>'
-                +   '<td><span class="cal-day-tbl-dur">' + durLabel + '</span></td>'
+                +   '<td>'
+                +     '<div class="cal-day-tbl-owner">'
+                +       '<span class="cal-day-tbl-owner-avatar" style="background:'+stripColor+';">' + woEscape(responsableIni) + '</span>'
+                +       '<span class="cal-day-tbl-owner-name" title="' + woEscape(responsable) + '">' + woEscape(responsable) + responsableExtra + '</span>'
+                +     '</div>'
+                +   '</td>'
                 +   '<td class="cal-day-tbl-status-cell">' + statusHTML + '</td>'
                 + '</tr>';
         });
@@ -1326,10 +1349,16 @@
             if (card._calHoverBound) return;
             card._calHoverBound = true;
             var evtId = card.getAttribute('data-evt-id');
-            card.addEventListener('mouseenter', function () {
+            // Trackear posición del cursor para posicionar el popover a la
+            // derecha del mouse — útil cuando el anchor es un <tr> que
+            // ocupa todo el ancho del viewport y no hay "derecha del row".
+            var lastMouse = { x: 0, y: 0 };
+            card.addEventListener('mousemove', function (e) { lastMouse.x = e.clientX; lastMouse.y = e.clientY; });
+            card.addEventListener('mouseenter', function (e) {
+                lastMouse.x = e.clientX; lastMouse.y = e.clientY;
                 clearTimeout(window._calHoverTimer);
                 window._calHoverTimer = setTimeout(function () {
-                    _calShowHoverPreview(evtId, card);
+                    _calShowHoverPreview(evtId, card, { mouseX: lastMouse.x, mouseY: lastMouse.y });
                 }, 280);
             });
             card.addEventListener('mouseleave', function () {
@@ -2217,7 +2246,8 @@
         return pop;
     }
     function _calEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    function _calShowHoverPreview(id, anchorEl) {
+    function _calShowHoverPreview(id, anchorEl, opts) {
+        opts = opts || {};
         var evt = _globalEvents.find(function (x) { return String(x.id) === String(id); });
         if (!evt) return;
         var ep = evt.extendedProps || {};
@@ -2266,18 +2296,31 @@
             (participantes.length ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Participantes</span><span>'+_calEsc(participantes.join(', '))+'</span></div>' : '') +
             oppHTML +
             '</div>';
-        // Posicionar cerca del anchor
-        var rect = anchorEl.getBoundingClientRect();
+        // Posicionar cerca del anchor o del cursor (cuando se proveen
+        // coords del mouse, se prefiere para que el popover salga al lado
+        // del cursor en vez de al lado de un anchor que ocupa todo el ancho).
         pop.style.visibility = 'hidden';
         pop.style.display = 'block';
         var pW = pop.offsetWidth;
         var pH = pop.offsetHeight;
         var vw = window.innerWidth;
         var vh = window.innerHeight;
-        var left = rect.right + 10;
-        if (left + pW + 8 > vw) left = rect.left - pW - 10;
-        if (left < 8) left = 8;
-        var top = rect.top;
+        var left, top;
+        if (typeof opts.mouseX === 'number' && typeof opts.mouseY === 'number') {
+            // Modo cursor: a la derecha del mouse + offset
+            left = opts.mouseX + 16;
+            top  = opts.mouseY + 14;
+            // Si se sale por la derecha, ponerlo a la izquierda del cursor.
+            if (left + pW + 8 > vw) left = opts.mouseX - pW - 16;
+            if (left < 8) left = 8;
+        } else {
+            // Modo anchor (FullCalendar mes view): rect a la derecha
+            var rect = anchorEl.getBoundingClientRect();
+            left = rect.right + 10;
+            if (left + pW + 8 > vw) left = rect.left - pW - 10;
+            if (left < 8) left = 8;
+            top = rect.top;
+        }
         if (top + pH + 8 > vh) top = vh - pH - 8;
         if (top < 8) top = 8;
         pop.style.left = left + 'px';
