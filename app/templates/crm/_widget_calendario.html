@@ -1963,14 +1963,17 @@
             }
             tareas.forEach(function(t){
                 if (!t.fecha_limite) return;
+                // Tarea.asignado_a es el "responsable" en el modelo Tarea (general),
+                // equivalente al primer participante en Actividad. La API ya manda
+                // `responsable` (nombre completo) y `creado_por` (nombre). Incluimos
+                // el text para que la vista del día lo pueda renderizar.
                 var tParticipants=[];
-                if (t.asignado_a_id) tParticipants.push({id:t.asignado_a_id});
-                // Normalizar a hora local sin timezone para consistencia
+                if (t.asignado_a_id) tParticipants.push({id:t.asignado_a_id, text:t.responsable||''});
                 var tStart = _calToLocalISO(t.fecha_limite);
                 var _dEnd = new Date(t.fecha_limite); _dEnd.setMinutes(_dEnd.getMinutes()+5);
                 var tEnd = _calToLocalISO(_dEnd.toISOString());
                 _globalEvents.push({ id:'tarea-'+t.id, title:t.titulo, start:tStart, end:tEnd, color:'#FF9500', editable:false,
-                    extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id}, estado:t.estado } });
+                    extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id, text:t.creado_por||''}, estado:t.estado } });
             });
             window._calAllEvents = _globalEvents.slice();
             var sel=document.getElementById('calUserFilter');
