@@ -1910,12 +1910,19 @@ button.mkthub-btn--share:hover {
     }
 
     /* ─── Builder de thumbnail visual según el tipo ───
-       Si el recurso tiene `url` (HTML standalone), mostramos un iframe
-       escalado con el contenido REAL del archivo — preview verídico en
-       vez del mockup genérico. Si no, caemos al mockup CSS por tipo. */
+       Si el recurso tiene `url` que apunta a un HTML (en /static/marketing/),
+       mostramos un iframe escalado con el contenido REAL. Si no, caemos
+       al mockup CSS por tipo. */
+    function isHtmlUrl(u) {
+        if (!u) return false;
+        // Aceptamos cualquier URL que apunte a un .html/.htm o que esté
+        // bajo /static/marketing/recursos/ (donde viven nuestros HTML
+        // standalone, sin importar query string o anchor).
+        var lower = u.toLowerCase();
+        return /\.html?(?:[?#]|$)/.test(lower) || lower.indexOf('/static/marketing/recursos/') !== -1;
+    }
     function buildThumb(r, t) {
-        // Preview real cuando el recurso es un HTML local que podemos cargar
-        if (r.url && /\.html?(\?|$)/i.test(r.url)) {
+        if (isHtmlUrl(r.url)) {
             return ''
                 + '<div class="mkthub-thumb-iframe-wrap">'
                 +   '<iframe class="mkthub-thumb-iframe" src="' + esc(r.url) + '"'
@@ -2048,7 +2055,7 @@ button.mkthub-btn--share:hover {
         var b = brandById(res.brand) || {};
         var t = TYPES[res.type] || {};
         modal.style.setProperty('--modal-color', b.color);
-        var hasHtmlPreview = res.url && /\.html?(\?|$)/i.test(res.url);
+        var hasHtmlPreview = isHtmlUrl(res.url);
         modal.innerHTML = ''
             + '<div class="mkthub-modal-head" style="--modal-color:' + b.color + '; background:' + b.color + ';">'
             +   '<button type="button" class="mkthub-modal-close" data-close>'
@@ -2164,7 +2171,7 @@ button.mkthub-btn--share:hover {
         }
 
         // Si es HTML standalone → fetch y embebe contenido real.
-        if (res.url && /\.html?(\?|$)/i.test(res.url)) {
+        if (isHtmlUrl(res.url)) {
             fetch(res.url, { credentials: 'same-origin' })
                 .then(function (r) { return r.ok ? r.text() : Promise.reject('HTTP ' + r.status); })
                 .then(function (rawHtml) {
