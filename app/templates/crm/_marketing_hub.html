@@ -1997,6 +1997,10 @@ button.mkthub-btn--share:hover {
                         +     '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>'
                         +   '</button>'
                         +   '<div class="mkthub-card-menu-pop" data-menu-pop>'
+                        +     '<button type="button" class="mkthub-card-menu-item" data-res-edit="' + r.id + '">'
+                        +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+                        +       'Editar'
+                        +     '</button>'
                         +     '<button type="button" class="mkthub-card-menu-item mkthub-card-menu-item--danger" data-res-delete="' + r.id + '">'
                         +       '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
                         +       'Eliminar'
@@ -2626,13 +2630,44 @@ button.mkthub-btn--share:hover {
             }).join('');
     }
 
-    function openUploadModal() {
+    // Modo del modal: null = crear, número = id del recurso en edición.
+    var _mkthubEditingResId = null;
+
+    function openUploadModal(editingRes) {
         if (window._mkthubCanEdit !== true) return;
         var overlay = document.getElementById('mkthubUploadOverlay');
         if (!overlay) return;
+        _mkthubEditingResId = editingRes ? editingRes.id : null;
         resetUploadForm();
+        // Adaptar la UI según modo (crear vs editar)
+        var titleEl = document.getElementById('mkthubUploadTitle');
+        var btnLabel = document.querySelector('#mkthubUpSubmit .mkthub-upload-btn-label');
+        var fileField = document.querySelector('#mkthubUpArchivo').closest('.mkthub-upload-field');
+        var urlToggle = document.getElementById('mkthubUpUrlToggle');
+        var urlWrap = document.getElementById('mkthubUpUrlWrap');
+        if (editingRes) {
+            // Modo edición — pre-llenar campos y ocultar el drop zone de
+            // archivo (el endpoint PATCH no acepta cambiar el archivo;
+            // para reemplazar archivo habría que subir uno nuevo).
+            if (titleEl) titleEl.textContent = 'Editar material';
+            if (btnLabel) btnLabel.textContent = 'Guardar cambios';
+            if (fileField) fileField.style.display = 'none';
+            // Mostrar URL siempre en edit (es lo único editable de origen)
+            if (urlWrap) urlWrap.style.display = '';
+            document.getElementById('mkthubUpBrand').value = editingRes.brand || '';
+            document.getElementById('mkthubUpTipo').value = editingRes.type || '';
+            document.getElementById('mkthubUpTitulo').value = editingRes.title || '';
+            document.getElementById('mkthubUpDesc').value = editingRes.desc || '';
+            document.getElementById('mkthubUpTags').value = (editingRes.tags || []).join(', ');
+            document.getElementById('mkthubUpUrl').value = editingRes.url || '';
+        } else {
+            // Modo creación
+            if (titleEl) titleEl.textContent = 'Subir material de marketing';
+            if (btnLabel) btnLabel.textContent = 'Subir material';
+            if (fileField) fileField.style.display = '';
+            if (urlWrap) urlWrap.style.display = 'none';
+        }
         overlay.classList.add('is-open');
-        // Focus en el primer select
         setTimeout(function () {
             var first = document.getElementById('mkthubUpBrand');
             if (first) first.focus();
@@ -2642,6 +2677,7 @@ button.mkthub-btn--share:hover {
     function closeUploadModal() {
         var overlay = document.getElementById('mkthubUploadOverlay');
         if (overlay) overlay.classList.remove('is-open');
+        _mkthubEditingResId = null;
     }
 
     function resetUploadForm() {
@@ -2783,26 +2819,55 @@ button.mkthub-btn--share:hover {
         if (!tipo) return showUploadError('Selecciona un tipo.');
         if (!titulo) return showUploadError('El título es obligatorio.');
         if (!desc) return showUploadError('La descripción es obligatoria.');
-        if (!archivo && !url) return showUploadError('Sube un archivo o pega una URL externa.');
 
-        var fd = new FormData();
-        fd.append('brand', brand);
-        fd.append('tipo', tipo);
-        fd.append('titulo', titulo);
-        fd.append('descripcion', desc);
-        fd.append('tags', tags);
-        if (archivo) fd.append('archivo', archivo);
-        if (url) fd.append('url', url);
+        var isEditing = _mkthubEditingResId != null;
+        if (!isEditing && !archivo && !url) {
+            return showUploadError('Sube un archivo o pega una URL externa.');
+        }
 
         submitBtn.disabled = true;
         submitBtn.classList.add('is-loading');
 
-        fetch('/app/api/marketing/recursos/', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': getCsrfToken() },
-            body: fd
-        }).then(function (resp) {
+        var requestInit, requestUrl;
+        if (isEditing) {
+            // PATCH con JSON — el backend no acepta cambiar archivo via PATCH
+            requestUrl = '/app/api/marketing/recursos/' + _mkthubEditingResId + '/';
+            requestInit = {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+                body: JSON.stringify({
+                    brand: brand,
+                    tipo: tipo,
+                    titulo: titulo,
+                    descripcion: desc,
+                    tags: tags,
+                    url: url,
+                }),
+            };
+        } else {
+            // POST multipart con archivo
+            var fd = new FormData();
+            fd.append('brand', brand);
+            fd.append('tipo', tipo);
+            fd.append('titulo', titulo);
+            fd.append('descripcion', desc);
+            fd.append('tags', tags);
+            if (archivo) fd.append('archivo', archivo);
+            if (url) fd.append('url', url);
+            requestUrl = '/app/api/marketing/recursos/';
+            requestInit = {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+                body: fd,
+            };
+        }
+
+        fetch(requestUrl, requestInit).then(function (resp) {
             return resp.json().then(function (data) {
                 return { ok: resp.ok, status: resp.status, data: data };
             }).catch(function () {
@@ -2810,7 +2875,7 @@ button.mkthub-btn--share:hover {
             });
         }).then(function (res) {
             if (!res.ok || !res.data || res.data.ok !== true) {
-                var msg = (res.data && (res.data.error || res.data.detail)) || ('Error al subir el material (HTTP ' + res.status + ').');
+                var msg = (res.data && (res.data.error || res.data.detail)) || ((isEditing ? 'Error al guardar cambios' : 'Error al subir el material') + ' (HTTP ' + res.status + ').');
                 showUploadError(msg);
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('is-loading');
@@ -2818,11 +2883,10 @@ button.mkthub-btn--share:hover {
             }
             // OK
             closeUploadModal();
-            showToast('Material subido');
-            // Refrescar lista
+            showToast(isEditing ? 'Cambios guardados' : 'Material subido');
             fetchRecursos();
         }).catch(function (err) {
-            console.warn('[mkthub] Error en upload:', err);
+            console.warn('[mkthub] Error en submit:', err);
             showUploadError('No se pudo conectar con el servidor. Intenta de nuevo.');
             submitBtn.disabled = false;
             submitBtn.classList.remove('is-loading');
@@ -2912,6 +2976,16 @@ button.mkthub-btn--share:hover {
                     if (w !== wrap) w.classList.remove('is-open');
                 });
                 wrap.classList.toggle('is-open', !isOpen);
+                return;
+            }
+            // Editar recurso (abre modal de upload en modo edit)
+            var resEditBtn = e.target.closest('[data-res-edit]');
+            if (resEditBtn) {
+                e.stopPropagation();
+                var ridEdit = parseInt(resEditBtn.getAttribute('data-res-edit'), 10);
+                var resEdit = RESOURCES.find(function (r) { return r.id === ridEdit; });
+                document.querySelectorAll('[data-menu-wrap].is-open').forEach(function (w) { w.classList.remove('is-open'); });
+                if (resEdit) openUploadModal(resEdit);
                 return;
             }
             // Eliminar recurso
