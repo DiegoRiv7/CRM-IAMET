@@ -327,6 +327,14 @@ cargado en la página, fallback a mailto:. Mock data por ahora — el backend
     line-height: 1;
     white-space: nowrap;
 }
+.mkthub-brand-heading-logo {
+    max-height: 26px;
+    max-width: 130px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
 .mkthub-brand-heading-sub {
     font-size: 0.74rem; font-weight: 500;
     color: #6B7280;
@@ -1117,6 +1125,16 @@ button.mkthub-btn--share:hover {
     animation: mkthubSlideUp 0.42s 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .mkthub-upload-btn.is-visible { display: inline-flex; }
+/* Cuando el botón se mueve al topbar (crm-bar-right) deja de ser
+   absolute — pasa a vivir en flujo dentro de la fila de la cápsula. */
+.mkthub-upload-btn.in-topbar {
+    position: static;
+    top: auto; right: auto;
+    z-index: auto;
+    animation: none;
+    padding: 7px 14px;
+    font-size: 0.82rem;
+}
 .mkthub-upload-btn:hover {
     background: #0041A8;
     transform: translateY(-1px);
@@ -1463,7 +1481,10 @@ button.mkthub-btn--share:hover {
 .mkthub-upload-btn-submit.is-loading .mkthub-upload-spinner { display: inline-block; }
 @keyframes mkthubSpin { to { transform: rotate(360deg); } }
 
-/* Toast notificación */
+/* Toast notificación.
+   Estado base: invisible (visibility + opacity) para evitar el "flash"
+   que aparecía al recargar — antes el transition arrancaba desde un
+   estado visible y se veía el deslizar inicial. */
 .mkthub-toast {
     position: fixed;
     top: 24px;
@@ -1479,10 +1500,20 @@ button.mkthub-btn--share:hover {
     box-shadow: 0 10px 30px -8px rgba(0,0,0,0.35), 0 4px 12px -4px rgba(0,0,0,0.18);
     display: flex; align-items: center; gap: 8px;
     transform: translateX(calc(100% + 30px));
-    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+                opacity 0.22s ease, visibility 0s linear 0.32s;
     pointer-events: none;
 }
-.mkthub-toast.is-visible { transform: translateX(0); pointer-events: auto; }
+.mkthub-toast.is-visible {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+                opacity 0.22s ease, visibility 0s linear 0s;
+}
 .mkthub-toast-check {
     width: 18px; height: 18px;
     border-radius: 50%;
@@ -1637,6 +1668,31 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             <button type="button" class="mkthub-upload-btn-submit" id="mkthubUpSubmit">
                 <span class="mkthub-upload-spinner" aria-hidden="true"></span>
                 <span class="mkthub-upload-btn-label">Subir material</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{# Modal compacto para editar el nombre de una marca (reemplaza al prompt() del navegador) #}
+<div class="mkthub-upload-overlay" id="mkthubBrandNameOverlay" data-mkthub-modal="brand-name">
+    <div class="mkthub-upload-modal" role="dialog" aria-labelledby="mkthubBrandNameTitle" style="max-width:420px;">
+        <div class="mkthub-upload-head">
+            <h3 id="mkthubBrandNameTitle">Editar nombre de marca</h3>
+            <button type="button" class="mkthub-upload-close" id="mkthubBrandNameClose" title="Cerrar">
+                <svg width="13" height="13" fill="none" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <form class="mkthub-upload-body" id="mkthubBrandNameForm" autocomplete="off" novalidate>
+            <div class="mkthub-upload-field">
+                <label class="mkthub-upload-label" for="mkthubBrandNameInput">Nuevo nombre</label>
+                <input class="mkthub-upload-input" id="mkthubBrandNameInput" type="text" maxlength="120" required>
+                <p class="mkthub-upload-hint" id="mkthubBrandNameHint">Esto cambia cómo aparece la marca en todo el módulo.</p>
+            </div>
+        </form>
+        <div class="mkthub-upload-foot">
+            <button type="button" class="mkthub-upload-btn-cancel" id="mkthubBrandNameCancel">Cancelar</button>
+            <button type="button" class="mkthub-upload-btn-submit" id="mkthubBrandNameSubmit">
+                <span class="mkthub-upload-btn-label">Guardar</span>
             </button>
         </div>
     </div>
@@ -1903,8 +1959,8 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             + '<svg width="13" height="13" fill="none" viewBox="0 0 14 14"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
             + 'Volver a marcas</button>';
 
-        // Right: wordmark de la marca (sin contador — el header de results
-        // ya muestra el conteo abajo del segmented).
+        // Right: logo subido (si existe) o wordmark de texto como fallback.
+        // El conteo va en el header de results, no aquí.
         if (state.activeBrand !== 'all') {
             var b = brandById(state.activeBrand);
             if (b) {
@@ -1913,9 +1969,10 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
                     + '--brand-weight:' + b.weight + ';'
                     + '--brand-tracking:' + b.tracking + ';'
                     + '--brand-case:' + b.case + ';';
-                rightEl.innerHTML = '<div class="mkthub-brand-heading" style="' + bstyle + '">'
-                    + '<span class="mkthub-brand-heading-mark">' + esc(b.displayName) + '</span>'
-                    + '</div>';
+                var inner = b.logoUrl
+                    ? '<img class="mkthub-brand-heading-logo" src="' + esc(b.logoUrl) + '" alt="' + esc(b.name) + '">'
+                    : '<span class="mkthub-brand-heading-mark">' + esc(b.displayName) + '</span>';
+                rightEl.innerHTML = '<div class="mkthub-brand-heading" style="' + bstyle + '">' + inner + '</div>';
             } else {
                 rightEl.innerHTML = '';
             }
@@ -2272,13 +2329,33 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
     /* ─── Acciones sobre Marcas (PATCH/DELETE/POST logo) ───
        Todas requieren can_manage_marketing en el backend (403 si no).
        El menu ⋯ solo se renderiza si el frontend tiene can_edit=true. */
-    function editBrandName(marcaId) {
+    // Estado del modal de edición de nombre.
+    var _mkthubEditingBrandId = null;
+    function openBrandNameModal(b) {
+        var overlay = document.getElementById('mkthubBrandNameOverlay');
+        var input = document.getElementById('mkthubBrandNameInput');
+        var hint = document.getElementById('mkthubBrandNameHint');
+        if (!overlay || !input) return;
+        _mkthubEditingBrandId = b.marcaId;
+        input.value = b.name || '';
+        if (hint) hint.textContent = 'Cambiando el nombre de "' + (b.name || '') + '".';
+        overlay.classList.add('is-open');
+        setTimeout(function () { try { input.focus(); input.select(); } catch (e) {} }, 30);
+    }
+    function closeBrandNameModal() {
+        var overlay = document.getElementById('mkthubBrandNameOverlay');
+        if (overlay) overlay.classList.remove('is-open');
+        _mkthubEditingBrandId = null;
+    }
+    function submitBrandNameModal() {
+        var marcaId = _mkthubEditingBrandId;
         var b = BRANDS.find(function (x) { return x.marcaId === marcaId; });
-        if (!b) return;
-        var nuevo = prompt('Nuevo nombre para "' + b.name + '":', b.name);
-        if (nuevo == null) return;
-        nuevo = nuevo.trim();
-        if (!nuevo || nuevo === b.name) return;
+        if (!b || !marcaId) { closeBrandNameModal(); return; }
+        var input = document.getElementById('mkthubBrandNameInput');
+        var nuevo = input ? input.value.trim() : '';
+        if (!nuevo || nuevo === b.name) { closeBrandNameModal(); return; }
+        var btn = document.getElementById('mkthubBrandNameSubmit');
+        if (btn) btn.disabled = true;
         fetch('/app/api/marketing/marcas/' + marcaId + '/', {
             method: 'PATCH',
             credentials: 'same-origin',
@@ -2288,11 +2365,18 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
           .then(function (res) {
             if (!res.ok || res.data.ok !== true) throw new Error((res.data && res.data.error) || 'Error');
             showToast('Nombre actualizado');
+            closeBrandNameModal();
             fetchMarcas();
           }).catch(function (err) {
             console.warn('[mkthub] editBrandName:', err);
-            alert('No se pudo actualizar el nombre.');
-          });
+            showToast('No se pudo actualizar el nombre');
+          }).finally(function () { if (btn) btn.disabled = false; });
+    }
+
+    function editBrandName(marcaId) {
+        var b = BRANDS.find(function (x) { return x.marcaId === marcaId; });
+        if (!b) return;
+        openBrandNameModal(b);
     }
 
     function uploadBrandLogo(marcaId) {
@@ -2558,6 +2642,22 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             btn.classList.add('is-visible');
         } else {
             btn.classList.remove('is-visible');
+        }
+    }
+
+    /* Mueve el botón "+ Subir material" al topbar (.crm-bar-right) para
+       que viva en la misma fila que la cápsula de tabs en lugar de flotar
+       absolute sobre el hero. Idempotente — sólo mueve si todavía está
+       dentro del mkthub-root. */
+    function relocateUploadBtnToTopbar() {
+        var btn = document.getElementById('mkthubUploadBtn');
+        var slot = document.getElementById('mkthubBarRight');
+        if (!btn || !slot) return;
+        var bar = slot.parentNode; // .crm-bar-right
+        if (!bar) return;
+        if (btn.parentNode !== bar) {
+            bar.insertBefore(btn, slot); // queda a la izquierda del slot del wordmark
+            btn.classList.add('in-topbar');
         }
     }
 
@@ -3139,11 +3239,29 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
             });
         }
 
-        /* ── Escape: cerrar modal de upload si está abierto ── */
+        /* ── Brand name modal: handlers ── */
+        var bnOverlay = document.getElementById('mkthubBrandNameOverlay');
+        if (bnOverlay) {
+            bnOverlay.addEventListener('click', function (e) {
+                if (e.target.id === 'mkthubBrandNameOverlay') closeBrandNameModal();
+            });
+        }
+        var bnClose = document.getElementById('mkthubBrandNameClose');
+        if (bnClose) bnClose.addEventListener('click', closeBrandNameModal);
+        var bnCancel = document.getElementById('mkthubBrandNameCancel');
+        if (bnCancel) bnCancel.addEventListener('click', closeBrandNameModal);
+        var bnSubmit = document.getElementById('mkthubBrandNameSubmit');
+        if (bnSubmit) bnSubmit.addEventListener('click', function (e) { e.preventDefault(); submitBrandNameModal(); });
+        var bnForm = document.getElementById('mkthubBrandNameForm');
+        if (bnForm) bnForm.addEventListener('submit', function (e) { e.preventDefault(); submitBrandNameModal(); });
+
+        /* ── Escape: cerrar modales abiertos ── */
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 var ov = document.getElementById('mkthubUploadOverlay');
                 if (ov && ov.classList.contains('is-open')) closeUploadModal();
+                var bn = document.getElementById('mkthubBrandNameOverlay');
+                if (bn && bn.classList.contains('is-open')) closeBrandNameModal();
             }
         });
     }
@@ -3184,6 +3302,7 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         renderBrands();
         populateUploadSelects();
         setupUploadDropZone();
+        relocateUploadBtnToTopbar();
         updateUploadBtnVisibility();
         bindEvents();
         // Fetch async solo para refrescar en background (por si los datos
