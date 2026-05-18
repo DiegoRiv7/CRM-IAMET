@@ -1241,12 +1241,19 @@
             // Responsable: primer participant (si hay) o el creador como fallback.
             // En el modelo del calendario el "responsable" es típicamente el
             // primer participante asignado; si no hay participants, el creador.
+            // OJO: la API usa .text para nombres (no .nombre / .name).
+            var _pickName = function (o) {
+                if (!o) return '';
+                return o.text || o.nombre || o.name || o.full_name || o.username || '';
+            };
             var responsable = '—';
             var parts = ep.participants || [];
-            if (parts.length && (parts[0].nombre || parts[0].name)) {
-                responsable = parts[0].nombre || parts[0].name;
-            } else if (ep.creado_por && (ep.creado_por.nombre || ep.creado_por.name)) {
-                responsable = ep.creado_por.nombre || ep.creado_por.name;
+            var firstPartName = parts.length ? _pickName(parts[0]) : '';
+            var creadorName = _pickName(ep.creado_por);
+            if (firstPartName) {
+                responsable = firstPartName;
+            } else if (creadorName) {
+                responsable = creadorName;
             }
             // Si hay más participantes, agregamos un "+N" para mostrar que es grupo.
             var responsableExtra = parts.length > 1 ? ' +' + (parts.length - 1) : '';
