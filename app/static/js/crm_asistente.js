@@ -108,7 +108,7 @@
             return [
                 {prompt: '¿Cómo va la empresa este mes?', label: 'Resumen del mes', sub: 'KPIs del negocio'},
                 {prompt: '¿Cómo cerraremos el mes?', label: 'Proyección del mes', sub: 'Forecast ponderado'},
-                {prompt: 'Dame el rendimiento de los vendedores este mes', label: 'Rendimiento de vendedores', sub: 'Quién aporta más'},
+                {prompt: 'Dame el rendimiento completo del equipo este mes', label: 'Rendimiento de vendedores', sub: 'Quién aporta más'},
                 {prompt: '¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?', label: 'Clientes sin atender', sub: 'Cartera olvidada'},
             ];
         }

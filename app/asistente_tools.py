@@ -213,9 +213,11 @@ def _total_cobrado_periodo(anio, mes=None):
 # ─── TOOLS ─────────────────────────────────────────────────────────────
 
 
-# 1. Clientes sin atender
+# 1. Clientes sin atender (con contexto enriquecido)
 def _tool_clientes_sin_atender(args: dict, user: User) -> dict:
-    """Lista clientes que NO tienen oportunidades creadas en los últimos N meses."""
+    """Lista clientes sin oportunidades creadas en los últimos N meses. Incluye
+    contexto útil: último cierre conocido (titulo + monto + fecha), monto
+    histórico ganado, vendedor asignado."""
     meses = int(args.get('meses') or 2)
     meses = max(1, min(meses, 24))
     limite = int(args.get('limite') or 20)
@@ -223,32 +225,50 @@ def _tool_clientes_sin_atender(args: dict, user: User) -> dict:
 
     desde = timezone.now() - timedelta(days=meses * 30)
 
-    # Clientes visibles para el user
     clientes_qs = Cliente.objects.all()
     visible_ids = _visible_user_ids(user)
     if visible_ids is not None:
         clientes_qs = clientes_qs.filter(asignado_a_id__in=visible_ids)
 
-    # Clientes con AL MENOS UNA oportunidad creada después de `desde`
     clientes_con_opp_reciente = TodoItem.objects.filter(
         fecha_creacion__gte=desde
     ).values_list('cliente_id', flat=True)
 
     inactivos = clientes_qs.exclude(
         id__in=clientes_con_opp_reciente
-    ).select_related('asignado_a').order_by('nombre_empresa')[:limite]
+    ).select_related('asignado_a')
+
+    # Tomar TODOS para enriquecer y luego ordenar por valor (los que más
+    # nos han dejado primero — son los más urgentes de reactivar).
+    items = []
+    for c in inactivos:
+        # Última opp ganada (cualquiera de las visibles del user)
+        opp_qs = TodoItem.objects.filter(cliente=c)
+        if visible_ids is not None:
+            opp_qs = opp_qs.filter(usuario_id__in=visible_ids)
+        ult_ganada = opp_qs.filter(_q_ganadas()).order_by('-fecha_actualizacion').first()
+        ult_cualquier = opp_qs.order_by('-fecha_creacion').first()
+        # Total histórico ganado
+        total_hist = opp_qs.filter(_q_ganadas()).aggregate(t=Sum('monto')).get('t') or 0
+
+        items.append({
+            'id': c.id,
+            'nombre': c.nombre_empresa,
+            'asignado_a': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '—',
+            'monto_historico_ganado_mxn': _to_money(total_hist),
+            'ultimo_cierre_titulo': ult_ganada.oportunidad if ult_ganada else None,
+            'ultimo_cierre_monto_mxn': _to_money(ult_ganada.monto) if ult_ganada else None,
+            'ultimo_cierre_fecha': ult_ganada.fecha_actualizacion.strftime('%Y-%m-%d') if (ult_ganada and ult_ganada.fecha_actualizacion) else None,
+            'ultima_opp_fecha': ult_cualquier.fecha_creacion.strftime('%Y-%m-%d') if (ult_cualquier and ult_cualquier.fecha_creacion) else None,
+        })
+
+    # Ordenar: los que más han dejado primero (priorizar reactivación)
+    items.sort(key=lambda r: r['monto_historico_ganado_mxn'], reverse=True)
 
     return {
         'meses_sin_atender': meses,
-        'total': inactivos.count() if hasattr(inactivos, 'count') else len(list(inactivos)),
-        'clientes': [
-            {
-                'id': c.id,
-                'nombre': c.nombre_empresa,
-                'asignado_a': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '—',
-            }
-            for c in inactivos
-        ],
+        'total': len(items),
+        'clientes': items[:limite],
     }
 
 
@@ -1285,6 +1305,170 @@ def _tool_historico_cliente(args: dict, user: User) -> dict:
     }
 
 
+# 14b. Rendimiento completo del equipo en un mes
+def _tool_rendimiento_equipo_completo(args: dict, user: User) -> dict:
+    """Reporte ejecutivo del rendimiento de TODOS los vendedores en un mes:
+    oportunidades, monto, cotizaciones, facturado real, cobrado real, tareas
+    vencidas/pendientes/completadas. Solo supervisores."""
+    if not (is_supervisor(user) or user.is_superuser):
+        return {'error': 'Solo supervisores y admins pueden ver el rendimiento del equipo.'}
+
+    ahora = timezone.now()
+    mes = int(args.get('mes') or ahora.month)
+    anio = int(args.get('anio') or ahora.year)
+    mes = max(1, min(mes, 12))
+
+    # Inicio y fin del mes
+    from datetime import datetime as _dt
+    import calendar as _cal
+    inicio_mes = timezone.make_aware(_dt(anio, mes, 1))
+    last_day = _cal.monthrange(anio, mes)[1]
+    fin_mes = timezone.make_aware(_dt(anio, mes, last_day, 23, 59, 59))
+
+    visible_ids = _visible_user_ids(user)
+    if visible_ids is None:
+        # Admin / supervisor global → todos los users que tengan algún
+        # cliente, opp, tarea o actividad. Para no listar usuarios sin
+        # actividad, filtramos por los que tengan SOMETHING.
+        user_ids = set()
+        user_ids.update(TodoItem.objects.values_list('usuario_id', flat=True).distinct())
+        user_ids.update(Cliente.objects.exclude(asignado_a__isnull=True).values_list('asignado_a_id', flat=True).distinct())
+        user_ids.discard(None)
+    else:
+        user_ids = set(visible_ids)
+
+    if not user_ids:
+        return {'error': 'No hay vendedores en tu visibilidad.'}
+
+    vendedores = list(User.objects.filter(id__in=user_ids, is_active=True).order_by('first_name', 'last_name'))
+
+    # ── Precarga: entries de facturación/cobro del mes ─────────────────
+    fact_entries = []
+    for af in ArchivoFacturacion.objects.filter(anio=anio, mes=str(mes).zfill(2)):
+        fact_entries.extend(_extract_factura_entries(af.datos_json))
+    cob_entries = []
+    for ac in ArchivoCobrado.objects.filter(anio=anio, mes=str(mes).zfill(2)):
+        cob_entries.extend(_extract_cobrado_entries(ac.datos_json))
+
+    # ── Precarga: clientes asignados a cada vendedor (para matching) ───
+    clientes_por_vendedor = {}
+    for c in Cliente.objects.exclude(asignado_a__isnull=True).select_related('asignado_a'):
+        if c.asignado_a_id in user_ids:
+            clientes_por_vendedor.setdefault(c.asignado_a_id, []).append(c)
+
+    # ── Por vendedor, calcular bloques ─────────────────────────────────
+    rows = []
+    totales = {
+        'oportunidades': 0, 'monto_oportunidades': 0.0,
+        'cotizaciones': 0,
+        'facturado': 0.0, 'cobrado': 0.0,
+        'tareas_vencidas': 0, 'tareas_pendientes': 0, 'tareas_completadas': 0,
+    }
+
+    for v in vendedores:
+        # Oportunidades creadas en el mes
+        opp_qs = TodoItem.objects.filter(
+            usuario=v, fecha_creacion__year=anio, fecha_creacion__month=mes,
+        )
+        opp_count = opp_qs.count()
+        opp_monto = float(opp_qs.aggregate(t=Sum('monto')).get('t') or 0)
+
+        # Cotizaciones creadas en el mes
+        cot_count = Cotizacion.objects.filter(
+            created_by=v, fecha_creacion__year=anio, fecha_creacion__month=mes,
+        ).count()
+
+        # Facturado y cobrado del vendedor: matchear entries del archivo
+        # del mes con SUS clientes (asignado_a=v).
+        mis_clientes = clientes_por_vendedor.get(v.id, [])
+        fact_monto = Decimal('0')
+        cob_monto = Decimal('0')
+        for entry in fact_entries:
+            for c in mis_clientes:
+                if _match_entry_to_cliente(entry, c):
+                    fact_monto += entry['monto']
+                    break
+        for entry in cob_entries:
+            for c in mis_clientes:
+                if _match_entry_to_cliente(entry, c):
+                    cob_monto += entry['monto']
+                    break
+
+        # Tareas del mes (vencidas / pendientes / completadas)
+        tareas_v = TareaOportunidad.objects.filter(
+            responsable=v, estado='pendiente',
+            fecha_limite__isnull=False, fecha_limite__lt=ahora,
+        ).count()
+        tareas_p = TareaOportunidad.objects.filter(
+            responsable=v, estado='pendiente',
+            fecha_limite__gte=ahora, fecha_limite__lte=fin_mes,
+        ).count()
+        tareas_c = TareaOportunidad.objects.filter(
+            responsable=v, estado='completada',
+            fecha_limite__gte=inicio_mes, fecha_limite__lte=fin_mes,
+        ).count()
+
+        # Actividades del calendario en el mes
+        act_v = Actividad.objects.filter(
+            creado_por=v, completada=False, fecha_inicio__lt=ahora,
+        ).count()
+        act_p = Actividad.objects.filter(
+            creado_por=v, completada=False,
+            fecha_inicio__gte=ahora, fecha_inicio__lte=fin_mes,
+        ).count()
+        act_c = Actividad.objects.filter(
+            creado_por=v, completada=True,
+            fecha_inicio__gte=inicio_mes, fecha_inicio__lte=fin_mes,
+        ).count()
+
+        vencidas_total = tareas_v + act_v
+        pendientes_total = tareas_p + act_p
+        completadas_total = tareas_c + act_c
+
+        # Saltar vendedores sin NINGUNA actividad en el mes
+        if (opp_count == 0 and cot_count == 0 and fact_monto == 0 and
+                cob_monto == 0 and vencidas_total == 0 and pendientes_total == 0 and
+                completadas_total == 0):
+            continue
+
+        nombre = (v.first_name + ' ' + v.last_name).strip() or v.username
+        rows.append({
+            'username': v.username,
+            'nombre': nombre,
+            'oportunidades_creadas': opp_count,
+            'monto_oportunidades_mxn': round(opp_monto, 2),
+            'cotizaciones_creadas': cot_count,
+            'facturado_real_mxn': float(fact_monto),
+            'cobrado_real_mxn': float(cob_monto),
+            'tareas_vencidas': vencidas_total,
+            'tareas_pendientes_mes': pendientes_total,
+            'tareas_completadas_mes': completadas_total,
+        })
+        totales['oportunidades'] += opp_count
+        totales['monto_oportunidades'] += opp_monto
+        totales['cotizaciones'] += cot_count
+        totales['facturado'] += float(fact_monto)
+        totales['cobrado'] += float(cob_monto)
+        totales['tareas_vencidas'] += vencidas_total
+        totales['tareas_pendientes'] += pendientes_total
+        totales['tareas_completadas'] += completadas_total
+
+    # Ordenar por cobrado descendente (los que más aportaron arriba)
+    rows.sort(key=lambda r: r['cobrado_real_mxn'], reverse=True)
+
+    return {
+        'mes': mes,
+        'anio': anio,
+        'totales_equipo': {k: (round(v, 2) if isinstance(v, float) else v) for k, v in totales.items()},
+        'vendedores': rows,
+        'nota': (
+            'Facturado/cobrado vienen del archivo del mes (ArchivoFacturacion / '
+            'ArchivoCobrado). El monto de oportunidades es proyección. '
+            'Tareas incluye tanto TareaOportunidad como Actividad del calendario.'
+        ),
+    }
+
+
 # 14. Ranking de productos (más vendidos del periodo)
 def _tool_ranking_productos(args: dict, user: User) -> dict:
     """Productos más vendidos del periodo, por monto ganado y por #
@@ -1589,6 +1773,27 @@ TOOL_SCHEMAS: list[dict] = [
     {
         'type': 'function',
         'function': {
+            'name': 'rendimiento_equipo_completo',
+            'description': (
+                'Reporte EJECUTIVO del rendimiento del equipo en un mes: '
+                'para cada vendedor devuelve oportunidades creadas, monto, '
+                'cotizaciones, facturado real, cobrado real, tareas '
+                'vencidas/pendientes/completadas. Solo supervisores. Úsalo '
+                'cuando el user diga "rendimiento de vendedores", "cómo va '
+                'el equipo este mes", "evaluación del equipo".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'mes': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes (1-12). Default: mes actual.'},
+                    'anio': {'type': 'integer', 'description': 'Año. Default: año actual.'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'actividades_pendientes',
             'description': (
                 'Actividades del calendario + tareas pendientes (no completadas) '
@@ -1706,6 +1911,7 @@ TOOL_HANDLERS = {
     'buscar_cliente': _tool_buscar_cliente,
     'historico_cliente': _tool_historico_cliente,
     'ranking_productos': _tool_ranking_productos,
+    'rendimiento_equipo_completo': _tool_rendimiento_equipo_completo,
 }
 
 
