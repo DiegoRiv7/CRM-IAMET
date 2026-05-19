@@ -278,7 +278,7 @@
         // Antes de procesar línea por línea, extraemos los bloques kpis para
         // que el parser normal no toque su contenido.
         var kpiBlocks = [];
-        html = html.replace(/^[ \t]*:::\s*kpis\s*\n([\s\S]*?)^[ \t]*:::\s*$/gm, function (_, content) {
+        html = html.replace(/^[ \t]*:::\s*kpis(?:\s*:::)?\s*\n([\s\S]*?)^[ \t]*:::\s*$/gm, function (_, content) {
             var rows = content.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
             var cards = '';
             rows.forEach(function (l) {
