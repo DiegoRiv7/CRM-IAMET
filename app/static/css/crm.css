@@ -9032,6 +9032,19 @@
     margin: 0 !important;          /* override "margin: 0 auto" general */
     flex: 0 0 auto;
 }
+/* Centrado VISUAL absoluto: con flex space-between los lados pueden tener
+   contenido asimétrico (3 vs 2 botones), y aunque el pill quede centrado
+   entre ellos visualmente parece off. Forzamos el pill al centro real
+   del bar con position:absolute. */
+.crm-page-sidebar .crm-bar.crm-bar--unified { position: relative; }
+.crm-page-sidebar .crm-bar.crm-bar--unified > .crm-tabs {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    z-index: 2;
+}
 .crm-page-sidebar .crm-bar.crm-bar--unified .crm-bar-right {
     display: flex;
     align-items: center;
