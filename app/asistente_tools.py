@@ -215,42 +215,48 @@ def _total_cobrado_periodo(anio, mes=None):
 
 # 1. Clientes sin atender (con contexto enriquecido)
 def _tool_clientes_sin_atender(args: dict, user: User) -> dict:
-    """Lista clientes sin oportunidades creadas en los últimos N meses. Incluye
-    contexto útil: último cierre conocido (titulo + monto + fecha), monto
-    histórico ganado, vendedor asignado."""
+    """Lista clientes sin oportunidades creadas en los últimos N meses. Solo
+    cuenta clientes que YA HAN tenido al menos una opp histórica (clientes
+    establecidos, no leads vacíos) y que están asignados a algún vendedor
+    visible. Incluye contexto: último cierre, monto histórico ganado."""
     meses = int(args.get('meses') or 2)
     meses = max(1, min(meses, 24))
     limite = int(args.get('limite') or 20)
     limite = max(1, min(limite, 100))
 
     desde = timezone.now() - timedelta(days=meses * 30)
-
-    clientes_qs = Cliente.objects.all()
     visible_ids = _visible_user_ids(user)
+
+    # Solo clientes ASIGNADOS a un vendedor visible (no clientes huérfanos
+    # ni los que nadie está trabajando).
+    clientes_qs = Cliente.objects.exclude(asignado_a__isnull=True)
     if visible_ids is not None:
         clientes_qs = clientes_qs.filter(asignado_a_id__in=visible_ids)
 
-    clientes_con_opp_reciente = TodoItem.objects.filter(
+    # Clientes con AL MENOS UNA opp en el periodo reciente → activos (no nos interesan).
+    activos_ids = set(TodoItem.objects.filter(
         fecha_creacion__gte=desde
-    ).values_list('cliente_id', flat=True)
+    ).values_list('cliente_id', flat=True))
 
-    inactivos = clientes_qs.exclude(
-        id__in=clientes_con_opp_reciente
+    # Clientes con HISTORIAL de opp (al menos una opp alguna vez) → "establecidos".
+    # Esto evita listar clientes nuevos sin movimiento o sólo importados de Bitrix.
+    con_historial_ids = set(TodoItem.objects.values_list('cliente_id', flat=True).distinct())
+
+    inactivos_qs = clientes_qs.exclude(id__in=activos_ids).filter(
+        id__in=con_historial_ids
     ).select_related('asignado_a')
 
-    # Tomar TODOS para enriquecer y luego ordenar por valor (los que más
-    # nos han dejado primero — son los más urgentes de reactivar).
+    total_inactivos = inactivos_qs.count()
+    total_clientes_visibles = clientes_qs.count()
+
     items = []
-    for c in inactivos:
-        # Última opp ganada (cualquiera de las visibles del user)
+    for c in inactivos_qs:
         opp_qs = TodoItem.objects.filter(cliente=c)
         if visible_ids is not None:
             opp_qs = opp_qs.filter(usuario_id__in=visible_ids)
         ult_ganada = opp_qs.filter(_q_ganadas()).order_by('-fecha_actualizacion').first()
         ult_cualquier = opp_qs.order_by('-fecha_creacion').first()
-        # Total histórico ganado
         total_hist = opp_qs.filter(_q_ganadas()).aggregate(t=Sum('monto')).get('t') or 0
-
         items.append({
             'id': c.id,
             'nombre': c.nombre_empresa,
@@ -262,13 +268,20 @@ def _tool_clientes_sin_atender(args: dict, user: User) -> dict:
             'ultima_opp_fecha': ult_cualquier.fecha_creacion.strftime('%Y-%m-%d') if (ult_cualquier and ult_cualquier.fecha_creacion) else None,
         })
 
-    # Ordenar: los que más han dejado primero (priorizar reactivación)
     items.sort(key=lambda r: r['monto_historico_ganado_mxn'], reverse=True)
 
     return {
         'meses_sin_atender': meses,
-        'total': len(items),
+        'total_clientes_visibles': total_clientes_visibles,
+        'total_inactivos_con_historial': total_inactivos,
         'clientes': items[:limite],
+        '_nota': (
+            'Solo se cuentan clientes ASIGNADOS a un vendedor y que YA TIENEN '
+            'al menos una oportunidad histórica. "Histórico ganado" es la '
+            'suma del monto de las oportunidades en etapa Ganado/Pagado/'
+            'Facturado/Cobrado (proyección del CRM, no necesariamente lo '
+            'realmente cobrado).'
+        ),
     }
 
 
