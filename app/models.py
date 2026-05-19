@@ -5618,3 +5618,102 @@ class MarcaMarketing(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+# ──────────────────────────────────────────────
+# ASISTENTE AI — chat con tool use (LiteLLM)
+# ──────────────────────────────────────────────
+# Diseño:
+#   - AsistenteConfig: 1 row global (nombre del asistente, logo, prompt
+#     base, modelo activo). Hardcoded por ahora; admin UI después.
+#   - ConversacionAsistente: 1 por usuario, persiste para que retome la
+#     plática donde la dejó.
+#   - MensajeAsistente: cada mensaje del chat (user / assistant / tool).
+#     Cuando llamamos al LLM, sólo mandamos los últimos N para no
+#     gastar tokens.
+
+class AsistenteConfig(models.Model):
+    """Configuración global del asistente AI. Singleton (1 row)."""
+    nombre = models.CharField(
+        max_length=80, default='IAMET AI',
+        help_text='Nombre que aparece en el chat (ej. "Aria", "IAMET AI").'
+    )
+    logo = models.ImageField(upload_to='asistente/', null=True, blank=True)
+    # Prompt base que define personalidad / contexto. Se inyecta como
+    # system message en cada llamada al LLM.
+    system_prompt = models.TextField(
+        blank=True, default='',
+        help_text='Instrucciones base del asistente (tono, personalidad, lo que puede y no puede hacer).'
+    )
+    # Modelo de LiteLLM activo. Ejemplos:
+    #   "openrouter/openai/gpt-4o-mini"
+    #   "openrouter/anthropic/claude-3.5-sonnet"
+    #   "gpt-4o-mini"     (provider directo)
+    modelo = models.CharField(
+        max_length=120,
+        default='openrouter/openai/gpt-4o-mini',
+        help_text='Modelo LiteLLM activo (ver docs.litellm.ai/docs/providers).'
+    )
+    # Cuántos mensajes recientes mandar al LLM en cada llamada.
+    # Más = mejor memoria pero más caro. 20 es buen balance.
+    contexto_max_mensajes = models.PositiveIntegerField(
+        default=20,
+        help_text='Cuántos mensajes recientes incluir como contexto. Más = más caro pero más memoria.'
+    )
+    activo = models.BooleanField(default=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuración Asistente AI'
+        verbose_name_plural = 'Configuración Asistente AI'
+
+    def __str__(self):
+        return f'{self.nombre} ({self.modelo})'
+
+    @classmethod
+    def get_singleton(cls):
+        """Devuelve la config global, creándola si no existe."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class ConversacionAsistente(models.Model):
+    """Conversación persistente del user con el asistente. 1:1 por user."""
+    usuario = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='conversacion_asistente',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_actualizacion']
+
+    def __str__(self):
+        return f'Conv {self.usuario.username}'
+
+
+class MensajeAsistente(models.Model):
+    """Mensaje individual del chat. role: user | assistant | tool."""
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('assistant', 'Asistente'),
+        ('tool', 'Tool (resultado de función)'),
+        ('system', 'System'),
+    ]
+    conversacion = models.ForeignKey(
+        ConversacionAsistente, on_delete=models.CASCADE, related_name='mensajes',
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, db_index=True)
+    contenido = models.TextField(blank=True, default='')
+    # Cuando el modelo pide llamar una tool, guardamos la info aquí
+    # (nombre + JSON de args). Si role='tool', es el RESULTADO.
+    tool_name = models.CharField(max_length=120, blank=True, default='')
+    tool_args_json = models.TextField(blank=True, default='')
+    tool_call_id = models.CharField(max_length=80, blank=True, default='')
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'[{self.role}] {self.contenido[:40]}'

@@ -16,6 +16,7 @@ from . import views_certificaciones
 from . import views_cursos
 from . import views_marketing
 from . import views_ideas
+from . import views_asistente
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -190,6 +191,12 @@ urlpatterns = [
     path('api/ideas/<int:idea_id>/mover/', views_ideas.api_idea_mover_etapa, name='api_idea_mover_etapa'),
     path('api/ideas/<int:idea_id>/comentar/', views_ideas.api_idea_comentar, name='api_idea_comentar'),
     path('api/ideas/<int:idea_id>/convertir/', views_ideas.api_idea_convertir, name='api_idea_convertir'),
+
+    # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
+    path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),
+    path('api/asistente/conversacion/', views_asistente.api_asistente_conversacion, name='api_asistente_conversacion'),
+    path('api/asistente/conversacion/eliminar/', views_asistente.api_asistente_conversacion_eliminar, name='api_asistente_conversacion_eliminar'),
+    path('api/asistente/mensaje/', views_asistente.api_asistente_mensaje, name='api_asistente_mensaje'),
 
     path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),

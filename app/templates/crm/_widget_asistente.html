@@ -1,0 +1,270 @@
+{% comment %}
+Widget overlay del Asistente AI. Se abre desde:
+  - Click en el logo IAMET del sidebar
+  - Click en el botón cerebro del widget Idea (cuando exista contexto)
+Chat estilo iMessage con burbujas, header con avatar del asistente, e
+input grande abajo con botón de enviar.
+{% endcomment %}
+<div class="widget-overlay" id="widgetAsistente" style="z-index:10400;display:none;">
+    <div class="asist-card">
+        {# Header #}
+        <header class="asist-header">
+            <div class="asist-header-left">
+                <div class="asist-avatar" id="asistAvatar">
+                    {# Si hay logo lo metemos via JS. Default: gradient con icono cerebro. #}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/>
+                        <path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/>
+                        <path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/>
+                        <path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/>
+                        <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/>
+                        <path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="asist-name" id="asistName">IAMET AI</div>
+                    <div class="asist-tagline">Tu asistente del CRM</div>
+                </div>
+            </div>
+            <div class="asist-header-right">
+                <button type="button" class="asist-icon-btn" id="asistClearBtn" title="Limpiar conversación">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                    </svg>
+                </button>
+                <button type="button" class="asist-icon-btn" id="asistCloseBtn" title="Cerrar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </header>
+
+        {# Mensajes #}
+        <div class="asist-messages" id="asistMessages">
+            <div class="asist-welcome" id="asistWelcome">
+                <div class="asist-welcome-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/>
+                        <path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/>
+                        <path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/>
+                        <path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/>
+                        <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/>
+                        <path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/>
+                    </svg>
+                </div>
+                <div class="asist-welcome-title">¿En qué te ayudo?</div>
+                <div class="asist-welcome-sub">Pregúntame por tus clientes, oportunidades, equipo o cómo va el mes.</div>
+                <div class="asist-suggestions">
+                    <button type="button" class="asist-suggestion" data-prompt="¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?">Clientes sin atender</button>
+                    <button type="button" class="asist-suggestion" data-prompt="Dame un resumen de cómo va la empresa este mes">Resumen del mes</button>
+                    <button type="button" class="asist-suggestion" data-prompt="¿Cuál es la oportunidad activa que más promete?">La más prometedora</button>
+                    <button type="button" class="asist-suggestion" data-prompt="¿Cómo voy a cerrar el mes?">Forecast del mes</button>
+                </div>
+            </div>
+        </div>
+
+        {# Input #}
+        <div class="asist-input-wrap">
+            <div class="asist-input-row">
+                <div class="asist-input-box">
+                    <textarea id="asistInput" rows="1" placeholder="Escribe tu pregunta…"></textarea>
+                </div>
+                <button type="button" id="asistSendBtn" class="asist-send-btn" title="Enviar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+            <div class="asist-input-hint">Enter para enviar · Shift+Enter para nueva línea</div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ─── Card / contenedor ─── */
+#widgetAsistente {
+    background: rgba(15, 15, 20, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.asist-card {
+    width: min(880px, 96vw);
+    height: min(720px, 92vh);
+    background: #FFFFFF;
+    border-radius: 22px;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.4), 0 12px 36px -12px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+}
+
+/* ─── Header ─── */
+.asist-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #F2F2F7;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFC 100%);
+}
+.asist-header-left { display: flex; align-items: center; gap: 12px; }
+.asist-avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, #0F172A, #1E1B4B, #581C87, #BE185D);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px -2px rgba(76,29,149,0.4);
+    overflow: hidden;
+}
+.asist-avatar svg { width: 22px; height: 22px; }
+.asist-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.asist-name {
+    font-size: 1rem; font-weight: 700; color: #1D1D1F;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+.asist-tagline {
+    font-size: 0.74rem; color: #86868B; margin-top: 1px;
+}
+.asist-header-right { display: flex; gap: 4px; }
+.asist-icon-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: transparent; border: none; color: #6B7280;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 0.16s ease, color 0.16s ease;
+}
+.asist-icon-btn:hover { background: #F2F2F7; color: #1D1D1F; }
+
+/* ─── Mensajes ─── */
+.asist-messages {
+    flex: 1; overflow-y: auto;
+    padding: 22px 20px;
+    display: flex; flex-direction: column; gap: 14px;
+    background: #FAFAFC;
+}
+.asist-msg { display: flex; gap: 10px; align-items: flex-end; max-width: 86%; }
+.asist-msg-user {
+    align-self: flex-end; flex-direction: row-reverse;
+}
+.asist-msg-bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 0.92rem; line-height: 1.45;
+    white-space: pre-wrap; word-break: break-word;
+    max-width: 100%;
+}
+.asist-msg-user .asist-msg-bubble {
+    background: linear-gradient(135deg, #0052D4 0%, #0041A8 100%);
+    color: #fff;
+    border-bottom-right-radius: 6px;
+}
+.asist-msg-bot .asist-msg-bubble {
+    background: #FFFFFF;
+    color: #1D1D1F;
+    border: 1px solid #E5E5EA;
+    border-bottom-left-radius: 6px;
+}
+.asist-msg-bot-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #0F172A, #581C87, #BE185D);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+}
+.asist-msg-bot-avatar svg { width: 14px; height: 14px; }
+
+/* Indicador de "escribiendo" */
+.asist-typing {
+    display: flex; align-items: center; gap: 4px;
+    padding: 12px 16px;
+}
+.asist-typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #C7C7CC;
+    animation: asistDot 1.2s infinite ease-in-out;
+}
+.asist-typing-dot:nth-child(2) { animation-delay: 0.16s; }
+.asist-typing-dot:nth-child(3) { animation-delay: 0.32s; }
+@keyframes asistDot {
+    0%, 60%, 100% { transform: scale(0.7); opacity: 0.5; }
+    30% { transform: scale(1); opacity: 1; }
+}
+
+/* ─── Welcome ─── */
+.asist-welcome {
+    text-align: center; padding: 30px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.asist-welcome-icon {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: linear-gradient(135deg, #0F172A, #1E1B4B, #581C87, #BE185D);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 28px -6px rgba(76,29,149,0.45);
+    margin-bottom: 6px;
+}
+.asist-welcome-icon svg { width: 32px; height: 32px; }
+.asist-welcome-title {
+    font-size: 1.35rem; font-weight: 700; color: #1D1D1F;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+.asist-welcome-sub {
+    font-size: 0.9rem; color: #6B7280; max-width: 380px;
+}
+.asist-suggestions {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin-top: 14px;
+}
+.asist-suggestion {
+    padding: 8px 14px;
+    background: #FFFFFF;
+    border: 1px solid #E5E5EA;
+    border-radius: 999px;
+    font-size: 0.82rem; font-weight: 500; color: #475569;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    font-family: inherit;
+}
+.asist-suggestion:hover {
+    border-color: #5B21B6;
+    color: #5B21B6;
+    background: #F5F3FF;
+}
+
+/* ─── Input ─── */
+.asist-input-wrap {
+    border-top: 1px solid #F2F2F7;
+    padding: 12px 16px 14px;
+    background: #FFFFFF;
+}
+.asist-input-row { display: flex; align-items: flex-end; gap: 8px; }
+.asist-input-box {
+    flex: 1;
+    background: #F2F2F7;
+    border: 1px solid #E5E5EA;
+    border-radius: 18px;
+    padding: 0;
+    display: flex; align-items: center;
+}
+.asist-input-box textarea {
+    flex: 1; background: none; border: none;
+    padding: 10px 14px; font-size: 0.95rem; resize: none; outline: none;
+    font-family: inherit; max-height: 140px; line-height: 1.4; width: 100%;
+}
+.asist-send-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #0052D4 0%, #0041A8 100%);
+    color: #fff; border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px -2px rgba(0,82,212,0.35);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.asist-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -2px rgba(0,82,212,0.45); }
+.asist-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.asist-input-hint {
+    margin-top: 4px; font-size: 0.66rem; color: #9CA3AF;
+    text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .asist-card { height: 100vh; width: 100vw; border-radius: 0; }
+    .asist-suggestions { flex-direction: column; align-items: stretch; }
+}
+</style>
