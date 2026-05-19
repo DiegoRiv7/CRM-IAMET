@@ -108,6 +108,42 @@
         });
     }
 
+    /* Welcome reusable: usa orb animado + saludo personalizado.
+       Captura el nombre del greeting que ya pintó Django en el template
+       inicial para conservarlo entre clears. */
+    var _greetingName = '';
+    function buildWelcomeNode() {
+        var div = document.createElement('div');
+        div.id = 'asistWelcome';
+        div.className = 'asist-welcome';
+        div.innerHTML =
+            '<div class="asist-orb asist-orb--lg" aria-hidden="true"></div>'
+            + '<div class="asist-welcome-title">'
+            +   '<span class="asist-greeting">Hola, <span id="asistGreetName">' + esc(_greetingName || '') + '</span></span>'
+            +   '<span class="asist-greeting-q">¿En qué te ayudo?</span>'
+            + '</div>'
+            + '<div class="asist-welcome-sub">Pregúntame por <strong>clientes</strong>, <strong>oportunidades</strong>, <strong>tu equipo</strong> o <strong>cómo va el mes</strong>.</div>'
+            + '<div class="asist-suggestions">'
+            +   '<button type="button" class="asist-sugg-card" data-prompt="¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?">'
+            +     '<span class="asist-sugg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>'
+            +     '<span class="asist-sugg-text"><strong>Clientes sin atender</strong><em>Quiénes llevan meses sin movimiento</em></span>'
+            +   '</button>'
+            +   '<button type="button" class="asist-sugg-card" data-prompt="Dame un resumen de cómo va la empresa este mes">'
+            +     '<span class="asist-sugg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg></span>'
+            +     '<span class="asist-sugg-text"><strong>Resumen del mes</strong><em>Cómo va el negocio</em></span>'
+            +   '</button>'
+            +   '<button type="button" class="asist-sugg-card" data-prompt="¿Cuál es la oportunidad activa que más promete?">'
+            +     '<span class="asist-sugg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>'
+            +     '<span class="asist-sugg-text"><strong>La más prometedora</strong><em>Dónde poner el foco</em></span>'
+            +   '</button>'
+            +   '<button type="button" class="asist-sugg-card" data-prompt="¿Cómo voy a cerrar el mes?">'
+            +     '<span class="asist-sugg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg></span>'
+            +     '<span class="asist-sugg-text"><strong>Forecast del mes</strong><em>Proyección del cierre</em></span>'
+            +   '</button>'
+            + '</div>';
+        return div;
+    }
+
     function clearHistory() {
         if (!confirm('¿Limpiar toda la conversación? No se puede deshacer.')) return;
         api('/app/api/asistente/conversacion/eliminar/', {method: 'DELETE'}).then(function (res) {
@@ -115,25 +151,47 @@
             var box = document.getElementById('asistMessages');
             if (!box) return;
             box.innerHTML = '';
-            // Re-insertar welcome
-            var welcome = document.createElement('div');
-            welcome.id = 'asistWelcome';
-            welcome.className = 'asist-welcome';
-            welcome.innerHTML = ''
-                + '<div class="asist-welcome-icon">'
-                + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-                + '<path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/>'
-                + '<path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/>'
-                + '<path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/>'
-                + '<path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/>'
-                + '<path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/>'
-                + '<path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/>'
-                + '</svg>'
-                + '</div>'
-                + '<div class="asist-welcome-title">¿En qué te ayudo?</div>'
-                + '<div class="asist-welcome-sub">Pregúntame por tus clientes, oportunidades, equipo o cómo va el mes.</div>';
-            box.appendChild(welcome);
+            box.appendChild(buildWelcomeNode());
         });
+    }
+
+    /* Markdown muy básico: **bold**, *italic*, `code`, líneas con "- " → <ul><li>.
+       Sin librerías externas. Sanitizo escape ANTES de inyectar HTML. */
+    function renderMarkdown(text) {
+        var html = esc(text);
+        // Negritas y cursivas
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+        // Inline code
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Listas: agrupar líneas consecutivas que empiezan con "- " o "• ".
+        var lines = html.split('\n');
+        var out = [];
+        var inList = false;
+        lines.forEach(function (line) {
+            var m = line.match(/^\s*(?:-|•|•)\s+(.*)$/);
+            if (m) {
+                if (!inList) { out.push('<ul>'); inList = true; }
+                out.push('<li>' + m[1] + '</li>');
+            } else {
+                if (inList) { out.push('</ul>'); inList = false; }
+                out.push(line);
+            }
+        });
+        if (inList) out.push('</ul>');
+        html = out.join('\n');
+        // Saltos de línea simples → <br>, pero no dentro de <ul>
+        html = html.split(/(<ul>[\s\S]*?<\/ul>)/g).map(function (chunk) {
+            if (chunk.startsWith('<ul>')) return chunk;
+            return chunk.replace(/\n/g, '<br>');
+        }).join('');
+        return html;
+    }
+
+    /* Orb SVG mini para usar como avatar de mensaje del bot */
+    function orbHTML(size) {
+        size = size || 'md';
+        return '<div class="asist-orb asist-orb--' + esc(size) + '" aria-hidden="true"></div>';
     }
 
     /* ─── Render ─── */
@@ -147,35 +205,39 @@
         wrap.className = 'asist-msg asist-msg-' + (role === 'user' ? 'user' : 'bot');
 
         if (role !== 'user') {
-            var av = document.createElement('div');
-            av.className = 'asist-msg-bot-avatar';
-            av.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/><path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/><path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/><path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/><path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/><path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/></svg>';
-            wrap.appendChild(av);
+            wrap.insertAdjacentHTML('beforeend', orbHTML('md'));
         }
 
         var bub = document.createElement('div');
         bub.className = 'asist-msg-bubble';
-        bub.textContent = texto;
+        if (role === 'user') {
+            // Mensajes del user: solo escape, sin markdown.
+            bub.textContent = texto;
+        } else {
+            bub.innerHTML = renderMarkdown(texto || '');
+        }
         wrap.appendChild(bub);
         box.appendChild(wrap);
         scrollToBottom();
     }
 
-    function showTyping() {
+    function showTyping(label) {
         hideTyping();
         var box = document.getElementById('asistMessages');
         if (!box) return;
         var wrap = document.createElement('div');
         wrap.className = 'asist-msg asist-msg-bot';
         wrap.id = 'asistTypingRow';
-        wrap.innerHTML = ''
-            + '<div class="asist-msg-bot-avatar">'
-            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/><path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/><path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/><path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/><path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/><path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/></svg>'
-            + '</div>'
-            + '<div class="asist-msg-bubble asist-typing">'
-            + '<span class="asist-typing-dot"></span><span class="asist-typing-dot"></span><span class="asist-typing-dot"></span>'
+        var lbl = label || 'Pensando…';
+        wrap.innerHTML =
+            orbHTML('md')
+            + '<div class="asist-msg-bubble asist-thinking">'
+            + '<span class="asist-thinking-text">' + esc(lbl) + '</span>'
             + '</div>';
         box.appendChild(wrap);
+        // Marcar el orb como "thinking" → animación más intensa
+        var orb = wrap.querySelector('.asist-orb');
+        if (orb) orb.classList.add('is-thinking');
         scrollToBottom();
     }
     function hideTyping() {
@@ -188,6 +250,18 @@
         if (box) box.scrollTop = box.scrollHeight;
     }
 
+    /* Frases que se rotan en el indicador "pensando" para que no sea monótono */
+    var THINKING_PHRASES = [
+        'Consultando datos…',
+        'Analizando información…',
+        'Procesando tu pregunta…',
+        'Buscando en el CRM…',
+        'Razonando…',
+    ];
+    function pickThinkingPhrase() {
+        return THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
+    }
+
     /* ─── Enviar mensaje ─── */
     function sendMessage(texto) {
         texto = (texto || '').trim();
@@ -198,7 +272,13 @@
         var inp = document.getElementById('asistInput');
         if (inp) { inp.value = ''; inp.style.height = 'auto'; }
         document.getElementById('asistSendBtn').disabled = true;
-        showTyping();
+        showTyping(pickThinkingPhrase());
+
+        // Cada 4s rotamos la frase para sentir progreso si tarda.
+        var phraseTimer = setInterval(function () {
+            var box = document.querySelector('#asistTypingRow .asist-thinking-text');
+            if (box) box.textContent = pickThinkingPhrase();
+        }, 4000);
 
         api('/app/api/asistente/mensaje/', {
             method: 'POST',
@@ -214,6 +294,7 @@
             hideTyping();
             renderMessage('assistant', '⚠️ Error de red: ' + err);
         }).finally(function () {
+            clearInterval(phraseTimer);
             STATE.sending = false;
             document.getElementById('asistSendBtn').disabled = false;
             var inp2 = document.getElementById('asistInput');
@@ -278,6 +359,10 @@
         if (!document.getElementById('widgetAsistente')) return;
         if (window._asistBooted) return;
         window._asistBooted = true;
+        // Capturar el nombre que Django pintó en el welcome inicial,
+        // para reusarlo cuando reconstruimos el welcome tras un clear.
+        var greetEl = document.getElementById('asistGreetName');
+        if (greetEl) _greetingName = (greetEl.textContent || '').trim();
         wireEvents();
     }
     document.addEventListener('DOMContentLoaded', boot);

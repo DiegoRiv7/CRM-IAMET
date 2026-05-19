@@ -1,29 +1,23 @@
 {% comment %}
-Widget overlay del Asistente AI. Se abre desde:
-  - Click en el logo IAMET del sidebar
-  - Click en el botón cerebro del widget Idea (cuando exista contexto)
-Chat estilo iMessage con burbujas, header con avatar del asistente, e
-input grande abajo con botón de enviar.
+Widget overlay del Asistente AI — estilo Apple Intelligence claro + azul eléctrico.
+Avatar es un orb CSS animado (hue-rotate + breathing + halo) en vez de
+un icono estático. Saludo personalizado con first_name del user.
 {% endcomment %}
+
 <div class="widget-overlay" id="widgetAsistente" style="z-index:10400;display:none;">
     <div class="asist-card">
-        {# Header #}
+        {# Header con orb pequeño #}
         <header class="asist-header">
             <div class="asist-header-left">
-                <div class="asist-avatar" id="asistAvatar">
-                    {# Si hay logo lo metemos via JS. Default: gradient con icono cerebro. #}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/>
-                        <path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/>
-                        <path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/>
-                        <path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/>
-                        <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/>
-                        <path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/>
-                    </svg>
-                </div>
-                <div>
-                    <div class="asist-name" id="asistName">IAMET AI</div>
-                    <div class="asist-tagline">Tu asistente del CRM</div>
+                <div class="asist-orb asist-orb--sm" id="asistAvatar" aria-hidden="true"></div>
+                <div class="asist-header-text">
+                    <div class="asist-name" id="asistName">IAMET AI
+                        <span class="asist-beta">BETA</span>
+                    </div>
+                    <div class="asist-tagline">
+                        <span class="asist-status-dot"></span>
+                        En línea · listo para ayudarte
+                    </div>
                 </div>
             </div>
             <div class="asist-header-right">
@@ -42,23 +36,51 @@ input grande abajo con botón de enviar.
         {# Mensajes #}
         <div class="asist-messages" id="asistMessages">
             <div class="asist-welcome" id="asistWelcome">
-                <div class="asist-welcome-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/>
-                        <path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/>
-                        <path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/>
-                        <path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/>
-                        <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/>
-                        <path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/>
-                    </svg>
+                <div class="asist-orb asist-orb--lg" aria-hidden="true"></div>
+                <div class="asist-welcome-title">
+                    <span class="asist-greeting">Hola, <span id="asistGreetName">{{ request.user.first_name|default:request.user.username }}</span></span>
+                    <span class="asist-greeting-q">¿En qué te ayudo?</span>
                 </div>
-                <div class="asist-welcome-title">¿En qué te ayudo?</div>
-                <div class="asist-welcome-sub">Pregúntame por tus clientes, oportunidades, equipo o cómo va el mes.</div>
+                <div class="asist-welcome-sub">
+                    Pregúntame por <strong>clientes</strong>, <strong>oportunidades</strong>, <strong>tu equipo</strong> o <strong>cómo va el mes</strong>.
+                </div>
                 <div class="asist-suggestions">
-                    <button type="button" class="asist-suggestion" data-prompt="¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?">Clientes sin atender</button>
-                    <button type="button" class="asist-suggestion" data-prompt="Dame un resumen de cómo va la empresa este mes">Resumen del mes</button>
-                    <button type="button" class="asist-suggestion" data-prompt="¿Cuál es la oportunidad activa que más promete?">La más prometedora</button>
-                    <button type="button" class="asist-suggestion" data-prompt="¿Cómo voy a cerrar el mes?">Forecast del mes</button>
+                    <button type="button" class="asist-sugg-card" data-prompt="¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>Clientes sin atender</strong>
+                            <em>Quiénes llevan meses sin movimiento</em>
+                        </span>
+                    </button>
+                    <button type="button" class="asist-sugg-card" data-prompt="Dame un resumen de cómo va la empresa este mes">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>Resumen del mes</strong>
+                            <em>Cómo va el negocio</em>
+                        </span>
+                    </button>
+                    <button type="button" class="asist-sugg-card" data-prompt="¿Cuál es la oportunidad activa que más promete?">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>La más prometedora</strong>
+                            <em>Dónde poner el foco</em>
+                        </span>
+                    </button>
+                    <button type="button" class="asist-sugg-card" data-prompt="¿Cómo voy a cerrar el mes?">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>Forecast del mes</strong>
+                            <em>Proyección del cierre</em>
+                        </span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -69,202 +91,391 @@ input grande abajo con botón de enviar.
                 <div class="asist-input-box">
                     <textarea id="asistInput" rows="1" placeholder="Escribe tu pregunta…"></textarea>
                 </div>
-                <button type="button" id="asistSendBtn" class="asist-send-btn" title="Enviar">
+                <button type="button" id="asistSendBtn" class="asist-send-btn" title="Enviar (Enter)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
-            <div class="asist-input-hint">Enter para enviar · Shift+Enter para nueva línea</div>
+            <div class="asist-input-hint">
+                <span>Enter para enviar · Shift+Enter para nueva línea</span>
+                <span class="asist-input-hint-right">Powered by AI · puede equivocarse</span>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-/* ─── Card / contenedor ─── */
+/* ═════════ ASISTENTE — Estilo Apple Intelligence claro + azul eléctrico ═════════ */
+
+/* Variables paleta */
 #widgetAsistente {
-    background: rgba(15, 15, 20, 0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    --ai-blue: #0066FF;             /* azul eléctrico */
+    --ai-blue-dark: #0052D4;
+    --ai-cyan: #00B5FF;
+    --ai-violet: #6366F1;
+    --ai-magenta: #C026D3;
+    --ai-pink: #EC4899;
+    --ai-ink: #0F172A;
+    --ai-muted: #64748B;
+    --ai-line: #E5E7EB;
+    --ai-soft: #F8FAFF;             /* fondo de mensajes con tinte azul */
 }
+
+#widgetAsistente {
+    background: rgba(10, 15, 30, 0.45);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
 .asist-card {
     width: min(880px, 96vw);
     height: min(720px, 92vh);
     background: #FFFFFF;
-    border-radius: 22px;
-    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.4), 0 12px 36px -12px rgba(0,0,0,0.2);
+    border-radius: 24px;
+    box-shadow:
+        0 40px 100px -20px rgba(0,82,212,0.30),
+        0 16px 40px -16px rgba(0,0,0,0.25);
     display: flex; flex-direction: column;
     overflow: hidden;
+    border: 1px solid rgba(0, 102, 255, 0.08);
 }
 
-/* ─── Header ─── */
+/* ═════════ ORB ANIMADO (avatar del AI) ═════════ */
+.asist-orb {
+    position: relative;
+    border-radius: 50%;
+    flex-shrink: 0;
+    /* Conic gradient swirl con highlight superior */
+    background:
+        radial-gradient(circle at 28% 28%, rgba(255,255,255,0.75) 0%, transparent 30%),
+        conic-gradient(from 0deg,
+            #00B5FF 0%,
+            #0066FF 18%,
+            #6366F1 36%,
+            #A855F7 52%,
+            #EC4899 68%,
+            #FF6B6B 82%,
+            #00B5FF 100%);
+    box-shadow:
+        inset 0 2px 6px rgba(255,255,255,0.5),
+        inset 0 -2px 6px rgba(0,0,0,0.12),
+        0 0 24px rgba(0,102,255,0.45),
+        0 0 8px rgba(192,38,211,0.30);
+    animation: asist-orb-hue 6s linear infinite,
+               asist-orb-breathe 3.4s ease-in-out infinite;
+}
+/* Halo exterior pulsante */
+.asist-orb::before {
+    content: '';
+    position: absolute;
+    inset: -25%;
+    border-radius: 50%;
+    background: inherit;
+    filter: blur(14px);
+    opacity: 0.45;
+    z-index: -1;
+    animation: asist-orb-hue 6s linear infinite,
+               asist-orb-halo 3.4s ease-in-out infinite;
+}
+/* Tamaños */
+.asist-orb--sm { width: 38px; height: 38px; }
+.asist-orb--md { width: 28px; height: 28px; }
+.asist-orb--lg { width: 88px; height: 88px; margin-bottom: 18px; }
+
+@keyframes asist-orb-hue {
+    to { filter: hue-rotate(360deg); }
+}
+@keyframes asist-orb-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.045); }
+}
+@keyframes asist-orb-halo {
+    0%, 100% { opacity: 0.42; transform: scale(1); }
+    50% { opacity: 0.62; transform: scale(1.08); }
+}
+
+/* Estado "pensando" — animación más intensa cuando está procesando */
+.asist-orb.is-thinking {
+    animation: asist-orb-hue 1.4s linear infinite,
+               asist-orb-breathe 1.2s ease-in-out infinite;
+}
+.asist-orb.is-thinking::before {
+    animation: asist-orb-hue 1.4s linear infinite,
+               asist-orb-halo 1.2s ease-in-out infinite;
+}
+
+/* ═════════ Header ═════════ */
 .asist-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid #F2F2F7;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFC 100%);
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0, 102, 255, 0.06);
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFF 100%);
 }
 .asist-header-left { display: flex; align-items: center; gap: 12px; }
-.asist-avatar {
-    width: 42px; height: 42px; border-radius: 50%;
-    background: linear-gradient(135deg, #0F172A, #1E1B4B, #581C87, #BE185D);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px -2px rgba(76,29,149,0.4);
-    overflow: hidden;
-}
-.asist-avatar svg { width: 22px; height: 22px; }
-.asist-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.asist-header-text { display: flex; flex-direction: column; gap: 2px; }
+
 .asist-name {
-    font-size: 1rem; font-weight: 700; color: #1D1D1F;
+    font-size: 1.02rem; font-weight: 700; color: var(--ai-ink);
     font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; gap: 8px;
+}
+.asist-beta {
+    font-size: 0.6rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
 }
 .asist-tagline {
-    font-size: 0.74rem; color: #86868B; margin-top: 1px;
+    font-size: 0.74rem; color: var(--ai-muted);
+    display: flex; align-items: center; gap: 6px;
 }
+.asist-status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #22C55E;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    animation: asist-pulse-status 2s ease-in-out infinite;
+}
+@keyframes asist-pulse-status {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); }
+    50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
+
 .asist-header-right { display: flex; gap: 4px; }
 .asist-icon-btn {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: transparent; border: none; color: #6B7280;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: transparent; border: none; color: var(--ai-muted);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: background 0.16s ease, color 0.16s ease;
 }
-.asist-icon-btn:hover { background: #F2F2F7; color: #1D1D1F; }
+.asist-icon-btn:hover { background: rgba(0, 102, 255, 0.08); color: var(--ai-blue); }
 
-/* ─── Mensajes ─── */
+/* ═════════ Mensajes ═════════ */
 .asist-messages {
     flex: 1; overflow-y: auto;
-    padding: 22px 20px;
-    display: flex; flex-direction: column; gap: 14px;
-    background: #FAFAFC;
+    padding: 24px 22px;
+    display: flex; flex-direction: column; gap: 16px;
+    background:
+        radial-gradient(circle at 0% 0%, rgba(0,102,255,0.05) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(192,38,211,0.04) 0%, transparent 40%),
+        var(--ai-soft);
 }
-.asist-msg { display: flex; gap: 10px; align-items: flex-end; max-width: 86%; }
+
+.asist-msg {
+    display: flex; gap: 10px; align-items: flex-end;
+    max-width: 88%;
+    animation: asist-msg-in 0.22s ease-out;
+}
 .asist-msg-user {
     align-self: flex-end; flex-direction: row-reverse;
 }
+@keyframes asist-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .asist-msg-bubble {
-    padding: 10px 14px;
+    padding: 11px 15px;
     border-radius: 18px;
-    font-size: 0.92rem; line-height: 1.45;
-    white-space: pre-wrap; word-break: break-word;
+    font-size: 0.92rem; line-height: 1.5;
+    word-break: break-word;
     max-width: 100%;
 }
 .asist-msg-user .asist-msg-bubble {
-    background: linear-gradient(135deg, #0052D4 0%, #0041A8 100%);
+    background: linear-gradient(135deg, var(--ai-blue) 0%, var(--ai-blue-dark) 100%);
     color: #fff;
     border-bottom-right-radius: 6px;
+    box-shadow: 0 4px 12px -4px rgba(0, 102, 255, 0.45);
 }
 .asist-msg-bot .asist-msg-bubble {
     background: #FFFFFF;
-    color: #1D1D1F;
-    border: 1px solid #E5E5EA;
+    color: var(--ai-ink);
+    border: 1px solid rgba(0, 102, 255, 0.10);
     border-bottom-left-radius: 6px;
+    box-shadow: 0 2px 8px -4px rgba(0, 102, 255, 0.10);
 }
-.asist-msg-bot-avatar {
-    width: 28px; height: 28px; border-radius: 50%;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #0F172A, #581C87, #BE185D);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
+/* Markdown básico dentro de bubble */
+.asist-msg-bubble strong { font-weight: 700; color: inherit; }
+.asist-msg-bubble em { font-style: italic; }
+.asist-msg-bubble ul {
+    margin: 6px 0 6px 4px; padding-left: 16px;
+    list-style: none;
 }
-.asist-msg-bot-avatar svg { width: 14px; height: 14px; }
+.asist-msg-bubble ul li {
+    position: relative; padding-left: 12px; margin: 3px 0;
+}
+.asist-msg-bubble ul li::before {
+    content: ''; position: absolute; left: 0; top: 9px;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: currentColor; opacity: 0.55;
+}
+.asist-msg-bubble code {
+    background: rgba(0, 102, 255, 0.08);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.86em;
+}
+.asist-msg-user .asist-msg-bubble code { background: rgba(255,255,255,0.18); }
+.asist-msg-bubble p { margin: 0; }
+.asist-msg-bubble p + p { margin-top: 6px; }
 
-/* Indicador de "escribiendo" */
-.asist-typing {
-    display: flex; align-items: center; gap: 4px;
-    padding: 12px 16px;
+/* Indicador "consultando datos" / typing */
+.asist-thinking {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
 }
-.asist-typing-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #C7C7CC;
-    animation: asistDot 1.2s infinite ease-in-out;
+.asist-thinking-text {
+    font-size: 0.85rem;
+    background: linear-gradient(90deg, var(--ai-blue), var(--ai-magenta), var(--ai-blue));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 600;
+    animation: asist-shimmer 2s linear infinite;
 }
-.asist-typing-dot:nth-child(2) { animation-delay: 0.16s; }
-.asist-typing-dot:nth-child(3) { animation-delay: 0.32s; }
-@keyframes asistDot {
-    0%, 60%, 100% { transform: scale(0.7); opacity: 0.5; }
-    30% { transform: scale(1); opacity: 1; }
+@keyframes asist-shimmer {
+    to { background-position: -200% 0; }
 }
 
-/* ─── Welcome ─── */
+/* ═════════ Welcome ═════════ */
 .asist-welcome {
-    text-align: center; padding: 30px 20px;
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    text-align: center; padding: 28px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
-.asist-welcome-icon {
-    width: 64px; height: 64px; border-radius: 18px;
-    background: linear-gradient(135deg, #0F172A, #1E1B4B, #581C87, #BE185D);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 12px 28px -6px rgba(76,29,149,0.45);
+.asist-welcome-title {
+    margin-top: 6px;
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.15;
+}
+.asist-greeting {
+    display: block;
+    font-size: 1.05rem; font-weight: 500; color: var(--ai-muted);
     margin-bottom: 6px;
 }
-.asist-welcome-icon svg { width: 32px; height: 32px; }
-.asist-welcome-title {
-    font-size: 1.35rem; font-weight: 700; color: #1D1D1F;
-    font-family: 'Inter', system-ui, sans-serif;
+.asist-greeting-q {
+    display: block;
+    font-size: 1.85rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--ai-ink) 30%, var(--ai-blue) 70%, var(--ai-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.02em;
 }
 .asist-welcome-sub {
-    font-size: 0.9rem; color: #6B7280; max-width: 380px;
+    font-size: 0.92rem; color: var(--ai-muted); max-width: 420px;
+    margin-top: 4px;
 }
-.asist-suggestions {
-    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-    margin-top: 14px;
-}
-.asist-suggestion {
-    padding: 8px 14px;
-    background: #FFFFFF;
-    border: 1px solid #E5E5EA;
-    border-radius: 999px;
-    font-size: 0.82rem; font-weight: 500; color: #475569;
-    cursor: pointer;
-    transition: all 0.16s ease;
-    font-family: inherit;
-}
-.asist-suggestion:hover {
-    border-color: #5B21B6;
-    color: #5B21B6;
-    background: #F5F3FF;
+.asist-welcome-sub strong {
+    color: var(--ai-ink); font-weight: 600;
 }
 
-/* ─── Input ─── */
+.asist-suggestions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 22px;
+    max-width: 540px;
+    width: 100%;
+}
+.asist-sugg-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.12);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+    text-align: left;
+    box-shadow: 0 2px 8px -4px rgba(0, 102, 255, 0.10);
+}
+.asist-sugg-card:hover {
+    border-color: var(--ai-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -6px rgba(0, 102, 255, 0.25);
+}
+.asist-sugg-icon {
+    width: 32px; height: 32px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0,102,255,0.10), rgba(99,102,241,0.10));
+    color: var(--ai-blue);
+}
+.asist-sugg-icon svg { width: 16px; height: 16px; }
+.asist-sugg-card:hover .asist-sugg-icon {
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+    color: #fff;
+}
+.asist-sugg-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.asist-sugg-text strong {
+    font-size: 0.85rem; font-weight: 700; color: var(--ai-ink);
+    line-height: 1.2;
+}
+.asist-sugg-text em {
+    font-size: 0.74rem; color: var(--ai-muted); font-style: normal;
+    line-height: 1.3;
+}
+
+/* ═════════ Input ═════════ */
 .asist-input-wrap {
-    border-top: 1px solid #F2F2F7;
-    padding: 12px 16px 14px;
+    border-top: 1px solid rgba(0, 102, 255, 0.06);
+    padding: 14px 18px 14px;
     background: #FFFFFF;
 }
-.asist-input-row { display: flex; align-items: flex-end; gap: 8px; }
+.asist-input-row { display: flex; align-items: flex-end; gap: 10px; }
 .asist-input-box {
     flex: 1;
-    background: #F2F2F7;
-    border: 1px solid #E5E5EA;
+    background: var(--ai-soft);
+    border: 1px solid rgba(0, 102, 255, 0.10);
     border-radius: 18px;
     padding: 0;
     display: flex; align-items: center;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.asist-input-box:focus-within {
+    border-color: var(--ai-blue);
+    box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.10);
 }
 .asist-input-box textarea {
     flex: 1; background: none; border: none;
-    padding: 10px 14px; font-size: 0.95rem; resize: none; outline: none;
+    padding: 11px 16px; font-size: 0.95rem; resize: none; outline: none;
     font-family: inherit; max-height: 140px; line-height: 1.4; width: 100%;
+    color: var(--ai-ink);
 }
+.asist-input-box textarea::placeholder { color: #9CA3AF; }
+
 .asist-send-btn {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(135deg, #0052D4 0%, #0041A8 100%);
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--ai-blue) 0%, var(--ai-blue-dark) 100%);
     color: #fff; border: none;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px -2px rgba(0,82,212,0.35);
+    box-shadow:
+        0 4px 12px -2px rgba(0,102,255,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.18);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.asist-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -2px rgba(0,82,212,0.45); }
+.asist-send-btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 8px 20px -4px rgba(0,102,255,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.22);
+}
 .asist-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
 .asist-input-hint {
-    margin-top: 4px; font-size: 0.66rem; color: #9CA3AF;
-    text-align: right;
+    margin-top: 6px; font-size: 0.68rem; color: #94A3B8;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px;
 }
 
 /* Responsive */
 @media (max-width: 640px) {
     .asist-card { height: 100vh; width: 100vw; border-radius: 0; }
-    .asist-suggestions { flex-direction: column; align-items: stretch; }
+    .asist-suggestions { grid-template-columns: 1fr; }
+    .asist-greeting-q { font-size: 1.5rem; }
 }
 </style>
