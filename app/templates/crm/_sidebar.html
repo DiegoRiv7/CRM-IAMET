@@ -2,8 +2,9 @@
 <!-- ═══ CRM SIDEBAR VERTICAL IZQUIERDO ═══ -->
 <aside class="crm-sidebar" id="crmSidebar">
 
-    <!-- Logo IAMET -->
-    <a href="/app/todos/" class="crm-sb-logo" title="IAMET · Evolución Tecnológica">
+    <!-- Logo IAMET — abre el asistente AI (click) o navega home (shift+click) -->
+    <a href="/app/todos/" class="crm-sb-logo" title="Abre el asistente AI (Shift+Click para ir a Home)"
+        onclick="if(!event.shiftKey){event.preventDefault();if(typeof window.asistenteAbrir==='function')window.asistenteAbrir();}">
         <img class="crm-sb-logo-chip" src="{% static 'images/iamet-logo.png' %}" alt="IAMET">
         <span class="crm-sb-logo-text">IAMET</span>
     </a>

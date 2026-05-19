@@ -1,0 +1,869 @@
+{% comment %}
+Widget overlay del Asistente AI — estilo Apple Intelligence claro + azul eléctrico.
+Avatar es un orb CSS animado (hue-rotate + breathing + halo) en vez de
+un icono estático. Saludo personalizado con first_name del user.
+{% endcomment %}
+
+<div class="widget-overlay" id="widgetAsistente" style="z-index:10400;display:none;">
+    {% comment %}SVG filter inline — agua real con turbulence + displacement.
+    Vive aquí para estar disponible globalmente cuando el widget está montado.
+    Las capas del orb lo referencian via filter:url(#asistWater).{% endcomment %}
+    <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+        <filter id="asistWater" x="-30%" y="-30%" width="160%" height="160%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.035 0.055" numOctaves="2" seed="4" result="turbulence"/>
+            <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="22"
+                xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+    </svg>
+    <div class="asist-card">
+        {# Header con orb pequeño #}
+        <header class="asist-header">
+            <div class="asist-header-left">
+                <div class="asist-orb asist-orb--sm" id="asistAvatar" aria-hidden="true">
+                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                </div>
+                <div class="asist-header-text">
+                    <div class="asist-name" id="asistName">IAMET AI
+                        <span class="asist-beta">BETA</span>
+                    </div>
+                    <div class="asist-tagline">
+                        <span class="asist-status-dot"></span>
+                        En línea · listo para ayudarte
+                    </div>
+                </div>
+            </div>
+            <div class="asist-header-right">
+                <button type="button" class="asist-new-chat-btn" id="asistNewChatBtn" title="Nuevo chat (limpia la conversación)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    <span>Nuevo chat</span>
+                </button>
+                <button type="button" class="asist-icon-btn" id="asistCloseBtn" title="Cerrar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </header>
+
+        {# Mensajes #}
+        <div class="asist-messages" id="asistMessages">
+            <div class="asist-welcome" id="asistWelcome">
+                <div class="asist-orb asist-orb--lg" aria-hidden="true">
+                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                </div>
+                <div class="asist-welcome-title">
+                    <span class="asist-greeting">Hola, <span id="asistGreetName">{{ request.user.first_name|default:request.user.username }}</span></span>
+                    <span class="asist-greeting-q">¿En qué te ayudo?</span>
+                </div>
+                <div class="asist-welcome-sub">
+                    Pregúntame por <strong>clientes</strong>, <strong>oportunidades</strong>, <strong>tu equipo</strong> o <strong>cómo va el mes</strong>.
+                </div>
+                <div class="asist-suggestions">
+                    <button type="button" class="asist-sugg-card" data-prompt="¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>Clientes sin atender</strong>
+                            <em>Quiénes llevan meses sin movimiento</em>
+                        </span>
+                    </button>
+                    <button type="button" class="asist-sugg-card" data-prompt="Dame un resumen de cómo va la empresa este mes">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>Resumen del mes</strong>
+                            <em>Cómo va el negocio</em>
+                        </span>
+                    </button>
+                    <button type="button" class="asist-sugg-card" data-prompt="¿Cuál es la oportunidad activa que más promete?">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>La más prometedora</strong>
+                            <em>Dónde poner el foco</em>
+                        </span>
+                    </button>
+                    <button type="button" class="asist-sugg-card" data-prompt="¿Cómo voy a cerrar el mes?">
+                        <span class="asist-sugg-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                        </span>
+                        <span class="asist-sugg-text">
+                            <strong>Forecast del mes</strong>
+                            <em>Proyección del cierre</em>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# Input #}
+        <div class="asist-input-wrap">
+            <div class="asist-input-row">
+                <div class="asist-input-box">
+                    <textarea id="asistInput" rows="1" placeholder="Escribe tu pregunta…"></textarea>
+                </div>
+                <button type="button" id="asistSendBtn" class="asist-send-btn" title="Enviar (Enter)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+            <div class="asist-input-hint">
+                <span>Enter para enviar · Shift+Enter para nueva línea</span>
+                <span class="asist-input-hint-right">Powered by AI · puede equivocarse</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ═════════ ASISTENTE — Apple Intelligence claro + azul eléctrico ═════════ */
+
+@property --asist-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+#widgetAsistente {
+    --ai-blue: #0066FF;
+    --ai-blue-dark: #0052D4;
+    --ai-cyan: #00B5FF;
+    --ai-violet: #6366F1;
+    --ai-magenta: #C026D3;
+    --ai-pink: #EC4899;
+    --ai-ink: #0F172A;
+    --ai-muted: #64748B;
+    --ai-line: #E5E7EB;
+    --ai-soft: #F8FAFF;
+    background: rgba(10, 15, 30, 0.45);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+/* ═════════ Card más grande + borde Apple Intelligence ═════════
+   Pseudo-elemento .asist-card-border es un cuadrado un poco más
+   grande con conic-gradient rotante que se ve como "luz que rodea
+   el card". Combina azul eléctrico dominante con índigo/violeta/
+   magenta oscuros. */
+.asist-card {
+    position: relative;
+    width: min(1120px, 96vw);
+    height: min(820px, 92vh);
+    background: #FFFFFF;
+    border-radius: 26px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow:
+        0 50px 120px -20px rgba(0,82,212,0.32),
+        0 18px 48px -16px rgba(0,0,0,0.28);
+}
+.asist-card::before,
+.asist-card::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 28px;
+    background: conic-gradient(from var(--asist-angle),
+        #0066FF 0%,         /* azul eléctrico DOMINANTE */
+        #00B5FF 12%,        /* cyan */
+        #1E1B4B 25%,        /* índigo profundo */
+        #0066FF 38%,        /* azul de regreso */
+        #6366F1 52%,        /* violeta */
+        #BE185D 65%,        /* magenta oscuro */
+        #0066FF 78%,        /* azul */
+        #581C87 90%,        /* púrpura oscuro */
+        #0066FF 100%);
+    z-index: -1;
+    animation: asist-border-rotate 6s linear infinite;
+}
+.asist-card::after {
+    inset: -8px;
+    border-radius: 32px;
+    filter: blur(18px);
+    opacity: 0.55;
+}
+@keyframes asist-border-rotate {
+    to { --asist-angle: 360deg; }
+}
+/* Fallback en navegadores sin @property: usamos un gradient lineal
+   animado por background-position. Visible solo si --asist-angle
+   no se interpola (Firefox <128). */
+@supports not (background: conic-gradient(from 0deg, red, red)) {
+    .asist-card::before, .asist-card::after {
+        background: linear-gradient(135deg, #0066FF, #1E1B4B, #BE185D, #0066FF);
+        background-size: 300% 300%;
+        animation: asist-border-fallback 6s linear infinite;
+    }
+    @keyframes asist-border-fallback {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 300% 0%; }
+    }
+}
+
+/* ═════════ ORB tipo Cortana / Jarvis ═════════
+   Core central pulsante + 3 anillos en planos diferentes que orbitan
+   a velocidades distintas. Sensación de "ente vivo / núcleo de energía". */
+.asist-orb {
+    position: relative;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: block;
+}
+.asist-orb-core {
+    position: absolute; inset: 18%;
+    border-radius: 50%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 50%,
+        #00D9FF 0%, #0066FF 35%, #1E1B4B 75%, #0A0E27 100%);
+    box-shadow:
+        inset 0 -3px 6px rgba(0,0,0,0.40),
+        inset 0 2px 4px rgba(255,255,255,0.35),
+        0 0 14px rgba(0,180,255,0.75),
+        0 0 28px rgba(0,102,255,0.55);
+    animation: asist-orb-core-breathe 2.4s ease-in-out infinite;
+}
+/* "Agua" dentro del core — múltiples blobs grandes con gradient blur,
+   blend-modes para mezcla orgánica, animaciones desfasadas para que
+   nunca se vea repetitivo. */
+.asist-orb-core::before,
+.asist-orb-core::after {
+    content: '';
+    position: absolute;
+    inset: -25%;
+    border-radius: 50%;
+    pointer-events: none;
+}
+/* Capas de "agua" ESTÁTICAS centradas en el core. Le dan textura y
+   profundidad al núcleo sin animación lateral. El SVG filter de
+   turbulence + displacement (también estático ahora) distorsiona
+   los gradients dando look de agua sin moverla. */
+.asist-orb-core::before {
+    background:
+        radial-gradient(ellipse 70% 35% at 50% 45%,
+            rgba(0, 240, 255, 0.85) 0%,
+            rgba(0, 130, 255, 0.55) 45%,
+            transparent 80%);
+    filter: url(#asistWater) blur(2.5px) saturate(170%);
+    mix-blend-mode: screen;
+}
+.asist-orb-core::after {
+    background:
+        radial-gradient(ellipse 65% 30% at 50% 55%,
+            rgba(192, 38, 211, 0.55) 0%,
+            rgba(99, 102, 241, 0.55) 45%,
+            transparent 80%);
+    filter: url(#asistWater) blur(3px) saturate(175%) contrast(1.15);
+    mix-blend-mode: screen;
+}
+/* Highlight + base — quedan FIJOS encima del agua para preservar
+   sensación de esfera con líquido moviéndose adentro. */
+.asist-orb-core {
+    background:
+        radial-gradient(ellipse 60% 35% at 35% 22%, rgba(255,255,255,0.55) 0%, transparent 70%),
+        radial-gradient(circle at 50% 50%, #00D9FF 0%, #0066FF 32%, #1E1B4B 78%, #0A0E27 100%);
+}
+/* 2 anillos atravesados formando una X visible alrededor del orb.
+   Más gruesos y más grandes (inset negativo para que sobresalgan del
+   core). Cada anillo se inclina 45° respecto al otro creando la X. */
+.asist-orb-ring {
+    position: absolute;
+    inset: -6%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    pointer-events: none;
+}
+.asist-orb-ring--horiz {
+    border-top-color: #00D9FF;
+    border-right-color: rgba(0, 200, 255, 0.65);
+    border-bottom-color: rgba(0, 130, 255, 0.30);
+    box-shadow:
+        0 0 12px rgba(0, 217, 255, 0.65),
+        0 0 24px rgba(0, 217, 255, 0.30),
+        inset 0 0 5px rgba(0, 217, 255, 0.30);
+    animation: asist-ring-horiz-spin 3.4s linear infinite;
+}
+.asist-orb-ring--vert {
+    border-top-color: #818CF8;
+    border-right-color: rgba(129, 140, 248, 0.60);
+    border-bottom-color: rgba(99, 102, 241, 0.28);
+    box-shadow:
+        0 0 12px rgba(129, 140, 248, 0.60),
+        0 0 24px rgba(129, 140, 248, 0.25),
+        inset 0 0 5px rgba(129, 140, 248, 0.28);
+    animation: asist-ring-vert-spin 4.6s linear infinite reverse;
+}
+/* Halo exterior pulsante */
+.asist-orb::before {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,102,255,0.5) 0%, rgba(99,102,241,0.2) 35%, transparent 70%);
+    z-index: -1;
+    animation: asist-orb-halo 3s ease-in-out infinite;
+    pointer-events: none;
+}
+/* Tamaños */
+.asist-orb--sm { width: 40px; height: 40px; }
+.asist-orb--md { width: 30px; height: 30px; }
+.asist-orb--lg { width: 96px; height: 96px; margin-bottom: 18px; }
+
+@keyframes asist-orb-core-breathe {
+    0%, 100% { transform: scale(1); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.4), 0 0 12px rgba(0,180,255,0.7), 0 0 24px rgba(0,102,255,0.5); }
+    50% { transform: scale(1.08); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.5), 0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,102,255,0.65); }
+}
+/* Anillos cruzados en X: rotateZ(±45°) inclina cada elipse en diagonal,
+   rotateX(72°) la deja vista de canto, y el rotate animado hace girar el
+   highlight de color alrededor → ilusión de rotación continua. */
+@keyframes asist-ring-horiz-spin {
+    from { transform: rotateZ(45deg) rotateX(72deg) rotate(0deg); }
+    to   { transform: rotateZ(45deg) rotateX(72deg) rotate(360deg); }
+}
+@keyframes asist-ring-vert-spin {
+    from { transform: rotateZ(-45deg) rotateX(72deg) rotate(0deg); }
+    to   { transform: rotateZ(-45deg) rotateX(72deg) rotate(360deg); }
+}
+
+@keyframes asist-orb-halo {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.18); }
+}
+
+/* Estado "pensando" — anillos giran 2× más rápido + glow intensificado */
+.asist-orb.is-thinking .asist-orb-ring--horiz { animation-duration: 1.4s; }
+.asist-orb.is-thinking .asist-orb-ring--vert { animation-duration: 1.8s; }
+.asist-orb.is-thinking .asist-orb-core { animation-duration: 1.0s; }
+.asist-orb.is-thinking::before { animation-duration: 1.2s; }
+
+/* ═════════ Header ═════════ */
+.asist-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0, 102, 255, 0.06);
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFF 100%);
+}
+.asist-header-left { display: flex; align-items: center; gap: 12px; }
+.asist-header-text { display: flex; flex-direction: column; gap: 2px; }
+
+.asist-name {
+    font-size: 1.02rem; font-weight: 700; color: var(--ai-ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; gap: 8px;
+}
+.asist-beta {
+    font-size: 0.6rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+}
+.asist-tagline {
+    font-size: 0.74rem; color: var(--ai-muted);
+    display: flex; align-items: center; gap: 6px;
+}
+.asist-status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #22C55E;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    animation: asist-pulse-status 2s ease-in-out infinite;
+}
+@keyframes asist-pulse-status {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); }
+    50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
+
+.asist-header-right { display: flex; gap: 8px; align-items: center; }
+.asist-icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: transparent; border: none; color: var(--ai-muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 0.16s ease, color 0.16s ease;
+}
+.asist-icon-btn:hover { background: rgba(0, 102, 255, 0.08); color: var(--ai-blue); }
+
+/* Botón "Nuevo chat" — pill con borde azul eléctrico */
+.asist-new-chat-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: rgba(0, 102, 255, 0.06);
+    border: 1px solid rgba(0, 102, 255, 0.20);
+    border-radius: 999px;
+    color: var(--ai-blue);
+    font-family: inherit; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+}
+.asist-new-chat-btn:hover {
+    background: rgba(0, 102, 255, 0.14);
+    border-color: var(--ai-blue);
+    transform: translateY(-1px);
+}
+.asist-new-chat-btn svg { flex-shrink: 0; }
+
+/* ═════════ Mensajes ═════════ */
+.asist-messages {
+    flex: 1; overflow-y: auto;
+    padding: 24px 22px;
+    display: flex; flex-direction: column; gap: 16px;
+    background:
+        radial-gradient(circle at 0% 0%, rgba(0,102,255,0.05) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(192,38,211,0.04) 0%, transparent 40%),
+        var(--ai-soft);
+}
+
+.asist-msg {
+    display: flex; gap: 10px; align-items: flex-end;
+    max-width: 88%;
+    animation: asist-msg-in 0.22s ease-out;
+}
+.asist-msg-user {
+    align-self: flex-end; flex-direction: row-reverse;
+}
+@keyframes asist-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.asist-msg-bubble {
+    padding: 11px 15px;
+    border-radius: 18px;
+    font-size: 0.92rem; line-height: 1.5;
+    word-break: break-word;
+    max-width: 100%;
+}
+.asist-msg-user .asist-msg-bubble {
+    background: linear-gradient(135deg, var(--ai-blue) 0%, var(--ai-blue-dark) 100%);
+    color: #fff;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 4px 12px -4px rgba(0, 102, 255, 0.45);
+}
+.asist-msg-bot .asist-msg-bubble {
+    background: #FFFFFF;
+    color: var(--ai-ink);
+    border: 1px solid rgba(0, 102, 255, 0.10);
+    border-bottom-left-radius: 6px;
+    box-shadow: 0 2px 8px -4px rgba(0, 102, 255, 0.10);
+}
+/* ─── Markdown estilizado profesional dentro de la burbuja del bot ─── */
+.asist-msg-bubble strong { font-weight: 700; color: var(--ai-ink); }
+.asist-msg-bubble em { font-style: italic; color: inherit; opacity: 0.85; }
+
+/* Headings */
+.asist-msg-bubble .asist-h {
+    margin: 14px 0 6px 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ai-ink);
+    line-height: 1.25;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(0, 102, 255, 0.10);
+}
+.asist-msg-bubble .asist-h:first-child { margin-top: 0; }
+.asist-msg-bubble .asist-h-1 { font-size: 1.15rem; color: var(--ai-blue); }
+.asist-msg-bubble .asist-h-2 { font-size: 1.02rem; color: var(--ai-blue-dark); }
+.asist-msg-bubble .asist-h-3 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ai-blue-dark);
+    font-weight: 700;
+}
+
+/* Listas */
+.asist-msg-bubble ul, .asist-msg-bubble ol {
+    margin: 6px 0; padding-left: 22px;
+}
+.asist-msg-bubble ul {
+    list-style: none; padding-left: 4px;
+}
+.asist-msg-bubble ul li {
+    position: relative; padding-left: 16px; margin: 4px 0;
+    line-height: 1.5;
+}
+.asist-msg-bubble ul li::before {
+    content: ''; position: absolute; left: 0; top: 9px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+}
+.asist-msg-bubble ol li {
+    margin: 4px 0; line-height: 1.5;
+}
+.asist-msg-bubble ol li::marker {
+    color: var(--ai-blue); font-weight: 700;
+}
+
+/* Inline code */
+.asist-msg-bubble code {
+    background: rgba(0, 102, 255, 0.08);
+    padding: 1px 6px; border-radius: 5px;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.86em;
+    color: var(--ai-blue-dark);
+    font-weight: 600;
+}
+.asist-msg-user .asist-msg-bubble code {
+    background: rgba(255,255,255,0.20);
+    color: #fff;
+}
+
+/* Tablas */
+.asist-msg-bubble .asist-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 10px 0;
+    font-size: 0.86rem;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 102, 255, 0.12);
+}
+.asist-msg-bubble .asist-table thead {
+    background: linear-gradient(135deg, rgba(0,102,255,0.10), rgba(99,102,241,0.10));
+}
+.asist-msg-bubble .asist-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--ai-blue-dark);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid rgba(0, 102, 255, 0.15);
+}
+.asist-msg-bubble .asist-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0, 102, 255, 0.06);
+    color: var(--ai-ink);
+}
+.asist-msg-bubble .asist-table tr:last-child td { border-bottom: none; }
+.asist-msg-bubble .asist-table tbody tr:hover { background: rgba(0, 102, 255, 0.03); }
+
+/* Links normales y a oportunidad (clickables) */
+.asist-msg-bubble .asist-link {
+    color: var(--ai-blue);
+    text-decoration: underline;
+    text-decoration-color: rgba(0, 102, 255, 0.35);
+    text-underline-offset: 2px;
+    font-weight: 600;
+    transition: color 0.16s ease;
+}
+.asist-msg-bubble .asist-link:hover {
+    color: var(--ai-blue-dark);
+    text-decoration-color: var(--ai-blue);
+}
+.asist-msg-bubble .asist-link--opp {
+    background: linear-gradient(135deg, rgba(0,102,255,0.08), rgba(99,102,241,0.08));
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 102, 255, 0.18);
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+}
+.asist-msg-bubble .asist-link--opp::before {
+    content: '↗';
+    font-size: 0.8em; opacity: 0.65;
+}
+.asist-msg-bubble .asist-link--opp:hover {
+    background: linear-gradient(135deg, rgba(0,102,255,0.15), rgba(99,102,241,0.15));
+    border-color: var(--ai-blue);
+}
+/* ─── KPI Grid (cards tipo dashboard dentro del chat) ───
+   Se renderea cuando el modelo escribe `::: kpis ... :::`. Cada fila
+   se convierte en una card con label arriba, value gigante en medio
+   y sub opcional debajo. */
+.asist-msg-bubble .asist-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+}
+.asist-msg-bubble .asist-kpi-card {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFF 100%);
+    border: 1px solid rgba(0, 102, 255, 0.16);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow:
+        0 1px 3px -1px rgba(0, 102, 255, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.asist-msg-bubble .asist-kpi-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -4px rgba(0, 102, 255, 0.18);
+    border-color: var(--ai-blue);
+}
+.asist-kpi-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--ai-blue-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+.asist-kpi-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    line-height: 1.15;
+    font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.01em;
+}
+.asist-kpi-sub {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--ai-muted);
+    margin-top: 3px;
+}
+
+/* Row "list item" de una oportunidad — diseño más limpio y compacto.
+   Se renderea cuando el modelo manda "[Título — Cliente — $Monto](opp:ID)". */
+.asist-msg-bubble .asist-opp-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    margin: 4px 0;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.14);
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.16s ease;
+    box-shadow: 0 1px 3px -1px rgba(0, 102, 255, 0.08);
+}
+.asist-msg-bubble .asist-opp-row:hover {
+    border-color: var(--ai-blue);
+    transform: translateX(2px);
+    box-shadow: 0 6px 14px -4px rgba(0, 102, 255, 0.22);
+}
+.asist-opp-row-arrow {
+    color: var(--ai-blue);
+    font-size: 0.95em;
+    flex-shrink: 0;
+    opacity: 0.55;
+    transition: opacity 0.16s ease;
+}
+.asist-msg-bubble .asist-opp-row:hover .asist-opp-row-arrow { opacity: 1; }
+.asist-opp-row-main {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 1px;
+}
+.asist-opp-row-title {
+    font-size: 0.88rem; font-weight: 600; color: var(--ai-ink);
+    line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.asist-opp-row-sub {
+    font-size: 0.74rem; font-weight: 500; color: var(--ai-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.asist-opp-row-amount {
+    font-size: 0.88rem; font-weight: 700; color: var(--ai-blue);
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    flex-shrink: 0;
+    padding-left: 8px;
+    border-left: 1px solid rgba(0, 102, 255, 0.10);
+}
+/* Quitar bullet del <ul> cuando contiene rows de opp para que se vea
+   limpio (los rows ya tienen su propia estructura). */
+.asist-msg-bubble ul li:has(> .asist-opp-row) {
+    padding-left: 0;
+    margin: 6px 0;
+}
+.asist-msg-bubble ul li:has(> .asist-opp-row)::before { display: none; }
+
+/* Link de descarga de reporte Excel */
+.asist-msg-bubble .asist-link--report {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, #16A34A, #15803D);
+    color: #fff !important;
+    padding: 6px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 2px 8px -2px rgba(22,163,74,0.35);
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.asist-msg-bubble .asist-link--report::before {
+    content: '⬇';
+    font-size: 0.95em;
+}
+.asist-msg-bubble .asist-link--report:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -4px rgba(22,163,74,0.50);
+}
+
+/* Tipografía general del bubble del bot */
+.asist-msg-bot .asist-msg-bubble {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 0.92rem; line-height: 1.55;
+}
+
+/* Indicador "consultando datos" / typing */
+.asist-thinking {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+}
+.asist-thinking-text {
+    font-size: 0.85rem;
+    background: linear-gradient(90deg, var(--ai-blue), var(--ai-magenta), var(--ai-blue));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 600;
+    animation: asist-shimmer 2s linear infinite;
+}
+@keyframes asist-shimmer {
+    to { background-position: -200% 0; }
+}
+
+/* ═════════ Welcome ═════════ */
+.asist-welcome {
+    text-align: center; padding: 28px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.asist-welcome-title {
+    margin-top: 6px;
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.15;
+}
+.asist-greeting {
+    display: block;
+    font-size: 1.05rem; font-weight: 500; color: var(--ai-muted);
+    margin-bottom: 6px;
+}
+.asist-greeting-q {
+    display: block;
+    font-size: 1.85rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--ai-ink) 30%, var(--ai-blue) 70%, var(--ai-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.02em;
+}
+.asist-welcome-sub {
+    font-size: 0.92rem; color: var(--ai-muted); max-width: 420px;
+    margin-top: 4px;
+}
+.asist-welcome-sub strong {
+    color: var(--ai-ink); font-weight: 600;
+}
+
+.asist-suggestions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 22px;
+    max-width: 540px;
+    width: 100%;
+}
+.asist-sugg-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.12);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+    text-align: left;
+    box-shadow: 0 2px 8px -4px rgba(0, 102, 255, 0.10);
+}
+.asist-sugg-card:hover {
+    border-color: var(--ai-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -6px rgba(0, 102, 255, 0.25);
+}
+.asist-sugg-icon {
+    width: 32px; height: 32px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0,102,255,0.10), rgba(99,102,241,0.10));
+    color: var(--ai-blue);
+}
+.asist-sugg-icon svg { width: 16px; height: 16px; }
+.asist-sugg-card:hover .asist-sugg-icon {
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+    color: #fff;
+}
+.asist-sugg-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.asist-sugg-text strong {
+    font-size: 0.85rem; font-weight: 700; color: var(--ai-ink);
+    line-height: 1.2;
+}
+.asist-sugg-text em {
+    font-size: 0.74rem; color: var(--ai-muted); font-style: normal;
+    line-height: 1.3;
+}
+
+/* ═════════ Input ═════════ */
+.asist-input-wrap {
+    border-top: 1px solid rgba(0, 102, 255, 0.06);
+    padding: 14px 18px 14px;
+    background: #FFFFFF;
+}
+.asist-input-row { display: flex; align-items: flex-end; gap: 10px; }
+.asist-input-box {
+    flex: 1;
+    background: var(--ai-soft);
+    border: 1px solid rgba(0, 102, 255, 0.10);
+    border-radius: 18px;
+    padding: 0;
+    display: flex; align-items: center;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.asist-input-box:focus-within {
+    border-color: var(--ai-blue);
+    box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.10);
+}
+.asist-input-box textarea {
+    flex: 1; background: none; border: none;
+    padding: 11px 16px; font-size: 0.95rem; resize: none; outline: none;
+    font-family: inherit; max-height: 140px; line-height: 1.4; width: 100%;
+    color: var(--ai-ink);
+}
+.asist-input-box textarea::placeholder { color: #9CA3AF; }
+
+.asist-send-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--ai-blue) 0%, var(--ai-blue-dark) 100%);
+    color: #fff; border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow:
+        0 4px 12px -2px rgba(0,102,255,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.asist-send-btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 8px 20px -4px rgba(0,102,255,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.22);
+}
+.asist-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.asist-input-hint {
+    margin-top: 6px; font-size: 0.68rem; color: #94A3B8;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .asist-card { height: 100vh; width: 100vw; border-radius: 0; }
+    .asist-suggestions { grid-template-columns: 1fr; }
+    .asist-greeting-q { font-size: 1.5rem; }
+}
+</style>

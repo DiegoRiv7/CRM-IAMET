@@ -6270,7 +6270,17 @@
                             headers.push(th.textContent.trim());
                         });
                     }
-                    if (headers.length) tableData.push(headers);
+                    // Solo el tab CRM (oportunidades) añade columnas extra:
+                    // Cliente, PO y Tipo — insertadas justo después de
+                    // "Oportunidad" (índice 1). Se leen de los data-attrs
+                    // del <tr> (no están en el DOM como <td>).
+                    var addOppCols = (tbodyId === 'crmTbody');
+                    if (headers.length) {
+                        if (addOppCols) {
+                            headers.splice(1, 0, 'Cliente', 'PO', 'Tipo');
+                        }
+                        tableData.push(headers);
+                    }
 
                     Array.from(tbody.querySelectorAll('tr')).forEach(function (row) {
                         if (row.style.display === 'none') return;
@@ -6279,6 +6289,16 @@
                         row.querySelectorAll('td').forEach(function (td) {
                             rowData.push(td.textContent.trim().replace(/\s+/g, ' '));
                         });
+                        if (addOppCols) {
+                            var tipoRaw = (row.getAttribute('data-tipo') || '').toLowerCase();
+                            var tipoLabel = tipoRaw === 'runrate' ? 'Runrate'
+                                          : tipoRaw === 'proyecto' ? 'Proyecto'
+                                          : tipoRaw === 'bitrix_proyecto' ? 'Proyecto Bitrix24'
+                                          : (tipoRaw ? tipoRaw : '');
+                            var poVal = row.getAttribute('data-po') || '';
+                            var cliVal = row.getAttribute('data-cliente') || '';
+                            rowData.splice(1, 0, cliVal, poVal, tipoLabel);
+                        }
                         if (rowData.length) tableData.push(rowData);
                     });
                 }

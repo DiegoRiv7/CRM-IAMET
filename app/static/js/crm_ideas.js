@@ -921,7 +921,11 @@
 
         var brainBtn = document.getElementById('wiBrainBtn');
         if (brainBtn) brainBtn.addEventListener('click', function () {
-            showFlash('Asistente AI: próximamente');
+            if (typeof window.asistenteAbrir === 'function') {
+                window.asistenteAbrir();
+            } else {
+                showFlash('Asistente AI no disponible');
+            }
         });
 
         var addActBtn = document.getElementById('wiAddActBtn');
