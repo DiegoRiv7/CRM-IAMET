@@ -10,14 +10,7 @@ un icono estático. Saludo personalizado con first_name del user.
     Las capas del orb lo referencian via filter:url(#asistWater).{% endcomment %}
     <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
         <filter id="asistWater" x="-30%" y="-30%" width="160%" height="160%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.035 0.055" numOctaves="2" seed="4" result="turbulence">
-                <animate attributeName="baseFrequency"
-                    dur="6s" repeatCount="indefinite"
-                    values="0.035 0.055; 0.055 0.075; 0.040 0.045; 0.035 0.055"/>
-                <animate attributeName="seed"
-                    dur="9s" repeatCount="indefinite"
-                    values="4; 12; 20; 4"/>
-            </feTurbulence>
+            <feTurbulence type="fractalNoise" baseFrequency="0.035 0.055" numOctaves="2" seed="4" result="turbulence"/>
             <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="22"
                 xChannelSelector="R" yChannelSelector="G"/>
         </filter>
@@ -247,35 +240,27 @@ un icono estático. Saludo personalizado con first_name del user.
     border-radius: 50%;
     pointer-events: none;
 }
-/* OLAS horizontales que cruzan el orb de derecha a izquierda.
-   Cada capa es una "ola" (elipse ancha y baja) que entra por la
-   derecha (translateX +150%), atraviesa el círculo y sale por la
-   izquierda (-150%). Las 2 capas tienen duraciones y delays
-   distintos → a veces se superponen (orb lleno) y a veces ambas
-   están afuera (orb casi vacío, lookeando hacia el gradient azul
-   profundo del core).
-   La distorsión SVG turbulence convierte el movimiento lineal en
-   ondulación orgánica tipo agua real. */
+/* Capas de "agua" ESTÁTICAS centradas en el core. Le dan textura y
+   profundidad al núcleo sin animación lateral. El SVG filter de
+   turbulence + displacement (también estático ahora) distorsiona
+   los gradients dando look de agua sin moverla. */
 .asist-orb-core::before {
     background:
         radial-gradient(ellipse 70% 35% at 50% 45%,
-            rgba(0, 240, 255, 0.95) 0%,
-            rgba(0, 130, 255, 0.60) 45%,
+            rgba(0, 240, 255, 0.85) 0%,
+            rgba(0, 130, 255, 0.55) 45%,
             transparent 80%);
     filter: url(#asistWater) blur(2.5px) saturate(170%);
     mix-blend-mode: screen;
-    animation: asist-wave-pass-a 6s ease-in-out infinite;
 }
 .asist-orb-core::after {
     background:
         radial-gradient(ellipse 65% 30% at 50% 55%,
-            rgba(192, 38, 211, 0.70) 0%,
-            rgba(99, 102, 241, 0.60) 45%,
+            rgba(192, 38, 211, 0.55) 0%,
+            rgba(99, 102, 241, 0.55) 45%,
             transparent 80%);
     filter: url(#asistWater) blur(3px) saturate(175%) contrast(1.15);
     mix-blend-mode: screen;
-    animation: asist-wave-pass-b 9s ease-in-out infinite;
-    animation-delay: -4s;
 }
 /* Highlight + base — quedan FIJOS encima del agua para preservar
    sensación de esfera con líquido moviéndose adentro. */
@@ -346,23 +331,6 @@ un icono estático. Saludo personalizado con first_name del user.
     to   { transform: rotateZ(-45deg) rotateX(72deg) rotate(360deg); }
 }
 
-/* Olas horizontales: entran por la derecha (X +150%), atraviesan el
-   centro, salen por la izquierda (-150%). Pequeña ondulación en Y
-   para que no parezca movimiento lineal mecánico. */
-@keyframes asist-wave-pass-a {
-    0%   { transform: translate(150%, -3%); }
-    25%  { transform: translate(70%, 4%); }
-    50%  { transform: translate(0%, -2%); }
-    75%  { transform: translate(-70%, 5%); }
-    100% { transform: translate(-150%, -3%); }
-}
-@keyframes asist-wave-pass-b {
-    0%   { transform: translate(170%, 5%); }
-    30%  { transform: translate(60%, -4%); }
-    55%  { transform: translate(0%, 3%); }
-    80%  { transform: translate(-70%, -5%); }
-    100% { transform: translate(-170%, 4%); }
-}
 @keyframes asist-orb-halo {
     0%, 100% { opacity: 0.55; transform: scale(1); }
     50% { opacity: 0.85; transform: scale(1.18); }
