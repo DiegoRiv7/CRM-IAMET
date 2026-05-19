@@ -216,14 +216,26 @@ Detalle de Idea — layout estilo widget de Prospección:
     transform: translateY(-1px);
     box-shadow: none;
 }
-.idea-brain-btn--orb .asist-orb { width: 32px; height: 32px; }
-/* Orb estático: mismo look del consultor pero sin las animaciones de
-   los anillos ni del halo. Le quitamos la animación de respiración
-   del core para mantenerlo fijo. */
+.idea-brain-btn--orb .asist-orb { width: 30px; height: 30px; }
+/* Orb estático: snapshot del orb animado. Apagamos animaciones pero
+   APLICAMOS los transforms base de los keyframes (rotateZ/rotateX) para
+   que los dos anillos sigan viéndose como X 3D cruzada. Sin esto los
+   anillos aparecen como círculos planos con un solo arco coloreado y
+   el orb se ve "vacío". Halo más chico y sin pulsación. */
 .asist-orb--static .asist-orb-core,
 .asist-orb--static .asist-orb-ring,
 .asist-orb--static.asist-orb::before {
     animation: none !important;
+}
+.asist-orb--static .asist-orb-ring--horiz {
+    transform: rotateZ(45deg) rotateX(72deg) rotate(30deg);
+}
+.asist-orb--static .asist-orb-ring--vert {
+    transform: rotateZ(-45deg) rotateX(72deg) rotate(-30deg);
+}
+.asist-orb--static.asist-orb::before {
+    inset: -16%;
+    opacity: 0.55;
 }
 .asist-orb--xs { width: 28px; height: 28px; }
 

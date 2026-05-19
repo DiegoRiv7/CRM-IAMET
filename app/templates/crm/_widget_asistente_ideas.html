@@ -81,7 +81,9 @@ disponibles, con fallback a render plano si no.
     position: fixed; inset: 0;
     background: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(6px);
-    z-index: 10100;
+    /* El widget de la idea está en z-index:10200 — el modal del
+       asistente DEBE quedar por encima para no abrirse atrás. */
+    z-index: 10400;
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
     animation: asistidea-fade 0.18s ease-out;
