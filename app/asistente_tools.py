@@ -301,8 +301,38 @@ def _tool_top_oportunidades_prometedoras(args: dict, user: User) -> dict:
 
 # 5. Forecast de cierre
 def _tool_forecast_cierre(args: dict, user: User) -> dict:
-    """Proyección de cierre basada en pipeline × probabilidad_cierre del CRM."""
-    qs = TodoItem.objects.exclude(_q_perdidas())
+    """Proyección de cierre del mes/periodo.
+
+    Por default toma SOLO las oportunidades cuyo mes_cierre = mes actual y
+    siguiente (filtro real de "cómo cerraremos el mes"). Acepta override
+    explícito si el user pide un mes/año diferente.
+
+    Args opcionales:
+        - mes (1-12), anio (4d): filtra por ese mes_cierre específico.
+        - rango_meses (int): cuántos meses adelante incluir desde el mes
+          base (default 2 = mes actual + siguiente).
+    """
+    ahora = timezone.now()
+    mes_base = int(args.get('mes') or ahora.month)
+    anio_base = int(args.get('anio') or ahora.year)
+    rango = int(args.get('rango_meses') or 2)
+    rango = max(1, min(rango, 12))
+
+    # Construir lista de (mes, anio) a incluir.
+    pares = []
+    m, a = mes_base, anio_base
+    for _ in range(rango):
+        pares.append((m, a))
+        m += 1
+        if m > 12:
+            m = 1; a += 1
+
+    # Filtro por mes_cierre (string '01'..'12') y anio_cierre (int).
+    q_periodo = Q()
+    for (mm, aa) in pares:
+        q_periodo |= Q(mes_cierre=str(mm).zfill(2), anio_cierre=aa)
+
+    qs = TodoItem.objects.exclude(_q_perdidas()).filter(q_periodo)
     visible_ids = _visible_user_ids(user)
     if visible_ids is not None:
         qs = qs.filter(usuario_id__in=visible_ids)
@@ -310,28 +340,58 @@ def _tool_forecast_cierre(args: dict, user: User) -> dict:
     pipeline_total = 0.0
     forecast = 0.0
     por_etapa: dict[str, dict] = {}
-    for opp in qs.only('monto', 'probabilidad_cierre', 'etapa_corta', 'etapa_completa'):
+    por_mes: dict[str, dict] = {}
+    total_opp = 0
+
+    meses_es = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+    for opp in qs.only('monto', 'probabilidad_cierre', 'etapa_corta',
+                       'etapa_completa', 'mes_cierre', 'anio_cierre'):
         m = _to_money(opp.monto)
         p = (opp.probabilidad_cierre or 20) / 100.0
         pipeline_total += m
         forecast += m * p
+        total_opp += 1
+
         etapa_key = opp.etapa_corta or opp.etapa_completa or 'sin_etapa'
-        por_etapa.setdefault(etapa_key, {'monto': 0.0, 'count': 0})
+        por_etapa.setdefault(etapa_key, {'monto': 0.0, 'forecast': 0.0, 'count': 0})
         por_etapa[etapa_key]['monto'] += m
+        por_etapa[etapa_key]['forecast'] += m * p
         por_etapa[etapa_key]['count'] += 1
 
+        try:
+            mn = int(opp.mes_cierre) if opp.mes_cierre else 0
+            label = f'{meses_es[mn]} {opp.anio_cierre}' if 1 <= mn <= 12 else f'{opp.anio_cierre}'
+        except (ValueError, TypeError):
+            label = 'sin definir'
+        por_mes.setdefault(label, {'monto': 0.0, 'forecast': 0.0, 'count': 0})
+        por_mes[label]['monto'] += m
+        por_mes[label]['forecast'] += m * p
+        por_mes[label]['count'] += 1
+
     top_etapas = sorted(por_etapa.items(), key=lambda kv: kv[1]['monto'], reverse=True)[:5]
+    desglose_mes = sorted(por_mes.items(), key=lambda kv: kv[1]['monto'], reverse=True)
+
+    periodo_str = ' / '.join(f'{meses_es[mm]} {aa}' for mm, aa in pares)
 
     return {
+        'periodo': periodo_str,
+        'meses_incluidos': pares,
+        'oportunidades_consideradas': total_opp,
         'pipeline_total_mxn': round(pipeline_total, 2),
         'forecast_ponderado_mxn': round(forecast, 2),
-        'top_etapas': [
-            {'etapa': k, 'monto_mxn': round(v['monto'], 2), 'count': v['count']}
+        'desglose_por_mes': [
+            {'mes': k, 'monto_mxn': round(v['monto'], 2), 'forecast_mxn': round(v['forecast'], 2), 'count': v['count']}
+            for k, v in desglose_mes
+        ],
+        'desglose_por_etapa': [
+            {'etapa': k, 'monto_mxn': round(v['monto'], 2), 'forecast_mxn': round(v['forecast'], 2), 'count': v['count']}
             for k, v in top_etapas
         ],
         'nota': (
             'forecast_ponderado = suma(monto × probabilidad_cierre del CRM). '
-            'pipeline_total = suma sin descontar perdidas.'
+            'Solo se incluyen oportunidades cuyo mes_cierre cae en el periodo.'
         ),
     }
 
@@ -807,14 +867,28 @@ TOOL_SCHEMAS: list[dict] = [
         'function': {
             'name': 'forecast_cierre',
             'description': (
-                'Proyección del cierre del mes/trimestre basado en el '
-                'pipeline activo, ponderando cada oportunidad por la '
-                'probabilidad típica de su etapa. Útil para "cómo voy a '
-                'cerrar el mes" o "qué tan probable es alcanzar la meta".'
+                'Proyección del cierre basada en las oportunidades cuyo '
+                'mes_cierre cae en el periodo solicitado. Pondera cada '
+                'opp por su probabilidad_cierre del CRM. Por DEFAULT toma '
+                'mes actual + siguiente (rango_meses=2). Útil para "cómo '
+                'cerraremos el mes", "forecast del próximo trimestre", etc.'
             ),
             'parameters': {
                 'type': 'object',
-                'properties': {},
+                'properties': {
+                    'mes': {
+                        'type': 'integer', 'minimum': 1, 'maximum': 12,
+                        'description': 'Mes inicial (1-12). Default: mes actual.',
+                    },
+                    'anio': {
+                        'type': 'integer',
+                        'description': 'Año del mes inicial. Default: año actual.',
+                    },
+                    'rango_meses': {
+                        'type': 'integer', 'minimum': 1, 'maximum': 12,
+                        'description': 'Cuántos meses incluir desde mes/anio. Default 2 (mes actual + siguiente).',
+                    },
+                },
             },
         },
     },

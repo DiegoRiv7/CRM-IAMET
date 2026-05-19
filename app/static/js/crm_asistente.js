@@ -182,19 +182,44 @@
         html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
             var oppMatch = url.match(/^opp:(\d+)$/);
             if (oppMatch) {
+                // El label del modelo viene en formato "Título — Cliente — $Monto".
+                // Si lo identificamos, partimos en pedazos para un layout 3-col.
+                var parts = label.split(/\s+—\s+/);
+                if (parts.length >= 3) {
+                    var titulo = parts[0];
+                    var cliente = parts.slice(1, -1).join(' — ');
+                    var monto = parts[parts.length - 1];
+                    return '<a href="#" data-asist-opp="' + oppMatch[1] + '" class="asist-opp-row">'
+                        + '<span class="asist-opp-row-arrow">↗</span>'
+                        + '<span class="asist-opp-row-main">'
+                        +   '<span class="asist-opp-row-title">' + titulo + '</span>'
+                        +   '<span class="asist-opp-row-sub">' + cliente + '</span>'
+                        + '</span>'
+                        + '<span class="asist-opp-row-amount">' + monto + '</span>'
+                        + '</a>';
+                }
+                // Fallback: pill simple si el formato no incluye separadores —
                 return '<a href="#" data-asist-opp="' + oppMatch[1] + '" class="asist-link asist-link--opp">' + label + '</a>';
             }
-            // URLs aceptadas: http(s), o paths relativos del CRM (/app/...).
-            if (/^https?:\/\//i.test(url)) {
+            // URLs aceptadas: SOLO mismo dominio o paths relativos del CRM.
+            // Cualquier dominio externo (incluso si el modelo lo inventa)
+            // queda como texto plano — evita que mande al user a sitios random.
+            var sameHost = false;
+            try {
+                if (/^https?:\/\//i.test(url)) {
+                    sameHost = (new URL(url)).host === window.location.host;
+                }
+            } catch (e) { sameHost = false; }
+
+            if (sameHost) {
                 return '<a href="' + url + '" target="_blank" rel="noopener" class="asist-link">' + label + '</a>';
             }
             if (/^\/app\//.test(url)) {
-                // Descargas / endpoints del CRM. Si el path es de reporte
-                // xlsx, lo marcamos como link de descarga con icono propio.
                 var isReport = url.indexOf('/api/asistente/reporte/') !== -1;
                 var cls = isReport ? 'asist-link asist-link--report' : 'asist-link';
                 return '<a href="' + url + '" target="_blank" rel="noopener" class="' + cls + '">' + label + '</a>';
             }
+            // Dominio externo o URL sospechosa → solo texto (sin link)
             return label;
         });
 
@@ -296,19 +321,25 @@
         return html;
     }
 
-    /* Abrir widget de oportunidad desde el chat. Prueba varias funciones
-       globales hasta encontrar la que aplica al contexto actual. */
+    /* Abrir widget de oportunidad desde el chat. Cerramos el chat primero
+       (z-index 10400) para que la oportunidad quede VISIBLE encima sin
+       competir con el overlay del asistente. El user puede reabrir el chat
+       desde el logo del sidebar. */
     function openOpportunityFromChat(oppId) {
-        if (typeof window.openDetalle === 'function') {
-            window.openDetalle(oppId);
-        } else if (typeof window.woAbrirDetalle === 'function') {
-            window.woAbrirDetalle(oppId);
-        } else if (typeof window.abrirOportunidad === 'function') {
-            window.abrirOportunidad(oppId);
-        } else {
-            // Fallback: navegar al CRM con la opp abierta como query param.
-            window.location.href = '/app/todos/?tab=crm&open_proyecto=' + oppId;
-        }
+        closeAsistente();
+        // Pequeño delay para que el overlay termine su transición antes de
+        // abrir el siguiente (evita "flash" visual de ambos abiertos).
+        setTimeout(function () {
+            if (typeof window.openDetalle === 'function') {
+                window.openDetalle(oppId);
+            } else if (typeof window.woAbrirDetalle === 'function') {
+                window.woAbrirDetalle(oppId);
+            } else if (typeof window.abrirOportunidad === 'function') {
+                window.abrirOportunidad(oppId);
+            } else {
+                window.location.href = '/app/todos/?tab=crm&open_proyecto=' + oppId;
+            }
+        }, 80);
     }
     window.asistenteAbrirOportunidad = openOpportunityFromChat;
 
