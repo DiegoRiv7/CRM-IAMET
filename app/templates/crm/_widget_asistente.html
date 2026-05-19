@@ -209,44 +209,77 @@ un icono estático. Saludo personalizado con first_name del user.
 .asist-orb-core {
     position: absolute; inset: 18%;
     border-radius: 50%;
-    background:
-        radial-gradient(circle at 32% 30%, rgba(255,255,255,0.85) 0%, transparent 38%),
-        radial-gradient(circle at 50% 50%, #00D9FF 0%, #0066FF 38%, #1E1B4B 72%, #0A0E27 100%);
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 50%,
+        #00D9FF 0%, #0066FF 35%, #1E1B4B 75%, #0A0E27 100%);
     box-shadow:
-        inset 0 -3px 6px rgba(0,0,0,0.35),
-        inset 0 2px 4px rgba(255,255,255,0.4),
-        0 0 12px rgba(0,180,255,0.7),
-        0 0 24px rgba(0,102,255,0.5);
+        inset 0 -3px 6px rgba(0,0,0,0.40),
+        inset 0 2px 4px rgba(255,255,255,0.35),
+        0 0 14px rgba(0,180,255,0.75),
+        0 0 28px rgba(0,102,255,0.55);
     animation: asist-orb-core-breathe 2.4s ease-in-out infinite;
 }
-/* 2 anillos atravesados (perpendiculares) tipo "Saturn cruzado".
-   Cada anillo es una elipse plana muy aplanada (rotate X o Y a 75°) y
-   tiene un highlight brillante que da la vuelta — eso da la ilusión
-   de rotación constante. */
-.asist-orb-ring {
-    position: absolute; inset: 0;
+/* "Agua" dentro del core — 2 capas con radial-gradient blur animado
+   que se mueven y rotan creando efecto plasma/líquido. */
+.asist-orb-core::before,
+.asist-orb-core::after {
+    content: '';
+    position: absolute;
+    inset: -15%;
     border-radius: 50%;
-    border: 2px solid transparent;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+.asist-orb-core::before {
+    background:
+        radial-gradient(circle at 28% 30%, rgba(0, 217, 255, 0.85) 0%, transparent 38%),
+        radial-gradient(circle at 72% 68%, rgba(99, 102, 241, 0.65) 0%, transparent 40%);
+    filter: blur(5px);
+    animation: asist-water-flow-a 5.5s ease-in-out infinite;
+}
+.asist-orb-core::after {
+    background:
+        radial-gradient(circle at 65% 28%, rgba(192, 38, 211, 0.55) 0%, transparent 36%),
+        radial-gradient(circle at 32% 72%, rgba(0, 180, 255, 0.70) 0%, transparent 38%);
+    filter: blur(6px);
+    animation: asist-water-flow-b 7.5s ease-in-out infinite reverse;
+}
+/* Highlight superior fijo encima del agua para que se sienta volumétrico */
+.asist-orb-core {
+    background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.55) 0%, transparent 30%),
+        radial-gradient(circle at 50% 50%, #00D9FF 0%, #0066FF 35%, #1E1B4B 75%, #0A0E27 100%);
+}
+/* 2 anillos atravesados formando una X visible alrededor del orb.
+   Más gruesos y más grandes (inset negativo para que sobresalgan del
+   core). Cada anillo se inclina 45° respecto al otro creando la X. */
+.asist-orb-ring {
+    position: absolute;
+    inset: -6%;          /* sobresalen del core para verse más prominentes */
+    border-radius: 50%;
+    border: 3px solid transparent;
     pointer-events: none;
 }
 .asist-orb-ring--horiz {
-    /* Anillo ecuatorial (horizontal, perspective desde arriba) */
-    border-top-color: #00B5FF;
-    border-right-color: rgba(0, 180, 255, 0.55);
-    border-bottom-color: rgba(0, 102, 255, 0.30);
+    /* Anillo "/": inclinado en diagonal ascendente (+45° eje Z) y plano (X 75°) */
+    border-top-color: #00D9FF;
+    border-right-color: rgba(0, 200, 255, 0.65);
+    border-bottom-color: rgba(0, 130, 255, 0.30);
     box-shadow:
-        0 0 8px rgba(0, 180, 255, 0.55),
-        inset 0 0 4px rgba(0, 180, 255, 0.25);
+        0 0 12px rgba(0, 217, 255, 0.65),
+        0 0 24px rgba(0, 217, 255, 0.30),
+        inset 0 0 5px rgba(0, 217, 255, 0.30);
     animation: asist-ring-horiz-spin 3.4s linear infinite;
 }
 .asist-orb-ring--vert {
-    /* Anillo meridional (vertical, perpendicular al horizontal) */
-    border-top-color: #6366F1;
-    border-right-color: rgba(99, 102, 241, 0.50);
-    border-bottom-color: rgba(99, 102, 241, 0.25);
+    /* Anillo "\": inclinado en diagonal descendente (-45° eje Z) y plano */
+    border-top-color: #818CF8;
+    border-right-color: rgba(129, 140, 248, 0.60);
+    border-bottom-color: rgba(99, 102, 241, 0.28);
     box-shadow:
-        0 0 8px rgba(99, 102, 241, 0.50),
-        inset 0 0 4px rgba(99, 102, 241, 0.25);
+        0 0 12px rgba(129, 140, 248, 0.60),
+        0 0 24px rgba(129, 140, 248, 0.25),
+        inset 0 0 5px rgba(129, 140, 248, 0.28);
     animation: asist-ring-vert-spin 4.6s linear infinite reverse;
 }
 /* Halo exterior pulsante */
@@ -269,17 +302,29 @@ un icono estático. Saludo personalizado con first_name del user.
     0%, 100% { transform: scale(1); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.4), 0 0 12px rgba(0,180,255,0.7), 0 0 24px rgba(0,102,255,0.5); }
     50% { transform: scale(1.08); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.5), 0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,102,255,0.65); }
 }
-/* Anillo horizontal: inclinado 75° en X (vista casi de canto desde el
-   plano del viewer) + rotación continua en Z para que el highlight gire. */
+/* Cada anillo se ve como una elipse cruzando el orb en diagonal.
+   Compuesto: rotateZ(±45°) inclina la elipse para formar la X, y
+   rotateX(72°) la deja vista "de canto". Después rotateZ animado
+   hace que el highlight de color gire alrededor → ilusión de
+   rotación constante del anillo. */
 @keyframes asist-ring-horiz-spin {
-    from { transform: rotateX(75deg) rotateZ(0deg); }
-    to   { transform: rotateX(75deg) rotateZ(360deg); }
+    from { transform: rotateZ(45deg) rotateX(72deg) rotate(0deg); }
+    to   { transform: rotateZ(45deg) rotateX(72deg) rotate(360deg); }
 }
-/* Anillo vertical: el complementario, inclinado 75° en Y para quedar
-   perpendicular al horizontal. Gira sobre su propio eje Z también. */
 @keyframes asist-ring-vert-spin {
-    from { transform: rotateY(75deg) rotateZ(0deg); }
-    to   { transform: rotateY(75deg) rotateZ(360deg); }
+    from { transform: rotateZ(-45deg) rotateX(72deg) rotate(0deg); }
+    to   { transform: rotateZ(-45deg) rotateX(72deg) rotate(360deg); }
+}
+
+/* "Agua" — capas que se desplazan y rotan dentro del core. */
+@keyframes asist-water-flow-a {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    33%      { transform: translate(8%, -5%) rotate(120deg) scale(1.08); }
+    66%      { transform: translate(-5%, 6%) rotate(240deg) scale(0.95); }
+}
+@keyframes asist-water-flow-b {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    50%      { transform: translate(-6%, 4%) rotate(180deg) scale(1.12); }
 }
 @keyframes asist-orb-halo {
     0%, 100% { opacity: 0.55; transform: scale(1); }
