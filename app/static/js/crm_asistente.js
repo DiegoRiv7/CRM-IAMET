@@ -424,14 +424,14 @@
     }
     window.asistenteAbrirOportunidad = openOpportunityFromChat;
 
-    /* Orb compuesto (core + 3 anillos) — mismo markup que el template inicial. */
+    /* Orb compuesto (core + 2 anillos atravesados) — mismo markup que el
+       template inicial. */
     function orbHTML(size) {
         size = size || 'md';
         return '<div class="asist-orb asist-orb--' + esc(size) + '" aria-hidden="true">'
             + '<span class="asist-orb-core"></span>'
-            + '<span class="asist-orb-ring asist-orb-ring--1"></span>'
-            + '<span class="asist-orb-ring asist-orb-ring--2"></span>'
-            + '<span class="asist-orb-ring asist-orb-ring--3"></span>'
+            + '<span class="asist-orb-ring asist-orb-ring--horiz"></span>'
+            + '<span class="asist-orb-ring asist-orb-ring--vert"></span>'
             + '</div>';
     }
 
