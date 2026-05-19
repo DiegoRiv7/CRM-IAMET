@@ -1318,6 +1318,90 @@ def _tool_historico_cliente(args: dict, user: User) -> dict:
     }
 
 
+# 14a. Comparativa de KPIs entre 2 periodos (para preguntas de seguimiento)
+def _tool_comparativa_kpi_mes(args: dict, user: User) -> dict:
+    """Compara los KPIs (oportunidades, monto, cotizaciones, facturado, cobrado)
+    de un mes vs otro. Útil para preguntas tipo "y vs el mes pasado",
+    "compara mayo vs abril", "cómo vamos vs el mismo mes el año pasado".
+
+    Args:
+        mes_actual, anio_actual: el periodo "actual" (default mes/anio hoy).
+        comparar_con: 'mes_anterior' (default), 'mismo_mes_anio_pasado',
+            o 'explicito' usando mes_comparacion/anio_comparacion.
+        mes_comparacion, anio_comparacion: cuando comparar_con='explicito'.
+    """
+    ahora = timezone.now()
+    mes_a = int(args.get('mes_actual') or ahora.month)
+    anio_a = int(args.get('anio_actual') or ahora.year)
+    mes_a = max(1, min(mes_a, 12))
+
+    modo = (args.get('comparar_con') or 'mes_anterior').strip()
+
+    if modo == 'mes_anterior':
+        mes_b = mes_a - 1
+        anio_b = anio_a
+        if mes_b < 1:
+            mes_b = 12; anio_b = anio_a - 1
+    elif modo == 'mismo_mes_anio_pasado':
+        mes_b = mes_a; anio_b = anio_a - 1
+    else:  # 'explicito'
+        try:
+            mes_b = max(1, min(int(args.get('mes_comparacion') or 1), 12))
+            anio_b = int(args.get('anio_comparacion') or anio_a)
+        except (ValueError, TypeError):
+            mes_b = mes_a - 1 if mes_a > 1 else 12
+            anio_b = anio_a if mes_a > 1 else anio_a - 1
+
+    def _kpis(mes, anio):
+        base = TodoItem.objects.filter(fecha_creacion__year=anio, fecha_creacion__month=mes)
+        visible_ids = _visible_user_ids(user)
+        if visible_ids is not None:
+            base = base.filter(usuario_id__in=visible_ids)
+        opp_count = base.count()
+        opp_monto = float(base.aggregate(t=Sum('monto')).get('t') or 0)
+        cot_qs = Cotizacion.objects.filter(fecha_creacion__year=anio, fecha_creacion__month=mes)
+        if visible_ids is not None:
+            cot_qs = cot_qs.filter(created_by_id__in=visible_ids)
+        cot_count = cot_qs.count()
+        facturado = float(_total_facturado_periodo(anio, mes))
+        cobrado = float(_total_cobrado_periodo(anio, mes))
+        return {
+            'oportunidades': opp_count,
+            'monto_oportunidades_mxn': round(opp_monto, 2),
+            'cotizaciones': cot_count,
+            'facturado_mxn': round(facturado, 2),
+            'cobrado_mxn': round(cobrado, 2),
+        }
+
+    kpis_a = _kpis(mes_a, anio_a)
+    kpis_b = _kpis(mes_b, anio_b)
+
+    def _delta(va, vb):
+        if vb == 0:
+            if va == 0:
+                return {'abs': 0, 'pct': 0, 'direccion': 'igual'}
+            return {'abs': va, 'pct': None, 'direccion': 'sube'}
+        ab = va - vb
+        pc = (ab / vb) * 100.0
+        return {
+            'abs': round(ab, 2),
+            'pct': round(pc, 1),
+            'direccion': 'sube' if ab > 0 else ('baja' if ab < 0 else 'igual'),
+        }
+
+    deltas = {k: _delta(kpis_a[k], kpis_b[k]) for k in kpis_a}
+
+    meses_es = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+    return {
+        'periodo_actual': {'mes': mes_a, 'anio': anio_a, 'label': f'{meses_es[mes_a]} {anio_a}', 'kpis': kpis_a},
+        'periodo_comparacion': {'mes': mes_b, 'anio': anio_b, 'label': f'{meses_es[mes_b]} {anio_b}', 'kpis': kpis_b},
+        'deltas': deltas,
+        'modo_comparacion': modo,
+    }
+
+
 # 14b. Rendimiento completo del equipo en un mes
 def _tool_rendimiento_equipo_completo(args: dict, user: User) -> dict:
     """Reporte ejecutivo del rendimiento de TODOS los vendedores en un mes:
@@ -1786,6 +1870,35 @@ TOOL_SCHEMAS: list[dict] = [
     {
         'type': 'function',
         'function': {
+            'name': 'comparativa_kpi_mes',
+            'description': (
+                'Compara los KPIs (oportunidades, monto, cotizaciones, '
+                'facturado real, cobrado real) entre 2 periodos. Úsala '
+                'CUANDO el user pregunte por comparativas o tendencias '
+                'puntuales: "y vs el mes pasado", "compara mayo vs abril", '
+                '"cómo vamos vs el mismo mes el año pasado". NO la uses '
+                'para las preguntas estándar de "resumen del mes" — esas '
+                'tienen su propia plantilla.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'mes_actual': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes "actual" 1-12. Default: mes de hoy.'},
+                    'anio_actual': {'type': 'integer', 'description': 'Año del periodo actual. Default: año de hoy.'},
+                    'comparar_con': {
+                        'type': 'string',
+                        'enum': ['mes_anterior', 'mismo_mes_anio_pasado', 'explicito'],
+                        'description': 'Contra qué comparar. Default: mes_anterior.',
+                    },
+                    'mes_comparacion': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes a comparar (solo si comparar_con=explicito).'},
+                    'anio_comparacion': {'type': 'integer', 'description': 'Año a comparar (solo si comparar_con=explicito).'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'rendimiento_equipo_completo',
             'description': (
                 'Reporte EJECUTIVO del rendimiento del equipo en un mes: '
@@ -1925,6 +2038,7 @@ TOOL_HANDLERS = {
     'historico_cliente': _tool_historico_cliente,
     'ranking_productos': _tool_ranking_productos,
     'rendimiento_equipo_completo': _tool_rendimiento_equipo_completo,
+    'comparativa_kpi_mes': _tool_comparativa_kpi_mes,
 }
 
 
