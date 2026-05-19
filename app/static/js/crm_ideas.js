@@ -186,6 +186,27 @@
             : '';
         var iniciales = (idea.autor && idea.autor.iniciales) || '?';
         var autorNombre = (idea.autor && idea.autor.nombre) || '—';
+        // Bloques extra: de dónde salió + último comentario
+        var inspirHtml = '';
+        if (idea.inspiracion_corta) {
+            inspirHtml = '<div class="idea-card-inspir">'
+                + '<span class="idea-card-inspir-label">De dónde salió</span>'
+                + '<span class="idea-card-inspir-text">' + esc(idea.inspiracion_corta) + '</span>'
+                + '</div>';
+        }
+        var lastComHtml = '';
+        if (idea.ultimo_comentario && idea.ultimo_comentario.texto) {
+            var lc = idea.ultimo_comentario;
+            var lcAuthor = (lc.autor && lc.autor.nombre) || '—';
+            lastComHtml = '<div class="idea-card-lastcom">'
+                + '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;opacity:0.7;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'
+                + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">'
+                + '<strong style="color:#475569;">' + esc(lcAuthor.split(' ')[0]) + ':</strong> '
+                + esc(lc.texto.substring(0, 80))
+                + '</span>'
+                + '</div>';
+        }
+
         return '<div class="idea-card" data-idea-id="' + idea.id + '" draggable="true">'
             + '  <div class="idea-card-strip"></div>'
             + '  <div class="idea-card-title">' + esc(idea.titulo) + '</div>'
@@ -196,9 +217,11 @@
             + '    </div>'
             + '    <div class="idea-card-pill">'
             + '      <span class="idea-card-pill-label">Mercado</span>'
-            + '      <span class="idea-card-pill-value">' + esc(idea.mercado_objetivo || '—') + '</span>'
+            + '      <span class="idea-card-pill-value">' + esc((idea.cliente && idea.cliente.nombre) || idea.mercado_objetivo || '—') + '</span>'
             + '    </div>'
             + '  </div>'
+            +    inspirHtml
+            +    lastComHtml
             +    tagsHtml
             + '  <div class="idea-card-foot">'
             + '    <span class="idea-card-author">'
@@ -592,20 +615,8 @@
         // Actividades del calendario
         renderActividades(i.actividades || []);
 
-        // Comentarios
-        var list = document.getElementById('wiComentariosList');
-        var coms = i.comentarios || [];
-        list.innerHTML = coms.length
-            ? coms.map(function (c) {
-                return '<div style="background:#F9FAFB;border-radius:10px;padding:8px 12px;">'
-                    + '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#6B7280;margin-bottom:2px;">'
-                    + '<strong>' + esc((c.usuario && c.usuario.nombre) || '?') + '</strong>'
-                    + '<span>' + fmtFecha(c.fecha) + '</span>'
-                    + '</div>'
-                    + '<div style="font-size:0.85rem;color:#1D1D1F;white-space:pre-wrap;">' + esc(c.texto) + '</div>'
-                    + '</div>';
-              }).join('')
-            : '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;padding:8px 0;">Aún no hay comentarios.</div>';
+        // Comentarios — estilo chat (avatar + bubble).
+        renderComentarios(i.comentarios || []);
 
         // Convertida info: solo se muestra si ya tiene prospecto_creado.
         var convInfo = document.getElementById('wiConvertidaInfo');
@@ -625,7 +636,7 @@
         var list = document.getElementById('wiActividadesList');
         if (!list) return;
         if (!acts.length) {
-            list.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;padding:8px 0;">Sin actividades agendadas. Captura una desde el botón Agendar.</div>';
+            list.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;padding:8px 0;">Sin actividades agendadas.</div>';
             return;
         }
         list.innerHTML = acts.map(function (a) {
@@ -633,7 +644,7 @@
             var fechaFmt = d ? d.toLocaleString('es-MX', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : 'Sin fecha';
             return '<div class="idea-act-row' + (a.completada ? ' is-done' : '') + '">'
                 + '  <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">'
-                + '    <svg width="14" height="14" fill="none" stroke="' + (a.completada ? '#16A34A' : '#5E5CE6') + '" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'
+                + '    <svg width="14" height="14" fill="none" stroke="' + (a.completada ? '#16A34A' : '#5B21B6') + '" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'
                 + '    <div style="display:flex;flex-direction:column;min-width:0;">'
                 + '      <span style="font-weight:600;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(a.titulo) + '</span>'
                 + '      <span class="idea-act-meta">' + esc(fechaFmt) + ((a.creado_por && a.creado_por.nombre) ? ' · por ' + esc(a.creado_por.nombre) : '') + '</span>'
@@ -643,79 +654,84 @@
         }).join('');
     }
 
+    /* Abrir el modal global del calendario (widgetGlobalCrearActividad) para
+       agendar una actividad ligada a la idea actual. La inyección del
+       campo `idea` en el payload se hace via window._calContextoIdea, que
+       el patch de calGlobalCrearActividadSubmit lee al hacer POST. */
     function openActividadForm() {
-        var f = document.getElementById('wiActividadForm');
-        if (!f) return;
-        f.style.display = '';
-        // Defaults: fecha hoy, hora actual + 1h
-        var t = document.getElementById('wiActTitulo');
-        var d = document.getElementById('wiActFecha');
-        var h = document.getElementById('wiActHora');
-        var now = new Date();
-        if (d) d.value = now.toISOString().substring(0, 10);
-        if (h) {
-            var hh = String(now.getHours()).padStart(2, '0');
-            var mm = String(now.getMinutes()).padStart(2, '0');
-            h.value = hh + ':' + mm;
-        }
-        if (t) { t.value = ''; setTimeout(function () { t.focus(); }, 30); }
-    }
-    function submitActividad() {
         var i = STATE.currentIdea;
         if (!i) return;
-        var titulo = document.getElementById('wiActTitulo').value.trim();
-        var fecha = document.getElementById('wiActFecha').value;
-        var hora = document.getElementById('wiActHora').value;
-        if (!titulo || !fecha || !hora) {
-            showFlash('Título, fecha y hora son requeridos', 'error');
+        if (typeof window.calGlobalAbrirCrearActividad !== 'function') {
+            showFlash('El composer de actividades no está disponible', 'error');
             return;
         }
-        // Construir inicio y fin (default duración = 1h).
-        var startIso = fecha + 'T' + hora + ':00';
-        var startDt = new Date(startIso);
-        var endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
-        function localIso(d) {
-            var p = function (n) { return String(n).padStart(2, '0'); };
-            return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-                + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':00';
-        }
-        var payload = {
-            title: titulo,
-            description: 'Actividad ligada a idea "' + i.titulo + '"',
-            tipo: 'tarea',
-            start: localIso(startDt),
-            end: localIso(endDt),
-            color: '#5E5CE6',
-            participants: [],
-            idea: i.id,
-        };
-        var btn = document.getElementById('wiActGuardar');
-        if (btn) btn.disabled = true;
-        api('/app/api/actividades/', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        }).then(function (res) {
-            if (!res.ok || res.data.error) {
-                showFlash(res.data.error || 'No se pudo agendar', 'error');
-                return;
-            }
-            showFlash('Actividad agendada');
-            document.getElementById('wiActividadForm').style.display = 'none';
-            // Append local sin re-fetch del detalle
-            i.actividades = i.actividades || [];
-            i.actividades.push({
-                id: res.data.id,
-                titulo: res.data.title || titulo,
-                tipo_actividad: res.data.tipo || 'tarea',
-                fecha_inicio: res.data.start || startDt.toISOString(),
-                fecha_fin: res.data.end || endDt.toISOString(),
-                descripcion: res.data.description || '',
-                color: res.data.color || '#5E5CE6',
-                completada: false,
-                creado_por: res.data.creado_por || null,
+        window._calContextoIdea = i.id;
+        window.calGlobalAbrirCrearActividad();
+        // Cuando el modal cierra (post-submit), recargamos el detalle de la
+        // idea para mostrar la actividad nueva en la card.
+        var ov = document.getElementById('widgetGlobalCrearActividad');
+        if (ov) {
+            var observer = new MutationObserver(function () {
+                if (ov.style.display === 'none' || !ov.classList.contains('active')) {
+                    observer.disconnect();
+                    window._calContextoIdea = null;
+                    // Recargar detalle (las actividades vienen en GET /api/ideas/<id>/).
+                    if (STATE.currentIdea) {
+                        api('/app/api/ideas/' + STATE.currentIdea.id + '/').then(function (res) {
+                            if (res.ok && res.data.ok) {
+                                STATE.currentIdea = res.data.idea;
+                                renderActividades(res.data.idea.actividades || []);
+                            }
+                        });
+                    }
+                }
             });
-            renderActividades(i.actividades);
-        }).finally(function () { if (btn) btn.disabled = false; });
+            observer.observe(ov, {attributes: true, attributeFilter: ['style', 'class']});
+        }
+    }
+
+    /* Patch global: extender calGlobalCrearActividadSubmit para que mande
+       `idea` cuando window._calContextoIdea está seteado. Se aplica una
+       sola vez. */
+    function patchCalActividadSubmit() {
+        if (window._calIdeaPatchApplied) return;
+        if (typeof window.fetch !== 'function') return;
+        var origFetch = window.fetch;
+        window.fetch = function (url, opts) {
+            if (typeof url === 'string'
+                && url.indexOf('/app/api/actividades/') !== -1
+                && opts && opts.method === 'POST'
+                && window._calContextoIdea) {
+                try {
+                    var body = JSON.parse(opts.body || '{}');
+                    body.idea = window._calContextoIdea;
+                    opts.body = JSON.stringify(body);
+                } catch (e) { /* ignore */ }
+            }
+            return origFetch.apply(this, arguments);
+        };
+        window._calIdeaPatchApplied = true;
+    }
+
+    function renderComentarios(coms) {
+        var list = document.getElementById('wiComentariosList');
+        if (!list) return;
+        if (!coms.length) {
+            list.innerHTML = '<div class="idea-msg-empty">Aún no hay comentarios. Empieza la bitácora.</div>';
+            return;
+        }
+        list.innerHTML = coms.map(function (c) {
+            var u = c.usuario || {};
+            var ini = u.iniciales || ((u.nombre || '?').substring(0, 2)).toUpperCase();
+            return '<div class="idea-msg">'
+                + '<div class="idea-msg-avatar">' + esc(ini) + '</div>'
+                + '<div class="idea-msg-body">'
+                + '  <div class="idea-msg-meta"><span class="idea-msg-author">' + esc(u.nombre || '—') + '</span><span>' + esc(fmtFecha(c.fecha)) + '</span></div>'
+                + '  <div class="idea-msg-text">' + esc(c.texto) + '</div>'
+                + '</div></div>';
+        }).join('');
+        // Scroll al final
+        list.scrollTop = list.scrollHeight;
     }
 
     function comentarIdea() {
@@ -900,18 +916,22 @@
         var ov = document.getElementById('widgetIdea');
         if (ov) ov.addEventListener('click', function (e) { if (e.target === ov) closeIdeaDetail(); });
 
-        var elim = document.getElementById('wiEliminarBtn');
-        if (elim) elim.addEventListener('click', eliminarIdea);
-        var edit = document.getElementById('wiEditarBtn');
-        if (edit) edit.addEventListener('click', editarIdea);
-
         var cBtn = document.getElementById('wiComentarBtn');
         if (cBtn) cBtn.addEventListener('click', comentarIdea);
 
+        var brainBtn = document.getElementById('wiBrainBtn');
+        if (brainBtn) brainBtn.addEventListener('click', function () {
+            showFlash('Asistente AI: próximamente');
+        });
+
         var addActBtn = document.getElementById('wiAddActBtn');
         if (addActBtn) addActBtn.addEventListener('click', openActividadForm);
-        var actGuardar = document.getElementById('wiActGuardar');
-        if (actGuardar) actGuardar.addEventListener('click', submitActividad);
+
+        // Enter en el textarea de comentario → enviar (Shift+Enter = nueva línea).
+        var inp = document.getElementById('wiComentarioInput');
+        if (inp) inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); comentarIdea(); }
+        });
 
         var cnvCancel = document.getElementById('wiCnvCancel');
         if (cnvCancel) cnvCancel.addEventListener('click', cerrarConvertir);
@@ -940,6 +960,59 @@
             var el = document.getElementById(id);
             if (el) el.addEventListener('input', validateNiForm);
         });
+    }
+
+    /* ─── Flechas de scroll horizontal del kanban ─── */
+    function injectKanbanArrows() {
+        var board = document.getElementById('ideasKanbanBoard');
+        if (!board) return;
+        var wrap = board.parentNode;
+        if (!wrap) return;
+        // Volverla relative para anclar las flechas absolute encima.
+        if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+
+        function mkArrow(dir) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'ideas-kanban-arrow ideas-kanban-arrow--' + dir;
+            b.setAttribute('aria-label', dir === 'left' ? 'Anterior' : 'Siguiente');
+            b.innerHTML = dir === 'left'
+                ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+                : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+            b.style.cssText = 'position:absolute;top:50%;transform:translateY(-50%);'
+                + (dir === 'left' ? 'left:-6px;' : 'right:-6px;')
+                + 'width:38px;height:38px;border-radius:50%;'
+                + 'background:#FFFFFF;border:1px solid #E5E7EB;color:#475569;'
+                + 'box-shadow:0 8px 20px -6px rgba(15,23,42,0.16);'
+                + 'cursor:pointer;display:flex;align-items:center;justify-content:center;'
+                + 'z-index:8;transition:opacity 0.18s ease, transform 0.18s ease;';
+            b.addEventListener('mouseenter', function () { b.style.background = '#F8FAFC'; });
+            b.addEventListener('mouseleave', function () { b.style.background = '#FFFFFF'; });
+            b.addEventListener('click', function () {
+                var step = Math.max(280, Math.floor(board.clientWidth * 0.7));
+                board.scrollBy({left: dir === 'left' ? -step : step, behavior: 'smooth'});
+            });
+            return b;
+        }
+        var left = mkArrow('left');
+        var right = mkArrow('right');
+        wrap.appendChild(left);
+        wrap.appendChild(right);
+
+        function updateVisibility() {
+            var canLeft = board.scrollLeft > 4;
+            var canRight = (board.scrollLeft + board.clientWidth) < (board.scrollWidth - 4);
+            left.style.opacity = canLeft ? '1' : '0';
+            left.style.pointerEvents = canLeft ? 'auto' : 'none';
+            right.style.opacity = canRight ? '1' : '0';
+            right.style.pointerEvents = canRight ? 'auto' : 'none';
+        }
+        board.addEventListener('scroll', updateVisibility);
+        window.addEventListener('resize', updateVisibility);
+        // Observa cambios de contenido (re-render) para refrescar visibility.
+        var mo = new MutationObserver(updateVisibility);
+        mo.observe(board, {childList: true});
+        setTimeout(updateVisibility, 50);
     }
 
     /* ─── Click-to-edit en el widget de detalle ─── */
@@ -1265,6 +1338,8 @@
         wireTopbarFilters();
         wireMercadoPicker();
         wireClickToEdit();
+        patchCalActividadSubmit();
+        injectKanbanArrows();
         fetchKanban().then(function () { applyFiltros(); });
     }
     document.addEventListener('DOMContentLoaded', boot);

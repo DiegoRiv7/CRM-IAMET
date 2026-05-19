@@ -130,6 +130,30 @@ Hidratado client-side desde /app/api/ideas/.
 .idea-card-potencial.is-medio { background: #FEF3C7; color: #B45309; }
 .idea-card-potencial.is-bajo { background: #F3F4F6; color: #6B7280; }
 .idea-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.idea-card-inspir {
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(91, 33, 182, 0.16);
+    border-radius: 10px;
+    padding: 6px 10px;
+}
+.idea-card-inspir-label {
+    font-size: 0.58rem; font-weight: 700; color: #6B21A8;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+.idea-card-inspir-text {
+    font-size: 0.76rem; color: #1E1B4B; line-height: 1.35;
+    font-style: italic;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.idea-card-lastcom {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.74rem; color: #475569;
+    background: rgba(255,255,255,0.65);
+    border-radius: 10px;
+    padding: 5px 10px;
+    border: 1px solid rgba(91,33,182,0.12);
+}
 .idea-card-tag {
     font-size: 0.65rem; font-weight: 600; color: var(--ai-primary);
     background: var(--ai-primary-soft); padding: 2px 7px; border-radius: 6px;
@@ -291,4 +315,4 @@ window._IDEAS_POTENCIAL = [
 
 {% include "crm/_widget_nueva_idea.html" %}
 {% include "crm/_widget_idea.html" %}
-<script src="{% static 'js/crm_ideas.js' %}?v=20260518-4"></script>
+<script src="{% static 'js/crm_ideas.js' %}?v=20260518-5"></script>

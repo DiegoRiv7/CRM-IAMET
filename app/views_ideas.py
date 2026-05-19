@@ -60,6 +60,23 @@ def _idea_to_dict(idea, include_descripcion=True):
     cliente_dict = None
     if idea.cliente_id and idea.cliente:
         cliente_dict = {'id': idea.cliente.id, 'nombre': idea.cliente.nombre_empresa}
+    # Último comentario (lo mostramos en la card del kanban). Lo tomamos del
+    # prefetched _last_comment si el queryset lo viene optimizado, si no, un
+    # query extra (acotado al primero por fecha desc).
+    ultimo_com = None
+    try:
+        last = getattr(idea, '_ultimo_comentario', None)
+        if last is None:
+            last = idea.comentarios.order_by('-fecha').first()
+        if last:
+            ultimo_com = {
+                'texto': (last.texto or '')[:140],
+                'fecha': last.fecha.isoformat() if last.fecha else None,
+                'autor': _user_short(last.usuario),
+            }
+    except Exception:
+        ultimo_com = None
+
     d = {
         'id': idea.id,
         'titulo': idea.titulo,
@@ -79,6 +96,8 @@ def _idea_to_dict(idea, include_descripcion=True):
         'fecha_creacion': idea.fecha_creacion.isoformat() if idea.fecha_creacion else None,
         'fecha_actualizacion': idea.fecha_actualizacion.isoformat() if idea.fecha_actualizacion else None,
         'prospecto_creado_id': idea.prospecto_creado_id,
+        'inspiracion_corta': (idea.inspiracion or '')[:140],
+        'ultimo_comentario': ultimo_com,
     }
     if include_descripcion:
         d['descripcion'] = idea.descripcion

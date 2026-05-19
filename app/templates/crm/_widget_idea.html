@@ -21,7 +21,7 @@ Detalle de Idea — layout estilo widget de Prospección:
             <div class="wo-header">
                 <div class="wo-header-top">
                     <div style="flex:1;min-width:0;">
-                        <div class="wo-type-badge" style="background:rgba(91,33,182,0.12);color:#5B21B6;">
+                        <div class="wo-type-badge idea-glass-badge">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"/>
                             </svg>
@@ -91,15 +91,23 @@ Detalle de Idea — layout estilo widget de Prospección:
 
                 {# Bottom row: Comentarios (left wide) + Actividad + Vendedor/Cliente card (right) #}
                 <div class="wo-grid" style="grid-template-columns:2fr 1fr;gap:14px;margin-top:14px;">
-                    <div class="wo-card" style="display:flex;flex-direction:column;">
-                        <div class="wo-section-header">
+                    <div class="wo-card" style="display:flex;flex-direction:column;padding:0;">
+                        <div class="wo-section-header" style="padding:14px 18px 0;">
                             <h3 class="wo-section-title">Comentarios / bitácora</h3>
                         </div>
-                        <div id="wiComentariosList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;min-height:80px;"></div>
-                        <div style="display:flex;gap:8px;align-items:flex-start;border-top:1px solid #F2F2F7;padding-top:10px;">
-                            <textarea id="wiComentarioInput" rows="1" placeholder="Escribe un comentario…" style="flex:1;border:1px solid #E5E5EA;border-radius:8px;padding:8px 12px;font-size:0.86rem;font-family:inherit;resize:vertical;min-height:38px;"></textarea>
-                            <button type="button" id="wiComentarBtn" style="background:#0052D4;color:#fff;border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Enviar">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        <div id="wiComentariosList" style="flex:1;padding:14px 18px;display:flex;flex-direction:column;gap:12px;min-height:120px;max-height:380px;overflow-y:auto;"></div>
+                        <div style="background:#FAFAFA;border-top:1px solid #F2F2F7;padding:12px 14px;display:flex;align-items:flex-end;gap:8px;">
+                            <div style="flex:1;background:#F2F2F7;border:1px solid #E5E5EA;border-radius:18px;padding:0;display:flex;align-items:center;">
+                                <textarea id="wiComentarioInput" rows="1" placeholder="Escribe un comentario..." style="flex:1;background:none;border:none;padding:9px 14px;font-size:0.9rem;resize:none;outline:none;font-family:inherit;max-height:100px;line-height:1.4;width:100%;"></textarea>
+                            </div>
+                            <button type="button" id="wiBrainBtn" class="idea-brain-btn" title="Asistente AI (próximamente)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v.5a2.5 2.5 0 0 0-2 4.45A2.5 2.5 0 0 0 5 14.5a2.5 2.5 0 0 0 .67 4.51A2.5 2.5 0 0 0 7 22a2.5 2.5 0 0 0 5 0V4.5A2.5 2.5 0 0 0 9.5 2z"/>
+                                    <path d="M14.5 2A2.5 2.5 0 0 1 17 4.5v.5a2.5 2.5 0 0 1 2 4.45A2.5 2.5 0 0 1 19 14.5a2.5 2.5 0 0 1-.67 4.51A2.5 2.5 0 0 1 17 22a2.5 2.5 0 0 1-5 0V4.5A2.5 2.5 0 0 1 14.5 2z"/>
+                                </svg>
+                            </button>
+                            <button type="button" id="wiComentarBtn" title="Enviar" style="width:38px;height:38px;border-radius:50%;background:#0052D4;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                             </button>
                         </div>
                     </div>
@@ -115,12 +123,6 @@ Detalle de Idea — layout estilo widget de Prospección:
                                 </button>
                             </div>
                             <div id="wiActividadesList" style="display:flex;flex-direction:column;gap:6px;"></div>
-                            <div id="wiActividadForm" class="idea-act-add-form" style="display:none;margin-top:8px;">
-                                <input type="text" id="wiActTitulo" placeholder="¿Qué hay que hacer?" maxlength="200" style="grid-column:1/-1;">
-                                <input type="date" id="wiActFecha">
-                                <input type="time" id="wiActHora">
-                                <button type="button" id="wiActGuardar">Agendar</button>
-                            </div>
                         </div>
 
                         {# Card: Vendedor + Cliente #}
@@ -147,20 +149,92 @@ Detalle de Idea — layout estilo widget de Prospección:
                     </div>
                 </div>
 
-                {# Acción de eliminar #}
-                <div style="display:flex;justify-content:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid #F2F2F7;">
-                    <button type="button" id="wiEliminarBtn" class="wo-btn-new" style="background:#FEF2F2;color:#DC2626;border-color:#FECACA;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                        Eliminar idea
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
-{# Estilos de click-to-edit #}
+{# Estilos liquid glass para el badge IDEA + botón cerebro + comentarios chat-style #}
 <style>
+/* Badge IDEA liquid glass multicolor */
+.idea-glass-badge {
+    background: linear-gradient(135deg,
+        rgba(30, 27, 75, 0.65) 0%,
+        rgba(76, 29, 149, 0.65) 35%,
+        rgba(124, 45, 138, 0.65) 65%,
+        rgba(190, 24, 93, 0.65) 100%) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        0 4px 12px -4px rgba(76,29,149,0.35);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.18);
+}
+.idea-glass-badge svg { stroke: #fff; opacity: 0.95; }
+
+/* Botón cerebro: gradiente multicolor oscuro, glass */
+.idea-brain-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg,
+        rgba(15, 23, 42,   0.92) 0%,
+        rgba(49, 46, 129,  0.92) 30%,
+        rgba(124, 45, 138, 0.92) 65%,
+        rgba(190, 24, 93,  0.92) 100%);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 4px 12px -4px rgba(76,29,149,0.45);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.idea-brain-btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        0 6px 18px -4px rgba(190,24,93,0.5);
+}
+.idea-brain-btn svg { width: 18px; height: 18px; }
+
+/* Burbujas de comentarios estilo chat (similar a oportunidad) */
+.idea-msg {
+    display: flex; gap: 10px; align-items: flex-start;
+}
+.idea-msg-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #1E1B4B, #581C87, #BE185D);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700;
+}
+.idea-msg-body {
+    flex: 1; min-width: 0;
+    background: #F8FAFC;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 8px 12px;
+}
+.idea-msg-meta {
+    display: flex; justify-content: space-between;
+    font-size: 0.7rem; color: #6B7280; margin-bottom: 2px;
+    gap: 8px;
+}
+.idea-msg-author { font-weight: 700; color: #475569; }
+.idea-msg-text {
+    font-size: 0.88rem; color: #1D1D1F; line-height: 1.45;
+    white-space: pre-wrap; word-break: break-word;
+}
+.idea-msg-empty {
+    font-size: 0.84rem; color: #9CA3AF; font-style: italic;
+    text-align: center; padding: 20px 0;
+}
+
+/* Estilos de click-to-edit */
 .idea-edit-field {
     cursor: pointer;
     padding: 4px 6px;
