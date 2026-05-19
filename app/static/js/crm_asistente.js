@@ -155,38 +155,151 @@
         });
     }
 
-    /* Markdown muy básico: **bold**, *italic*, `code`, líneas con "- " → <ul><li>.
-       Sin librerías externas. Sanitizo escape ANTES de inyectar HTML. */
+    /* Markdown rendering profesional. Soporta:
+       - Headings #, ##, ###
+       - **bold**, *italic*, `code`
+       - Listas con "- " o "* "
+       - Listas numeradas "1. "
+       - Tablas markdown | col | col |
+       - Links: [texto](url) y formato custom [texto](opp:ID) para abrir
+         el widget de una oportunidad sin salir del chat.
+       Escapamos HTML ANTES de inyectar — no se interpreta HTML del modelo. */
     function renderMarkdown(text) {
         var html = esc(text);
+
+        // Inline code (proteger contenido antes que el resto)
+        var codeBlocks = [];
+        html = html.replace(/`([^`\n]+)`/g, function (_, c) {
+            codeBlocks.push(c);
+            return '\x00CODE' + (codeBlocks.length - 1) + '\x00';
+        });
+
         // Negritas y cursivas
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
-        // Inline code
-        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-        // Listas: agrupar líneas consecutivas que empiezan con "- " o "• ".
+
+        // Links: [texto](url). Detectamos custom `opp:ID` para hacer click handler.
+        html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_, label, url) {
+            var oppMatch = url.match(/^opp:(\d+)$/);
+            if (oppMatch) {
+                return '<a href="#" data-asist-opp="' + oppMatch[1] + '" class="asist-link asist-link--opp">' + label + '</a>';
+            }
+            // Link externo (solo http/https para seguridad).
+            if (/^https?:\/\//i.test(url)) {
+                return '<a href="' + url + '" target="_blank" rel="noopener" class="asist-link">' + label + '</a>';
+            }
+            return label;
+        });
+
+        // Procesar línea por línea para listas, headings y tablas.
         var lines = html.split('\n');
         var out = [];
-        var inList = false;
-        lines.forEach(function (line) {
-            var m = line.match(/^\s*(?:-|•|•)\s+(.*)$/);
-            if (m) {
-                if (!inList) { out.push('<ul>'); inList = true; }
-                out.push('<li>' + m[1] + '</li>');
-            } else {
-                if (inList) { out.push('</ul>'); inList = false; }
-                out.push(line);
+        var inList = null;        // 'ul' | 'ol' | null
+        var inTable = false;
+        var tableHeader = null;
+
+        function closeList() {
+            if (inList) { out.push('</' + inList + '>'); inList = null; }
+        }
+        function closeTable() {
+            if (inTable) { out.push('</tbody></table>'); inTable = false; tableHeader = null; }
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            // Headings
+            var h = line.match(/^\s*(#{1,3})\s+(.+)$/);
+            if (h) {
+                closeList(); closeTable();
+                var level = h[1].length + 2;  // ### → h5, ## → h4, # → h3
+                out.push('<h' + level + ' class="asist-h asist-h-' + h[1].length + '">' + h[2] + '</h' + level + '>');
+                continue;
             }
-        });
-        if (inList) out.push('</ul>');
+            // Tabla — detectar líneas con |
+            var isTableRow = /^\s*\|.+\|\s*$/.test(line);
+            var isTableSep = /^\s*\|[\s\-:|]+\|\s*$/.test(line);
+            if (isTableRow && !isTableSep) {
+                closeList();
+                var cells = line.trim().replace(/^\||\|$/g, '').split('|').map(function (s) { return s.trim(); });
+                if (!inTable) {
+                    // Mirar siguiente línea — si es separador, esto es header
+                    var next = lines[i + 1];
+                    if (next && /^\s*\|[\s\-:|]+\|\s*$/.test(next)) {
+                        out.push('<table class="asist-table"><thead><tr>'
+                            + cells.map(function (c) { return '<th>' + c + '</th>'; }).join('')
+                            + '</tr></thead><tbody>');
+                        inTable = true;
+                        i++; // saltar separator
+                        continue;
+                    }
+                    // Sin header: abrir tabla simple
+                    out.push('<table class="asist-table"><tbody>');
+                    inTable = true;
+                }
+                out.push('<tr>' + cells.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>');
+                continue;
+            }
+            if (inTable) closeTable();
+
+            // Listas
+            var ul = line.match(/^\s*(?:-|•|\*)\s+(.*)$/);
+            var ol = line.match(/^\s*\d+\.\s+(.*)$/);
+            if (ul) {
+                if (inList !== 'ul') { closeList(); out.push('<ul>'); inList = 'ul'; }
+                out.push('<li>' + ul[1] + '</li>');
+                continue;
+            }
+            if (ol) {
+                if (inList !== 'ol') { closeList(); out.push('<ol>'); inList = 'ol'; }
+                out.push('<li>' + ol[1] + '</li>');
+                continue;
+            }
+            // Línea vacía
+            if (!line.trim()) {
+                closeList();
+                out.push('');
+                continue;
+            }
+            // Línea normal
+            closeList();
+            out.push(line);
+        }
+        closeList();
+        closeTable();
+
         html = out.join('\n');
-        // Saltos de línea simples → <br>, pero no dentro de <ul>
-        html = html.split(/(<ul>[\s\S]*?<\/ul>)/g).map(function (chunk) {
-            if (chunk.startsWith('<ul>')) return chunk;
-            return chunk.replace(/\n/g, '<br>');
-        }).join('');
+
+        // Restaurar code blocks
+        html = html.replace(/\x00CODE(\d+)\x00/g, function (_, idx) {
+            return '<code>' + codeBlocks[parseInt(idx, 10)] + '</code>';
+        });
+
+        // Saltos de línea simples → <br>, sin tocar bloques estructurales.
+        var blockTags = '(?:<\\/(?:ul|ol|li|h\\d|table|thead|tbody|tr|td|th|p)>)|(?:<(?:ul|ol|h\\d|table|thead|tbody|tr)\\b)';
+        html = html.split(/\n/).join('\n');
+        html = html.replace(/\n(?!\s*(?:<\/?(?:ul|ol|li|h\d|table|thead|tbody|tr|td|th|p)\b))/g, '<br>');
+        // Quitar <br> sobrantes adyacentes a bloques
+        html = html.replace(/<br>\s*(<\/?(?:ul|ol|h\d|table|thead|tbody|tr)\b)/g, '$1');
+        html = html.replace(/(<\/(?:ul|ol|h\d|table|thead|tbody|tr)>)\s*<br>/g, '$1');
+
         return html;
     }
+
+    /* Abrir widget de oportunidad desde el chat. Prueba varias funciones
+       globales hasta encontrar la que aplica al contexto actual. */
+    function openOpportunityFromChat(oppId) {
+        if (typeof window.openDetalle === 'function') {
+            window.openDetalle(oppId);
+        } else if (typeof window.woAbrirDetalle === 'function') {
+            window.woAbrirDetalle(oppId);
+        } else if (typeof window.abrirOportunidad === 'function') {
+            window.abrirOportunidad(oppId);
+        } else {
+            // Fallback: navegar al CRM con la opp abierta como query param.
+            window.location.href = '/app/todos/?tab=crm&open_proyecto=' + oppId;
+        }
+    }
+    window.asistenteAbrirOportunidad = openOpportunityFromChat;
 
     /* Orb compuesto (core + 3 anillos) — mismo markup que el template inicial. */
     function orbHTML(size) {
@@ -339,12 +452,21 @@
             if (e.target === overlay) closeAsistente();
         });
 
-        // Sugerencias del welcome
+        // Sugerencias del welcome y clicks en oportunidades dentro de respuestas
         document.addEventListener('click', function (e) {
-            var sug = e.target.closest('.asist-suggestion');
+            var sug = e.target.closest('.asist-sugg-card, .asist-suggestion');
             if (sug) {
                 var prompt = sug.getAttribute('data-prompt') || sug.textContent;
                 sendMessage(prompt);
+                return;
+            }
+            // Link a oportunidad dentro de una respuesta del bot: abre el widget
+            var oppLink = e.target.closest('a[data-asist-opp]');
+            if (oppLink) {
+                e.preventDefault();
+                var oppId = parseInt(oppLink.getAttribute('data-asist-opp'), 10);
+                if (oppId) openOpportunityFromChat(oppId);
+                return;
             }
             var opener = e.target.closest('[data-asist-open]');
             if (opener) {

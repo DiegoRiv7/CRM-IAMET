@@ -24,6 +24,7 @@ from django.utils import timezone
 
 from .models import (
     Cliente, TodoItem, Cotizacion, Actividad, TareaOportunidad,
+    UserProfile,
 )
 from .views_utils import is_supervisor
 
@@ -184,9 +185,10 @@ def _tool_ranking_vendedores(args: dict, user: User) -> dict:
     }
 
 
-# 3. Resumen de empresa
+# 3. Resumen de empresa — mismo KPI que el dashboard del CRM
 def _tool_resumen_empresa(args: dict, user: User) -> dict:
-    """KPIs del periodo: nuevas oportunidades, pipeline, ganadas/perdidas."""
+    """KPIs del periodo (dashboard del CRM): cotizado, facturado, cobrado,
+    pipeline, oportunidades nuevas / ganadas / perdidas."""
     ahora = timezone.now()
     mes = int(args.get('mes') or ahora.month)
     anio = int(args.get('anio') or ahora.year)
@@ -199,23 +201,47 @@ def _tool_resumen_empresa(args: dict, user: User) -> dict:
 
     nuevas_opp = base.count()
 
-    # Pipeline activo (no perdidas) del periodo
     activas = base.exclude(_q_perdidas())
     pipeline_periodo = activas.aggregate(total=Sum('monto')).get('total') or 0
 
-    # Ganadas (etapa contiene "ganado", "pagado", "facturado", "cobrado")
+    # Cotizado: monto total de Cotizacion objects creadas en el periodo.
+    cot_qs = Cotizacion.objects.filter(fecha_creacion__year=anio, fecha_creacion__month=mes)
+    if visible_ids is not None:
+        cot_qs = cot_qs.filter(created_by_id__in=visible_ids)
+    total_cotizado = cot_qs.aggregate(total=Sum('total')).get('total') or 0
+    num_cotizaciones = cot_qs.count()
+
+    # Facturado: oportunidades con etapa que contiene "facturad" o "factura" en el periodo.
+    fact_qs = base.filter(etapa_corta__icontains='factur')
+    total_facturado = fact_qs.aggregate(total=Sum('monto')).get('total') or 0
+    num_facturadas = fact_qs.count()
+
+    # Cobrado: oportunidades con etapa Ganado o Pagado.
+    cob_qs = base.filter(etapa_corta__in=['Ganado', 'Pagado'])
+    total_cobrado = cob_qs.aggregate(total=Sum('monto')).get('total') or 0
+    num_cobradas = cob_qs.count()
+
     ganadas_qs = base.filter(_q_ganadas())
     ganadas_count = ganadas_qs.count()
     ganadas_monto = ganadas_qs.aggregate(total=Sum('monto')).get('total') or 0
 
-    # Perdidas / canceladas
     perdidas_count = base.filter(_q_perdidas()).count()
+
+    # Clientes únicos del periodo
+    num_clientes = base.values('cliente').distinct().count()
 
     return {
         'mes': mes,
         'anio': anio,
         'oportunidades_nuevas': nuevas_opp,
+        'clientes_distintos': num_clientes,
         'pipeline_activo_mxn': _to_money(pipeline_periodo),
+        'cotizado_mxn': _to_money(total_cotizado),
+        'num_cotizaciones': num_cotizaciones,
+        'facturado_mxn': _to_money(total_facturado),
+        'num_facturadas': num_facturadas,
+        'cobrado_mxn': _to_money(total_cobrado),
+        'num_cobradas': num_cobradas,
         'oportunidades_ganadas': ganadas_count,
         'monto_ganado_mxn': _to_money(ganadas_monto),
         'oportunidades_perdidas': perdidas_count,
@@ -307,6 +333,257 @@ def _tool_forecast_cierre(args: dict, user: User) -> dict:
             'forecast_ponderado = suma(monto × probabilidad_cierre del CRM). '
             'pipeline_total = suma sin descontar perdidas.'
         ),
+    }
+
+
+# 6. Oportunidades por vendedor (lista detallada con IDs para click-to-open)
+def _tool_oportunidades_por_vendedor(args: dict, user: User) -> dict:
+    """Lista las oportunidades de un vendedor en un periodo. Incluye `id` para
+    que el chat las renderee como links que abren el widget."""
+    vendedor = (args.get('vendedor_username') or args.get('vendedor') or '').strip()
+    if not vendedor:
+        return {'error': 'Falta el username del vendedor.'}
+    try:
+        target = User.objects.get(username=vendedor)
+    except User.DoesNotExist:
+        # Intentar buscar por nombre completo (fuzzy)
+        partes = vendedor.split()
+        target = None
+        if len(partes) >= 1:
+            qs = User.objects.filter(
+                Q(first_name__icontains=partes[0]) | Q(last_name__icontains=partes[0])
+            )
+            if len(partes) >= 2:
+                qs = qs.filter(
+                    Q(first_name__icontains=partes[1]) | Q(last_name__icontains=partes[1])
+                )
+            target = qs.first()
+        if not target:
+            return {'error': f'No encuentro al vendedor "{vendedor}".'}
+
+    # Permisos: si el caller no es supervisor, solo puede ver SUS propias opp.
+    if not _can_see_all(user) and target.id != user.id:
+        return {'error': 'Solo supervisores pueden consultar las oportunidades de otros vendedores.'}
+
+    # Periodo: por default últimos 12 meses
+    desde = None; hasta = None
+    if args.get('mes_desde') and args.get('anio_desde'):
+        try:
+            from datetime import datetime as _dt
+            desde = timezone.make_aware(_dt(int(args['anio_desde']), int(args['mes_desde']), 1))
+        except Exception:
+            desde = None
+    if args.get('mes_hasta') and args.get('anio_hasta'):
+        try:
+            from datetime import datetime as _dt
+            import calendar
+            anio_h = int(args['anio_hasta']); mes_h = int(args['mes_hasta'])
+            last_day = calendar.monthrange(anio_h, mes_h)[1]
+            hasta = timezone.make_aware(_dt(anio_h, mes_h, last_day, 23, 59, 59))
+        except Exception:
+            hasta = None
+    if not desde:
+        desde = timezone.now() - timedelta(days=365)
+    if not hasta:
+        hasta = timezone.now()
+
+    limite = int(args.get('limite') or 200)
+    limite = max(1, min(limite, 500))
+
+    qs = TodoItem.objects.filter(
+        usuario=target,
+        fecha_creacion__gte=desde,
+        fecha_creacion__lte=hasta,
+    ).select_related('cliente').order_by('-fecha_creacion')[:limite]
+
+    items = []
+    for opp in qs:
+        items.append({
+            'id': opp.id,
+            'titulo': opp.oportunidad,
+            'cliente': opp.cliente.nombre_empresa if opp.cliente_id else '—',
+            'monto_mxn': _to_money(opp.monto),
+            'etapa': opp.etapa_corta or opp.etapa_completa or '—',
+            'producto': opp.producto or '—',
+            'probabilidad_pct': opp.probabilidad_cierre or 0,
+            'fecha_creacion': opp.fecha_creacion.strftime('%Y-%m-%d') if opp.fecha_creacion else '—',
+        })
+
+    return {
+        'vendedor': target.get_full_name() or target.username,
+        'username': target.username,
+        'desde': desde.strftime('%Y-%m-%d'),
+        'hasta': hasta.strftime('%Y-%m-%d'),
+        'total': len(items),
+        'oportunidades': items,
+    }
+
+
+# 7. Detalle de una oportunidad específica
+def _tool_detalle_oportunidad(args: dict, user: User) -> dict:
+    """Info completa de una oportunidad por ID."""
+    try:
+        opp_id = int(args.get('id') or 0)
+    except (ValueError, TypeError):
+        opp_id = 0
+    if not opp_id:
+        return {'error': 'Falta el id de la oportunidad.'}
+    try:
+        opp = TodoItem.objects.select_related('cliente', 'usuario', 'contacto').get(pk=opp_id)
+    except TodoItem.DoesNotExist:
+        return {'error': f'Oportunidad #{opp_id} no encontrada.'}
+
+    # Permisos
+    visible_ids = _visible_user_ids(user)
+    if visible_ids is not None and opp.usuario_id not in visible_ids:
+        return {'error': 'No tienes permiso para ver esta oportunidad.'}
+
+    return {
+        'id': opp.id,
+        'titulo': opp.oportunidad,
+        'cliente': opp.cliente.nombre_empresa if opp.cliente_id else '—',
+        'contacto': (opp.contacto.nombre + ' ' + (opp.contacto.apellido or '')).strip() if opp.contacto_id else '—',
+        'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario_id else '—',
+        'monto_mxn': _to_money(opp.monto),
+        'producto': opp.producto or '—',
+        'area': opp.area or '—',
+        'tipo_negociacion': opp.tipo_negociacion or '—',
+        'etapa_corta': opp.etapa_corta or '—',
+        'etapa_completa': opp.etapa_completa or '—',
+        'probabilidad_pct': opp.probabilidad_cierre or 0,
+        'mes_cierre': opp.mes_cierre or '—',
+        'anio_cierre': opp.anio_cierre,
+        'comentarios': (opp.comentarios or '')[:500],
+        'po_number': opp.po_number or '',
+        'factura_numero': opp.factura_numero or '',
+        'fecha_creacion': opp.fecha_creacion.strftime('%Y-%m-%d') if opp.fecha_creacion else '—',
+        'fecha_actualizacion': opp.fecha_actualizacion.strftime('%Y-%m-%d') if opp.fecha_actualizacion else '—',
+    }
+
+
+# 8. Perfil / desempeño de un vendedor
+def _tool_detalle_vendedor(args: dict, user: User) -> dict:
+    """Perfil de un vendedor: opp activas, ganadas/perdidas del mes y del año,
+    clientes asignados, monto generado. Solo supervisores y admins."""
+    if not (is_supervisor(user) or user.is_superuser):
+        return {'error': 'Solo supervisores y admins pueden ver el perfil completo de un vendedor.'}
+
+    vendedor = (args.get('vendedor_username') or args.get('vendedor') or '').strip()
+    if not vendedor:
+        return {'error': 'Falta el username del vendedor.'}
+    try:
+        target = User.objects.get(username=vendedor)
+    except User.DoesNotExist:
+        partes = vendedor.split()
+        target = None
+        if partes:
+            qs = User.objects.filter(
+                Q(first_name__icontains=partes[0]) | Q(last_name__icontains=partes[0])
+            )
+            target = qs.first()
+        if not target:
+            return {'error': f'No encuentro al vendedor "{vendedor}".'}
+
+    ahora = timezone.now()
+    inicio_mes = timezone.make_aware(
+        timezone.datetime(ahora.year, ahora.month, 1)
+    ) if hasattr(timezone, 'datetime') else None
+    # Fallback safe
+    from datetime import datetime as _dt
+    inicio_mes = timezone.make_aware(_dt(ahora.year, ahora.month, 1))
+    inicio_anio = timezone.make_aware(_dt(ahora.year, 1, 1))
+
+    opp_base = TodoItem.objects.filter(usuario=target)
+    activas = opp_base.exclude(_q_perdidas())
+    pipeline_total = activas.aggregate(total=Sum('monto')).get('total') or 0
+    opp_activas_count = activas.count()
+
+    # Mes actual
+    opp_mes = opp_base.filter(fecha_creacion__gte=inicio_mes)
+    nuevas_mes = opp_mes.count()
+    ganadas_mes = opp_mes.filter(_q_ganadas()).aggregate(total=Sum('monto')).get('total') or 0
+    ganadas_mes_count = opp_mes.filter(_q_ganadas()).count()
+
+    # Año actual
+    opp_anio = opp_base.filter(fecha_creacion__gte=inicio_anio)
+    nuevas_anio = opp_anio.count()
+    ganadas_anio = opp_anio.filter(_q_ganadas()).aggregate(total=Sum('monto')).get('total') or 0
+
+    # Clientes asignados
+    clientes_count = Cliente.objects.filter(asignado_a=target).count()
+
+    # Rol
+    rol = 'vendedor'
+    try:
+        prof = UserProfile.objects.filter(user=target).first()
+        if prof:
+            rol = prof.get_rol_display() if hasattr(prof, 'get_rol_display') else str(prof.rol)
+    except Exception:
+        pass
+
+    return {
+        'username': target.username,
+        'nombre': target.get_full_name() or target.username,
+        'rol': rol,
+        'oportunidades_activas': opp_activas_count,
+        'pipeline_activo_mxn': _to_money(pipeline_total),
+        'clientes_asignados': clientes_count,
+        'mes_actual': {
+            'nuevas_oportunidades': nuevas_mes,
+            'ganadas': ganadas_mes_count,
+            'monto_ganado_mxn': _to_money(ganadas_mes),
+        },
+        'anio_actual': {
+            'nuevas_oportunidades': nuevas_anio,
+            'monto_ganado_mxn': _to_money(ganadas_anio),
+        },
+    }
+
+
+# 9. Clientes asignados a un vendedor
+def _tool_clientes_de_vendedor(args: dict, user: User) -> dict:
+    """Lista los clientes asignados a un vendedor (cartera)."""
+    vendedor = (args.get('vendedor_username') or args.get('vendedor') or '').strip()
+    if not vendedor:
+        return {'error': 'Falta el username del vendedor.'}
+    try:
+        target = User.objects.get(username=vendedor)
+    except User.DoesNotExist:
+        partes = vendedor.split()
+        target = None
+        if partes:
+            qs = User.objects.filter(
+                Q(first_name__icontains=partes[0]) | Q(last_name__icontains=partes[0])
+            )
+            target = qs.first()
+        if not target:
+            return {'error': f'No encuentro al vendedor "{vendedor}".'}
+
+    # Permisos: solo supervisor o el mismo vendedor.
+    if not _can_see_all(user) and target.id != user.id:
+        return {'error': 'Solo supervisores pueden ver la cartera de otros vendedores.'}
+
+    limite = int(args.get('limite') or 50)
+    limite = max(1, min(limite, 300))
+
+    clientes = Cliente.objects.filter(asignado_a=target).order_by('nombre_empresa')[:limite]
+    items = []
+    for c in clientes:
+        # Cuántas opp activas tiene cada cliente con este vendedor
+        opp_activas = TodoItem.objects.filter(
+            cliente=c, usuario=target
+        ).exclude(_q_perdidas()).count()
+        items.append({
+            'id': c.id,
+            'nombre': c.nombre_empresa,
+            'oportunidades_activas': opp_activas,
+        })
+
+    return {
+        'vendedor': target.get_full_name() or target.username,
+        'username': target.username,
+        'total_clientes': len(items),
+        'clientes': items,
     }
 
 
@@ -435,6 +712,96 @@ TOOL_SCHEMAS: list[dict] = [
             },
         },
     },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'oportunidades_por_vendedor',
+            'description': (
+                'Lista DETALLADA de oportunidades de un vendedor específico '
+                'en un periodo, con id, título, cliente, monto y etapa. '
+                'Úsala cuando el usuario pida "muéstrame las oportunidades '
+                'que creó X", "lista todas las opp de X en abril-mayo", o '
+                'cuando hayas dicho que un vendedor tiene N oportunidades y '
+                'el usuario quiera verlas todas.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'vendedor_username': {
+                        'type': 'string',
+                        'description': 'Username o nombre del vendedor (acepta nombre parcial).',
+                    },
+                    'mes_desde': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes inicial del rango.'},
+                    'anio_desde': {'type': 'integer', 'description': 'Año inicial del rango.'},
+                    'mes_hasta': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes final del rango.'},
+                    'anio_hasta': {'type': 'integer', 'description': 'Año final del rango.'},
+                    'limite': {'type': 'integer', 'minimum': 1, 'maximum': 500, 'description': 'Máximo de oportunidades a devolver (default 200).'},
+                },
+                'required': ['vendedor_username'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'detalle_oportunidad',
+            'description': (
+                'Información completa de UNA oportunidad por su id: cliente, '
+                'contacto, vendedor, monto, etapa, probabilidad, comentarios. '
+                'Úsala cuando el usuario pregunte por una oportunidad específica.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer', 'description': 'ID de la oportunidad.'},
+                },
+                'required': ['id'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'detalle_vendedor',
+            'description': (
+                'Perfil completo de un vendedor con KPIs del mes y del año: '
+                'pipeline activo, opp ganadas, clientes asignados, etc. '
+                'Solo supervisores. Útil para evaluaciones de desempeño.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'vendedor_username': {
+                        'type': 'string',
+                        'description': 'Username o nombre del vendedor.',
+                    },
+                },
+                'required': ['vendedor_username'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'clientes_de_vendedor',
+            'description': (
+                'Cartera de clientes asignados a un vendedor. Cada cliente '
+                'trae cuántas oportunidades activas tiene con ese vendedor. '
+                'Útil para "qué clientes tiene X", "cuál es la cartera de Y".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'vendedor_username': {
+                        'type': 'string',
+                        'description': 'Username o nombre del vendedor.',
+                    },
+                    'limite': {'type': 'integer', 'minimum': 1, 'maximum': 300, 'description': 'Máximo de clientes a devolver (default 50).'},
+                },
+                'required': ['vendedor_username'],
+            },
+        },
+    },
 ]
 
 TOOL_HANDLERS = {
@@ -443,6 +810,10 @@ TOOL_HANDLERS = {
     'resumen_empresa': _tool_resumen_empresa,
     'top_oportunidades_prometedoras': _tool_top_oportunidades_prometedoras,
     'forecast_cierre': _tool_forecast_cierre,
+    'oportunidades_por_vendedor': _tool_oportunidades_por_vendedor,
+    'detalle_oportunidad': _tool_detalle_oportunidad,
+    'detalle_vendedor': _tool_detalle_vendedor,
+    'clientes_de_vendedor': _tool_clientes_de_vendedor,
 }
 
 
