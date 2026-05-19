@@ -250,14 +250,39 @@ def _tool_resumen_empresa(args: dict, user: User) -> dict:
 
 # 4. Top oportunidades prometedoras
 def _tool_top_oportunidades_prometedoras(args: dict, user: User) -> dict:
-    """Oportunidades activas que más prometen (monto × probabilidad × recencia)."""
+    """Oportunidades activas que más prometen (monto × probabilidad × recencia).
+
+    Por DEFAULT filtra por mes_cierre = mes actual (las "que cierran este mes").
+    Para ver las de otro mes pasa `mes` y `anio`. Para ignorar el filtro de mes
+    y ver todo el pipeline activo, pasa `todos_los_meses=true`.
+    """
     limite = int(args.get('limite') or 10)
     limite = max(1, min(limite, 30))
+
+    ahora = timezone.now()
+    todos = bool(args.get('todos_los_meses'))
+    mes = args.get('mes')
+    anio = args.get('anio')
 
     qs = TodoItem.objects.exclude(_q_perdidas())
     visible_ids = _visible_user_ids(user)
     if visible_ids is not None:
         qs = qs.filter(usuario_id__in=visible_ids)
+
+    # Filtro por mes_cierre: default mes actual, override con mes/anio, o
+    # ignorar si todos_los_meses=true.
+    periodo_label = None
+    if not todos:
+        try:
+            mm = int(mes) if mes else ahora.month
+            aa = int(anio) if anio else ahora.year
+        except (ValueError, TypeError):
+            mm, aa = ahora.month, ahora.year
+        mm = max(1, min(mm, 12))
+        qs = qs.filter(mes_cierre=str(mm).zfill(2), anio_cierre=aa)
+        meses_es = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+        periodo_label = f'{meses_es[mm]} {aa}'
 
     qs = qs.select_related('cliente', 'usuario').order_by('-monto')[:limite * 3]
 
@@ -296,7 +321,10 @@ def _tool_top_oportunidades_prometedoras(args: dict, user: User) -> dict:
         return monto * prob * penal
 
     items.sort(key=_score, reverse=True)
-    return {'oportunidades': items[:limite]}
+    return {
+        'periodo': periodo_label,  # None si todos_los_meses=true
+        'oportunidades': items[:limite],
+    }
 
 
 # 5. Forecast de cierre
@@ -313,19 +341,32 @@ def _tool_forecast_cierre(args: dict, user: User) -> dict:
           base (default 2 = mes actual + siguiente).
     """
     ahora = timezone.now()
-    mes_base = int(args.get('mes') or ahora.month)
-    anio_base = int(args.get('anio') or ahora.year)
     rango = int(args.get('rango_meses') or 2)
     rango = max(1, min(rango, 12))
 
-    # Construir lista de (mes, anio) a incluir.
-    pares = []
-    m, a = mes_base, anio_base
-    for _ in range(rango):
-        pares.append((m, a))
-        m += 1
-        if m > 12:
-            m = 1; a += 1
+    # Si el user pasa mes/anio, se usa COMO INICIAL y se cuenta hacia
+    # adelante `rango` meses (default 2).
+    # Si NO pasa nada, default es mes_anterior + mes_actual (las opp
+    # cuyo cierre ya pasó pero siguen abiertas + las que cierran ahora).
+    if args.get('mes') or args.get('anio'):
+        mes_base = int(args.get('mes') or ahora.month)
+        anio_base = int(args.get('anio') or ahora.year)
+        pares = []
+        m, a = mes_base, anio_base
+        for _ in range(rango):
+            pares.append((m, a))
+            m += 1
+            if m > 12:
+                m = 1; a += 1
+    else:
+        # Default: mes anterior + mes actual.
+        mes_actual = ahora.month
+        anio_actual = ahora.year
+        mes_ant = mes_actual - 1
+        anio_ant = anio_actual
+        if mes_ant < 1:
+            mes_ant = 12; anio_ant = anio_actual - 1
+        pares = [(mes_ant, anio_ant), (mes_actual, anio_actual)]
 
     # Filtro por mes_cierre (string '01'..'12') y anio_cierre (int).
     q_periodo = Q()
@@ -847,9 +888,11 @@ TOOL_SCHEMAS: list[dict] = [
             'name': 'top_oportunidades_prometedoras',
             'description': (
                 'Lista las oportunidades activas que más prometen, '
-                'considerando monto + recencia de actividad. Útil para '
-                '"cuál es la oportunidad que más promete" o "dónde debería '
-                'poner mi foco".'
+                'considerando monto × probabilidad × recencia de actividad. '
+                'Por DEFAULT filtra por mes_cierre = mes actual (las que '
+                'cierran este mes). Para otro mes pasa mes y anio. Para '
+                'ignorar el filtro de mes y ver todo el pipeline activo '
+                'pasa todos_los_meses=true.'
             ),
             'parameters': {
                 'type': 'object',
@@ -857,6 +900,18 @@ TOOL_SCHEMAS: list[dict] = [
                     'limite': {
                         'type': 'integer', 'minimum': 1, 'maximum': 30,
                         'description': 'Cuántas oportunidades devolver. Default 10.',
+                    },
+                    'mes': {
+                        'type': 'integer', 'minimum': 1, 'maximum': 12,
+                        'description': 'Mes de cierre (1-12). Default: mes actual.',
+                    },
+                    'anio': {
+                        'type': 'integer',
+                        'description': 'Año de cierre. Default: año actual.',
+                    },
+                    'todos_los_meses': {
+                        'type': 'boolean',
+                        'description': 'Si true, ignora el filtro de mes y considera todo el pipeline activo.',
                     },
                 },
             },
@@ -870,8 +925,10 @@ TOOL_SCHEMAS: list[dict] = [
                 'Proyección del cierre basada en las oportunidades cuyo '
                 'mes_cierre cae en el periodo solicitado. Pondera cada '
                 'opp por su probabilidad_cierre del CRM. Por DEFAULT toma '
-                'mes actual + siguiente (rango_meses=2). Útil para "cómo '
-                'cerraremos el mes", "forecast del próximo trimestre", etc.'
+                'mes ANTERIOR + mes actual (las opp que ya debían cerrar '
+                'pero siguen abiertas + las que cierran este mes). Útil '
+                'para "cómo cerraremos el mes". Para otro rango pasa mes, '
+                'anio y rango_meses.'
             ),
             'parameters': {
                 'type': 'object',
@@ -986,31 +1043,6 @@ TOOL_SCHEMAS: list[dict] = [
     {
         'type': 'function',
         'function': {
-            'name': 'generar_reporte_excel',
-            'description': (
-                'Crea un reporte Excel descargable y devuelve un link. Úsalo '
-                'cuando el usuario pida "un reporte en Excel", "descarga las '
-                'oportunidades", "expórtame esto". El link es válido por 1 '
-                'hora. Soporta tipo "oportunidades" (default).'
-            ),
-            'parameters': {
-                'type': 'object',
-                'properties': {
-                    'tipo': {
-                        'type': 'string',
-                        'enum': ['oportunidades'],
-                        'description': 'Tipo de reporte. Por ahora solo "oportunidades".',
-                    },
-                    'mes': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes del reporte. Default: mes actual.'},
-                    'anio': {'type': 'integer', 'description': 'Año del reporte. Default: año actual.'},
-                    'vendedor_username': {'type': 'string', 'description': 'Filtrar por vendedor (opcional).'},
-                },
-            },
-        },
-    },
-    {
-        'type': 'function',
-        'function': {
             'name': 'clientes_de_vendedor',
             'description': (
                 'Cartera de clientes asignados a un vendedor. Cada cliente '
@@ -1043,7 +1075,6 @@ TOOL_HANDLERS = {
     'detalle_oportunidad': _tool_detalle_oportunidad,
     'detalle_vendedor': _tool_detalle_vendedor,
     'clientes_de_vendedor': _tool_clientes_de_vendedor,
-    'generar_reporte_excel': _tool_generar_reporte_excel,
 }
 
 
