@@ -25,10 +25,10 @@ Modal de creación de Idea — usa las clases del modal de "Nuevo prospecto"
                 <div class="wn-ctw-popwrap">
                     <button type="button" class="wn-ctw-pill-meta" data-niact="tipo" onclick="niOpenPop('tipo', event)">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
-                        <span data-niact-label="tipo">Tipo: Producto</span>
+                        <span data-niact-label="tipo">Tipo: Territorial</span>
                     </button>
                     <div class="wn-ctw-pop" data-niact-pop="tipo" style="display:none;">
-                        <div class="wn-ctw-pop-title">Tipo de idea</div>
+                        <div class="wn-ctw-pop-title">Tipo de idea <span style="color:#DC2626;">*</span></div>
                         <div id="newIdeaTipoList" style="display:flex;flex-direction:column;gap:4px;"></div>
                     </div>
                 </div>
@@ -43,26 +43,19 @@ Modal de creación de Idea — usa las clases del modal de "Nuevo prospecto"
                         <div id="newIdeaPotencialList" style="display:flex;flex-direction:column;gap:4px;"></div>
                     </div>
                 </div>
-
-                <div class="wn-ctw-popwrap">
-                    <button type="button" class="wn-ctw-pill-meta" data-niact="valor" onclick="niOpenPop('valor', event)">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                        <span data-niact-label="valor">Valor estimado</span>
-                    </button>
-                    <div class="wn-ctw-pop" data-niact-pop="valor" style="display:none;">
-                        <div class="wn-ctw-pop-title">Valor estimado (MXN)</div>
-                        <input type="number" class="wn-ctw-pop-input" id="newIdeaValor" placeholder="100000" min="0" step="1000">
-                        <div style="font-size:11px;color:#6B7280;margin-top:6px;">Opcional. Ayuda a priorizar la idea.</div>
-                    </div>
-                </div>
             </div>
 
-            <textarea class="wn-ctw-desc" id="newIdeaDescripcion" placeholder="Describe la idea: qué problema resuelve, cómo se ejecutaría, qué la hace diferente…" rows="4"></textarea>
+            <textarea class="wn-ctw-desc" id="newIdeaDescripcion" placeholder="Describe la idea: qué problema resuelve, cómo se ejecutaría, qué la hace diferente… *" rows="4"></textarea>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <div style="margin-top:10px;">
+                <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Mercado / cliente objetivo <span style="color:#DC2626;">*</span></label>
+                <input class="wn-ctw-pop-input" id="newIdeaMercado" type="text" placeholder="Ej. PyMEs del sector salud, retail México…" maxlength="200">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
                 <div>
-                    <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Mercado / cliente objetivo</label>
-                    <input class="wn-ctw-pop-input" id="newIdeaMercado" type="text" placeholder="Ej. PyMEs del sector salud, retail México…" maxlength="200">
+                    <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Valor estimado (MXN)</label>
+                    <input class="wn-ctw-pop-input" id="newIdeaValor" type="number" min="0" step="1000" placeholder="100000">
                 </div>
                 <div>
                     <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Etiquetas (separadas por coma)</label>

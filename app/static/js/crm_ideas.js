@@ -88,9 +88,8 @@
         canSeeAll: false,
         currentIdea: null,       // idea abierta en el widget de detalle
         creating: {               // form de creación
-            tipo: 'producto',
+            tipo: 'territorial',
             potencial: 'medio',
-            valor: null,
         },
     };
 
@@ -196,8 +195,8 @@
             + '      <span class="idea-card-pill-value">' + esc(idea.tipo_display || idea.tipo) + '</span>'
             + '    </div>'
             + '    <div class="idea-card-pill">'
-            + '      <span class="idea-card-pill-label">Valor</span>'
-            + '      <span class="idea-card-pill-value">' + (idea.valor_estimado != null ? fmtMoney(idea.valor_estimado) : '—') + '</span>'
+            + '      <span class="idea-card-pill-label">Mercado</span>'
+            + '      <span class="idea-card-pill-value">' + esc(idea.mercado_objetivo || '—') + '</span>'
             + '    </div>'
             + '  </div>'
             +    tagsHtml
@@ -260,8 +259,19 @@
     }
 
     function moverEtapa(ideaId, etapa) {
-        var idea = STATE.ideas_by_id[ideaId];
+        var idea = STATE.ideas_by_id[ideaId] || (STATE.currentIdea && STATE.currentIdea.id === ideaId ? STATE.currentIdea : null);
         if (!idea || idea.etapa === etapa) return;
+
+        // Si se mueve a "convertida" y aún no hay prospecto creado, abrir el
+        // modal de conversión (pide cliente). NO movemos a "convertida"
+        // hasta que el usuario confirme la creación del prospecto — porque
+        // ese flujo crea el Prospecto y mueve la etapa atómicamente.
+        if (etapa === 'convertida' && !idea.prospecto_creado_id) {
+            STATE.currentIdea = STATE.currentIdea || idea;
+            abrirConvertir();
+            return;
+        }
+
         api('/app/api/ideas/' + ideaId + '/mover/', {
             method: 'POST',
             body: JSON.stringify({etapa: etapa}),
@@ -279,7 +289,8 @@
         var ov = document.getElementById('widgetNuevaIdea');
         if (!ov) return;
         // Reset
-        STATE.creating = {tipo: 'producto', potencial: 'medio', valor: null};
+        STATE.creating = {tipo: 'territorial', potencial: 'medio'};
+        STATE.editingId = null;
         document.getElementById('newIdeaTitulo').value = '';
         document.getElementById('newIdeaDescripcion').value = '';
         document.getElementById('newIdeaMercado').value = '';
@@ -288,12 +299,41 @@
         document.getElementById('newIdeaValor').value = '';
         updateNiLabel('tipo');
         updateNiLabel('potencial');
-        updateNiLabel('valor');
         renderNiPicker('tipo');
         renderNiPicker('potencial');
+        validateNiForm();
+        // Restaurar el breadcrumb + label del submit a "Capturar idea"
+        var crumb = document.querySelector('#widgetNuevaIdea .wn-ctw-crumb-current');
+        if (crumb) crumb.textContent = 'Capturar idea';
+        var sb = document.getElementById('niSubmitBtn');
+        if (sb) {
+            sb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Capturar idea';
+        }
         ov.classList.add('active');
         ov.style.display = 'flex';
         setTimeout(function () { document.getElementById('newIdeaTitulo').focus(); }, 30);
+    }
+
+    /* Validación live: el botón submit sigue gris hasta que título, tipo,
+       descripción y mercado estén llenos. Se llama desde cada `input` evento. */
+    function validateNiForm() {
+        var titulo = (document.getElementById('newIdeaTitulo') || {}).value || '';
+        var desc = (document.getElementById('newIdeaDescripcion') || {}).value || '';
+        var mercado = (document.getElementById('newIdeaMercado') || {}).value || '';
+        var ok = titulo.trim() && desc.trim() && mercado.trim() && STATE.creating.tipo;
+        var btn = document.getElementById('niSubmitBtn');
+        if (!btn) return;
+        if (ok) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.background = '';  // usa estilo .wn-ctw-submit normal (azul)
+        } else {
+            btn.disabled = true;
+            btn.style.opacity = '0.55';
+            btn.style.cursor = 'not-allowed';
+            btn.style.background = '#CBD5E1';
+        }
     }
     window.cerrarWidgetNuevaIdea = function () {
         var ov = document.getElementById('widgetNuevaIdea');
@@ -323,6 +363,7 @@
                 updateNiLabel(w);
                 renderNiPicker(w);
                 hideAllNiPops();
+                validateNiForm();
             });
         });
     }
@@ -335,12 +376,6 @@
             var p = POTENCIAL.find(function (x) { return x.id === STATE.creating.potencial; });
             var el2 = document.querySelector('[data-niact-label="potencial"]');
             if (el2) el2.textContent = 'Potencial: ' + (p ? p.label : '—');
-        } else if (which === 'valor') {
-            var inp = document.getElementById('newIdeaValor');
-            var v = inp ? parseFloat(inp.value) : NaN;
-            STATE.creating.valor = isNaN(v) ? null : v;
-            var el3 = document.querySelector('[data-niact-label="valor"]');
-            if (el3) el3.textContent = isNaN(v) ? 'Valor estimado' : 'Valor: ' + fmtMoney(v);
         }
     }
     function hideAllNiPops() {
@@ -360,21 +395,28 @@
         }
     });
 
+    function readValorEstimado() {
+        var inp = document.getElementById('newIdeaValor');
+        if (!inp) return null;
+        var v = parseFloat(inp.value);
+        return isNaN(v) ? null : v;
+    }
+
     function submitNuevaIdea() {
         var titulo = document.getElementById('newIdeaTitulo').value.trim();
-        if (!titulo) {
-            showFlash('El título es requerido', 'error');
-            document.getElementById('newIdeaTitulo').focus();
+        var desc = document.getElementById('newIdeaDescripcion').value.trim();
+        var mercado = document.getElementById('newIdeaMercado').value.trim();
+        if (!titulo || !desc || !mercado) {
+            showFlash('Faltan campos obligatorios', 'error');
             return;
         }
-        updateNiLabel('valor');
         var payload = {
             titulo: titulo,
-            descripcion: document.getElementById('newIdeaDescripcion').value.trim(),
+            descripcion: desc,
             tipo: STATE.creating.tipo,
             potencial_comercial: STATE.creating.potencial,
-            valor_estimado: STATE.creating.valor,
-            mercado_objetivo: document.getElementById('newIdeaMercado').value.trim(),
+            valor_estimado: readValorEstimado(),
+            mercado_objetivo: mercado,
             inspiracion: document.getElementById('newIdeaInspiracion').value.trim(),
             etiquetas: document.getElementById('newIdeaEtiquetas').value.trim(),
         };
@@ -449,6 +491,12 @@
             b.addEventListener('click', function () {
                 var nueva = b.getAttribute('data-set-etapa');
                 if (nueva === i.etapa) return;
+                // Si va a "convertida" sin prospecto, moverEtapa abre el modal
+                // de conversión y NO actualiza la etapa hasta que se confirme.
+                if (nueva === 'convertida' && !i.prospecto_creado_id) {
+                    moverEtapa(i.id, nueva);
+                    return;
+                }
                 moverEtapa(i.id, nueva);
                 i.etapa = nueva;
                 renderIdeaDetail();
@@ -473,15 +521,16 @@
               }).join('')
             : '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;padding:8px 0;">Aún no hay comentarios.</div>';
 
-        // Convertida info
-        if (i.prospecto_creado_id) {
-            document.getElementById('wiConvertirBtn').style.display = 'none';
-            document.getElementById('wiConvertidaInfo').style.display = 'inline-flex';
-            var link = document.getElementById('wiVerProspectoLink');
-            if (link) link.href = '/app/todos/?tab=prospectos#prospecto-' + i.prospecto_creado_id;
-        } else {
-            document.getElementById('wiConvertirBtn').style.display = '';
-            document.getElementById('wiConvertidaInfo').style.display = 'none';
+        // Convertida info: solo se muestra si ya tiene prospecto_creado.
+        var convInfo = document.getElementById('wiConvertidaInfo');
+        if (convInfo) {
+            if (i.prospecto_creado_id) {
+                convInfo.style.display = 'inline-flex';
+                var link = document.getElementById('wiVerProspectoLink');
+                if (link) link.href = '/app/todos/?tab=prospectos#prospecto-' + i.prospecto_creado_id;
+            } else {
+                convInfo.style.display = 'none';
+            }
         }
     }
 
@@ -692,12 +741,12 @@
         });
     }
 
-    /* ─── Editar idea (inline simple) ─── */
+    /* ─── Editar idea (reusa el modal en modo edición) ─── */
     function editarIdea() {
         var i = STATE.currentIdea;
         if (!i) return;
-        // Reusa el modal de nueva idea en modo edición.
         openNuevaIdea();
+        STATE.editingId = i.id;
         document.querySelector('#widgetNuevaIdea .wn-ctw-crumb-current').textContent = 'Editar idea';
         document.getElementById('niSubmitBtn').innerHTML =
             '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Guardar cambios';
@@ -709,30 +758,33 @@
         document.getElementById('newIdeaValor').value = i.valor_estimado != null ? i.valor_estimado : '';
         STATE.creating.tipo = i.tipo;
         STATE.creating.potencial = i.potencial_comercial;
-        STATE.creating.valor = i.valor_estimado;
         updateNiLabel('tipo');
         updateNiLabel('potencial');
-        updateNiLabel('valor');
         renderNiPicker('tipo');
         renderNiPicker('potencial');
-        STATE.editingId = i.id;
+        validateNiForm();
     }
 
     function submitNiSwitch() {
         if (STATE.editingId) {
             var id = STATE.editingId;
+            var titulo = document.getElementById('newIdeaTitulo').value.trim();
+            var desc = document.getElementById('newIdeaDescripcion').value.trim();
+            var mercado = document.getElementById('newIdeaMercado').value.trim();
+            if (!titulo || !desc || !mercado) {
+                showFlash('Faltan campos obligatorios', 'error');
+                return;
+            }
             var payload = {
-                titulo: document.getElementById('newIdeaTitulo').value.trim(),
-                descripcion: document.getElementById('newIdeaDescripcion').value.trim(),
+                titulo: titulo,
+                descripcion: desc,
                 tipo: STATE.creating.tipo,
                 potencial_comercial: STATE.creating.potencial,
-                valor_estimado: STATE.creating.valor,
-                mercado_objetivo: document.getElementById('newIdeaMercado').value.trim(),
+                valor_estimado: readValorEstimado(),
+                mercado_objetivo: mercado,
                 inspiracion: document.getElementById('newIdeaInspiracion').value.trim(),
                 etiquetas: document.getElementById('newIdeaEtiquetas').value.trim(),
             };
-            updateNiLabel('valor');
-            payload.valor_estimado = STATE.creating.valor;
             api('/app/api/ideas/' + id + '/', {
                 method: 'PATCH',
                 body: JSON.stringify(payload),
@@ -744,12 +796,8 @@
                 showFlash('Cambios guardados');
                 STATE.editingId = null;
                 window.cerrarWidgetNuevaIdea();
-                // Refrescar detalle
                 if (STATE.currentIdea && STATE.currentIdea.id === id) {
-                    STATE.currentIdea = res.data.idea;
-                    // Mantenemos comentarios — el PATCH no los devuelve.
-                    var prev = STATE.currentIdea.comentarios;
-                    if (!prev) STATE.currentIdea.comentarios = [];
+                    STATE.currentIdea = Object.assign({}, STATE.currentIdea, res.data.idea);
                     renderIdeaDetail();
                 }
                 fetchKanban();
@@ -768,8 +816,6 @@
 
         var elim = document.getElementById('wiEliminarBtn');
         if (elim) elim.addEventListener('click', eliminarIdea);
-        var conv = document.getElementById('wiConvertirBtn');
-        if (conv) conv.addEventListener('click', abrirConvertir);
         var edit = document.getElementById('wiEditarBtn');
         if (edit) edit.addEventListener('click', editarIdea);
 
@@ -796,15 +842,18 @@
             });
         }
 
-        // Nuevo: modal
+        // Modal nueva/editar idea
         var niClose = document.getElementById('niCloseBtn');
         if (niClose) niClose.addEventListener('click', window.cerrarWidgetNuevaIdea);
         var niCancel = document.getElementById('niCancelBtn');
         if (niCancel) niCancel.addEventListener('click', window.cerrarWidgetNuevaIdea);
         var niSubmit = document.getElementById('niSubmitBtn');
         if (niSubmit) niSubmit.addEventListener('click', submitNiSwitch);
-        var valorInp = document.getElementById('newIdeaValor');
-        if (valorInp) valorInp.addEventListener('input', function () { updateNiLabel('valor'); });
+        // Validación live: cada input obligatorio dispara validateNiForm.
+        ['newIdeaTitulo', 'newIdeaDescripcion', 'newIdeaMercado'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('input', validateNiForm);
+        });
     }
 
     /* ─── Filtros y orden (popovers del topbar izquierdo) ─── */

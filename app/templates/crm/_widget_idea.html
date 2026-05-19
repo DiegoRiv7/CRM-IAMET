@@ -124,15 +124,13 @@ Usa las clases del widget de oportunidad (wo-*) para mantener look & feel.
                     </div>
                 </div>
 
-                {# Acciones: convertir + eliminar #}
+                {% comment %}Acciones: info de conversión (si aplica) + eliminar.
+                La conversión a prospección se dispara automáticamente al
+                mover la idea a la etapa "Convertida" (pipeline).{% endcomment %}
                 <div style="display:flex;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid #F2F2F7;">
-                    <button type="button" id="wiConvertirBtn" class="wo-btn-new" style="background:#16A34A;color:#fff;border-color:#16A34A;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        Convertir a prospección
-                    </button>
                     <div id="wiConvertidaInfo" style="display:none;font-size:0.85rem;color:#16A34A;font-weight:600;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg>
-                        Ya convertida — <a href="#" id="wiVerProspectoLink" style="color:#16A34A;text-decoration:underline;">ver prospección</a>
+                        Convertida en prospección — <a href="#" id="wiVerProspectoLink" style="color:#16A34A;text-decoration:underline;">ver prospección</a>
                     </div>
                     <button type="button" id="wiEliminarBtn" class="wo-btn-new" style="background:#FEF2F2;color:#DC2626;border-color:#FECACA;margin-left:auto;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>

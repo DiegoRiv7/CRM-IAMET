@@ -4013,12 +4013,16 @@ class Idea(models.Model):
         ('descartada', 'Descartada'),
     ]
     TIPO_CHOICES = [
-        ('producto', 'Producto'),
-        ('servicio', 'Servicio'),
-        ('proceso', 'Proceso / Mejora interna'),
-        ('mercado', 'Mercado / Cliente nuevo'),
-        ('alianza', 'Alianza / Partnership'),
-        ('otro', 'Otro'),
+        ('territorial', 'Territorial'),
+        ('vertical', 'Vertical'),
+        ('marca', 'Marca'),
+        ('cliente', 'Cliente'),
+        ('reactivacion', 'Reactivación'),
+        ('tendencia', 'Tendencia'),
+        ('asociacion', 'Asociación'),
+        ('evento', 'Evento'),
+        ('tecnologia', 'Tecnología'),
+        ('competencia', 'Competencia'),
     ]
     POTENCIAL_CHOICES = [
         ('alto', 'Alto'),
@@ -4029,7 +4033,7 @@ class Idea(models.Model):
     autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ideas')
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True, default='')
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='producto')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='territorial')
     potencial_comercial = models.CharField(max_length=10, choices=POTENCIAL_CHOICES, default='medio')
     valor_estimado = models.DecimalField(
         max_digits=14, decimal_places=2, null=True, blank=True,

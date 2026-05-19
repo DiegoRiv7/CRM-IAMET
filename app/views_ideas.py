@@ -123,12 +123,18 @@ def api_idea_crear(request):
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
     titulo = (data.get('titulo') or '').strip()
+    descripcion = (data.get('descripcion') or '').strip()
+    mercado_obj = (data.get('mercado_objetivo') or '').strip()
     if not titulo:
         return JsonResponse({'ok': False, 'error': 'El título es requerido'}, status=400)
+    if not descripcion:
+        return JsonResponse({'ok': False, 'error': 'La descripción es requerida'}, status=400)
+    if not mercado_obj:
+        return JsonResponse({'ok': False, 'error': 'El mercado / cliente objetivo es requerido'}, status=400)
 
-    tipo = (data.get('tipo') or 'producto').strip()
+    tipo = (data.get('tipo') or 'territorial').strip()
     if tipo not in dict(Idea.TIPO_CHOICES):
-        tipo = 'producto'
+        tipo = 'territorial'
     potencial = (data.get('potencial_comercial') or 'medio').strip()
     if potencial not in dict(Idea.POTENCIAL_CHOICES):
         potencial = 'medio'
@@ -146,11 +152,11 @@ def api_idea_crear(request):
     idea = Idea.objects.create(
         autor=request.user,
         titulo=titulo[:200],
-        descripcion=(data.get('descripcion') or '').strip(),
+        descripcion=descripcion,
         tipo=tipo,
         potencial_comercial=potencial,
         valor_estimado=valor,
-        mercado_objetivo=(data.get('mercado_objetivo') or '').strip()[:200],
+        mercado_objetivo=mercado_obj[:200],
         inspiracion=(data.get('inspiracion') or '').strip(),
         etiquetas=(data.get('etiquetas') or '').strip()[:300],
         etapa='capturada',
