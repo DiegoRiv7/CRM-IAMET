@@ -1,0 +1,318 @@
+{% load app_filters %}{% load static %}
+{% comment %}
+Kanban de Ideas — paleta Apple Intelligence (rainbow gradient).
+Las etapas (capturada → ... → descartada) son fijas en el template.
+Hidratado client-side desde /app/api/ideas/.
+{% endcomment %}
+
+<style>
+/* ─── Paleta Apple Intelligence ───
+   Rainbow gradient saturado en versiones más oscuras (Apple Intelligence
+   tipo "iluminación" sobre las cards). El "+ Nueva idea" usa azul estándar
+   del CRM (#0052D4) para no competir visualmente con las cards. */
+:root {
+    /* Paleta oscura tipo iOS 18 wallpaper: índigo profundo → violeta →
+       magenta. Más oscura y saturada que la rainbow Apple system. */
+    --ai-gradient: linear-gradient(135deg,
+        #0F172A 0%,
+        #1E1B4B 18%,
+        #312E81 38%,
+        #581C87 58%,
+        #7C2D8A 75%,
+        #BE185D 92%,
+        #831843 100%);
+    --ai-gradient-strip: linear-gradient(90deg,
+        #1E1B4B 0%,
+        #312E81 18%,
+        #4C1D95 38%,
+        #6D28D9 58%,
+        #9D174D 78%,
+        #BE185D 100%);
+    --ai-primary: #5B21B6;
+    --ai-primary-soft: #EDE9FE;
+    --ai-primary-border: #C4B5FD;
+    --ai-ink: #1D1D1F;
+}
+
+.crm-kanban-col--idea .crm-kanban-dot {
+    background: var(--ai-gradient);
+}
+.crm-kanban-col--idea .crm-kanban-dot.active {
+    box-shadow: 0 0 0 3px rgba(94,92,230,0.20);
+}
+
+/* ─── Card de Idea: tinte rainbow saturado + "glow" multicolor ───
+   Mismo patrón que las cards de Prospectos (que glow café), pero con
+   shadows en arcoiris. El fondo es un gradient sutil más saturado, no
+   pastel — se nota que la card está "iluminada". */
+.idea-card {
+    /* Tinte oscuro estilo iOS 18 wallpaper: índigo + violeta + magenta.
+       Más oscuro y saturado que pastel, pero la card sigue siendo legible
+       en blanco. Box-shadows multicapa generan el "glow" tipo neon. */
+    background:
+        linear-gradient(135deg,
+            rgba(30, 27, 75,   0.10) 0%,
+            rgba(49, 46, 129,  0.10) 22%,
+            rgba(88, 28, 135,  0.12) 42%,
+            rgba(124, 45, 138, 0.13) 60%,
+            rgba(190, 24, 93,  0.10) 85%,
+            rgba(131, 24, 67,  0.08) 100%),
+        #FFFFFF;
+    border: 1px solid rgba(91, 33, 182, 0.32);
+    border-radius: 14px;
+    padding: 18px 14px 12px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+    box-shadow:
+        0 6px 18px -8px rgba(76, 29, 149, 0.32),
+        0 2px 6px -3px rgba(190, 24, 93, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.idea-card:hover {
+    border-color: rgba(91, 33, 182, 0.6);
+    transform: translateY(-1px);
+    box-shadow:
+        0 18px 36px -12px rgba(76, 29, 149, 0.5),
+        0 8px 18px -6px rgba(190, 24, 93, 0.22),
+        0 6px 14px -4px rgba(49, 46, 129, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.idea-card-strip {
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: var(--ai-gradient-strip);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 2px 8px -2px rgba(175, 82, 222, 0.4);
+}
+.idea-card-title {
+    font-size: 0.95rem; font-weight: 700; color: var(--ai-ink); line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.idea-card-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.idea-card-pill {
+    background: var(--ai-primary-soft);
+    border: 1px solid var(--ai-primary-border);
+    border-radius: 10px;
+    padding: 6px 10px; display: flex; flex-direction: column; gap: 2px;
+}
+.idea-card-pill-label {
+    font-size: 0.58rem; font-weight: 700; color: var(--ai-primary);
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+.idea-card-pill-value {
+    font-size: 0.82rem; font-weight: 700; color: #1E1B4B; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.idea-card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.7rem; color: #6B7280;
+}
+.idea-card-author {
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 600; color: #374151;
+}
+.idea-card-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ai-gradient);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700;
+    box-shadow: 0 1px 2px rgba(94,92,230,0.3);
+}
+.idea-card-potencial {
+    padding: 2px 8px; border-radius: 8px; font-weight: 700; font-size: 0.66rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.idea-card-potencial.is-alto { background: #DCFCE7; color: #15803D; }
+.idea-card-potencial.is-medio { background: #FEF3C7; color: #B45309; }
+.idea-card-potencial.is-bajo { background: #F3F4F6; color: #6B7280; }
+.idea-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.idea-card-inspir {
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(91, 33, 182, 0.16);
+    border-radius: 10px;
+    padding: 6px 10px;
+}
+.idea-card-inspir-label {
+    font-size: 0.58rem; font-weight: 700; color: #6B21A8;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+.idea-card-inspir-text {
+    font-size: 0.76rem; color: #1E1B4B; line-height: 1.35;
+    font-style: italic;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.idea-card-lastcom {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.74rem; color: #475569;
+    background: rgba(255,255,255,0.65);
+    border-radius: 10px;
+    padding: 5px 10px;
+    border: 1px solid rgba(91,33,182,0.12);
+}
+.idea-card-tag {
+    font-size: 0.65rem; font-weight: 600; color: var(--ai-primary);
+    background: var(--ai-primary-soft); padding: 2px 7px; border-radius: 6px;
+    border: 1px solid var(--ai-primary-border);
+}
+.idea-kanban-empty {
+    border: 1px dashed #D1D5DB; border-radius: 12px;
+    padding: 18px 12px; text-align: center;
+    color: #9CA3AF; font-size: 0.78rem;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.idea-kanban-empty:hover {
+    border-color: var(--ai-primary);
+    background: var(--ai-primary-soft);
+    color: var(--ai-primary);
+}
+
+/* Topbar action: botón "+ Nueva Idea" — azul estándar del CRM (mismo
+   estilo que +Nuevo de Oportunidades / Prospectos) para no robar
+   atención de las cards rainbow. */
+.idea-topbar-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 999px; border: none;
+    background: #0052D4;
+    color: #FFFFFF;
+    font-family: inherit; font-size: 0.82rem; font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,82,212,0.18), 0 6px 16px -8px rgba(0,82,212,0.35);
+    transition: background 0.16s ease, transform 0.16s ease;
+}
+.idea-topbar-btn:hover { background: #0041A8; transform: translateY(-1px); }
+.idea-topbar-btn:active { transform: translateY(0); }
+
+/* Estado especial por etapa: convertida en verde, descartada en gris, pausada ámbar. */
+.crm-kanban-col[data-stage="convertida"] .idea-card-strip {
+    background: linear-gradient(90deg, #16A34A 0%, #4ADE80 100%);
+}
+.crm-kanban-col[data-stage="descartada"] .idea-card-strip {
+    background: linear-gradient(90deg, #9CA3AF 0%, #D1D5DB 100%);
+}
+.crm-kanban-col[data-stage="pausada"] .idea-card-strip {
+    background: linear-gradient(90deg, #F59E0B 0%, #FCD34D 100%);
+}
+
+/* ─── Popover de filtros/ordenar en el topbar ─── */
+.ideas-pop {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px;
+    padding: 8px; min-width: 220px;
+    box-shadow: 0 12px 36px -10px rgba(15,23,42,0.18);
+    z-index: 60;
+}
+.ideas-pop-section {
+    font-size: 0.66rem; font-weight: 700; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 6px 8px 4px;
+}
+.ideas-pop-option {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; border-radius: 8px;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; color: #1D1D1F;
+    text-align: left;
+}
+.ideas-pop-option:hover { background: #F8FAFC; }
+.ideas-pop-option.is-on { background: var(--ai-primary-soft); color: var(--ai-primary); font-weight: 600; }
+
+/* ─── Modal de Agendar Actividad (compacto, integrado en widget detalle) ─── */
+.idea-actividad-section {
+    border-top: 1px solid #F2F2F7;
+    padding-top: 14px;
+    margin-top: 14px;
+}
+.idea-act-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
+    padding: 8px 12px; margin-bottom: 6px;
+    font-size: 0.86rem;
+}
+.idea-act-row.is-done { opacity: 0.6; text-decoration: line-through; }
+.idea-act-meta { font-size: 0.72rem; color: #6B7280; }
+.idea-act-add-form {
+    display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px;
+    align-items: stretch;
+    background: var(--ai-primary-soft);
+    border: 1px solid var(--ai-primary-border);
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 8px;
+}
+.idea-act-add-form input,
+.idea-act-add-form select {
+    border: 1px solid #E5E7EB; border-radius: 8px;
+    padding: 7px 10px; font-size: 0.84rem; font-family: inherit;
+    background: #fff;
+}
+.idea-act-add-form input:focus,
+.idea-act-add-form select:focus {
+    outline: none; border-color: var(--ai-primary);
+    box-shadow: 0 0 0 3px rgba(94,92,230,0.12);
+}
+.idea-act-add-form button {
+    background: #0052D4; color: #fff;
+    border: none; padding: 0 14px; border-radius: 8px;
+    font-weight: 600; font-size: 0.82rem; cursor: pointer;
+    white-space: nowrap;
+}
+.idea-act-add-form button:hover:not(:disabled) { background: #0041A8; }
+.idea-act-add-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Pipeline de etapas del detalle ─── */
+.idea-pipeline-stage {
+    padding: 6px 12px; border-radius: 18px; border: 1px solid #E5E7EB;
+    background: #FFFFFF; color: #475569;
+    font-size: 0.76rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.idea-pipeline-stage:hover { border-color: var(--ai-primary); color: var(--ai-primary); }
+.idea-pipeline-stage.active {
+    background: var(--ai-gradient);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 8px -2px rgba(94,92,230,0.4);
+}
+</style>
+
+<div class="crm-kanban-wrap pk-kanban-wrap-v2" data-module="ideas">
+    <div class="crm-kanban-board pk-board" id="ideasKanbanBoard"></div>
+</div>
+
+<script>
+window._IDEAS_ETAPAS = [
+    { key: 'capturada',      label: 'Capturada' },
+    { key: 'en_analisis',    label: 'En Análisis' },
+    { key: 'validada',       label: 'Validada' },
+    { key: 'en_seguimiento', label: 'En Seguimiento' },
+    { key: 'convertida',     label: 'Convertida' },
+    { key: 'pausada',        label: 'Pausada' },
+    { key: 'descartada',     label: 'Descartada' },
+];
+window._IDEAS_TIPOS = [
+    { id: 'territorial',  label: 'Territorial' },
+    { id: 'vertical',     label: 'Vertical' },
+    { id: 'marca',        label: 'Marca' },
+    { id: 'cliente',      label: 'Cliente' },
+    { id: 'reactivacion', label: 'Reactivación' },
+    { id: 'tendencia',    label: 'Tendencia' },
+    { id: 'asociacion',   label: 'Asociación' },
+    { id: 'evento',       label: 'Evento' },
+    { id: 'tecnologia',   label: 'Tecnología' },
+    { id: 'competencia',  label: 'Competencia' },
+];
+window._IDEAS_POTENCIAL = [
+    { id: 'alto',  label: 'Alto' },
+    { id: 'medio', label: 'Medio' },
+    { id: 'bajo',  label: 'Bajo' },
+];
+</script>
+
+{% include "crm/_widget_nueva_idea.html" %}
+{% include "crm/_widget_idea.html" %}
+<script src="{% static 'js/crm_ideas.js' %}?v=20260518-5"></script>

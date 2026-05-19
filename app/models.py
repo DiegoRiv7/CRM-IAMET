@@ -2551,6 +2551,18 @@ class Actividad(models.Model):
         verbose_name="Curso Relacionado"
     )
 
+    # Enlace opcional a una Idea — cuando se agenda una actividad desde
+    # el widget de detalle de Idea, queda vinculada para que el usuario
+    # vea sus actividades programadas en el detalle de la idea.
+    idea = models.ForeignKey(
+        'Idea',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='actividades_calendario',
+        verbose_name="Idea Relacionada"
+    )
+
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
     # Agrupador opcional para actividades creadas como serie recurrente.
@@ -3980,6 +3992,103 @@ class Prospecto(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+# ──────────────────────────────────────────────
+# IDEAS — Tablero creativo del equipo
+# ──────────────────────────────────────────────
+# Las Ideas viven antes que Oportunidades en el flujo. Cualquier vendedor
+# captura una idea (producto nuevo, servicio, mejora, alianza, etc.) y la
+# pasea por un kanban de validación. Al llegar a "convertida" se crea un
+# Prospecto vinculado y sigue su flujo normal.
+
+class Idea(models.Model):
+    ETAPA_CHOICES = [
+        ('capturada', 'Capturada'),
+        ('en_analisis', 'En Análisis'),
+        ('validada', 'Validada'),
+        ('en_seguimiento', 'En Seguimiento'),
+        ('convertida', 'Convertida'),
+        ('pausada', 'Pausada'),
+        ('descartada', 'Descartada'),
+    ]
+    TIPO_CHOICES = [
+        ('territorial', 'Territorial'),
+        ('vertical', 'Vertical'),
+        ('marca', 'Marca'),
+        ('cliente', 'Cliente'),
+        ('reactivacion', 'Reactivación'),
+        ('tendencia', 'Tendencia'),
+        ('asociacion', 'Asociación'),
+        ('evento', 'Evento'),
+        ('tecnologia', 'Tecnología'),
+        ('competencia', 'Competencia'),
+    ]
+    POTENCIAL_CHOICES = [
+        ('alto', 'Alto'),
+        ('medio', 'Medio'),
+        ('bajo', 'Bajo'),
+    ]
+
+    autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ideas')
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, default='')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='territorial')
+    potencial_comercial = models.CharField(max_length=10, choices=POTENCIAL_CHOICES, default='medio')
+    valor_estimado = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text='Valor estimado en MXN si la idea se materializa.'
+    )
+    mercado_objetivo = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='A quién va dirigida (sector, tipo de cliente, geografía). Texto libre.'
+    )
+    # FK opcional al Cliente seleccionado en el picker de "mercado / cliente".
+    # Si se setea, predomina sobre mercado_objetivo. La conversión a
+    # prospección lo usa para pre-llenar el cliente.
+    cliente = models.ForeignKey(
+        'Cliente', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ideas',
+    )
+    inspiracion = models.TextField(
+        blank=True, default='',
+        help_text='De dónde salió la idea: conversación con cliente, evento, etc.'
+    )
+    etiquetas = models.CharField(
+        max_length=300, blank=True, default='',
+        help_text='Etiquetas separadas por coma (innovación, urgente, etc).'
+    )
+    etapa = models.CharField(max_length=20, choices=ETAPA_CHOICES, default='capturada', db_index=True)
+    orden = models.PositiveIntegerField(default=0, help_text='Orden dentro de la columna del kanban.')
+    prospecto_creado = models.ForeignKey(
+        'Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='idea_origen',
+        help_text='Prospecto creado al convertir la idea.'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Idea'
+        verbose_name_plural = 'Ideas'
+        ordering = ['etapa', 'orden', '-fecha_creacion']
+
+    def __str__(self):
+        return self.titulo
+
+
+class IdeaComentario(models.Model):
+    """Comentarios / bitácora de una idea (similar a MensajeOportunidad pero simple)."""
+    idea = models.ForeignKey(Idea, on_delete=models.CASCADE, related_name='comentarios')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    texto = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.usuario}: {self.texto[:40]}'
 
 
 # ──────────────────────────────────────────────
