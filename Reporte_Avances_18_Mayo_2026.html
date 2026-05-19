@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 18 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 18 de Mayo, 2026</p>
+            <p>Periodo: 18 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Lanzamiento del <strong>nuevo modulo Ideas</strong>: un espacio donde el equipo captura toda esa &ldquo;corazonada&rdquo; o pista de negocio que antes se perdia en notas y WhatsApp, la madura en un tablero visual y, cuando ya tiene forma, se convierte en una prospeccion formal con un solo click. Tambien se sumaron mejoras grandes al <strong>Marketing Hub</strong> y a la <strong>vista Dia del calendario</strong>.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Modulo nuevo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Etapas en el tablero</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Areas mejoradas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">28</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Nuevo Modulo Ideas
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El CRM ahora tiene una <strong>seccion Ideas</strong> al principio del flujo comercial, antes de Prospeccion. Sirve para registrar cualquier oportunidad detectada en frio: una marca que pregunto algo, un cliente del que se escucho un rumor, una recomendacion. Cada idea vive en un <strong>tablero visual de 4 etapas</strong> que se arrastra con el mouse, y cuando madura se convierte en una prospeccion formal sin volver a capturar los datos. Ideas que se quedan sin avanzar se descartan; las que prosperan empujan el resto del embudo.</p>
+    </div>
+
+    <h2>1. Modulo Ideas &mdash; Tablero Visual</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab Ideas como Primera Etapa del Embudo</span>
+        <div class="update-desc">Nueva seccion al inicio del CRM. El orden quedo: <strong>Ideas &middot; Prospeccion &middot; Oportunidades &middot; Marketing</strong>, que refleja como realmente nace y madura un negocio. Cada idea ocupa una tarjeta con su tipo, mercado y cliente sugerido.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Kanban de 4 Columnas para Madurar la Idea</span>
+        <div class="update-desc">Las ideas avanzan por etapas claras: <strong>Nueva &rarr; Investigando &rarr; Lista para prospectar &rarr; Descartada</strong>. Se arrastran de una columna a la otra o se mueven con flechas. Asi todo el equipo ve de un vistazo en que esta cada pista.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Conversion a Prospeccion con un Click</span>
+        <div class="update-desc">Cuando una idea ya esta madura, un boton la <strong>convierte automaticamente en prospeccion formal</strong> con los datos que ya se capturaron (cliente, mercado, descripcion). Se elimina la doble captura entre &ldquo;la nota&rdquo; y &ldquo;el registro oficial&rdquo;.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Widget de Detalle con Edicion Directa</span>
+        <div class="update-desc">Al abrir una idea aparece un panel lateral con todos sus datos. Cualquier campo se <strong>edita haciendo click sobre el</strong> &mdash; sin pasar por un formulario aparte. El cliente se asigna con un selector que busca en el CRM, y el mercado se elige como pildora.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtros, Orden y Actividades en cada Idea</span>
+        <div class="update-desc">Filtros por <strong>tipo, mercado, responsable y etapa</strong>; ordenar por fecha o por importancia. Cada idea puede tener actividades pendientes asociadas (llamar, investigar, etc.) que se ven en el calendario general.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Diseno Apple Intelligence &mdash; Cards con Brillo</span>
+        <div class="update-desc">Las tarjetas del kanban tienen un <strong>borde luminoso multicolor</strong> al estilo de las apps de IA modernas, sobre fondo oscuro. Visualmente diferencia este modulo de los demas para que se sienta como un espacio creativo, no operativo.</div>
+    </div>
+
+    <h2>2. Marketing Hub &mdash; Gestion Real del Material</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Crear, Editar y Eliminar Marcas desde el Hub</span>
+        <div class="update-desc">Boton <strong>+ Agregar marca</strong> en la barra superior. Marketing puede agregar marcas nuevas, cambiarles el logo o eliminarlas sin pedir nada a TI. Cada accion pasa por un <strong>modal de confirmacion propio del CRM</strong> en vez del popup del navegador.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Editar Recursos desde el Menu de 3 Puntos</span>
+        <div class="update-desc">Cada tarjeta de recurso tiene un menu de tres puntos para <strong>editar o eliminar</strong> el material. Se aprovecha el mismo modal de subida en &ldquo;modo edicion&rdquo; para que la experiencia sea identica.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Preview Real del Recurso en el Modal</span>
+        <div class="update-desc">Al abrir un recurso ya no se ve solo la portada: se carga el <strong>archivo real dentro del modal</strong> (PDF, landing, brochure) para revisarlo antes de compartirlo. Los botones Compartir y Abrir quedan fijos abajo siempre visibles.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Carga mas Rapida y Fluida</span>
+        <div class="update-desc">Las previas pesadas solo se cargan cuando entran a la vista (no todas a la vez), y los logos llegan junto con la pagina. El Hub se siente mucho mas ligero al navegar entre marcas.</div>
+    </div>
+
+    <h2>3. Calendario Vista Dia &mdash; Mas util y mas claro</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tabla Ancha que Aprovecha la Pantalla</span>
+        <div class="update-desc">Se cambio el timeline tradicional por una <strong>tabla horizontal</strong> con las actividades del dia ordenadas por hora. Aprovecha el ancho del monitor en vez de dejarlo en blanco.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Columna Responsable Visible</span>
+        <div class="update-desc">Cada actividad muestra <strong>quien la tiene asignada</strong> (no la duracion como antes). Util en oficina para ver de un vistazo la carga del dia por persona.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Hover Preview al Lado del Cursor</span>
+        <div class="update-desc">Al pasar el mouse sobre una actividad aparece una <strong>tarjeta con los detalles</strong> pegada al cursor (cliente, lugar, notas) sin tener que hacer click. Acelera la revision matutina de la agenda.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Asignar Responsable al Agendar</span>
+        <div class="update-desc">El modal de <strong>Agendar Actividad</strong> dentro de una oportunidad ahora pregunta quien es el responsable. Antes siempre quedaba asignada al que creaba la actividad.</div>
+    </div>
+
+    <h2>4. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Nada de Negocio se Pierde en Notas Sueltas</span>
+        <div class="update-desc">Antes una corazonada o un rumor de cliente vivia en WhatsApp, en una libreta o en la cabeza del vendedor. Ahora todo entra al <strong>tablero Ideas</strong>, se discute en equipo y madura hasta volverse prospeccion formal &mdash; o se descarta con argumentos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Embudo Comercial Completo de Punta a Punta</span>
+        <div class="update-desc">Con Ideas como primera etapa, el CRM cubre <strong>todo el ciclo</strong>: desde la chispa inicial, pasando por prospeccion y oportunidad, hasta el material de venta en Marketing. Direccion puede medir cuantas ideas se convierten realmente en negocio.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Marketing Autonomo del Area Tecnica</span>
+        <div class="update-desc">Marcas, logos y recursos se gestionan desde la interfaz. Marketing no depende de un desarrollador para cargar una marca nueva o reemplazar un brochure.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Agenda del Dia con Toda la Informacion en Pantalla</span>
+        <div class="update-desc">La vista Dia del calendario ahora muestra responsable, hora y detalle al pasar el mouse. <strong>Menos clicks</strong> para entender la jornada y repartir el trabajo.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 18 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>
