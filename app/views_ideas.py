@@ -57,6 +57,9 @@ def _user_short(u):
 
 
 def _idea_to_dict(idea, include_descripcion=True):
+    cliente_dict = None
+    if idea.cliente_id and idea.cliente:
+        cliente_dict = {'id': idea.cliente.id, 'nombre': idea.cliente.nombre_empresa}
     d = {
         'id': idea.id,
         'titulo': idea.titulo,
@@ -66,6 +69,8 @@ def _idea_to_dict(idea, include_descripcion=True):
         'potencial_display': idea.get_potencial_comercial_display(),
         'valor_estimado': float(idea.valor_estimado) if idea.valor_estimado is not None else None,
         'mercado_objetivo': idea.mercado_objetivo,
+        'cliente_id': idea.cliente_id,
+        'cliente': cliente_dict,
         'etapa': idea.etapa,
         'etapa_display': idea.get_etapa_display(),
         'orden': idea.orden,
@@ -149,6 +154,18 @@ def api_idea_crear(request):
 
     # Orden = al final de la columna "capturada" (siempre nace ahí).
     max_orden = Idea.objects.filter(etapa='capturada').aggregate(m=Max('orden')).get('m') or 0
+    # Cliente opcional (si el picker tuvo selección): valida que exista.
+    cliente_obj = None
+    cliente_id_raw = data.get('cliente_id')
+    if cliente_id_raw:
+        try:
+            cliente_obj = Cliente.objects.get(pk=int(cliente_id_raw))
+            # Si el usuario ELIGIÓ cliente, sobrescribe mercado_obj con el
+            # nombre del cliente (para mantener consistencia visual).
+            mercado_obj = cliente_obj.nombre_empresa
+        except (Cliente.DoesNotExist, ValueError, TypeError):
+            cliente_obj = None
+
     idea = Idea.objects.create(
         autor=request.user,
         titulo=titulo[:200],
@@ -157,6 +174,7 @@ def api_idea_crear(request):
         potencial_comercial=potencial,
         valor_estimado=valor,
         mercado_objetivo=mercado_obj[:200],
+        cliente=cliente_obj,
         inspiracion=(data.get('inspiracion') or '').strip(),
         etiquetas=(data.get('etiquetas') or '').strip()[:300],
         etapa='capturada',
@@ -243,6 +261,18 @@ def api_idea_detalle(request, idea_id):
         except (ValueError, TypeError):
             pass
 
+    # Cliente: aceptamos cliente_id explícito (None lo desliga).
+    if 'cliente_id' in data:
+        cid = data.get('cliente_id')
+        if cid in (None, '', 'null', 0):
+            idea.cliente = None
+        else:
+            try:
+                idea.cliente = Cliente.objects.get(pk=int(cid))
+                idea.mercado_objetivo = idea.cliente.nombre_empresa
+            except (Cliente.DoesNotExist, ValueError, TypeError):
+                pass
+
     idea.save()
     return JsonResponse({'ok': True, 'idea': _idea_to_dict(idea)})
 
@@ -319,7 +349,7 @@ def api_idea_convertir(request, idea_id):
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
-    cliente_id = data.get('cliente_id')
+    cliente_id = data.get('cliente_id') or idea.cliente_id
     if not cliente_id:
         return JsonResponse({'ok': False, 'error': 'cliente_id es requerido'}, status=400)
     try:

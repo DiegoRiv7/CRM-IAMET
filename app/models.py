@@ -4041,7 +4041,14 @@ class Idea(models.Model):
     )
     mercado_objetivo = models.CharField(
         max_length=200, blank=True, default='',
-        help_text='A quién va dirigida (sector, tipo de cliente, geografía).'
+        help_text='A quién va dirigida (sector, tipo de cliente, geografía). Texto libre.'
+    )
+    # FK opcional al Cliente seleccionado en el picker de "mercado / cliente".
+    # Si se setea, predomina sobre mercado_objetivo. La conversión a
+    # prospección lo usa para pre-llenar el cliente.
+    cliente = models.ForeignKey(
+        'Cliente', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ideas',
     )
     inspiracion = models.TextField(
         blank=True, default='',

@@ -294,20 +294,24 @@
         document.getElementById('newIdeaTitulo').value = '';
         document.getElementById('newIdeaDescripcion').value = '';
         document.getElementById('newIdeaMercado').value = '';
+        document.getElementById('newIdeaClienteId').value = '';
+        var sb = document.getElementById('newIdeaMercadoSearch'); if (sb) sb.value = '';
+        var lst = document.getElementById('newIdeaMercadoList'); if (lst) { lst.style.display = 'none'; lst.innerHTML = ''; }
+        var ut = document.getElementById('newIdeaMercadoUseText'); if (ut) ut.style.display = 'none';
         document.getElementById('newIdeaEtiquetas').value = '';
         document.getElementById('newIdeaInspiracion').value = '';
         document.getElementById('newIdeaValor').value = '';
         updateNiLabel('tipo');
         updateNiLabel('potencial');
+        updateNiLabel('mercado');
         renderNiPicker('tipo');
         renderNiPicker('potencial');
         validateNiForm();
-        // Restaurar el breadcrumb + label del submit a "Capturar idea"
         var crumb = document.querySelector('#widgetNuevaIdea .wn-ctw-crumb-current');
         if (crumb) crumb.textContent = 'Capturar idea';
-        var sb = document.getElementById('niSubmitBtn');
-        if (sb) {
-            sb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Capturar idea';
+        var sub = document.getElementById('niSubmitBtn');
+        if (sub) {
+            sub.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Capturar idea';
         }
         ov.classList.add('active');
         ov.style.display = 'flex';
@@ -327,12 +331,71 @@
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
-            btn.style.background = '';  // usa estilo .wn-ctw-submit normal (azul)
+            btn.style.background = '';
         } else {
             btn.disabled = true;
             btn.style.opacity = '0.55';
             btn.style.cursor = 'not-allowed';
             btn.style.background = '#CBD5E1';
+        }
+    }
+
+    /* ─── Cliente picker del form de creación ─── */
+    function wireMercadoPicker() {
+        var sb = document.getElementById('newIdeaMercadoSearch');
+        var list = document.getElementById('newIdeaMercadoList');
+        var useTextBtn = document.getElementById('newIdeaMercadoUseText');
+        if (!sb || !list) return;
+        var timer = null;
+        sb.addEventListener('input', function () {
+            clearTimeout(timer);
+            var q = sb.value.trim();
+            if (useTextBtn) useTextBtn.style.display = q ? '' : 'none';
+            if (q.length < 2) { list.style.display = 'none'; return; }
+            timer = setTimeout(function () {
+                fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q), {credentials: 'same-origin'})
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        var items = data.clientes || data.results || [];
+                        if (!items.length) {
+                            list.innerHTML = '<div style="padding:8px;color:#9CA3AF;font-size:0.84rem;">Sin resultados — usa "Usar texto libre" para guardar como mercado.</div>';
+                            list.style.display = 'block';
+                            return;
+                        }
+                        list.innerHTML = items.slice(0, 8).map(function (c) {
+                            var name = c.nombre_empresa || c.nombre || c.text || '';
+                            return '<div data-cli="' + c.id + '" data-name="' + esc(name) + '" '
+                                + 'style="padding:7px 10px;cursor:pointer;border-radius:6px;font-size:0.86rem;">'
+                                + esc(name) + '</div>';
+                        }).join('');
+                        list.querySelectorAll('[data-cli]').forEach(function (row) {
+                            row.addEventListener('click', function () {
+                                document.getElementById('newIdeaClienteId').value = row.getAttribute('data-cli');
+                                document.getElementById('newIdeaMercado').value = row.getAttribute('data-name');
+                                sb.value = row.getAttribute('data-name');
+                                list.style.display = 'none';
+                                updateNiLabel('mercado');
+                                validateNiForm();
+                                hideAllNiPops();
+                            });
+                            row.addEventListener('mouseenter', function () { row.style.background = 'rgba(91,33,182,0.08)'; });
+                            row.addEventListener('mouseleave', function () { row.style.background = ''; });
+                        });
+                        list.style.display = 'block';
+                    }).catch(function () { list.style.display = 'none'; });
+            }, 220);
+        });
+        if (useTextBtn) {
+            useTextBtn.addEventListener('click', function () {
+                var v = sb.value.trim();
+                if (!v) return;
+                document.getElementById('newIdeaClienteId').value = '';
+                document.getElementById('newIdeaMercado').value = v;
+                list.style.display = 'none';
+                updateNiLabel('mercado');
+                validateNiForm();
+                hideAllNiPops();
+            });
         }
     }
     window.cerrarWidgetNuevaIdea = function () {
@@ -376,6 +439,11 @@
             var p = POTENCIAL.find(function (x) { return x.id === STATE.creating.potencial; });
             var el2 = document.querySelector('[data-niact-label="potencial"]');
             if (el2) el2.textContent = 'Potencial: ' + (p ? p.label : '—');
+        } else if (which === 'mercado') {
+            var inp = document.getElementById('newIdeaMercado');
+            var v = inp ? inp.value : '';
+            var el3 = document.querySelector('[data-niact-label="mercado"]');
+            if (el3) el3.textContent = v ? ('Mercado: ' + v.substring(0, 28) + (v.length > 28 ? '…' : '')) : 'Mercado: selecciona…';
         }
     }
     function hideAllNiPops() {
@@ -406,6 +474,7 @@
         var titulo = document.getElementById('newIdeaTitulo').value.trim();
         var desc = document.getElementById('newIdeaDescripcion').value.trim();
         var mercado = document.getElementById('newIdeaMercado').value.trim();
+        var clienteIdRaw = (document.getElementById('newIdeaClienteId') || {}).value || '';
         if (!titulo || !desc || !mercado) {
             showFlash('Faltan campos obligatorios', 'error');
             return;
@@ -417,6 +486,7 @@
             potencial_comercial: STATE.creating.potencial,
             valor_estimado: readValorEstimado(),
             mercado_objetivo: mercado,
+            cliente_id: clienteIdRaw ? parseInt(clienteIdRaw, 10) : null,
             inspiracion: document.getElementById('newIdeaInspiracion').value.trim(),
             etiquetas: document.getElementById('newIdeaEtiquetas').value.trim(),
         };
@@ -470,7 +540,7 @@
         document.getElementById('wiTipo').textContent = i.tipo_display || i.tipo;
         document.getElementById('wiPotencial').textContent = i.potencial_display || i.potencial_comercial;
         document.getElementById('wiValor').textContent = i.valor_estimado != null ? fmtMoney(i.valor_estimado) : '—';
-        document.getElementById('wiMercado').textContent = i.mercado_objetivo || '—';
+        document.getElementById('wiMercado').textContent = (i.cliente && i.cliente.nombre) || i.mercado_objetivo || '—';
         document.getElementById('wiAutor').textContent = (i.autor && i.autor.nombre) || '—';
         document.getElementById('wiFecha').textContent = fmtFecha(i.fecha_creacion);
         document.getElementById('wiDescripcion').textContent = i.descripcion || '—';
@@ -479,6 +549,22 @@
         document.getElementById('wiEtiquetas').innerHTML = tags.length
             ? tags.map(function (t) { return '<span class="idea-card-tag" style="margin-right:4px;">' + esc(t) + '</span>'; }).join('')
             : '—';
+
+        // Vendedor / autor block
+        var vAv = document.getElementById('wiVendedorAvatar');
+        var vN = document.getElementById('wiVendedorNombre');
+        if (vAv) vAv.textContent = (i.autor && i.autor.iniciales) || '?';
+        if (vN) vN.textContent = (i.autor && i.autor.nombre) || '—';
+        // Cliente / mercado block
+        var cAv = document.getElementById('wiClienteAvatar');
+        var cN = document.getElementById('wiClienteNombre');
+        var clienteName = (i.cliente && i.cliente.nombre) || i.mercado_objetivo || '—';
+        if (cN) cN.textContent = clienteName;
+        if (cAv) {
+            var initials = clienteName === '—' ? '—' :
+                clienteName.split(/\s+/).slice(0, 2).map(function (s) { return (s[0] || '').toUpperCase(); }).join('') || '?';
+            cAv.textContent = initials;
+        }
 
         // Pipeline (Apple Intelligence gradient en la etapa activa)
         var pipe = document.getElementById('wiPipelineStages');
@@ -856,6 +942,190 @@
         });
     }
 
+    /* ─── Click-to-edit en el widget de detalle ─── */
+    function patchIdea(payload, onDone) {
+        var i = STATE.currentIdea;
+        if (!i) return;
+        api('/app/api/ideas/' + i.id + '/', {
+            method: 'PATCH',
+            body: JSON.stringify(payload),
+        }).then(function (res) {
+            if (!res.ok || !res.data.ok) {
+                showFlash(res.data.error || 'No se pudo guardar', 'error');
+                return;
+            }
+            STATE.currentIdea = Object.assign({}, STATE.currentIdea, res.data.idea);
+            renderIdeaDetail();
+            fetchKanban();
+            if (typeof onDone === 'function') onDone();
+        });
+    }
+
+    function startInlineEdit(el) {
+        if (!el || el.classList.contains('is-editing')) return;
+        var field = el.getAttribute('data-edit-field');
+        var kind = el.getAttribute('data-edit-kind') || 'text';
+        if (!field) return;
+        var i = STATE.currentIdea;
+        if (!i) return;
+
+        // Cliente picker es un popup, no un input inline.
+        if (kind === 'cliente') {
+            startClientePicker(el);
+            return;
+        }
+
+        var current;
+        if (kind === 'number') current = (i[field] != null ? i[field] : '');
+        else if (kind === 'select' && field === 'tipo') current = i.tipo;
+        else if (kind === 'select' && field === 'potencial_comercial') current = i.potencial_comercial;
+        else if (field === 'etiquetas') current = (i.etiquetas || []).join(', ');
+        else if (field === 'titulo') current = i.titulo || '';
+        else current = i[field] || '';
+
+        var inp;
+        if (kind === 'select') {
+            inp = document.createElement('select');
+            inp.className = 'idea-edit-input';
+            var opts = field === 'tipo' ? TIPOS : POTENCIAL;
+            opts.forEach(function (o) {
+                var opt = document.createElement('option');
+                opt.value = o.id;
+                opt.textContent = o.label;
+                if (o.id === current) opt.selected = true;
+                inp.appendChild(opt);
+            });
+        } else if (kind === 'textarea') {
+            inp = document.createElement('textarea');
+            inp.className = 'idea-edit-input';
+            inp.rows = Math.max(3, Math.min(8, (current.split('\n').length + 1)));
+            inp.value = current;
+        } else if (kind === 'number') {
+            inp = document.createElement('input');
+            inp.type = 'number';
+            inp.min = '0';
+            inp.step = '1000';
+            inp.className = 'idea-edit-input';
+            inp.value = current;
+        } else {
+            inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'idea-edit-input';
+            inp.value = current;
+        }
+
+        var originalHtml = el.innerHTML;
+        el.innerHTML = '';
+        el.appendChild(inp);
+        el.classList.add('is-editing');
+        inp.focus();
+        if (inp.select) inp.select();
+
+        var finished = false;
+        function commit() {
+            if (finished) return;
+            finished = true;
+            var newVal = inp.value;
+            if (kind === 'number') {
+                newVal = newVal === '' ? null : parseFloat(newVal);
+                if (isNaN(newVal)) newVal = null;
+            }
+            // Si no cambió, revertir.
+            var changed = String(newVal == null ? '' : newVal) !== String(current == null ? '' : current);
+            if (!changed) { el.classList.remove('is-editing'); el.innerHTML = originalHtml; return; }
+            var payload = {};
+            payload[field] = newVal;
+            patchIdea(payload, function () {
+                el.classList.remove('is-editing');
+            });
+        }
+        function cancel() {
+            finished = true;
+            el.classList.remove('is-editing');
+            el.innerHTML = originalHtml;
+        }
+        inp.addEventListener('blur', commit);
+        inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && kind !== 'textarea') { e.preventDefault(); inp.blur(); }
+            else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); inp.blur(); }
+            else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        });
+        if (kind === 'select') {
+            inp.addEventListener('change', function () { inp.blur(); });
+        }
+    }
+
+    function startClientePicker(el) {
+        // Popup compacto con búsqueda. Coloca al lado del campo.
+        var existing = document.querySelector('.idea-edit-cliente-pop');
+        if (existing) existing.remove();
+        var pop = document.createElement('div');
+        pop.className = 'idea-edit-cliente-pop';
+        pop.innerHTML =
+            '<input type="text" placeholder="Buscar cliente…" autocomplete="off">'
+            + '<div class="idea-edit-cliente-pop-list" style="display:none;"></div>'
+            + '<button type="button" data-action="clear" style="margin-top:6px;background:#F1F5F9;border:none;padding:6px 10px;border-radius:6px;font-size:0.8rem;cursor:pointer;width:100%;color:#475569;">Quitar cliente</button>';
+        document.body.appendChild(pop);
+        var rect = el.getBoundingClientRect();
+        pop.style.left = (rect.left + window.scrollX) + 'px';
+        pop.style.top = (rect.bottom + window.scrollY) + 'px';
+        var search = pop.querySelector('input');
+        var list = pop.querySelector('.idea-edit-cliente-pop-list');
+        search.focus();
+        var timer = null;
+        search.addEventListener('input', function () {
+            clearTimeout(timer);
+            var q = search.value.trim();
+            if (q.length < 2) { list.style.display = 'none'; return; }
+            timer = setTimeout(function () {
+                fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q), {credentials: 'same-origin'})
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        var items = data.clientes || data.results || [];
+                        if (!items.length) {
+                            list.innerHTML = '<div style="color:#9CA3AF;">Sin resultados</div>';
+                            list.style.display = 'block';
+                            return;
+                        }
+                        list.innerHTML = items.slice(0, 8).map(function (c) {
+                            return '<div data-cli="' + c.id + '" data-name="' + esc(c.nombre_empresa || c.nombre || '') + '">' + esc(c.nombre_empresa || c.nombre || '') + '</div>';
+                        }).join('');
+                        list.querySelectorAll('[data-cli]').forEach(function (row) {
+                            row.addEventListener('click', function () {
+                                var cid = parseInt(row.getAttribute('data-cli'), 10);
+                                pop.remove();
+                                patchIdea({cliente_id: cid});
+                            });
+                        });
+                        list.style.display = 'block';
+                    });
+            }, 220);
+        });
+        pop.querySelector('[data-action="clear"]').addEventListener('click', function () {
+            pop.remove();
+            patchIdea({cliente_id: null, mercado_objetivo: ''});
+        });
+        // Click fuera cierra
+        setTimeout(function () {
+            document.addEventListener('click', function close(e) {
+                if (!pop.contains(e.target) && e.target !== el) {
+                    pop.remove();
+                    document.removeEventListener('click', close);
+                }
+            });
+        }, 0);
+    }
+
+    function wireClickToEdit() {
+        var content = document.getElementById('ideaContent');
+        if (!content) return;
+        content.addEventListener('click', function (e) {
+            var el = e.target.closest('.idea-edit-field');
+            if (!el || el.classList.contains('is-editing')) return;
+            startInlineEdit(el);
+        });
+    }
+
     /* ─── Filtros y orden (popovers del topbar izquierdo) ─── */
     var FILTROS = { tipo: null, potencial: null };
     var SORT_KEY = 'recientes'; // 'recientes' | 'valor_desc' | 'valor_asc' | 'alfa'
@@ -993,6 +1263,8 @@
         injectTopbarButton();
         wireDetailEvents();
         wireTopbarFilters();
+        wireMercadoPicker();
+        wireClickToEdit();
         fetchKanban().then(function () { applyFiltros(); });
     }
     document.addEventListener('DOMContentLoaded', boot);
