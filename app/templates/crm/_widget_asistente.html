@@ -5,12 +5,31 @@ un icono estático. Saludo personalizado con first_name del user.
 {% endcomment %}
 
 <div class="widget-overlay" id="widgetAsistente" style="z-index:10400;display:none;">
+    {# SVG filter inline — agua real con turbulence + displacement. Vive aquí
+       para estar disponible globalmente cuando el widget está montado. Las
+       capas del orb lo referencian via filter:url(#asistWater). #}
+    <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+        <filter id="asistWater" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.022" numOctaves="2" seed="4" result="turbulence">
+                <animate attributeName="baseFrequency"
+                    dur="14s" repeatCount="indefinite"
+                    values="0.012 0.022; 0.018 0.030; 0.014 0.020; 0.012 0.022"/>
+                <animate attributeName="seed"
+                    dur="20s" repeatCount="indefinite"
+                    values="4; 8; 12; 4"/>
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="9"
+                xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+    </svg>
     <div class="asist-card">
         {# Header con orb pequeño #}
         <header class="asist-header">
             <div class="asist-header-left">
                 <div class="asist-orb asist-orb--sm" id="asistAvatar" aria-hidden="true">
-                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-core">
+                        <span class="asist-orb-eye"></span>
+                    </span>
                     <span class="asist-orb-ring asist-orb-ring--horiz"></span>
                     <span class="asist-orb-ring asist-orb-ring--vert"></span>
                 </div>
@@ -42,7 +61,9 @@ un icono estático. Saludo personalizado con first_name del user.
         <div class="asist-messages" id="asistMessages">
             <div class="asist-welcome" id="asistWelcome">
                 <div class="asist-orb asist-orb--lg" aria-hidden="true">
-                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-core">
+                        <span class="asist-orb-eye"></span>
+                    </span>
                     <span class="asist-orb-ring asist-orb-ring--horiz"></span>
                     <span class="asist-orb-ring asist-orb-ring--vert"></span>
                 </div>
@@ -235,7 +256,9 @@ un icono estático. Saludo personalizado con first_name del user.
         radial-gradient(circle at 22% 28%, rgba(0, 240, 255, 0.95) 0%, transparent 32%),
         radial-gradient(circle at 78% 60%, rgba(99, 102, 241, 0.80) 0%, transparent 36%),
         radial-gradient(circle at 50% 85%, rgba(0, 130, 255, 0.75) 0%, transparent 30%);
-    filter: blur(9px) saturate(140%);
+    /* feTurbulence + feDisplacementMap distorsiona los pixeles en tiempo
+       real → agua real con ondas, no blobs planos moviéndose. */
+    filter: url(#asistWater) blur(7px) saturate(150%);
     mix-blend-mode: screen;
     animation: asist-water-flow-a 5.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -244,9 +267,44 @@ un icono estático. Saludo personalizado con first_name del user.
         radial-gradient(circle at 65% 22%, rgba(192, 38, 211, 0.70) 0%, transparent 30%),
         radial-gradient(circle at 28% 70%, rgba(0, 200, 255, 0.85) 0%, transparent 34%),
         radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.60) 0%, transparent 28%);
-    filter: blur(11px) saturate(160%) contrast(1.15);
+    filter: url(#asistWater) blur(9px) saturate(160%) contrast(1.15);
     mix-blend-mode: screen;
     animation: asist-water-flow-b 7.5s cubic-bezier(0.4, 0, 0.6, 1) infinite reverse;
+}
+
+/* Ojo central — un núcleo brillante (con pupila violeta) que sirve de
+   punto focal al inicio. Después de unos segundos baja opacidad y el
+   agua lo va cubriendo, quedando como un "destello tenue" recurrente.
+   Sin z-index explícito para que los pseudos ::before/::after (agua)
+   se pinten ENCIMA y lo cubran. */
+.asist-orb-eye {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 26%; height: 26%;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 50%, #FFFFFF 0%, #E0F2FF 22%, #6366F1 65%, #1E1B4B 100%);
+    box-shadow:
+        0 0 6px rgba(255, 255, 255, 0.55),
+        0 0 14px rgba(0, 217, 255, 0.50),
+        inset 0 0 4px rgba(255, 255, 255, 0.45);
+    transform: translate(-50%, -50%);
+    animation: asist-eye-reveal 6s ease-out 1 forwards,
+               asist-eye-flicker 9s ease-in-out 6s infinite;
+    pointer-events: none;
+}
+@keyframes asist-eye-reveal {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.10); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0.30; transform: translate(-50%, -50%) scale(0.92); }
+}
+@keyframes asist-eye-flicker {
+    /* Después del reveal inicial, el ojo "respira" entre 0.18 y 0.45 de
+       opacidad — siempre presente sutilmente, a veces más visible cuando
+       el agua se mueve y deja un hueco. */
+    0%, 100% { opacity: 0.25; }
+    35%      { opacity: 0.45; }
+    70%      { opacity: 0.18; }
 }
 /* Highlight + base — quedan FIJOS encima del agua para preservar
    sensación de esfera con líquido moviéndose adentro. */
@@ -258,34 +316,40 @@ un icono estático. Saludo personalizado con first_name del user.
 /* 2 anillos atravesados formando una X visible alrededor del orb.
    Más gruesos y más grandes (inset negativo para que sobresalgan del
    core). Cada anillo se inclina 45° respecto al otro creando la X. */
+.asist-orb {
+    transform-style: preserve-3d;
+    perspective: 240px;
+}
 .asist-orb-ring {
     position: absolute;
-    inset: -6%;          /* sobresalen del core para verse más prominentes */
+    inset: -6%;
     border-radius: 50%;
-    border: 3px solid transparent;
+    border: 2.5px solid transparent;
     pointer-events: none;
+    transform-style: preserve-3d;
 }
 .asist-orb-ring--horiz {
-    /* Anillo "/": inclinado en diagonal ascendente (+45° eje Z) y plano (X 75°) */
+    /* Anillo en diagonal ascendente. La animación rota TODO el plano
+       alrededor del eje Y → el anillo realmente ORBITA el orb. */
     border-top-color: #00D9FF;
-    border-right-color: rgba(0, 200, 255, 0.65);
-    border-bottom-color: rgba(0, 130, 255, 0.30);
+    border-right-color: rgba(0, 200, 255, 0.50);
+    border-bottom-color: rgba(0, 130, 255, 0.22);
     box-shadow:
-        0 0 12px rgba(0, 217, 255, 0.65),
-        0 0 24px rgba(0, 217, 255, 0.30),
-        inset 0 0 5px rgba(0, 217, 255, 0.30);
-    animation: asist-ring-horiz-spin 3.4s linear infinite;
+        0 0 8px rgba(0, 217, 255, 0.45),
+        0 0 16px rgba(0, 217, 255, 0.20),
+        inset 0 0 4px rgba(0, 217, 255, 0.22);
+    animation: asist-ring-orbit-a 7s linear infinite;
 }
 .asist-orb-ring--vert {
-    /* Anillo "\": inclinado en diagonal descendente (-45° eje Z) y plano */
+    /* Anillo en diagonal descendente, orbita en sentido contrario. */
     border-top-color: #818CF8;
-    border-right-color: rgba(129, 140, 248, 0.60);
-    border-bottom-color: rgba(99, 102, 241, 0.28);
+    border-right-color: rgba(129, 140, 248, 0.45);
+    border-bottom-color: rgba(99, 102, 241, 0.20);
     box-shadow:
-        0 0 12px rgba(129, 140, 248, 0.60),
-        0 0 24px rgba(129, 140, 248, 0.25),
-        inset 0 0 5px rgba(129, 140, 248, 0.28);
-    animation: asist-ring-vert-spin 4.6s linear infinite reverse;
+        0 0 8px rgba(129, 140, 248, 0.42),
+        0 0 16px rgba(129, 140, 248, 0.18),
+        inset 0 0 4px rgba(129, 140, 248, 0.20);
+    animation: asist-ring-orbit-b 9s linear infinite;
 }
 /* Halo exterior pulsante */
 .asist-orb::before {
@@ -307,18 +371,19 @@ un icono estático. Saludo personalizado con first_name del user.
     0%, 100% { transform: scale(1); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.4), 0 0 12px rgba(0,180,255,0.7), 0 0 24px rgba(0,102,255,0.5); }
     50% { transform: scale(1.08); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.5), 0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,102,255,0.65); }
 }
-/* Cada anillo se ve como una elipse cruzando el orb en diagonal.
-   Compuesto: rotateZ(±45°) inclina la elipse para formar la X, y
-   rotateX(72°) la deja vista "de canto". Después rotateZ animado
-   hace que el highlight de color gire alrededor → ilusión de
-   rotación constante del anillo. */
-@keyframes asist-ring-horiz-spin {
-    from { transform: rotateZ(45deg) rotateX(72deg) rotate(0deg); }
-    to   { transform: rotateZ(45deg) rotateX(72deg) rotate(360deg); }
+/* Los anillos ORBITAN — todo el plano del anillo gira 360° alrededor
+   del eje vertical Y del orb. La inclinación rotateZ(±45°) mantiene la
+   diagonal de la X. rotateX(60°) deja el anillo casi de canto. El
+   rotateY animado hace que pase de "visible de frente" a "visible
+   desde atrás" cruzando por "casi invisible de canto". Verdadera
+   sensación de órbita 3D. */
+@keyframes asist-ring-orbit-a {
+    from { transform: rotateY(0deg)   rotateZ(45deg)  rotateX(62deg); }
+    to   { transform: rotateY(360deg) rotateZ(45deg)  rotateX(62deg); }
 }
-@keyframes asist-ring-vert-spin {
-    from { transform: rotateZ(-45deg) rotateX(72deg) rotate(0deg); }
-    to   { transform: rotateZ(-45deg) rotateX(72deg) rotate(360deg); }
+@keyframes asist-ring-orbit-b {
+    from { transform: rotateY(0deg)    rotateZ(-45deg) rotateX(62deg); }
+    to   { transform: rotateY(-360deg) rotateZ(-45deg) rotateX(62deg); }
 }
 
 /* "Agua" — capas con movimiento amplio (12-15% de translate) y rotación
@@ -342,9 +407,9 @@ un icono estático. Saludo personalizado con first_name del user.
     50% { opacity: 0.85; transform: scale(1.18); }
 }
 
-/* Estado "pensando" — anillos giran 2× más rápido + glow intensificado */
-.asist-orb.is-thinking .asist-orb-ring--horiz { animation-duration: 1.4s; }
-.asist-orb.is-thinking .asist-orb-ring--vert { animation-duration: 1.8s; }
+/* Estado "pensando" — anillos giran 2-3× más rápido + glow intensificado */
+.asist-orb.is-thinking .asist-orb-ring--horiz { animation-duration: 2.5s; }
+.asist-orb.is-thinking .asist-orb-ring--vert { animation-duration: 3.2s; }
 .asist-orb.is-thinking .asist-orb-core { animation-duration: 1.0s; }
 .asist-orb.is-thinking::before { animation-duration: 1.2s; }
 

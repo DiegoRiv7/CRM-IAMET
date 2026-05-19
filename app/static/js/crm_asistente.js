@@ -424,12 +424,11 @@
     }
     window.asistenteAbrirOportunidad = openOpportunityFromChat;
 
-    /* Orb compuesto (core + 2 anillos atravesados) — mismo markup que el
-       template inicial. */
+    /* Orb compuesto (core con ojo + 2 anillos cruzados orbitando). */
     function orbHTML(size) {
         size = size || 'md';
         return '<div class="asist-orb asist-orb--' + esc(size) + '" aria-hidden="true">'
-            + '<span class="asist-orb-core"></span>'
+            + '<span class="asist-orb-core"><span class="asist-orb-eye"></span></span>'
             + '<span class="asist-orb-ring asist-orb-ring--horiz"></span>'
             + '<span class="asist-orb-ring asist-orb-ring--vert"></span>'
             + '</div>';
