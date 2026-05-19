@@ -101,11 +101,14 @@
        (rankings, forecasts, evaluaciones), si es vendedor mostramos
        prompts operacionales (mi agenda, mis clientes, mis opp). */
     function getSuggestionsForRole(esSupervisor) {
+        // El layout del welcome es grid 2×2:
+        // [0]=top-left   [1]=top-right
+        // [2]=bottom-left [3]=bottom-right
         if (esSupervisor) {
             return [
                 {prompt: '¿Cómo va la empresa este mes?', label: 'Resumen del mes', sub: 'KPIs del negocio'},
-                {prompt: 'Ranking de vendedores este mes', label: 'Ranking del equipo', sub: 'Top y bottom performers'},
-                {prompt: '¿Cómo cerraremos el mes?', label: 'Forecast del mes', sub: 'Proyección ponderada'},
+                {prompt: '¿Cómo cerraremos el mes?', label: 'Proyección del mes', sub: 'Forecast ponderado'},
+                {prompt: 'Dame el rendimiento de los vendedores este mes', label: 'Rendimiento de vendedores', sub: 'Quién aporta más'},
                 {prompt: '¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?', label: 'Clientes sin atender', sub: 'Cartera olvidada'},
             ];
         }
