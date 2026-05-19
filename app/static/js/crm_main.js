@@ -6271,12 +6271,13 @@
                         });
                     }
                     // Solo el tab CRM (oportunidades) añade columnas extra:
-                    // Tipo (Runrate/Proyecto), PO y Cliente — leídas de los
-                    // data-attrs del <tr> (no están en el DOM como <td>).
+                    // Cliente, PO y Tipo — insertadas justo después de
+                    // "Oportunidad" (índice 1). Se leen de los data-attrs
+                    // del <tr> (no están en el DOM como <td>).
                     var addOppCols = (tbodyId === 'crmTbody');
                     if (headers.length) {
                         if (addOppCols) {
-                            headers = headers.concat(['Tipo', 'PO', 'Cliente']);
+                            headers.splice(1, 0, 'Cliente', 'PO', 'Tipo');
                         }
                         tableData.push(headers);
                     }
@@ -6296,7 +6297,7 @@
                                           : (tipoRaw ? tipoRaw : '');
                             var poVal = row.getAttribute('data-po') || '';
                             var cliVal = row.getAttribute('data-cliente') || '';
-                            rowData.push(tipoLabel, poVal, cliVal);
+                            rowData.splice(1, 0, cliVal, poVal, tipoLabel);
                         }
                         if (rowData.length) tableData.push(rowData);
                     });
