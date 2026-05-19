@@ -113,10 +113,10 @@
             ];
         }
         return [
-            {prompt: '¿Qué actividades tengo pendientes?', label: 'Mi agenda', sub: 'Lo que tengo que atender'},
-            {prompt: '¿Cuál es mi oportunidad que más promete este mes?', label: 'Mi más prometedora', sub: 'Dónde poner el foco'},
-            {prompt: '¿Qué clientes tengo asignados?', label: 'Mi cartera', sub: 'Clientes a mi nombre'},
-            {prompt: '¿Cómo voy este mes?', label: 'Mi mes', sub: 'Cómo voy con mis números'},
+            {prompt: '¿Cómo voy este mes?', label: 'Mi resumen del mes', sub: 'Mis KPIs personales'},
+            {prompt: '¿Cómo cerraré el mes?', label: 'Mi proyección', sub: 'Forecast de mis opp'},
+            {prompt: 'Dame mi rendimiento de este mes', label: 'Mi rendimiento', sub: 'Mis números y consejos'},
+            {prompt: '¿Qué clientes míos llevo tiempo sin atender?', label: 'Mis clientes sin atender', sub: 'Cartera por reactivar'},
         ];
     }
 

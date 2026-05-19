@@ -80,18 +80,22 @@ def _user_context_block(user) -> str:
     """
     from .models import TodoItem, UserProfile
     from django.utils import timezone
+    from .views_utils import is_supervisor as _is_sup
 
     full = user.get_full_name() or user.username
     first = (user.first_name or user.username).strip()
     last = (user.last_name or '').strip()
     # Rol
-    rol_display = 'vendedor'
+    rol_raw = 'vendedor'
+    rol_display = 'Vendedor'
     try:
         prof = UserProfile.objects.filter(user=user).first()
         if prof and prof.rol:
-            rol_display = prof.get_rol_display() if hasattr(prof, 'get_rol_display') else str(prof.rol)
+            rol_raw = str(prof.rol)
+            rol_display = prof.get_rol_display() if hasattr(prof, 'get_rol_display') else rol_raw
     except Exception:
         pass
+    es_supervisor = bool(_is_sup(user) or user.is_superuser)
     # Oportunidades activas del user
     try:
         opp_activas = TodoItem.objects.filter(usuario=user).exclude(
@@ -106,6 +110,43 @@ def _user_context_block(user) -> str:
                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     fecha_str = f'{meses_es[now.month]} {now.year}'
 
+    # ── Scope por rol — regla dura que el AI debe respetar ──────────────
+    if es_supervisor:
+        scope_block = (
+            '\n## Alcance del usuario (rol)\n'
+            f'- {first} es **supervisor / administrador**. Puede ver datos de '
+            'TODO el equipo: cualquier vendedor, cualquier cliente, cualquier '
+            'oportunidad. Las tools devuelven la empresa completa.\n'
+            '- Cuando pregunte "rendimiento del equipo", "cómo va Ana", '
+            '"clientes sin atender", etc., responde con la visión global.\n'
+            '- El rendimiento del equipo lista SOLO usuarios con rol '
+            '"vendedor"; supervisores e ingenieros no aparecen en esa tabla '
+            '(la tool ya los excluye).\n'
+        )
+    else:
+        scope_block = (
+            '\n## Alcance del usuario (rol)\n'
+            f'- {first} es **{rol_display.lower()}**, NO supervisor. Las tools '
+            'devuelven SOLO sus datos: sus oportunidades, sus clientes, sus '
+            'cotizaciones, sus tareas. NO tiene visibilidad de otros '
+            'vendedores ni del equipo completo.\n'
+            '- Cuando pregunte "cómo voy", "mi mes", "mi forecast", "mis '
+            'clientes sin atender", "mi rendimiento" → responde con SUS '
+            'datos personales. Habla en segunda persona ("tú cerraste", '
+            '"te falta", "te recomiendo").\n'
+            '- Si pide info del equipo, de otro vendedor, o rankings entre '
+            'vendedores → recházalo con cortesía explicando que esa vista '
+            'es solo para supervisores. Sugiere reformular en términos '
+            'personales ("¿quieres que veamos cómo vas tú este mes?").\n'
+            '- **NUNCA llames `rendimiento_equipo_completo`** — esa tool '
+            'requiere ser supervisor y va a devolver error.\n'
+            '- Tono: actúa como su **coach de ventas personal**. Cuando los '
+            'números estén bajos, da 2-3 consejos prácticos para mejorar '
+            '(prospección, seguimiento, priorización). Cuando los números '
+            'estén bien, reconócelo en una línea breve y sugiere el '
+            'siguiente paso para empujar más.\n'
+        )
+
     return (
         f'\n\n## Contexto del usuario actual\n'
         f'- Nombre: **{full}** (puedes llamarle "{first}" en conversación informal)\n'
@@ -113,6 +154,7 @@ def _user_context_block(user) -> str:
         f'- Rol: {rol_display}\n'
         f'- Oportunidades activas a su nombre: {opp_activas}\n'
         f'- Fecha de hoy: {fecha_str}\n'
+        + scope_block
     )
 
 
