@@ -270,6 +270,33 @@
             return label;
         });
 
+        // Bloques de KPI cards: ::: kpis ... ::: → grid de tarjetas.
+        // Cada línea dentro del bloque es: "Label | Valor | Subtítulo" (pipes).
+        // Antes de procesar línea por línea, extraemos los bloques kpis para
+        // que el parser normal no toque su contenido.
+        var kpiBlocks = [];
+        html = html.replace(/^[ \t]*:::\s*kpis\s*\n([\s\S]*?)^[ \t]*:::\s*$/gm, function (_, content) {
+            var rows = content.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+            var cards = '';
+            rows.forEach(function (l) {
+                // Quitar bullet/numeral inicial si lo trae
+                l = l.replace(/^\s*[-*•]\s+/, '');
+                var parts = l.split('|').map(function (s) { return s.trim(); });
+                if (parts.length === 0 || !parts[0]) return;
+                var label = parts[0];
+                var value = parts[1] || '';
+                var sub = parts[2] || '';
+                cards += '<div class="asist-kpi-card">'
+                    + '<div class="asist-kpi-label">' + label + '</div>'
+                    + '<div class="asist-kpi-value">' + value + '</div>'
+                    + (sub ? '<div class="asist-kpi-sub">' + sub + '</div>' : '')
+                    + '</div>';
+            });
+            var idx = kpiBlocks.length;
+            kpiBlocks.push('<div class="asist-kpi-grid">' + cards + '</div>');
+            return '\x00KPIBLOCK' + idx + '\x00';
+        });
+
         // Procesar línea por línea para listas, headings y tablas.
         var lines = html.split('\n');
         var out = [];
@@ -355,6 +382,10 @@
         // Restaurar code blocks
         html = html.replace(/\x00CODE(\d+)\x00/g, function (_, idx) {
             return '<code>' + codeBlocks[parseInt(idx, 10)] + '</code>';
+        });
+        // Restaurar KPI grids
+        html = html.replace(/\x00KPIBLOCK(\d+)\x00/g, function (_, idx) {
+            return kpiBlocks[parseInt(idx, 10)] || '';
         });
 
         // Saltos de línea simples → <br>, sin tocar bloques estructurales.

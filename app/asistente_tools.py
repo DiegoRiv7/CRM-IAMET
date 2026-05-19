@@ -365,6 +365,39 @@ def _tool_resumen_empresa(args: dict, user: User) -> dict:
     # Cobrado REAL: del ArchivoCobrado del periodo.
     total_cobrado = _total_cobrado_periodo(anio, mes)
 
+    # Top y bottom vendedor del cobrado: matcheamos cada entry del
+    # ArchivoCobrado a un Cliente (por RFC o nombre) → al asignado_a →
+    # acumulamos monto por usuario. Solo cuenta usuarios visibles.
+    cobrado_por_user = {}
+    clientes_all = list(Cliente.objects.exclude(asignado_a__isnull=True).select_related('asignado_a'))
+    if visible_ids is not None:
+        clientes_all = [c for c in clientes_all if c.asignado_a_id in visible_ids]
+    qs_arch_cob = ArchivoCobrado.objects.filter(anio=anio)
+    if mes:
+        qs_arch_cob = qs_arch_cob.filter(mes=str(mes).zfill(2))
+    for ac in qs_arch_cob:
+        entries = _extract_cobrado_entries(ac.datos_json)
+        for entry in entries:
+            for c in clientes_all:
+                if _match_entry_to_cliente(entry, c):
+                    uid = c.asignado_a_id
+                    if not uid:
+                        break
+                    if uid not in cobrado_por_user:
+                        u = c.asignado_a
+                        cobrado_por_user[uid] = {
+                            'user_id': uid,
+                            'nombre': u.get_full_name() or u.username,
+                            'monto': Decimal('0'),
+                        }
+                    cobrado_por_user[uid]['monto'] += entry['monto']
+                    break
+    ranking = sorted(cobrado_por_user.values(), key=lambda x: x['monto'], reverse=True)
+    # Filtramos los que sí cobraron algo para el bottom (no tiene sentido decir "menor cobrado: $0")
+    con_cobro = [r for r in ranking if r['monto'] > 0]
+    top_v = con_cobro[0] if con_cobro else None
+    bottom_v = con_cobro[-1] if len(con_cobro) > 1 else None
+
     ganadas_qs = base.filter(_q_ganadas())
     ganadas_count = ganadas_qs.count()
     ganadas_monto = ganadas_qs.aggregate(total=Sum('monto')).get('total') or 0
@@ -384,6 +417,12 @@ def _tool_resumen_empresa(args: dict, user: User) -> dict:
         'num_cotizaciones': num_cotizaciones,
         'facturado_real_mxn': _to_money(total_facturado),
         'cobrado_real_mxn': _to_money(total_cobrado),
+        'top_vendedor_cobrado': (
+            {'nombre': top_v['nombre'], 'monto_mxn': float(top_v['monto'])} if top_v else None
+        ),
+        'bottom_vendedor_cobrado': (
+            {'nombre': bottom_v['nombre'], 'monto_mxn': float(bottom_v['monto'])} if bottom_v else None
+        ),
         '_fuente_facturado': 'ArchivoFacturacion del mes (Excel admin)',
         '_fuente_cobrado': 'ArchivoCobrado del mes (CSV admin)',
         'oportunidades_ganadas': ganadas_count,
@@ -560,12 +599,36 @@ def _tool_forecast_cierre(args: dict, user: User) -> dict:
 
     periodo_str = ' / '.join(f'{meses_es[mm]} {aa}' for mm, aa in pares)
 
+    # Top 3 oportunidades RECOMENDADAS para enfocarse — las que más
+    # contribuyen al forecast (monto × probabilidad), excluyendo las
+    # ya cerradas. Devolvemos id + titulo + cliente + monto + prob para
+    # que el modelo las pinte como links clickables.
+    qs_recomendadas = qs.select_related('cliente').only(
+        'id', 'oportunidad', 'monto', 'probabilidad_cierre', 'cliente__nombre_empresa',
+        'etapa_corta', 'etapa_completa',
+    )
+    candidatos = []
+    for opp in qs_recomendadas:
+        m = _to_money(opp.monto)
+        p = (opp.probabilidad_cierre or 20) / 100.0
+        candidatos.append({
+            'id': opp.id,
+            'titulo': opp.oportunidad,
+            'cliente': opp.cliente.nombre_empresa if opp.cliente_id else '—',
+            'monto_mxn': round(m, 2),
+            'probabilidad_pct': opp.probabilidad_cierre or 0,
+            'aporte_forecast_mxn': round(m * p, 2),
+            'etapa': opp.etapa_corta or opp.etapa_completa or '—',
+        })
+    candidatos.sort(key=lambda x: x['aporte_forecast_mxn'], reverse=True)
+    recomendadas = candidatos[:3]
+
     return {
         'periodo': periodo_str,
         'meses_incluidos': pares,
         'oportunidades_consideradas': total_opp,
-        'pipeline_total_mxn': round(pipeline_total, 2),
-        'forecast_ponderado_mxn': round(forecast, 2),
+        'monto_total_mxn': round(pipeline_total, 2),
+        'monto_esperado_mxn': round(forecast, 2),
         'desglose_por_mes': [
             {'mes': k, 'monto_mxn': round(v['monto'], 2), 'forecast_mxn': round(v['forecast'], 2), 'count': v['count']}
             for k, v in desglose_mes
@@ -574,10 +637,12 @@ def _tool_forecast_cierre(args: dict, user: User) -> dict:
             {'etapa': k, 'monto_mxn': round(v['monto'], 2), 'forecast_mxn': round(v['forecast'], 2), 'count': v['count']}
             for k, v in top_etapas
         ],
-        'nota': (
-            'forecast_ponderado = suma(monto × probabilidad_cierre del CRM). '
-            'Solo se incluyen oportunidades cuyo mes_cierre cae en el periodo.'
-        ),
+        'top_3_recomendadas': recomendadas,
+        '_glosario': {
+            'monto_total': 'Suma del monto de TODAS las opp activas en el periodo. Es el máximo posible.',
+            'monto_esperado': 'Suma(monto × probabilidad de cierre del CRM). Es lo que ESTADÍSTICAMENTE esperarías cerrar.',
+            'top_3_recomendadas': 'Las 3 que más aportan al forecast — donde poner el esfuerzo.',
+        },
     }
 
 
