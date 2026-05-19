@@ -117,7 +117,7 @@
         div.id = 'asistWelcome';
         div.className = 'asist-welcome';
         div.innerHTML =
-            '<div class="asist-orb asist-orb--lg" aria-hidden="true"></div>'
+            orbHTML('lg')
             + '<div class="asist-welcome-title">'
             +   '<span class="asist-greeting">Hola, <span id="asistGreetName">' + esc(_greetingName || '') + '</span></span>'
             +   '<span class="asist-greeting-q">¿En qué te ayudo?</span>'
@@ -144,8 +144,8 @@
         return div;
     }
 
-    function clearHistory() {
-        if (!confirm('¿Limpiar toda la conversación? No se puede deshacer.')) return;
+    function newChat(silent) {
+        if (!silent && !confirm('¿Iniciar un nuevo chat? Se perderá la conversación actual.')) return;
         api('/app/api/asistente/conversacion/eliminar/', {method: 'DELETE'}).then(function (res) {
             if (!res.ok) return;
             var box = document.getElementById('asistMessages');
@@ -188,10 +188,15 @@
         return html;
     }
 
-    /* Orb SVG mini para usar como avatar de mensaje del bot */
+    /* Orb compuesto (core + 3 anillos) — mismo markup que el template inicial. */
     function orbHTML(size) {
         size = size || 'md';
-        return '<div class="asist-orb asist-orb--' + esc(size) + '" aria-hidden="true"></div>';
+        return '<div class="asist-orb asist-orb--' + esc(size) + '" aria-hidden="true">'
+            + '<span class="asist-orb-core"></span>'
+            + '<span class="asist-orb-ring asist-orb-ring--1"></span>'
+            + '<span class="asist-orb-ring asist-orb-ring--2"></span>'
+            + '<span class="asist-orb-ring asist-orb-ring--3"></span>'
+            + '</div>';
     }
 
     /* ─── Render ─── */
@@ -327,7 +332,9 @@
             });
         }
         if (closeBtn) closeBtn.addEventListener('click', closeAsistente);
-        if (clearBtn) clearBtn.addEventListener('click', clearHistory);
+        if (clearBtn) clearBtn.addEventListener('click', newChat);
+        var newChatBtn = document.getElementById('asistNewChatBtn');
+        if (newChatBtn) newChatBtn.addEventListener('click', newChat);
         if (overlay) overlay.addEventListener('click', function (e) {
             if (e.target === overlay) closeAsistente();
         });

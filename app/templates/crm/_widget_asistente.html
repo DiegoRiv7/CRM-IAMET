@@ -9,7 +9,12 @@ un icono estático. Saludo personalizado con first_name del user.
         {# Header con orb pequeño #}
         <header class="asist-header">
             <div class="asist-header-left">
-                <div class="asist-orb asist-orb--sm" id="asistAvatar" aria-hidden="true"></div>
+                <div class="asist-orb asist-orb--sm" id="asistAvatar" aria-hidden="true">
+                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-ring asist-orb-ring--1"></span>
+                    <span class="asist-orb-ring asist-orb-ring--2"></span>
+                    <span class="asist-orb-ring asist-orb-ring--3"></span>
+                </div>
                 <div class="asist-header-text">
                     <div class="asist-name" id="asistName">IAMET AI
                         <span class="asist-beta">BETA</span>
@@ -21,11 +26,12 @@ un icono estático. Saludo personalizado con first_name del user.
                 </div>
             </div>
             <div class="asist-header-right">
-                <button type="button" class="asist-icon-btn" id="asistClearBtn" title="Limpiar conversación">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                <button type="button" class="asist-new-chat-btn" id="asistNewChatBtn" title="Nuevo chat (limpia la conversación)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                     </svg>
+                    <span>Nuevo chat</span>
                 </button>
                 <button type="button" class="asist-icon-btn" id="asistCloseBtn" title="Cerrar">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -36,7 +42,12 @@ un icono estático. Saludo personalizado con first_name del user.
         {# Mensajes #}
         <div class="asist-messages" id="asistMessages">
             <div class="asist-welcome" id="asistWelcome">
-                <div class="asist-orb asist-orb--lg" aria-hidden="true"></div>
+                <div class="asist-orb asist-orb--lg" aria-hidden="true">
+                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-ring asist-orb-ring--1"></span>
+                    <span class="asist-orb-ring asist-orb-ring--2"></span>
+                    <span class="asist-orb-ring asist-orb-ring--3"></span>
+                </div>
                 <div class="asist-welcome-title">
                     <span class="asist-greeting">Hola, <span id="asistGreetName">{{ request.user.first_name|default:request.user.username }}</span></span>
                     <span class="asist-greeting-q">¿En qué te ayudo?</span>
@@ -104,11 +115,16 @@ un icono estático. Saludo personalizado con first_name del user.
 </div>
 
 <style>
-/* ═════════ ASISTENTE — Estilo Apple Intelligence claro + azul eléctrico ═════════ */
+/* ═════════ ASISTENTE — Apple Intelligence claro + azul eléctrico ═════════ */
 
-/* Variables paleta */
+@property --asist-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
 #widgetAsistente {
-    --ai-blue: #0066FF;             /* azul eléctrico */
+    --ai-blue: #0066FF;
     --ai-blue-dark: #0052D4;
     --ai-cyan: #00B5FF;
     --ai-violet: #6366F1;
@@ -117,91 +133,163 @@ un icono estático. Saludo personalizado con first_name del user.
     --ai-ink: #0F172A;
     --ai-muted: #64748B;
     --ai-line: #E5E7EB;
-    --ai-soft: #F8FAFF;             /* fondo de mensajes con tinte azul */
-}
-
-#widgetAsistente {
+    --ai-soft: #F8FAFF;
     background: rgba(10, 15, 30, 0.45);
     backdrop-filter: blur(10px) saturate(140%);
     -webkit-backdrop-filter: blur(10px) saturate(140%);
 }
 
+/* ═════════ Card más grande + borde Apple Intelligence ═════════
+   Pseudo-elemento .asist-card-border es un cuadrado un poco más
+   grande con conic-gradient rotante que se ve como "luz que rodea
+   el card". Combina azul eléctrico dominante con índigo/violeta/
+   magenta oscuros. */
 .asist-card {
-    width: min(880px, 96vw);
-    height: min(720px, 92vh);
+    position: relative;
+    width: min(1120px, 96vw);
+    height: min(820px, 92vh);
     background: #FFFFFF;
-    border-radius: 24px;
-    box-shadow:
-        0 40px 100px -20px rgba(0,82,212,0.30),
-        0 16px 40px -16px rgba(0,0,0,0.25);
+    border-radius: 26px;
     display: flex; flex-direction: column;
     overflow: hidden;
-    border: 1px solid rgba(0, 102, 255, 0.08);
+    box-shadow:
+        0 50px 120px -20px rgba(0,82,212,0.32),
+        0 18px 48px -16px rgba(0,0,0,0.28);
+}
+.asist-card::before,
+.asist-card::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 28px;
+    background: conic-gradient(from var(--asist-angle),
+        #0066FF 0%,         /* azul eléctrico DOMINANTE */
+        #00B5FF 12%,        /* cyan */
+        #1E1B4B 25%,        /* índigo profundo */
+        #0066FF 38%,        /* azul de regreso */
+        #6366F1 52%,        /* violeta */
+        #BE185D 65%,        /* magenta oscuro */
+        #0066FF 78%,        /* azul */
+        #581C87 90%,        /* púrpura oscuro */
+        #0066FF 100%);
+    z-index: -1;
+    animation: asist-border-rotate 6s linear infinite;
+}
+.asist-card::after {
+    inset: -8px;
+    border-radius: 32px;
+    filter: blur(18px);
+    opacity: 0.55;
+}
+@keyframes asist-border-rotate {
+    to { --asist-angle: 360deg; }
+}
+/* Fallback en navegadores sin @property: usamos un gradient lineal
+   animado por background-position. Visible solo si --asist-angle
+   no se interpola (Firefox <128). */
+@supports not (background: conic-gradient(from 0deg, red, red)) {
+    .asist-card::before, .asist-card::after {
+        background: linear-gradient(135deg, #0066FF, #1E1B4B, #BE185D, #0066FF);
+        background-size: 300% 300%;
+        animation: asist-border-fallback 6s linear infinite;
+    }
+    @keyframes asist-border-fallback {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 300% 0%; }
+    }
 }
 
-/* ═════════ ORB ANIMADO (avatar del AI) ═════════ */
+/* ═════════ ORB tipo Cortana / Jarvis ═════════
+   Core central pulsante + 3 anillos en planos diferentes que orbitan
+   a velocidades distintas. Sensación de "ente vivo / núcleo de energía". */
 .asist-orb {
     position: relative;
-    border-radius: 50%;
     flex-shrink: 0;
-    /* Conic gradient swirl con highlight superior */
+    border-radius: 50%;
+    display: block;
+}
+.asist-orb-core {
+    position: absolute; inset: 18%;
+    border-radius: 50%;
     background:
-        radial-gradient(circle at 28% 28%, rgba(255,255,255,0.75) 0%, transparent 30%),
-        conic-gradient(from 0deg,
-            #00B5FF 0%,
-            #0066FF 18%,
-            #6366F1 36%,
-            #A855F7 52%,
-            #EC4899 68%,
-            #FF6B6B 82%,
-            #00B5FF 100%);
+        radial-gradient(circle at 32% 30%, rgba(255,255,255,0.85) 0%, transparent 38%),
+        radial-gradient(circle at 50% 50%, #00D9FF 0%, #0066FF 38%, #1E1B4B 72%, #0A0E27 100%);
     box-shadow:
-        inset 0 2px 6px rgba(255,255,255,0.5),
-        inset 0 -2px 6px rgba(0,0,0,0.12),
-        0 0 24px rgba(0,102,255,0.45),
-        0 0 8px rgba(192,38,211,0.30);
-    animation: asist-orb-hue 6s linear infinite,
-               asist-orb-breathe 3.4s ease-in-out infinite;
+        inset 0 -3px 6px rgba(0,0,0,0.35),
+        inset 0 2px 4px rgba(255,255,255,0.4),
+        0 0 12px rgba(0,180,255,0.7),
+        0 0 24px rgba(0,102,255,0.5);
+    animation: asist-orb-core-breathe 2.4s ease-in-out infinite;
+}
+.asist-orb-ring {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    border-top-color: #00B5FF;
+    border-right-color: rgba(0, 102, 255, 0.5);
+    box-shadow:
+        0 0 6px rgba(0,180,255,0.6),
+        inset 0 0 4px rgba(0,180,255,0.3);
+    pointer-events: none;
+}
+.asist-orb-ring--1 {
+    animation: asist-ring-spin-x 3.2s linear infinite;
+}
+.asist-orb-ring--2 {
+    border-top-color: #6366F1;
+    border-right-color: rgba(99, 102, 241, 0.4);
+    transform: rotateY(72deg);
+    animation: asist-ring-spin-y 4.4s linear infinite reverse;
+}
+.asist-orb-ring--3 {
+    border-top-color: #C026D3;
+    border-right-color: rgba(192, 38, 211, 0.3);
+    transform: rotate(35deg) rotateX(60deg);
+    animation: asist-ring-spin-diag 5.6s linear infinite;
 }
 /* Halo exterior pulsante */
 .asist-orb::before {
     content: '';
     position: absolute;
-    inset: -25%;
+    inset: -30%;
     border-radius: 50%;
-    background: inherit;
-    filter: blur(14px);
-    opacity: 0.45;
+    background: radial-gradient(circle, rgba(0,102,255,0.5) 0%, rgba(99,102,241,0.2) 35%, transparent 70%);
     z-index: -1;
-    animation: asist-orb-hue 6s linear infinite,
-               asist-orb-halo 3.4s ease-in-out infinite;
+    animation: asist-orb-halo 3s ease-in-out infinite;
+    pointer-events: none;
 }
 /* Tamaños */
-.asist-orb--sm { width: 38px; height: 38px; }
-.asist-orb--md { width: 28px; height: 28px; }
-.asist-orb--lg { width: 88px; height: 88px; margin-bottom: 18px; }
+.asist-orb--sm { width: 40px; height: 40px; }
+.asist-orb--md { width: 30px; height: 30px; }
+.asist-orb--lg { width: 96px; height: 96px; margin-bottom: 18px; }
 
-@keyframes asist-orb-hue {
-    to { filter: hue-rotate(360deg); }
+@keyframes asist-orb-core-breathe {
+    0%, 100% { transform: scale(1); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.35), inset 0 2px 4px rgba(255,255,255,0.4), 0 0 12px rgba(0,180,255,0.7), 0 0 24px rgba(0,102,255,0.5); }
+    50% { transform: scale(1.08); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.5), 0 0 18px rgba(0,180,255,0.85), 0 0 36px rgba(0,102,255,0.65); }
 }
-@keyframes asist-orb-breathe {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.045); }
+@keyframes asist-ring-spin-x {
+    from { transform: rotateZ(0deg) rotateX(0deg); }
+    to { transform: rotateZ(360deg) rotateX(0deg); }
+}
+@keyframes asist-ring-spin-y {
+    from { transform: rotateY(72deg) rotateZ(0deg); }
+    to { transform: rotateY(72deg) rotateZ(360deg); }
+}
+@keyframes asist-ring-spin-diag {
+    from { transform: rotate(35deg) rotateX(60deg) rotateZ(0deg); }
+    to { transform: rotate(35deg) rotateX(60deg) rotateZ(360deg); }
 }
 @keyframes asist-orb-halo {
-    0%, 100% { opacity: 0.42; transform: scale(1); }
-    50% { opacity: 0.62; transform: scale(1.08); }
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.18); }
 }
 
-/* Estado "pensando" — animación más intensa cuando está procesando */
-.asist-orb.is-thinking {
-    animation: asist-orb-hue 1.4s linear infinite,
-               asist-orb-breathe 1.2s ease-in-out infinite;
-}
-.asist-orb.is-thinking::before {
-    animation: asist-orb-hue 1.4s linear infinite,
-               asist-orb-halo 1.2s ease-in-out infinite;
-}
+/* Estado "pensando" — anillos giran 2× más rápido + glow intensificado */
+.asist-orb.is-thinking .asist-orb-ring--1 { animation-duration: 1.4s; }
+.asist-orb.is-thinking .asist-orb-ring--2 { animation-duration: 1.8s; }
+.asist-orb.is-thinking .asist-orb-ring--3 { animation-duration: 2.2s; }
+.asist-orb.is-thinking .asist-orb-core { animation-duration: 1.0s; }
+.asist-orb.is-thinking::before { animation-duration: 1.2s; }
 
 /* ═════════ Header ═════════ */
 .asist-header {
@@ -242,7 +330,7 @@ un icono estático. Saludo personalizado con first_name del user.
     50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
 }
 
-.asist-header-right { display: flex; gap: 4px; }
+.asist-header-right { display: flex; gap: 8px; align-items: center; }
 .asist-icon-btn {
     width: 36px; height: 36px; border-radius: 50%;
     background: transparent; border: none; color: var(--ai-muted);
@@ -250,6 +338,25 @@ un icono estático. Saludo personalizado con first_name del user.
     cursor: pointer; transition: background 0.16s ease, color 0.16s ease;
 }
 .asist-icon-btn:hover { background: rgba(0, 102, 255, 0.08); color: var(--ai-blue); }
+
+/* Botón "Nuevo chat" — pill con borde azul eléctrico */
+.asist-new-chat-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: rgba(0, 102, 255, 0.06);
+    border: 1px solid rgba(0, 102, 255, 0.20);
+    border-radius: 999px;
+    color: var(--ai-blue);
+    font-family: inherit; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+}
+.asist-new-chat-btn:hover {
+    background: rgba(0, 102, 255, 0.14);
+    border-color: var(--ai-blue);
+    transform: translateY(-1px);
+}
+.asist-new-chat-btn svg { flex-shrink: 0; }
 
 /* ═════════ Mensajes ═════════ */
 .asist-messages {

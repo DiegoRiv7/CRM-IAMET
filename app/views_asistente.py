@@ -18,6 +18,7 @@ import logging
 from typing import Any
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
@@ -72,22 +73,96 @@ def _build_context(conv: ConversacionAsistente, config: AsistenteConfig) -> list
     return [_msg_to_dict(m) for m in msgs]
 
 
+def _user_context_block(user) -> str:
+    """Datos relevantes del user que el asistente DEBE saber de entrada.
+    No son secretos — son cosas que mejoran las respuestas y dan personalidad
+    (saludar por nombre, conocer rol, saber su carga actual).
+    """
+    from .models import TodoItem, UserProfile
+    from django.utils import timezone
+
+    full = user.get_full_name() or user.username
+    first = (user.first_name or user.username).strip()
+    last = (user.last_name or '').strip()
+    # Rol
+    rol_display = 'vendedor'
+    try:
+        prof = UserProfile.objects.filter(user=user).first()
+        if prof and prof.rol:
+            rol_display = prof.get_rol_display() if hasattr(prof, 'get_rol_display') else str(prof.rol)
+    except Exception:
+        pass
+    # Oportunidades activas del user
+    try:
+        opp_activas = TodoItem.objects.filter(usuario=user).exclude(
+            Q(etapa_completa__icontains='perdido') |
+            Q(etapa_completa__icontains='cancelad')
+        ).count()
+    except Exception:
+        opp_activas = '?'
+    # Fecha actual
+    now = timezone.now()
+    meses_es = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    fecha_str = f'{meses_es[now.month]} {now.year}'
+
+    return (
+        f'\n\n## Contexto del usuario actual\n'
+        f'- Nombre: **{full}** (puedes llamarle "{first}" en conversación informal)\n'
+        f'- Usuario en el sistema: @{user.username}\n'
+        f'- Rol: {rol_display}\n'
+        f'- Oportunidades activas a su nombre: {opp_activas}\n'
+        f'- Fecha de hoy: {fecha_str}\n'
+    )
+
+
 def _system_prompt(user, config: AsistenteConfig) -> dict:
-    """Construye el system prompt: instrucciones base + contexto del user."""
-    base = (config.system_prompt or '').strip() or (
-        f'Eres {config.nombre}, asistente del CRM IAMET. Respondes en español '
-        'mexicano, con tono profesional pero cercano. Cuando el usuario te '
-        'pregunte por datos del negocio (clientes, oportunidades, ventas, '
-        'rendimiento del equipo), USA las herramientas disponibles. NUNCA '
-        'inventes datos. Si una herramienta devuelve un error o lista vacía, '
-        'di eso al usuario. Sé conciso: respuestas cortas con bullets si hay '
-        'lista. No expongas IDs internos a menos que el usuario los pida.'
+    """System prompt — personalidad + reglas + contexto del user."""
+    custom = (config.system_prompt or '').strip()
+    if custom:
+        # Si el admin definió un prompt custom, lo respetamos pero le agregamos
+        # el contexto del user al final.
+        return {'role': 'system', 'content': custom + _user_context_block(user)}
+
+    base = (
+        f'Eres {config.nombre}, asistente AI del CRM de IAMET — una empresa '
+        'mexicana de soluciones de tecnología, automatización industrial y '
+        'sistemas de identificación. Hablas español mexicano natural, con '
+        'tono cercano y profesional. Tienes humor sutil, agudo — eres como '
+        'un colega vendedor experimentado que ya lleva años en la calle, '
+        'no payaso ni acartonado. Eres conciso por default; expandes solo '
+        'cuando el dato lo amerita.\n\n'
+
+        '## Reglas duras\n'
+        '1. **NUNCA inventes datos.** Si necesitas información del CRM, USA '
+        'las herramientas disponibles. Si una tool devuelve lista vacía o '
+        'error, dilo claro sin disfrazar.\n'
+        '2. **No expongas IDs internos** (como #12345) salvo que el usuario '
+        'los pida explícitamente.\n'
+        '3. **Formatea montos** con $ y separadores de miles (ej. $1,250,000 MXN).\n'
+        '4. **Bullets cuando hay listas.** Texto corrido para respuestas de '
+        '1-2 oraciones.\n'
+        '5. **No te disculpes en exceso** ("disculpa que…", "lamento que…"). '
+        'Si te equivocas, corrige y sigue.\n'
+        '6. **No abuses de "ofertas" innecesarias.** Si te saludan con un '
+        '"hola", responde casual y breve, no le sueltes al user un menú de '
+        'todo lo que puedes hacer.\n\n'
+
+        '## Personalidad\n'
+        '- Saluda por nombre cuando es apropiado (en el primer mensaje del '
+        'día o de la sesión).\n'
+        '- Puedes usar mexicanismos suaves ("órale", "va", "andamos", '
+        '"a darle"). Sin exagerar.\n'
+        '- Cuando los números son buenos, celebra brevemente ("¡buen mes!"). '
+        'Cuando son malos, sé empático antes de soltar la cifra ("este mes '
+        'fue retador…").\n'
+        '- Si el user te tira una broma o algo casual, responde con humor '
+        'sutil. No te quedes rígido.\n'
+        '- Si el user pregunta algo fuera del CRM (clima, deporte, vida), '
+        'aclaras que tu fuerte son los datos del CRM, pero puedes responder '
+        'brevemente sin dramatizar.\n'
     )
-    extra = (
-        f'\n\nUsuario actual: {user.get_full_name() or user.username}. '
-        f'Username: {user.username}.'
-    )
-    return {'role': 'system', 'content': base + extra}
+    return {'role': 'system', 'content': base + _user_context_block(user)}
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────
