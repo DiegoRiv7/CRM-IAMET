@@ -197,6 +197,7 @@ urlpatterns = [
     path('api/asistente/conversacion/', views_asistente.api_asistente_conversacion, name='api_asistente_conversacion'),
     path('api/asistente/conversacion/eliminar/', views_asistente.api_asistente_conversacion_eliminar, name='api_asistente_conversacion_eliminar'),
     path('api/asistente/mensaje/', views_asistente.api_asistente_mensaje, name='api_asistente_mensaje'),
+    path('api/asistente/reporte/xlsx/', views_asistente.api_asistente_reporte_xlsx, name='api_asistente_reporte_xlsx'),
 
     path('api/admin/oportunidades/', views.api_admin_oportunidades, name='api_admin_oportunidades'),
     path('api/admin/oportunidades/<int:opp_id>/', views.api_admin_oportunidad_detalle, name='api_admin_oportunidad_detalle'),

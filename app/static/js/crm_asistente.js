@@ -184,9 +184,16 @@
             if (oppMatch) {
                 return '<a href="#" data-asist-opp="' + oppMatch[1] + '" class="asist-link asist-link--opp">' + label + '</a>';
             }
-            // Link externo (solo http/https para seguridad).
+            // URLs aceptadas: http(s), o paths relativos del CRM (/app/...).
             if (/^https?:\/\//i.test(url)) {
                 return '<a href="' + url + '" target="_blank" rel="noopener" class="asist-link">' + label + '</a>';
+            }
+            if (/^\/app\//.test(url)) {
+                // Descargas / endpoints del CRM. Si el path es de reporte
+                // xlsx, lo marcamos como link de descarga con icono propio.
+                var isReport = url.indexOf('/api/asistente/reporte/') !== -1;
+                var cls = isReport ? 'asist-link asist-link--report' : 'asist-link';
+                return '<a href="' + url + '" target="_blank" rel="noopener" class="' + cls + '">' + label + '</a>';
             }
             return label;
         });
@@ -207,12 +214,16 @@
 
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
-            // Headings
-            var h = line.match(/^\s*(#{1,3})\s+(.+)$/);
+            // Headings (#, ##, ###, #### …) — cualquier nivel se renderea
+            // con clase .asist-h-N (N=1..6). El CSS solo distingue 1/2/3
+            // y trata 4+ igual que 3 (sub-heading).
+            var h = line.match(/^\s*(#{1,6})\s+(.+)$/);
             if (h) {
                 closeList(); closeTable();
-                var level = h[1].length + 2;  // ### → h5, ## → h4, # → h3
-                out.push('<h' + level + ' class="asist-h asist-h-' + h[1].length + '">' + h[2] + '</h' + level + '>');
+                var lvl = Math.min(h[1].length, 6);
+                var cssLevel = Math.min(lvl, 3);  // CSS hasta nivel 3
+                var htmlLevel = Math.min(lvl + 2, 6);  // h3..h6
+                out.push('<h' + htmlLevel + ' class="asist-h asist-h-' + cssLevel + '">' + h[2] + '</h' + htmlLevel + '>');
                 continue;
             }
             // Tabla — detectar líneas con |

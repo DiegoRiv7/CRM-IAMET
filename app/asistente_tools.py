@@ -540,6 +540,112 @@ def _tool_detalle_vendedor(args: dict, user: User) -> dict:
     }
 
 
+# 9b. Oportunidades por periodo (sin filtrar por vendedor)
+def _tool_oportunidades_por_periodo(args: dict, user: User) -> dict:
+    """Lista las oportunidades CREADAS en un periodo, opcionalmente filtradas
+    por etapa, monto mínimo, o producto. Respeta permisos de visibilidad."""
+    ahora = timezone.now()
+    mes = int(args.get('mes') or ahora.month)
+    anio = int(args.get('anio') or ahora.year)
+    mes = max(1, min(mes, 12))
+
+    qs = TodoItem.objects.filter(
+        fecha_creacion__year=anio,
+        fecha_creacion__month=mes,
+    ).select_related('cliente', 'usuario')
+
+    visible_ids = _visible_user_ids(user)
+    if visible_ids is not None:
+        qs = qs.filter(usuario_id__in=visible_ids)
+
+    # Filtros opcionales
+    etapa_kw = (args.get('etapa') or '').strip()
+    if etapa_kw:
+        qs = qs.filter(Q(etapa_corta__icontains=etapa_kw) | Q(etapa_completa__icontains=etapa_kw))
+
+    monto_min = args.get('monto_minimo')
+    if monto_min:
+        try:
+            qs = qs.filter(monto__gte=float(monto_min))
+        except (ValueError, TypeError):
+            pass
+
+    limite = int(args.get('limite') or 100)
+    limite = max(1, min(limite, 500))
+
+    qs = qs.order_by('-monto')[:limite]
+
+    items = []
+    for opp in qs:
+        items.append({
+            'id': opp.id,
+            'titulo': opp.oportunidad,
+            'cliente': opp.cliente.nombre_empresa if opp.cliente_id else '—',
+            'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario_id else '—',
+            'monto_mxn': _to_money(opp.monto),
+            'etapa': opp.etapa_corta or opp.etapa_completa or '—',
+            'producto': opp.producto or '—',
+            'fecha_creacion': opp.fecha_creacion.strftime('%Y-%m-%d') if opp.fecha_creacion else '—',
+        })
+
+    return {
+        'mes': mes,
+        'anio': anio,
+        'etapa_filtro': etapa_kw or None,
+        'monto_minimo': monto_min,
+        'total': len(items),
+        'oportunidades': items,
+    }
+
+
+# 10. Generar reporte Excel descargable
+def _tool_generar_reporte_excel(args: dict, user: User) -> dict:
+    """Crea un archivo XLSX con las oportunidades del periodo y devuelve
+    una URL de descarga válida por 1 hora. El reporte respeta permisos
+    de visibilidad del user."""
+    import uuid
+    from django.core.cache import cache
+
+    ahora = timezone.now()
+    mes = args.get('mes')
+    anio = args.get('anio')
+    if mes:
+        try: mes = max(1, min(int(mes), 12))
+        except (ValueError, TypeError): mes = ahora.month
+    if anio:
+        try: anio = int(anio)
+        except (ValueError, TypeError): anio = ahora.year
+
+    tipo = (args.get('tipo') or 'oportunidades').lower()
+    vendedor_username = (args.get('vendedor_username') or '').strip()
+
+    # Token corto para autorizar la descarga (1 hora de vida).
+    token = uuid.uuid4().hex[:16]
+    payload = {
+        'tipo': tipo,
+        'mes': mes,
+        'anio': anio,
+        'vendedor_username': vendedor_username,
+        'user_id': user.id,
+    }
+    cache.set('asist_xlsx_' + token, payload, timeout=3600)
+
+    url = '/app/api/asistente/reporte/xlsx/?token=' + token
+
+    nombre_periodo = ''
+    if mes and anio:
+        meses_es = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+        nombre_periodo = f' de {meses_es[mes]} {anio}'
+
+    return {
+        'ok': True,
+        'tipo': tipo,
+        'download_url': url,
+        'mensaje': f'Reporte Excel listo: {tipo}{nombre_periodo}. El link es válido por 1 hora.',
+    }
+
+
 # 9. Clientes asignados a un vendedor
 def _tool_clientes_de_vendedor(args: dict, user: User) -> dict:
     """Lista los clientes asignados a un vendedor (cartera)."""
@@ -783,6 +889,54 @@ TOOL_SCHEMAS: list[dict] = [
     {
         'type': 'function',
         'function': {
+            'name': 'oportunidades_por_periodo',
+            'description': (
+                'Lista las oportunidades CREADAS en un mes/año específico, sin '
+                'filtrar por vendedor. Soporta filtros opcionales por etapa '
+                '(ej. "cotizado", "ganado") o monto mínimo. Úsala cuando el '
+                'usuario pregunte "las oportunidades de enero 2026", "todas las '
+                'opp del mes pasado", "las opp ganadas en abril", etc.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'mes': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes 1-12. Default: mes actual.'},
+                    'anio': {'type': 'integer', 'description': 'Año (4 dígitos). Default: año actual.'},
+                    'etapa': {'type': 'string', 'description': 'Filtro por etapa (substring de etapa_corta/completa).'},
+                    'monto_minimo': {'type': 'number', 'description': 'Monto mínimo en MXN.'},
+                    'limite': {'type': 'integer', 'minimum': 1, 'maximum': 500, 'description': 'Máximo a devolver (default 100).'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'generar_reporte_excel',
+            'description': (
+                'Crea un reporte Excel descargable y devuelve un link. Úsalo '
+                'cuando el usuario pida "un reporte en Excel", "descarga las '
+                'oportunidades", "expórtame esto". El link es válido por 1 '
+                'hora. Soporta tipo "oportunidades" (default).'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tipo': {
+                        'type': 'string',
+                        'enum': ['oportunidades'],
+                        'description': 'Tipo de reporte. Por ahora solo "oportunidades".',
+                    },
+                    'mes': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes del reporte. Default: mes actual.'},
+                    'anio': {'type': 'integer', 'description': 'Año del reporte. Default: año actual.'},
+                    'vendedor_username': {'type': 'string', 'description': 'Filtrar por vendedor (opcional).'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'clientes_de_vendedor',
             'description': (
                 'Cartera de clientes asignados a un vendedor. Cada cliente '
@@ -811,9 +965,11 @@ TOOL_HANDLERS = {
     'top_oportunidades_prometedoras': _tool_top_oportunidades_prometedoras,
     'forecast_cierre': _tool_forecast_cierre,
     'oportunidades_por_vendedor': _tool_oportunidades_por_vendedor,
+    'oportunidades_por_periodo': _tool_oportunidades_por_periodo,
     'detalle_oportunidad': _tool_detalle_oportunidad,
     'detalle_vendedor': _tool_detalle_vendedor,
     'clientes_de_vendedor': _tool_clientes_de_vendedor,
+    'generar_reporte_excel': _tool_generar_reporte_excel,
 }
 
 

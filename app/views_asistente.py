@@ -155,7 +155,12 @@ def _system_prompt(user, config: AsistenteConfig) -> dict:
         '5. **No expongas IDs internos** crudos como texto suelto (ej. '
         '"#12345"). Los IDs solo van dentro de `(opp:ID)` para los links.\n'
         '6. **Headings con `###`** SOLO para secciones de respuestas largas. '
-        'Respuestas cortas no necesitan headings.\n'
+        'Respuestas cortas no necesitan headings. NO uses `####` ni más #, '
+        'usa máximo `###`.\n'
+        '6b. **Reportes Excel descargables**: si el usuario pide "un reporte '
+        'en Excel", "exporta esto", "dame un archivo descargable", llama '
+        '`generar_reporte_excel` con tipo, mes y año. Devuelve el link al '
+        'usuario como `[Descargar reporte](URL_QUE_TE_DIO_LA_TOOL)`.\n'
         '7. **NO uses emojis decorativos** (sin "✨", "🎉", "💰", etc.). '
         'Si quieres énfasis usa **negritas**. Los símbolos como ↗ o ✓ están '
         'bien si suman información.\n'
@@ -237,6 +242,120 @@ def api_asistente_conversacion_eliminar(request):
     conv = _get_or_create_conv(request.user)
     conv.mensajes.all().delete()
     return JsonResponse({'ok': True})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_asistente_reporte_xlsx(request):
+    """Genera un reporte Excel a partir de un token de un solo uso creado
+    por la tool `generar_reporte_excel`. El token vive 1 hora y guarda los
+    filtros + el user_id que lo solicitó (para preservar permisos).
+    """
+    from django.core.cache import cache
+    from django.http import HttpResponse
+    token = (request.GET.get('token') or '').strip()
+    if not token:
+        return JsonResponse({'ok': False, 'error': 'Falta token.'}, status=400)
+    payload = cache.get('asist_xlsx_' + token)
+    if not payload:
+        return JsonResponse({'ok': False, 'error': 'Token expirado o inválido.'}, status=410)
+    if payload.get('user_id') != request.user.id:
+        return JsonResponse({'ok': False, 'error': 'Token no pertenece a este usuario.'}, status=403)
+
+    tipo = payload.get('tipo') or 'oportunidades'
+    if tipo != 'oportunidades':
+        return JsonResponse({'ok': False, 'error': f'Tipo de reporte no soportado: {tipo}'}, status=400)
+
+    # Construir queryset con permisos del user solicitante.
+    from .models import TodoItem
+    from .views_utils import is_supervisor
+    from .views_grupos import get_usuarios_visibles_ids
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    mes = payload.get('mes')
+    anio = payload.get('anio')
+    vendedor_username = payload.get('vendedor_username')
+
+    qs = TodoItem.objects.select_related('cliente', 'usuario')
+    if mes and anio:
+        qs = qs.filter(fecha_creacion__year=anio, fecha_creacion__month=mes)
+    if not (is_supervisor(request.user) or request.user.is_superuser):
+        try:
+            ids = list(get_usuarios_visibles_ids(request.user)) or [request.user.id]
+            qs = qs.filter(usuario_id__in=ids)
+        except Exception:
+            qs = qs.filter(usuario=request.user)
+    if vendedor_username:
+        from django.contrib.auth.models import User as _User
+        try:
+            v = _User.objects.get(username=vendedor_username)
+            qs = qs.filter(usuario=v)
+        except _User.DoesNotExist:
+            pass
+
+    qs = qs.order_by('-monto')
+
+    # Construir el workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f'Oportunidades {mes or "X"}-{anio or "X"}'
+
+    headers = ['ID', 'Oportunidad', 'Cliente', 'Vendedor', 'Monto MXN',
+               'Probabilidad %', 'Etapa', 'Producto', 'Área',
+               'Tipo negociación', 'Mes cierre', 'Año cierre',
+               'Fecha creación', 'PO', 'Factura']
+    header_fill = PatternFill('solid', fgColor='0066FF')
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    for col_idx, h in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    for row_idx, opp in enumerate(qs, start=2):
+        ws.cell(row=row_idx, column=1, value=opp.id)
+        ws.cell(row=row_idx, column=2, value=opp.oportunidad)
+        ws.cell(row=row_idx, column=3, value=opp.cliente.nombre_empresa if opp.cliente_id else '')
+        ws.cell(row=row_idx, column=4, value=(opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario_id else '')
+        ws.cell(row=row_idx, column=5, value=float(opp.monto or 0))
+        ws.cell(row=row_idx, column=6, value=opp.probabilidad_cierre or 0)
+        ws.cell(row=row_idx, column=7, value=opp.etapa_corta or opp.etapa_completa or '')
+        ws.cell(row=row_idx, column=8, value=opp.producto or '')
+        ws.cell(row=row_idx, column=9, value=opp.area or '')
+        ws.cell(row=row_idx, column=10, value=opp.tipo_negociacion or '')
+        ws.cell(row=row_idx, column=11, value=opp.mes_cierre or '')
+        ws.cell(row=row_idx, column=12, value=opp.anio_cierre or '')
+        ws.cell(row=row_idx, column=13, value=opp.fecha_creacion.strftime('%Y-%m-%d') if opp.fecha_creacion else '')
+        ws.cell(row=row_idx, column=14, value=opp.po_number or '')
+        ws.cell(row=row_idx, column=15, value=opp.factura_numero or '')
+
+    # Anchos automáticos rough
+    widths = [8, 36, 28, 24, 14, 8, 18, 14, 14, 14, 8, 8, 12, 14, 14]
+    for i, w in enumerate(widths, start=1):
+        col_letter = ws.cell(row=1, column=i).column_letter
+        ws.column_dimensions[col_letter].width = w
+
+    # Formato moneda en col E (Monto)
+    for row in range(2, ws.max_row + 1):
+        ws.cell(row=row, column=5).number_format = '"$"#,##0.00'
+
+    ws.freeze_panes = 'A2'
+
+    # Servir como descarga
+    import io
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = f'oportunidades_{mes or "all"}-{anio or "all"}.xlsx'
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+    # Token de un solo uso: invalidamos después de la descarga.
+    cache.delete('asist_xlsx_' + token)
+    return resp
 
 
 @login_required
