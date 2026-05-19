@@ -794,6 +794,281 @@ def _tool_clientes_de_vendedor(args: dict, user: User) -> dict:
     }
 
 
+# 11. Actividades pendientes (calendario + tareas)
+def _tool_actividades_pendientes(args: dict, user: User) -> dict:
+    """Actividades no completadas del usuario actual o de un vendedor específico
+    (solo supervisores). Las agrupa en: vencidas, hoy, esta_semana, proximas."""
+    target = user
+    vendedor = (args.get('vendedor_username') or '').strip()
+    if vendedor:
+        if not (_can_see_all(user) or user.is_superuser):
+            return {'error': 'Solo supervisores pueden ver actividades de otros vendedores.'}
+        try:
+            target = User.objects.get(username=vendedor)
+        except User.DoesNotExist:
+            partes = vendedor.split()
+            if partes:
+                target = User.objects.filter(
+                    Q(first_name__icontains=partes[0]) | Q(last_name__icontains=partes[0])
+                ).first()
+            if not target:
+                return {'error': f'No encuentro al vendedor "{vendedor}".'}
+
+    ahora = timezone.now()
+    hoy_inicio = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+    hoy_fin = hoy_inicio + timedelta(days=1)
+    semana_fin = hoy_inicio + timedelta(days=7)
+
+    # Calendario (Actividad)
+    acts = Actividad.objects.filter(
+        Q(creado_por=target) | Q(participantes=target)
+    ).filter(completada=False).distinct()
+
+    # Tareas de oportunidad
+    tareas = TareaOportunidad.objects.filter(
+        responsable=target, estado='pendiente', fecha_limite__isnull=False,
+    )
+
+    def _act_to_row(a):
+        return {
+            'tipo': 'actividad',
+            'id': a.id,
+            'titulo': a.titulo,
+            'fecha': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
+            'fecha_legible': a.fecha_inicio.strftime('%Y-%m-%d %H:%M') if a.fecha_inicio else '—',
+            'oportunidad_id': a.oportunidad_id,
+        }
+
+    def _tarea_to_row(t):
+        return {
+            'tipo': 'tarea',
+            'id': t.id,
+            'titulo': t.titulo,
+            'fecha': t.fecha_limite.isoformat() if t.fecha_limite else None,
+            'fecha_legible': t.fecha_limite.strftime('%Y-%m-%d %H:%M') if t.fecha_limite else '—',
+            'oportunidad_id': t.oportunidad_id,
+        }
+
+    vencidas = []
+    hoy = []
+    esta_semana = []
+    proximas = []
+
+    for a in acts:
+        row = _act_to_row(a)
+        if a.fecha_inicio is None:
+            continue
+        if a.fecha_inicio < hoy_inicio:
+            vencidas.append(row)
+        elif a.fecha_inicio < hoy_fin:
+            hoy.append(row)
+        elif a.fecha_inicio < semana_fin:
+            esta_semana.append(row)
+        else:
+            proximas.append(row)
+
+    for t in tareas:
+        row = _tarea_to_row(t)
+        if t.fecha_limite < hoy_inicio:
+            vencidas.append(row)
+        elif t.fecha_limite < hoy_fin:
+            hoy.append(row)
+        elif t.fecha_limite < semana_fin:
+            esta_semana.append(row)
+        else:
+            proximas.append(row)
+
+    # Ordenar cada grupo por fecha
+    for grupo in (vencidas, hoy, esta_semana, proximas):
+        grupo.sort(key=lambda r: r['fecha'] or '')
+
+    return {
+        'usuario': target.get_full_name() or target.username,
+        'totales': {
+            'vencidas': len(vencidas),
+            'hoy': len(hoy),
+            'esta_semana': len(esta_semana),
+            'proximas': len(proximas),
+        },
+        'vencidas': vencidas[:30],
+        'hoy': hoy[:30],
+        'esta_semana': esta_semana[:30],
+        'proximas': proximas[:20],
+    }
+
+
+# 12. Buscar cliente y devolver sus oportunidades activas
+def _tool_buscar_cliente(args: dict, user: User) -> dict:
+    """Busca clientes por nombre y devuelve sus oportunidades activas + último contacto."""
+    q = (args.get('nombre') or args.get('q') or '').strip()
+    if len(q) < 2:
+        return {'error': 'Pasa al menos 2 caracteres del nombre del cliente.'}
+
+    visible_ids = _visible_user_ids(user)
+    clientes_qs = Cliente.objects.filter(nombre_empresa__icontains=q)
+    if visible_ids is not None:
+        clientes_qs = clientes_qs.filter(asignado_a_id__in=visible_ids)
+    clientes_qs = clientes_qs.select_related('asignado_a').order_by('nombre_empresa')[:10]
+
+    results = []
+    for c in clientes_qs:
+        opp_qs = TodoItem.objects.filter(cliente=c)
+        if visible_ids is not None:
+            opp_qs = opp_qs.filter(usuario_id__in=visible_ids)
+        opp_activas = opp_qs.exclude(_q_perdidas()).select_related('usuario').order_by('-monto')[:10]
+        ultima_act = (
+            Actividad.objects.filter(oportunidad__cliente=c).order_by('-fecha_inicio').first()
+        )
+        results.append({
+            'id': c.id,
+            'nombre': c.nombre_empresa,
+            'asignado_a': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '—',
+            'total_oportunidades_activas': opp_activas.count() if hasattr(opp_activas, 'count') else len(list(opp_activas)),
+            'oportunidades_top': [
+                {
+                    'id': o.id,
+                    'titulo': o.oportunidad,
+                    'monto_mxn': _to_money(o.monto),
+                    'etapa': o.etapa_corta or o.etapa_completa or '—',
+                    'vendedor': (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else '—',
+                }
+                for o in opp_activas
+            ],
+            'ultima_actividad': {
+                'titulo': ultima_act.titulo,
+                'fecha': ultima_act.fecha_inicio.strftime('%Y-%m-%d') if ultima_act.fecha_inicio else '—',
+            } if ultima_act else None,
+        })
+
+    return {
+        'query': q,
+        'total_clientes': len(results),
+        'clientes': results,
+    }
+
+
+# 13. Histórico de un cliente (ventas / monto total por año)
+def _tool_historico_cliente(args: dict, user: User) -> dict:
+    """Histórico de ventas con un cliente: monto ganado por año, oportunidades
+    totales, ticket promedio, último cierre."""
+    cid_raw = args.get('cliente_id')
+    nombre = (args.get('nombre') or '').strip()
+    cliente = None
+
+    if cid_raw:
+        try:
+            cliente = Cliente.objects.get(pk=int(cid_raw))
+        except (Cliente.DoesNotExist, ValueError, TypeError):
+            cliente = None
+    if not cliente and nombre:
+        cliente = Cliente.objects.filter(nombre_empresa__icontains=nombre).first()
+    if not cliente:
+        return {'error': 'Pasa cliente_id o nombre.'}
+
+    # Permisos
+    visible_ids = _visible_user_ids(user)
+    if visible_ids is not None and cliente.asignado_a_id and cliente.asignado_a_id not in visible_ids:
+        return {'error': 'No tienes permiso para ver el histórico de este cliente.'}
+
+    qs = TodoItem.objects.filter(cliente=cliente)
+    if visible_ids is not None:
+        qs = qs.filter(usuario_id__in=visible_ids)
+
+    total_opp = qs.count()
+    activas = qs.exclude(_q_perdidas()).count()
+    ganadas_qs = qs.filter(_q_ganadas())
+    total_ganado = ganadas_qs.aggregate(t=Sum('monto')).get('t') or 0
+    num_ganadas = ganadas_qs.count()
+    ticket_prom = float(total_ganado) / num_ganadas if num_ganadas else 0
+
+    # Por año
+    por_anio = {}
+    for opp in ganadas_qs:
+        yr = opp.fecha_creacion.year if opp.fecha_creacion else 0
+        por_anio.setdefault(yr, {'monto': 0.0, 'count': 0})
+        por_anio[yr]['monto'] += _to_money(opp.monto)
+        por_anio[yr]['count'] += 1
+
+    # Último cierre
+    ult = ganadas_qs.order_by('-fecha_actualizacion').first()
+
+    return {
+        'cliente': cliente.nombre_empresa,
+        'cliente_id': cliente.id,
+        'asignado_a': (cliente.asignado_a.get_full_name() or cliente.asignado_a.username) if cliente.asignado_a_id else '—',
+        'oportunidades_totales': total_opp,
+        'oportunidades_activas': activas,
+        'oportunidades_ganadas': num_ganadas,
+        'monto_ganado_total_mxn': _to_money(total_ganado),
+        'ticket_promedio_mxn': round(ticket_prom, 2),
+        'por_anio': [
+            {'anio': k, 'monto_mxn': round(v['monto'], 2), 'count': v['count']}
+            for k, v in sorted(por_anio.items(), reverse=True)
+        ],
+        'ultimo_cierre': {
+            'id': ult.id,
+            'titulo': ult.oportunidad,
+            'monto_mxn': _to_money(ult.monto),
+            'fecha': ult.fecha_actualizacion.strftime('%Y-%m-%d') if ult.fecha_actualizacion else '—',
+        } if ult else None,
+    }
+
+
+# 14. Ranking de productos (más vendidos del periodo)
+def _tool_ranking_productos(args: dict, user: User) -> dict:
+    """Productos más vendidos del periodo, por monto ganado y por #
+    oportunidades. Default: año actual."""
+    ahora = timezone.now()
+    anio = int(args.get('anio') or ahora.year)
+    mes = args.get('mes')
+
+    qs = TodoItem.objects.all()
+    if mes:
+        try:
+            mes = max(1, min(int(mes), 12))
+            qs = qs.filter(fecha_creacion__year=anio, fecha_creacion__month=mes)
+        except (ValueError, TypeError):
+            qs = qs.filter(fecha_creacion__year=anio)
+            mes = None
+    else:
+        qs = qs.filter(fecha_creacion__year=anio)
+
+    visible_ids = _visible_user_ids(user)
+    if visible_ids is not None:
+        qs = qs.filter(usuario_id__in=visible_ids)
+
+    # Ganadas para el monto vendido
+    ganadas = qs.filter(_q_ganadas())
+    por_producto = {}
+    for opp in ganadas.only('producto', 'monto'):
+        prod = opp.producto or 'OTRO'
+        por_producto.setdefault(prod, {'monto_ganado': 0.0, 'count_ganadas': 0})
+        por_producto[prod]['monto_ganado'] += _to_money(opp.monto)
+        por_producto[prod]['count_ganadas'] += 1
+
+    # Total de oportunidades creadas por producto (incluye no ganadas)
+    for opp in qs.only('producto'):
+        prod = opp.producto or 'OTRO'
+        por_producto.setdefault(prod, {'monto_ganado': 0.0, 'count_ganadas': 0})
+        por_producto[prod]['count_total_opp'] = por_producto[prod].get('count_total_opp', 0) + 1
+
+    items = []
+    for prod, v in por_producto.items():
+        items.append({
+            'producto': prod,
+            'oportunidades_totales': v.get('count_total_opp', 0),
+            'ganadas': v['count_ganadas'],
+            'monto_ganado_mxn': round(v['monto_ganado'], 2),
+        })
+    items.sort(key=lambda r: r['monto_ganado_mxn'], reverse=True)
+
+    return {
+        'anio': anio,
+        'mes': mes,
+        'productos': items,
+    }
+
+
 # ─── REGISTRO ──────────────────────────────────────────────────────────
 
 TOOL_SCHEMAS: list[dict] = [
@@ -1043,6 +1318,87 @@ TOOL_SCHEMAS: list[dict] = [
     {
         'type': 'function',
         'function': {
+            'name': 'actividades_pendientes',
+            'description': (
+                'Actividades del calendario + tareas pendientes (no completadas) '
+                'del usuario actual, agrupadas en vencidas / hoy / esta_semana / '
+                'proximas. Acepta vendedor_username opcional (solo supervisores). '
+                'Usa cuando el user pregunte "qué tengo hoy", "actividades '
+                'pendientes", "mis vencidas", "qué tiene agendado Ana".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'vendedor_username': {
+                        'type': 'string',
+                        'description': 'Ver actividades de otro vendedor (solo supervisores).',
+                    },
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'buscar_cliente',
+            'description': (
+                'Busca clientes por nombre (substring) y devuelve cada uno con '
+                'sus oportunidades activas top y última actividad. Usa cuando '
+                'el user pregunte "qué tengo de Carl Zeiss", "muéstrame mis '
+                'opp con X cliente", "info de Y empresa".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'nombre': {
+                        'type': 'string',
+                        'description': 'Nombre o parte del nombre del cliente (mínimo 2 caracteres).',
+                    },
+                },
+                'required': ['nombre'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'historico_cliente',
+            'description': (
+                'Histórico de ventas con un cliente: monto total ganado, '
+                'oportunidades ganadas/activas, ticket promedio, desglose por '
+                'año, último cierre. Útil para preparar reuniones o evaluar '
+                'el peso de un cliente.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'cliente_id': {'type': 'integer', 'description': 'ID del cliente (si lo conoces).'},
+                    'nombre': {'type': 'string', 'description': 'Nombre del cliente (alternativa al id).'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'ranking_productos',
+            'description': (
+                'Productos más vendidos en un periodo: total ganado, # ganadas, '
+                '# oportunidades. Útil para "qué producto se vende más este '
+                'año", "ranking por línea de negocio".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'anio': {'type': 'integer', 'description': 'Año del análisis. Default: año actual.'},
+                    'mes': {'type': 'integer', 'minimum': 1, 'maximum': 12, 'description': 'Mes (opcional, si no se especifica toma todo el año).'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'clientes_de_vendedor',
             'description': (
                 'Cartera de clientes asignados a un vendedor. Cada cliente '
@@ -1075,6 +1431,10 @@ TOOL_HANDLERS = {
     'detalle_oportunidad': _tool_detalle_oportunidad,
     'detalle_vendedor': _tool_detalle_vendedor,
     'clientes_de_vendedor': _tool_clientes_de_vendedor,
+    'actividades_pendientes': _tool_actividades_pendientes,
+    'buscar_cliente': _tool_buscar_cliente,
+    'historico_cliente': _tool_historico_cliente,
+    'ranking_productos': _tool_ranking_productos,
 }
 
 

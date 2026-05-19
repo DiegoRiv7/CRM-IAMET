@@ -73,7 +73,7 @@
     window.asistenteAbrir = openAsistente;
     window.asistenteCerrar = closeAsistente;
 
-    /* ─── Config (nombre + logo) ─── */
+    /* ─── Config (nombre + logo + rol del user) ─── */
     function ensureConfig() {
         if (STATE.configLoaded) return;
         STATE.configLoaded = true;
@@ -82,12 +82,58 @@
             STATE.config = res.data;
             // Aplicar al header
             var nameEl = document.getElementById('asistName');
-            if (nameEl && res.data.nombre) nameEl.textContent = res.data.nombre;
+            if (nameEl && res.data.nombre) {
+                // Conservar el badge BETA si existe
+                var beta = nameEl.querySelector('.asist-beta');
+                nameEl.textContent = res.data.nombre + ' ';
+                if (beta) nameEl.appendChild(beta);
+            }
             if (res.data.logo_url) {
                 var av = document.getElementById('asistAvatar');
                 if (av) av.innerHTML = '<img src="' + esc(res.data.logo_url) + '" alt="logo">';
             }
+            // Re-pintar sugerencias según rol si el welcome está visible.
+            applyContextualSuggestions();
         });
+    }
+
+    /* Sugerencias por rol. Si es supervisor mostramos prompts de líder
+       (rankings, forecasts, evaluaciones), si es vendedor mostramos
+       prompts operacionales (mi agenda, mis clientes, mis opp). */
+    function getSuggestionsForRole(esSupervisor) {
+        if (esSupervisor) {
+            return [
+                {prompt: '¿Cómo va la empresa este mes?', label: 'Resumen del mes', sub: 'KPIs del negocio'},
+                {prompt: 'Ranking de vendedores este mes', label: 'Ranking del equipo', sub: 'Top y bottom performers'},
+                {prompt: '¿Cómo cerraremos el mes?', label: 'Forecast del mes', sub: 'Proyección ponderada'},
+                {prompt: '¿Qué clientes llevan 2 meses sin que les hagamos una oportunidad?', label: 'Clientes sin atender', sub: 'Cartera olvidada'},
+            ];
+        }
+        return [
+            {prompt: '¿Qué actividades tengo pendientes?', label: 'Mi agenda', sub: 'Lo que tengo que atender'},
+            {prompt: '¿Cuál es mi oportunidad que más promete este mes?', label: 'Mi más prometedora', sub: 'Dónde poner el foco'},
+            {prompt: '¿Qué clientes tengo asignados?', label: 'Mi cartera', sub: 'Clientes a mi nombre'},
+            {prompt: '¿Cómo voy este mes?', label: 'Mi mes', sub: 'Cómo voy con mis números'},
+        ];
+    }
+
+    function applyContextualSuggestions() {
+        var container = document.querySelector('#asistWelcome .asist-suggestions');
+        if (!container) return;
+        var esSup = !!(STATE.config && STATE.config.user && STATE.config.user.es_supervisor);
+        var items = getSuggestionsForRole(esSup);
+        var icons = [
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        ];
+        container.innerHTML = items.map(function (it, i) {
+            return '<button type="button" class="asist-sugg-card" data-prompt="' + esc(it.prompt) + '">'
+                + '<span class="asist-sugg-icon">' + icons[i % icons.length] + '</span>'
+                + '<span class="asist-sugg-text"><strong>' + esc(it.label) + '</strong><em>' + esc(it.sub) + '</em></span>'
+                + '</button>';
+        }).join('');
     }
 
     /* ─── Historial ─── */
@@ -152,6 +198,7 @@
             if (!box) return;
             box.innerHTML = '';
             box.appendChild(buildWelcomeNode());
+            applyContextualSuggestions();
         });
     }
 

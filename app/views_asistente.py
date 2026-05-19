@@ -175,6 +175,19 @@ def _system_prompt(user, config: AsistenteConfig) -> dict:
         'pasado" o "de marzo", pasa mes/anio. Si dice "de todo el '
         'pipeline" pasa todos_los_meses=true. En la respuesta SIEMPRE di '
         'a qué periodo corresponde ("de las que cierran en mayo").\n'
+        '6f. **Agenda / actividades pendientes**: "qué tengo hoy", "qué '
+        'tengo pendiente", "actividades vencidas" → usa '
+        '`actividades_pendientes`. Si el supervisor pregunta por otro '
+        'vendedor, pasa `vendedor_username`. Formatea por grupos '
+        '(vencidas → hoy → semana → próximas), destacando las vencidas.\n'
+        '6g. **Búsqueda de cliente**: "qué tengo de Carl Zeiss", "opp con '
+        'X cliente" → usa `buscar_cliente` con el nombre. Devuelve cada '
+        'opp como link `[Título — Cliente — $Monto](opp:ID)`.\n'
+        '6h. **Histórico de un cliente**: "cuánto le he vendido a X", '
+        '"qué tan grande es Y como cliente" → usa `historico_cliente`. '
+        'Resalta el monto ganado total y el ticket promedio.\n'
+        '6i. **Ranking de productos**: "qué producto se vende más", "top '
+        'producto este año" → usa `ranking_productos`.\n'
         '7. **NO uses emojis decorativos** (sin "✨", "🎉", "💰", etc.). '
         'Si quieres énfasis usa **negritas**. Los símbolos como ↗ o ✓ están '
         'bien si suman información.\n'
@@ -212,14 +225,34 @@ def _system_prompt(user, config: AsistenteConfig) -> dict:
 @login_required
 @require_http_methods(['GET'])
 def api_asistente_config(request):
-    """Devuelve la config visible (nombre + logo) para que el frontend la pinte."""
+    """Devuelve la config visible (nombre + logo) y el rol del user para que
+    el frontend pueda mostrar sugerencias contextuales."""
+    from .models import UserProfile
+    from .views_utils import is_supervisor as _is_sup, is_administrador as _is_admin
     cfg = AsistenteConfig.get_singleton()
     logo_url = cfg.logo.url if cfg.logo else ''
+
+    # Rol del user
+    rol = 'vendedor'
+    try:
+        prof = UserProfile.objects.filter(user=request.user).first()
+        if prof and prof.rol:
+            rol = str(prof.rol)
+    except Exception:
+        pass
+    es_supervisor = bool(_is_sup(request.user) or _is_admin(request.user) or request.user.is_superuser)
+
     return JsonResponse({
         'ok': True,
         'nombre': cfg.nombre,
         'logo_url': logo_url,
         'activo': cfg.activo,
+        'user': {
+            'nombre': request.user.get_full_name() or request.user.username,
+            'first_name': request.user.first_name or request.user.username,
+            'rol': rol,
+            'es_supervisor': es_supervisor,
+        },
     })
 
 
