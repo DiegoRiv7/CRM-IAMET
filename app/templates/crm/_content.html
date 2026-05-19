@@ -290,16 +290,16 @@
                     class="crm-tab {% if tab_activo == 'ideas' %}active{% endif %}">
                     Ideas
                 </a>
+                <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
+                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
+                    Prospección
+                </a>
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
                     onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                     {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
-                </a>
-                <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
-                    class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
-                    Prospección
                 </a>
                 {% if not es_ingeniero %}
                 {% comment %}Tab "Recursos" oculto temporalmente — pendiente de autorización del módulo. La URL (?tab=prospeccion) sigue funcional para deep links existentes.{% endcomment %}
