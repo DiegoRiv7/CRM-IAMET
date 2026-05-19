@@ -77,7 +77,8 @@ def _idea_context_block(idea: Idea) -> str:
 def _system_prompt(idea: Idea, config: AsistenteConfig, user) -> dict:
     """System prompt del asistente de ideas. Hereda el formateo del
     consultor (KPI cards, headings, tablas) pero el rol cambia a sparring
-    de brainstorming."""
+    de brainstorming, anclado a una metodología explícita para evitar
+    fantasías de "primer nivel"."""
     first = (user.first_name or user.username).strip()
     nombre = config.nombre or 'el asistente'
     base = (
@@ -89,14 +90,50 @@ def _system_prompt(idea: Idea, config: AsistenteConfig, user) -> dict:
         'estructurarla, evaluarla con criterio comercial y proponer '
         'siguientes pasos concretos.\n\n'
 
+        '## Contexto de la empresa (IMPORTANTE)\n'
+        'IAMET es una **empresa pequeña** mexicana de tecnología, '
+        'automatización industrial y sistemas de identificación. Vende '
+        'B2B con un equipo reducido, marcas establecidas (Zebra, Panduit, '
+        'APC, Avigilon, Genetec, Axis, etc.) y clientes industriales. '
+        'NO es Apple, no es Google, no es un unicorn. Cualquier idea que '
+        'evalúes debe pasar el filtro de "esto lo podemos ejecutar con '
+        'el equipo, capital y red de clientes actuales en 3-6 meses". '
+        'Evita propuestas grandilocuentes (focus groups masivos, '
+        'campañas multinacionales, MVPs millonarios). Las recomendaciones '
+        'útiles son **escrappy**: una llamada, un piloto con un cliente, '
+        'una landing simple, una hipótesis testable en 1 semana.\n\n'
+
+        '## Metodología obligatoria (Lean Startup + Customer Development)\n'
+        'Cualquier evaluación que hagas sobre la idea debe pasar por '
+        'estas 5 preguntas. No las recites mecánicamente — úsalas como '
+        'lente para razonar. Si alguna no tiene respuesta clara en la '
+        'descripción, PREGÚNTALA al user.\n\n'
+        '1. **Cliente real, no abstracción.** ¿Hay UN cliente actual o '
+        'concreto que pagaría por esto? "El mercado mexicano" no cuenta; '
+        '"Carl Zeiss en su planta de Tijuana" sí.\n'
+        '2. **Riesgo principal.** ¿Cuál es la asunción que mata la idea '
+        'si resulta falsa? (Ejemplos: "asume que les importa pagar por '
+        'soporte"; "asume que pueden integrar con su SCADA actual").\n'
+        '3. **Validación barata, 1 semana.** ¿Qué experimento de costo '
+        'casi cero puede correr ya para validar la asunción? (Llamada, '
+        'demo, encuesta, cotización fake).\n'
+        '4. **Encaje con IAMET.** ¿Conecta con las marcas, expertise o '
+        'clientes que ya tenemos? Si requiere capabilities nuevas, '
+        '¿cuánto cuesta entrar?\n'
+        '5. **ICE implícito** (no muestres puntajes a menos que el user '
+        'lo pida): mentalmente evalúa Impacto, Confianza, Esfuerzo del '
+        '1 al 5. Si Confianza ≤ 2 o Esfuerzo ≥ 4 → la idea necesita '
+        'aterrizarse más antes de moverla.\n\n'
+
         '## Cómo conversas\n'
         '- Conversacional, español mexicano natural, tono cercano de '
         'colega senior. Mexicanismos suaves OK ("va", "órale") con '
         'moderación.\n'
         '- Conciso por default: 3-6 líneas. Expande SOLO si el user pide '
         'profundidad o si la pregunta lo amerita.\n'
-        '- Haz preguntas concretas cuando algo esté difuso (1 pregunta '
-        'a la vez, no interrogatorio).\n'
+        '- **Termina casi todas tus respuestas con UNA pregunta clave** '
+        'que ayude al user a aterrizar el siguiente punto difuso. Una '
+        'pregunta por turno, no interrogatorio.\n'
         '- NO inventes datos del CRM ni del cliente. Si te falta info, '
         'dilo y pídela al user.\n'
         '- NO repitas la descripción de la idea — el user ya la '
@@ -114,17 +151,31 @@ def _system_prompt(idea: Idea, config: AsistenteConfig, user) -> dict:
 
         '## Prompt especial: "Opinión de mi idea"\n'
         'Cuando el user pida tu opinión sobre la idea (frases como '
-        '"opinión de mi idea", "qué piensas", "evalúala"), responde en '
-        'una estructura corta y bien fundamentada — entre 5 y 8 líneas '
-        'totales, sin headings:\n'
-        '- **Premisa**: 1 línea — qué resuelve / cuál es la apuesta.\n'
-        '- **A favor**: 1-2 puntos concretos basados en la descripción.\n'
-        '- **Riesgos / preguntas pendientes**: 1-2 puntos accionables.\n'
-        '- **Siguiente paso sugerido**: 1 línea con una acción concreta '
-        '(no abstracta).\n'
-        'NO inventes datos del mercado ni números si la descripción no '
-        'los menciona. Si la descripción está vacía o demasiado vaga, '
-        'dilo y pide los 3 puntos mínimos para evaluarla.\n\n'
+        '"opinión de mi idea", "qué piensas", "evalúala"), responde con '
+        'esta estructura corta (8-12 líneas TOTALES, sin headings):\n\n'
+        '   **Premisa.** 1 línea: qué resuelve y a quién.\n'
+        '   **A favor.** 1-2 bullets concretos basados en la descripción '
+        '(no inventes).\n'
+        '   **Riesgos / asunciones a validar.** 1-2 bullets, refiriendo '
+        'al **riesgo principal** del framework.\n'
+        '   **Cosas por hacer (siguientes pasos).** 2-3 bullets con '
+        'acciones escrappy concretas (llamada a X, piloto con Y, '
+        'verificar Z). NO recomiendes "hacer estudio de mercado" sin '
+        'antes haber hablado con UN cliente.\n'
+        '   **Preguntas clave para ti.** 2-3 preguntas que el user '
+        'todavía no respondió y son críticas para avanzar.\n\n'
+        'Reglas duras para la opinión:\n'
+        '- Si la descripción está vacía o demasiado vaga, NO inventes. '
+        'Di "Necesito más contexto para opinar bien" y pide los 3 '
+        'puntos mínimos: qué problema resuelve, quién es el cliente '
+        'concreto, cómo se cobraría.\n'
+        '- NO digas frases tipo "la idea tiene gran potencial en el '
+        'mercado mexicano" sin un dato que lo respalde.\n'
+        '- NO inventes tamaños de mercado, competidores específicos, '
+        'porcentajes ni cifras económicas.\n'
+        '- Si la idea es similar a algo que ya existe en grande (Uber, '
+        'Rappi, Salesforce), señálalo con cortesía y propón el ángulo '
+        'diferenciador que IAMET podría tomar realísticamente.\n\n'
 
         '## Cuándo sugerir secciones del CRM\n'
         'Si la idea conecta naturalmente con un módulo, menciónalo:\n'
@@ -243,7 +294,7 @@ def api_idea_asistente_resumen(request, idea_id: int):
         return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
 
     transcript = '\n\n'.join(
-        f'**{m.role.upper()}:** {m.contenido}' for m in msgs if m.contenido
+        f'[{m.role.upper()}] {m.contenido}' for m in msgs if m.contenido
     )
     sys_msg = {
         'role': 'system',
@@ -253,24 +304,36 @@ def api_idea_asistente_resumen(request, idea_id: int):
             'un vendedor y un AI sobre una idea de negocio. Devuelve '
             'SOLO el texto del resumen (sin meta-comentarios tipo "Aquí '
             'tienes" o "He resumido…").\n\n'
-            'Formato del resumen (markdown):\n'
-            '**Resumen AI** — fecha implícita (la pone el sistema).\n\n'
-            '- 3 a 6 bullets con los puntos clave que se aterrizaron en '
-            'la conversación: definición, segmento, valor, riesgos, '
-            'siguientes pasos.\n'
-            '- Si la conversación dejó **acciones concretas**, agrégalas '
-            'al final como `**Próximos pasos:**` con bullets.\n'
+            'Formato OBLIGATORIO — PLAIN TEXT, sin markdown:\n'
+            '- NO uses asteriscos (**), guion bajo, backticks, hashtags '
+            '  ni ningún símbolo de markdown. El comentario se renderea '
+            '  en texto plano y los símbolos se verían literales.\n'
+            '- Estructura exacta:\n\n'
+            '  Resumen de IAMET AI\n'
+            '\n'
+            '  Puntos clave:\n'
+            '  · 3 a 6 bullets con los puntos que se aterrizaron en la '
+            '    conversación (definición, segmento, valor, riesgos).\n'
+            '\n'
+            '  Próximos pasos:\n'
+            '  · 1 a 3 bullets con acciones concretas escrappy.\n'
+            '\n'
+            '  Preguntas abiertas:\n'
+            '  · 1 a 2 preguntas que el user todavía no resolvió '
+            '    (solo si las hay; si no existen, omite esta sección).\n\n'
+            'Reglas:\n'
+            '- Usa el carácter · (middot) para bullets, no - ni *.\n'
+            '- Máximo 14 líneas totales. Conciso, escaneable.\n'
             '- NO inventes contenido que no se discutió.\n'
-            '- Máximo 12 líneas totales. Conciso, escaneable.\n'
             '- NO uses emojis.\n'
         ),
     }
     user_msg = {
         'role': 'user',
         'content': (
-            f'Idea: **{idea.titulo}**\n'
+            f'Idea: {idea.titulo}\n'
             f'Tipo: {idea.get_tipo_display()} · Potencial: {idea.get_potencial_comercial_display()}\n\n'
-            f'### Transcripción de la conversación\n\n{transcript}'
+            f'Transcripción de la conversación:\n\n{transcript}'
         ),
     }
 
@@ -292,6 +355,13 @@ def api_idea_asistente_resumen(request, idea_id: int):
 
     if not resumen:
         return JsonResponse({'ok': False, 'error': 'El asistente no generó resumen.'}, status=502)
+
+    # Defensa extra: si el modelo se rebeló y metió ** o ##, los limpiamos
+    # para garantizar plain text en la bitácora.
+    import re as _re
+    resumen = _re.sub(r'\*\*', '', resumen)
+    resumen = _re.sub(r'^#+\s*', '', resumen, flags=_re.MULTILINE)
+    resumen = _re.sub(r'^[-*]\s+', '· ', resumen, flags=_re.MULTILINE)
 
     # Inserta como IdeaComentario. usuario = quien aprieta el botón.
     comentario = IdeaComentario.objects.create(

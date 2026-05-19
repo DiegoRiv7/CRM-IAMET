@@ -47,17 +47,42 @@
         configLoaded: false,
         historyLoaded: false,
         sending: false,
+        // ideaCtx: cuando es != null el asistente opera en modo "idea":
+        //   - usa los endpoints /app/api/ideas/<id>/asistente/...
+        //   - muestra "Guardar resumen" en el header
+        //   - el welcome solo trae 1 sugerencia (Opinión de mi idea)
+        // null = modo general (consultor de ventas).
+        ideaCtx: null,
     };
 
     /* ─── Open / close ─── */
-    function openAsistente() {
+    function openAsistente(options) {
         var ov = document.getElementById('widgetAsistente');
         if (!ov) return;
+        options = options || {};
+        // Si nos pasan una idea, cambiamos de modo. Si abren el general
+        // habiendo estado en idea, reseteamos.
+        var prevIdeaId = STATE.ideaCtx ? STATE.ideaCtx.id : null;
+        var nextIdea = options.idea || null;
+        var nextIdeaId = nextIdea ? nextIdea.id : null;
+        STATE.ideaCtx = nextIdea;
+        // Si cambiamos de modo o de idea, vaciamos mensajes y forzamos
+        // recarga de historial.
+        if (prevIdeaId !== nextIdeaId) {
+            STATE.historyLoaded = false;
+            var box = document.getElementById('asistMessages');
+            if (box) {
+                box.innerHTML = '';
+                box.appendChild(buildWelcomeNode());
+                applyContextualSuggestions();
+            }
+        }
         ov.style.display = 'flex';
         ov.classList.add('active');
         document.body.style.overflow = 'hidden';
+        applyMode();
         ensureConfig();
-        ensureHistory();
+        loadHistory();
         setTimeout(function () {
             var inp = document.getElementById('asistInput');
             if (inp) inp.focus();
@@ -72,6 +97,45 @@
     }
     window.asistenteAbrir = openAsistente;
     window.asistenteCerrar = closeAsistente;
+
+    /* ─── Mode (general vs idea) ─── */
+    function isIdeaMode() { return !!STATE.ideaCtx; }
+
+    function applyMode() {
+        var modeIdea = isIdeaMode();
+        // Tagline: en modo idea muestra el título de la idea.
+        var tagText = document.getElementById('asistTaglineText');
+        if (tagText) {
+            tagText.textContent = modeIdea
+                ? ('Idea: ' + (STATE.ideaCtx.titulo || 'sin título'))
+                : 'En línea · listo para ayudarte';
+        }
+        // Botón "Guardar resumen": solo en modo idea.
+        var saveBtn = document.getElementById('asistSaveResumenBtn');
+        if (saveBtn) saveBtn.style.display = modeIdea ? '' : 'none';
+        applyContextualSuggestions();
+    }
+
+    /* ─── Endpoints por modo ─── */
+    function urlHistory() {
+        return isIdeaMode()
+            ? '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensajes/'
+            : '/app/api/asistente/conversacion/';
+    }
+    function urlSend() {
+        return isIdeaMode()
+            ? '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensaje/'
+            : '/app/api/asistente/mensaje/';
+    }
+    function urlReset() {
+        return isIdeaMode()
+            ? '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/reset/'
+            : '/app/api/asistente/conversacion/eliminar/';
+    }
+    function urlResumen() {
+        // Solo válido en modo idea.
+        return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/resumen/';
+    }
 
     /* ─── Config (nombre + logo + rol del user) ─── */
     function ensureConfig() {
@@ -123,6 +187,26 @@
     function applyContextualSuggestions() {
         var container = document.querySelector('#asistWelcome .asist-suggestions');
         if (!container) return;
+        // Modo idea: 1 sola sugerencia, además ajustamos el texto del
+        // welcome para reflejar el nuevo propósito.
+        if (isIdeaMode()) {
+            var qEl = document.querySelector('#asistWelcome .asist-greeting-q');
+            if (qEl) qEl.textContent = 'Vamos a aterrizar tu idea';
+            var subEl = document.querySelector('#asistWelcome .asist-welcome-sub');
+            if (subEl) {
+                subEl.innerHTML = 'Pregúntame por <strong>la idea</strong>, '
+                    + 'pídeme una <strong>opinión rápida</strong> o '
+                    + '<strong>preguntas clave</strong> para validarla.';
+            }
+            container.innerHTML = ''
+                + '<button type="button" class="asist-sugg-card" data-prompt="Opinión de mi idea">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Opinión de mi idea</strong><em>Evaluación corta y preguntas clave</em></span>'
+                + '</button>';
+            return;
+        }
         var esSup = !!(STATE.config && STATE.config.user && STATE.config.user.es_supervisor);
         var items = getSuggestionsForRole(esSup);
         var icons = [
@@ -139,11 +223,11 @@
         }).join('');
     }
 
-    /* ─── Historial ─── */
-    function ensureHistory() {
+    /* ─── Historial (general o por idea, según modo) ─── */
+    function loadHistory() {
         if (STATE.historyLoaded) return;
         STATE.historyLoaded = true;
-        api('/app/api/asistente/conversacion/').then(function (res) {
+        api(urlHistory()).then(function (res) {
             if (!res.ok || !res.data.ok) return;
             var msgs = res.data.mensajes || [];
             if (!msgs.length) return;
@@ -194,14 +278,52 @@
     }
 
     function newChat(silent) {
-        if (!silent && !confirm('¿Iniciar un nuevo chat? Se perderá la conversación actual.')) return;
-        api('/app/api/asistente/conversacion/eliminar/', {method: 'DELETE'}).then(function (res) {
+        var promptText = isIdeaMode()
+            ? '¿Borrar la conversación con la AI sobre esta idea? El resumen guardado en bitácora no se borra.'
+            : '¿Iniciar un nuevo chat? Se perderá la conversación actual.';
+        if (!silent && !confirm(promptText)) return;
+        // El endpoint general usa DELETE, el de ideas usa POST.
+        var method = isIdeaMode() ? 'POST' : 'DELETE';
+        var opts = {method: method};
+        if (method === 'POST') opts.body = '{}';
+        api(urlReset(), opts).then(function (res) {
             if (!res.ok) return;
             var box = document.getElementById('asistMessages');
             if (!box) return;
             box.innerHTML = '';
             box.appendChild(buildWelcomeNode());
             applyContextualSuggestions();
+        });
+    }
+
+    /* ─── Guardar resumen (solo en modo idea) ─── */
+    function saveResumen() {
+        if (!isIdeaMode() || STATE.sending) return;
+        STATE.sending = true;
+        var btn = document.getElementById('asistSaveResumenBtn');
+        if (btn) btn.disabled = true;
+        api(urlResumen(), {method: 'POST', body: '{}'}).then(function (res) {
+            if (!res.ok || !res.data.ok) {
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash((res.data && res.data.error) || 'No se pudo guardar el resumen', 'error');
+                } else {
+                    alert((res.data && res.data.error) || 'No se pudo guardar el resumen');
+                }
+                return;
+            }
+            if (typeof window.showFlash === 'function') {
+                window.showFlash('Resumen agregado a la bitácora');
+            }
+            // Refrescar el widget de la idea para que el comentario nuevo
+            // aparezca al instante si la idea está abierta.
+            try {
+                if (typeof window.refreshIdeaDetalle === 'function') {
+                    window.refreshIdeaDetalle(STATE.ideaCtx.id);
+                }
+            } catch (e) { /* silent */ }
+        }).finally(function () {
+            STATE.sending = false;
+            if (btn) btn.disabled = false;
         });
     }
 
@@ -529,7 +651,7 @@
             if (box) box.textContent = pickThinkingPhrase();
         }, 4000);
 
-        api('/app/api/asistente/mensaje/', {
+        api(urlSend(), {
             method: 'POST',
             body: JSON.stringify({texto: texto}),
         }).then(function (res) {
@@ -538,7 +660,12 @@
                 renderMessage('assistant', '⚠️ ' + (res.data.error || 'Error de conexión. Intenta de nuevo.'));
                 return;
             }
-            renderMessage('assistant', res.data.respuesta || '(sin respuesta)');
+            // Modo general devuelve {respuesta:"..."}, modo idea devuelve
+            // {mensaje:{contenido:"..."}}.
+            var respTexto = '';
+            if (res.data.respuesta) respTexto = res.data.respuesta;
+            else if (res.data.mensaje && res.data.mensaje.contenido) respTexto = res.data.mensaje.contenido;
+            renderMessage('assistant', respTexto || '(sin respuesta)');
         }).catch(function (err) {
             hideTyping();
             renderMessage('assistant', '⚠️ Error de red: ' + err);
@@ -579,6 +706,8 @@
         if (clearBtn) clearBtn.addEventListener('click', newChat);
         var newChatBtn = document.getElementById('asistNewChatBtn');
         if (newChatBtn) newChatBtn.addEventListener('click', newChat);
+        var saveResBtn = document.getElementById('asistSaveResumenBtn');
+        if (saveResBtn) saveResBtn.addEventListener('click', saveResumen);
         if (overlay) overlay.addEventListener('click', function (e) {
             if (e.target === overlay) closeAsistente();
         });

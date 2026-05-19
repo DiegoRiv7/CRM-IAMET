@@ -932,10 +932,17 @@
 
         var brainBtn = document.getElementById('wiBrainBtn');
         if (brainBtn) brainBtn.addEventListener('click', function () {
-            // El cerebro abre el asistente AI ATADO a esta idea — hilo
-            // independiente del consultor general (window.asistenteAbrir).
-            if (STATE.currentIdea && window.IdeaAsistente && typeof window.IdeaAsistente.abrir === 'function') {
-                window.IdeaAsistente.abrir(STATE.currentIdea);
+            // El cerebro abre el MISMO modal del asistente general pero
+            // en "modo idea": la conversación se guarda atada a esta
+            // idea (endpoints /app/api/ideas/<id>/asistente/...), aparece
+            // el botón "Guardar resumen", y el welcome solo muestra
+            // "Opinión de mi idea".
+            if (!STATE.currentIdea) return;
+            if (typeof window.asistenteAbrir === 'function') {
+                window.asistenteAbrir({idea: {
+                    id: STATE.currentIdea.id,
+                    titulo: STATE.currentIdea.titulo,
+                }});
             } else {
                 showFlash('Asistente AI no disponible');
             }
