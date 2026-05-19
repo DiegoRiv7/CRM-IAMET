@@ -547,6 +547,17 @@
             renderIdeaDetail();
         });
     }
+    // Refetch + re-render del detalle de una idea sin abrir/cerrar el
+    // overlay. Usado por el asistente AI de ideas para reflejar el
+    // resumen recién insertado en bitácora.
+    window.refreshIdeaDetalle = function (ideaId) {
+        if (!ideaId || !STATE.currentIdea || STATE.currentIdea.id !== ideaId) return;
+        api('/app/api/ideas/' + ideaId + '/').then(function (res) {
+            if (!res.ok || !res.data.ok) return;
+            STATE.currentIdea = res.data.idea;
+            renderIdeaDetail();
+        });
+    };
     function closeIdeaDetail() {
         var ov = document.getElementById('widgetIdea');
         if (!ov) return;
@@ -921,8 +932,10 @@
 
         var brainBtn = document.getElementById('wiBrainBtn');
         if (brainBtn) brainBtn.addEventListener('click', function () {
-            if (typeof window.asistenteAbrir === 'function') {
-                window.asistenteAbrir();
+            // El cerebro abre el asistente AI ATADO a esta idea — hilo
+            // independiente del consultor general (window.asistenteAbrir).
+            if (STATE.currentIdea && window.IdeaAsistente && typeof window.IdeaAsistente.abrir === 'function') {
+                window.IdeaAsistente.abrir(STATE.currentIdea);
             } else {
                 showFlash('Asistente AI no disponible');
             }

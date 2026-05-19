@@ -17,6 +17,7 @@ from . import views_cursos
 from . import views_marketing
 from . import views_ideas
 from . import views_asistente
+from . import views_asistente_ideas
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -191,6 +192,11 @@ urlpatterns = [
     path('api/ideas/<int:idea_id>/mover/', views_ideas.api_idea_mover_etapa, name='api_idea_mover_etapa'),
     path('api/ideas/<int:idea_id>/comentar/', views_ideas.api_idea_comentar, name='api_idea_comentar'),
     path('api/ideas/<int:idea_id>/convertir/', views_ideas.api_idea_convertir, name='api_idea_convertir'),
+    # ── Asistente AI de Ideas (hilo por idea, separado del consultor general) ─
+    path('api/ideas/<int:idea_id>/asistente/mensajes/', views_asistente_ideas.api_idea_asistente_mensajes, name='api_idea_asistente_mensajes'),
+    path('api/ideas/<int:idea_id>/asistente/mensaje/', views_asistente_ideas.api_idea_asistente_mensaje, name='api_idea_asistente_mensaje'),
+    path('api/ideas/<int:idea_id>/asistente/resumen/', views_asistente_ideas.api_idea_asistente_resumen, name='api_idea_asistente_resumen'),
+    path('api/ideas/<int:idea_id>/asistente/reset/', views_asistente_ideas.api_idea_asistente_reset, name='api_idea_asistente_reset'),
 
     # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
     path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),

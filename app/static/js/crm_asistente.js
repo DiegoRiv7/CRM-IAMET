@@ -424,6 +424,15 @@
     }
     window.asistenteAbrirOportunidad = openOpportunityFromChat;
 
+    /* API pública del renderer — otros módulos (p.ej. el asistente de
+       ideas) la reusan para mantener UN SOLO formatter de markdown
+       (KPI cards, tablas, links, etc.). */
+    window.AsistenteRender = {
+        renderMarkdown: renderMarkdown,
+        escapeHtml: esc,
+        orbHTML: orbHTML,
+    };
+
     /* Orb compuesto (core + 2 anillos cruzados en X). */
     function orbHTML(size) {
         size = size || 'md';
