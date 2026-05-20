@@ -18,6 +18,7 @@ from . import views_marketing
 from . import views_ideas
 from . import views_asistente
 from . import views_asistente_ideas
+from . import views_asistente_prospeccion
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -198,6 +199,11 @@ urlpatterns = [
     path('api/ideas/<int:idea_id>/asistente/mensaje/', views_asistente_ideas.api_idea_asistente_mensaje, name='api_idea_asistente_mensaje'),
     path('api/ideas/<int:idea_id>/asistente/resumen/', views_asistente_ideas.api_idea_asistente_resumen, name='api_idea_asistente_resumen'),
     path('api/ideas/<int:idea_id>/asistente/reset/', views_asistente_ideas.api_idea_asistente_reset, name='api_idea_asistente_reset'),
+    # ── Asistente AI de Prospección (coach táctico por prospecto) ──────
+    path('api/prospectos/<int:prospecto_id>/asistente/mensajes/', views_asistente_prospeccion.api_prospecto_asistente_mensajes, name='api_prospecto_asistente_mensajes'),
+    path('api/prospectos/<int:prospecto_id>/asistente/mensaje/', views_asistente_prospeccion.api_prospecto_asistente_mensaje, name='api_prospecto_asistente_mensaje'),
+    path('api/prospectos/<int:prospecto_id>/asistente/resumen/', views_asistente_prospeccion.api_prospecto_asistente_resumen, name='api_prospecto_asistente_resumen'),
+    path('api/prospectos/<int:prospecto_id>/asistente/reset/', views_asistente_prospeccion.api_prospecto_asistente_reset, name='api_prospecto_asistente_reset'),
 
     # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
     path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),

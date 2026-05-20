@@ -4516,6 +4516,29 @@ class ProspectoComentario(models.Model):
         return f'Comentario de {self.usuario} en {self.prospecto}'
 
 
+class ProspectoAsistenteMensaje(models.Model):
+    """Mensajes de la conversación entre el user y el asistente AI sobre
+    un prospecto específico. Cada prospecto tiene su propio hilo
+    independiente del consultor general y del asistente de ideas. Mismo
+    patrón que IdeaAsistenteMensaje."""
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('assistant', 'Asistente'),
+    ]
+    prospecto = models.ForeignKey(
+        Prospecto, on_delete=models.CASCADE, related_name='asistente_mensajes'
+    )
+    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    contenido = models.TextField(blank=True, default='')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.prospecto_id}:{self.role}:{self.contenido[:30]}'
+
+
 class ProspectoActividad(models.Model):
     TIPO_CHOICES = [
         ('visita', 'Visita'),

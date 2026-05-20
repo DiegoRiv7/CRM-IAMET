@@ -8588,6 +8588,26 @@
 .wp-chat-input button:hover {
     background: #78350F;
 }
+/* Override del botón de asistente AI dentro del composer del
+   prospecto: NO usa el fondo café del botón de enviar — el orb
+   manda la estética. */
+.wp-chat-input button.wp-asistente-btn,
+.wp-chat-input button.wp-asistente-btn:hover {
+    background: transparent;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    transition: transform 0.12s ease;
+}
+.wp-chat-input button.wp-asistente-btn:hover {
+    transform: translateY(-1px);
+}
+.wp-chat-input button.wp-asistente-btn .asist-orb {
+    width: 26px;
+    height: 26px;
+}
 
 .btn-campana:hover { background: #FF950022 !important; }
 

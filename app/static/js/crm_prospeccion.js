@@ -874,6 +874,33 @@ document.addEventListener('click', function(ev) {
         }
     });
 
+    // Botón orb del asistente AI sobre este prospecto.
+    // Abre el modal del consultor general en "modo prospecto" — chat
+    // específico atado al prospecto actual.
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'wpBtnAsistente' || e.target.closest('#wpBtnAsistente')) {
+            e.preventDefault();
+            var id = window._currentProspectoId;
+            var d = window._currentProspectoData;
+            if (!id) return;
+            if (typeof window.asistenteAbrir === 'function') {
+                window.asistenteAbrir({prospecto: {
+                    id: id,
+                    titulo: (d && (d.nombre || (d.cliente && d.cliente.nombre_empresa))) || 'Prospecto',
+                }});
+            }
+        }
+    });
+
+    // Refresh hook usado por el asistente AI cuando guarda un resumen
+    // (manual o auto-save) para que el comentario nuevo aparezca al
+    // instante en la bitácora sin tener que cerrar/reabrir el prospecto.
+    window.refreshProspectoDetalle = function (prospectoId) {
+        if (!prospectoId || prospectoId !== window._currentProspectoId) return;
+        var d = window._currentProspectoData;
+        cargarComentariosProspecto(prospectoId, d ? d.comentarios : null, d ? d.fecha_creacion : null);
+    };
+
     // ── Actividades Programadas ──
     function cargarActividadesProspecto(id) {
         fetch('/app/api/prospecto/' + id + '/actividades/')

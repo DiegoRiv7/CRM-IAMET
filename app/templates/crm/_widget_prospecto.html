@@ -125,6 +125,14 @@
                         </div>
                         <div class="wp-chat-input">
                             <textarea id="wpNuevoComentario" placeholder="Escribe un comentario..." rows="2"></textarea>
+                            {% comment %}Orb del asistente AI de Prospección — abre el modal del consultor en "modo prospecto". El orb es estático (sin animaciones) y reusa el markup del consultor general.{% endcomment %}
+                            <button type="button" id="wpBtnAsistente" class="wp-asistente-btn" title="Asistente AI de este prospecto">
+                                <span class="asist-orb asist-orb--static asist-orb--xs" aria-hidden="true">
+                                    <span class="asist-orb-core"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                                </span>
+                            </button>
                             <button type="button" id="wpBtnAgregarComentario">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="22" y1="2" x2="11" y2="13" />

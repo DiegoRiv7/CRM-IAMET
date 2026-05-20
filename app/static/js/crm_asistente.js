@@ -47,12 +47,15 @@
         configLoaded: false,
         historyLoaded: false,
         sending: false,
-        // ideaCtx: cuando es != null el asistente opera en modo "idea":
-        //   - usa los endpoints /app/api/ideas/<id>/asistente/...
-        //   - muestra "Guardar resumen" en el header
-        //   - el welcome solo trae 1 sugerencia (Opinión de mi idea)
-        // null = modo general (consultor de ventas).
+        // Contextos embebidos. Solo uno puede estar activo a la vez:
+        //   - ideaCtx: modo "idea" (sparring sobre una idea capturada).
+        //   - prospectoCtx: modo "prospecto" (coach táctico de ventas).
+        //   - ambos null: modo general (consultor de pipeline).
+        // Cuando hay contexto embebido el asistente usa endpoints
+        // distintos, muestra "Guardar resumen" en el header, y el
+        // welcome trae sugerencias específicas del modo.
         ideaCtx: null,
+        prospectoCtx: null,
     };
 
     /* ─── Open / close ─── */
@@ -60,15 +63,14 @@
         var ov = document.getElementById('widgetAsistente');
         if (!ov) return;
         options = options || {};
-        // Si nos pasan una idea, cambiamos de modo. Si abren el general
-        // habiendo estado en idea, reseteamos.
-        var prevIdeaId = STATE.ideaCtx ? STATE.ideaCtx.id : null;
-        var nextIdea = options.idea || null;
-        var nextIdeaId = nextIdea ? nextIdea.id : null;
-        STATE.ideaCtx = nextIdea;
-        // Si cambiamos de modo o de idea, vaciamos mensajes y forzamos
+        // Detectamos el contexto embebido (idea/prospecto) o modo general.
+        var prevCtxKey = ctxKey();
+        STATE.ideaCtx = options.idea || null;
+        STATE.prospectoCtx = options.prospecto || null;
+        var nextCtxKey = ctxKey();
+        // Si cambiamos de modo o de target, vaciamos mensajes y forzamos
         // recarga de historial.
-        if (prevIdeaId !== nextIdeaId) {
+        if (prevCtxKey !== nextCtxKey) {
             STATE.historyLoaded = false;
             var box = document.getElementById('asistMessages');
             if (box) {
@@ -98,43 +100,62 @@
     window.asistenteAbrir = openAsistente;
     window.asistenteCerrar = closeAsistente;
 
-    /* ─── Mode (general vs idea) ─── */
+    /* ─── Modo (general / idea / prospecto) ─── */
     function isIdeaMode() { return !!STATE.ideaCtx; }
+    function isProspectoMode() { return !!STATE.prospectoCtx; }
+    function isEmbedMode() { return isIdeaMode() || isProspectoMode(); }
+    function ctxKey() {
+        // Identidad del contexto embebido — sirve para detectar cambios.
+        if (STATE.ideaCtx) return 'idea:' + STATE.ideaCtx.id;
+        if (STATE.prospectoCtx) return 'prospecto:' + STATE.prospectoCtx.id;
+        return 'general';
+    }
 
     function applyMode() {
-        var modeIdea = isIdeaMode();
-        // Tagline: en modo idea muestra el título de la idea.
         var tagText = document.getElementById('asistTaglineText');
         if (tagText) {
-            tagText.textContent = modeIdea
-                ? ('Idea: ' + (STATE.ideaCtx.titulo || 'sin título'))
-                : 'En línea · listo para ayudarte';
+            if (isIdeaMode()) {
+                tagText.textContent = 'Idea: ' + (STATE.ideaCtx.titulo || 'sin título');
+            } else if (isProspectoMode()) {
+                tagText.textContent = 'Prospecto: ' + (STATE.prospectoCtx.titulo || 'sin nombre');
+            } else {
+                tagText.textContent = 'En línea · listo para ayudarte';
+            }
         }
-        // Botón "Guardar resumen": solo en modo idea.
+        // Botón "Guardar resumen": visible cuando hay contexto embebido
+        // (idea o prospecto). El consultor general no tiene resumen.
         var saveBtn = document.getElementById('asistSaveResumenBtn');
-        if (saveBtn) saveBtn.style.display = modeIdea ? '' : 'none';
+        if (saveBtn) saveBtn.style.display = isEmbedMode() ? '' : 'none';
         applyContextualSuggestions();
     }
 
     /* ─── Endpoints por modo ─── */
     function urlHistory() {
-        return isIdeaMode()
-            ? '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensajes/'
-            : '/app/api/asistente/conversacion/';
+        if (isIdeaMode())
+            return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensajes/';
+        if (isProspectoMode())
+            return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/mensajes/';
+        return '/app/api/asistente/conversacion/';
     }
     function urlSend() {
-        return isIdeaMode()
-            ? '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensaje/'
-            : '/app/api/asistente/mensaje/';
+        if (isIdeaMode())
+            return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensaje/';
+        if (isProspectoMode())
+            return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/mensaje/';
+        return '/app/api/asistente/mensaje/';
     }
     function urlReset() {
-        return isIdeaMode()
-            ? '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/reset/'
-            : '/app/api/asistente/conversacion/eliminar/';
+        if (isIdeaMode())
+            return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/reset/';
+        if (isProspectoMode())
+            return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/reset/';
+        return '/app/api/asistente/conversacion/eliminar/';
     }
     function urlResumen() {
-        // Solo válido en modo idea.
-        return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/resumen/';
+        // Solo válido en modo embebido (idea o prospecto).
+        if (isIdeaMode())
+            return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/resumen/';
+        return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/resumen/';
     }
 
     /* ─── Config (nombre + logo + rol del user) ─── */
@@ -187,8 +208,7 @@
     function applyContextualSuggestions() {
         var container = document.querySelector('#asistWelcome .asist-suggestions');
         if (!container) return;
-        // Modo idea: 1 sola sugerencia, además ajustamos el texto del
-        // welcome para reflejar el nuevo propósito.
+        // Modo idea: 1 sola sugerencia + texto del welcome adaptado.
         if (isIdeaMode()) {
             var qEl = document.querySelector('#asistWelcome .asist-greeting-q');
             if (qEl) qEl.textContent = 'Vamos a aterrizar tu idea';
@@ -204,6 +224,31 @@
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'
                 +   '</span>'
                 +   '<span class="asist-sugg-text"><strong>Opinión de mi idea</strong><em>Evaluación corta y preguntas clave</em></span>'
+                + '</button>';
+            return;
+        }
+        // Modo prospecto: 2 sugerencias — Próximo paso + Coach de objeciones.
+        if (isProspectoMode()) {
+            var qEl2 = document.querySelector('#asistWelcome .asist-greeting-q');
+            if (qEl2) qEl2.textContent = 'Coach de este prospecto';
+            var subEl2 = document.querySelector('#asistWelcome .asist-welcome-sub');
+            if (subEl2) {
+                subEl2.innerHTML = 'Pídeme el <strong>próximo paso</strong>, '
+                    + 'pasa una <strong>objeción</strong>, o pídeme '
+                    + 'que redacte un <strong>seguimiento</strong>.';
+            }
+            container.innerHTML = ''
+                + '<button type="button" class="asist-sugg-card" data-prompt="¿Cuál es el próximo paso recomendado para este prospecto?">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Próximo paso</strong><em>Qué hacer ahora para mover el deal</em></span>'
+                + '</button>'
+                + '<button type="button" class="asist-sugg-card" data-prompt="Ayúdame con una objeción / cómo cierro este prospecto.">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Coach de objeciones</strong><em>Opciones para destrabar el cierre</em></span>'
                 + '</button>';
             return;
         }
@@ -278,12 +323,17 @@
     }
 
     function newChat(silent) {
-        var promptText = isIdeaMode()
-            ? '¿Borrar la conversación con la AI sobre esta idea? El resumen guardado en bitácora no se borra.'
-            : '¿Iniciar un nuevo chat? Se perderá la conversación actual.';
+        var promptText;
+        if (isIdeaMode()) {
+            promptText = '¿Borrar la conversación con la AI sobre esta idea? El resumen guardado en bitácora no se borra.';
+        } else if (isProspectoMode()) {
+            promptText = '¿Borrar la conversación con la AI sobre este prospecto? El resumen guardado en bitácora no se borra.';
+        } else {
+            promptText = '¿Iniciar un nuevo chat? Se perderá la conversación actual.';
+        }
         if (!silent && !confirm(promptText)) return;
-        // El endpoint general usa DELETE, el de ideas usa POST.
-        var method = isIdeaMode() ? 'POST' : 'DELETE';
+        // General usa DELETE, los embebidos usan POST.
+        var method = isEmbedMode() ? 'POST' : 'DELETE';
         var opts = {method: method};
         if (method === 'POST') opts.body = '{}';
         api(urlReset(), opts).then(function (res) {
@@ -296,9 +346,9 @@
         });
     }
 
-    /* ─── Guardar resumen (solo en modo idea) ─── */
+    /* ─── Guardar resumen (solo en modo embebido: idea o prospecto) ─── */
     function saveResumen() {
-        if (!isIdeaMode() || STATE.sending) return;
+        if (!isEmbedMode() || STATE.sending) return;
         STATE.sending = true;
         var btn = document.getElementById('asistSaveResumenBtn');
         if (btn) btn.disabled = true;
@@ -314,11 +364,13 @@
             if (typeof window.showFlash === 'function') {
                 window.showFlash('Resumen agregado a la bitácora');
             }
-            // Refrescar el widget de la idea para que el comentario nuevo
-            // aparezca al instante si la idea está abierta.
+            // Refrescar el detalle (idea o prospecto) para que el comentario
+            // recién guardado aparezca de inmediato.
             try {
-                if (typeof window.refreshIdeaDetalle === 'function') {
+                if (isIdeaMode() && typeof window.refreshIdeaDetalle === 'function') {
                     window.refreshIdeaDetalle(STATE.ideaCtx.id);
+                } else if (isProspectoMode() && typeof window.refreshProspectoDetalle === 'function') {
+                    window.refreshProspectoDetalle(STATE.prospectoCtx.id);
                 }
             } catch (e) { /* silent */ }
         }).finally(function () {
@@ -665,17 +717,20 @@
             var respTexto = '';
             if (res.data.respuesta) respTexto = res.data.respuesta;
             else if (res.data.mensaje && res.data.mensaje.contenido) respTexto = res.data.mensaje.contenido;
-            // Auto-save: el backend del modo idea avisa cuando llegó al
-            // tope de turnos y guardó un resumen + reinició el hilo.
-            // Refrescamos el detalle de la idea para que el resumen
-            // aparezca al instante en la bitácora.
-            if (res.data.auto_saved_resumen && isIdeaMode()) {
+            // Auto-save: cuando el backend de un modo embebido llega al
+            // tope de turnos guarda un resumen + reinicia el hilo y nos
+            // avisa con auto_saved_resumen. Refrescamos el detalle
+            // (idea o prospecto) para que el comentario aparezca ya en
+            // la bitácora.
+            if (res.data.auto_saved_resumen && isEmbedMode()) {
                 if (typeof window.showFlash === 'function') {
                     window.showFlash('Resumen guardado en la bitácora · chat reiniciado');
                 }
                 try {
-                    if (typeof window.refreshIdeaDetalle === 'function') {
+                    if (isIdeaMode() && typeof window.refreshIdeaDetalle === 'function') {
                         window.refreshIdeaDetalle(STATE.ideaCtx.id);
+                    } else if (isProspectoMode() && typeof window.refreshProspectoDetalle === 'function') {
+                        window.refreshProspectoDetalle(STATE.prospectoCtx.id);
                     }
                 } catch (e) { /* silent */ }
             }
