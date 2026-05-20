@@ -829,12 +829,59 @@ def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
         prospecto.oportunidad_creada = opp
         prospecto.save(update_fields=['oportunidad_creada', 'fecha_actualizacion'])
 
+    # Auto-actividad para el responsable: aparece en su calendario para
+    # que atienda la opp recién creada. Mismo patrón que la auto-actividad
+    # de prospectos pero apuntando a la opp en lugar del prospecto.
+    fecha_act = _siguiente_dia_habil(timezone.now())
+    cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+    desc_act = (
+        f'Atender oportunidad recién convertida desde prospecto '
+        f'«{prospecto.nombre}». Cliente: {cliente_nombre}.'
+    )
+    try:
+        from datetime import timedelta as _td
+        Actividad.objects.create(
+            titulo=opp.oportunidad[:200],
+            tipo_actividad='tarea',
+            descripcion=desc_act,
+            fecha_inicio=fecha_act,
+            fecha_fin=fecha_act + _td(hours=1),
+            creado_por=responsable,
+            oportunidad=opp,
+            color='#0052D4',
+        )
+    except Exception as e:
+        logger.warning('No se pudo crear actividad de calendario para nueva opp: %s', e)
+
+    # Notificación al responsable cuando es distinto del que creó la opp
+    # (típicamente supervisor asignando a un vendedor del equipo). Aparece
+    # en el ícono de campana del CRM.
+    if responsable.id != request.user.id:
+        try:
+            sup_nombre = (request.user.get_full_name() or request.user.username).strip()
+            Notificacion.objects.create(
+                usuario_destinatario=responsable,
+                usuario_remitente=request.user,
+                tipo='oportunidad_asignada',
+                titulo=f'{sup_nombre} te asignó una oportunidad',
+                mensaje=(
+                    f'"{opp.oportunidad}" — viene del prospecto '
+                    f'"{prospecto.nombre}". Cliente: {cliente_nombre}.'
+                ),
+            )
+        except Exception as e:
+            logger.warning('No se pudo crear notificación de asignación de opp: %s', e)
+
     return JsonResponse({
         'success': True,
         'oportunidad_id': opp.id,
         'titulo': opp.oportunidad,
         'monto': float(opp.monto or 0),
         'tipo_negociacion': opp.tipo_negociacion,
+        'responsable': {
+            'id': responsable.id,
+            'nombre': (responsable.get_full_name() or responsable.username),
+        },
     })
 
 
