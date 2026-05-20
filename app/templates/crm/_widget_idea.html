@@ -273,23 +273,88 @@ Detalle de Idea — layout estilo widget de Prospección:
     text-align: center; padding: 20px 0;
 }
 
-/* Menú de 3 puntos en cada comentario (editar / eliminar). El menú
-   aparece al hacer hover sobre el comentario o al darle al botón. */
+/* Menú de 3 puntos en cada comentario (editar / eliminar).
+   Va INLINE al lado de la fecha en la meta — no absoluto en la
+   esquina, que se perdía debajo del texto cuando el comentario era
+   largo. */
 .idea-msg-body { position: relative; }
+.idea-msg-meta-right {
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.idea-msg-date { color: inherit; }
 .idea-msg-menu-btn {
-    position: absolute; top: 6px; right: 6px;
-    width: 26px; height: 26px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     background: transparent; border: none; cursor: pointer;
     color: #94A3B8;
     display: inline-flex; align-items: center; justify-content: center;
-    /* Siempre visible (antes solo en hover) — así el user ve de
-       inmediato que puede editar / borrar el comentario. */
-    opacity: 0.6;
-    transition: opacity 0.15s ease, background 0.12s ease;
+    padding: 0;
+    transition: background 0.12s ease, color 0.12s ease;
 }
-.idea-msg:hover .idea-msg-menu-btn { opacity: 1; }
-.idea-msg-menu-btn:hover { background: #E2E8F0; color: #475569; opacity: 1; }
-.idea-msg-menu-btn svg { width: 14px; height: 14px; }
+.idea-msg-menu-btn:hover { background: #E2E8F0; color: #475569; }
+.idea-msg-menu-btn svg { width: 13px; height: 13px; }
+
+/* Modal de confirmación (reemplaza al confirm() nativo del browser
+   para no salir del estilo de la app cuando se elimina un comentario). */
+.idea-confirm-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.50);
+    backdrop-filter: blur(4px);
+    z-index: 10500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: idea-confirm-fade 0.16s ease-out;
+}
+@keyframes idea-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+.idea-confirm-modal {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 24px 48px -16px rgba(15, 23, 42, 0.40);
+    animation: idea-confirm-pop 0.18s ease-out;
+}
+@keyframes idea-confirm-pop {
+    from { opacity: 0; transform: scale(0.95) translateY(6px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.idea-confirm-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #FEF2F2; color: #DC2626;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+}
+.idea-confirm-icon svg { width: 24px; height: 24px; }
+.idea-confirm-title {
+    font-size: 1.05rem; font-weight: 700; color: #0F172A;
+    text-align: center; margin: 0 0 6px;
+    letter-spacing: -0.01em;
+}
+.idea-confirm-message {
+    font-size: 0.82rem; color: #64748B;
+    text-align: center; margin: 0 0 18px;
+    line-height: 1.4;
+}
+.idea-confirm-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+}
+.idea-confirm-actions button {
+    padding: 9px 16px;
+    font-size: 0.80rem; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.idea-confirm-cancel {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.idea-confirm-cancel:hover { background: #F1F5F9; }
+.idea-confirm-ok {
+    color: #fff; background: #DC2626; border-color: #DC2626;
+}
+.idea-confirm-ok:hover { background: #B91C1C; border-color: #B91C1C; }
 .idea-msg-menu {
     position: absolute; top: 30px; right: 4px;
     min-width: 130px;

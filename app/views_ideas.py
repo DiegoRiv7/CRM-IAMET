@@ -349,6 +349,10 @@ def api_idea_comentar(request, idea_id):
             'texto': c.texto,
             'fecha': c.fecha.isoformat(),
             'usuario': _user_short(c.usuario),
+            # El user que acaba de crear el comentario SIEMPRE puede
+            # editarlo / borrarlo — sin esto el frontend no pinta el
+            # menú de 3 puntos en comentarios recién creados.
+            'puede_editar': True,
         },
     }, status=201)
 

@@ -745,8 +745,13 @@
             return '<div class="idea-msg" data-com-id="' + c.id + '">'
                 + '<div class="idea-msg-avatar">' + esc(ini) + '</div>'
                 + '<div class="idea-msg-body">'
-                +   menuBtn
-                + '  <div class="idea-msg-meta"><span class="idea-msg-author">' + esc(u.nombre || '—') + '</span><span>' + esc(fmtFecha(c.fecha)) + '</span></div>'
+                + '  <div class="idea-msg-meta">'
+                +     '<span class="idea-msg-author">' + esc(u.nombre || '—') + '</span>'
+                +     '<span class="idea-msg-meta-right">'
+                +       '<span class="idea-msg-date">' + esc(fmtFecha(c.fecha)) + '</span>'
+                +       menuBtn
+                +     '</span>'
+                +   '</div>'
                 + '  <div class="idea-msg-text" data-com-text="' + c.id + '">' + esc(c.texto) + '</div>'
                 + '</div></div>';
         }).join('');
@@ -863,18 +868,66 @@
         });
     }
 
+    /* Modal de confirmación estilizado — reemplaza al confirm() nativo
+       del browser para que el flujo de eliminar no rompa la estética
+       del módulo de Ideas. */
+    function customConfirm(opts, onConfirm) {
+        opts = opts || {};
+        var backdrop = document.createElement('div');
+        backdrop.className = 'idea-confirm-backdrop';
+        backdrop.innerHTML = ''
+            + '<div class="idea-confirm-modal" role="dialog" aria-modal="true">'
+            +   '<div class="idea-confirm-icon">'
+            +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            +       '<polyline points="3 6 5 6 21 6"/>'
+            +       '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+            +       '<path d="M10 11v6"/><path d="M14 11v6"/>'
+            +       '<path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
+            +     '</svg>'
+            +   '</div>'
+            +   '<h3 class="idea-confirm-title">' + esc(opts.title || '¿Confirmas?') + '</h3>'
+            +   '<p class="idea-confirm-message">' + esc(opts.message || '') + '</p>'
+            +   '<div class="idea-confirm-actions">'
+            +     '<button type="button" class="idea-confirm-cancel">' + esc(opts.cancelText || 'Cancelar') + '</button>'
+            +     '<button type="button" class="idea-confirm-ok">' + esc(opts.okText || 'Eliminar') + '</button>'
+            +   '</div>'
+            + '</div>';
+        document.body.appendChild(backdrop);
+        function close() { backdrop.remove(); document.removeEventListener('keydown', onKey); }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        backdrop.querySelector('.idea-confirm-cancel').addEventListener('click', close);
+        backdrop.querySelector('.idea-confirm-ok').addEventListener('click', function () {
+            close();
+            try { onConfirm(); } catch (e) { console.error(e); }
+        });
+        backdrop.addEventListener('click', function (e) {
+            if (e.target === backdrop) close();
+        });
+        document.addEventListener('keydown', onKey);
+        // Focus en cancelar por defecto (acción menos destructiva)
+        setTimeout(function () {
+            var c = backdrop.querySelector('.idea-confirm-cancel');
+            if (c) c.focus();
+        }, 50);
+    }
+
     function deleteComentario(comId) {
-        if (!confirm('¿Eliminar este comentario? No se puede deshacer.')) return;
-        api('/app/api/idea-comentarios/' + comId + '/', {method: 'DELETE'}).then(function (res) {
-            if (!res.ok || !res.data.ok) {
-                showFlash((res.data && res.data.error) || 'No se pudo eliminar', 'error');
-                return;
-            }
-            var i = STATE.currentIdea;
-            if (i && i.comentarios) {
-                i.comentarios = i.comentarios.filter(function (c) { return c.id !== parseInt(comId, 10); });
-            }
-            renderComentarios(i ? (i.comentarios || []) : []);
+        customConfirm({
+            title: '¿Eliminar comentario?',
+            message: 'Esta acción no se puede deshacer.',
+            okText: 'Eliminar',
+        }, function () {
+            api('/app/api/idea-comentarios/' + comId + '/', {method: 'DELETE'}).then(function (res) {
+                if (!res.ok || !res.data.ok) {
+                    showFlash((res.data && res.data.error) || 'No se pudo eliminar', 'error');
+                    return;
+                }
+                var i = STATE.currentIdea;
+                if (i && i.comentarios) {
+                    i.comentarios = i.comentarios.filter(function (c) { return c.id !== parseInt(comId, 10); });
+                }
+                renderComentarios(i ? (i.comentarios || []) : []);
+            });
         });
     }
 
