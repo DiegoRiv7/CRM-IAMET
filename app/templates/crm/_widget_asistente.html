@@ -952,4 +952,68 @@ un icono estático. Saludo personalizado con first_name del user.
     color: #fff; background: #0052D4; border-color: #0052D4;
 }
 .asist-agendar-ok:hover { background: #0040A8; border-color: #0040A8; }
+
+/* ═════════ Custom confirm modal (global, reutilizable) ═════════
+   Reemplazo de confirm() del browser. Lo expone crm_asistente.js
+   como window.customConfirm — cualquier módulo del CRM puede llamarlo. */
+.asist-confirm-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.50);
+    backdrop-filter: blur(4px);
+    z-index: 10600;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: asist-confirm-fade 0.16s ease-out;
+}
+@keyframes asist-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+.asist-confirm-modal {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 24px 48px -16px rgba(15, 23, 42, 0.40);
+    animation: asist-confirm-pop 0.18s ease-out;
+}
+@keyframes asist-confirm-pop {
+    from { opacity: 0; transform: scale(0.95) translateY(6px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.asist-confirm-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #FEF2F2; color: #DC2626;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+}
+.asist-confirm-icon svg { width: 24px; height: 24px; }
+.asist-confirm-title {
+    font-size: 1.05rem; font-weight: 700; color: #0F172A;
+    text-align: center; margin: 0 0 6px;
+    letter-spacing: -0.01em;
+}
+.asist-confirm-message {
+    font-size: 0.82rem; color: #64748B;
+    text-align: center; margin: 0 0 18px;
+    line-height: 1.4;
+}
+.asist-confirm-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+}
+.asist-confirm-actions button {
+    padding: 9px 16px;
+    font-size: 0.80rem; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.asist-confirm-cancel {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.asist-confirm-cancel:hover { background: #F1F5F9; }
+.asist-confirm-ok {
+    color: #fff; background: #DC2626; border-color: #DC2626;
+}
+.asist-confirm-ok:hover { background: #B91C1C; border-color: #B91C1C; }
 </style>

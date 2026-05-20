@@ -618,6 +618,47 @@
         orbHTML: orbHTML,
     };
 
+    /* Modal de confirmación estilizado — global, reusable desde cualquier
+       parte del CRM. Reemplaza al confirm() del browser. */
+    window.customConfirm = function (opts, onConfirm) {
+        opts = opts || {};
+        var backdrop = document.createElement('div');
+        backdrop.className = 'asist-confirm-backdrop';
+        backdrop.innerHTML = ''
+            + '<div class="asist-confirm-modal" role="dialog" aria-modal="true">'
+            +   '<div class="asist-confirm-icon">'
+            +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            +       '<polyline points="3 6 5 6 21 6"/>'
+            +       '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+            +       '<path d="M10 11v6"/><path d="M14 11v6"/>'
+            +       '<path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
+            +     '</svg>'
+            +   '</div>'
+            +   '<h3 class="asist-confirm-title">' + esc(opts.title || '¿Confirmas?') + '</h3>'
+            +   '<p class="asist-confirm-message">' + esc(opts.message || '') + '</p>'
+            +   '<div class="asist-confirm-actions">'
+            +     '<button type="button" class="asist-confirm-cancel">' + esc(opts.cancelText || 'Cancelar') + '</button>'
+            +     '<button type="button" class="asist-confirm-ok">' + esc(opts.okText || 'Eliminar') + '</button>'
+            +   '</div>'
+            + '</div>';
+        document.body.appendChild(backdrop);
+        function close() { backdrop.remove(); document.removeEventListener('keydown', onKey); }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        backdrop.querySelector('.asist-confirm-cancel').addEventListener('click', close);
+        backdrop.querySelector('.asist-confirm-ok').addEventListener('click', function () {
+            close();
+            try { onConfirm(); } catch (e) { console.error(e); }
+        });
+        backdrop.addEventListener('click', function (e) {
+            if (e.target === backdrop) close();
+        });
+        document.addEventListener('keydown', onKey);
+        setTimeout(function () {
+            var c = backdrop.querySelector('.asist-confirm-cancel');
+            if (c) c.focus();
+        }, 50);
+    };
+
     /* Orb compuesto (core + 2 anillos cruzados en X). */
     function orbHTML(size) {
         size = size || 'md';
@@ -696,6 +737,28 @@
         if (dow === 6) d.setDate(d.getDate() + 2);       // Sáb → Lun
         else if (dow === 0) d.setDate(d.getDate() + 1);  // Dom → Lun
         return d;
+    }
+    /* ISO con offset local (NO UTC). Necesario para preservar el
+       reloj de pared del usuario. JavaScript .toISOString() siempre
+       devuelve UTC, lo que hace que la hora cambie cuando el server
+       o el render conviertan timezones. Esta función devuelve algo
+       como "2026-05-22T15:17:00-07:00" que el backend parsea
+       directo como datetime aware en la TZ del user. */
+    function _toLocalIsoOffset(d) {
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        var year = d.getFullYear();
+        var month = pad(d.getMonth() + 1);
+        var day = pad(d.getDate());
+        var hh = pad(d.getHours());
+        var mm = pad(d.getMinutes());
+        var ss = pad(d.getSeconds());
+        var off = -d.getTimezoneOffset(); // minutos desde UTC
+        var sign = off >= 0 ? '+' : '-';
+        var absOff = Math.abs(off);
+        var offH = pad(Math.floor(absOff / 60));
+        var offM = pad(absOff % 60);
+        return year + '-' + month + '-' + day + 'T'
+             + hh + ':' + mm + ':' + ss + sign + offH + ':' + offM;
     }
     function _fmtFechaSeguimiento(d) {
         var meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -777,11 +840,9 @@
                 body: JSON.stringify({
                     descripcion: descripcion,
                     tipo: 'tarea',
-                    // Mandamos la fecha ya calculada en cliente (ISO con
-                    // offset local) — así la hora de la actividad coincide
-                    // con el reloj del usuario y no depende de la TZ del
-                    // servidor.
-                    fecha_iso: fecha.toISOString(),
+                    // Mandamos la fecha en ISO LOCAL (con offset, NO UTC)
+                    // para preservar el reloj de pared del usuario.
+                    fecha_iso: _toLocalIsoOffset(fecha),
                 }),
             }).then(function (res) {
                 if (!res.ok || !res.data.ok) {

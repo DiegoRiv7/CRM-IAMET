@@ -802,6 +802,131 @@ document.addEventListener('click', function(ev) {
     }
 
     // ── Comentarios (chat style) ──
+    /* Menú de 3 puntos en cada comentario del prospecto.
+       Soporta editar inline + eliminar con custom confirm. Solo
+       montamos los listeners UNA vez (delegación) por contenedor. */
+    function wireProspectoComMenus(container) {
+        if (!container || container._comMenuWired) return;
+        container._comMenuWired = true;
+        // Cerrar menús abiertos al clickear fuera
+        document.addEventListener('click', function () {
+            container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+        });
+        // Delegación de clicks: abrir menú / editar / eliminar
+        container.addEventListener('click', function (e) {
+            var btnMenu = e.target.closest('[data-com-menu]');
+            if (btnMenu) {
+                e.stopPropagation();
+                var cid = btnMenu.getAttribute('data-com-menu');
+                var existing = container.querySelector('.wp-com-menu[data-com-menu-for="' + cid + '"]');
+                container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+                if (existing) return;
+                var menu = document.createElement('div');
+                menu.className = 'wp-com-menu';
+                menu.setAttribute('data-com-menu-for', cid);
+                menu.innerHTML = ''
+                    + '<button type="button" data-com-edit="' + cid + '">'
+                    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+                    +   'Editar'
+                    + '</button>'
+                    + '<button type="button" class="wp-com-menu-danger" data-com-del="' + cid + '">'
+                    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+                    +   'Eliminar'
+                    + '</button>';
+                btnMenu.parentNode.appendChild(menu);
+                return;
+            }
+            var editBtn = e.target.closest('[data-com-edit]');
+            if (editBtn) {
+                e.stopPropagation();
+                container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+                startEditProspectoComentario(editBtn.getAttribute('data-com-edit'));
+                return;
+            }
+            var delBtn = e.target.closest('[data-com-del]');
+            if (delBtn) {
+                e.stopPropagation();
+                container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+                deleteProspectoComentario(delBtn.getAttribute('data-com-del'));
+                return;
+            }
+        });
+    }
+
+    function startEditProspectoComentario(comId) {
+        var container = document.getElementById('wpComentariosList');
+        if (!container) return;
+        var textEl = container.querySelector('[data-com-text="' + comId + '"]');
+        if (!textEl || textEl.classList.contains('editing')) return;
+        var original = textEl.textContent;
+        textEl.classList.add('editing');
+        textEl.innerHTML = ''
+            + '<textarea class="wp-com-edit-area"></textarea>'
+            + '<div class="wp-com-edit-actions">'
+            +   '<button type="button" class="wp-com-edit-cancel">Cancelar</button>'
+            +   '<button type="button" class="wp-com-edit-save">Guardar</button>'
+            + '</div>';
+        var ta = textEl.querySelector('textarea');
+        ta.value = original;
+        ta.focus();
+        textEl.querySelector('.wp-com-edit-cancel').addEventListener('click', function () {
+            textEl.classList.remove('editing');
+            textEl.textContent = original;
+        });
+        textEl.querySelector('.wp-com-edit-save').addEventListener('click', function () {
+            var nuevo = (ta.value || '').trim();
+            if (!nuevo) {
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash('El comentario no puede quedar vacío', 'error');
+                }
+                return;
+            }
+            fetch('/app/api/prospecto-comentarios/' + comId + '/', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ texto: nuevo }),
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                if (!d || !d.success) {
+                    if (typeof window.showFlash === 'function') {
+                        window.showFlash((d && d.error) || 'No se pudo guardar', 'error');
+                    }
+                    return;
+                }
+                textEl.classList.remove('editing');
+                textEl.textContent = d.comentario.texto;
+            });
+        });
+    }
+
+    function deleteProspectoComentario(comId) {
+        var doDelete = function () {
+            fetch('/app/api/prospecto-comentarios/' + comId + '/', {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': csrf() },
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                if (!d || !d.success) {
+                    if (typeof window.showFlash === 'function') {
+                        window.showFlash((d && d.error) || 'No se pudo eliminar', 'error');
+                    }
+                    return;
+                }
+                // Quitamos el comentario del DOM sin recargar todo.
+                var node = document.querySelector('#wpComentariosList [data-com-id="' + comId + '"]');
+                if (node) node.remove();
+            });
+        };
+        if (typeof window.customConfirm === 'function') {
+            window.customConfirm({
+                title: '¿Eliminar comentario?',
+                message: 'Esta acción no se puede deshacer.',
+                okText: 'Eliminar',
+            }, doDelete);
+        } else {
+            // Fallback si customConfirm no está disponible (debería estarlo).
+            if (confirm('¿Eliminar este comentario? No se puede deshacer.')) doDelete();
+        }
+    }
+
     function cargarComentariosProspecto(id, comentarioInicial, fechaCreacion) {
         fetch('/app/api/prospecto/' + id + '/comentarios/')
             .then(function(r) { return r.json(); })
@@ -832,17 +957,28 @@ document.addEventListener('click', function(ev) {
                 (data.comentarios || []).forEach(function(c) {
                     var msg = document.createElement('div');
                     msg.className = 'wp-chat-msg';
+                    msg.setAttribute('data-com-id', c.id);
+                    // Menú de 3 puntos: solo si el user puede editar.
+                    var menuBtn = c.puede_editar
+                        ? '<button type="button" class="wp-com-menu-btn" data-com-menu="' + c.id + '" title="Opciones">' +
+                            '<svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>' +
+                          '</button>'
+                        : '';
                     msg.innerHTML =
                         '<div class="wp-chat-avatar">' + getInitials(c.usuario) + '</div>' +
                         '<div class="wp-chat-bubble">' +
                             '<div class="wp-chat-meta">' +
                                 '<span class="wp-chat-author">' + escapeHtml(c.usuario) + '</span>' +
-                                '<span class="wp-chat-time">' + escapeHtml(c.fecha) + '</span>' +
+                                '<span class="wp-chat-meta-right">' +
+                                    '<span class="wp-chat-time">' + escapeHtml(c.fecha) + '</span>' +
+                                    menuBtn +
+                                '</span>' +
                             '</div>' +
-                            '<div class="wp-chat-text">' + escapeHtml(c.texto) + '</div>' +
+                            '<div class="wp-chat-text" data-com-text="' + c.id + '">' + escapeHtml(c.texto) + '</div>' +
                         '</div>';
                     container.appendChild(msg);
                 });
+                wireProspectoComMenus(container);
 
                 if (!comentarioInicial && !(data.comentarios || []).length) {
                     container.innerHTML = '<div style="padding:2rem;text-align:center;color:#C7C7CC;font-size:0.8rem;font-style:italic;">Sin comentarios aun</div>';

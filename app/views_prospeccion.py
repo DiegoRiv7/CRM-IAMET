@@ -8,6 +8,7 @@ from datetime import datetime
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from decimal import Decimal
 
@@ -619,6 +620,12 @@ def api_prospecto_comentarios(request, prospecto_id):
         return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
 
     if request.method == 'GET':
+        # Para decidir el flag puede_editar de cada comentario.
+        try:
+            from .views_utils import is_supervisor as _is_sup
+            es_sup = bool(_is_sup(request.user) or request.user.is_superuser)
+        except Exception:
+            es_sup = bool(request.user.is_superuser)
         comentarios = ProspectoComentario.objects.filter(prospecto=prospecto).select_related('usuario')
         return JsonResponse({
             'comentarios': [
@@ -627,6 +634,8 @@ def api_prospecto_comentarios(request, prospecto_id):
                     'usuario': c.usuario.get_full_name() or c.usuario.username,
                     'texto': c.texto,
                     'fecha': c.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                    # El frontend usa esto para pintar el menú 3 puntos.
+                    'puede_editar': (c.usuario_id == request.user.id) or es_sup,
                 }
                 for c in comentarios
             ]
@@ -642,14 +651,68 @@ def api_prospecto_comentarios(request, prospecto_id):
         if not texto:
             return JsonResponse({'success': False, 'error': 'Texto requerido'}, status=400)
 
-        ProspectoComentario.objects.create(
+        c = ProspectoComentario.objects.create(
             prospecto=prospecto,
             usuario=request.user,
             texto=texto,
         )
-        return JsonResponse({'success': True})
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': c.id,
+                'usuario': c.usuario.get_full_name() or c.usuario.username,
+                'texto': c.texto,
+                'fecha': c.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'puede_editar': True,
+            },
+        })
 
     return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+@require_http_methods(['PATCH', 'PUT', 'DELETE'])
+def api_prospecto_comentario_detalle(request, comentario_id):
+    """Editar (PATCH/PUT) o eliminar (DELETE) un comentario del
+    seguimiento de un prospecto. Solo el autor o supervisor/admin."""
+    try:
+        c = ProspectoComentario.objects.select_related('usuario', 'prospecto').get(pk=comentario_id)
+    except ProspectoComentario.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Comentario no encontrado'}, status=404)
+
+    try:
+        from .views_utils import is_supervisor as _is_sup
+        es_sup = bool(_is_sup(request.user) or request.user.is_superuser)
+    except Exception:
+        es_sup = bool(request.user.is_superuser)
+    es_autor = (c.usuario_id == request.user.id)
+    if not (es_autor or es_sup):
+        return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
+
+    if request.method == 'DELETE':
+        c.delete()
+        return JsonResponse({'success': True})
+
+    # PATCH / PUT — actualizar texto
+    try:
+        data = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    texto = (data.get('texto') or '').strip()
+    if not texto:
+        return JsonResponse({'success': False, 'error': 'Texto requerido'}, status=400)
+    c.texto = texto
+    c.save(update_fields=['texto'])
+    return JsonResponse({
+        'success': True,
+        'comentario': {
+            'id': c.id,
+            'usuario': c.usuario.get_full_name() or c.usuario.username,
+            'texto': c.texto,
+            'fecha': c.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'puede_editar': True,
+        },
+    })
 
 
 @login_required

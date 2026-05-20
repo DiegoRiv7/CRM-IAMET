@@ -8531,6 +8531,7 @@
 .wp-chat-meta {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.2rem;
 }
@@ -8539,9 +8540,74 @@
     font-weight: 700;
     color: #1C1C1E;
 }
+.wp-chat-meta-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
 .wp-chat-time {
     font-size: 0.62rem;
     color: #86868B;
+}
+/* Menú de 3 puntos en cada comentario del prospecto */
+.wp-chat-bubble { position: relative; }
+.wp-com-menu-btn {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: transparent; border: none; cursor: pointer;
+    color: #94A3B8; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s;
+}
+.wp-com-menu-btn:hover { background: #E2E8F0; color: #475569; }
+.wp-com-menu {
+    position: absolute; top: 24px; right: 4px;
+    min-width: 128px;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 10px;
+    box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.20);
+    padding: 4px; z-index: 30;
+}
+.wp-com-menu button {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 7px 10px;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 0.76rem; color: #1E293B; text-align: left;
+    border-radius: 6px;
+    font-family: inherit;
+}
+.wp-com-menu button:hover { background: #F1F5F9; }
+.wp-com-menu button.wp-com-menu-danger { color: #DC2626; }
+.wp-com-menu button.wp-com-menu-danger:hover { background: #FEF2F2; }
+/* Edición inline del comentario */
+.wp-com-edit-area {
+    width: 100%;
+    min-height: 56px;
+    border: 1px solid #6366F1;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 0.82rem;
+    color: #1D1D1F;
+    background: #fff;
+    resize: vertical;
+    outline: none;
+}
+.wp-com-edit-actions {
+    display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end;
+}
+.wp-com-edit-actions button {
+    padding: 5px 11px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+}
+.wp-com-edit-actions .wp-com-edit-cancel {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.wp-com-edit-actions .wp-com-edit-save {
+    color: #fff; background: #0052D4; border-color: #0052D4;
 }
 .wp-chat-text {
     font-size: 0.8rem;
