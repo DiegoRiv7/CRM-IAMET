@@ -637,6 +637,13 @@
             if (window._mailCorreoContextoOppId) {
                 fd.append('oportunidad_id', window._mailCorreoContextoOppId);
             }
+            // Análogo para prospectos: cuando el composer se abre desde el
+            // widget de un prospecto (botón "Nuevo correo" o handler del AI),
+            // se setea window._mailCorreoContextoProspectoId y aquí lo
+            // adjuntamos al envío para que el correo quede vinculado.
+            if (window._mailCorreoContextoProspectoId) {
+                fd.append('prospecto_id', window._mailCorreoContextoProspectoId);
+            }
             _mailComposeAttachments.forEach(function (f) { fd.append('adjuntos', f); });
 
             fetch('/app/api/mail/enviar/', {
@@ -662,6 +669,16 @@
                         window._mailCorreoContextoOppNombre = null;
                         if (typeof window.woCargarNotas === 'function') {
                             try { window.woCargarNotas(oppId); } catch (_) { }
+                        }
+                    }
+                    // Análogo para prospectos: refrescar la lista de correos
+                    // vinculados al prospecto que tenga abierto el widget.
+                    if (window._mailCorreoContextoProspectoId) {
+                        var prospId = window._mailCorreoContextoProspectoId;
+                        window._mailCorreoContextoProspectoId = null;
+                        window._mailCorreoContextoProspectoNombre = null;
+                        if (typeof window.cargarCorreosProspecto === 'function') {
+                            try { window.cargarCorreosProspecto(prospId, window._currentProspectoData || {}); } catch (_) { }
                         }
                     }
                     // If this was a campaign email, register it

@@ -88,20 +88,29 @@
                         </div>
                     </div>
 
-                    <!-- DOM ITEM 2: Cotizaciones card (Row 1, Col 2) -->
+                    {% comment %}
+                    DOM ITEM 2: Correos vinculados (Row 1, Col 2)
+                    Antes vivía aquí la card de "Cotizaciones"; los prospectos
+                    pre-conversión no cotizan todavía. Ahora muestra la lista
+                    de correos vinculados al prospecto (enviados/recibidos)
+                    como evidencia de seguimiento. Click en una card abre el
+                    detalle vía window.woCorreoVerDetalle (definido en el
+                    widget de oportunidad — funciona igual para correos del
+                    prospecto porque solo carga el correo por id).
+                    {% endcomment %}
                     <div class="wo-card" style="display:flex;flex-direction:column;">
                         <div class="wo-section-header">
-                            <h3 class="wo-section-title">Cotizaciones</h3>
-                            <button class="wo-btn-new" id="wpNuevaCot">
+                            <h3 class="wo-section-title">Correos vinculados</h3>
+                            <button class="wo-btn-new" id="wpNuevoCorreo" title="Redactar correo al cliente del prospecto">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="12" y1="5" x2="12" y2="19" />
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
-                                Nueva
+                                Nuevo correo
                             </button>
                         </div>
-                        <div class="wo-quote-list" id="wpQuoteList" style="flex:1;max-height:180px;">
-                            <div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin cotizaciones aun</div>
+                        <div id="wpCorreosList" style="flex:1;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;">
+                            <div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin correos vinculados aún</div>
                         </div>
                     </div>
 

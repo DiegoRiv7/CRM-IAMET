@@ -556,8 +556,9 @@ document.addEventListener('click', function(ev) {
         // Actividades
         cargarActividadesProspecto(data.id);
 
-        // Cotizaciones
-        cargarCotizacionesProspecto(data);
+        // Correos vinculados (antes "Cotizaciones"; cambio de scope para
+        // prospectos pre-conversión — el cotizador se abre solo al convertir).
+        cargarCorreosProspecto(data.id, data);
 
         // Vendedor/Cliente cards
         renderStakeholders(data);
@@ -1552,33 +1553,126 @@ document.addEventListener('click', function(ev) {
         }).join('');
     }
 
-    // ── Cotizaciones ──
-    function cargarCotizacionesProspecto(data) {
-        var container = document.getElementById('wpQuoteList');
+    // ── Correos vinculados ──
+    // Reemplaza la antigua sección de Cotizaciones del widget.
+    // Lista los MailCorreo (enviados/recibidos) vinculados al prospecto.
+    // Click en una card → window.woCorreoVerDetalle (definido en
+    // _widget_oportunidad.html — solo carga el correo por id, sirve igual).
+    function cargarCorreosProspecto(prospectoId, prospData) {
+        var container = document.getElementById('wpCorreosList');
         if (!container) return;
 
-        // If the API returns cotizaciones, render them
-        if (data.cotizaciones && data.cotizaciones.length) {
-            container.innerHTML = '';
-            data.cotizaciones.forEach(function(cot) {
-                var card = document.createElement('div');
-                card.className = 'wo-quote-card';
-                card.innerHTML =
-                    '<div class="wo-quote-left">' +
-                        '<div class="wo-quote-badge">' + escapeHtml(cot.folio || 'COT') + '</div>' +
-                    '</div>' +
-                    '<div class="wo-quote-info">' +
-                        '<div class="wo-quote-title">' + escapeHtml(cot.titulo || cot.folio || 'Cotizacion') + '</div>' +
-                        '<div class="wo-quote-meta">' + escapeHtml(cot.fecha || '') + ' &middot; ' + escapeHtml(cot.estado || '') + '</div>' +
-                    '</div>';
-                container.appendChild(card);
-            });
-        } else {
-            container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin cotizaciones aun</div>';
-        }
-    }
+        container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;color:#86868B;">Cargando correos…</div>';
 
-    // Nueva cotizacion button — confirm conversion to oportunidad, then open cotizador
+        fetch('/app/api/prospecto/' + prospectoId + '/correos/', {
+            credentials: 'same-origin'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (!res || !res.success) {
+                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">No se pudo cargar la lista de correos</div>';
+                return;
+            }
+            var correos = res.correos || [];
+            if (!correos.length) {
+                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin correos vinculados aún</div>';
+                return;
+            }
+            container.innerHTML = correos.map(function(c) {
+                var enviado = c.sentido === 'enviado';
+                var accentBg = enviado ? '#EFF6FF' : '#F4F4F5';
+                var accentBorder = enviado ? '#DBEAFE' : '#E5E7EB';
+                var badgeText = enviado ? 'Enviado' : 'Recibido';
+                var badgeColor = enviado ? '#1E40AF' : '#52525B';
+                var attTag = c.tiene_adjuntos
+                    ? '<span style="display:inline-block;margin-left:6px;font-size:0.62rem;color:#92400E;background:#FEF3C7;padding:1px 6px;border-radius:9999px;font-weight:600;">ADJ</span>'
+                    : '';
+                return ''
+                    + '<div onclick="if(typeof window.woCorreoVerDetalle===\'function\')window.woCorreoVerDetalle(' + c.id + ');" '
+                    +      'style="cursor:pointer;background:' + accentBg + ';border:1px solid ' + accentBorder + ';border-radius:10px;padding:9px 11px;transition:transform 0.15s,box-shadow 0.15s;" '
+                    +      'onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 12px -4px rgba(0,0,0,0.15)\'" '
+                    +      'onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">'
+                    +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">'
+                    +     '<span style="font-size:0.62rem;font-weight:700;color:' + badgeColor + ';letter-spacing:0.04em;text-transform:uppercase;">' + badgeText + attTag + '</span>'
+                    +     '<span style="font-size:0.68rem;color:#86868B;">' + escapeHtml(c.fecha) + '</span>'
+                    +   '</div>'
+                    +   '<div style="font-size:0.82rem;font-weight:600;color:#1C1C1E;margin-bottom:2px;line-height:1.25;">' + escapeHtml(c.asunto || '(Sin asunto)') + '</div>'
+                    +   (c.snippet ? '<div style="font-size:0.72rem;color:#3C3C43;line-height:1.3;">' + escapeHtml(c.snippet) + '</div>' : '')
+                    + '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Error al cargar correos</div>';
+        });
+    }
+    window.cargarCorreosProspecto = cargarCorreosProspecto;
+
+    // ── Composer de correo con contexto del prospecto ──
+    // Análogo a woConvAbrirCorreoComposer (oportunidades): abre el widget
+    // Mail en modo "Redactar" y deja marcado window._mailCorreoContextoProspectoId
+    // para que el envío vincule el correo al prospecto vía FormData.
+    function wpAbrirComposerConPrellenado(correo) {
+        correo = correo || {};
+        var prospData = window._currentProspectoData || {};
+        var prospectoId = window._currentProspectoId || prospData.id;
+        if (!prospectoId) return;
+
+        // Marcamos el contexto antes de abrir Mail.
+        window._mailCorreoContextoProspectoId = prospectoId;
+        window._mailCorreoContextoProspectoNombre = prospData.nombre || '';
+
+        if (typeof window.mailAbrir !== 'function') return;
+        window.mailAbrir();
+        // Subir el z-index para que quede encima del widget de prospecto.
+        var mailWidget = document.getElementById('widgetMail');
+        if (mailWidget) mailWidget.style.zIndex = '11000';
+
+        setTimeout(function() {
+            if (typeof window.mailRedactar === 'function') window.mailRedactar();
+            setTimeout(function() {
+                var paraEl = document.getElementById('mailCompPara');
+                var asuntoEl = document.getElementById('mailCompAsunto');
+                var editorEl = document.getElementById('mailCompEditor');
+                var prefillTo = correo.destinatario_email || prospData.cliente_email || (prospData.contacto_email || '');
+                if (paraEl && prefillTo) paraEl.value = prefillTo;
+                if (asuntoEl) {
+                    if (correo.asunto) asuntoEl.value = correo.asunto;
+                    else if (!asuntoEl.value) asuntoEl.value = prospData.nombre || '';
+                }
+                if (editorEl) {
+                    if (correo.cuerpo) {
+                        // Convertimos saltos de línea simples a <br> para preservar
+                        // el formato del cuerpo redactado por el AI.
+                        editorEl.innerHTML = String(correo.cuerpo)
+                            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br>');
+                    }
+                    editorEl.focus();
+                }
+            }, 120);
+        }, 220);
+    }
+    window.wpAbrirComposerConPrellenado = wpAbrirComposerConPrellenado;
+
+    // Botón "Nuevo correo" en el widget del prospecto → composer en blanco
+    // con destinatario prellenado al email del cliente/contacto del prospecto.
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'wpNuevoCorreo' || e.target.closest && e.target.closest('#wpNuevoCorreo')) {
+            var prospData = window._currentProspectoData || {};
+            wpAbrirComposerConPrellenado({
+                asunto: '',
+                cuerpo: '',
+                destinatario_email: prospData.cliente_email || prospData.contacto_email || '',
+            });
+        }
+    });
+
+    // Nota: el flujo de cotización para prospectos (botón antiguo wpNuevaCot)
+    // se removió del template. La conversión a oportunidad se sigue ofreciendo
+    // desde el pipeline; el handler de abajo queda como referencia histórica
+    // por si en el futuro queremos volver a exponer "Convertir y cotizar"
+    // desde el widget. El listener no hace nada porque #wpNuevaCot ya no
+    // existe en el DOM.
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpNuevaCot' || e.target.closest('#wpNuevaCot')) {
             var data = window._currentProspectoData;

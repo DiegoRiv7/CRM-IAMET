@@ -18,6 +18,7 @@ from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
     MensajeOportunidad, Actividad, Notificacion,
+    MailCorreo,
 )
 
 logger = logging.getLogger(__name__)
@@ -525,13 +526,28 @@ def api_prospecto_detalle(request, prospecto_id):
     if asig_por:
         asignado_por_nombre = (asig_por.get_full_name() or asig_por.username).strip()
 
+    # Emails del contacto/cliente — el composer del widget los usa como
+    # destinatario sugerido al abrir el botón "Nuevo correo".
+    contacto_email = ''
+    if p.contacto:
+        contacto_email = (getattr(p.contacto, 'email', '') or '').strip()
+    cliente_email = ''
+    if p.cliente:
+        for attr in ('email', 'correo', 'correo_electronico'):
+            val = (getattr(p.cliente, attr, '') or '').strip()
+            if val:
+                cliente_email = val
+                break
+
     return JsonResponse({
         'id': p.id,
         'nombre': p.nombre,
         'cliente': p.cliente.nombre_empresa if p.cliente else '-',
         'cliente_id': p.cliente_id,
+        'cliente_email': cliente_email,
         'contacto': p.contacto.nombre if p.contacto else '-',
         'contacto_id': p.contacto_id,
+        'contacto_email': contacto_email,
         'producto': p.producto,
         'area': p.area,
         'tipo_pipeline': p.tipo_pipeline,
@@ -995,3 +1011,111 @@ def api_prospecto_actividad_toggle(request, actividad_id):
         'success': True,
         'completada': actividad.completada,
     })
+
+
+# ──────────────────────────────────────────────
+# CORREOS VINCULADOS AL PROSPECTO
+# ──────────────────────────────────────────────
+# Análogo al patrón usado en oportunidades: el MailCorreo tiene una FK
+# opcional `prospecto`, y desde el widget del prospecto el usuario puede:
+#   - Ver los correos vinculados (enviados / recibidos).
+#   - Redactar un correo nuevo desde el contexto del prospecto (el envío
+#     queda automáticamente vinculado vía el composer del módulo Mail).
+#   - Vincular/desvincular un correo existente (admin, debug, corrección).
+# Los 3 endpoints siguientes alimentan esa UI.
+
+def _correo_to_card_dict(correo):
+    """Serializa un MailCorreo a un dict ligero apto para listas de cards
+    (timeline del prospecto). Cuerpo capeado a 240 chars (snippet)."""
+    import re as _re
+    import html as _html_lib
+
+    cuerpo = ''
+    if correo.cuerpo_texto:
+        cuerpo = correo.cuerpo_texto.strip()
+    elif correo.cuerpo_html:
+        cuerpo = _re.sub(r'<[^>]+>', ' ', correo.cuerpo_html)
+        cuerpo = _html_lib.unescape(cuerpo)
+    cuerpo = ' '.join(cuerpo.split())[:240]
+
+    return {
+        'id': correo.id,
+        'sentido': 'enviado' if correo.carpeta_display == 'SENT' else 'recibido',
+        'asunto': correo.asunto or '(Sin asunto)',
+        'remitente_nombre': correo.remitente_nombre or '',
+        'remitente_email': correo.remitente_email or '',
+        'fecha': correo.fecha_envio.strftime('%d/%m/%Y %H:%M') if correo.fecha_envio else '',
+        'fecha_iso': correo.fecha_envio.isoformat() if correo.fecha_envio else '',
+        'snippet': cuerpo,
+        'tiene_adjuntos': bool(correo.tiene_adjuntos),
+    }
+
+
+@login_required
+def api_prospecto_correos(request, prospecto_id):
+    """GET: lista de correos vinculados al prospecto, más recientes primero."""
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    qs = MailCorreo.objects.filter(prospecto=prospecto).order_by('-fecha_envio')[:50]
+    return JsonResponse({
+        'success': True,
+        'correos': [_correo_to_card_dict(c) for c in qs],
+    })
+
+
+@login_required
+def api_prospecto_vincular_correo(request, prospecto_id):
+    """POST {correo_id}: vincula un MailCorreo existente al prospecto."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    correo_id = data.get('correo_id')
+    if not correo_id:
+        return JsonResponse({'success': False, 'error': 'correo_id requerido'}, status=400)
+
+    try:
+        # Solo correos del propio usuario para evitar fugas entre cuentas.
+        correo = MailCorreo.objects.get(id=int(correo_id), usuario=request.user)
+    except (MailCorreo.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Correo no encontrado'}, status=404)
+
+    correo.prospecto = prospecto
+    correo.save(update_fields=['prospecto'])
+    return JsonResponse({'success': True, 'correo': _correo_to_card_dict(correo)})
+
+
+@login_required
+def api_prospecto_desvincular_correo(request, prospecto_id, correo_id):
+    """POST / DELETE: desvincula el correo del prospecto (prospecto = None)."""
+    if request.method not in ('POST', 'DELETE'):
+        return JsonResponse({'success': False, 'error': 'POST o DELETE'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, prospecto=prospecto)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Correo no vinculado a este prospecto'}, status=404)
+
+    correo.prospecto = None
+    correo.save(update_fields=['prospecto'])
+    return JsonResponse({'success': True})

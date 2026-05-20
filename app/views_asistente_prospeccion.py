@@ -623,10 +623,10 @@ def api_prospecto_asistente_mensaje(request, prospecto_id: int):
         previous_resumen=previous_resumen,
     )
     messages = [sys_msg] + _build_context(p)
-    # Tool schema disponible para el AI — le permite disparar la creación
-    # de actividad directamente cuando el user da una instrucción directa.
-    tools = [_tool_crear_actividad_schema()]
+    # Tools disponibles: crear actividad + redactar correo de seguimiento.
+    tools = [_tool_crear_actividad_schema(), _tool_preparar_correo_schema()]
     actividad_creada = None
+    correo_preparado = None
     try:
         resp = chat(
             messages=messages,
@@ -635,27 +635,48 @@ def api_prospecto_asistente_mensaje(request, prospecto_id: int):
             temperature=0.5,
             max_tokens=900,
         )
-        # Loop de tool calling (máximo 2 iteraciones para no irse de
-        # presupuesto si el modelo se enloquece).
+        # Loop de tool calling (máximo 2 iteraciones).
         for _iter in range(2):
             tc_list = resp.get('tool_calls') or []
             if not tc_list:
                 break
             for tc in tc_list:
-                if tc.get('name') != 'crear_actividad_prospecto':
-                    continue
+                tool_name = tc.get('name')
                 args = tc.get('arguments') or {}
-                actividad, err = _crear_actividad_para_prospecto(
-                    prospecto=p,
-                    request_user=request.user,
-                    descripcion=args.get('descripcion') or '',
-                    tipo=args.get('tipo') or 'tarea',
-                    dias_desde_hoy=int(args.get('dias_desde_hoy') or 2),
-                )
-                if not err:
-                    actividad_creada = actividad
-                # Construimos el mensaje "assistant con tool_calls" y
-                # el "tool result" para que el modelo cierre el turno.
+                tool_result_payload = {'ok': False, 'error': 'tool desconocida'}
+                if tool_name == 'crear_actividad_prospecto':
+                    actividad, err = _crear_actividad_para_prospecto(
+                        prospecto=p,
+                        request_user=request.user,
+                        descripcion=args.get('descripcion') or '',
+                        tipo=args.get('tipo') or 'tarea',
+                        dias_desde_hoy=int(args.get('dias_desde_hoy') or 2),
+                    )
+                    if not err:
+                        actividad_creada = actividad
+                        tool_result_payload = {'ok': True, 'actividad': actividad}
+                    else:
+                        tool_result_payload = {'ok': False, 'error': err}
+                elif tool_name == 'preparar_correo_seguimiento_prospecto':
+                    payload = _preparar_correo_seguimiento_prosp(
+                        prospecto=p,
+                        asunto=args.get('asunto') or '',
+                        cuerpo=args.get('cuerpo') or '',
+                        reply_to_correo_id=args.get('reply_to_correo_id'),
+                        vendedor=p.usuario,
+                    )
+                    correo_preparado = payload
+                    tool_result_payload = {
+                        'ok': True,
+                        'mensaje': (
+                            'Correo preparado. El user verá una card '
+                            '"Abrir correo" para revisarlo. NO repitas '
+                            'el cuerpo, confirma en 1 línea.'
+                        ),
+                    }
+                else:
+                    continue
+
                 messages.append({
                     'role': 'assistant',
                     'content': resp.get('text') or '',
@@ -663,21 +684,16 @@ def api_prospecto_asistente_mensaje(request, prospecto_id: int):
                         'id': tc['id'],
                         'type': 'function',
                         'function': {
-                            'name': tc['name'],
+                            'name': tool_name,
                             'arguments': tc.get('arguments_str') or json.dumps(args),
                         },
                     }],
                 })
-                tool_result = (
-                    json.dumps({'ok': True, 'actividad': actividad}, default=str)
-                    if not err else json.dumps({'ok': False, 'error': err})
-                )
                 messages.append({
                     'role': 'tool',
                     'tool_call_id': tc['id'],
-                    'content': tool_result,
+                    'content': json.dumps(tool_result_payload, default=str),
                 })
-            # Volvemos a llamar al modelo con los resultados de las tools.
             resp = chat(
                 messages=messages,
                 tools=tools,
@@ -709,6 +725,8 @@ def api_prospecto_asistente_mensaje(request, prospecto_id: int):
         payload_resp['auto_saved_resumen'] = auto_saved_resumen
     if actividad_creada:
         payload_resp['actividad_creada'] = actividad_creada
+    if correo_preparado:
+        payload_resp['correo_preparado'] = correo_preparado
     return JsonResponse(payload_resp)
 
 
@@ -978,3 +996,166 @@ def api_prospecto_actividad_rapida(request, prospecto_id: int):
     if err:
         return JsonResponse({'ok': False, 'error': err}, status=400)
     return JsonResponse({'ok': True, 'actividad': actividad})
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Helpers para la tool `preparar_correo_seguimiento_prospecto`
+# (integrados del trabajo del Agente A — redactar correo de seguimiento)
+# ─────────────────────────────────────────────────────────────────────
+
+def _detectar_destinatario_prosp(prospecto):
+    """Devuelve el email del destinatario sugerido (contacto del prospecto
+    o email del cliente). Cadena vacía si no hay nada."""
+    try:
+        if prospecto.contacto and getattr(prospecto.contacto, 'email', ''):
+            return prospecto.contacto.email.strip()
+    except Exception:
+        pass
+    try:
+        cliente = prospecto.cliente
+        if cliente:
+            for attr in ('email', 'correo', 'correo_electronico'):
+                val = getattr(cliente, attr, '') or ''
+                if val.strip():
+                    return val.strip()
+    except Exception:
+        pass
+    return ''
+
+
+def _sugerir_from_email_prosp(vendedor):
+    """Si el vendedor tiene UNA conexión de correo activa, la devolvemos.
+    Si tiene varias, vacío + flag para que la UI deje la que el user tiene
+    abierta."""
+    try:
+        from .models import MailConexion
+        cuentas = list(
+            MailConexion.objects.filter(usuario=vendedor, activo=True)
+            .values_list('correo_electronico', flat=True)
+        )
+    except Exception:
+        cuentas = []
+    if len(cuentas) == 1:
+        return cuentas[0], False
+    if len(cuentas) > 1:
+        return '', True
+    return '', False
+
+
+def _preparar_correo_seguimiento_prosp(prospecto, asunto, cuerpo,
+                                       reply_to_correo_id=None, vendedor=None):
+    """Construye el payload para que el frontend abra el composer del
+    módulo Mail con todo pre-llenado. Si hay reply_to_correo_id, extrae
+    threading y destinatario del correo referenciado."""
+    asunto = (asunto or '').strip()
+    cuerpo = (cuerpo or '').strip()
+
+    in_reply_to = ''
+    asunto_referenciado = ''
+    destinatario_from_ref = ''
+    if reply_to_correo_id:
+        try:
+            from .models import MailCorreo as _MailCorreo
+            ref = _MailCorreo.objects.filter(
+                id=int(reply_to_correo_id), prospecto=prospecto,
+            ).first()
+            if ref:
+                in_reply_to = ref.message_id or ''
+                asunto_referenciado = ref.asunto or ''
+                if not asunto:
+                    base = asunto_referenciado.strip()
+                    asunto = base if base.lower().startswith('re:') else f'RE: {base}'
+                # Destinatario del correo referenciado
+                if ref.carpeta_display == 'SENT':
+                    try:
+                        dlist = json.loads(ref.destinatarios_json or '[]')
+                        if dlist and isinstance(dlist, list):
+                            d0 = dlist[0]
+                            destinatario_from_ref = (
+                                d0.get('email') if isinstance(d0, dict) else str(d0)
+                            ) or ''
+                    except Exception:
+                        pass
+                else:
+                    destinatario_from_ref = ref.remitente_email or ''
+        except (TypeError, ValueError):
+            pass
+
+    if not asunto:
+        asunto = (prospecto.nombre or 'Seguimiento')[:200]
+
+    destinatario_email = destinatario_from_ref or _detectar_destinatario_prosp(prospecto)
+    from_email_sugerido = ''
+    multiples = False
+    if vendedor is not None:
+        from_email_sugerido, multiples = _sugerir_from_email_prosp(vendedor)
+
+    return {
+        'asunto': asunto[:255],
+        'cuerpo': cuerpo,
+        'reply_to_correo_id': int(reply_to_correo_id) if reply_to_correo_id else None,
+        'destinatario_email': destinatario_email,
+        'in_reply_to': in_reply_to,
+        'asunto_referenciado': asunto_referenciado,
+        'from_email_sugerido': from_email_sugerido,
+        'vendedor_tiene_multiples_cuentas': multiples,
+        'prospecto_id': prospecto.id,
+        'prospecto_nombre': prospecto.nombre,
+    }
+
+
+def _tool_preparar_correo_schema():
+    """Tool schema OpenAI-compatible para que el AI prepare un correo
+    de seguimiento del prospecto. NO envía nada — solo prepara el payload
+    que el frontend usa para abrir el composer."""
+    return {
+        'type': 'function',
+        'function': {
+            'name': 'preparar_correo_seguimiento_prospecto',
+            'description': (
+                'Prepara un correo de seguimiento al cliente del prospecto. '
+                'NO lo envía — solo lo deja listo en el composer para que '
+                'el user revise y mande. USA esta tool cuando el user pida '
+                '"redacta un correo", "manda seguimiento", "escríbele al '
+                'cliente". Reglas:\n'
+                '- Si hay correos previos vinculados al prospecto, asunto '
+                '"RE: <último asunto>" y pasa el id en reply_to_correo_id.\n'
+                '- Si NO hay correos previos, asunto = nombre del prospecto.\n'
+                '- Cuerpo: 6-12 líneas, español MX, cordial pero directo. '
+                'Lee la actividad agendada, los comentarios de seguimiento, '
+                'la info del cliente y los correos previos del contexto. '
+                'NO inventes datos.\n'
+                '- Firma con el nombre del VENDEDOR responsable; NO incluyas '
+                '"IAMET" ni "BAJANET" en la firma de prospectos — la '
+                'institución se decide cuando ya es oportunidad.\n'
+                '- Después de llamar la tool, responde al user 1-2 líneas: '
+                '"Listo, te dejé el correo preparado. Dale Abrir para '
+                'revisarlo." NO repitas el cuerpo en el chat.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'asunto': {
+                        'type': 'string',
+                        'description': 'Asunto final del correo.',
+                    },
+                    'cuerpo': {
+                        'type': 'string',
+                        'description': (
+                            'Cuerpo del correo (6-12 líneas, plain text). '
+                            'Firma con el nombre del vendedor responsable, '
+                            'sin institución.'
+                        ),
+                    },
+                    'reply_to_correo_id': {
+                        'type': 'integer',
+                        'description': (
+                            'Opcional. ID del MailCorreo previo al que '
+                            'responde, si hay hilo de correos.'
+                        ),
+                    },
+                },
+                'required': ['cuerpo'],
+            },
+        },
+    }

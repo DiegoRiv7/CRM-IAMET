@@ -342,6 +342,10 @@ urlpatterns = [
     path('api/prospecto/<int:prospecto_id>/comentarios/', views.api_prospecto_comentarios, name='api_prospecto_comentarios'),
     path('api/prospecto/<int:prospecto_id>/actividades/', views.api_prospecto_actividades, name='api_prospecto_actividades'),
     path('api/prospecto-actividad/<int:actividad_id>/toggle/', views.api_prospecto_actividad_toggle, name='api_prospecto_actividad_toggle'),
+    # Correos vinculados al prospecto (lista / vincular / desvincular)
+    path('api/prospecto/<int:prospecto_id>/correos/', views.api_prospecto_correos, name='api_prospecto_correos'),
+    path('api/prospecto/<int:prospecto_id>/correos/vincular/', views.api_prospecto_vincular_correo, name='api_prospecto_vincular_correo'),
+    path('api/prospecto/<int:prospecto_id>/correos/<int:correo_id>/desvincular/', views.api_prospecto_desvincular_correo, name='api_prospecto_desvincular_correo'),
 
     # ── Campañas ────────────────────────────────────────────────────────
     path('api/campana/templates/', views.api_campana_templates, name='api_campana_templates'),

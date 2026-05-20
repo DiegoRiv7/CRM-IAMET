@@ -3383,6 +3383,13 @@ class MailCorreo(models.Model):
         'TodoItem', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='correos_vinculados'
     )
+    # Vínculo opcional con un Prospecto — análogo a `oportunidad` pero para la
+    # etapa de prospección (pre-conversión). Cuando el envío sale del widget
+    # del prospecto, el correo queda guardado aquí como evidencia.
+    prospecto = models.ForeignKey(
+        'Prospecto', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='correos_vinculados'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
