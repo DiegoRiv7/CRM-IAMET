@@ -1225,13 +1225,14 @@ document.addEventListener('click', function(ev) {
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:10400;display:flex;align-items:center;justify-content:center;';
         overlay.innerHTML =
             '<div style="background:#fff;border-radius:16px;width:480px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">' +
-                // Header morado
+                // Header morado — TÍTULO = nombre del prospecto.
+                // La descripcion (la acción concreta) va en el body.
                 '<div style="background:linear-gradient(135deg,#B45309,#78350F);padding:1.5rem;position:relative;">' +
                     '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
                     '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
                         '<svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
                     '</div>' +
-                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + escapeHtml(act.descripcion) + '</div>' +
+                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + escapeHtml(prospectoNombre || 'Actividad') + '</div>' +
                     '<div style="font-size:0.82rem;color:rgba(255,255,255,0.8);">' + escapeHtml(act.fecha_programada || '') + '</div>' +
                 '</div>' +
                 // Body
