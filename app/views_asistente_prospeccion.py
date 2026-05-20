@@ -674,3 +674,74 @@ def api_prospecto_asistente_reset(request, prospecto_id: int):
         return JsonResponse({'ok': False, 'error': 'Sin permisos.'}, status=403)
     deleted, _ = ProspectoAsistenteMensaje.objects.filter(prospecto=p).delete()
     return JsonResponse({'ok': True, 'borrados': deleted})
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_prospecto_actividad_rapida(request, prospecto_id: int):
+    """Agenda rápida disparada desde el asistente AI después de pedir
+    "próximo paso". Crea una ProspectoActividad en el calendario del
+    vendedor dueño del prospecto (NO del user que clickea, ya que la
+    AI sugiere al equipo entero).
+
+    Fecha: ahora + 2 días naturales. Si cae en sábado se empuja a
+    lunes (+2), si cae en domingo se empuja a lunes (+1). Hora: la
+    misma del momento del click.
+
+    Body: { descripcion: str, tipo?: str }
+    Default tipo: 'tarea'.
+    """
+    p, access = _get_prospecto_with_access(prospecto_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Prospecto no encontrado.'}, status=404)
+    if access == 'no_access':
+        return JsonResponse({'ok': False, 'error': 'Sin permisos.'}, status=403)
+    try:
+        payload = json.loads(request.body or '{}')
+    except Exception:
+        payload = {}
+    descripcion = (payload.get('descripcion') or '').strip()
+    if not descripcion:
+        return JsonResponse({'ok': False, 'error': 'Falta descripción del próximo paso.'}, status=400)
+    # Limpiamos: si viene markdown del response del AI lo aplanamos.
+    import re as _re
+    descripcion = _re.sub(r'\*\*', '', descripcion)
+    descripcion = _re.sub(r'^#+\s*', '', descripcion, flags=_re.MULTILINE)
+    descripcion = _re.sub(r'`+', '', descripcion)
+    descripcion = descripcion.strip()
+    # Cap a 500 chars para no llenar el campo con un essay
+    if len(descripcion) > 500:
+        descripcion = descripcion[:497] + '...'
+
+    tipo = (payload.get('tipo') or 'tarea').strip().lower()
+    valid_tipos = {t[0] for t in ProspectoActividad.TIPO_CHOICES}
+    if tipo not in valid_tipos:
+        tipo = 'tarea'
+
+    # Calculamos la fecha: hoy + 2 días naturales, empujando fin de
+    # semana al lunes siguiente.
+    ahora = timezone.now()
+    fecha = ahora + timedelta(days=2)
+    if fecha.weekday() == 5:  # sábado
+        fecha = fecha + timedelta(days=2)
+    elif fecha.weekday() == 6:  # domingo
+        fecha = fecha + timedelta(days=1)
+
+    act = ProspectoActividad.objects.create(
+        prospecto=p,
+        usuario=p.usuario,  # cae en el calendario del vendedor dueño
+        tipo=tipo,
+        descripcion=descripcion,
+        fecha_programada=fecha,
+    )
+    return JsonResponse({
+        'ok': True,
+        'actividad': {
+            'id': act.id,
+            'tipo': act.tipo,
+            'tipo_display': act.get_tipo_display(),
+            'descripcion': act.descripcion,
+            'fecha_programada': act.fecha_programada.isoformat() if act.fecha_programada else None,
+            'vendedor_id': p.usuario_id,
+        },
+    })

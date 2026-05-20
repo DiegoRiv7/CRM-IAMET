@@ -204,6 +204,7 @@ urlpatterns = [
     path('api/prospectos/<int:prospecto_id>/asistente/mensaje/', views_asistente_prospeccion.api_prospecto_asistente_mensaje, name='api_prospecto_asistente_mensaje'),
     path('api/prospectos/<int:prospecto_id>/asistente/resumen/', views_asistente_prospeccion.api_prospecto_asistente_resumen, name='api_prospecto_asistente_resumen'),
     path('api/prospectos/<int:prospecto_id>/asistente/reset/', views_asistente_prospeccion.api_prospecto_asistente_reset, name='api_prospecto_asistente_reset'),
+    path('api/prospectos/<int:prospecto_id>/asistente/actividad-rapida/', views_asistente_prospeccion.api_prospecto_actividad_rapida, name='api_prospecto_actividad_rapida'),
 
     # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
     path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),

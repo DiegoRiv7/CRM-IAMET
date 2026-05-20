@@ -893,4 +893,63 @@ un icono estático. Saludo personalizado con first_name del user.
     .asist-suggestions { grid-template-columns: 1fr; }
     .asist-greeting-q { font-size: 1.5rem; }
 }
+
+/* ═════════ Card "Agendar seguimiento" (modo prospecto) ═════════
+   Aparece debajo del mensaje del bot cuando el user pidió próximo
+   paso. Ofrece 1 click para crear la ProspectoActividad. */
+.asist-agendar-card {
+    display: flex; align-items: center; gap: 12px;
+    margin: 8px 28px 8px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px -8px rgba(99, 102, 241, 0.25);
+    animation: asist-agendar-fade-in 0.22s ease-out;
+}
+@keyframes asist-agendar-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.asist-agendar-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0EA5E9, #6366F1);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.asist-agendar-icon--ok {
+    background: linear-gradient(135deg, #10B981, #059669);
+}
+.asist-agendar-body { flex: 1; min-width: 0; }
+.asist-agendar-title {
+    font-size: 0.82rem; font-weight: 700; color: #0F172A;
+    line-height: 1.2;
+}
+.asist-agendar-fecha {
+    font-size: 0.74rem; color: #64748B; margin-top: 2px;
+    text-transform: capitalize;
+}
+.asist-agendar-actions {
+    display: flex; gap: 6px; flex-shrink: 0;
+}
+.asist-agendar-btn {
+    padding: 6px 12px;
+    font-size: 0.74rem; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s;
+}
+.asist-agendar-btn:disabled { opacity: 0.6; cursor: default; }
+.asist-agendar-skip {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.asist-agendar-skip:hover { background: #F1F5F9; }
+.asist-agendar-ok {
+    color: #fff; background: #0052D4; border-color: #0052D4;
+}
+.asist-agendar-ok:hover { background: #0040A8; border-color: #0040A8; }
 </style>

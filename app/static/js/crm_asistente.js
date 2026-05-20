@@ -16,6 +16,11 @@
     if (window._asistenteLoaded) return;
     window._asistenteLoaded = true;
 
+    // Prompt canónico del botón "Próximo paso" en modo prospecto.
+    // Lo usamos para detectar cuándo la respuesta del AI debe ir
+    // acompañada de la card "Agendar seguimiento".
+    var PROXIMO_PASO_PROMPT = '¿Cuál es el próximo paso recomendado para este prospecto?';
+
     /* ─── Helpers ─── */
     function esc(s) {
         return String(s == null ? '' : s)
@@ -56,6 +61,12 @@
         // welcome trae sugerencias específicas del modo.
         ideaCtx: null,
         prospectoCtx: null,
+        // Flag: la PRÓXIMA respuesta del asistente (en modo prospecto)
+        // debe traer la card "Agendar seguimiento" debajo. Se levanta
+        // cuando el user manda exactamente PROXIMO_PASO_PROMPT y se
+        // baja en cuanto la card se renderea.
+        expectingProximoPaso: false,
+        lastAssistantText: '',
     };
 
     /* ─── Open / close ─── */
@@ -227,28 +238,28 @@
                 + '</button>';
             return;
         }
-        // Modo prospecto: 2 sugerencias — Próximo paso + Coach de objeciones.
+        // Modo prospecto: 2 sugerencias — Próximo paso + Sugerencias prospección.
         if (isProspectoMode()) {
             var qEl2 = document.querySelector('#asistWelcome .asist-greeting-q');
-            if (qEl2) qEl2.textContent = 'Coach de este prospecto';
+            if (qEl2) qEl2.textContent = 'Vamos a cerrar este prospecto';
             var subEl2 = document.querySelector('#asistWelcome .asist-welcome-sub');
             if (subEl2) {
                 subEl2.innerHTML = 'Pídeme el <strong>próximo paso</strong>, '
-                    + 'pasa una <strong>objeción</strong>, o pídeme '
-                    + 'que redacte un <strong>seguimiento</strong>.';
+                    + 'pídeme <strong>sugerencias para la prospección</strong>, '
+                    + 'o pásame una <strong>objeción</strong> que estás enfrentando.';
             }
             container.innerHTML = ''
-                + '<button type="button" class="asist-sugg-card" data-prompt="¿Cuál es el próximo paso recomendado para este prospecto?">'
+                + '<button type="button" class="asist-sugg-card" data-prompt="' + PROXIMO_PASO_PROMPT + '">'
                 +   '<span class="asist-sugg-icon">'
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
                 +   '</span>'
                 +   '<span class="asist-sugg-text"><strong>Próximo paso</strong><em>Qué hacer ahora para mover el deal</em></span>'
                 + '</button>'
-                + '<button type="button" class="asist-sugg-card" data-prompt="Ayúdame con una objeción / cómo cierro este prospecto.">'
+                + '<button type="button" class="asist-sugg-card" data-prompt="Dame sugerencias para avanzar este prospecto.">'
                 +   '<span class="asist-sugg-icon">'
-                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>'
                 +   '</span>'
-                +   '<span class="asist-sugg-text"><strong>Coach de objeciones</strong><em>Opciones para destrabar el cierre</em></span>'
+                +   '<span class="asist-sugg-text"><strong>Sugerencias para la prospección</strong><em>Opciones para destrabar y cerrar</em></span>'
                 + '</button>';
             return;
         }
@@ -673,6 +684,105 @@
         if (box) box.scrollTop = box.scrollHeight;
     }
 
+    /* ─── Card "Agendar seguimiento" (modo prospecto) ─────────────────
+       Aparece debajo del último mensaje del bot cuando el user pidió
+       "próximo paso". Calcula la fecha sugerida (+2 días naturales,
+       fin de semana → lunes) y permite agendar con 1 click. */
+    function _proximaFechaSeguimiento() {
+        // Mismo cálculo que el backend para que la preview coincida.
+        var d = new Date();
+        d.setDate(d.getDate() + 2);
+        var dow = d.getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+        if (dow === 6) d.setDate(d.getDate() + 2);       // Sáb → Lun
+        else if (dow === 0) d.setDate(d.getDate() + 1);  // Dom → Lun
+        return d;
+    }
+    function _fmtFechaSeguimiento(d) {
+        var meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+                     'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        var diasSemana = ['domingo', 'lunes', 'martes', 'miércoles',
+                          'jueves', 'viernes', 'sábado'];
+        var hh = String(d.getHours()).padStart(2, '0');
+        var mm = String(d.getMinutes()).padStart(2, '0');
+        return diasSemana[d.getDay()] + ' '
+            + d.getDate() + ' ' + meses[d.getMonth()] + ' '
+            + hh + ':' + mm;
+    }
+    function renderAgendarSeguimientoCard(descripcion) {
+        var box = document.getElementById('asistMessages');
+        if (!box) return;
+        var fecha = _proximaFechaSeguimiento();
+        var fechaTxt = _fmtFechaSeguimiento(fecha);
+        var card = document.createElement('div');
+        card.className = 'asist-agendar-card';
+        card.innerHTML = ''
+            + '<div class="asist-agendar-icon">'
+            +   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+            + '</div>'
+            + '<div class="asist-agendar-body">'
+            +   '<div class="asist-agendar-title">¿Agendamos este seguimiento?</div>'
+            +   '<div class="asist-agendar-fecha">' + esc(fechaTxt) + '</div>'
+            + '</div>'
+            + '<div class="asist-agendar-actions">'
+            +   '<button type="button" class="asist-agendar-btn asist-agendar-skip">Ahora no</button>'
+            +   '<button type="button" class="asist-agendar-btn asist-agendar-ok">Agendar</button>'
+            + '</div>';
+        box.appendChild(card);
+        scrollToBottom();
+
+        var skip = card.querySelector('.asist-agendar-skip');
+        var ok = card.querySelector('.asist-agendar-ok');
+        skip.addEventListener('click', function () {
+            card.remove();
+        });
+        ok.addEventListener('click', function () {
+            if (!isProspectoMode() || !STATE.prospectoCtx) return;
+            ok.disabled = true;
+            skip.disabled = true;
+            ok.textContent = 'Agendando…';
+            api('/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/actividad-rapida/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    descripcion: descripcion,
+                    tipo: 'tarea',
+                }),
+            }).then(function (res) {
+                if (!res.ok || !res.data.ok) {
+                    if (typeof window.showFlash === 'function') {
+                        window.showFlash((res.data && res.data.error) || 'No se pudo agendar', 'error');
+                    }
+                    ok.disabled = false;
+                    skip.disabled = false;
+                    ok.textContent = 'Agendar';
+                    return;
+                }
+                // Reemplazamos la card por una confirmación.
+                var act = res.data.actividad || {};
+                var fechaConfirm = act.fecha_programada
+                    ? _fmtFechaSeguimiento(new Date(act.fecha_programada))
+                    : fechaTxt;
+                card.innerHTML = ''
+                    + '<div class="asist-agendar-icon asist-agendar-icon--ok">'
+                    +   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+                    + '</div>'
+                    + '<div class="asist-agendar-body">'
+                    +   '<div class="asist-agendar-title">Seguimiento agendado</div>'
+                    +   '<div class="asist-agendar-fecha">' + esc(fechaConfirm) + '</div>'
+                    + '</div>';
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash('Seguimiento agendado para ' + fechaConfirm);
+                }
+                // Refrescamos el detalle del prospecto para que la
+                // actividad aparezca en el bloque "Actividad programada".
+                try {
+                    if (typeof window.refreshProspectoDetalle === 'function') {
+                        window.refreshProspectoDetalle(STATE.prospectoCtx.id);
+                    }
+                } catch (e) { /* silent */ }
+            });
+        });
+    }
+
     /* Frases que se rotan en el indicador "pensando" para que no sea monótono */
     var THINKING_PHRASES = [
         'Consultando datos…',
@@ -690,6 +800,10 @@
         texto = (texto || '').trim();
         if (!texto || STATE.sending) return;
         STATE.sending = true;
+        // Si el user pidió el "próximo paso" en modo prospecto,
+        // levantamos el flag para que la próxima respuesta del AI
+        // se acompañe del botón "Agendar seguimiento".
+        STATE.expectingProximoPaso = isProspectoMode() && (texto === PROXIMO_PASO_PROMPT);
 
         renderMessage('user', texto);
         var inp = document.getElementById('asistInput');
@@ -734,7 +848,15 @@
                     }
                 } catch (e) { /* silent */ }
             }
-            renderMessage('assistant', respTexto || '(sin respuesta)');
+            var finalTxt = respTexto || '(sin respuesta)';
+            STATE.lastAssistantText = finalTxt;
+            renderMessage('assistant', finalTxt);
+            // Card "Agendar seguimiento" si veníamos de pedir próximo
+            // paso. Sale debajo del último mensaje del bot.
+            if (STATE.expectingProximoPaso && isProspectoMode() && respTexto) {
+                renderAgendarSeguimientoCard(finalTxt);
+            }
+            STATE.expectingProximoPaso = false;
         }).catch(function (err) {
             hideTyping();
             renderMessage('assistant', '⚠️ Error de red: ' + err);
