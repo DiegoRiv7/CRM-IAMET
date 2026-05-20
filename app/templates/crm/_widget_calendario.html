@@ -1057,7 +1057,17 @@
                 var startD = new Date(ev.start);
                 var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
                 var startMins = startD.getHours()*60+startD.getMinutes();
-                var endMins = endD.getHours()*60+endD.getMinutes();
+                // Para eventos multi-día: si endD cae en un día posterior al de
+                // inicio (la columna en la que se renderiza), extender hasta el
+                // final del día (24:00). Sin esto, endMins = hora del día siguiente
+                // (p.ej. 02:00 → 120) y endMins-startMins quedaba negativo o
+                // clampado al mínimo de 30 min, mostrando un bloque diminuto.
+                var endMins;
+                if (endD.toDateString() !== startD.toDateString()) {
+                    endMins = 24*60;
+                } else {
+                    endMins = endD.getHours()*60+endD.getMinutes();
+                }
                 var evTop = (startMins/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
                 var evH = Math.max(((Math.max(endMins-startMins,30))/60)*CAL_HOUR_H, 28);
                 var safeId = String(ev.id).replace(/'/g,'');
@@ -1926,6 +1936,16 @@
     }
 
     /* ─── FETCH EVENTS ─── */
+    // Convierte cualquier fecha a string local sin sufijo timezone (p.ej. "2026-03-20T14:30:00")
+    // así FullCalendar y las vistas personalizadas la tratan como hora local consistente.
+    // Vive en scope del IIFE para que el .map() de actividades también pueda normalizar
+    // (antes estaba dentro del callback Promise.all().then(); se movió arriba para evitar
+    // que actividades con offset UTC quedaran sin normalizar y se vieran al día siguiente).
+    function _calToLocalISO(dateStr) {
+        var d = new Date(dateStr);
+        var p = function(n){ return String(n).padStart(2,'0'); };
+        return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':00';
+    }
     // userId opcional: cuando se pasa, refetchea el calendario como lo vería
     // ese usuario (actividades + tareas donde es creador/participante/asignado).
     // Permite al selector mostrar el calendario completo de otra persona.
@@ -1949,18 +1969,18 @@
                 var evtColor = e.color || (e.opportunity ? '#0052D4' : '#1D1D1F');
                 // Migrar morado legacy #8B5CF6 → café #B45309 para prospectos
                 if (evtColor === '#8B5CF6') evtColor = '#B45309';
-                return { id:e.id, title:e.title, start:e.start, end:e.end, description:e.description, color:evtColor,
+                // Normalizar start/end a hora local sin sufijo timezone. El backend
+                // manda ISO con offset UTC; sin esto, ev.start.substring(0,10) en
+                // las vistas Día/Semana saca el día UTC y eventos creados 17:00+
+                // Tijuana (UTC-7/UTC-8) "saltan" al día siguiente.
+                return { id:e.id, title:e.title,
+                    start: e.start ? _calToLocalISO(e.start) : null,
+                    end: e.end ? _calToLocalISO(e.end) : null,
+                    description:e.description, color:evtColor,
                     // Top-level para que eventContent lo encuentre en `stored`.
                     recurrence_group_id: e.recurrence_group_id || null,
                     extendedProps:{ participants:e.participants, opportunity:e.opportunity, evento:e.evento || null, curso:e.curso || null, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada, recurrence_group_id: e.recurrence_group_id || null } };
             });
-            // Convierte cualquier fecha a string local sin sufijo timezone (p.ej. "2026-03-20T14:30:00")
-            // así FullCalendar y las vistas personalizadas la tratan como hora local consistente.
-            function _calToLocalISO(dateStr) {
-                var d = new Date(dateStr);
-                var p = function(n){ return String(n).padStart(2,'0'); };
-                return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':00';
-            }
             tareas.forEach(function(t){
                 if (!t.fecha_limite) return;
                 // Tarea.asignado_a es el "responsable" en el modelo Tarea (general),
@@ -1969,9 +1989,17 @@
                 // el text para que la vista del día lo pueda renderizar.
                 var tParticipants=[];
                 if (t.asignado_a_id) tParticipants.push({id:t.asignado_a_id, text:t.responsable||''});
-                var tStart = _calToLocalISO(t.fecha_limite);
-                var _dEnd = new Date(t.fecha_limite); _dEnd.setMinutes(_dEnd.getMinutes()+5);
-                var tEnd = _calToLocalISO(_dEnd.toISOString());
+                // Heurística: si la tarea quedó en 00:00:00 local (deadline sin hora
+                // real, p.ej. cuando el usuario solo eligió fecha), tratarla como
+                // cierre del día (23:59) para que aparezca al atardecer en el
+                // calendario en lugar de al amanecer.
+                var dStart = new Date(t.fecha_limite);
+                if (dStart.getHours() === 0 && dStart.getMinutes() === 0 && dStart.getSeconds() === 0) {
+                    dStart.setHours(23, 59, 0, 0);
+                }
+                var tStart = _calToLocalISO(dStart.toISOString());
+                var dEnd = new Date(dStart.getTime() + 5*60*1000);
+                var tEnd = _calToLocalISO(dEnd.toISOString());
                 _globalEvents.push({ id:'tarea-'+t.id, title:t.titulo, start:tStart, end:tEnd, color:'#FF9500', editable:false,
                     extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id, text:t.creado_por||''}, estado:t.estado } });
             });
