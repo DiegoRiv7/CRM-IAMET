@@ -719,7 +719,10 @@
                 {% for item in tabla_data %}
                 <tr class="crm-data-row" data-opp-id="{{ item.id }}" data-cliente="{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}" data-contacto="{% if item.contacto %}{{ item.contacto.nombre }}{% else %}-{% endif %}" data-area="{{ item.area|default:'-' }}" data-producto="{{ item.producto }}" data-monto="{{ item.monto|unlocalize }}" data-tipo="{{ item.tipo_negociacion }}" data-po="{{ item.po_number|default:'' }}" data-etapa="{{ item.etapa_corta|default:'' }}" data-fecha="{{ item.fecha_actualizacion|date:'U' }}">
                     <td class="px-2 py-4"><span class="opp-name-link" data-oportunidad-id="{{ item.id }}">{{ item.oportunidad }}</span>
-                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span></td>
+                        <span class="client-name-link text-[9px] text-gray-400 font-medium uppercase mt-1 cursor-pointer hover:text-blue-500 transition-colors block" data-cliente-id="{{ item.cliente.id|default:'' }}" data-tab="crm">{{ item.cliente.nombre_empresa|default:'- Sin Cliente -' }}</span>
+                        {% comment %}Span oculto con el PO — backup para el export del Excel cuando los data-attrs del <tr> no se lean por alguna razón.{% endcomment %}
+                        <span class="crm-row-po-backup" data-po-number="{{ item.po_number|default:'' }}" style="display:none;">{{ item.po_number|default:'' }}</span>
+                    </td>
                     <td class="px-2 py-4 text-gray-600">{% if item.contacto %}{{ item.contacto.nombre|truncatechars:18 }}{% else %}-{% endif %}</td>
                     <td class="px-2 py-4 text-gray-400 text-xs italic">{{ item.area|default:'-' }}</td>
                     <td class="px-2 py-4 text-right">{% if item.producto == 'ZEBRA' %}<span class="text-blue-600 font-bold">${{ item.monto|format_currency_short }}</span>{% else %}<span class="money-zero">$0</span>{% endif %}</td>

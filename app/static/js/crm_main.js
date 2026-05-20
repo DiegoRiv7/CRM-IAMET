@@ -6293,14 +6293,35 @@
                             rowData.push(td.textContent.trim().replace(/\s+/g, ' '));
                         });
                         if (addOppCols) {
-                            var tipoRaw = (row.getAttribute('data-tipo') || '').toLowerCase();
+                            var tipoRaw = (row.getAttribute('data-tipo') || row.dataset.tipo || '').toLowerCase();
                             var tipoLabel = tipoRaw === 'runrate' ? 'Runrate'
                                           : tipoRaw === 'proyecto' ? 'Proyecto'
                                           : tipoRaw === 'bitrix_proyecto' ? 'Proyecto Bitrix24'
                                           : (tipoRaw ? tipoRaw : '');
-                            var poVal = row.getAttribute('data-po') || '';
-                            var cliVal = row.getAttribute('data-cliente') || '';
-                            var etapaVal = row.getAttribute('data-etapa') || '';
+                            // PO: probamos data-attr + dataset + el span backup
+                            // dentro del cell 0 (crm-row-po-backup). Triple
+                            // fuente porque empíricamente data-po a veces se
+                            // pierde en producción.
+                            var poVal = row.getAttribute('data-po') || row.dataset.po || '';
+                            if (!poVal) {
+                                var poBackup = row.querySelector('.crm-row-po-backup');
+                                if (poBackup) {
+                                    poVal = (poBackup.getAttribute('data-po-number')
+                                        || poBackup.textContent || '').trim();
+                                }
+                            }
+                            // Cliente: si el data-attr viene vacío, leemos del
+                            // span .client-name-link que sí tiene el nombre
+                            // del cliente en el cell 0.
+                            var cliVal = row.getAttribute('data-cliente') || row.dataset.cliente || '';
+                            if (!cliVal || cliVal === '- Sin Cliente -') {
+                                var cliSpan = row.querySelector('.client-name-link');
+                                if (cliSpan) {
+                                    var t = (cliSpan.textContent || '').trim();
+                                    if (t) cliVal = t;
+                                }
+                            }
+                            var etapaVal = row.getAttribute('data-etapa') || row.dataset.etapa || '';
                             rowData.splice(1, 0, cliVal, poVal, tipoLabel, etapaVal);
                         }
                         if (rowData.length) tableData.push(rowData);
