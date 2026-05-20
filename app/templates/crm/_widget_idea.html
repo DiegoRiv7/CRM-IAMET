@@ -282,10 +282,13 @@ Detalle de Idea — layout estilo widget de Prospección:
     background: transparent; border: none; cursor: pointer;
     color: #94A3B8;
     display: inline-flex; align-items: center; justify-content: center;
-    opacity: 0; transition: opacity 0.15s ease, background 0.12s ease;
+    /* Siempre visible (antes solo en hover) — así el user ve de
+       inmediato que puede editar / borrar el comentario. */
+    opacity: 0.6;
+    transition: opacity 0.15s ease, background 0.12s ease;
 }
 .idea-msg:hover .idea-msg-menu-btn { opacity: 1; }
-.idea-msg-menu-btn:hover { background: #E2E8F0; color: #475569; }
+.idea-msg-menu-btn:hover { background: #E2E8F0; color: #475569; opacity: 1; }
 .idea-msg-menu-btn svg { width: 14px; height: 14px; }
 .idea-msg-menu {
     position: absolute; top: 30px; right: 4px;

@@ -98,14 +98,27 @@ Hidratado client-side desde /app/api/ideas/.
     border: 1px solid var(--ai-primary-border);
     border-radius: 12px;
     padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;
+    /* Sin min-width:0, el contenido largo (mercado/cliente con frases
+       grandes) hace overflow del grid 1fr 1fr y rompe la card. */
+    min-width: 0;
 }
 .idea-card-pill-label {
     font-size: 0.58rem; font-weight: 700; color: var(--ai-primary);
     text-transform: uppercase; letter-spacing: 0.05em;
 }
 .idea-card-pill-value {
-    font-size: 0.86rem; font-weight: 700; color: #1E1B4B; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
+    font-size: 0.86rem; font-weight: 700; color: #1E1B4B;
+    /* Permitimos hasta 2 líneas con ellipsis cuando el texto es largo
+       (ej. mercado "empresas industriales del bajío"), en lugar de
+       tirar el layout. word-break protege contra una sola palabra
+       muy larga (URLs, IDs). */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    line-height: 1.25;
+    min-width: 0;
 }
 .idea-card-foot {
     display: flex; align-items: center; justify-content: space-between;

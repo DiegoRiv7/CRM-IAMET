@@ -80,6 +80,38 @@ def _get_idea_for_user(idea_id: int, user) -> Idea | None:
     return idea
 
 
+def _get_idea_with_access(idea_id: int, user):
+    """Como _get_idea_for_user pero distingue entre 'no existe' y
+    'existe pero no eres el autor'. Devuelve (idea, access) donde
+    access es:
+      - 'not_found': la idea no existe.
+      - 'not_owner': existe pero el user no es su autor (y no es admin).
+      - 'ok': existe y el user puede usar el AI sobre ella.
+    Usado por los endpoints del asistente para devolver un mensaje
+    amigable en lugar de 404 cuando un user visita la idea de otro.
+    """
+    try:
+        idea = Idea.objects.select_related('cliente').get(pk=idea_id)
+    except Idea.DoesNotExist:
+        return (None, 'not_found')
+    if idea.autor_id != user.id and not user.is_superuser:
+        return (idea, 'not_owner')
+    return (idea, 'ok')
+
+
+def _msg_not_owner(idea: Idea) -> str:
+    """Mensaje amigable que el AI 'manda' cuando un user que no es el
+    autor intenta usarlo. Se entrega como respuesta normal del bot, no
+    como error, así no rompe la UX del chat."""
+    autor = idea.autor.first_name or idea.autor.username if idea.autor_id else 'su autor'
+    return (
+        f'Esta idea es de **{autor}**, así que no puedo darte mi '
+        f'opinión aquí — solo le contesto al autor de la idea. '
+        f'Si quieres que la AI evalúe una idea tuya, captúrala desde '
+        f'el kanban de Ideas y ahí sí podemos aterrizarla juntos.'
+    )
+
+
 def _idea_context_block(idea: Idea) -> str:
     """Bloque markdown con los datos de la idea. Va dentro del system
     prompt para que el modelo sepa de qué está hablando."""
@@ -397,11 +429,16 @@ def _msg_to_dict(m: IdeaAsistenteMensaje) -> dict:
 @login_required
 @require_http_methods(['GET'])
 def api_idea_asistente_mensajes(request, idea_id: int):
-    """Devuelve el historial de la conversación AI de una idea."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
-    msgs = IdeaAsistenteMensaje.objects.filter(idea=idea).order_by('fecha')
+    """Devuelve el historial de la conversación AI de una idea.
+    Si el user no es el autor, devolvemos historial vacío (sin error)
+    para que el modal abra y el primer mensaje que mande dispare el
+    aviso amigable de "no puedo opinar sobre la idea de otro"."""
+    idea_obj, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        return JsonResponse({'ok': True, 'mensajes': []})
+    msgs = IdeaAsistenteMensaje.objects.filter(idea=idea_obj).order_by('fecha')
     return JsonResponse({'ok': True, 'mensajes': [_msg_to_dict(m) for m in msgs]})
 
 
@@ -410,9 +447,21 @@ def api_idea_asistente_mensajes(request, idea_id: int):
 def api_idea_asistente_mensaje(request, idea_id: int):
     """Recibe un mensaje del user, lo persiste, llama al LLM y devuelve
     la respuesta del asistente."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
+    idea_obj, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        # Mensaje amigable del bot — no es un error técnico.
+        return JsonResponse({
+            'ok': True,
+            'mensaje': {
+                'id': None,
+                'role': 'assistant',
+                'contenido': _msg_not_owner(idea_obj),
+                'fecha': None,
+            },
+        })
+    idea = idea_obj
     try:
         payload = json.loads(request.body or '{}')
     except Exception:
@@ -615,9 +664,14 @@ def _generar_resumen_llm(idea: Idea, msgs, cfg: AsistenteConfig) -> tuple[str, s
 def api_idea_asistente_resumen(request, idea_id: int):
     """Genera un resumen de la conversación AI y lo guarda como
     IdeaComentario en la bitácora de la idea."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
+    idea, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        return JsonResponse({
+            'ok': False,
+            'error': 'Solo el autor de la idea puede guardar resúmenes del AI.',
+        }, status=403)
 
     msgs = list(IdeaAsistenteMensaje.objects.filter(idea=idea).order_by('fecha'))
     if not msgs:
@@ -651,8 +705,13 @@ def api_idea_asistente_resumen(request, idea_id: int):
 def api_idea_asistente_reset(request, idea_id: int):
     """Borra todos los mensajes de la conversación AI de una idea
     (el botón ‘Nuevo chat’ del widget)."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
+    idea, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        return JsonResponse({
+            'ok': False,
+            'error': 'Solo el autor de la idea puede resetear el chat.',
+        }, status=403)
     deleted, _ = IdeaAsistenteMensaje.objects.filter(idea=idea).delete()
     return JsonResponse({'ok': True, 'borrados': deleted})
