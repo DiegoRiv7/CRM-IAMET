@@ -665,6 +665,20 @@
             var respTexto = '';
             if (res.data.respuesta) respTexto = res.data.respuesta;
             else if (res.data.mensaje && res.data.mensaje.contenido) respTexto = res.data.mensaje.contenido;
+            // Auto-save: el backend del modo idea avisa cuando llegó al
+            // tope de turnos y guardó un resumen + reinició el hilo.
+            // Refrescamos el detalle de la idea para que el resumen
+            // aparezca al instante en la bitácora.
+            if (res.data.auto_saved_resumen && isIdeaMode()) {
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash('Resumen guardado en la bitácora · chat reiniciado');
+                }
+                try {
+                    if (typeof window.refreshIdeaDetalle === 'function') {
+                        window.refreshIdeaDetalle(STATE.ideaCtx.id);
+                    }
+                } catch (e) { /* silent */ }
+            }
             renderMessage('assistant', respTexto || '(sin respuesta)');
         }).catch(function (err) {
             hideTyping();
