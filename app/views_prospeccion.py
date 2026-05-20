@@ -745,9 +745,11 @@ def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
     comentarios_extra = (data.get('comentarios') or '').strip()
 
     # Responsable de la opp. Por default = vendedor del prospecto.
-    # Si llega usuario_id en el payload (supervisor reasignando), lo
-    # respetamos solo si: (a) el solicitante es supervisor/admin, o
-    # (b) es el mismo vendedor dueño del prospecto.
+    # Reglas de quién puede asignar a quién (usuario_id en el payload):
+    #   - System supervisor / admin / superuser → cualquier user.
+    #   - Group supervisor (supervisor_grupo de un GrupoTrabajo activo) →
+    #     cualquier miembro de ese mismo grupo.
+    #   - Vendor normal → solo a sí mismo o al vendedor del prospecto.
     responsable = prospecto.usuario
     raw_uid = data.get('usuario_id')
     if raw_uid:
@@ -756,8 +758,28 @@ def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
         except (TypeError, ValueError):
             uid = None
         if uid:
-            es_sup = is_supervisor(request.user) or is_administrador(request.user)
-            if es_sup or uid == prospecto.usuario_id or uid == request.user.id:
+            puede = False
+            if request.user.is_superuser:
+                puede = True
+            elif is_supervisor(request.user) or is_administrador(request.user):
+                puede = True
+            elif uid == prospecto.usuario_id or uid == request.user.id:
+                puede = True
+            else:
+                # Group supervisor: ¿supervisa un grupo activo que
+                # contenga al target uid como miembro?
+                try:
+                    from .models import GrupoTrabajo
+                    es_jefe_de_grupo = GrupoTrabajo.objects.filter(
+                        supervisor_grupo=request.user,
+                        activo=True,
+                        miembros__id=uid,
+                    ).exists()
+                    if es_jefe_de_grupo:
+                        puede = True
+                except Exception:
+                    pass
+            if puede:
                 try:
                     from django.contrib.auth.models import User as _User
                     responsable = _User.objects.get(pk=uid)
