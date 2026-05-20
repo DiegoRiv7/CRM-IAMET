@@ -734,15 +734,148 @@
         list.innerHTML = coms.map(function (c) {
             var u = c.usuario || {};
             var ini = u.iniciales || ((u.nombre || '?').substring(0, 2)).toUpperCase();
-            return '<div class="idea-msg">'
+            // Solo pintamos el menú de 3 puntos si el backend dice que
+            // este usuario puede editar/eliminar este comentario.
+            var puedeEditar = !!c.puede_editar;
+            var menuBtn = puedeEditar
+                ? '<button type="button" class="idea-msg-menu-btn" data-com-menu="' + c.id + '" title="Opciones">'
+                    + '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
+                + '</button>'
+                : '';
+            return '<div class="idea-msg" data-com-id="' + c.id + '">'
                 + '<div class="idea-msg-avatar">' + esc(ini) + '</div>'
                 + '<div class="idea-msg-body">'
+                +   menuBtn
                 + '  <div class="idea-msg-meta"><span class="idea-msg-author">' + esc(u.nombre || '—') + '</span><span>' + esc(fmtFecha(c.fecha)) + '</span></div>'
-                + '  <div class="idea-msg-text">' + esc(c.texto) + '</div>'
+                + '  <div class="idea-msg-text" data-com-text="' + c.id + '">' + esc(c.texto) + '</div>'
                 + '</div></div>';
         }).join('');
+        wireComentariosMenu();
         // Scroll al final
         list.scrollTop = list.scrollHeight;
+    }
+
+    /* Cierra cualquier menú abierto excepto el del id dado (o todos si
+       no se pasa nada). */
+    function closeAllComMenus(exceptId) {
+        document.querySelectorAll('#wiComentariosList .idea-msg-menu').forEach(function (m) {
+            if (exceptId && m.getAttribute('data-com-menu-for') === String(exceptId)) return;
+            m.remove();
+        });
+    }
+
+    function wireComentariosMenu() {
+        var list = document.getElementById('wiComentariosList');
+        if (!list) return;
+        list.querySelectorAll('[data-com-menu]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var cid = btn.getAttribute('data-com-menu');
+                // Toggle: si ya estaba el menú abierto para este comentario, ciérralo.
+                var existing = list.querySelector('.idea-msg-menu[data-com-menu-for="' + cid + '"]');
+                closeAllComMenus();
+                if (existing) return;
+                var menu = document.createElement('div');
+                menu.className = 'idea-msg-menu';
+                menu.setAttribute('data-com-menu-for', cid);
+                menu.innerHTML = ''
+                    + '<button type="button" data-com-edit="' + cid + '">'
+                    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+                    +   'Editar'
+                    + '</button>'
+                    + '<button type="button" class="idea-msg-menu-danger" data-com-del="' + cid + '">'
+                    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+                    +   'Eliminar'
+                    + '</button>';
+                btn.parentNode.appendChild(menu);
+            });
+        });
+        // Click fuera del menú → cierra
+        if (!list._comMenuOutsideBound) {
+            document.addEventListener('click', function () { closeAllComMenus(); });
+            // Delegamos clicks de editar / eliminar UNA sola vez para
+            // no acumular listeners en cada re-render.
+            list.addEventListener('click', function (e) {
+                var editBtn = e.target.closest('[data-com-edit]');
+                if (editBtn) {
+                    e.stopPropagation();
+                    closeAllComMenus();
+                    startEditComentario(editBtn.getAttribute('data-com-edit'));
+                    return;
+                }
+                var delBtn = e.target.closest('[data-com-del]');
+                if (delBtn) {
+                    e.stopPropagation();
+                    closeAllComMenus();
+                    deleteComentario(delBtn.getAttribute('data-com-del'));
+                    return;
+                }
+            });
+            list._comMenuOutsideBound = true;
+        }
+    }
+
+    function startEditComentario(comId) {
+        var list = document.getElementById('wiComentariosList');
+        if (!list) return;
+        var textEl = list.querySelector('[data-com-text="' + comId + '"]');
+        if (!textEl || textEl.classList.contains('editing')) return;
+        var original = textEl.textContent;
+        textEl.classList.add('editing');
+        textEl.innerHTML = ''
+            + '<textarea class="idea-msg-edit-area"></textarea>'
+            + '<div class="idea-msg-edit-actions">'
+            +   '<button type="button" class="idea-msg-edit-cancel">Cancelar</button>'
+            +   '<button type="button" class="idea-msg-edit-save">Guardar</button>'
+            + '</div>';
+        var ta = textEl.querySelector('textarea');
+        ta.value = original;
+        ta.focus();
+        textEl.querySelector('.idea-msg-edit-cancel').addEventListener('click', function () {
+            textEl.classList.remove('editing');
+            textEl.innerHTML = esc(original);
+        });
+        textEl.querySelector('.idea-msg-edit-save').addEventListener('click', function () {
+            var nuevo = (ta.value || '').trim();
+            if (!nuevo) {
+                showFlash('El comentario no puede quedar vacío', 'error');
+                return;
+            }
+            api('/app/api/idea-comentarios/' + comId + '/', {
+                method: 'PATCH',
+                body: JSON.stringify({texto: nuevo}),
+            }).then(function (res) {
+                if (!res.ok || !res.data.ok) {
+                    showFlash((res.data && res.data.error) || 'No se pudo guardar', 'error');
+                    return;
+                }
+                // Actualizamos en el state y re-renderizamos.
+                var i = STATE.currentIdea;
+                if (i && i.comentarios) {
+                    i.comentarios = i.comentarios.map(function (c) {
+                        return (c.id === res.data.comentario.id)
+                            ? Object.assign({}, c, res.data.comentario)
+                            : c;
+                    });
+                }
+                renderComentarios(i ? (i.comentarios || []) : []);
+            });
+        });
+    }
+
+    function deleteComentario(comId) {
+        if (!confirm('¿Eliminar este comentario? No se puede deshacer.')) return;
+        api('/app/api/idea-comentarios/' + comId + '/', {method: 'DELETE'}).then(function (res) {
+            if (!res.ok || !res.data.ok) {
+                showFlash((res.data && res.data.error) || 'No se pudo eliminar', 'error');
+                return;
+            }
+            var i = STATE.currentIdea;
+            if (i && i.comentarios) {
+                i.comentarios = i.comentarios.filter(function (c) { return c.id !== parseInt(comId, 10); });
+            }
+            renderComentarios(i ? (i.comentarios || []) : []);
+        });
     }
 
     function comentarIdea() {

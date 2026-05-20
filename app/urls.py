@@ -191,6 +191,7 @@ urlpatterns = [
     path('api/ideas/<int:idea_id>/', views_ideas.api_idea_detalle, name='api_idea_detalle'),
     path('api/ideas/<int:idea_id>/mover/', views_ideas.api_idea_mover_etapa, name='api_idea_mover_etapa'),
     path('api/ideas/<int:idea_id>/comentar/', views_ideas.api_idea_comentar, name='api_idea_comentar'),
+    path('api/idea-comentarios/<int:comentario_id>/', views_ideas.api_idea_comentario_detalle, name='api_idea_comentario_detalle'),
     path('api/ideas/<int:idea_id>/convertir/', views_ideas.api_idea_convertir, name='api_idea_convertir'),
     # ── Asistente AI de Ideas (hilo por idea, separado del consultor general) ─
     path('api/ideas/<int:idea_id>/asistente/mensajes/', views_asistente_ideas.api_idea_asistente_mensajes, name='api_idea_asistente_mensajes'),

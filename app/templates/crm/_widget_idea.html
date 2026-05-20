@@ -273,6 +273,68 @@ Detalle de Idea — layout estilo widget de Prospección:
     text-align: center; padding: 20px 0;
 }
 
+/* Menú de 3 puntos en cada comentario (editar / eliminar). El menú
+   aparece al hacer hover sobre el comentario o al darle al botón. */
+.idea-msg-body { position: relative; }
+.idea-msg-menu-btn {
+    position: absolute; top: 6px; right: 6px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: transparent; border: none; cursor: pointer;
+    color: #94A3B8;
+    display: inline-flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s ease, background 0.12s ease;
+}
+.idea-msg:hover .idea-msg-menu-btn { opacity: 1; }
+.idea-msg-menu-btn:hover { background: #E2E8F0; color: #475569; }
+.idea-msg-menu-btn svg { width: 14px; height: 14px; }
+.idea-msg-menu {
+    position: absolute; top: 30px; right: 4px;
+    min-width: 130px;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 10px;
+    box-shadow: 0 8px 24px -8px rgba(15,23,42,0.20);
+    padding: 4px;
+    z-index: 30;
+}
+.idea-msg-menu button {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 7px 10px;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 0.78rem; color: #1E293B; text-align: left;
+    border-radius: 6px;
+    font-family: inherit;
+}
+.idea-msg-menu button:hover { background: #F1F5F9; }
+.idea-msg-menu button.idea-msg-menu-danger { color: #DC2626; }
+.idea-msg-menu button.idea-msg-menu-danger:hover { background: #FEF2F2; }
+.idea-msg-menu svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* Edición inline: textarea reemplaza al .idea-msg-text */
+.idea-msg-edit-area {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid #6366F1; border-radius: 8px;
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 0.86rem; color: #1D1D1F;
+    background: #fff;
+    resize: vertical;
+    outline: none;
+}
+.idea-msg-edit-actions {
+    display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end;
+}
+.idea-msg-edit-actions button {
+    padding: 5px 11px; font-size: 0.72rem; font-weight: 600;
+    border-radius: 12px; border: 1px solid transparent; cursor: pointer;
+    font-family: inherit;
+}
+.idea-msg-edit-actions .idea-msg-edit-cancel {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.idea-msg-edit-actions .idea-msg-edit-save {
+    color: #fff; background: #0052D4; border-color: #0052D4;
+}
+
 /* Estilos de click-to-edit */
 .idea-edit-field {
     cursor: pointer;

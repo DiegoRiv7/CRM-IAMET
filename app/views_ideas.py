@@ -216,12 +216,16 @@ def api_idea_detalle(request, idea_id):
 
     if request.method == 'GET':
         d = _idea_to_dict(idea)
+        es_sup = _can_see_all(request.user)
         d['comentarios'] = [
             {
                 'id': c.id,
                 'texto': c.texto,
                 'fecha': c.fecha.isoformat() if c.fecha else None,
                 'usuario': _user_short(c.usuario),
+                # El frontend usa esto para decidir si pinta el menú de
+                # 3 puntos en este comentario (editar / eliminar).
+                'puede_editar': (c.usuario_id == request.user.id) or es_sup,
             }
             for c in idea.comentarios.select_related('usuario').all()
         ]
@@ -347,6 +351,46 @@ def api_idea_comentar(request, idea_id):
             'usuario': _user_short(c.usuario),
         },
     }, status=201)
+
+
+@login_required
+@require_http_methods(['PATCH', 'PUT', 'DELETE'])
+def api_idea_comentario_detalle(request, comentario_id):
+    """Editar (PATCH/PUT) o eliminar (DELETE) un comentario de la bitácora.
+    Solo el autor del comentario o quien pueda ver todo (supervisor/admin)
+    pueden modificar / borrar."""
+    try:
+        c = IdeaComentario.objects.select_related('idea', 'usuario').get(pk=comentario_id)
+    except IdeaComentario.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Comentario no encontrado'}, status=404)
+
+    es_autor = (c.usuario_id == request.user.id)
+    if not (es_autor or _can_see_all(request.user)):
+        return JsonResponse({'ok': False, 'error': 'Sin permisos'}, status=403)
+
+    if request.method == 'DELETE':
+        c.delete()
+        return JsonResponse({'ok': True})
+
+    # PATCH / PUT — actualizar texto
+    try:
+        data = json.loads(request.body or b'{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    texto = (data.get('texto') or '').strip()
+    if not texto:
+        return JsonResponse({'ok': False, 'error': 'Texto requerido'}, status=400)
+    c.texto = texto
+    c.save(update_fields=['texto'])
+    return JsonResponse({
+        'ok': True,
+        'comentario': {
+            'id': c.id,
+            'texto': c.texto,
+            'fecha': c.fecha.isoformat(),
+            'usuario': _user_short(c.usuario),
+        },
+    })
 
 
 # ─── API Convertir idea → prospección ─────────────────────────────────
