@@ -47,51 +47,47 @@
             .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; }
             .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.85; }
             .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
-            /* ─── Day view en formato TABLA — aprovecha todo el ancho disponible ─── */
-            .cal-day-list { width:100%; padding:6px 18px 28px; }
-            .cal-day-list-empty { text-align:center; padding:80px 20px; color:#9CA3AF; }
-            .cal-day-list-empty-ic { width:68px; height:68px; border-radius:20px; background:#F3F4F6; color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
-            .cal-day-list-empty-t { font-size:1.05rem; font-weight:700; color:#1D1D1F; margin-bottom:6px; }
-            .cal-day-list-empty-s { font-size:0.86rem; color:#6B7280; }
-            .cal-day-table { width:100%; border-collapse:separate; border-spacing:0; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(20,20,18,0.04); }
-            .cal-day-table thead th { background:#FAFAFA; border-bottom:1px solid #E5E7EB; padding:11px 16px; text-align:left; font-size:0.7rem; font-weight:700; color:#6B7280; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; position:sticky; top:0; z-index:2; }
-            .cal-day-table thead th.cal-day-th-time { width:120px; }
-            .cal-day-table thead th.cal-day-th-kind { width:130px; }
-            .cal-day-table thead th.cal-day-th-owner { width:200px; }
-            .cal-day-table thead th.cal-day-th-status { width:130px; text-align:right; }
-            .cal-day-table tbody td { padding:14px 16px; border-bottom:1px solid #F0F2F5; vertical-align:middle; }
-            .cal-day-table tbody tr { cursor:pointer; transition:background .12s ease; position:relative; }
-            .cal-day-table tbody tr:hover { background:#F8FAFC; }
-            .cal-day-table tbody tr:last-child td { border-bottom:none; }
-            .cal-day-table tbody tr td:first-child { border-left:3px solid #9CA3AF; padding-left:14px; }
-            /* Cell: hora */
-            .cal-day-tbl-time { white-space:nowrap; }
-            .cal-day-tbl-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1; }
-            .cal-day-tbl-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:3px; }
-            /* Cell: tipo */
-            .cal-day-tbl-kind { display:inline-flex; align-items:center; gap:6px; font-size:0.74rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
-            .cal-day-tbl-kind::before { content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
-            /* Cell: título + sub */
-            .cal-day-tbl-title { font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-            .cal-day-tbl-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
-            .cal-day-tbl-sub { font-size:0.78rem; color:#6B7280; margin-top:3px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
-            /* Cell: responsable (avatar de iniciales + nombre) */
-            .cal-day-tbl-owner { display:inline-flex; align-items:center; gap:8px; max-width:100%; min-width:0; }
-            .cal-day-tbl-owner-avatar { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:0.7rem; font-weight:700; letter-spacing:0.02em; }
-            .cal-day-tbl-owner-name { font-size:0.82rem; font-weight:600; color:#1D1D1F; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-            /* Cell: status (alineada a la derecha) */
-            .cal-day-tbl-status-cell { text-align:right; }
-            .cal-day-list-status { display:inline-flex; align-items:center; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:0.02em; white-space:nowrap; }
-            .cal-day-list-status.is-now { background:rgba(52,199,89,0.15); color:#34C759; }
-            .cal-day-list-status.is-over { background:rgba(255,59,48,0.1); color:#FF3B30; }
-            .cal-day-list-status.is-done { background:#F3F4F6; color:#6B7280; }
-            /* Row separador "Ahora" — TR especial entre actividades */
-            .cal-day-table tr.cal-day-now-tr td { padding:6px 16px; background:#FFFBFA; }
-            .cal-day-now-bar { display:flex; align-items:center; gap:10px; }
-            .cal-day-now-time { font-size:0.84rem; font-weight:700; color:#FF3B30; min-width:90px; }
-            .cal-day-now-line { flex:1; height:2px; background:#FF3B30; border-radius:2px; position:relative; }
-            .cal-day-now-line::before { content:''; position:absolute; left:-5px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
-            .cal-day-now-label { font-size:0.7rem; font-weight:700; color:#FF3B30; letter-spacing:0.06em; text-transform:uppercase; }
+            /* ─── Day view — Agenda con cards verticales tipo Apple Calendar ─── */
+            .cal-day-list { width:100%; padding:14px 22px 32px; max-width:980px; margin:0 auto; }
+            .cal-day-list-empty { text-align:center; padding:90px 20px; color:#9CA3AF; }
+            .cal-day-list-empty-ic { width:78px; height:78px; border-radius:22px; background:linear-gradient(180deg,#F3F4F6 0%,#E9ECF2 100%); color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(0,0,0,0.04); }
+            .cal-day-list-empty-t { font-size:1.15rem; font-weight:700; color:#1D1D1F; margin-bottom:6px; letter-spacing:-0.01em; }
+            .cal-day-list-empty-s { font-size:0.88rem; color:#6B7280; margin-bottom:20px; }
+            .cal-day-list-empty-btn { display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 18px; background:#0052D4; color:#fff; border:none; border-radius:10px; font-family:inherit; font-size:0.88rem; font-weight:700; cursor:pointer; transition:background 0.15s, transform 0.15s, box-shadow 0.15s; box-shadow:0 1px 2px rgba(0,82,212,0.18), 0 4px 12px rgba(0,82,212,0.18); }
+            .cal-day-list-empty-btn:hover { background:#0041A8; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,82,212,0.22), 0 6px 16px rgba(0,82,212,0.22); }
+            .cal-day-list-empty-btn:active { transform:translateY(0); }
+            /* Agenda — fila = [hora a la izquierda | card a la derecha] */
+            .cal-day-agenda { display:flex; flex-direction:column; gap:12px; }
+            .cal-day-agenda-row { display:flex; align-items:flex-start; gap:18px; }
+            .cal-day-agenda-time { flex:0 0 92px; padding-top:14px; text-align:right; }
+            .cal-day-agenda-time-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1.1; }
+            .cal-day-agenda-time-ampm { font-size:0.7rem; font-weight:700; color:#86868B; letter-spacing:0.04em; margin-left:2px; }
+            .cal-day-agenda-time-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:3px; }
+            .cal-day-agenda-card { flex:1; min-width:0; background:#FFFFFF; border:1px solid #E5E7EB; border-left:4px solid #9CA3AF; border-radius:14px; padding:14px 18px 14px 16px; box-shadow:0 1px 2px rgba(20,20,18,0.04), 0 4px 12px rgba(20,20,18,0.04); cursor:pointer; transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; position:relative; }
+            .cal-day-agenda-card:hover { transform:translateY(-1px); box-shadow:0 2px 4px rgba(20,20,18,0.06), 0 10px 24px rgba(20,20,18,0.08); }
+            .cal-day-agenda-card.is-done { opacity:0.55; }
+            .cal-day-agenda-card.is-now { box-shadow:0 0 0 2px rgba(52,199,89,0.18), 0 1px 2px rgba(20,20,18,0.04), 0 6px 16px rgba(20,20,18,0.06); }
+            .cal-day-agenda-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+            .cal-day-agenda-title { font-size:1rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; flex:1; min-width:0; }
+            .cal-day-agenda-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
+            .cal-day-agenda-kind { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; font-size:0.66rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:4px 9px; border-radius:999px; color:#fff; white-space:nowrap; }
+            .cal-day-agenda-sub { font-size:0.84rem; color:#6B7280; margin-top:6px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+            .cal-day-agenda-people { display:flex; align-items:center; gap:8px; margin-top:10px; min-width:0; }
+            .cal-day-agenda-avatars { display:inline-flex; align-items:center; flex-shrink:0; }
+            .cal-day-agenda-avatar { width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:0.68rem; font-weight:700; letter-spacing:0.02em; border:2px solid #FFFFFF; box-sizing:content-box; margin-left:-6px; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+            .cal-day-agenda-avatar:first-child { margin-left:0; }
+            .cal-day-agenda-avatar.is-more { background:#E5E7EB; color:#6B7280; font-size:0.62rem; }
+            .cal-day-agenda-names { font-size:0.8rem; color:#4B5563; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+            .cal-day-agenda-status { display:inline-flex; align-items:center; font-size:0.66rem; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:0.04em; white-space:nowrap; text-transform:uppercase; margin-left:auto; flex-shrink:0; }
+            .cal-day-agenda-status.is-now { background:rgba(52,199,89,0.15); color:#1F8F40; }
+            .cal-day-agenda-status.is-over { background:rgba(255,59,48,0.12); color:#C2362E; }
+            .cal-day-agenda-status.is-done { background:#F3F4F6; color:#6B7280; }
+            /* Separador "Ahora" — barra horizontal entre cards */
+            .cal-day-agenda-now { display:flex; align-items:center; gap:14px; padding:2px 0; }
+            .cal-day-agenda-now-time { flex:0 0 92px; text-align:right; font-size:0.78rem; font-weight:700; color:#FF3B30; letter-spacing:-0.005em; }
+            .cal-day-agenda-now-line { flex:1; height:2px; background:#FF3B30; border-radius:2px; position:relative; }
+            .cal-day-agenda-now-line::before { content:''; position:absolute; left:-5px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
+            .cal-day-agenda-now-label { font-size:0.66rem; font-weight:700; color:#FF3B30; letter-spacing:0.08em; text-transform:uppercase; flex-shrink:0; }
             /* ─── Right panel ─── */
             #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
             #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
@@ -1401,15 +1397,30 @@
             return ev.start && ev.start.substring(0,10) === dateStr;
         }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
 
-        // Empty state
+        // Helper: formato 12h con AM/PM, p.ej. "9:00 AM"
+        function fmt12(d) {
+            var h = d.getHours();
+            var m = d.getMinutes();
+            var ampm = h >= 12 ? 'PM' : 'AM';
+            var h12 = h % 12; if (h12 === 0) h12 = 12;
+            return { hm: h12 + ':' + pad(m), ampm: ampm };
+        }
+
+        // Empty state — card centrada con icono, texto y botón "Crear evento"
         if (!dayEvts.length) {
             container.innerHTML = ''
-                + '<div class="cal-day-list-empty">'
-                +   '<div class="cal-day-list-empty-ic">'
-                +     '<svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+                + '<div class="cal-day-list">'
+                +   '<div class="cal-day-list-empty">'
+                +     '<div class="cal-day-list-empty-ic">'
+                +       '<svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+                +     '</div>'
+                +     '<div class="cal-day-list-empty-t">No tienes eventos hoy</div>'
+                +     '<div class="cal-day-list-empty-s">Disfruta tu día libre o crea un nuevo evento.</div>'
+                +     '<button type="button" class="cal-day-list-empty-btn" onclick="calGlobalAbrirCrearActividad()">'
+                +       '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+                +       '<span>Crear evento</span>'
+                +     '</button>'
                 +   '</div>'
-                +   '<div class="cal-day-list-empty-t">Sin actividades este día</div>'
-                +   '<div class="cal-day-list-empty-s">Disfruta el día libre o agenda algo con + Nueva actividad.</div>'
                 + '</div>';
             _calDayBindHoverHandlers();
             if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
@@ -1418,27 +1429,34 @@
         }
 
         var nowInserted = false;
-        var html = '<div class="cal-day-list">'
-            + '<table class="cal-day-table">'
-            +   '<thead><tr>'
-            +     '<th class="cal-day-th-time">Hora</th>'
-            +     '<th class="cal-day-th-kind">Tipo</th>'
-            +     '<th>Actividad</th>'
-            +     '<th class="cal-day-th-owner">Responsable</th>'
-            +     '<th class="cal-day-th-status">Estado</th>'
-            +   '</tr></thead>'
-            + '<tbody>';
+        var html = '<div class="cal-day-list"><div class="cal-day-agenda">';
 
         function renderNowRow() {
+            var t = fmt12(now);
             html += ''
-                + '<tr class="cal-day-now-tr"><td colspan="5">'
-                +   '<div class="cal-day-now-bar">'
-                +     '<div class="cal-day-now-time">' + pad(now.getHours())+':'+pad(now.getMinutes()) + '</div>'
-                +     '<div class="cal-day-now-line"></div>'
-                +     '<div class="cal-day-now-label">Ahora</div>'
-                +   '</div>'
-                + '</td></tr>';
+                + '<div class="cal-day-agenda-now">'
+                +   '<div class="cal-day-agenda-now-time">' + t.hm + ' ' + t.ampm + '</div>'
+                +   '<div class="cal-day-agenda-now-line"></div>'
+                +   '<div class="cal-day-agenda-now-label">Ahora</div>'
+                + '</div>';
             nowInserted = true;
+        }
+
+        // Helper: iniciales del nombre completo (avatares)
+        function _ini(full) {
+            var p = String(full || '').trim().split(/\s+/);
+            if (!p[0]) return '?';
+            if (p.length === 1) return p[0].substring(0, 2).toUpperCase();
+            return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+        }
+
+        // Helper: color HSL estable derivado del nombre (avatares variados)
+        function _avatarColor(name) {
+            var s = String(name || '?');
+            var h = 0;
+            for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
+            var hue = Math.abs(h) % 360;
+            return 'hsl(' + hue + ', 55%, 52%)';
         }
 
         dayEvts.forEach(function(ev) {
@@ -1454,41 +1472,29 @@
             var ep = ev.extendedProps || {};
             var isTask = String(ev.id).indexOf('tarea-') === 0;
             var hasOpp = !isTask && ep.opportunity && ep.opportunity.id;
-            var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-            var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
+
+            var start12 = fmt12(startD);
+            var end12 = fmt12(endD);
 
             var isNowEvt = isToday && nowMs >= startD.getTime() && nowMs <= endD.getTime();
             var isOverEvt = isToday && nowMs > endD.getTime();
             var completada = isTask ? (ep.estado === 'completada') : !!ep.completada;
 
-            // Responsable: primer participant (si hay) o el creador como fallback.
-            // En el modelo del calendario el "responsable" es típicamente el
-            // primer participante asignado; si no hay participants, el creador.
+            // Participantes (avatares apilados + texto de nombres).
             // OJO: la API usa .text para nombres (no .nombre / .name).
             var _pickName = function (o) {
                 if (!o) return '';
                 return o.text || o.nombre || o.name || o.full_name || o.username || '';
             };
-            var responsable = '—';
-            var parts = ep.participants || [];
-            var firstPartName = parts.length ? _pickName(parts[0]) : '';
-            var creadorName = _pickName(ep.creado_por);
-            if (firstPartName) {
-                responsable = firstPartName;
-            } else if (creadorName) {
-                responsable = creadorName;
+            var parts = (ep.participants || []).slice();
+            var partNames = parts.map(_pickName).filter(Boolean);
+            // Fallback al creador si no hay participantes asignados.
+            if (!partNames.length) {
+                var creadorName = _pickName(ep.creado_por);
+                if (creadorName) partNames.push(creadorName);
             }
-            // Si hay más participantes, agregamos un "+N" para mostrar que es grupo.
-            var responsableExtra = parts.length > 1 ? ' +' + (parts.length - 1) : '';
-            // Avatar de iniciales para visualizar el responsable.
-            var responsableIni = (function (full) {
-                var p = String(full).trim().split(/\s+/);
-                if (!p[0]) return '?';
-                if (p.length === 1) return p[0].substring(0, 2).toUpperCase();
-                return (p[0][0] + p[p.length - 1][0]).toUpperCase();
-            })(responsable);
 
-            // Color por tipo (mismo criterio que el timeline anterior)
+            // Color por tipo + etiqueta
             var stripColor, kindLabel;
             if (isTask) {
                 kindLabel = 'Tarea';
@@ -1508,53 +1514,75 @@
             }
             if (ev.color) stripColor = ev.color;
 
+            // Línea 2 — cliente/contexto. Con opp: "Cliente: X"; si no, descripción limpia.
+            var subText = '';
+            if (hasOpp) {
+                var oppTitle = ep.opportunity.title || ep.opportunity.titulo || '';
+                if (oppTitle) subText = 'Cliente: ' + oppTitle;
+            } else if (ev.description) {
+                subText = String(ev.description).replace(/\[.*?\]/g, '').trim();
+            }
+
             // Status badge
             var statusHTML = '';
             if (completada) {
-                statusHTML = '<span class="cal-day-list-status is-done">Completada</span>';
+                statusHTML = '<span class="cal-day-agenda-status is-done">Completada</span>';
             } else if (isNowEvt) {
-                statusHTML = '<span class="cal-day-list-status is-now">En curso</span>';
+                statusHTML = '<span class="cal-day-agenda-status is-now">En curso</span>';
             } else if (isOverEvt) {
-                statusHTML = '<span class="cal-day-list-status is-over">Vencido</span>';
+                statusHTML = '<span class="cal-day-agenda-status is-over">Vencido</span>';
             }
 
-            // Subtítulo: oportunidad ligada o descripción corta
-            var subText = '';
-            if (hasOpp) subText = ep.opportunity.title || ep.opportunity.titulo || '';
-            else if (ev.description) subText = String(ev.description).replace(/\[.*?\]/g, '').trim();
+            // Avatares apilados (máx 3) + nombres (hasta 2 explícitos + "+N")
+            var avatarsHTML = '';
+            var namesHTML = '';
+            if (partNames.length) {
+                var shown = partNames.slice(0, 3);
+                shown.forEach(function (n) {
+                    avatarsHTML += '<span class="cal-day-agenda-avatar" style="background:' + _avatarColor(n) + ';" title="' + woEscape(n) + '">' + woEscape(_ini(n)) + '</span>';
+                });
+                if (partNames.length > 3) {
+                    avatarsHTML += '<span class="cal-day-agenda-avatar is-more">+' + (partNames.length - 3) + '</span>';
+                }
+                var displayNames = partNames.slice(0, 2).join(', ');
+                if (partNames.length > 2) displayNames += ', +' + (partNames.length - 2);
+                namesHTML = '<span class="cal-day-agenda-names" title="' + woEscape(partNames.join(', ')) + '">' + woEscape(displayNames) + '</span>';
+            }
 
-            var rowOpacity = completada ? 'opacity:0.55;' : '';
+            var cardClass = 'cal-day-agenda-card';
+            if (completada) cardClass += ' is-done';
+            else if (isNowEvt) cardClass += ' is-now';
 
             html += ''
-                + '<tr data-evt-id="'+safeId+'" style="'+rowOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'
-                +   '<td style="border-left-color:'+stripColor+';">'
-                +     '<div class="cal-day-tbl-time">'
-                +       '<div class="cal-day-tbl-start">' + startFmt + '</div>'
-                +       '<div class="cal-day-tbl-end">→ ' + endFmt + '</div>'
+                + '<div class="cal-day-agenda-row">'
+                +   '<div class="cal-day-agenda-time">'
+                +     '<div><span class="cal-day-agenda-time-start">' + start12.hm + '</span><span class="cal-day-agenda-time-ampm"> ' + start12.ampm + '</span></div>'
+                +     '<div class="cal-day-agenda-time-end">→ ' + end12.hm + ' ' + end12.ampm + '</div>'
+                +   '</div>'
+                +   '<div class="' + cardClass + '" data-evt-id="' + safeId + '" style="border-left-color:' + stripColor + ';" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">'
+                +     '<div class="cal-day-agenda-card-top">'
+                +       '<div class="cal-day-agenda-title' + (completada ? ' is-strike' : '') + '">' + woEscape(ev.title) + '</div>'
+                +       '<span class="cal-day-agenda-kind" style="background:' + stripColor + ';">' + woEscape(kindLabel) + '</span>'
                 +     '</div>'
-                +   '</td>'
-                +   '<td><span class="cal-day-tbl-kind" style="color:'+stripColor+';">' + kindLabel + '</span></td>'
-                +   '<td>'
-                +     '<div class="cal-day-tbl-title' + (completada?' is-strike':'') + '">' + woEscape(ev.title) + '</div>'
-                +     (subText ? '<div class="cal-day-tbl-sub">' + woEscape(subText.substring(0,180)) + '</div>' : '')
-                +   '</td>'
-                +   '<td>'
-                +     '<div class="cal-day-tbl-owner">'
-                +       '<span class="cal-day-tbl-owner-avatar" style="background:'+stripColor+';">' + woEscape(responsableIni) + '</span>'
-                +       '<span class="cal-day-tbl-owner-name" title="' + woEscape(responsable) + '">' + woEscape(responsable) + responsableExtra + '</span>'
-                +     '</div>'
-                +   '</td>'
-                +   '<td class="cal-day-tbl-status-cell">' + statusHTML + '</td>'
-                + '</tr>';
+                +     (subText ? '<div class="cal-day-agenda-sub">' + woEscape(subText.substring(0, 180)) + '</div>' : '')
+                +     ((avatarsHTML || statusHTML) ?
+                          '<div class="cal-day-agenda-people">'
+                        +   (avatarsHTML ? '<span class="cal-day-agenda-avatars">' + avatarsHTML + '</span>' : '')
+                        +   namesHTML
+                        +   statusHTML
+                        + '</div>'
+                        : '')
+                +   '</div>'
+                + '</div>';
         });
 
-        // Si la hora actual es DESPUÉS de todos los eventos pero seguimos
-        // en el día, marcamos "ahora" al final igual.
+        // Si la hora actual es DESPUÉS de todos los eventos pero seguimos en el día,
+        // marcamos "ahora" al final igual.
         if (isToday && !nowInserted) {
             renderNowRow();
         }
 
-        html += '</tbody></table></div>';
+        html += '</div></div>';
         container.innerHTML = html;
 
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
@@ -1574,7 +1602,7 @@
        cada render y solo añade el listener si la card aún no fue bindeada. */
     function _calDayBindHoverHandlers() {
         // Acepta cards del timeline antiguo + filas <tr> de la vista tabla.
-        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id], #calDayTimeline .cal-day-table tbody tr[data-evt-id]');
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id], #calDayTimeline .cal-day-agenda-card[data-evt-id]');
         cards.forEach(function (card) {
             if (card._calHoverBound) return;
             card._calHoverBound = true;
