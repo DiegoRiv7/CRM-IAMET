@@ -15,15 +15,29 @@
             <!-- Header -->
             <div class="wo-header">
                 <div class="wo-header-top">
-                    <div>
-                        <div class="wo-type-badge runrate" id="woTypeBadge">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path
-                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                            </svg>
-                            <span id="woTypeBadgeText">VENTA RUNRATE</span>
+                    {% comment %}Bloque badge + título + botón AI a la izquierda; close X a la derecha. El orb del asistente queda inmediatamente después del título para que el user lo descubra al ver el deal.{% endcomment %}
+                    <div style="display:flex;align-items:flex-end;gap:14px;flex:1;min-width:0;">
+                        <div style="min-width:0;">
+                            <div class="wo-type-badge runrate" id="woTypeBadge">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                </svg>
+                                <span id="woTypeBadgeText">VENTA RUNRATE</span>
+                            </div>
+                            <h1 class="wo-title" id="woTitle"></h1>
                         </div>
-                        <h1 class="wo-title" id="woTitle"></h1>
+                        <button type="button" id="woBtnAsistente" class="wo-asist-btn-title"
+                            title="Asistente AI de esta oportunidad"
+                            style="background:transparent;border:none;cursor:pointer;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-bottom:6px;transition:transform 0.15s ease;"
+                            onmouseover="this.style.transform='translateY(-1px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
+                            <span class="asist-orb asist-orb--static" aria-hidden="true" style="width:34px;height:34px;">
+                                <span class="asist-orb-core"></span>
+                                <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                                <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                            </span>
+                        </button>
                     </div>
                     <button type="button" class="widget-close" id="detalleClose">&times;</button>
                 </div>
@@ -477,16 +491,7 @@
                 <!-- Dropdown de menciones -->
                 <div id="woMentionDropdown" style="display:none;position:absolute;bottom:110%;left:0;background:#fff;border:1px solid #E5E5EA;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10050;min-width:200px;max-height:200px;overflow-y:auto;"></div>
             </div>
-            {% comment %}Orb del asistente AI de Oportunidades — abre el modal del consultor en modo "oportunidad". Estático (sin animaciones); reusa el markup del orb del consultor.{% endcomment %}
-            <button type="button" id="woBtnAsistente" class="wo-asist-btn"
-                style="width:36px;height:36px;border-radius:50%;background:transparent;border:none;cursor:pointer;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;"
-                title="Asistente AI de esta oportunidad">
-                <span class="asist-orb asist-orb--static asist-orb--xs" aria-hidden="true">
-                    <span class="asist-orb-core"></span>
-                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
-                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
-                </span>
-            </button>
+            {% comment %}El orb del asistente AI vivía aquí en una versión anterior. Se movió al header del widget de oportunidad (al lado del título) para que sea descubrible sin tener que abrir la Conversación.{% endcomment %}
             <button onclick="woConvSendMessage()"
                 style="width:36px;height:36px;border-radius:50%;background:#0052D4;border:none;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;flex-shrink:0;">
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
