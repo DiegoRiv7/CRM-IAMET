@@ -546,18 +546,41 @@ def _system_prompt(opp: TodoItem, config: AsistenteConfig, user,
         'la comunicación").\n\n'
 
         '**C) "Redactar seguimiento"** — la función más usada día a día.\n'
-        'Cuando el user pide redactar correo / mensaje:\n'
-        '   - Entrégale **el correo/mensaje listo** para copiar.\n'
-        '   - Tono cordial mexicano B2B, profesional pero cercano.\n'
-        '   - Incluye **asunto** si es correo.\n'
-        '   - Si hay correos previos en el contexto, **REFERENCIA** '
-        'el último ("dando seguimiento a tu correo del [fecha]") o el '
-        'tema concreto que dejaron pendiente.\n'
+        'Cuando el user pide redactar correo / mensaje, **USA LA TOOL** '
+        '`preparar_correo_seguimiento` con asunto + cuerpo + opcional '
+        '`reply_to_correo_id` si hay correos vinculados. La tool NO '
+        'envía el correo — solo lo deja listo para que el user le dé '
+        '"Abrir correo" y revise antes de mandarlo. Reglas:\n\n'
+        '   **Asunto**:\n'
+        '   - Si NO hay correos previos en el contexto → usa el título '
+        'de la oportunidad.\n'
+        '   - Si HAY correos previos → "RE: <asunto del último correo>". '
+        'Y manda el ID del último correo en `reply_to_correo_id` para '
+        'que el composer abra como respuesta enhebrada.\n\n'
+        '   **Cuerpo**:\n'
+        '   - Texto plano, español mexicano B2B, cordial pero '
+        'profesional.\n'
+        '   - **FIRMA con el nombre del VENDEDOR responsable** (el que '
+        'aparece como "Vendedor responsable" en el contexto), NO con '
+        'el nombre del user que está chateando (puede ser un '
+        'supervisor ayudando). Ejemplo: cerrar con "Saludos,\\n'
+        'Aaron Casillas\\nIAMET".\n'
+        '   - Si hay correos previos, **referencia el contenido '
+        'específico** del último ("Siguiendo tu correo del 12 de mayo, '
+        'donde mencionaste X..."), no genérico "dando seguimiento".\n'
         '   - Adapta tono según contexto:\n'
         '     · Tiempo sin movimiento → directo, recordatorio.\n'
         '     · Cotización fresca → educado, "¿pudieron revisarla?".\n'
-        '     · Objeción en bitácora/correo → respuesta dirigida.\n'
-        '   - NO inventes datos que no estén en el contexto.\n\n'
+        '     · Objeción concreta en correo/bitácora → respuesta '
+        'dirigida a esa objeción.\n'
+        '   - NO inventes datos que no estén en el contexto.\n'
+        '   - 6-12 líneas: saludo + mensaje + cierre + firma.\n\n'
+        '   **Después de llamar la tool**: el frontend muestra una '
+        'card "Abrir correo" automáticamente. Tu respuesta de texto '
+        'debe ser corta (1-2 líneas): "Listo, te dejé el correo '
+        'preparado. Revísalo y dale Abrir para enviar." NO repitas '
+        'el cuerpo del correo en el texto del chat — ya lo verá en '
+        'la card.\n\n'
 
         '## Preguntas de seguimiento — sé el "ojo crítico" del deal\n'
         'Después de un diagnóstico ("Cómo va este deal") es COMÚN que '
@@ -825,6 +848,127 @@ def _crear_actividad_para_opp(opp: TodoItem, request_user, descripcion: str,
         return (None, f'No se pudo crear la actividad: {e}')
 
 
+def _preparar_correo_seguimiento(opp: TodoItem, asunto: str, cuerpo: str,
+                                 reply_to_correo_id=None) -> tuple[dict, str]:
+    """Prepara los datos para el composer de correo. NO envía nada —
+    solo valida y devuelve el payload estructurado que el frontend usará
+    para pre-llenar el composer. Si reply_to_correo_id está presente
+    y es válido, también devuelve el destinatario y el threading.
+
+    Returns: (payload_dict, error_str). Si error_str != '' algo falló.
+    """
+    asunto = (asunto or '').strip()
+    cuerpo = (cuerpo or '').strip()
+    if not cuerpo:
+        return (None, 'El cuerpo del correo está vacío.')
+    if not asunto:
+        # Default: título de la oportunidad
+        asunto = (opp.oportunidad or 'Seguimiento')[:200]
+
+    payload = {
+        'asunto': asunto[:255],
+        'cuerpo': cuerpo,
+        'reply_to_correo_id': None,
+        'destinatario_email': '',
+        'in_reply_to': '',
+        'asunto_referenciado': '',
+    }
+
+    # Si hay reply_to_correo_id, buscamos el correo y extraemos datos
+    # para threading + destinatario.
+    if reply_to_correo_id:
+        try:
+            ref = (MailCorreo.objects
+                   .filter(pk=int(reply_to_correo_id), oportunidad=opp)
+                   .first())
+            if ref:
+                payload['reply_to_correo_id'] = ref.id
+                payload['in_reply_to'] = ref.message_id or ''
+                payload['asunto_referenciado'] = ref.asunto or ''
+                # Si el correo referenciado fue RECIBIDO, respondemos al
+                # remitente. Si fue ENVIADO por nosotros, respondemos al
+                # destinatario original (no a nosotros mismos).
+                if ref.carpeta_display == 'SENT':
+                    try:
+                        dest_list = json.loads(ref.destinatarios_json or '[]')
+                        if dest_list and isinstance(dest_list, list):
+                            primer = dest_list[0]
+                            payload['destinatario_email'] = (
+                                primer.get('email') if isinstance(primer, dict) else str(primer)
+                            ) or ''
+                    except Exception:
+                        pass
+                else:
+                    payload['destinatario_email'] = ref.remitente_email or ''
+        except Exception as e:
+            log.warning('preparar_correo_seguimiento: lookup reply_to falló: %s', e)
+
+    # Default destinatario si no se sacó del correo previo: contacto de la opp
+    if not payload['destinatario_email'] and opp.contacto_id:
+        try:
+            payload['destinatario_email'] = opp.contacto.email or ''
+        except Exception:
+            pass
+
+    return (payload, '')
+
+
+def _tool_preparar_correo_schema() -> dict:
+    """Schema para que el AI prepare un correo de seguimiento. La tool
+    NO envía nada — solo devuelve un payload que el frontend usa para
+    abrir el composer con todo pre-llenado."""
+    return {
+        'type': 'function',
+        'function': {
+            'name': 'preparar_correo_seguimiento',
+            'description': (
+                'Prepara un correo de seguimiento al cliente con asunto '
+                'y cuerpo listos. NO lo envía — solo lo deja para que el '
+                'user le dé "Abrir correo" y revise antes de enviar. '
+                'USA esta función cuando el user pida "redacta", '
+                '"redáctame un correo", "seguimiento", "manda un correo". '
+                'Si hay correos previos vinculados a la opp, pasa el ID '
+                'del más reciente en `reply_to_correo_id` para que el '
+                'composer abra como respuesta a ese correo.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'asunto': {
+                        'type': 'string',
+                        'description': (
+                            'Asunto del correo. Si NO es respuesta a uno '
+                            'previo, usa el título de la oportunidad. Si '
+                            'es respuesta, usa "RE: <asunto original>".'
+                        ),
+                    },
+                    'cuerpo': {
+                        'type': 'string',
+                        'description': (
+                            'Cuerpo del correo en texto plano. Cordial, '
+                            'profesional, español mexicano B2B. DEBE '
+                            'firmarse con el nombre del VENDEDOR '
+                            'responsable de la opp (no con tu nombre como '
+                            'AI). Si responde a un correo previo, '
+                            'referencia su contenido específicamente. NO '
+                            'inventes datos.'
+                        ),
+                    },
+                    'reply_to_correo_id': {
+                        'type': 'integer',
+                        'description': (
+                            'ID del MailCorreo al que estás respondiendo. '
+                            'Solo si en el contexto ves correos previos '
+                            'vinculados a esta opp; pasa el más reciente.'
+                        ),
+                    },
+                },
+                'required': ['cuerpo'],
+            },
+        },
+    }
+
+
 def _tool_crear_actividad_schema() -> dict:
     """OpenAI-compatible tool schema para function calling."""
     return {
@@ -961,8 +1105,9 @@ def api_oportunidad_asistente_mensaje(request, opp_id: int):
         previous_resumen=previous_resumen,
     )
     messages = [sys_msg] + _build_context(opp)
-    tools = [_tool_crear_actividad_schema()]
+    tools = [_tool_crear_actividad_schema(), _tool_preparar_correo_schema()]
     actividad_creada = None
+    correo_preparado = None
 
     try:
         resp = chat(
@@ -978,18 +1123,48 @@ def api_oportunidad_asistente_mensaje(request, opp_id: int):
             if not tc_list:
                 break
             for tc in tc_list:
-                if tc.get('name') != 'crear_actividad_oportunidad':
-                    continue
+                tool_name = tc.get('name')
                 args = tc.get('arguments') or {}
-                actividad, err = _crear_actividad_para_opp(
-                    opp=opp,
-                    request_user=request.user,
-                    descripcion=args.get('descripcion') or '',
-                    tipo=args.get('tipo') or 'tarea',
-                    dias_desde_hoy=int(args.get('dias_desde_hoy') or 2),
-                )
-                if not err:
-                    actividad_creada = actividad
+                # Resultado por defecto
+                tool_result_payload = {'ok': False, 'error': 'tool desconocida'}
+                if tool_name == 'crear_actividad_oportunidad':
+                    actividad, err = _crear_actividad_para_opp(
+                        opp=opp,
+                        request_user=request.user,
+                        descripcion=args.get('descripcion') or '',
+                        tipo=args.get('tipo') or 'tarea',
+                        dias_desde_hoy=int(args.get('dias_desde_hoy') or 2),
+                    )
+                    if not err:
+                        actividad_creada = actividad
+                        tool_result_payload = {'ok': True, 'actividad': actividad}
+                    else:
+                        tool_result_payload = {'ok': False, 'error': err}
+                elif tool_name == 'preparar_correo_seguimiento':
+                    payload, err = _preparar_correo_seguimiento(
+                        opp=opp,
+                        asunto=args.get('asunto') or '',
+                        cuerpo=args.get('cuerpo') or '',
+                        reply_to_correo_id=args.get('reply_to_correo_id'),
+                    )
+                    if not err:
+                        correo_preparado = payload
+                        # Para el AI, solo confirmamos que se preparó —
+                        # NO le devolvemos el cuerpo (ya lo escribió).
+                        tool_result_payload = {
+                            'ok': True,
+                            'mensaje': (
+                                'Correo preparado. El user verá una '
+                                'card "Abrir correo" para revisarlo y '
+                                'enviarlo. NO repitas el cuerpo, solo '
+                                'confirma en 1 línea.'
+                            ),
+                        }
+                    else:
+                        tool_result_payload = {'ok': False, 'error': err}
+                else:
+                    continue  # tool desconocida → ignora
+
                 messages.append({
                     'role': 'assistant',
                     'content': resp.get('text') or '',
@@ -997,19 +1172,15 @@ def api_oportunidad_asistente_mensaje(request, opp_id: int):
                         'id': tc['id'],
                         'type': 'function',
                         'function': {
-                            'name': tc['name'],
+                            'name': tool_name,
                             'arguments': tc.get('arguments_str') or json.dumps(args),
                         },
                     }],
                 })
-                tool_result = (
-                    json.dumps({'ok': True, 'actividad': actividad}, default=str)
-                    if not err else json.dumps({'ok': False, 'error': err})
-                )
                 messages.append({
                     'role': 'tool',
                     'tool_call_id': tc['id'],
-                    'content': tool_result,
+                    'content': json.dumps(tool_result_payload, default=str),
                 })
             resp = chat(
                 messages=messages,
@@ -1042,6 +1213,8 @@ def api_oportunidad_asistente_mensaje(request, opp_id: int):
         payload_resp['auto_saved_resumen'] = auto_saved_resumen
     if actividad_creada:
         payload_resp['actividad_creada'] = actividad_creada
+    if correo_preparado:
+        payload_resp['correo_preparado'] = correo_preparado
     return JsonResponse(payload_resp)
 
 

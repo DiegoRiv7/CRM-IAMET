@@ -278,6 +278,12 @@
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
                 +   '</span>'
                 +   '<span class="asist-sugg-text"><strong>Próximo paso</strong><em>UNA acción urgente, lista para agendar</em></span>'
+                + '</button>'
+                + '<button type="button" class="asist-sugg-card" data-prompt="Redacta un correo de seguimiento para el cliente basado en el contexto del deal.">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Redactar seguimiento</strong><em>Un correo listo para enviar</em></span>'
                 + '</button>';
             return;
         }
@@ -940,6 +946,59 @@
         });
     }
 
+    /* ─── Card "Correo preparado" (modo oportunidad) ────────────────
+       Aparece debajo del mensaje del bot cuando el AI usó la tool
+       preparar_correo_seguimiento. Muestra el asunto, una preview del
+       cuerpo, y un botón para abrir el composer del módulo Mail con
+       todo pre-llenado. NO envía nada — siempre revisión humana. */
+    function renderCorreoPreparadoCard(correo) {
+        var box = document.getElementById('asistMessages');
+        if (!box) return;
+        var card = document.createElement('div');
+        card.className = 'asist-correo-card';
+        var asunto = correo.asunto || '(sin asunto)';
+        var preview = (correo.cuerpo || '').split('\n').filter(function (l) { return l.trim(); }).slice(0, 3).join(' · ');
+        if (preview.length > 180) preview = preview.slice(0, 177) + '...';
+        var dest = correo.destinatario_email || '';
+        card.innerHTML = ''
+            + '<div class="asist-correo-icon">'
+            +   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+            + '</div>'
+            + '<div class="asist-correo-body">'
+            +   '<div class="asist-correo-title">Correo listo para revisar</div>'
+            +   '<div class="asist-correo-asunto">' + esc(asunto) + '</div>'
+            +   (dest ? '<div class="asist-correo-dest">Para: ' + esc(dest) + '</div>' : '')
+            +   '<div class="asist-correo-preview">' + esc(preview) + '</div>'
+            + '</div>'
+            + '<div class="asist-correo-actions">'
+            +   '<button type="button" class="asist-correo-btn asist-correo-skip">Cancelar</button>'
+            +   '<button type="button" class="asist-correo-btn asist-correo-open">Abrir correo</button>'
+            + '</div>';
+        box.appendChild(card);
+        scrollToBottom();
+
+        var skip = card.querySelector('.asist-correo-skip');
+        var ok = card.querySelector('.asist-correo-open');
+        skip.addEventListener('click', function () { card.remove(); });
+        ok.addEventListener('click', function () {
+            if (typeof window.woAbrirComposerConPrellenado === 'function') {
+                window.woAbrirComposerConPrellenado(correo);
+            } else if (typeof window.woConvAbrirCorreoComposer === 'function') {
+                // Fallback al composer básico — solo prefilea asunto.
+                window.woConvAbrirCorreoComposer();
+            }
+            // Tras abrir, transformamos la card en confirmación silenciosa.
+            card.innerHTML = ''
+                + '<div class="asist-correo-icon asist-correo-icon--ok">'
+                +   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+                + '</div>'
+                + '<div class="asist-correo-body">'
+                +   '<div class="asist-correo-title">Composer abierto</div>'
+                +   '<div class="asist-correo-preview">Revisa el correo y dale Enviar cuando estés listo.</div>'
+                + '</div>';
+        });
+    }
+
     /* Frases que se rotan en el indicador "pensando" para que no sea monótono */
     var THINKING_PHRASES = [
         'Consultando datos…',
@@ -1041,6 +1100,11 @@
                 renderAgendarSeguimientoCard(finalTxt);
             }
             STATE.expectingProximoPaso = false;
+            // Card "Abrir correo" cuando el AI preparó un correo via
+            // la tool preparar_correo_seguimiento (modo oportunidad).
+            if (res.data.correo_preparado && isOportunidadMode()) {
+                renderCorreoPreparadoCard(res.data.correo_preparado);
+            }
         }).catch(function (err) {
             hideTyping();
             renderMessage('assistant', '⚠️ Error de red: ' + err);
