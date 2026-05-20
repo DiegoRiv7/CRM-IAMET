@@ -1079,14 +1079,20 @@ document.addEventListener('click', function(ev) {
             'reunion': '#92400E', 'tarea': '#34C759', 'otro': '#8E8E93'
         };
         var color = tipoColors[act.tipo] || '#8E8E93';
+        // Título compacto = nombre del prospecto (mismo criterio que el
+        // header del modal de actividad). La descripción larga vive en
+        // el modal, no aquí — antes desbordaba el layout cuando la
+        // acción era de más de 1-2 líneas.
+        var prospData = window._currentProspectoData;
+        var titulo = (prospData && prospData.nombre) ? prospData.nombre : 'Actividad';
 
         body.innerHTML =
             '<div style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0;"></div>' +
-            '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:0.8rem;font-weight:600;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(act.descripcion) + '</div>' +
-                '<div style="font-size:0.7rem;color:#86868B;display:flex;gap:6px;align-items:center;">' +
+            '<div style="flex:1;min-width:0;overflow:hidden;">' +
+                '<div style="font-size:0.8rem;font-weight:600;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(titulo) + '</div>' +
+                '<div style="font-size:0.7rem;color:#86868B;display:flex;gap:6px;align-items:center;white-space:nowrap;">' +
                     '<span style="text-transform:uppercase;font-weight:600;color:' + color + ';font-size:0.65rem;">' + escapeHtml((act.tipo || '').toUpperCase()) + '</span>' +
-                    '<span>' + escapeHtml(act.fecha_programada || '') + '</span>' +
+                    '<span style="overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(act.fecha_programada || '') + '</span>' +
                 '</div>' +
             '</div>';
         body.style.cursor = 'pointer';
