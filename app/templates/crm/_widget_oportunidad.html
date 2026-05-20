@@ -477,6 +477,16 @@
                 <!-- Dropdown de menciones -->
                 <div id="woMentionDropdown" style="display:none;position:absolute;bottom:110%;left:0;background:#fff;border:1px solid #E5E5EA;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10050;min-width:200px;max-height:200px;overflow-y:auto;"></div>
             </div>
+            {% comment %}Orb del asistente AI de Oportunidades — abre el modal del consultor en modo "oportunidad". Estático (sin animaciones); reusa el markup del orb del consultor.{% endcomment %}
+            <button type="button" id="woBtnAsistente" class="wo-asist-btn"
+                style="width:36px;height:36px;border-radius:50%;background:transparent;border:none;cursor:pointer;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;"
+                title="Asistente AI de esta oportunidad">
+                <span class="asist-orb asist-orb--static asist-orb--xs" aria-hidden="true">
+                    <span class="asist-orb-core"></span>
+                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                </span>
+            </button>
             <button onclick="woConvSendMessage()"
                 style="width:36px;height:36px;border-radius:50%;background:#0052D4;border:none;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;flex-shrink:0;">
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">

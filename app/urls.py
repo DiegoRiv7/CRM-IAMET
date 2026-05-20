@@ -19,6 +19,7 @@ from . import views_ideas
 from . import views_asistente
 from . import views_asistente_ideas
 from . import views_asistente_prospeccion
+from . import views_asistente_oportunidades
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -206,6 +207,12 @@ urlpatterns = [
     path('api/prospectos/<int:prospecto_id>/asistente/reset/', views_asistente_prospeccion.api_prospecto_asistente_reset, name='api_prospecto_asistente_reset'),
     path('api/prospectos/<int:prospecto_id>/asistente/actividad-rapida/', views_asistente_prospeccion.api_prospecto_actividad_rapida, name='api_prospecto_actividad_rapida'),
     path('api/prospecto-comentarios/<int:comentario_id>/', views.api_prospecto_comentario_detalle, name='api_prospecto_comentario_detalle'),
+    # ── Asistente AI de Oportunidades (coach táctico de cierre) ────────
+    path('api/oportunidades/<int:opp_id>/asistente/mensajes/', views_asistente_oportunidades.api_oportunidad_asistente_mensajes, name='api_oportunidad_asistente_mensajes'),
+    path('api/oportunidades/<int:opp_id>/asistente/mensaje/', views_asistente_oportunidades.api_oportunidad_asistente_mensaje, name='api_oportunidad_asistente_mensaje'),
+    path('api/oportunidades/<int:opp_id>/asistente/resumen/', views_asistente_oportunidades.api_oportunidad_asistente_resumen, name='api_oportunidad_asistente_resumen'),
+    path('api/oportunidades/<int:opp_id>/asistente/reset/', views_asistente_oportunidades.api_oportunidad_asistente_reset, name='api_oportunidad_asistente_reset'),
+    path('api/oportunidades/<int:opp_id>/asistente/actividad-rapida/', views_asistente_oportunidades.api_oportunidad_actividad_rapida, name='api_oportunidad_actividad_rapida'),
 
     # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
     path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),

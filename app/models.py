@@ -2895,6 +2895,29 @@ class ArchivoOportunidad(models.Model):
 def chat_imagen_upload_path(instance, filename):
     return f'chat/{instance.oportunidad_id}/{filename}'
 
+class OportunidadAsistenteMensaje(models.Model):
+    """Mensajes del chat con el asistente AI sobre una oportunidad
+    específica. Hilo independiente del consultor general, del
+    asistente de ideas y del de prospección. Cada oportunidad
+    mantiene su propia conversación con el coach táctico de cierre."""
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('assistant', 'Asistente'),
+    ]
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='asistente_mensajes'
+    )
+    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    contenido = models.TextField(blank=True, default='')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.oportunidad_id}:{self.role}:{self.contenido[:30]}'
+
+
 class MensajeOportunidad(models.Model):
     """Mensajes de chat/bitácora vinculados a una Oportunidad."""
     oportunidad = models.ForeignKey(

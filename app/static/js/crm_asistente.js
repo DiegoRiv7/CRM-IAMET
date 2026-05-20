@@ -61,10 +61,11 @@
         // welcome trae sugerencias específicas del modo.
         ideaCtx: null,
         prospectoCtx: null,
-        // Flag: la PRÓXIMA respuesta del asistente (en modo prospecto)
-        // debe traer la card "Agendar seguimiento" debajo. Se levanta
-        // cuando el user manda exactamente PROXIMO_PASO_PROMPT y se
-        // baja en cuanto la card se renderea.
+        oportunidadCtx: null,
+        // Flag: la PRÓXIMA respuesta del asistente (en modo prospecto
+        // o modo oportunidad) debe traer la card "Agendar seguimiento"
+        // debajo. Se levanta cuando el user manda exactamente
+        // PROXIMO_PASO_PROMPT y se baja en cuanto la card se renderea.
         expectingProximoPaso: false,
         lastAssistantText: '',
     };
@@ -78,6 +79,7 @@
         var prevCtxKey = ctxKey();
         STATE.ideaCtx = options.idea || null;
         STATE.prospectoCtx = options.prospecto || null;
+        STATE.oportunidadCtx = options.oportunidad || null;
         var nextCtxKey = ctxKey();
         // Si cambiamos de modo o de target, vaciamos mensajes y forzamos
         // recarga de historial.
@@ -111,14 +113,18 @@
     window.asistenteAbrir = openAsistente;
     window.asistenteCerrar = closeAsistente;
 
-    /* ─── Modo (general / idea / prospecto) ─── */
+    /* ─── Modo (general / idea / prospecto / oportunidad) ─── */
     function isIdeaMode() { return !!STATE.ideaCtx; }
     function isProspectoMode() { return !!STATE.prospectoCtx; }
-    function isEmbedMode() { return isIdeaMode() || isProspectoMode(); }
+    function isOportunidadMode() { return !!STATE.oportunidadCtx; }
+    function isEmbedMode() {
+        return isIdeaMode() || isProspectoMode() || isOportunidadMode();
+    }
     function ctxKey() {
         // Identidad del contexto embebido — sirve para detectar cambios.
         if (STATE.ideaCtx) return 'idea:' + STATE.ideaCtx.id;
         if (STATE.prospectoCtx) return 'prospecto:' + STATE.prospectoCtx.id;
+        if (STATE.oportunidadCtx) return 'opp:' + STATE.oportunidadCtx.id;
         return 'general';
     }
 
@@ -129,12 +135,12 @@
                 tagText.textContent = 'Idea: ' + (STATE.ideaCtx.titulo || 'sin título');
             } else if (isProspectoMode()) {
                 tagText.textContent = 'Prospecto: ' + (STATE.prospectoCtx.titulo || 'sin nombre');
+            } else if (isOportunidadMode()) {
+                tagText.textContent = 'Oportunidad: ' + (STATE.oportunidadCtx.titulo || 'sin título');
             } else {
                 tagText.textContent = 'En línea · listo para ayudarte';
             }
         }
-        // Botón "Guardar resumen": visible cuando hay contexto embebido
-        // (idea o prospecto). El consultor general no tiene resumen.
         var saveBtn = document.getElementById('asistSaveResumenBtn');
         if (saveBtn) saveBtn.style.display = isEmbedMode() ? '' : 'none';
         applyContextualSuggestions();
@@ -146,6 +152,8 @@
             return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensajes/';
         if (isProspectoMode())
             return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/mensajes/';
+        if (isOportunidadMode())
+            return '/app/api/oportunidades/' + STATE.oportunidadCtx.id + '/asistente/mensajes/';
         return '/app/api/asistente/conversacion/';
     }
     function urlSend() {
@@ -153,6 +161,8 @@
             return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/mensaje/';
         if (isProspectoMode())
             return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/mensaje/';
+        if (isOportunidadMode())
+            return '/app/api/oportunidades/' + STATE.oportunidadCtx.id + '/asistente/mensaje/';
         return '/app/api/asistente/mensaje/';
     }
     function urlReset() {
@@ -160,13 +170,18 @@
             return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/reset/';
         if (isProspectoMode())
             return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/reset/';
+        if (isOportunidadMode())
+            return '/app/api/oportunidades/' + STATE.oportunidadCtx.id + '/asistente/reset/';
         return '/app/api/asistente/conversacion/eliminar/';
     }
     function urlResumen() {
-        // Solo válido en modo embebido (idea o prospecto).
         if (isIdeaMode())
             return '/app/api/ideas/' + STATE.ideaCtx.id + '/asistente/resumen/';
-        return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/resumen/';
+        if (isProspectoMode())
+            return '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/resumen/';
+        if (isOportunidadMode())
+            return '/app/api/oportunidades/' + STATE.oportunidadCtx.id + '/asistente/resumen/';
+        return '';
     }
 
     /* ─── Config (nombre + logo + rol del user) ─── */
@@ -235,6 +250,34 @@
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'
                 +   '</span>'
                 +   '<span class="asist-sugg-text"><strong>Opinión de mi idea</strong><em>Evaluación corta y preguntas clave</em></span>'
+                + '</button>';
+            return;
+        }
+        // Modo oportunidad: 2 sugerencias predeterminadas — Cómo va este
+        // deal + Próximo paso. El user puede pedir además "Redacta un
+        // seguimiento" como tercera función pero NO la ponemos en el
+        // welcome para no abrumar; el system prompt sabe responderla.
+        if (isOportunidadMode()) {
+            var qElO = document.querySelector('#asistWelcome .asist-greeting-q');
+            if (qElO) qElO.textContent = 'Cerremos este deal';
+            var subElO = document.querySelector('#asistWelcome .asist-welcome-sub');
+            if (subElO) {
+                subElO.innerHTML = 'Pídeme <strong>cómo va este deal</strong>, '
+                    + 'el <strong>próximo paso</strong>, o pídeme que '
+                    + '<strong>redacte un seguimiento</strong>.';
+            }
+            container.innerHTML = ''
+                + '<button type="button" class="asist-sugg-card" data-prompt="¿Cómo va este deal? Dame un diagnóstico honesto con red flags y la acción más urgente.">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Cómo va este deal</strong><em>Diagnóstico + red flags + acción urgente</em></span>'
+                + '</button>'
+                + '<button type="button" class="asist-sugg-card" data-prompt="' + PROXIMO_PASO_PROMPT + '">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Próximo paso</strong><em>Qué hacer ahora para mover el deal</em></span>'
                 + '</button>';
             return;
         }
@@ -339,6 +382,8 @@
             promptText = '¿Borrar la conversación con la AI sobre esta idea? El resumen guardado en bitácora no se borra.';
         } else if (isProspectoMode()) {
             promptText = '¿Borrar la conversación con la AI sobre este prospecto? El resumen guardado en bitácora no se borra.';
+        } else if (isOportunidadMode()) {
+            promptText = '¿Borrar la conversación con la AI sobre esta oportunidad? El resumen guardado en la conversación del deal no se borra.';
         } else {
             promptText = '¿Iniciar un nuevo chat? Se perderá la conversación actual.';
         }
@@ -373,15 +418,18 @@
                 return;
             }
             if (typeof window.showFlash === 'function') {
-                window.showFlash('Resumen agregado a la bitácora');
+                var dest = isOportunidadMode() ? 'la conversación del deal' : 'la bitácora';
+                window.showFlash('Resumen agregado a ' + dest);
             }
-            // Refrescar el detalle (idea o prospecto) para que el comentario
-            // recién guardado aparezca de inmediato.
+            // Refrescar el detalle (idea / prospecto / oportunidad) para
+            // que el comentario nuevo aparezca de inmediato.
             try {
                 if (isIdeaMode() && typeof window.refreshIdeaDetalle === 'function') {
                     window.refreshIdeaDetalle(STATE.ideaCtx.id);
                 } else if (isProspectoMode() && typeof window.refreshProspectoDetalle === 'function') {
                     window.refreshProspectoDetalle(STATE.prospectoCtx.id);
+                } else if (isOportunidadMode() && typeof window.refreshOportunidadDetalle === 'function') {
+                    window.refreshOportunidadDetalle(STATE.oportunidadCtx.id);
                 }
             } catch (e) { /* silent */ }
         }).finally(function () {
@@ -831,17 +879,23 @@
             card.remove();
         });
         ok.addEventListener('click', function () {
-            if (!isProspectoMode() || !STATE.prospectoCtx) return;
+            // Endpoint según el modo embebido activo.
+            var endpoint = '';
+            if (isProspectoMode() && STATE.prospectoCtx) {
+                endpoint = '/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/actividad-rapida/';
+            } else if (isOportunidadMode() && STATE.oportunidadCtx) {
+                endpoint = '/app/api/oportunidades/' + STATE.oportunidadCtx.id + '/asistente/actividad-rapida/';
+            }
+            if (!endpoint) return;
             ok.disabled = true;
             skip.disabled = true;
             ok.textContent = 'Agendando…';
-            api('/app/api/prospectos/' + STATE.prospectoCtx.id + '/asistente/actividad-rapida/', {
+            api(endpoint, {
                 method: 'POST',
                 body: JSON.stringify({
                     descripcion: descripcion,
                     tipo: 'tarea',
-                    // Mandamos la fecha en ISO LOCAL (con offset, NO UTC)
-                    // para preservar el reloj de pared del usuario.
+                    // ISO local con offset — preserva el reloj del user.
                     fecha_iso: _toLocalIsoOffset(fecha),
                 }),
             }).then(function (res) {
@@ -856,8 +910,11 @@
                 }
                 // Reemplazamos la card por una confirmación.
                 var act = res.data.actividad || {};
-                var fechaConfirm = act.fecha_programada
-                    ? _fmtFechaSeguimiento(new Date(act.fecha_programada))
+                // El payload de prospecto trae fecha_programada; el de
+                // oportunidad trae fecha_inicio. Aceptamos ambos.
+                var fechaRaw = act.fecha_programada || act.fecha_inicio || null;
+                var fechaConfirm = fechaRaw
+                    ? _fmtFechaSeguimiento(new Date(fechaRaw))
                     : fechaTxt;
                 card.innerHTML = ''
                     + '<div class="asist-agendar-icon asist-agendar-icon--ok">'
@@ -870,11 +927,13 @@
                 if (typeof window.showFlash === 'function') {
                     window.showFlash('Seguimiento agendado para ' + fechaConfirm);
                 }
-                // Refrescamos el detalle del prospecto para que la
-                // actividad aparezca en el bloque "Actividad programada".
+                // Refrescamos el detalle (prospecto u oportunidad) para
+                // que la actividad aparezca en el bloque "Actividad".
                 try {
-                    if (typeof window.refreshProspectoDetalle === 'function') {
+                    if (isProspectoMode() && typeof window.refreshProspectoDetalle === 'function') {
                         window.refreshProspectoDetalle(STATE.prospectoCtx.id);
+                    } else if (isOportunidadMode() && typeof window.refreshOportunidadDetalle === 'function') {
+                        window.refreshOportunidadDetalle(STATE.oportunidadCtx.id);
                     }
                 } catch (e) { /* silent */ }
             });
@@ -901,7 +960,13 @@
         // Si el user pidió el "próximo paso" en modo prospecto,
         // levantamos el flag para que la próxima respuesta del AI
         // se acompañe del botón "Agendar seguimiento".
-        STATE.expectingProximoPaso = isProspectoMode() && (texto === PROXIMO_PASO_PROMPT);
+        // El flag se levanta para mostrar la card "Agendar" cuando el
+        // user pide el próximo paso en prospecto u oportunidad. Match
+        // exacto contra el prompt canónico O substring match flexible.
+        var pidiendoProxPaso = (texto === PROXIMO_PASO_PROMPT)
+            || /pr[óo]ximo\s+paso/i.test(texto);
+        STATE.expectingProximoPaso = pidiendoProxPaso
+            && (isProspectoMode() || isOportunidadMode());
 
         renderMessage('user', texto);
         var inp = document.getElementById('asistInput');
@@ -935,14 +1000,17 @@
             // (idea o prospecto) para que el comentario aparezca ya en
             // la bitácora.
             if (res.data.auto_saved_resumen && isEmbedMode()) {
+                var dest = isOportunidadMode() ? 'la conversación del deal' : 'la bitácora';
                 if (typeof window.showFlash === 'function') {
-                    window.showFlash('Resumen guardado en la bitácora · chat reiniciado');
+                    window.showFlash('Resumen guardado en ' + dest + ' · chat reiniciado');
                 }
                 try {
                     if (isIdeaMode() && typeof window.refreshIdeaDetalle === 'function') {
                         window.refreshIdeaDetalle(STATE.ideaCtx.id);
                     } else if (isProspectoMode() && typeof window.refreshProspectoDetalle === 'function') {
                         window.refreshProspectoDetalle(STATE.prospectoCtx.id);
+                    } else if (isOportunidadMode() && typeof window.refreshOportunidadDetalle === 'function') {
+                        window.refreshOportunidadDetalle(STATE.oportunidadCtx.id);
                     }
                 } catch (e) { /* silent */ }
             }
@@ -953,21 +1021,21 @@
             // (caso de instrucción directa "agéndame X"), avisamos al
             // user con un flash y refrescamos el detalle. No mostramos
             // la card de Agendar — ya se ejecutó.
-            if (res.data.actividad_creada && isProspectoMode()) {
+            if (res.data.actividad_creada && (isProspectoMode() || isOportunidadMode())) {
                 if (typeof window.showFlash === 'function') {
                     window.showFlash('Actividad agendada por el asistente');
                 }
                 try {
-                    if (typeof window.refreshProspectoDetalle === 'function') {
+                    if (isProspectoMode() && typeof window.refreshProspectoDetalle === 'function') {
                         window.refreshProspectoDetalle(STATE.prospectoCtx.id);
+                    } else if (isOportunidadMode() && typeof window.refreshOportunidadDetalle === 'function') {
+                        window.refreshOportunidadDetalle(STATE.oportunidadCtx.id);
                     }
                 } catch (e) { /* silent */ }
-                // No renderizamos la card de Agendar manual cuando la AI
-                // ya creó algo directamente.
                 STATE.expectingProximoPaso = false;
-            } else if (STATE.expectingProximoPaso && isProspectoMode() && respTexto) {
-                // Card "Agendar seguimiento" si veníamos de pedir próximo
-                // paso. Sale debajo del último mensaje del bot.
+            } else if (STATE.expectingProximoPaso && (isProspectoMode() || isOportunidadMode()) && respTexto) {
+                // Card "Agendar seguimiento" debajo del último mensaje
+                // del bot — solo cuando venimos de pedir próximo paso.
                 renderAgendarSeguimientoCard(finalTxt);
             }
             STATE.expectingProximoPaso = false;
