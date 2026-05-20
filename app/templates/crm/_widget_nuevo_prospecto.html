@@ -781,12 +781,13 @@
                         setTimeout(function() { toast.classList.remove('show'); }, 3000);
                     }
 
-                    // Abrir widget del prospecto para registrar primera actividad
+                    // Abrir widget del prospecto automáticamente tras crear.
+                    // Ya no marcamos "_pendienteProspectoSinActividad" porque
+                    // el backend genera auto-actividad al siguiente día hábil.
                     if (data.id && typeof abrirWidgetProspecto === 'function') {
                         setTimeout(function() {
                             abrirWidgetProspecto(data.id);
-                            localStorage.setItem('_pendienteProspectoSinActividad', data.id);
-                        }, 500);
+                        }, 300);
                     }
 
                     // Flujo automático desde click en marca (campañas)

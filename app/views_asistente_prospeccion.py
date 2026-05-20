@@ -1159,3 +1159,86 @@ def _tool_preparar_correo_schema():
             },
         },
     }
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_prospecto_redactar_correo_directo(request, prospecto_id: int):
+    """Atajo: el frontend dispara este endpoint desde el botón "Nuevo
+    correo" del widget del prospecto y obtiene un correo redactado
+    LISTO para abrir en el composer — sin pasar por el chat UI.
+
+    Bajo el cofre hace 1 sola llamada al LLM con la tool
+    `preparar_correo_seguimiento_prospecto`. Si el LLM responde con la
+    tool, devolvemos el payload `correo_preparado` directo. Si no
+    devuelve la tool (raro), devolvemos error 502.
+
+    NO guarda mensajes en el hilo del asistente — es un disparo
+    sincrónico, no parte de una conversación.
+    """
+    p, access = _get_prospecto_with_access(prospecto_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Prospecto no encontrado.'}, status=404)
+    if access == 'no_access':
+        return JsonResponse({'ok': False, 'error': 'Sin permisos.'}, status=403)
+    cfg = AsistenteConfig.get_singleton()
+    if not cfg.activo:
+        return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
+
+    # Reusamos el system prompt completo del chat (con todo el contexto
+    # del prospecto: actividad, comentarios, correos, cliente) pero NO
+    # incluimos historial — es disparo independiente, no conversación.
+    sys_msg = _system_prompt(
+        p, cfg, request.user,
+        turn_number=1,
+        previous_resumen='',
+    )
+    user_msg = {
+        'role': 'user',
+        'content': (
+            'Redacta un correo de seguimiento para el cliente del '
+            'prospecto basándote en el contexto completo: comentarios, '
+            'actividades, correos previos vinculados, info del cliente '
+            'y contacto. Usa la tool preparar_correo_seguimiento_prospecto '
+            'para entregar asunto y cuerpo finales. No me respondas con '
+            'texto suelto — solo dispara la tool.'
+        ),
+    }
+    messages = [sys_msg, user_msg]
+    tools = [_tool_preparar_correo_schema()]
+
+    try:
+        resp = chat(
+            messages=messages,
+            tools=tools,
+            model=cfg.modelo,
+            temperature=0.5,
+            max_tokens=900,
+        )
+    except AsistenteError as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=502)
+    except Exception as e:
+        log.exception('Error en redactar correo directo: %s', e)
+        return JsonResponse({'ok': False, 'error': f'Error inesperado: {e}'}, status=500)
+
+    tc_list = resp.get('tool_calls') or []
+    for tc in tc_list:
+        if tc.get('name') != 'preparar_correo_seguimiento_prospecto':
+            continue
+        args = tc.get('arguments') or {}
+        payload = _preparar_correo_seguimiento_prosp(
+            prospecto=p,
+            asunto=args.get('asunto') or '',
+            cuerpo=args.get('cuerpo') or '',
+            reply_to_correo_id=args.get('reply_to_correo_id'),
+            vendedor=p.usuario,
+        )
+        return JsonResponse({'ok': True, 'correo_preparado': payload})
+
+    # Si el LLM no llamó la tool, devolvemos su texto como fallback.
+    txt = (resp.get('text') or '').strip()
+    return JsonResponse({
+        'ok': False,
+        'error': 'El asistente no preparó un correo (no llamó la tool).',
+        'texto': txt,
+    }, status=502)

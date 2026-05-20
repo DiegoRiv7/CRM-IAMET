@@ -206,6 +206,7 @@ urlpatterns = [
     path('api/prospectos/<int:prospecto_id>/asistente/resumen/', views_asistente_prospeccion.api_prospecto_asistente_resumen, name='api_prospecto_asistente_resumen'),
     path('api/prospectos/<int:prospecto_id>/asistente/reset/', views_asistente_prospeccion.api_prospecto_asistente_reset, name='api_prospecto_asistente_reset'),
     path('api/prospectos/<int:prospecto_id>/asistente/actividad-rapida/', views_asistente_prospeccion.api_prospecto_actividad_rapida, name='api_prospecto_actividad_rapida'),
+    path('api/prospectos/<int:prospecto_id>/asistente/redactar-correo-directo/', views_asistente_prospeccion.api_prospecto_redactar_correo_directo, name='api_prospecto_redactar_correo_directo'),
     path('api/prospecto-comentarios/<int:comentario_id>/', views.api_prospecto_comentario_detalle, name='api_prospecto_comentario_detalle'),
     # ── Asistente AI de Oportunidades (coach táctico de cierre) ────────
     path('api/oportunidades/<int:opp_id>/asistente/mensajes/', views_asistente_oportunidades.api_oportunidad_asistente_mensajes, name='api_oportunidad_asistente_mensajes'),

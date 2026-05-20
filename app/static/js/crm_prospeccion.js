@@ -1654,17 +1654,57 @@ document.addEventListener('click', function(ev) {
     }
     window.wpAbrirComposerConPrellenado = wpAbrirComposerConPrellenado;
 
-    // Botón "Nuevo correo" en el widget del prospecto → composer en blanco
-    // con destinatario prellenado al email del cliente/contacto del prospecto.
+    // Botón "Nuevo correo" — atajo que dispara la AI DIRECTAMENTE y
+    // abre el composer con todo redactado. NO abre el chat del AI.
+    // Bajo el cofre: llamamos al endpoint /redactar-correo-directo/
+    // que internamente ejecuta 1 sola llamada al LLM con la tool de
+    // redacción y devuelve el payload listo.
     document.addEventListener('click', function(e) {
-        if (e.target.id === 'wpNuevoCorreo' || e.target.closest && e.target.closest('#wpNuevoCorreo')) {
+        var btn = e.target.closest && e.target.closest('#wpNuevoCorreo');
+        if (!btn && e.target.id !== 'wpNuevoCorreo') return;
+        var pid = window._currentProspectoId;
+        if (!pid) return;
+        // Feedback visual: deshabilita el botón mientras la AI redacta.
+        var origLabel = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.innerHTML = '<span style="font-size:0.75rem;">Redactando…</span>';
+        }
+        fetch('/app/api/prospectos/' + pid + '/asistente/redactar-correo-directo/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({}),
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.innerHTML = origLabel;
+            }
+            if (!data || !data.ok) {
+                // Fallback: abrir composer en blanco para que el user redacte solo.
+                var prospData = window._currentProspectoData || {};
+                wpAbrirComposerConPrellenado({
+                    asunto: '',
+                    cuerpo: '',
+                    destinatario_email: prospData.cliente_email || prospData.contacto_email || '',
+                });
+                return;
+            }
+            wpAbrirComposerConPrellenado(data.correo_preparado || {});
+        }).catch(function() {
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.innerHTML = origLabel;
+            }
             var prospData = window._currentProspectoData || {};
             wpAbrirComposerConPrellenado({
                 asunto: '',
                 cuerpo: '',
                 destinatario_email: prospData.cliente_email || prospData.contacto_email || '',
             });
-        }
+        });
     });
 
     // Nota: el flujo de cotización para prospectos (botón antiguo wpNuevaCot)

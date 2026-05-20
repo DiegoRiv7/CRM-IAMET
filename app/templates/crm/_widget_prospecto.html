@@ -373,11 +373,8 @@ Al cerrar el modal, si se creó al menos una, el prospecto pasa a cerrado_ganado
                         </select>
                     </div>
 
-                    <div>
-                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Monto (MXN)</label>
-                        <input type="number" id="wcoMonto" placeholder="0.00" step="0.01" min="0"
-                            style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.88rem;font-family:inherit;outline:none;">
-                    </div>
+                    {% comment %}Monto eliminado del form — el monto real se captura cuando se crea la cotización dentro de la oportunidad.{% endcomment %}
+                    <input type="hidden" id="wcoMonto" value="0">
                     <div>
                         <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Tipo de pipeline <span style="color:#EF4444;">*</span></label>
                         <select id="wcoTipoNeg" required style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">
