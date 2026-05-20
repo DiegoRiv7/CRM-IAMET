@@ -273,7 +273,7 @@
                 +   '</span>'
                 +   '<span class="asist-sugg-text"><strong>Cómo va este deal</strong><em>Diagnóstico + errores + recomendaciones</em></span>'
                 + '</button>'
-                + '<button type="button" class="asist-sugg-card" data-prompt="Dime UNA sola acción — la más urgente que detectes en el contexto (correos sin responder, tareas vencidas, cotizaciones sin seguimiento, etc.) — lista para que la agende en el calendario.">'
+                + '<button type="button" class="asist-sugg-card" data-prompt="¿Cuál es el próximo paso urgente para este deal?">'
                 +   '<span class="asist-sugg-icon">'
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
                 +   '</span>'
