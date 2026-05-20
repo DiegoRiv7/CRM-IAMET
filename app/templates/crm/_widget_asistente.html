@@ -794,6 +794,15 @@ un icono estático. Saludo personalizado con first_name del user.
     grid-template-columns: minmax(260px, 360px);
     justify-content: center;
 }
+/* Cuando hay exactamente 3 cards (modo oportunidad: Cómo va · Próximo
+   paso · Redactar seguimiento), la tercera se CENTRA en su propia
+   fila — en lugar de quedar alineada a la izquierda dejando un hueco
+   donde "faltaría" una cuarta card. */
+.asist-suggestions:has(> .asist-sugg-card:nth-child(3):last-child) > .asist-sugg-card:nth-child(3) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 5px);
+}
 .asist-sugg-card {
     display: flex; align-items: center; gap: 12px;
     padding: 12px 14px;
