@@ -309,6 +309,12 @@
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>'
                 +   '</span>'
                 +   '<span class="asist-sugg-text"><strong>Sugerencias para la prospección</strong><em>Opciones para destrabar y cerrar</em></span>'
+                + '</button>'
+                + '<button type="button" class="asist-sugg-card" data-prompt="Redacta un correo de seguimiento para el cliente basado en el contexto del prospecto.">'
+                +   '<span class="asist-sugg-icon">'
+                +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+                +   '</span>'
+                +   '<span class="asist-sugg-text"><strong>Redactar correo</strong><em>Un seguimiento listo para enviar</em></span>'
                 + '</button>';
             return;
         }
@@ -981,10 +987,12 @@
         var ok = card.querySelector('.asist-correo-open');
         skip.addEventListener('click', function () { card.remove(); });
         ok.addEventListener('click', function () {
-            if (typeof window.woAbrirComposerConPrellenado === 'function') {
+            // Modo prospecto vs oportunidad → composer distinto.
+            if (isProspectoMode() && typeof window.wpAbrirComposerConPrellenado === 'function') {
+                window.wpAbrirComposerConPrellenado(correo);
+            } else if (typeof window.woAbrirComposerConPrellenado === 'function') {
                 window.woAbrirComposerConPrellenado(correo);
             } else if (typeof window.woConvAbrirCorreoComposer === 'function') {
-                // Fallback al composer básico — solo prefilea asunto.
                 window.woConvAbrirCorreoComposer();
             }
             // Tras abrir, transformamos la card en confirmación silenciosa.
@@ -1102,7 +1110,7 @@
             STATE.expectingProximoPaso = false;
             // Card "Abrir correo" cuando el AI preparó un correo via
             // la tool preparar_correo_seguimiento (modo oportunidad).
-            if (res.data.correo_preparado && isOportunidadMode()) {
+            if (res.data.correo_preparado && (isOportunidadMode() || isProspectoMode())) {
                 renderCorreoPreparadoCard(res.data.correo_preparado);
             }
         }).catch(function (err) {
