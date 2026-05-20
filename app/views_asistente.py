@@ -31,7 +31,7 @@ from .asistente_tools import execute_tool, tools_for_user
 log = logging.getLogger(__name__)
 
 # Tope de iteraciones tool-use → respuesta. Evita loops infinitos.
-MAX_TOOL_ITERATIONS = 6
+MAX_TOOL_ITERATIONS = 8
 
 
 def _get_or_create_conv(user):
@@ -80,18 +80,22 @@ def _user_context_block(user) -> str:
     """
     from .models import TodoItem, UserProfile
     from django.utils import timezone
+    from .views_utils import is_supervisor as _is_sup
 
     full = user.get_full_name() or user.username
     first = (user.first_name or user.username).strip()
     last = (user.last_name or '').strip()
     # Rol
-    rol_display = 'vendedor'
+    rol_raw = 'vendedor'
+    rol_display = 'Vendedor'
     try:
         prof = UserProfile.objects.filter(user=user).first()
         if prof and prof.rol:
-            rol_display = prof.get_rol_display() if hasattr(prof, 'get_rol_display') else str(prof.rol)
+            rol_raw = str(prof.rol)
+            rol_display = prof.get_rol_display() if hasattr(prof, 'get_rol_display') else rol_raw
     except Exception:
         pass
+    es_supervisor = bool(_is_sup(user) or user.is_superuser)
     # Oportunidades activas del user
     try:
         opp_activas = TodoItem.objects.filter(usuario=user).exclude(
@@ -106,6 +110,51 @@ def _user_context_block(user) -> str:
                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     fecha_str = f'{meses_es[now.month]} {now.year}'
 
+    # ── Scope por rol — regla dura que el AI debe respetar ──────────────
+    if es_supervisor:
+        scope_block = (
+            '\n## Alcance del usuario (rol)\n'
+            f'- {first} es **supervisor / administrador**. Puede ver datos de '
+            'TODO el equipo: cualquier vendedor, cualquier cliente, cualquier '
+            'oportunidad. Las tools devuelven la empresa completa.\n'
+            '- Cuando pregunte "rendimiento del equipo", "cómo va Ana", '
+            '"clientes sin atender", etc., responde con la visión global.\n'
+            '- El rendimiento del equipo lista SOLO usuarios con rol '
+            '"vendedor"; supervisores e ingenieros no aparecen en esa tabla '
+            '(la tool ya los excluye).\n'
+        )
+    else:
+        scope_block = (
+            '\n## Alcance del usuario (rol)\n'
+            f'- {first} es **{rol_display.lower()}**, NO supervisor. Las tools '
+            'devuelven SOLO sus datos: sus oportunidades, sus clientes, sus '
+            'cotizaciones, sus tareas. NO tiene visibilidad de otros '
+            'vendedores ni del equipo completo.\n'
+            '- Cuando pregunte "cómo voy", "mi mes", "mi forecast", "mis '
+            'clientes sin atender", "mi rendimiento" → responde con SUS '
+            'datos personales. Habla en segunda persona ("tú cerraste", '
+            '"te falta", "te recomiendo").\n'
+            '- Si pide info del equipo, de otro vendedor, o rankings entre '
+            'vendedores → recházalo con cortesía explicando que esa vista '
+            'es solo para supervisores. Sugiere reformular en términos '
+            'personales ("¿quieres que veamos cómo vas tú este mes?").\n'
+            '- **NUNCA llames `rendimiento_equipo_completo`** — esa tool '
+            'requiere ser supervisor y va a devolver error.\n'
+            '- **"Mi rendimiento" / "cómo voy" tool routing**: para '
+            'preguntas sobre el propio desempeño usa `detalle_vendedor` '
+            f'con `vendedor_username="{user.username}"` — devuelve pipeline '
+            'activo, opp creadas/ganadas del mes y año, monto generado y '
+            'clientes asignados. Combínalo con `actividades_pendientes` '
+            'para mencionar tareas vencidas/pendientes. NO uses la '
+            'plantilla `rendimiento_equipo_completo` (tabla del equipo); '
+            'arma una mini-evaluación personal en bullets + KPI cards.\n'
+            '- Tono: actúa como su **coach de ventas personal**. Cuando los '
+            'números estén bajos, da 2-3 consejos prácticos para mejorar '
+            '(prospección, seguimiento, priorización). Cuando los números '
+            'estén bien, reconócelo en una línea breve y sugiere el '
+            'siguiente paso para empujar más.\n'
+        )
+
     return (
         f'\n\n## Contexto del usuario actual\n'
         f'- Nombre: **{full}** (puedes llamarle "{first}" en conversación informal)\n'
@@ -113,6 +162,7 @@ def _user_context_block(user) -> str:
         f'- Rol: {rol_display}\n'
         f'- Oportunidades activas a su nombre: {opp_activas}\n'
         f'- Fecha de hoy: {fecha_str}\n'
+        + scope_block
     )
 
 
@@ -358,7 +408,77 @@ def _system_prompt(user, config: AsistenteConfig) -> dict:
         '- Números buenos: una línea de reconocimiento breve. Números malos: '
         'sé honesto pero constructivo ("este mes fue retador; el pipeline '
         'sigue sólido para junio").\n'
-        '- Si te preguntan algo fuera del CRM, redirige con cortesía.\n'
+        '- Si te preguntan algo fuera del CRM, redirige con cortesía.\n\n'
+
+        '## Conocimiento del CRM (módulos disponibles)\n'
+        'El CRM tiene varias secciones además del pipeline de ventas. '
+        'Conocerlas te permite dar consejos completos, no solo análisis de '
+        'números. Cuando una pregunta encaje, MENCIONA la sección por nombre '
+        'para que el user sepa adónde ir.\n\n'
+        '- **Oportunidades** (`?tab=crm`): pipeline principal donde se '
+        'crean, mueven entre etapas y cierran las ventas. Aquí viven los '
+        'datos que devuelven la mayoría de tus tools.\n'
+        '- **Dashboard / Clientes** (`?tab=clientes`): KPIs visuales de '
+        'facturación y cobranza por mes, con los archivos Excel/CSV que '
+        'admin sube. Es la fuente real de "facturado" y "cobrado".\n'
+        '- **Calendario** (`?tab=calendario`): actividades, llamadas, '
+        'visitas, juntas. Cuando hables de "agenda" o "tareas vencidas", '
+        'sugiere ir al calendario para reagendar.\n'
+        '- **Marketing Hub** (`?tab=marketing`): contiene recursos para '
+        'apoyar la venta. Subsecciones:\n'
+        '  - **Eventos** (`?tab=prospeccion&vista=eventos`): expos, demos '
+        'y eventos donde IAMET participa o invita clientes. Útil para '
+        'invitar clientes dormidos o prospects calientes.\n'
+        '  - **Certificaciones** (`?tab=prospeccion&vista=certificaciones`): '
+        'certificaciones de marcas (Zebra, Panduit, APC, etc.) que valen '
+        'como argumento de venta técnica.\n'
+        '  - **Cursos** (`?tab=prospeccion&vista=cursos`): capacitaciones '
+        'para clientes — gancho clásico para reactivar cuentas.\n'
+        '  - **Campañas** (`?tab=prospeccion&vista=campanas`): listas de '
+        'clientes/prospectos para campañas de seguimiento dirigido.\n'
+        '- **Prospección / Ideas** (`?tab=ideas`): kanban de leads y '
+        'ideas tempranas que aún no son oportunidades.\n'
+        '- **Tareas / Proyectos**: gestión post-venta cuando una opp se '
+        'convierte en proyecto entregable.\n\n'
+        '## Cuándo recomendar Marketing\n'
+        'Cuando un vendedor tenga problemas que el dato sugiera (números '
+        'bajos, muchos clientes sin atender, pocas opp nuevas, mes flojo), '
+        'sugiérele de forma natural un recurso de Marketing como acción '
+        'concreta. Ejemplos:\n'
+        '- Muchos clientes sin atender → "Hay un evento próximo en '
+        'Marketing → Eventos al que podrías invitar a los 3 más valiosos '
+        'para reactivar la conversación."\n'
+        '- Pocas opp nuevas → "Revisa Marketing → Campañas para lanzar '
+        'una campaña dirigida a tu cartera dormida."\n'
+        '- Cliente técnico difícil → "Considera ofrecerle un curso o '
+        'certificación (Marketing → Cursos / Certificaciones); les abre '
+        'la puerta a hablar de proyectos más grandes."\n'
+        '- Mes flojo en general → "Aprovecha los recursos del Marketing '
+        'Hub para reactivar — eventos y campañas suelen mover '
+        'oportunidades dormidas."\n'
+        'NO inventes nombres de eventos/cursos específicos (no tienes esa '
+        'tool); habla solo de la SECCIÓN del CRM donde están.\n\n'
+
+        '## Respondiendo fuera de plantilla\n'
+        'Las plantillas (resumen, forecast, rendimiento, clientes sin '
+        'atender) son SOLO para las 4 preguntas iniciales típicas. Para '
+        'cualquier otra pregunta — operativa, conceptual, hipotética, '
+        'consejos generales, preguntas abiertas — responde con **tu '
+        'criterio y conocimiento del CRM**:\n'
+        '- Si la respuesta necesita un dato del CRM → llama la tool que '
+        'mejor encaje (`oportunidades_por_periodo`, `historico_cliente`, '
+        '`actividades_pendientes`, `buscar_cliente`, `detalle_vendedor` con '
+        'tu propio username, etc.). NUNCA te quedes pidiendo más tools '
+        'cuando ya tienes la información — RESPONDE.\n'
+        '- Si la pregunta es un consejo o pregunta abierta sin necesidad '
+        'de tool → responde directamente con tu experiencia de ventas '
+        '(prospección, manejo de objeciones, seguimiento, técnicas de '
+        'cierre). NO digas "no puedo responder" si puedes razonar.\n'
+        '- Si no entiendes lo que pide → haz UNA pregunta de aclaración, '
+        'no múltiples llamadas a tools.\n'
+        '- Límite duro: si después de 2 tools no llegas a la respuesta, '
+        'SAL del loop y responde con lo que tengas + pregunta concreta '
+        'para destrabar.\n'
     )
     return {'role': 'system', 'content': base + _user_context_block(user)}
 
@@ -628,10 +748,39 @@ def api_asistente_mensaje(request):
             # Siguiente iteración: el modelo verá los resultados y responderá.
         else:
             # Salió del for sin break → llegó al tope sin texto final.
-            final_text = (
-                'Lo siento, no pude llegar a una respuesta después de varias '
-                'consultas. Intenta reformular tu pregunta.'
-            )
+            # Último intento: pedir respuesta SIN tools, forzando que el
+            # modelo redacte algo con lo que ya tiene en contexto en vez
+            # de seguir pidiendo herramientas.
+            try:
+                context_msgs = _build_context(conv, cfg)
+                forced_hint = {
+                    'role': 'system',
+                    'content': (
+                        'Ya consultaste varias herramientas. AHORA responde '
+                        'al user en lenguaje natural con lo que sepas, lo '
+                        'que ya consultaste y tu criterio. NO pidas más '
+                        'tools. Si te falta un dato, dilo y sugiere cómo '
+                        'el user puede precisar la pregunta.'
+                    ),
+                }
+                messages = [sys_msg] + context_msgs + [forced_hint]
+                resp = chat(
+                    messages=messages,
+                    tools=None,
+                    model=cfg.modelo,
+                    temperature=0.4,
+                    max_tokens=900,
+                )
+                final_text = (resp.get('text') or '').strip()
+            except Exception:
+                final_text = ''
+            if not final_text:
+                final_text = (
+                    'Llegué al límite de consultas sin armar una respuesta '
+                    'clara. ¿Puedes precisar un poco más la pregunta? '
+                    '(Por ejemplo: el periodo, el cliente o el vendedor '
+                    'concreto.)'
+                )
             MensajeAsistente.objects.create(
                 conversacion=conv, role='assistant', contenido=final_text,
             )

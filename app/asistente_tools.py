@@ -34,17 +34,18 @@ log = logging.getLogger(__name__)
 # ─── Helpers de visibilidad ────────────────────────────────────────────
 
 def _visible_user_ids(user: User) -> list[int] | None:
-    """Devuelve los user_ids cuyos datos el `user` actual PUEDE ver.
-    None = sin restricción (admin / supervisor global).
+    """Devuelve los user_ids cuyos datos el `user` actual PUEDE ver
+    DESDE EL ASISTENTE.
+
+    - Supervisor / superuser → None (sin restricción, ve todo).
+    - Cualquier otro rol (vendedor, ingeniero, administrador) → solo
+      sus propios datos. A diferencia de la visibilidad general del CRM,
+      el asistente NO comparte data entre compañeros de grupo: cada
+      usuario solo recibe su info personal cuando le pregunta a la AI.
     """
     if is_supervisor(user) or user.is_superuser:
         return None
-    try:
-        from .views_grupos import get_usuarios_visibles_ids
-        ids = get_usuarios_visibles_ids(user)
-        return list(ids) if ids else [user.id]
-    except Exception:
-        return [user.id]
+    return [user.id]
 
 
 def _filter_by_visibilidad(qs, user, user_field='usuario'):
@@ -807,11 +808,18 @@ def _tool_detalle_oportunidad(args: dict, user: User) -> dict:
 # 8. Perfil / desempeño de un vendedor
 def _tool_detalle_vendedor(args: dict, user: User) -> dict:
     """Perfil de un vendedor: opp activas, ganadas/perdidas del mes y del año,
-    clientes asignados, monto generado. Solo supervisores y admins."""
-    if not (is_supervisor(user) or user.is_superuser):
-        return {'error': 'Solo supervisores y admins pueden ver el perfil completo de un vendedor.'}
+    clientes asignados, monto generado.
 
+    - Supervisor / admin → puede consultar a cualquiera.
+    - Cualquier otro rol → SOLO puede consultar su propio perfil
+      (sirve para "mi rendimiento", "cómo voy yo").
+    """
+    es_sup = bool(is_supervisor(user) or user.is_superuser)
     vendedor = (args.get('vendedor_username') or args.get('vendedor') or '').strip()
+    # Default: si no es supervisor y no manda username, asume que pregunta
+    # por sí mismo.
+    if not es_sup and not vendedor:
+        vendedor = user.username
     if not vendedor:
         return {'error': 'Falta el username del vendedor.'}
     try:
@@ -826,6 +834,11 @@ def _tool_detalle_vendedor(args: dict, user: User) -> dict:
             target = qs.first()
         if not target:
             return {'error': f'No encuentro al vendedor "{vendedor}".'}
+
+    # Sin permisos para ver a otro: si no es supervisor, solo puede
+    # consultar su propio perfil.
+    if not es_sup and target.id != user.id:
+        return {'error': 'Solo puedes consultar tu propio rendimiento, no el de otros vendedores.'}
 
     ahora = timezone.now()
     inicio_mes = timezone.make_aware(
@@ -1437,7 +1450,19 @@ def _tool_rendimiento_equipo_completo(args: dict, user: User) -> dict:
     if not user_ids:
         return {'error': 'No hay vendedores en tu visibilidad.'}
 
-    vendedores = list(User.objects.filter(id__in=user_ids, is_active=True).order_by('first_name', 'last_name'))
+    # Solo usuarios con rol explícito "vendedor" en UserProfile. Supervisores,
+    # ingenieros y administradores NO entran al reporte de rendimiento — la
+    # tabla mide al equipo comercial, no a roles de apoyo.
+    vendedor_user_ids = set(
+        UserProfile.objects.filter(rol='vendedor', user_id__in=user_ids)
+        .values_list('user_id', flat=True)
+    )
+    vendedores = list(
+        User.objects.filter(id__in=vendedor_user_ids, is_active=True)
+        .order_by('first_name', 'last_name')
+    )
+    if not vendedores:
+        return {'error': 'No hay usuarios con rol "vendedor" en tu visibilidad.'}
 
     # ── Precarga: entries de facturación/cobro del mes ─────────────────
     fact_entries = []

@@ -102,15 +102,12 @@ Detalle de Idea — layout estilo widget de Prospección:
                             <div style="flex:1;background:#F2F2F7;border:1px solid #E5E5EA;border-radius:18px;padding:0;display:flex;align-items:center;">
                                 <textarea id="wiComentarioInput" rows="1" placeholder="Escribe un comentario..." style="flex:1;background:none;border:none;padding:9px 14px;font-size:0.9rem;resize:none;outline:none;font-family:inherit;max-height:100px;line-height:1.4;width:100%;"></textarea>
                             </div>
-                            <button type="button" id="wiBrainBtn" class="idea-brain-btn" title="Asistente AI (próximamente)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/>
-                                    <path d="M19 9.3V6.5a3.5 3.5 0 0 0 -7 0"/>
-                                    <path d="M6.5 16a3.5 3.5 0 0 1 0-7h.5"/>
-                                    <path d="M17.5 16a3.5 3.5 0 0 0 0-7h-.5"/>
-                                    <path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5V19a3 3 0 0 1-6 0"/>
-                                    <path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5V19a3 3 0 0 0 6 0"/>
-                                </svg>
+                            <button type="button" id="wiBrainBtn" class="idea-brain-btn idea-brain-btn--orb" title="Abrir asistente AI de esta idea">
+                                <span class="asist-orb asist-orb--static asist-orb--xs" aria-hidden="true">
+                                    <span class="asist-orb-core"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                                </span>
                             </button>
                             <button type="button" id="wiComentarBtn" title="Enviar" style="width:38px;height:38px;border-radius:50%;background:#0052D4;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -206,6 +203,42 @@ Detalle de Idea — layout estilo widget de Prospección:
 }
 .idea-brain-btn svg { width: 18px; height: 18px; }
 
+/* Variante --orb: el contenido es el orb estático del asistente
+   (mismo gradient/agua) sin fondo extra para que el orb mande la
+   estética del botón. */
+.idea-brain-btn--orb {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+.idea-brain-btn--orb:hover {
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+.idea-brain-btn--orb .asist-orb { width: 30px; height: 30px; }
+/* Orb estático: snapshot del orb animado. Apagamos animaciones pero
+   APLICAMOS los transforms base de los keyframes (rotateZ/rotateX) para
+   que los dos anillos sigan viéndose como X 3D cruzada. Sin esto los
+   anillos aparecen como círculos planos con un solo arco coloreado y
+   el orb se ve "vacío". Halo más chico y sin pulsación. */
+.asist-orb--static .asist-orb-core,
+.asist-orb--static .asist-orb-ring,
+.asist-orb--static.asist-orb::before {
+    animation: none !important;
+}
+.asist-orb--static .asist-orb-ring--horiz {
+    transform: rotateZ(45deg) rotateX(72deg) rotate(30deg);
+}
+.asist-orb--static .asist-orb-ring--vert {
+    transform: rotateZ(-45deg) rotateX(72deg) rotate(-30deg);
+}
+.asist-orb--static.asist-orb::before {
+    inset: -16%;
+    opacity: 0.55;
+}
+.asist-orb--xs { width: 28px; height: 28px; }
+
 /* Burbujas de comentarios estilo chat (similar a oportunidad) */
 .idea-msg {
     display: flex; gap: 10px; align-items: flex-start;
@@ -238,6 +271,68 @@ Detalle de Idea — layout estilo widget de Prospección:
 .idea-msg-empty {
     font-size: 0.84rem; color: #9CA3AF; font-style: italic;
     text-align: center; padding: 20px 0;
+}
+
+/* Menú de 3 puntos en cada comentario (editar / eliminar). El menú
+   aparece al hacer hover sobre el comentario o al darle al botón. */
+.idea-msg-body { position: relative; }
+.idea-msg-menu-btn {
+    position: absolute; top: 6px; right: 6px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: transparent; border: none; cursor: pointer;
+    color: #94A3B8;
+    display: inline-flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s ease, background 0.12s ease;
+}
+.idea-msg:hover .idea-msg-menu-btn { opacity: 1; }
+.idea-msg-menu-btn:hover { background: #E2E8F0; color: #475569; }
+.idea-msg-menu-btn svg { width: 14px; height: 14px; }
+.idea-msg-menu {
+    position: absolute; top: 30px; right: 4px;
+    min-width: 130px;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 10px;
+    box-shadow: 0 8px 24px -8px rgba(15,23,42,0.20);
+    padding: 4px;
+    z-index: 30;
+}
+.idea-msg-menu button {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 7px 10px;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 0.78rem; color: #1E293B; text-align: left;
+    border-radius: 6px;
+    font-family: inherit;
+}
+.idea-msg-menu button:hover { background: #F1F5F9; }
+.idea-msg-menu button.idea-msg-menu-danger { color: #DC2626; }
+.idea-msg-menu button.idea-msg-menu-danger:hover { background: #FEF2F2; }
+.idea-msg-menu svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* Edición inline: textarea reemplaza al .idea-msg-text */
+.idea-msg-edit-area {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid #6366F1; border-radius: 8px;
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 0.86rem; color: #1D1D1F;
+    background: #fff;
+    resize: vertical;
+    outline: none;
+}
+.idea-msg-edit-actions {
+    display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end;
+}
+.idea-msg-edit-actions button {
+    padding: 5px 11px; font-size: 0.72rem; font-weight: 600;
+    border-radius: 12px; border: 1px solid transparent; cursor: pointer;
+    font-family: inherit;
+}
+.idea-msg-edit-actions .idea-msg-edit-cancel {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.idea-msg-edit-actions .idea-msg-edit-save {
+    color: #fff; background: #0052D4; border-color: #0052D4;
 }
 
 /* Estilos de click-to-edit */

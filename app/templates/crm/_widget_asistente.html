@@ -28,13 +28,22 @@ un icono estático. Saludo personalizado con first_name del user.
                     <div class="asist-name" id="asistName">IAMET AI
                         <span class="asist-beta">BETA</span>
                     </div>
-                    <div class="asist-tagline">
+                    <div class="asist-tagline" id="asistTagline">
                         <span class="asist-status-dot"></span>
-                        En línea · listo para ayudarte
+                        <span id="asistTaglineText">En línea · listo para ayudarte</span>
                     </div>
                 </div>
             </div>
             <div class="asist-header-right">
+                {% comment %}Botón "Guardar resumen": solo visible en modo idea (lo muestra el JS cuando se llama asistenteAbrir({idea}). Inserta el resumen de la conversación como IdeaComentario en la bitácora de la idea.{% endcomment %}
+                <button type="button" class="asist-new-chat-btn asist-save-resumen-btn" id="asistSaveResumenBtn" style="display:none;" title="Guardar resumen de la conversación en la bitácora de la idea">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span>Guardar resumen</span>
+                </button>
                 <button type="button" class="asist-new-chat-btn" id="asistNewChatBtn" title="Nuevo chat (limpia la conversación)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 20h9"/>
@@ -409,6 +418,17 @@ un icono estático. Saludo personalizado con first_name del user.
 }
 .asist-new-chat-btn svg { flex-shrink: 0; }
 
+/* Variante para "Guardar resumen" (verde) — solo visible en modo idea. */
+.asist-save-resumen-btn {
+    background: rgba(16, 185, 129, 0.10);
+    border-color: rgba(16, 185, 129, 0.32);
+    color: #059669;
+}
+.asist-save-resumen-btn:hover {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: #059669;
+}
+
 /* ═════════ Mensajes ═════════ */
 .asist-messages {
     flex: 1; overflow-y: auto;
@@ -766,6 +786,13 @@ un icono estático. Saludo personalizado con first_name del user.
     margin-top: 22px;
     max-width: 540px;
     width: 100%;
+}
+/* Cuando solo hay 1 sugerencia (modo idea), centramos la card y le
+   damos un ancho cómodo en lugar de que ocupe la mitad izquierda
+   del grid 2 columnas. */
+.asist-suggestions:has(> :only-child) {
+    grid-template-columns: minmax(260px, 360px);
+    justify-content: center;
 }
 .asist-sugg-card {
     display: flex; align-items: center; gap: 12px;

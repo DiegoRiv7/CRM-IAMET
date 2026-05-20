@@ -4091,6 +4091,28 @@ class IdeaComentario(models.Model):
         return f'{self.usuario}: {self.texto[:40]}'
 
 
+class IdeaAsistenteMensaje(models.Model):
+    """Mensajes de la conversación entre el user y el asistente AI sobre una
+    idea específica. Cada idea tiene su propio hilo independiente del
+    consultor general."""
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('assistant', 'Asistente'),
+    ]
+    idea = models.ForeignKey(
+        Idea, on_delete=models.CASCADE, related_name='asistente_mensajes'
+    )
+    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    contenido = models.TextField(blank=True, default='')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.idea_id}:{self.role}:{self.contenido[:30]}'
+
+
 # ──────────────────────────────────────────────
 # Modelos de Gestión de Proyectos IAMET
 # ──────────────────────────────────────────────
