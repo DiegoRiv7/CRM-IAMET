@@ -61,7 +61,7 @@
                         <div class="wn-ctw-popwrap">
                             <button type="button" class="wn-ctw-pill-meta empty" id="wpPipelineBtn" onclick="wpOpenPop('pipeline', event)">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                                <span id="wpPipelineLabel">Pipeline (requerido)</span>
+                                <span id="wpPipelineLabel">Pipeline (opcional)</span>
                             </button>
                             <div class="wn-ctw-pop" id="wpPopPipeline" style="display:none;">
                                 <div class="wn-ctw-pop-title">Tipo de pipeline</div>
@@ -317,7 +317,7 @@
         var pipSel = document.getElementById('wpfTipoPipeline');
         if (pipSel) pipSel.addEventListener('change', function() {
             var v = pipSel.value;
-            _setLabel('wpPipelineBtn', 'wpPipelineLabel', v ? _labelOf('wpfTipoPipeline','Pipeline') : 'Pipeline (requerido)', !v);
+            _setLabel('wpPipelineBtn', 'wpPipelineLabel', v ? _labelOf('wpfTipoPipeline','Pipeline') : 'Pipeline (opcional)', !v);
             _wpCloseAllPops();
         });
         // Inicializar label (default: runrate)
@@ -574,20 +574,20 @@
         });
 
         // ── Refresco de estado "listo" del submit según obligatorios ──
+        // Pipeline es OPCIONAL — si no se selecciona, el backend usa default 'runrate'.
         function _wpRefreshReadyState() {
             var titulo    = (document.getElementById('wpfNombre') || {}).value || '';
             var clienteId = (document.getElementById('wpfClienteId') || {}).value || '';
-            var pipeline  = (document.getElementById('wpfTipoPipeline') || {}).value || '';
-            var allReady  = titulo.trim().length > 0 && !!clienteId && !!pipeline;
+            var allReady  = titulo.trim().length > 0 && !!clienteId;
             var submitBtn = document.getElementById('wpfSubmit');
             if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
         }
 
         // ── Validación reactiva al intentar crear (shake + highlight rojo) ──
+        // Solo título + cliente son requeridos. Pipeline es opcional.
         function _wpValidateRequired() {
             var titulo    = (document.getElementById('wpfNombre') || {}).value || '';
             var clienteId = (document.getElementById('wpfClienteId') || {}).value || '';
-            var pipeline  = (document.getElementById('wpfTipoPipeline') || {}).value || '';
             var missing = [];
 
             var tituloEl = document.getElementById('wpfNombre');
@@ -601,8 +601,7 @@
                 tituloEl.classList.remove('title-error');
             }
 
-            [{ key:'cli', ok:!!clienteId, btnId:'wpClienteBtn' },
-             { key:'pipeline', ok:!!pipeline, btnId:'wpPipelineBtn' }].forEach(function(f) {
+            [{ key:'cli', ok:!!clienteId, btnId:'wpClienteBtn' }].forEach(function(f) {
                 var btn = document.getElementById(f.btnId);
                 if (!btn) return;
                 if (!f.ok) {
@@ -666,7 +665,7 @@
             _updateClienteLabel();
             _updateContactoLabel();
             var pipLbl = document.getElementById('wpPipelineLabel');
-            if (pipLbl) pipLbl.textContent = 'Pipeline (requerido)';
+            if (pipLbl) pipLbl.textContent = 'Pipeline (opcional)';
             var pipBtn = document.getElementById('wpPipelineBtn');
             if (pipBtn) { pipBtn.classList.remove('filled'); pipBtn.classList.add('empty'); }
         }
@@ -722,9 +721,11 @@
                 nombre: nombre,
                 cliente_id: parseInt(clienteId),
                 contacto_id: contactoId ? parseInt(contactoId) : null,
-                tipo_pipeline: pipeline,
                 comentarios: document.getElementById('wpfComentarios').value.trim()
             };
+            // tipo_pipeline es opcional — solo enviar si el creador eligió uno;
+            // el backend usa el default 'runrate' del modelo en caso contrario.
+            if (pipeline) payload.tipo_pipeline = pipeline;
             // Producto/Área son opcionales — solo enviar si el creador eligió algo,
             // así el backend usa los defaults del modelo si no se especifican.
             var prodVal = (document.getElementById('wpfProducto') || {}).value || '';

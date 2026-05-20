@@ -4,7 +4,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -21,6 +21,18 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _siguiente_dia_habil(base_dt):
+    """Devuelve el siguiente día hábil (L-V) a la misma hora de base_dt.
+
+    Si hoy es viernes, sábado o domingo, empuja al próximo lunes. Para
+    cualquier otro día, suma 1 día. weekday(): 0=L, 1=M, 2=X, 3=J, 4=V, 5=S, 6=D.
+    """
+    nxt = base_dt + timedelta(days=1)
+    while nxt.weekday() >= 5:  # 5=sábado, 6=domingo
+        nxt = nxt + timedelta(days=1)
+    return nxt
 
 
 @login_required
@@ -279,7 +291,10 @@ def api_crear_prospecto(request):
     contacto_id = data.get('contacto_id')
     producto = data.get('producto', 'ZEBRA')
     area = data.get('area', 'SISTEMAS')
-    tipo_pipeline = data.get('tipo_pipeline', 'runrate')
+    # tipo_pipeline es OPCIONAL desde el frontend. Si llega vacío o no llega,
+    # se omite del create_kwargs para que el modelo use el default ('runrate').
+    tipo_pipeline_raw = (data.get('tipo_pipeline') or '').strip()
+    tipo_pipeline = tipo_pipeline_raw if tipo_pipeline_raw else None
     comentarios = data.get('comentarios', '')
     etapa = data.get('etapa', '')
 
@@ -345,9 +360,11 @@ def api_crear_prospecto(request):
         contacto=contacto,
         producto=producto,
         area=area,
-        tipo_pipeline=tipo_pipeline,
         comentarios=comentarios,
     )
+    # tipo_pipeline solo se setea si llegó; si no, el modelo usa default 'runrate'.
+    if tipo_pipeline:
+        create_kwargs['tipo_pipeline'] = tipo_pipeline
     if asignacion_externa:
         create_kwargs['asignado_por'] = request.user
     if etapa and etapa in etapas_validas:
@@ -366,6 +383,53 @@ def api_crear_prospecto(request):
     if evento_origen_obj:
         from .models import EventoAsistente
         EventoAsistente.objects.create(evento=evento_origen_obj, prospecto=prospecto)
+
+    # ── AUTO-ACTIVIDAD POR DEFAULT (Task 2) ──
+    # Si NO hubo asignación externa con actividad inicial explícita, creamos
+    # una ProspectoActividad + Actividad de calendario automáticamente para
+    # el vendedor dueño del prospecto, programada al siguiente día hábil a la
+    # misma hora actual. Esto garantiza que cada prospecto nuevo tenga al
+    # menos una tarea pendiente y aparezca en el calendario.
+    if not asignacion_externa:
+        try:
+            ahora = timezone.now()
+            fecha_auto = _siguiente_dia_habil(ahora)
+            # Título y descripción: tomados del prospecto. Si hay comentarios
+            # iniciales, los anexamos para dar contexto al vendedor.
+            titulo_auto = prospecto.nombre
+            comentarios_iniciales = (prospecto.comentarios or '').strip()
+            if comentarios_iniciales:
+                desc_auto = f'{titulo_auto}\n\n{comentarios_iniciales}'
+            else:
+                desc_auto = titulo_auto
+
+            ProspectoActividad.objects.create(
+                prospecto=prospecto,
+                usuario=asignar_a,
+                tipo='tarea',
+                descripcion=desc_auto,
+                fecha_programada=fecha_auto,
+            )
+
+            # Replicar en el calendario (Actividad) — patrón Bajanet usado en
+            # api_prospecto_actividades. Metadata `---prospecto_id:...` permite
+            # al modal del calendario abrir la sección "Relacionado a → prospecto".
+            cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+            desc_cal = (
+                desc_auto
+                + f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
+            )
+            Actividad.objects.create(
+                titulo=titulo_auto[:200],
+                tipo_actividad='tarea',
+                descripcion=desc_cal,
+                fecha_inicio=fecha_auto,
+                fecha_fin=fecha_auto + timedelta(hours=1),
+                creado_por=asignar_a,
+                color='#B45309',
+            )
+        except Exception as e:
+            logger.warning('Prospecto: no se pudo crear auto-actividad: %s', e)
 
     # Si fue asignación externa, crear actividad inicial + evento de calendario
     # para el vendedor asignado, con metadata para enlazar de vuelta al prospecto.
@@ -518,24 +582,30 @@ def api_prospecto_etapa(request, prospecto_id):
     oportunidad_id = None
 
     if nueva_etapa == 'cerrado_ganado':
-        # Crear oportunidad (TodoItem) con datos del prospecto
-        opp = TodoItem.objects.create(
-            usuario=prospecto.usuario,
-            oportunidad=prospecto.nombre,
-            cliente=prospecto.cliente,
-            contacto=prospecto.contacto,
-            producto=prospecto.producto,
-            area=prospecto.area,
-            tipo_negociacion=prospecto.tipo_pipeline,
-            monto=Decimal('0.00'),
-            probabilidad_cierre=5,
-            mes_cierre=str(timezone.now().month).zfill(2),
-            anio_cierre=timezone.now().year,
-            comentarios=prospecto.comentarios,
-            estado_crm='nueva',
-        )
-        prospecto.oportunidad_creada = opp
-        oportunidad_id = opp.id
+        # Si ya hay oportunidad asociada (flujo modal "Crear opps en serie"),
+        # no creamos otra vacía — solo reportamos la existente.
+        if prospecto.oportunidad_creada_id:
+            oportunidad_id = prospecto.oportunidad_creada_id
+        else:
+            # Compatibilidad hacia atrás: cierre directo sin pasar por el modal —
+            # crea una oportunidad stub con los datos del prospecto.
+            opp = TodoItem.objects.create(
+                usuario=prospecto.usuario,
+                oportunidad=prospecto.nombre,
+                cliente=prospecto.cliente,
+                contacto=prospecto.contacto,
+                producto=prospecto.producto,
+                area=prospecto.area,
+                tipo_negociacion=prospecto.tipo_pipeline,
+                monto=Decimal('0.00'),
+                probabilidad_cierre=5,
+                mes_cierre=str(timezone.now().month).zfill(2),
+                anio_cierre=timezone.now().year,
+                comentarios=prospecto.comentarios,
+                estado_crm='nueva',
+            )
+            prospecto.oportunidad_creada = opp
+            oportunidad_id = opp.id
 
     prospecto.save()
 
@@ -608,6 +678,102 @@ def api_prospecto_convertir(request, prospecto_id):
         'oportunidad_id': opp.id,
         'cliente_id': prospecto.cliente_id,
         'ya_existia': False,
+    })
+
+
+@login_required
+def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
+    """POST: crea una nueva Oportunidad (TodoItem) a partir de un prospecto.
+
+    Pensado para el flujo "Cerrar Ganado → Crear Oportunidad(es) en serie":
+    el modal permite crear varias oportunidades para el mismo prospecto.
+    NO cambia la etapa del prospecto — el frontend lo hace cuando el user
+    cierra el modal habiendo creado al menos una opp.
+
+    La PRIMERA opp creada se vincula via Prospecto.oportunidad_creada (FK)
+    para mantener trazabilidad principal. Las subsecuentes quedan asociadas
+    por el campo `comentarios` (que incluye un link al prospecto origen) y
+    por estar en el mismo cliente/contacto.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.select_related('cliente', 'contacto', 'usuario').get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON invalido'}, status=400)
+
+    titulo = (data.get('titulo') or '').strip() or prospecto.nombre
+    tipo_negociacion = (data.get('tipo_negociacion') or '').strip()
+    if tipo_negociacion not in {c[0] for c in TodoItem.TIPO_NEGOCIACION_CHOICES}:
+        return JsonResponse({'success': False, 'error': 'Tipo de negociación requerido (runrate/proyecto)'}, status=400)
+
+    monto_raw = data.get('monto', '0')
+    try:
+        monto = Decimal(str(monto_raw))
+    except Exception:
+        monto = Decimal('0.00')
+
+    producto = (data.get('producto') or prospecto.producto or 'SOFTWARE').strip()
+    area = (data.get('area') or prospecto.area or 'SISTEMAS').strip()
+    probabilidad = data.get('probabilidad_cierre', 25)
+    try:
+        probabilidad = int(probabilidad)
+    except Exception:
+        probabilidad = 25
+    comentarios_extra = (data.get('comentarios') or '').strip()
+
+    # Comentario inicial: deja rastro del prospecto origen para auditoría.
+    comentario_link = f'[Creada desde prospecto #{prospecto.id} "{prospecto.nombre}"]'
+    comentarios_final = comentario_link
+    if comentarios_extra:
+        comentarios_final = f'{comentario_link}\n{comentarios_extra}'
+
+    now_dt = timezone.now()
+    opp = TodoItem.objects.create(
+        usuario=prospecto.usuario,
+        oportunidad=titulo[:200],
+        cliente=prospecto.cliente,
+        contacto=prospecto.contacto,
+        producto=producto,
+        area=area,
+        tipo_negociacion=tipo_negociacion,
+        monto=monto,
+        probabilidad_cierre=probabilidad,
+        mes_cierre=str(now_dt.month).zfill(2),
+        anio_cierre=now_dt.year,
+        comentarios=comentarios_final,
+        estado_crm='nueva',
+    )
+
+    # Replicar el comentario inicial en la conversación de la oportunidad
+    # para que el vendedor lo vea como primer mensaje del chat.
+    try:
+        MensajeOportunidad.objects.create(
+            oportunidad=opp,
+            usuario=request.user,
+            texto=comentarios_final,
+        )
+    except Exception:
+        pass
+
+    # Vincular sólo la PRIMERA oportunidad creada al prospecto (trazabilidad
+    # principal). Las demás siguen asociadas por cliente/contacto/comentario.
+    if not prospecto.oportunidad_creada_id:
+        prospecto.oportunidad_creada = opp
+        prospecto.save(update_fields=['oportunidad_creada', 'fecha_actualizacion'])
+
+    return JsonResponse({
+        'success': True,
+        'oportunidad_id': opp.id,
+        'titulo': opp.oportunidad,
+        'monto': float(opp.monto or 0),
+        'tipo_negociacion': opp.tipo_negociacion,
     })
 
 

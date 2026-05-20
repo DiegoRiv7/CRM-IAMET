@@ -707,8 +707,212 @@ document.addEventListener('click', function(ev) {
     }
     window.confirmarCerrar = function(etapa) {
         document.getElementById('cerrarSelector').remove();
+        // ── Ganado: abre el modal "Crear Oportunidad(es) en serie". El cambio
+        // de etapa se aplica al CERRAR el modal sólo si se creó >=1 opp.
+        if (etapa === 'cerrado_ganado') {
+            wpAbrirModalCrearOpp();
+            return;
+        }
         cambiarEtapaProspecto(etapa);
     };
+
+    // ══════════════════════════════════════════════════════════════
+    // CERRAR GANADO → MODAL CREAR OPORTUNIDAD(ES) EN SERIE
+    // ══════════════════════════════════════════════════════════════
+    // Estado del flow durante la sesión del modal abierto:
+    var _wcoOppsCreadas = [];  // [{id, titulo, monto, tipo_negociacion}]
+
+    function wpAbrirModalCrearOpp() {
+        var data = window._currentProspectoData || {};
+        var modal = document.getElementById('widgetCrearOppDesdeProspecto');
+        if (!modal) return;
+        // Reset estado de sesión
+        _wcoOppsCreadas = [];
+        _wcoRenderCreatedList();
+        _wcoResetForm(true);
+
+        // Prellenar campos read-only desde el prospecto
+        var setVal = function(id, v) { var el = document.getElementById(id); if (el) el.value = v == null ? '' : v; };
+        setVal('wcoTitulo', data.nombre || '');
+        setVal('wcoCliente', data.cliente || '-');
+        setVal('wcoContacto', data.contacto || '-');
+        setVal('wcoProducto', data.producto || 'SOFTWARE');
+        setVal('wcoArea', data.area || 'SISTEMAS');
+        setVal('wcoMonto', '');
+        setVal('wcoTipoNeg', data.tipo_pipeline || '');
+        setVal('wcoNotas', '');
+
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        setTimeout(function() {
+            var t = document.getElementById('wcoTitulo');
+            if (t) t.focus();
+        }, 60);
+    }
+    window.wpAbrirModalCrearOpp = wpAbrirModalCrearOpp;
+
+    function _wcoResetForm(keepReadonly) {
+        // Limpia los campos editables; los read-only (cliente/contacto) se
+        // re-aplican desde el prospecto en cada apertura.
+        ['wcoMonto', 'wcoNotas'].forEach(function(id){
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        // Para "Crear otra" reiniciamos también título a "Nombre prospecto - oportunidad N"
+        var data = window._currentProspectoData || {};
+        var titEl = document.getElementById('wcoTitulo');
+        if (titEl) {
+            var n = _wcoOppsCreadas.length;
+            titEl.value = (n === 0)
+                ? (data.nombre || '')
+                : ((data.nombre || 'Oportunidad') + ' #' + (n + 1));
+        }
+        // Pipeline conserva valor previo (si hubo). Si no, vacío.
+        if (!keepReadonly) {
+            var t = document.getElementById('wcoTipoNeg');
+            if (t) t.value = '';
+        }
+    }
+
+    function _wcoRenderCreatedList() {
+        var listWrap = document.getElementById('wcoCreatedList');
+        var items = document.getElementById('wcoCreatedItems');
+        var status = document.getElementById('wcoFooterStatus');
+        if (!listWrap || !items || !status) return;
+
+        if (_wcoOppsCreadas.length === 0) {
+            listWrap.style.display = 'none';
+            items.innerHTML = '';
+            status.textContent = 'Aún no se ha creado ninguna oportunidad.';
+            return;
+        }
+        listWrap.style.display = 'block';
+        items.innerHTML = _wcoOppsCreadas.map(function(o) {
+            var monto = (o.monto || 0).toLocaleString('es-MX', { style:'currency', currency:'MXN', maximumFractionDigits:0 });
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;">' +
+                '<span style="width:22px;height:22px;border-radius:50%;background:#16A34A;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+                '</span>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.84rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(o.titulo) + '</div>' +
+                    '<div style="font-size:0.7rem;color:#6B7280;">' + (o.tipo_negociacion === 'proyecto' ? 'Proyecto' : 'Runrate') + ' · ' + escapeHtml(monto) + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        var n = _wcoOppsCreadas.length;
+        status.textContent = n === 1 ? '1 oportunidad creada.' : (n + ' oportunidades creadas.');
+    }
+
+    function _wcoCerrarModal() {
+        var modal = document.getElementById('widgetCrearOppDesdeProspecto');
+        if (modal) modal.style.display = 'none';
+
+        // Si se creó al menos una oportunidad, marcar el prospecto como ganado.
+        // Si no, dejar la etapa anterior intacta.
+        if (_wcoOppsCreadas.length > 0) {
+            cambiarEtapaProspecto('cerrado_ganado');
+        }
+        _wcoOppsCreadas = [];
+    }
+
+    // ── Hooks DOM del modal — registrar una sola vez ──
+    (function _wcoHookOnce() {
+        var form = document.getElementById('wcoForm');
+        var btnClose = document.getElementById('wcoCloseBtn');
+        var btnReset = document.getElementById('wcoResetBtn');
+        var btnTerm = document.getElementById('wcoTerminarBtn');
+        var overlay = document.getElementById('widgetCrearOppDesdeProspecto');
+
+        if (form && !form._wcoHooked) {
+            form._wcoHooked = true;
+            form.addEventListener('submit', function(ev) {
+                ev.preventDefault();
+                _wcoEnviar();
+            });
+        }
+        if (btnClose && !btnClose._wcoHooked) {
+            btnClose._wcoHooked = true;
+            btnClose.addEventListener('click', _wcoCerrarModal);
+        }
+        if (btnTerm && !btnTerm._wcoHooked) {
+            btnTerm._wcoHooked = true;
+            btnTerm.addEventListener('click', _wcoCerrarModal);
+        }
+        if (btnReset && !btnReset._wcoHooked) {
+            btnReset._wcoHooked = true;
+            btnReset.addEventListener('click', function() { _wcoResetForm(false); });
+        }
+        if (overlay && !overlay._wcoHooked) {
+            overlay._wcoHooked = true;
+            overlay.addEventListener('click', function(ev) {
+                // Click en backdrop (fuera del card) cierra el modal con la
+                // misma lógica que el botón Terminar.
+                if (ev.target === overlay) _wcoCerrarModal();
+            });
+        }
+    })();
+
+    function _wcoEnviar() {
+        var id = window._currentProspectoId;
+        if (!id) return;
+
+        var titulo = (document.getElementById('wcoTitulo').value || '').trim();
+        var tipoNeg = (document.getElementById('wcoTipoNeg').value || '').trim();
+        var monto = (document.getElementById('wcoMonto').value || '').trim();
+        var producto = (document.getElementById('wcoProducto').value || '').trim();
+        var area = (document.getElementById('wcoArea').value || '').trim();
+        var notas = (document.getElementById('wcoNotas').value || '').trim();
+
+        if (!titulo) {
+            alert('El título de la oportunidad es requerido.');
+            document.getElementById('wcoTitulo').focus();
+            return;
+        }
+        if (!tipoNeg) {
+            alert('Selecciona el tipo de pipeline (Runrate / Proyecto).');
+            document.getElementById('wcoTipoNeg').focus();
+            return;
+        }
+
+        var btn = document.getElementById('wcoSubmitBtn');
+        var orig = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Creando…'; }
+
+        fetch('/app/api/prospecto/' + id + '/crear-oportunidad/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({
+                titulo: titulo,
+                tipo_negociacion: tipoNeg,
+                monto: monto || '0',
+                producto: producto,
+                area: area,
+                comentarios: notas,
+                probabilidad_cierre: 25
+            })
+        }).then(function(r){ return r.json(); }).then(function(data) {
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            if (!data || !data.success) {
+                alert((data && data.error) || 'Error al crear la oportunidad.');
+                return;
+            }
+            _wcoOppsCreadas.push({
+                id: data.oportunidad_id,
+                titulo: data.titulo || titulo,
+                monto: data.monto || 0,
+                tipo_negociacion: data.tipo_negociacion || tipoNeg
+            });
+            _wcoRenderCreatedList();
+            // Listo para crear otra: limpiar editables pero conservar pipeline.
+            _wcoResetForm(true);
+            var titEl = document.getElementById('wcoTitulo');
+            if (titEl) titEl.focus();
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            alert('Error de red al crear oportunidad.');
+            console.error('[Prospecto→Opp] error', err);
+        });
+    }
 
     function _showProspectoMissingActivityWarning() {
         var existing = document.getElementById('warnMissingProspectoActivity');
