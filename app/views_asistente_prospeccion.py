@@ -29,7 +29,7 @@ from django.views.decorators.http import require_http_methods
 
 from .models import (
     AsistenteConfig, Prospecto, ProspectoActividad, ProspectoComentario,
-    ProspectoAsistenteMensaje, TodoItem, Cotizacion,
+    ProspectoAsistenteMensaje, TodoItem, Cotizacion, Actividad,
 )
 from .asistente_provider import chat, AsistenteError
 from .views_grupos import comparten_grupo
@@ -363,6 +363,31 @@ def _system_prompt(prospecto: Prospecto, config: AsistenteConfig, user,
         'mexicano B2B. NO inventes nombres ni datos que no estén en '
         'el contexto.\n\n'
 
+        '## Tool disponible: crear_actividad_prospecto\n'
+        'Tienes acceso a una función `crear_actividad_prospecto` que '
+        'agenda una actividad en el calendario del vendedor.\n\n'
+        '**ÚSALA SOLO cuando el usuario te dé una instrucción '
+        'DIRECTA**, imperativa, sin pregunta — frases como:\n'
+        '   - "agenda una visita para mañana"\n'
+        '   - "agéndame una llamada a este cliente"\n'
+        '   - "ponme en el calendario un seguimiento en 3 días"\n'
+        '   - "crea una actividad para visitar a Carlos el viernes"\n\n'
+        '**NO la uses** cuando el user:\n'
+        '   - te pide consejo, opinión o sugerencias\n'
+        '   - pregunta "¿qué hago?" o "¿cómo cierro?"\n'
+        '   - pide el próximo paso (ahí responde en texto y el user '
+        'verá un botón Agendar manual debajo)\n'
+        '   - duda o explora — ahí responde conversacional, no '
+        'ejecutes\n\n'
+        'Al usar la tool: extrae la acción concreta (verbo + objeto) '
+        'como `descripcion` corta, infiere `tipo` por el verbo '
+        '("llámale" → llamada; "visítalo" → visita; "mándale correo" → '
+        'correo; etc.), y `dias_desde_hoy` por el plazo que dijo '
+        '("mañana" = 1; "pasado mañana" = 2; "en una semana" = 7; si '
+        'no dijo nada usa 2). Después de que la tool corra, confirma '
+        'al usuario en una sola línea: "Listo, agendé X para tal '
+        'fecha en el calendario." Sin más rollo.\n\n'
+
         '## Reglas duras\n'
         '- NO inventes información del cliente, del prospecto, ni de '
         'la competencia. Si no está en el contexto, dilo y pídelo.\n'
@@ -598,14 +623,68 @@ def api_prospecto_asistente_mensaje(request, prospecto_id: int):
         previous_resumen=previous_resumen,
     )
     messages = [sys_msg] + _build_context(p)
+    # Tool schema disponible para el AI — le permite disparar la creación
+    # de actividad directamente cuando el user da una instrucción directa.
+    tools = [_tool_crear_actividad_schema()]
+    actividad_creada = None
     try:
         resp = chat(
             messages=messages,
-            tools=None,
+            tools=tools,
             model=cfg.modelo,
             temperature=0.5,
             max_tokens=900,
         )
+        # Loop de tool calling (máximo 2 iteraciones para no irse de
+        # presupuesto si el modelo se enloquece).
+        for _iter in range(2):
+            tc_list = resp.get('tool_calls') or []
+            if not tc_list:
+                break
+            for tc in tc_list:
+                if tc.get('name') != 'crear_actividad_prospecto':
+                    continue
+                args = tc.get('arguments') or {}
+                actividad, err = _crear_actividad_para_prospecto(
+                    prospecto=p,
+                    request_user=request.user,
+                    descripcion=args.get('descripcion') or '',
+                    tipo=args.get('tipo') or 'tarea',
+                    dias_desde_hoy=int(args.get('dias_desde_hoy') or 2),
+                )
+                if not err:
+                    actividad_creada = actividad
+                # Construimos el mensaje "assistant con tool_calls" y
+                # el "tool result" para que el modelo cierre el turno.
+                messages.append({
+                    'role': 'assistant',
+                    'content': resp.get('text') or '',
+                    'tool_calls': [{
+                        'id': tc['id'],
+                        'type': 'function',
+                        'function': {
+                            'name': tc['name'],
+                            'arguments': tc.get('arguments_str') or json.dumps(args),
+                        },
+                    }],
+                })
+                tool_result = (
+                    json.dumps({'ok': True, 'actividad': actividad}, default=str)
+                    if not err else json.dumps({'ok': False, 'error': err})
+                )
+                messages.append({
+                    'role': 'tool',
+                    'tool_call_id': tc['id'],
+                    'content': tool_result,
+                })
+            # Volvemos a llamar al modelo con los resultados de las tools.
+            resp = chat(
+                messages=messages,
+                tools=tools,
+                model=cfg.modelo,
+                temperature=0.5,
+                max_tokens=600,
+            )
         final_text = (resp.get('text') or '').strip() or '(sin respuesta)'
     except AsistenteError as e:
         log.warning('Prospecto asistente error: %s', e)
@@ -628,7 +707,67 @@ def api_prospecto_asistente_mensaje(request, prospecto_id: int):
     payload_resp = {'ok': True, 'mensaje': _msg_to_dict(assistant_msg)}
     if auto_saved_resumen:
         payload_resp['auto_saved_resumen'] = auto_saved_resumen
+    if actividad_creada:
+        payload_resp['actividad_creada'] = actividad_creada
     return JsonResponse(payload_resp)
+
+
+def _tool_crear_actividad_schema() -> dict:
+    """Schema OpenAI-compatible para la tool de crear actividad. Se le
+    pasa al chat() del LLM. El modelo decide cuándo usarla — solo
+    cuando el user da una instrucción DIRECTA de agendar."""
+    return {
+        'type': 'function',
+        'function': {
+            'name': 'crear_actividad_prospecto',
+            'description': (
+                'Crea una actividad de seguimiento en el calendario del '
+                'vendedor responsable del prospecto. USA esta función '
+                'SOLO cuando el usuario dé una instrucción DIRECTA tipo '
+                '"agenda", "agéndame", "ponme en el calendario", "crea '
+                'una actividad". NO la uses cuando el usuario solo te '
+                'pide consejo o sugerencias — para esas responde en '
+                'texto y deja que el user clickeé el botón Agendar '
+                'manual. La actividad quedará con título = nombre del '
+                'prospecto y caerá en el calendario del vendedor dueño.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tipo': {
+                        'type': 'string',
+                        'enum': ['visita', 'llamada', 'correo', 'campana',
+                                 'reunion', 'reunion_virtual', 'tarea', 'otro'],
+                        'description': (
+                            'Tipo de la actividad. Si el user no especifica '
+                            'usa "tarea". Si dice "llámale" usa "llamada", '
+                            'si dice "visítalo" usa "visita", etc.'
+                        ),
+                    },
+                    'descripcion': {
+                        'type': 'string',
+                        'description': (
+                            'Acción corta y accionable que se va a hacer. '
+                            'Ejemplo: "Comunicarme con Carlos Pérez para '
+                            'confirmar cotización". NO incluyas headers, '
+                            'meta-comentarios ni el contexto — solo la '
+                            'acción imperativa. Máximo 200 caracteres.'
+                        ),
+                    },
+                    'dias_desde_hoy': {
+                        'type': 'integer',
+                        'description': (
+                            'Días naturales desde hoy para agendar. Si el '
+                            'user dice "mañana" usa 1, "pasado mañana" '
+                            'usa 2, "en una semana" usa 7. Por defecto 2.'
+                        ),
+                        'default': 2,
+                    },
+                },
+                'required': ['descripcion'],
+            },
+        },
+    }
 
 
 @login_required
@@ -676,20 +815,148 @@ def api_prospecto_asistente_reset(request, prospecto_id: int):
     return JsonResponse({'ok': True, 'borrados': deleted})
 
 
+def _extraer_proximo_paso(texto_ai: str) -> str:
+    """Extrae la acción concreta del 'próximo paso' del texto del AI.
+    El AI usa varios patrones — probamos los más comunes y caemos a
+    la primera oración si nada matchea. Devuelve string corto y limpio.
+    """
+    import re as _re
+    if not texto_ai:
+        return ''
+    # 1) "**Próximo paso (UNO solo):** acción..." o variantes con bold
+    patterns = [
+        r'\*\*[Pp]r[óo]ximo\s+paso[^*]*?\*\*\s*:?\s*([^\n]+(?:\n(?!\s*\*\*)[^\n]+){0,2})',
+        r'(?:^|\n)\s*[Pp]r[óo]ximo\s+paso(?:\s+recomendado)?\s*:\s*([^\n]+(?:\n(?!\s*[A-ZÁ-Úa-z]+:)[^\n]+){0,1})',
+        r'\*\*[Ee]l\s+pr[óo]ximo\s+paso[^*]*\*\*\s*:?\s*([^\n]+)',
+    ]
+    for pat in patterns:
+        m = _re.search(pat, texto_ai, _re.MULTILINE)
+        if m:
+            txt = m.group(1).strip()
+            # Detener antes del siguiente bloque ("Por qué...", "Alternativa B...")
+            txt = _re.split(r'\s*\*\*|\s*(?:Por qu[eé]\s|Alternativa\s)', txt, maxsplit=1)[0]
+            return _limpiar_markdown(txt)[:300].strip().rstrip('.,;:').strip()
+    # Fallback: primera oración del texto sin markdown
+    plain = _limpiar_markdown(texto_ai)
+    m = _re.search(r'^([^.\n]{20,300}\.)', plain.strip())
+    if m:
+        return m.group(1).strip()
+    return plain.strip()[:200]
+
+
+def _limpiar_markdown(t: str) -> str:
+    import re as _re
+    t = _re.sub(r'\*\*', '', t)
+    t = _re.sub(r'^#+\s*', '', t, flags=_re.MULTILINE)
+    t = _re.sub(r'`+', '', t)
+    return t.strip()
+
+
+def _calcular_fecha_seguimiento(dias: int = 2):
+    """Hoy + N días naturales, con push de fin de semana al lunes.
+    Devuelve datetime aware en TZ del servidor."""
+    ahora = timezone.now()
+    fecha = ahora + timedelta(days=dias)
+    if fecha.weekday() == 5:    # sábado
+        fecha = fecha + timedelta(days=2)
+    elif fecha.weekday() == 6:  # domingo
+        fecha = fecha + timedelta(days=1)
+    return fecha
+
+
+def _crear_actividad_para_prospecto(prospecto: Prospecto, request_user,
+                                    descripcion: str, tipo: str = 'tarea',
+                                    fecha_iso: str = '', dias_desde_hoy: int = 2):
+    """Helper compartido entre el endpoint público (botón Agendar) y la
+    tool de function-calling del chat. Crea la ProspectoActividad y, en
+    paralelo, una Actividad de calendario para que aparezca en el
+    calendario del vendedor con el formato correcto.
+
+    Returns: (actividad_dict, error_str). Si error_str != '' algo falló.
+    """
+    if not descripcion or not descripcion.strip():
+        return (None, 'Falta descripción.')
+    descripcion = _limpiar_markdown(descripcion)
+    if len(descripcion) > 300:
+        descripcion = descripcion[:297].rstrip() + '...'
+
+    tipo = (tipo or 'tarea').strip().lower()
+    valid_tipos = {t[0] for t in ProspectoActividad.TIPO_CHOICES}
+    if tipo not in valid_tipos:
+        tipo = 'tarea'
+
+    # Fecha: priorizamos fecha_iso del cliente (su hora local convertida
+    # a UTC vía toISOString). Fallback al cálculo del servidor.
+    fecha = None
+    if fecha_iso:
+        try:
+            from datetime import datetime as _dt
+            iso_clean = fecha_iso.replace('Z', '+00:00')
+            fecha = _dt.fromisoformat(iso_clean)
+            if timezone.is_naive(fecha):
+                fecha = timezone.make_aware(fecha)
+        except Exception:
+            fecha = None
+    if fecha is None:
+        fecha = _calcular_fecha_seguimiento(dias_desde_hoy)
+
+    pa = ProspectoActividad.objects.create(
+        prospecto=prospecto,
+        usuario=prospecto.usuario,
+        tipo=tipo,
+        descripcion=descripcion,
+        fecha_programada=fecha,
+    )
+
+    # También creamos una Actividad de calendario (igual que el endpoint
+    # manual hace) — así aparece en el calendario del vendedor con el
+    # título = nombre del prospecto, no el texto largo.
+    cliente_nombre = (prospecto.cliente.nombre_empresa
+                      if prospecto.cliente_id else 'Sin cliente')
+    tipo_map = {
+        'llamada': 'llamada', 'reunion': 'reunion',
+        'reunion_virtual': 'reunion', 'correo': 'email',
+        'visita': 'visita', 'tarea': 'tarea', 'campana': 'otro',
+        'otro': 'otro',
+    }
+    try:
+        Actividad.objects.create(
+            titulo=prospecto.nombre[:200],
+            tipo_actividad=tipo_map.get(tipo, 'otro'),
+            descripcion=(
+                descripcion + '\n\n'
+                f'---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
+            ),
+            fecha_inicio=fecha,
+            fecha_fin=fecha + timedelta(hours=1),
+            creado_por=prospecto.usuario,
+            color='#B45309',
+        )
+    except Exception as e:
+        log.warning('No se pudo crear Actividad de calendario: %s', e)
+
+    return ({
+        'id': pa.id,
+        'tipo': pa.tipo,
+        'tipo_display': pa.get_tipo_display(),
+        'titulo': prospecto.nombre,
+        'descripcion': pa.descripcion,
+        'fecha_programada': pa.fecha_programada.isoformat() if pa.fecha_programada else None,
+        'vendedor_id': prospecto.usuario_id,
+    }, '')
+
+
 @login_required
 @require_http_methods(['POST'])
 def api_prospecto_actividad_rapida(request, prospecto_id: int):
-    """Agenda rápida disparada desde el asistente AI después de pedir
-    "próximo paso". Crea una ProspectoActividad en el calendario del
-    vendedor dueño del prospecto (NO del user que clickea, ya que la
-    AI sugiere al equipo entero).
+    """Agenda rápida disparada desde el asistente AI (botón "Agendar"
+    debajo del próximo paso). Acepta opcionalmente `fecha_iso` (ISO
+    string desde el cliente, con timezone) para evitar discrepancias
+    horarias servidor↔usuario. La descripcion debe ser ya el texto
+    corto del próximo paso (el JS lo extrae); aquí solo limpiamos
+    markdown y capamos longitud.
 
-    Fecha: ahora + 2 días naturales. Si cae en sábado se empuja a
-    lunes (+2), si cae en domingo se empuja a lunes (+1). Hora: la
-    misma del momento del click.
-
-    Body: { descripcion: str, tipo?: str }
-    Default tipo: 'tarea'.
+    Body: { descripcion, tipo?, fecha_iso? }
     """
     p, access = _get_prospecto_with_access(prospecto_id, request.user)
     if access == 'not_found':
@@ -700,48 +967,14 @@ def api_prospecto_actividad_rapida(request, prospecto_id: int):
         payload = json.loads(request.body or '{}')
     except Exception:
         payload = {}
-    descripcion = (payload.get('descripcion') or '').strip()
-    if not descripcion:
-        return JsonResponse({'ok': False, 'error': 'Falta descripción del próximo paso.'}, status=400)
-    # Limpiamos: si viene markdown del response del AI lo aplanamos.
-    import re as _re
-    descripcion = _re.sub(r'\*\*', '', descripcion)
-    descripcion = _re.sub(r'^#+\s*', '', descripcion, flags=_re.MULTILINE)
-    descripcion = _re.sub(r'`+', '', descripcion)
-    descripcion = descripcion.strip()
-    # Cap a 500 chars para no llenar el campo con un essay
-    if len(descripcion) > 500:
-        descripcion = descripcion[:497] + '...'
-
-    tipo = (payload.get('tipo') or 'tarea').strip().lower()
-    valid_tipos = {t[0] for t in ProspectoActividad.TIPO_CHOICES}
-    if tipo not in valid_tipos:
-        tipo = 'tarea'
-
-    # Calculamos la fecha: hoy + 2 días naturales, empujando fin de
-    # semana al lunes siguiente.
-    ahora = timezone.now()
-    fecha = ahora + timedelta(days=2)
-    if fecha.weekday() == 5:  # sábado
-        fecha = fecha + timedelta(days=2)
-    elif fecha.weekday() == 6:  # domingo
-        fecha = fecha + timedelta(days=1)
-
-    act = ProspectoActividad.objects.create(
+    actividad, err = _crear_actividad_para_prospecto(
         prospecto=p,
-        usuario=p.usuario,  # cae en el calendario del vendedor dueño
-        tipo=tipo,
-        descripcion=descripcion,
-        fecha_programada=fecha,
+        request_user=request.user,
+        descripcion=(payload.get('descripcion') or '').strip(),
+        tipo=(payload.get('tipo') or 'tarea').strip(),
+        fecha_iso=(payload.get('fecha_iso') or '').strip(),
+        dias_desde_hoy=int(payload.get('dias_desde_hoy') or 2),
     )
-    return JsonResponse({
-        'ok': True,
-        'actividad': {
-            'id': act.id,
-            'tipo': act.tipo,
-            'tipo_display': act.get_tipo_display(),
-            'descripcion': act.descripcion,
-            'fecha_programada': act.fecha_programada.isoformat() if act.fecha_programada else None,
-            'vendedor_id': p.usuario_id,
-        },
-    })
+    if err:
+        return JsonResponse({'ok': False, 'error': err}, status=400)
+    return JsonResponse({'ok': True, 'actividad': actividad})

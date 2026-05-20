@@ -708,9 +708,41 @@
             + d.getDate() + ' ' + meses[d.getMonth()] + ' '
             + hh + ':' + mm;
     }
-    function renderAgendarSeguimientoCard(descripcion) {
+    /* Extrae la acción concreta del response del AI (patrón "Próximo
+       paso: X" o variantes con bold). Si no encuentra patrón, devuelve
+       la primera oración. Mantiene la descripcion de la actividad
+       corta y limpia. */
+    function _extraerProximoPasoTexto(txt) {
+        if (!txt) return '';
+        // Quitamos markdown para que los patterns funcionen sobre el
+        // texto plano y para el fallback.
+        var plain = txt.replace(/\*\*/g, '').replace(/^#+\s*/gm, '').replace(/`+/g, '');
+        var patterns = [
+            /Pr[óo]ximo\s+paso\s+recomendado\s*:\s*([^\n]+(?:\.\s*[A-Z][^\n.]+)?)\.?/i,
+            /Pr[óo]ximo\s+paso\s*(?:\(UNO\s+solo\))?\s*:\s*([^\n]+)/i,
+            /El\s+pr[óo]ximo\s+paso\s*:\s*([^\n]+)/i,
+        ];
+        for (var i = 0; i < patterns.length; i++) {
+            var m = plain.match(patterns[i]);
+            if (m) {
+                var s = m[1].trim();
+                // Cortar antes del siguiente bloque tipo "Por qué...", "Alternativa B..."
+                s = s.split(/\s*(?:Por\s+qu[eé]\s|Alternativa\s|Por\s+qué\s)/i)[0].trim();
+                if (s.length > 280) s = s.slice(0, 277) + '...';
+                return s.replace(/[.,;:\s]+$/, '');
+            }
+        }
+        // Fallback: primera oración
+        var firstSent = plain.match(/^([^.\n]{20,280}\.)/);
+        if (firstSent) return firstSent[1].trim();
+        return plain.slice(0, 200).trim();
+    }
+
+    function renderAgendarSeguimientoCard(descripcionFull) {
         var box = document.getElementById('asistMessages');
         if (!box) return;
+        // Extraemos SOLO la acción (no el contexto completo).
+        var descripcion = _extraerProximoPasoTexto(descripcionFull);
         var fecha = _proximaFechaSeguimiento();
         var fechaTxt = _fmtFechaSeguimiento(fecha);
         var card = document.createElement('div');
@@ -745,6 +777,11 @@
                 body: JSON.stringify({
                     descripcion: descripcion,
                     tipo: 'tarea',
+                    // Mandamos la fecha ya calculada en cliente (ISO con
+                    // offset local) — así la hora de la actividad coincide
+                    // con el reloj del usuario y no depende de la TZ del
+                    // servidor.
+                    fecha_iso: fecha.toISOString(),
                 }),
             }).then(function (res) {
                 if (!res.ok || !res.data.ok) {
@@ -851,9 +888,25 @@
             var finalTxt = respTexto || '(sin respuesta)';
             STATE.lastAssistantText = finalTxt;
             renderMessage('assistant', finalTxt);
-            // Card "Agendar seguimiento" si veníamos de pedir próximo
-            // paso. Sale debajo del último mensaje del bot.
-            if (STATE.expectingProximoPaso && isProspectoMode() && respTexto) {
+            // Si la AI creó la actividad ELLA MISMA via function calling
+            // (caso de instrucción directa "agéndame X"), avisamos al
+            // user con un flash y refrescamos el detalle. No mostramos
+            // la card de Agendar — ya se ejecutó.
+            if (res.data.actividad_creada && isProspectoMode()) {
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash('Actividad agendada por el asistente');
+                }
+                try {
+                    if (typeof window.refreshProspectoDetalle === 'function') {
+                        window.refreshProspectoDetalle(STATE.prospectoCtx.id);
+                    }
+                } catch (e) { /* silent */ }
+                // No renderizamos la card de Agendar manual cuando la AI
+                // ya creó algo directamente.
+                STATE.expectingProximoPaso = false;
+            } else if (STATE.expectingProximoPaso && isProspectoMode() && respTexto) {
+                // Card "Agendar seguimiento" si veníamos de pedir próximo
+                // paso. Sale debajo del último mensaje del bot.
                 renderAgendarSeguimientoCard(finalTxt);
             }
             STATE.expectingProximoPaso = false;
