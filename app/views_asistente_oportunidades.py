@@ -563,8 +563,20 @@ def _system_prompt(opp: TodoItem, config: AsistenteConfig, user,
         '   - **FIRMA con el nombre del VENDEDOR responsable** (el que '
         'aparece como "Vendedor responsable" en el contexto), NO con '
         'el nombre del user que está chateando (puede ser un '
-        'supervisor ayudando). Ejemplo: cerrar con "Saludos,\\n'
-        'Aaron Casillas\\nIAMET".\n'
+        'supervisor ayudando).\n'
+        '   - **Institución de la firma** — REGLA CLAVE:\n'
+        '     · Lee el tipo de la cotización MÁS RECIENTE de la opp '
+        '(campo `tipo` en cada línea de cotización: "Iamet" o '
+        '"Bajanet"). Esa institución va en la firma.\n'
+        '     · Si la última cotización fue **Iamet** → "Saludos,\\n'
+        '<Nombre del vendedor>\\nIAMET".\n'
+        '     · Si la última cotización fue **Bajanet** → "Saludos,\\n'
+        '<Nombre del vendedor>\\nBAJANET".\n'
+        '     · Si NO hay cotizaciones o no se puede determinar la '
+        'institución → NO pongas institución en la firma; solo '
+        '"Saludos,\\n<Nombre del vendedor>". Mejor sin firma que con '
+        'la institución equivocada.\n'
+        '     · NO mezcles ambas (nunca "IAMET / BAJANET" — uno solo).\n'
         '   - **PRIMERO lee la actividad agendada** (sección '
         '"Actividades del calendario" del contexto). Si hay una con '
         'descripción SUSTANTIVA (más de 15 chars y NO es genérica '
@@ -876,6 +888,61 @@ def _crear_actividad_para_opp(opp: TodoItem, request_user, descripcion: str,
         return (None, f'No se pudo crear la actividad: {e}')
 
 
+def _detectar_institucion_opp(opp: TodoItem) -> str:
+    """Devuelve 'Iamet', 'Bajanet' o '' (vacío = no se pudo determinar)
+    según el `tipo_cotizacion` de la cotización MÁS RECIENTE de la opp.
+    Esto define cómo se firma el correo y qué cuenta de email usar."""
+    cot = (Cotizacion.objects.filter(oportunidad=opp)
+           .order_by('-fecha_creacion')
+           .first())
+    if not cot:
+        return ''
+    tipo = (cot.tipo_cotizacion or '').strip().lower()
+    if tipo == 'iamet':
+        return 'Iamet'
+    if tipo == 'bajanet':
+        return 'Bajanet'
+    return ''
+
+
+def _sugerir_from_email(opp: TodoItem, institucion: str) -> tuple[str, list[str]]:
+    """Busca la cuenta de correo del VENDEDOR de la opp que mejor
+    coincida con la institución detectada.
+
+    Returns: (from_email_sugerido, lista_todos_los_emails_del_vendedor).
+    Lógica:
+    - Si vendedor tiene 1 sola cuenta → esa, sin importar institución.
+    - Si tiene varias y hay institución → matchea por dominio
+      (iamet → @iamet.*, bajanet → @bajanet.*).
+    - Si tiene varias pero NO hay institución → from_email='' para que
+      el frontend deje la cuenta actualmente abierta del user.
+    """
+    if not opp.usuario_id:
+        return ('', [])
+    try:
+        conexiones = list(
+            opp.usuario.mail_conexiones.filter(activo=True)
+            .order_by('id')
+        )
+    except Exception:
+        conexiones = []
+    emails = [c.correo_electronico for c in conexiones if c.correo_electronico]
+    if not emails:
+        return ('', [])
+    if len(emails) == 1:
+        return (emails[0], emails)
+    # Múltiples cuentas: match por institución
+    if institucion:
+        inst_lower = institucion.lower()
+        for em in emails:
+            em_lower = em.lower()
+            if inst_lower == 'iamet' and 'iamet' in em_lower:
+                return (em, emails)
+            if inst_lower == 'bajanet' and 'bajanet' in em_lower:
+                return (em, emails)
+    return ('', emails)  # No matcheable → frontend decide
+
+
 def _preparar_correo_seguimiento(opp: TodoItem, asunto: str, cuerpo: str,
                                  reply_to_correo_id=None) -> tuple[dict, str]:
     """Prepara los datos para el composer de correo. NO envía nada —
@@ -893,6 +960,9 @@ def _preparar_correo_seguimiento(opp: TodoItem, asunto: str, cuerpo: str,
         # Default: título de la oportunidad
         asunto = (opp.oportunidad or 'Seguimiento')[:200]
 
+    institucion = _detectar_institucion_opp(opp)
+    from_email_sugerido, vendedor_emails = _sugerir_from_email(opp, institucion)
+
     payload = {
         'asunto': asunto[:255],
         'cuerpo': cuerpo,
@@ -900,6 +970,11 @@ def _preparar_correo_seguimiento(opp: TodoItem, asunto: str, cuerpo: str,
         'destinatario_email': '',
         'in_reply_to': '',
         'asunto_referenciado': '',
+        # NUEVO: contexto para que el frontend elija la cuenta de
+        # envío correcta del vendedor.
+        'institucion': institucion,           # 'Iamet' | 'Bajanet' | ''
+        'from_email_sugerido': from_email_sugerido,  # '' si no determinable
+        'vendedor_tiene_multiples_cuentas': len(vendedor_emails) > 1,
     }
 
     # Si hay reply_to_correo_id, buscamos el correo y extraemos datos

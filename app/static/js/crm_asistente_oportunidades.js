@@ -67,6 +67,33 @@
         if (mailWidget) mailWidget.style.zIndex = '11000';
 
         setTimeout(function () {
+            // Antes de entrar a Redactar: cambiar la cuenta de envío
+            // si el backend sugirió una (basado en la institución de
+            // la última cotización: Iamet vs Bajanet).
+            if (correo.from_email_sugerido) {
+                var sel = document.getElementById('mailWidgetEmailSelect');
+                if (sel) {
+                    var match = null;
+                    for (var i = 0; i < sel.options.length; i++) {
+                        var optTxt = (sel.options[i].textContent || '').toLowerCase();
+                        var optVal = sel.options[i].value;
+                        if (optTxt.indexOf(correo.from_email_sugerido.toLowerCase()) >= 0) {
+                            match = sel.options[i];
+                            break;
+                        }
+                    }
+                    if (match && match.value !== sel.value) {
+                        sel.value = match.value;
+                        // Disparar el handler que cambia la cuenta
+                        // activa del módulo Mail.
+                        if (typeof window.mailCambiarConexion === 'function') {
+                            window.mailCambiarConexion();
+                        } else {
+                            sel.dispatchEvent(new Event('change', {bubbles: true}));
+                        }
+                    }
+                }
+            }
             if (typeof window.mailRedactar === 'function') window.mailRedactar();
             setTimeout(function () {
                 // Para (destinatario)
@@ -93,13 +120,13 @@
                         var range = document.createRange();
                         range.selectNodeContents(editorEl);
                         range.collapse(false);
-                        var sel = window.getSelection();
-                        sel.removeAllRanges();
-                        sel.addRange(range);
+                        var sel2 = window.getSelection();
+                        sel2.removeAllRanges();
+                        sel2.addRange(range);
                     } catch (e) { /* silent */ }
                 }
-            }, 150);
-        }, 250);
+            }, 200);
+        }, 280);
     };
 
     /* Refresh hook usado por el asistente AI cuando guarda un resumen
