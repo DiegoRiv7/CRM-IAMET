@@ -1287,13 +1287,36 @@ def api_tareas(request):
                 elif estado_filter == 'completadas':
                     tareas = tareas.filter(estado='completada')
 
+                # Filtro por mes (YYYY-MM) — usado por el calendario para
+                # no traer todo el histórico. Aplica sobre fecha_limite.
+                mes_param = request.GET.get('mes', '').strip()
+                if mes_param:
+                    try:
+                        from datetime import datetime as _dt
+                        from django.utils import timezone as _tz
+                        import calendar as _cal
+                        year, month = int(mes_param[:4]), int(mes_param[5:7])
+                        last_day = _cal.monthrange(year, month)[1]
+                        desde = _tz.make_aware(_dt(year, month, 1, 0, 0, 0))
+                        hasta = _tz.make_aware(_dt(year, month, last_day, 23, 59, 59))
+                        tareas = tareas.filter(fecha_limite__gte=desde, fecha_limite__lte=hasta)
+                    except Exception:
+                        pass
+
                 # Paginación para completadas y todas (no para pendientes)
                 is_paginated = estado_filter in ('completadas', 'todas', '')
                 if is_paginated:
                     q_search = request.GET.get('q', '').strip()
                     if q_search:
                         tareas = tareas.filter(titulo__icontains=q_search)
-                    per_page = 50
+                    # per_page configurable (default 50, máx 500 para protección).
+                    # El calendario usa per_page=500 para jalar todas las tareas
+                    # del mes sin paginar.
+                    try:
+                        per_page = int(request.GET.get('per_page', 50))
+                    except (TypeError, ValueError):
+                        per_page = 50
+                    per_page = max(1, min(per_page, 500))
                     page = max(1, int(request.GET.get('page', 1)))
                     total = tareas.count()
                     total_pages = max(1, (total + per_page - 1) // per_page)

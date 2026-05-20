@@ -601,6 +601,12 @@
                     datesSet: function () {
                         calUpdateNavTitle();
                         if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
+                        // Refetch al cambiar de mes en FullCalendar (botones prev/next/today
+                        // o gotoDate disparan datesSet). Sólo si el mes visible cambió
+                        // respecto al último fetch (evita requests duplicadas en re-render).
+                        if (_calViewMode === 'month' && typeof window.calMaybeRefetchOnMonthChange === 'function') {
+                            window.calMaybeRefetchOnMonthChange();
+                        }
                     },
                     eventContent: function (arg) {
                         var ev = arg.event;
@@ -744,19 +750,33 @@
     };
 
     /* ─── NAVEGACIÓN ─── */
+    // Helper: refetch sólo si el mes visible cambió respecto al último fetch.
+    // Evita requests duplicadas y nos asegura no quedarnos sin eventos al
+    // navegar de un mes a otro.
+    window.calMaybeRefetchOnMonthChange = function () {
+        var mes = _calCurrentMesParam();
+        if (mes !== _calLastFetchedMes) {
+            var sel = document.getElementById('calUserFilter');
+            calGlobalRefetch(sel ? sel.value : 'all');
+        }
+    };
+
     window.calNavPrev = function () {
         if (_calViewMode === 'month') {
+            // datesSet de FullCalendar disparará calMaybeRefetchOnMonthChange.
             if (_globalCalendar) { _globalCalendar.prev(); }
         } else if (_calViewMode === 'week') {
             _calWeekStart = new Date(_calWeekStart);
             _calWeekStart.setDate(_calWeekStart.getDate() - 7);
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() - 1);
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         }
     };
 
@@ -768,11 +788,13 @@
             _calWeekStart.setDate(_calWeekStart.getDate() + 7);
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() + 1);
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         }
     };
 
@@ -784,13 +806,16 @@
             _calWeekStart = calGetWeekStart(new Date());
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         } else {
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         }
     };
 
     window.calSwitchView = function (mode) {
+        var prevMode = _calViewMode;
         _calViewMode = mode;
         try { localStorage.setItem('_crm_cal_view', mode); } catch (e) {}
         var fcRoot = document.getElementById('fullCalendarRoot');
@@ -813,20 +838,41 @@
             fcRoot.style.display = '';
             if (btnMes) btnMes.classList.add('active');
             if (btnMesP) btnMesP.classList.add('active');
-            if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
+            if (_globalCalendar) {
+                // Preservar la fecha visible entre vistas. Si venimos de
+                // 'week' usamos _calWeekStart, si venimos de 'day' usamos
+                // _calCurrentDay. Fallback a hoy.
+                var targetDate = null;
+                if (prevMode === 'week' && _calWeekStart) targetDate = _calWeekStart;
+                else if (prevMode === 'day' && _calCurrentDay) targetDate = _calCurrentDay;
+                if (targetDate) _globalCalendar.gotoDate(targetDate);
+                _globalCalendar.render();
+            }
         } else if (mode === 'week') {
             weekRoot.style.display = 'flex';
             weekRoot.style.flexDirection = 'column';
             if (btnSemana) btnSemana.classList.add('active');
             if (btnSemanaP) btnSemanaP.classList.add('active');
-            _calWeekStart = calGetWeekStart(new Date());
+            // Si venimos de 'month', usar el mes visible del FullCalendar.
+            // Si venimos de 'day', usar _calCurrentDay para que la semana lo contenga.
+            var weekSeed;
+            if (prevMode === 'day' && _calCurrentDay) weekSeed = _calCurrentDay;
+            else if (_globalCalendar) weekSeed = _globalCalendar.getDate();
+            else weekSeed = new Date();
+            _calWeekStart = calGetWeekStart(weekSeed);
             calRenderWeekView(_calWeekStart);
         } else {
             dayRoot.style.display = 'flex';
             dayRoot.style.flexDirection = 'column';
             if (btnDia) btnDia.classList.add('active');
             if (btnDiaP) btnDiaP.classList.add('active');
-            _calCurrentDay = new Date();
+            // Si venimos de 'week', usar inicio de la semana visible.
+            // Si venimos de 'month', usar la fecha visible del FullCalendar.
+            var daySeed;
+            if (prevMode === 'week' && _calWeekStart) daySeed = _calWeekStart;
+            else if (_globalCalendar) daySeed = _globalCalendar.getDate();
+            else daySeed = new Date();
+            _calCurrentDay = new Date(daySeed);
             calRenderDayView(_calCurrentDay);
         }
         calHidePanelDetail();
@@ -906,9 +952,13 @@
     var _calWeekStart = null; // Monday of current week
 
     function calGetWeekStart(date) {
+        // Semana empieza en LUNES (consistente con FullCalendar firstDay:1).
+        // getDay(): 0=Dom, 1=Lun, ..., 6=Sáb.
+        // offset hacia lunes: domingo retrocede 6, otros retroceden day-1.
         var d = new Date(date);
-        var day = d.getDay(); // 0=Sun
-        d.setDate(d.getDate() - day); // go to Sunday
+        var day = d.getDay();
+        var offset = (day === 0) ? 6 : day - 1;
+        d.setDate(d.getDate() - offset);
         d.setHours(0,0,0,0);
         return d;
     }
@@ -1094,7 +1144,7 @@
                 if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
                 else if (isOvAct) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:1px;"></div>';
 
-                html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
+                html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" data-draggable="1" data-orig-top="'+evTop+'" data-orig-left="'+leftPx+'" data-orig-width="'+colW+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:grab;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;user-select:none;'+compOpacity+'">'+
                     '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
                     '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
                     '</div>'+
@@ -1136,6 +1186,8 @@
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
         // Hover preview en cards de evento y tarea de la vista semana.
         _calWeekBindHoverHandlers();
+        // Drag & drop para reagendar actividades (no aplica a tareas).
+        _calWeekBindDragHandlers();
         calUpdateSidePanel();
     }
 
@@ -1161,6 +1213,167 @@
             });
         });
     }
+
+    /* ─── DRAG & DROP de actividades en vista Semana ───
+       Permite arrastrar una card de actividad para cambiar hora y/o día.
+       Snap a 15 minutos. Mantiene la duración del evento. Las tareas
+       (id que empieza con "tarea-") quedan excluidas (editable:false).
+       Si el PUT al backend falla, revierte visualmente la card. */
+    var _calWeekDrag = null;
+
+    function _calWeekBindDragHandlers() {
+        var cards = document.querySelectorAll('#calWeekTimeline .cal-week-evt[data-draggable="1"]');
+        cards.forEach(function (card) {
+            if (card._calWeekDragBound) return;
+            card._calWeekDragBound = true;
+            card.addEventListener('mousedown', _calWeekCardMouseDown);
+        });
+    }
+
+    function _calWeekCardMouseDown(ev) {
+        if (ev.button !== 0) return;
+        var card = ev.currentTarget;
+        var evtId = card.getAttribute('data-evt-id');
+        if (!evtId) return;
+        // Tareas no son arrastrables (editable:false). Defensa extra por si
+        // alguna card con id 'tarea-' obtuviera data-draggable="1".
+        if (String(evtId).indexOf('tarea-') === 0) return;
+        var stored = _globalEvents.find(function (x) { return String(x.id) === String(evtId); });
+        if (!stored) return;
+        var sD = new Date(stored.start);
+        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
+        var container = document.getElementById('calWeekTimeline');
+        if (!container) return;
+        var hoursW = 56;
+        var dayW = Math.floor((container.offsetWidth - hoursW) / 7);
+        _calWeekDrag = {
+            card: card,
+            evtId: evtId,
+            startX: ev.clientX,
+            startY: ev.clientY,
+            startTop: parseFloat(card.style.top) || 0,
+            startLeft: parseFloat(card.style.left) || 0,
+            startWidth: parseFloat(card.style.width) || 0,
+            origDataTop: parseFloat(card.getAttribute('data-orig-top')) || (parseFloat(card.style.top) || 0),
+            origDataLeft: parseFloat(card.getAttribute('data-orig-left')) || (parseFloat(card.style.left) || 0),
+            origDataWidth: parseFloat(card.getAttribute('data-orig-width')) || (parseFloat(card.style.width) || 0),
+            originalStartMs: sD.getTime(),
+            originalEndMs: eD.getTime(),
+            moved: false,
+            stored: stored,
+            dayW: dayW,
+            lastDeltaMin: 0,
+            lastDeltaDays: 0,
+        };
+        // Cerramos cualquier hover preview antes de empezar el drag.
+        if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview();
+        clearTimeout(window._calHoverTimer);
+        ev.preventDefault();
+        ev.stopPropagation();
+    }
+
+    function _calWeekDragMoveGlobal(ev) {
+        if (!_calWeekDrag) return;
+        var dx = ev.clientX - _calWeekDrag.startX;
+        var dy = ev.clientY - _calWeekDrag.startY;
+        // Threshold 2px para distinguir click de drag (igual que vista Día).
+        if (!_calWeekDrag.moved && Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return;
+        if (!_calWeekDrag.moved) {
+            _calWeekDrag.moved = true;
+            _calWeekDrag.card.style.opacity = '0.7';
+            _calWeekDrag.card.style.zIndex = '30';
+            _calWeekDrag.card.style.cursor = 'grabbing';
+            _calWeekDrag.card.style.boxShadow = '0 8px 24px rgba(0,82,212,0.35), 0 0 0 2px #0052D4';
+            // Mientras arrastra, expandir al ancho completo de la columna-día
+            // para evitar confusión visual con el column-split de eventos solapados.
+            _calWeekDrag.card.style.width = _calWeekDrag.dayW + 'px';
+        }
+        var pxPerMin = CAL_HOUR_H / 60;
+        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;
+        var deltaDays = Math.round(dx / _calWeekDrag.dayW);
+        _calWeekDrag.lastDeltaMin = deltaMin;
+        _calWeekDrag.lastDeltaDays = deltaDays;
+        _calWeekDrag.card.style.top = (_calWeekDrag.startTop + deltaMin * pxPerMin) + 'px';
+        _calWeekDrag.card.style.left = (_calWeekDrag.startLeft + deltaDays * _calWeekDrag.dayW) + 'px';
+    }
+
+    function _calWeekDragUpGlobal(ev) {
+        if (!_calWeekDrag) return;
+        var drag = _calWeekDrag;
+        _calWeekDrag = null;
+        drag.card.style.opacity = '';
+        drag.card.style.zIndex = '';
+        drag.card.style.cursor = '';
+        drag.card.style.boxShadow = '';
+        if (!drag.moved) {
+            // Click puro → abrir detalle (sustituye al onclick inline removido).
+            if (typeof window._calOpenFull === 'function') window._calOpenFull(drag.evtId);
+            return;
+        }
+        var deltaMin = drag.lastDeltaMin || 0;
+        var deltaDays = drag.lastDeltaDays || 0;
+        // Sin cambio neto → revertir a posición original y salir.
+        if (deltaMin === 0 && deltaDays === 0) {
+            drag.card.style.top = drag.startTop + 'px';
+            drag.card.style.left = drag.startLeft + 'px';
+            drag.card.style.width = drag.startWidth + 'px';
+            return;
+        }
+        var deltaMs = deltaMin * 60000 + deltaDays * 86400000;
+        var newStart = new Date(drag.originalStartMs + deltaMs);
+        var newEnd = new Date(drag.originalEndMs + deltaMs);
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        function localIso(d) {
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+                'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':00';
+        }
+        var ep = drag.stored.extendedProps || {};
+        var csrf = (function () { var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; })();
+        var newStartIso = localIso(newStart);
+        var newEndIso = localIso(newEnd);
+        fetch('/app/api/actividades/' + drag.evtId + '/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                title: drag.stored.title,
+                start: newStartIso,
+                end: newEndIso,
+                description: drag.stored.description || '',
+                tipo: ep.tipo_actividad || 'otro',
+                color: drag.stored.color || '#1D1D1F',
+                participants: (ep.participants || []).map(function (p) { return p.id; }),
+                opportunity: ep.opportunity ? ep.opportunity.id : null,
+            })
+        }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function (res) {
+            if (res && res.error) throw new Error(res.error);
+            // Update local sin refetch al server.
+            drag.stored.start = newStartIso;
+            drag.stored.end = newEndIso;
+            // Sincronizar el evento en FullCalendar (vista Mes) para que al
+            // cambiar de vista refleje la nueva fecha sin refetch.
+            if (_globalCalendar) {
+                var fcEv = _globalCalendar.getEventById(drag.evtId);
+                if (fcEv) fcEv.setDates(newStart, newEnd);
+            }
+            // Re-render local para reposicionar la card (column-split, separadores, etc.).
+            calRenderWeekView(_calWeekStart);
+        }).catch(function (err) {
+            console.error('[cal-drag-week] PUT failed:', err);
+            // Revertir visualmente a la posición original.
+            drag.card.style.top = drag.origDataTop + 'px';
+            drag.card.style.left = drag.origDataLeft + 'px';
+            drag.card.style.width = drag.origDataWidth + 'px';
+            alert('No se pudo mover el evento: ' + (err.message || 'error desconocido'));
+        });
+    }
+
+    // Handlers globales para move/up — siempre activos (no-op cuando _calWeekDrag es null).
+    document.addEventListener('mousemove', _calWeekDragMoveGlobal);
+    document.addEventListener('mouseup', _calWeekDragUpGlobal);
 
     /* ─── DAY VIEW RENDER ─── */
     /* Vista Día — formato LISTA (no timeline tradicional).
@@ -1949,6 +2162,7 @@
     // userId opcional: cuando se pasa, refetchea el calendario como lo vería
     // ese usuario (actividades + tareas donde es creador/participante/asignado).
     // Permite al selector mostrar el calendario completo de otra persona.
+    var _calLastFetchedMes = null;  // último mes (YYYY-MM) fetcheado, para detectar cambios al navegar.
     window.calGlobalRefetch = function (userVal) {
         // userVal puede ser 'all', un id ('12') o un CSV ('12,34,56').
         var csrf = (typeof getCsrf==='function')?getCsrf():(function(){ var v=document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v?v.pop():''; })();
@@ -1958,8 +2172,17 @@
                 ? ('?user_ids=' + encodeURIComponent(userVal))
                 : ('?user_id=' + encodeURIComponent(userVal));
         }
-        var pActividades = fetch('/app/api/actividades/' + qs,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
-        var pTareas = fetch('/app/api/tareas/' + qs).then(function(r){return r.json();});
+        // Filtro por mes para evitar bajar todo el histórico.
+        // Backend de /api/actividades/ y /api/tareas/ soporta ?mes=YYYY-MM.
+        // /api/tareas/ pagina a 50 por default; per_page=500 garantiza traer
+        // todas las tareas del mes visible sin perder ninguna.
+        var mes = _calCurrentMesParam();
+        var sep = qs ? '&' : '?';
+        var actividadesUrl = '/app/api/actividades/' + qs + sep + 'mes=' + encodeURIComponent(mes);
+        var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500';
+        _calLastFetchedMes = mes;
+        var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
+        var pTareas = fetch(tareasUrl).then(function(r){return r.json();});
 
         Promise.all([pActividades,pTareas]).then(function(results){
             var actividades=results[0];
@@ -2027,7 +2250,18 @@
     var _calInitialSelectionDone = false;
 
     function _calCurrentMesParam() {
-        var d = _calCurrentDay || new Date();
+        // Devuelve el "mes visible" actual según la vista activa.
+        // En vista mes usamos la fecha del FullCalendar (puede no estar en
+        // _calCurrentDay si el usuario navegó con prev/next).
+        var d;
+        if (_calViewMode === 'month' && _globalCalendar) {
+            try { d = _globalCalendar.getDate(); } catch (e) { d = null; }
+        } else if (_calViewMode === 'week') {
+            d = _calWeekStart || _calCurrentDay;
+        } else {
+            d = _calCurrentDay;
+        }
+        if (!d) d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
     }
 
