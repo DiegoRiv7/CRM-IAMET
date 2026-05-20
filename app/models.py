@@ -370,6 +370,16 @@ class TodoItem(models.Model):
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
     po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO")
     factura_numero = models.CharField(max_length=100, blank=True, default='', verbose_name="Factura")
+    # FK directo al prospecto del que se generó esta oportunidad. A
+    # diferencia de Prospecto.oportunidad_creada (FK al revés que solo
+    # apunta a UNA opp), aquí CADA opp generada apunta al mismo
+    # prospecto. Permite contar correctamente cuántas opps salieron de
+    # cada prospecto en los dashboards.
+    prospecto_origen_directo = models.ForeignKey(
+        'Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='opps_generadas',
+        verbose_name="Prospecto de origen (directo)",
+    )
 
     # Campos para seguimiento de facturación
     monto_facturacion = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name="Monto de Facturación")

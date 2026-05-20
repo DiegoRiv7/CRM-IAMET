@@ -743,6 +743,11 @@ document.addEventListener('click', function(ev) {
         setVal('wcoTipoNeg', data.tipo_pipeline || '');
         setVal('wcoNotas', '');
 
+        // Cargar dropdown de responsable. Default = vendedor del prospecto.
+        // Si el user es supervisor/admin, podemos cargar la lista completa
+        // de vendedores visibles para que elija a quién asignar.
+        _wcoPoblarResponsables();
+
         modal.style.display = 'flex';
         modal.style.alignItems = 'center';
         modal.style.justifyContent = 'center';
@@ -750,6 +755,33 @@ document.addEventListener('click', function(ev) {
             var t = document.getElementById('wcoTitulo');
             if (t) t.focus();
         }, 60);
+    }
+
+    function _wcoPoblarResponsables() {
+        var sel = document.getElementById('wcoResponsable');
+        if (!sel) return;
+        var data = window._currentProspectoData || {};
+        var vendedorIdProspecto = (data.usuario && data.usuario.id) || data.usuario_id || null;
+        var vendedorNombre = (data.usuario && (data.usuario.nombre || data.usuario.first_name)) || data.vendedor || 'Vendedor del prospecto';
+        // Vista base: vacío = vendedor del prospecto (default backend).
+        sel.innerHTML = '<option value="">— ' + escapeHtml(vendedorNombre) + ' (default) —</option>';
+        // Si el user actual es supervisor, intentamos cargar la lista
+        // completa para que pueda elegir reasignar.
+        fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(payload) {
+                if (!payload) return;
+                var users = (payload.usuarios || payload.users || []);
+                if (!users.length) return;
+                users.forEach(function(u) {
+                    var nombre = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = nombre + (u.id === vendedorIdProspecto ? ' (vendedor del prospecto)' : '');
+                    sel.appendChild(opt);
+                });
+            })
+            .catch(function() { /* vendor sin permisos — solo verá la opción default */ });
     }
     window.wpAbrirModalCrearOpp = wpAbrirModalCrearOpp;
 
@@ -863,6 +895,9 @@ document.addEventListener('click', function(ev) {
         var producto = (document.getElementById('wcoProducto').value || '').trim();
         var area = (document.getElementById('wcoArea').value || '').trim();
         var notas = (document.getElementById('wcoNotas').value || '').trim();
+        var responsableId = (document.getElementById('wcoResponsable')
+            ? document.getElementById('wcoResponsable').value
+            : '').trim();
 
         if (!titulo) {
             alert('El título de la oportunidad es requerido.');
@@ -889,7 +924,9 @@ document.addEventListener('click', function(ev) {
                 producto: producto,
                 area: area,
                 comentarios: notas,
-                probabilidad_cierre: 25
+                probabilidad_cierre: 25,
+                // Si está vacío, el backend usa prospecto.usuario por default.
+                usuario_id: responsableId ? parseInt(responsableId, 10) : null,
             })
         }).then(function(r){ return r.json(); }).then(function(data) {
             if (btn) { btn.disabled = false; btn.innerHTML = orig; }

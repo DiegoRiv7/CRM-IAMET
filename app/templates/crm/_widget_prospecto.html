@@ -373,8 +373,15 @@ Al cerrar el modal, si se creó al menos una, el prospecto pasa a cerrado_ganado
                         </select>
                     </div>
 
-                    {% comment %}Monto eliminado del form — el monto real se captura cuando se crea la cotización dentro de la oportunidad.{% endcomment %}
+                    {% comment %}Monto eliminado — se captura en la cotización dentro de la opp.{% endcomment %}
                     <input type="hidden" id="wcoMonto" value="0">
+                    <div>
+                        <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Responsable</label>
+                        <select id="wcoResponsable" style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">
+                            {% comment %}Default: el vendedor dueño del prospecto. Si es supervisor, se inyectan opciones extra via JS al abrir el modal.{% endcomment %}
+                            <option value="">— Vendedor del prospecto —</option>
+                        </select>
+                    </div>
                     <div>
                         <label style="display:block;font-size:0.72rem;font-weight:700;color:#475569;margin-bottom:4px;">Tipo de pipeline <span style="color:#EF4444;">*</span></label>
                         <select id="wcoTipoNeg" required style="width:100%;border:1px solid #E5E5EA;border-radius:8px;padding:9px 12px;font-size:0.86rem;background:#fff;outline:none;font-family:inherit;">

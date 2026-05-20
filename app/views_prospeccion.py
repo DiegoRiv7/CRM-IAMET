@@ -744,6 +744,26 @@ def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
         probabilidad = 25
     comentarios_extra = (data.get('comentarios') or '').strip()
 
+    # Responsable de la opp. Por default = vendedor del prospecto.
+    # Si llega usuario_id en el payload (supervisor reasignando), lo
+    # respetamos solo si: (a) el solicitante es supervisor/admin, o
+    # (b) es el mismo vendedor dueño del prospecto.
+    responsable = prospecto.usuario
+    raw_uid = data.get('usuario_id')
+    if raw_uid:
+        try:
+            uid = int(raw_uid)
+        except (TypeError, ValueError):
+            uid = None
+        if uid:
+            es_sup = is_supervisor(request.user) or is_administrador(request.user)
+            if es_sup or uid == prospecto.usuario_id or uid == request.user.id:
+                try:
+                    from django.contrib.auth.models import User as _User
+                    responsable = _User.objects.get(pk=uid)
+                except Exception:
+                    responsable = prospecto.usuario
+
     # Comentario inicial: deja rastro del prospecto origen para auditoría.
     comentario_link = f'[Creada desde prospecto #{prospecto.id} "{prospecto.nombre}"]'
     comentarios_final = comentario_link
@@ -752,7 +772,7 @@ def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
 
     now_dt = timezone.now()
     opp = TodoItem.objects.create(
-        usuario=prospecto.usuario,
+        usuario=responsable,
         oportunidad=titulo[:200],
         cliente=prospecto.cliente,
         contacto=prospecto.contacto,
@@ -765,6 +785,9 @@ def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
         anio_cierre=now_dt.year,
         comentarios=comentarios_final,
         estado_crm='nueva',
+        # FK directo para que los dashboards cuenten TODAS las opps que
+        # salieron de este prospecto, no solo la primera.
+        prospecto_origen_directo=prospecto,
     )
 
     # Replicar el comentario inicial en la conversación de la oportunidad
