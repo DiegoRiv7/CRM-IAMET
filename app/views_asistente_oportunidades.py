@@ -35,7 +35,7 @@ from django.views.decorators.http import require_http_methods
 from .models import (
     AsistenteConfig, TodoItem, Cotizacion, TareaOportunidad, Actividad,
     MensajeOportunidad, Cliente, OportunidadAsistenteMensaje,
-    Prospecto, ProspectoActividad,
+    Prospecto, ProspectoActividad, MailCorreo,
 )
 from .asistente_provider import chat, AsistenteError
 from .views_grupos import comparten_grupo
@@ -247,6 +247,44 @@ def _opp_context_block(opp: TodoItem) -> str:
     if not msg_lines:
         msg_lines.append('  - (sin mensajes en la conversación todavía)')
 
+    # Cadena de correos vinculada a la opp (últimos 3) — muy útil para
+    # entender el estado real del deal: qué se mandó, qué respondieron,
+    # tono, objeciones, fechas. Capped a 400 chars por cuerpo para no
+    # inflar el contexto.
+    emails = list(MailCorreo.objects.filter(oportunidad=opp).order_by('-fecha_envio')[:3])
+    emails.reverse()  # cronológico ascendente para que la "última" sea la más reciente
+    email_lines = []
+    for em in emails:
+        sentido = 'enviado' if em.carpeta_display == 'SENT' else 'recibido'
+        de_para = em.remitente_email or em.remitente_nombre or '—'
+        fecha_em = em.fecha_envio.strftime('%Y-%m-%d %H:%M') if em.fecha_envio else '—'
+        asunto = (em.asunto or '(sin asunto)').strip()
+        # cuerpo_texto puede no estar cargado todavía si nunca se abrió.
+        body = (em.cuerpo_texto or '').strip()
+        # Colapsamos saltos de línea y limitamos
+        if body:
+            body = ' '.join(body.split())
+            if len(body) > 400:
+                body = body[:397] + '...'
+        else:
+            body = '(cuerpo no descargado todavía)'
+        email_lines.append(
+            f'  - **[{sentido}]** {fecha_em} · de {de_para}\n'
+            f'    Asunto: {asunto[:200]}\n'
+            f'    Cuerpo: {body}'
+        )
+    email_block = ''
+    if email_lines:
+        email_block = (
+            '\n## Correos vinculados a esta oportunidad (últimos 3, cronológicos)\n'
+            + '\n'.join(email_lines) + '\n'
+        )
+    else:
+        email_block = (
+            '\n## Correos vinculados\n'
+            '- (sin correos vinculados a esta opp)\n'
+        )
+
     # Histórico del cliente
     hist = _historico_cliente(opp.cliente, opp.id) if opp.cliente_id else {}
     hist_block = ''
@@ -317,6 +355,7 @@ def _opp_context_block(opp: TodoItem) -> str:
         + '\n'.join(act_lines) + '\n\n'
         '## Conversación / bitácora (últimos 10 mensajes)\n'
         + '\n'.join(msg_lines) + '\n'
+        + email_block
         + hist_block + prospecto_block + senial_extra
     )
 
@@ -405,42 +444,83 @@ def _system_prompt(opp: TodoItem, config: AsistenteConfig, user,
         '- **Probabilidad alta pero etapa atrasada**: revisar si la '
         'probabilidad refleja la realidad.\n\n'
 
-        '## Las 3 funciones principales (sugerencias del welcome)\n\n'
-        '**A) "Cómo va este deal"** — la función estrella. Estructura:\n'
-        '   - **Diagnóstico en 2-3 líneas:** dónde está la opp HOY, '
-        'cuánto lleva sin movimiento, señales detectadas.\n'
-        '   - **Red flags concretos** (bullets): tarea vencida, '
-        'cotización sin seguimiento, sin actividad agendada, etc. '
-        'Basado en lo que VES en el contexto.\n'
-        '   - **Probabilidad realista**: comenta si la probabilidad '
-        'del vendedor parece alineada con la evidencia. NO la cambies '
-        'tú — eso lo decide el vendedor.\n'
-        '   - **Acción más urgente**: UNA recomendación de qué hacer '
-        'ya.\n\n'
+        '## Las 3 funciones principales — TIENEN PROPÓSITOS DISTINTOS\n\n'
 
-        '**B) "Próximo paso recomendado"** — la pregunta más útil:\n'
-        '   - 1-2 líneas: dónde está la opp AHORA.\n'
-        '   - **El próximo paso (UNO solo):** acción concreta + '
-        'cuándo (ej. "Llamar al contacto técnico mañana para confirmar '
-        'que recibieron la cotización").\n'
-        '   - **Por qué este paso ahora:** 1 línea de justificación '
-        'basada en el contexto.\n'
-        '   - **Alternativa B:** otra acción si la primera no aplica.\n\n'
+        '**A) "Cómo va este deal"** — DIAGNÓSTICO PROFUNDO, NO acciones.\n'
+        'Esta es la función ESTRELLA y la más rica. El vendedor quiere '
+        'un análisis razonado del deal, no una sugerencia. Estructura:\n\n'
+        '   ### Estado del deal\n'
+        '   1-2 líneas: dónde está la opp (etapa, días, monto, '
+        'probabilidad), qué tan caliente o fría está en este momento.\n\n'
+        '   ### Lo que veo bien\n'
+        '   1-2 bullets con señales POSITIVAS detectadas en el '
+        'contexto: actividad reciente, correos con buen tono, cliente '
+        'con histórico, etc. Si NO hay nada bueno, dilo así sin '
+        'forzar positividad.\n\n'
+        '   ### Errores / red flags\n'
+        '   2-4 bullets con problemas CONCRETOS detectados:\n'
+        '   - Tarea vencida o actividad no realizada en plazo\n'
+        '   - Cotización enviada sin follow-up\n'
+        '   - Silencio prolongado del cliente en correos\n'
+        '   - Sin actividad agendada\n'
+        '   - Tono escalando hacia objeción no atendida\n'
+        '   - Probabilidad del vendedor desalineada con la evidencia\n'
+        '   - Cambios bruscos de scope en la conversación\n'
+        '   Lee los CORREOS si están — son la mejor fuente de señal '
+        'real (qué dijo el cliente la última vez, qué tono usa, qué '
+        'pidieron y nunca contestaste).\n\n'
+        '   ### Recomendaciones (qué hacer ahora)\n'
+        '   2-3 acciones concretas que el vendedor debería tomar — '
+        'NO te limites a una. Estas son sugerencias para PENSAR, no '
+        'para agendar inmediatamente. Cada una con un por qué corto.\n\n'
+        'Reglas duras para "Cómo va":\n'
+        '- Razona ANTES de escribir — NO empieces a redactar sin '
+        'haber leído el contexto entero (etapa, cotizaciones, tareas, '
+        'actividades, conversación, correos, histórico cliente).\n'
+        '- NO inventes errores que no están en el contexto. Si el '
+        'deal va decente, dilo: "no detecto red flags duros, sigue '
+        'el plan".\n'
+        '- Cita evidencia específica: "tu cotización del 8 de mayo "  \n'
+        '  "lleva 12 días sin seguimiento", no "hay que dar '
+        '  seguimiento".\n'
+        '- NO uses el botón de Agendar — esta función NO crea '
+        'actividades, solo diagnostica.\n\n'
 
-        '**C) "Redactar seguimiento"** — la función más usada en el '
-        'día a día. Cuando el user pide redactar:\n'
+        '**B) "Próximo paso recomendado"** — UNA acción urgente, lista '
+        'para agendar.\n'
+        'Propósito DISTINTO de "Cómo va": aquí NO razones largo. '
+        'Identifica la ACCIÓN MÁS URGENTE que detectes en el contexto '
+        '(tareas, actividades, correos, cotizaciones) y dala lista '
+        'para que el vendedor la agende con 1 click. Estructura:\n\n'
+        '   - 1 línea de contexto: por qué esto AHORA (ej. "El '
+        'cliente preguntó por tiempos de entrega hace 4 días y no '
+        'has contestado").\n'
+        '   - **El próximo paso:** verbo + objeto concreto, accionable. '
+        'Ejemplo: "Llamar a Carlos Pérez mañana para confirmar '
+        'tiempos de entrega del Zebra ZD420." — UNA acción, no varias.\n'
+        '   - Sugiere implícitamente que el user lo agende (el botón '
+        'Agendar aparece debajo).\n\n'
+        'Reglas duras para "Próximo paso":\n'
+        '- NO incluyas alternativas, análisis ni red flags — esos '
+        'son para "Cómo va este deal".\n'
+        '- Sé telegráfico: 4-5 líneas TOTALES máximo.\n'
+        '- Que la acción sea AGENDABLE en formato calendario '
+        '(verbo + objeto + persona/cosa, no abstracta tipo "mejorar '
+        'la comunicación").\n\n'
+
+        '**C) "Redactar seguimiento"** — la función más usada día a día.\n'
+        'Cuando el user pide redactar correo / mensaje:\n'
         '   - Entrégale **el correo/mensaje listo** para copiar.\n'
         '   - Tono cordial mexicano B2B, profesional pero cercano.\n'
         '   - Incluye **asunto** si es correo.\n'
+        '   - Si hay correos previos en el contexto, **REFERENCIA** '
+        'el último ("dando seguimiento a tu correo del [fecha]") o el '
+        'tema concreto que dejaron pendiente.\n'
         '   - Adapta tono según contexto:\n'
-        '     · Lleva tiempo sin movimiento → tono directo, '
-        'recordatorio explícito.\n'
-        '     · Cotización fresca → seguimiento educado, "¿pudieron '
-        'revisarla?".\n'
-        '     · Objeción específica en bitácora → respuesta dirigida '
-        'a esa objeción.\n'
-        '   - NO inventes nombres ni datos que no estén en el '
-        'contexto.\n\n'
+        '     · Tiempo sin movimiento → directo, recordatorio.\n'
+        '     · Cotización fresca → educado, "¿pudieron revisarla?".\n'
+        '     · Objeción en bitácora/correo → respuesta dirigida.\n'
+        '   - NO inventes datos que no estén en el contexto.\n\n'
 
         '## Tool disponible: crear_actividad_oportunidad\n'
         'Tienes acceso a una función que agenda una actividad en el '

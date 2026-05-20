@@ -267,17 +267,17 @@
                     + '<strong>redacte un seguimiento</strong>.';
             }
             container.innerHTML = ''
-                + '<button type="button" class="asist-sugg-card" data-prompt="¿Cómo va este deal? Dame un diagnóstico honesto con red flags y la acción más urgente.">'
+                + '<button type="button" class="asist-sugg-card" data-prompt="¿Cómo va este deal? Léete las tareas, actividades, cotizaciones, conversación y correos vinculados. Dame un diagnóstico razonado: estado actual, lo que veo bien, errores o red flags que detectes, y recomendaciones concretas para los siguientes movimientos.">'
                 +   '<span class="asist-sugg-icon">'
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-5"/></svg>'
                 +   '</span>'
-                +   '<span class="asist-sugg-text"><strong>Cómo va este deal</strong><em>Diagnóstico + red flags + acción urgente</em></span>'
+                +   '<span class="asist-sugg-text"><strong>Cómo va este deal</strong><em>Diagnóstico + errores + recomendaciones</em></span>'
                 + '</button>'
-                + '<button type="button" class="asist-sugg-card" data-prompt="' + PROXIMO_PASO_PROMPT + '">'
+                + '<button type="button" class="asist-sugg-card" data-prompt="Dime UNA sola acción — la más urgente que detectes en el contexto (correos sin responder, tareas vencidas, cotizaciones sin seguimiento, etc.) — lista para que la agende en el calendario.">'
                 +   '<span class="asist-sugg-icon">'
                 +     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
                 +   '</span>'
-                +   '<span class="asist-sugg-text"><strong>Próximo paso</strong><em>Qué hacer ahora para mover el deal</em></span>'
+                +   '<span class="asist-sugg-text"><strong>Próximo paso</strong><em>UNA acción urgente, lista para agendar</em></span>'
                 + '</button>';
             return;
         }
@@ -962,9 +962,11 @@
         // se acompañe del botón "Agendar seguimiento".
         // El flag se levanta para mostrar la card "Agendar" cuando el
         // user pide el próximo paso en prospecto u oportunidad. Match
-        // exacto contra el prompt canónico O substring match flexible.
+        // por varias frases comunes que dispara esa intención.
         var pidiendoProxPaso = (texto === PROXIMO_PASO_PROMPT)
-            || /pr[óo]ximo\s+paso/i.test(texto);
+            || /pr[óo]ximo\s+paso/i.test(texto)
+            || /(?:la|una)\s+(?:sola\s+)?acci[oó]n\s+(?:m[áa]s\s+)?urgente/i.test(texto)
+            || /lista\s+para\s+(?:que\s+)?(?:la\s+)?agend/i.test(texto);
         STATE.expectingProximoPaso = pidiendoProxPaso
             && (isProspectoMode() || isOportunidadMode());
 

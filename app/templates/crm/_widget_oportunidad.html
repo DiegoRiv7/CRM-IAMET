@@ -15,29 +15,29 @@
             <!-- Header -->
             <div class="wo-header">
                 <div class="wo-header-top">
-                    {% comment %}Bloque badge + título + botón AI a la izquierda; close X a la derecha. El orb del asistente queda inmediatamente después del título para que el user lo descubra al ver el deal.{% endcomment %}
-                    <div style="display:flex;align-items:flex-end;gap:14px;flex:1;min-width:0;">
-                        <div style="min-width:0;">
-                            <div class="wo-type-badge runrate" id="woTypeBadge">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path
-                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                                </svg>
-                                <span id="woTypeBadgeText">VENTA RUNRATE</span>
-                            </div>
-                            <h1 class="wo-title" id="woTitle"></h1>
+                    {% comment %}Bloque badge + título a la izquierda; el orb del asistente vive al lado del título (no del badge), centrado verticalmente con la línea del título. Close X a la derecha.{% endcomment %}
+                    <div style="flex:1;min-width:0;">
+                        <div class="wo-type-badge runrate" id="woTypeBadge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            </svg>
+                            <span id="woTypeBadgeText">VENTA RUNRATE</span>
                         </div>
-                        <button type="button" id="woBtnAsistente" class="wo-asist-btn-title"
-                            title="Asistente AI de esta oportunidad"
-                            style="background:transparent;border:none;cursor:pointer;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-bottom:6px;transition:transform 0.15s ease;"
-                            onmouseover="this.style.transform='translateY(-1px)'"
-                            onmouseout="this.style.transform='translateY(0)'">
-                            <span class="asist-orb asist-orb--static" aria-hidden="true" style="width:34px;height:34px;">
-                                <span class="asist-orb-core"></span>
-                                <span class="asist-orb-ring asist-orb-ring--horiz"></span>
-                                <span class="asist-orb-ring asist-orb-ring--vert"></span>
-                            </span>
-                        </button>
+                        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                            <h1 class="wo-title" id="woTitle" style="margin:0;min-width:0;"></h1>
+                            <button type="button" id="woBtnAsistente" class="wo-asist-btn-title"
+                                title="Asistente AI de esta oportunidad"
+                                style="background:transparent;border:none;cursor:pointer;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform 0.15s ease;"
+                                onmouseover="this.style.transform='translateY(-1px)'"
+                                onmouseout="this.style.transform='translateY(0)'">
+                                <span class="asist-orb asist-orb--static" aria-hidden="true" style="width:34px;height:34px;">
+                                    <span class="asist-orb-core"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     <button type="button" class="widget-close" id="detalleClose">&times;</button>
                 </div>
