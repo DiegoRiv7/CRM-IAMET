@@ -35,10 +35,7 @@ un icono estático. Saludo personalizado con first_name del user.
                 </div>
             </div>
             <div class="asist-header-right">
-                {# Botón "Guardar resumen": solo visible en modo idea (lo
-                   muestra el JS cuando se llama asistenteAbrir({idea}).
-                   Inserta el resumen de la conversación como IdeaComentario
-                   en la bitácora de la idea. #}
+                {% comment %}Botón "Guardar resumen": solo visible en modo idea (lo muestra el JS cuando se llama asistenteAbrir({idea}). Inserta el resumen de la conversación como IdeaComentario en la bitácora de la idea.{% endcomment %}
                 <button type="button" class="asist-new-chat-btn asist-save-resumen-btn" id="asistSaveResumenBtn" style="display:none;" title="Guardar resumen de la conversación en la bitácora de la idea">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -789,6 +786,13 @@ un icono estático. Saludo personalizado con first_name del user.
     margin-top: 22px;
     max-width: 540px;
     width: 100%;
+}
+/* Cuando solo hay 1 sugerencia (modo idea), centramos la card y le
+   damos un ancho cómodo en lugar de que ocupe la mitad izquierda
+   del grid 2 columnas. */
+.asist-suggestions:has(> :only-child) {
+    grid-template-columns: minmax(260px, 360px);
+    justify-content: center;
 }
 .asist-sugg-card {
     display: flex; align-items: center; gap: 12px;
