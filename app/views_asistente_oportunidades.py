@@ -190,14 +190,51 @@ def _opp_context_block(opp: TodoItem) -> str:
     # (el log de cambios de etapa no siempre está en este sistema).
     tiempo_en_etapa = _humanize_dias(dias_desde_act)
 
-    # Cotizaciones vinculadas
-    cots = list(Cotizacion.objects.filter(oportunidad=opp).order_by('-fecha_creacion')[:5])
+    # Cotizaciones vinculadas — con detalle de items (productos/servicios)
+    # para que el AI pueda responder "qué incluye la última cotización"
+    # con precisión. Limitamos a 3 cotizaciones y 8 items por cot.
+    cots = list(Cotizacion.objects.filter(oportunidad=opp).order_by('-fecha_creacion')[:3])
     cot_lines = []
     if cots:
         for c in cots:
             fecha = c.fecha_creacion.strftime('%Y-%m-%d') if c.fecha_creacion else '—'
-            monto_cot = _money(getattr(c, 'total', None) or getattr(c, 'monto', None))
-            cot_lines.append(f'  - {fecha} · {monto_cot} · estado: {c.estado or "—"}')
+            total_cot = _money(c.total)
+            titulo = (c.titulo or 'Cotización').strip()
+            tipo = c.tipo_cotizacion or '—'
+            moneda = c.moneda or 'MXN'
+            cot_lines.append(
+                f'  - **{titulo}** ({fecha}) · {total_cot} {moneda} · {tipo}'
+            )
+            if c.descripcion:
+                desc_short = c.descripcion.strip()
+                if len(desc_short) > 200:
+                    desc_short = desc_short[:197] + '...'
+                cot_lines.append(f'    · Descripción: {desc_short}')
+            # Items / DetalleCotizacion — los más importantes
+            detalles = list(c.detalles.all().order_by('orden')[:8])
+            if detalles:
+                cot_lines.append('    · Items:')
+                for d in detalles:
+                    qty = d.cantidad or 1
+                    marca = d.marca or ''
+                    parte = d.no_parte or ''
+                    precio = _money(d.total or d.precio_unitario)
+                    nombre = (d.nombre_producto or '').strip()[:120]
+                    extra = []
+                    if marca: extra.append(marca)
+                    if parte: extra.append('NP ' + parte)
+                    extra_str = (' · ' + ' · '.join(extra)) if extra else ''
+                    cot_lines.append(
+                        f'       {qty}× {nombre}{extra_str} → {precio}'
+                    )
+                total_items = c.detalles.count()
+                if total_items > 8:
+                    cot_lines.append(f'       (+ {total_items - 8} items más)')
+            if c.comentarios:
+                com_short = c.comentarios.strip()
+                if len(com_short) > 200:
+                    com_short = com_short[:197] + '...'
+                cot_lines.append(f'    · Comentarios: {com_short}')
     else:
         cot_lines.append('  - **Sin cotizaciones vinculadas** todavía.')
 
@@ -535,8 +572,11 @@ def _system_prompt(opp: TodoItem, config: AsistenteConfig, user,
         '- "¿Qué decía el último correo?" / "¿Qué nos respondieron?" '
         '→ resume en 2-3 líneas el cuerpo del correo más reciente '
         'del contexto, citando remitente y fecha.\n'
-        '- "¿Cuánto fue la cotización más reciente?" → da monto, '
-        'fecha y estado.\n'
+        '- "¿Cuánto fue la cotización más reciente?" → da total, '
+        'fecha, moneda y tipo (Bajanet/Iamet).\n'
+        '- "¿Qué incluye la cotización?" / "¿Qué productos cotizamos?" '
+        '→ lista los items literales con cantidad, marca, no. de '
+        'parte y precio total. NO inventes productos.\n'
         '- "¿Qué actividades tiene agendadas?" / "¿Tiene algo '
         'vencido?" → lista lo que esté en el contexto.\n'
         '- "¿Cuántas opps cerradas ha tenido este cliente?" → cita '
