@@ -428,6 +428,20 @@ un icono estático. Saludo personalizado con first_name del user.
     background: rgba(16, 185, 129, 0.18);
     border-color: #059669;
 }
+/* Estado "guardando" — opacidad sutil y sin hover. */
+.asist-save-resumen-btn.is-saving {
+    opacity: 0.75;
+    cursor: progress;
+}
+/* Estado "guardado" — verde sólido por 2.5s para feedback inequívoco
+   y evitar que el user le dé doble-click. */
+.asist-save-resumen-btn.is-saved {
+    background: #059669 !important;
+    color: #fff !important;
+    border-color: #047857 !important;
+    box-shadow: 0 1px 2px rgba(5,150,105,0.18), 0 6px 16px rgba(5,150,105,0.22);
+}
+.asist-save-resumen-btn.is-saved svg { display: none; }
 
 /* ═════════ Mensajes ═════════ */
 .asist-messages {

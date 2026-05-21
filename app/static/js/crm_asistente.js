@@ -103,6 +103,20 @@
         ov.classList.add('active');
         document.body.style.overflow = 'hidden';
         applyMode();
+        // Reset de las animaciones del orb (logo). Al cerrar el modal con
+        // display:none las animaciones CSS pausan en estado mid-frame;
+        // al reabrir el browser a veces no las reinicia limpio y el logo
+        // se ve trabado. Forzamos remove+reflow+add para garantizar arranque
+        // desde 0%.
+        try {
+            var orbs = ov.querySelectorAll('.asist-orb, .asist-orb-core, .asist-orb-ring');
+            orbs.forEach(function (el) {
+                var prev = el.style.animation;
+                el.style.animation = 'none';
+                void el.offsetWidth; // forzar reflow
+                el.style.animation = prev || '';
+            });
+        } catch (e) { /* silent */ }
         if (nextCalendar) {
             // No cargamos config/historial del chat. Disparamos el render
             // del módulo del calendario (definido en crm_asistente_calendario.js).
@@ -177,7 +191,24 @@
             }
         }
         var saveBtn = document.getElementById('asistSaveResumenBtn');
-        if (saveBtn) saveBtn.style.display = (!modeCal && isEmbedMode()) ? '' : 'none';
+        if (saveBtn) {
+            saveBtn.style.display = (!modeCal && isEmbedMode()) ? '' : 'none';
+            // Texto del botón según modo:
+            //   - Oportunidad → "Resumir en conversación" (se guarda como mensaje en
+            //     la conversación interna del deal).
+            //   - Idea / Prospecto → "Resumir en comentarios" (bitácora).
+            var lbl = saveBtn.querySelector('span');
+            if (lbl) {
+                if (isOportunidadMode()) {
+                    lbl.textContent = 'Resumir en conversación';
+                } else {
+                    lbl.textContent = 'Resumir en comentarios';
+                }
+                // Guardamos el texto base para que saveResumen() pueda restaurarlo
+                // después del feedback "✓ Guardado".
+                saveBtn.dataset.labelBase = lbl.textContent;
+            }
+        }
         // En modo calendario ocultamos el input de chat y el botón "Nuevo chat"
         // (es action-driven, no conversacional).
         var inputWrap = document.querySelector('#widgetAsistente .asist-input-wrap');
@@ -459,21 +490,46 @@
         });
     }
 
-    /* ─── Guardar resumen (solo en modo embebido: idea o prospecto) ─── */
+    /* ─── Guardar resumen (solo en modo embebido: idea, prospecto u oportunidad) ─── */
     function saveResumen() {
         if (!isEmbedMode() || STATE.sending) return;
         STATE.sending = true;
         var btn = document.getElementById('asistSaveResumenBtn');
-        if (btn) btn.disabled = true;
+        var lbl = btn ? btn.querySelector('span') : null;
+        var labelBase = (btn && btn.dataset.labelBase) || (lbl ? lbl.textContent : 'Resumir');
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('is-saving');
+        }
+        if (lbl) lbl.textContent = 'Guardando…';
+
+        // Reset común para los caminos de error (fallo de red o backend no-ok).
+        function restoreBtn() {
+            if (lbl) lbl.textContent = labelBase;
+            if (btn) {
+                btn.classList.remove('is-saving');
+                btn.classList.remove('is-saved');
+                btn.disabled = false;
+            }
+            STATE.sending = false;
+        }
         api(urlResumen(), {method: 'POST', body: '{}'}).then(function (res) {
             if (!res.ok || !res.data.ok) {
+                var errMsg = (res.data && res.data.error) || 'No se pudo guardar el resumen';
                 if (typeof window.showFlash === 'function') {
-                    window.showFlash((res.data && res.data.error) || 'No se pudo guardar el resumen', 'error');
+                    window.showFlash(errMsg, 'error');
                 } else {
-                    alert((res.data && res.data.error) || 'No se pudo guardar el resumen');
+                    alert(errMsg);
                 }
+                restoreBtn();
                 return;
             }
+            // Éxito: feedback claro EN EL BOTÓN mismo (no se pierde como un
+            // toast) + toast global por redundancia. El botón se queda
+            // disabled 2.5s en estado "Guardado" para que el user no haga
+            // doble-click.
+            if (lbl) lbl.textContent = '✓ Guardado';
+            if (btn) btn.classList.add('is-saved');
             if (typeof window.showFlash === 'function') {
                 var dest = isOportunidadMode() ? 'la conversación del deal' : 'la bitácora';
                 window.showFlash('Resumen agregado a ' + dest);
@@ -489,9 +545,10 @@
                     window.refreshOportunidadDetalle(STATE.oportunidadCtx.id);
                 }
             } catch (e) { /* silent */ }
-        }).finally(function () {
-            STATE.sending = false;
-            if (btn) btn.disabled = false;
+            // Reset visual a 2.5s (botón disabled durante ese tiempo evita doble-click).
+            setTimeout(restoreBtn, 2500);
+        }).catch(function () {
+            restoreBtn();
         });
     }
 
