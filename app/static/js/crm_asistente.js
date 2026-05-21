@@ -62,10 +62,12 @@
         ideaCtx: null,
         prospectoCtx: null,
         oportunidadCtx: null,
+        // calendarMode: cuando es true, el asistente opera en modo
+        // "calendario" (action-driven, sin chat). Lo dibuja
+        // crm_asistente_calendario.js dentro de #asistMessages.
+        calendarMode: false,
         // Flag: la PRÓXIMA respuesta del asistente (en modo prospecto
-        // o modo oportunidad) debe traer la card "Agendar seguimiento"
-        // debajo. Se levanta cuando el user manda exactamente
-        // PROXIMO_PASO_PROMPT y se baja en cuanto la card se renderea.
+        // o modo oportunidad) debe traer la card "Agendar seguimiento".
         expectingProximoPaso: false,
         lastAssistantText: '',
     };
@@ -75,33 +77,48 @@
         var ov = document.getElementById('widgetAsistente');
         if (!ov) return;
         options = options || {};
-        // Detectamos el contexto embebido (idea/prospecto) o modo general.
+        // Resolver modo objetivo. El modo calendario es excluyente con
+        // los contextos embebidos (idea/prospecto/oportunidad).
         var prevCtxKey = ctxKey();
-        STATE.ideaCtx = options.idea || null;
-        STATE.prospectoCtx = options.prospecto || null;
-        STATE.oportunidadCtx = options.oportunidad || null;
+        var prevCalendar = STATE.calendarMode;
+        var nextCalendar = !!options.calendar;
+        STATE.calendarMode = nextCalendar;
+        STATE.ideaCtx = (!nextCalendar && options.idea) ? options.idea : null;
+        STATE.prospectoCtx = (!nextCalendar && options.prospecto) ? options.prospecto : null;
+        STATE.oportunidadCtx = (!nextCalendar && options.oportunidad) ? options.oportunidad : null;
         var nextCtxKey = ctxKey();
-        // Si cambiamos de modo o de target, vaciamos mensajes y forzamos
-        // recarga de historial.
-        if (prevCtxKey !== nextCtxKey) {
+        var modeChanged = (prevCtxKey !== nextCtxKey) || (prevCalendar !== nextCalendar);
+        if (modeChanged) {
             STATE.historyLoaded = false;
             var box = document.getElementById('asistMessages');
             if (box) {
                 box.innerHTML = '';
-                box.appendChild(buildWelcomeNode());
-                applyContextualSuggestions();
+                if (!nextCalendar) {
+                    box.appendChild(buildWelcomeNode());
+                    applyContextualSuggestions();
+                }
             }
         }
         ov.style.display = 'flex';
         ov.classList.add('active');
         document.body.style.overflow = 'hidden';
         applyMode();
-        ensureConfig();
-        loadHistory();
-        setTimeout(function () {
-            var inp = document.getElementById('asistInput');
-            if (inp) inp.focus();
-        }, 50);
+        if (nextCalendar) {
+            // No cargamos config/historial del chat. Disparamos el render
+            // del módulo del calendario (definido en crm_asistente_calendario.js).
+            try {
+                if (typeof window._calAiRenderRoot === 'function') {
+                    window._calAiRenderRoot();
+                }
+            } catch (e) { /* silent */ }
+        } else {
+            ensureConfig();
+            loadHistory();
+            setTimeout(function () {
+                var inp = document.getElementById('asistInput');
+                if (inp) inp.focus();
+            }, 50);
+        }
     }
     function closeAsistente() {
         var ov = document.getElementById('widgetAsistente');
@@ -112,16 +129,19 @@
     }
     window.asistenteAbrir = openAsistente;
     window.asistenteCerrar = closeAsistente;
+    // Helpers para integraciones externas (p.ej. crm_asistente_calendario.js).
+    window.asistenteEsCalendarMode = function () { return isCalendarMode(); };
 
-    /* ─── Modo (general / idea / prospecto / oportunidad) ─── */
+    /* ─── Modo (general / idea / prospecto / oportunidad / calendario) ─── */
     function isIdeaMode() { return !!STATE.ideaCtx; }
     function isProspectoMode() { return !!STATE.prospectoCtx; }
     function isOportunidadMode() { return !!STATE.oportunidadCtx; }
+    function isCalendarMode() { return !!STATE.calendarMode; }
     function isEmbedMode() {
         return isIdeaMode() || isProspectoMode() || isOportunidadMode();
     }
     function ctxKey() {
-        // Identidad del contexto embebido — sirve para detectar cambios.
+        if (STATE.calendarMode) return 'calendar';
         if (STATE.ideaCtx) return 'idea:' + STATE.ideaCtx.id;
         if (STATE.prospectoCtx) return 'prospecto:' + STATE.prospectoCtx.id;
         if (STATE.oportunidadCtx) return 'opp:' + STATE.oportunidadCtx.id;
@@ -129,9 +149,12 @@
     }
 
     function applyMode() {
+        var modeCal = isCalendarMode();
         var tagText = document.getElementById('asistTaglineText');
         if (tagText) {
-            if (isIdeaMode()) {
+            if (modeCal) {
+                tagText.textContent = 'Asistente del Calendario · acciones rápidas';
+            } else if (isIdeaMode()) {
                 tagText.textContent = 'Idea: ' + (STATE.ideaCtx.titulo || 'sin título');
             } else if (isProspectoMode()) {
                 tagText.textContent = 'Prospecto: ' + (STATE.prospectoCtx.titulo || 'sin nombre');
@@ -141,9 +164,29 @@
                 tagText.textContent = 'En línea · listo para ayudarte';
             }
         }
+        // Nombre del asistente en modo calendario.
+        var nameEl = document.getElementById('asistName');
+        if (nameEl) {
+            var beta = nameEl.querySelector('.asist-beta');
+            if (modeCal) {
+                nameEl.textContent = 'Asistente del Calendario ';
+                if (beta) nameEl.appendChild(beta);
+            } else if (STATE.config && STATE.config.nombre) {
+                nameEl.textContent = STATE.config.nombre + ' ';
+                if (beta) nameEl.appendChild(beta);
+            }
+        }
         var saveBtn = document.getElementById('asistSaveResumenBtn');
-        if (saveBtn) saveBtn.style.display = isEmbedMode() ? '' : 'none';
-        applyContextualSuggestions();
+        if (saveBtn) saveBtn.style.display = (!modeCal && isEmbedMode()) ? '' : 'none';
+        // En modo calendario ocultamos el input de chat y el botón "Nuevo chat"
+        // (es action-driven, no conversacional).
+        var inputWrap = document.querySelector('#widgetAsistente .asist-input-wrap');
+        if (inputWrap) inputWrap.style.display = modeCal ? 'none' : '';
+        var newChatBtn = document.getElementById('asistNewChatBtn');
+        if (newChatBtn) newChatBtn.style.display = modeCal ? 'none' : '';
+        var ov = document.getElementById('widgetAsistente');
+        if (ov) ov.classList.toggle('is-calendar-mode', modeCal);
+        if (!modeCal) applyContextualSuggestions();
     }
 
     /* ─── Endpoints por modo ─── */
@@ -336,6 +379,8 @@
 
     /* ─── Historial (general o por idea, según modo) ─── */
     function loadHistory() {
+        // En modo calendario no hay historial — la UI es action-driven.
+        if (isCalendarMode()) return;
         if (STATE.historyLoaded) return;
         STATE.historyLoaded = true;
         api(urlHistory()).then(function (res) {
