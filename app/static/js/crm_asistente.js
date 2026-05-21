@@ -145,6 +145,9 @@
     window.asistenteCerrar = closeAsistente;
     // Helpers para integraciones externas (p.ej. crm_asistente_calendario.js).
     window.asistenteEsCalendarMode = function () { return isCalendarMode(); };
+    // Exponemos renderMarkdown para que el módulo del calendario use el
+    // MISMO render de markdown que el chat general (consistencia visual).
+    window.asistenteRenderMarkdown = function (t) { return renderMarkdown(t); };
 
     /* ─── Modo (general / idea / prospecto / oportunidad / calendario) ─── */
     function isIdeaMode() { return !!STATE.ideaCtx; }
@@ -209,12 +212,14 @@
                 saveBtn.dataset.labelBase = lbl.textContent;
             }
         }
-        // En modo calendario ocultamos el input de chat y el botón "Nuevo chat"
-        // (es action-driven, no conversacional).
+        // En modo calendario el chat ESTÁ activo (chat libre del calendario):
+        // mantenemos visible el input y el botón "Nuevo chat". El handler
+        // del input delega a window._calAiSendMessage y el de "Nuevo chat"
+        // a window._calAiNewChat (ver wireEvents y newChat).
         var inputWrap = document.querySelector('#widgetAsistente .asist-input-wrap');
-        if (inputWrap) inputWrap.style.display = modeCal ? 'none' : '';
+        if (inputWrap) inputWrap.style.display = '';
         var newChatBtn = document.getElementById('asistNewChatBtn');
-        if (newChatBtn) newChatBtn.style.display = modeCal ? 'none' : '';
+        if (newChatBtn) newChatBtn.style.display = '';
         var ov = document.getElementById('widgetAsistente');
         if (ov) ov.classList.toggle('is-calendar-mode', modeCal);
         if (!modeCal) applyContextualSuggestions();
@@ -465,6 +470,16 @@
     }
 
     function newChat(silent) {
+        // En modo calendario delegamos al módulo del calendario: él tiene
+        // su propio historial en sessionStorage y NO golpeamos endpoints
+        // de chat general.
+        if (isCalendarMode()) {
+            if (!silent && !confirm('¿Iniciar un nuevo chat del calendario? Se perderá la conversación actual.')) return;
+            if (typeof window._calAiNewChat === 'function') {
+                window._calAiNewChat();
+            }
+            return;
+        }
         var promptText;
         if (isIdeaMode()) {
             promptText = '¿Borrar la conversación con la AI sobre esta idea? El resumen guardado en bitácora no se borra.';
@@ -1124,7 +1139,19 @@
     /* ─── Enviar mensaje ─── */
     function sendMessage(texto) {
         texto = (texto || '').trim();
-        if (!texto || STATE.sending) return;
+        if (!texto) return;
+        // En modo calendario delegamos al módulo del calendario, que tiene
+        // su propio endpoint, historial en sessionStorage y render inline
+        // de planes.
+        if (isCalendarMode()) {
+            if (typeof window._calAiSendMessage === 'function') {
+                window._calAiSendMessage(texto);
+                var inpCal = document.getElementById('asistInput');
+                if (inpCal) { inpCal.value = ''; inpCal.style.height = 'auto'; }
+            }
+            return;
+        }
+        if (STATE.sending) return;
         STATE.sending = true;
         // Si el user pidió el "próximo paso" en modo prospecto,
         // levantamos el flag para que la próxima respuesta del AI

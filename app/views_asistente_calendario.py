@@ -1328,7 +1328,690 @@ def _aplicar_rellenar(user, plan: list) -> JsonResponse:
     })
 
 
+# ─── Chat libre del Calendario ─────────────────────────────────────────
+# El asistente del calendario ahora soporta CHAT LIBRE además de las dos
+# acciones rápidas. El usuario puede preguntar "qué tengo el viernes",
+# "ayúdame a reagendar mis vencidas", "qué clientes llevan sin actividad",
+# etc. El LLM tiene tools de lectura (server-side, devuelven datos al
+# modelo en otro turno) y tools de plan (no se ejecutan, vuelven al
+# frontend para que el usuario apruebe).
+#
+# Loop de tool calling estándar: hasta MAX_TOOL_ROUNDS rondas para evitar
+# loops infinitos. Si en alguna ronda el modelo llama una tool de plan
+# devolvemos el plan al frontend y terminamos el loop.
+
+# Cap de rondas del loop de tool calling — anti-loop infinito.
+MAX_TOOL_ROUNDS = 4
+
+# Cap blando de turnos del usuario antes de que el frontend reset (no se
+# valida en backend, solo es la cifra que mostramos en logs/heurísticas).
+MAX_USER_TURNS_CHAT = 8
+
+
+SYS_CHAT = (
+    'Eres el **asistente del Calendario de IAMET**. Tu rol es ayudar al '
+    'vendedor a organizar y entender su agenda: lo que tiene pendiente, '
+    'lo vencido, qué oportunidades llevan sin movimiento, y proponer '
+    'planes para reagendar o rellenar huecos.\n\n'
+
+    '## Filosofía\n'
+    '- **Directo, conciso, accionable.** No saludes en cada turno, no '
+    'des rodeos. Mexicano profesional, tono colega.\n'
+    '- **NO sycophancy** ("excelente pregunta", "claro que sí"). '
+    'Respuestas útiles, no halagos.\n'
+    '- **NO emojis.**\n'
+    '- **NO inventes datos.** Si no tienes el dato llama una tool de '
+    'lectura. Si no hay tool aplicable, dilo: "no tengo ese dato".\n'
+    '- Mantén las respuestas **cortas** (1-4 párrafos como mucho) salvo '
+    'que el user pida detalle explícito. Usa listas markdown cuando '
+    'mencionas varios items.\n\n'
+
+    '## Qué puedes hacer\n'
+    '1. **Responder preguntas con datos reales** usando las tools de '
+    'lectura: `consultar_vencidas`, `consultar_agenda(desde, hasta)`, '
+    '`consultar_opps_sin_actividad`. Llamas la tool, recibes el JSON, '
+    'respondes en lenguaje natural usando esos datos.\n'
+    '2. **Proponer planes** con las tools `proponer_plan_reagendamiento` '
+    '(para reagendar vencidas) o `proponer_plan_rellenar` (para llenar '
+    'huecos con seguimientos nuevos). Cuando llamas una de estas el '
+    'usuario verá una card con el plan y botones Aplicar/Cancelar — '
+    'NO ejecuta nada hasta que él aprueba.\n\n'
+
+    '## Cuándo usar cada tool\n'
+    '- Si el user dice "reagenda mis vencidas", "ayúdame con lo vencido" '
+    '→ primero `consultar_vencidas`, luego `proponer_plan_reagendamiento` '
+    'con los items reales.\n'
+    '- Si dice "llena mi calendario", "qué opps tengo paradas y agéndame '
+    'algo" → primero `consultar_opps_sin_actividad`, luego '
+    '`proponer_plan_rellenar`.\n'
+    '- Si pregunta "qué tengo el viernes", "agenda de la semana" → '
+    '`consultar_agenda(desde, hasta)` y responde con texto.\n'
+    '- Si el user solo conversa o pregunta cosas fuera del scope del '
+    'calendario, responde brevemente y, si aplica, ofrece redirigir al '
+    'scope ("¿quieres que revise tu calendario?").\n\n'
+
+    + _REGLAS_HORARIO +
+    '\n'
+
+    '## Duraciones heurísticas\n'
+    '- Correo, llamada corta, seguimiento por correo: **10 min**.\n'
+    '- Reunión interna / planning: **30 min**.\n'
+    '- Reunión con cliente / presentación: **60 min**.\n'
+    '- Revisión técnica: **45 min**.\n'
+    '- Default 30 min.\n\n'
+
+    '## Formato de fechas\n'
+    'Cuando llames tools que requieren fecha (`consultar_agenda`), usa '
+    'ISO local sin TZ: "YYYY-MM-DDTHH:MM:SS". Si no sabes la fecha '
+    'exacta (p.ej. "el viernes"), calcúlala desde la fecha actual que '
+    'te paso en el contexto del user.'
+)
+
+
+def _tool_consultar_vencidas() -> dict:
+    """Read-only: devuelve actividades + tareas vencidas del user."""
+    return {
+        'type': 'function',
+        'function': {
+            'name': 'consultar_vencidas',
+            'description': (
+                'Devuelve la lista de actividades del calendario y tareas '
+                'vencidas (fecha pasada, no completadas) del usuario '
+                'actual. Úsala cuando el user pregunte qué tiene vencido '
+                'o antes de proponer un plan de reagendamiento.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {},
+            },
+        },
+    }
+
+
+def _tool_consultar_agenda() -> dict:
+    """Read-only: devuelve eventos del user en un rango de fechas."""
+    return {
+        'type': 'function',
+        'function': {
+            'name': 'consultar_agenda',
+            'description': (
+                'Devuelve los eventos (actividades y tareas con fecha '
+                'límite) del usuario en un rango de fechas. Úsala para '
+                'preguntas tipo "qué tengo el viernes", "agenda de la '
+                'semana", "qué tengo del lunes al miércoles".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'desde_iso': {
+                        'type': 'string',
+                        'description': (
+                            'Fecha/hora de inicio del rango en ISO '
+                            'local sin TZ: "YYYY-MM-DDTHH:MM:SS". '
+                            'Si quieres "todo el día X", usa 00:00:00.'
+                        ),
+                    },
+                    'hasta_iso': {
+                        'type': 'string',
+                        'description': (
+                            'Fecha/hora de fin del rango (exclusive) en '
+                            'ISO local sin TZ. Si quieres "todo el día '
+                            'X", usa el día siguiente 00:00:00.'
+                        ),
+                    },
+                },
+                'required': ['desde_iso', 'hasta_iso'],
+            },
+        },
+    }
+
+
+def _tool_consultar_opps_sin_actividad() -> dict:
+    """Read-only: devuelve opps + prospectos del user sin actividad pendiente."""
+    return {
+        'type': 'function',
+        'function': {
+            'name': 'consultar_opps_sin_actividad',
+            'description': (
+                'Devuelve las oportunidades activas y prospectos del '
+                'usuario que NO tienen ninguna actividad pendiente '
+                '(ni futura ni vencida). Úsala antes de proponer un '
+                'plan de rellenar calendario o cuando el user pregunte '
+                'por opps "olvidadas" / sin movimiento.'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {},
+            },
+        },
+    }
+
+
+def _run_consultar_vencidas(user) -> dict:
+    """Ejecuta server-side la tool read-only de vencidas. Devuelve dict
+    JSON-serializable que se manda al LLM como tool_result."""
+    ahora = timezone.now()
+    actividades = _actividades_vencidas_del_user(user, ahora)
+    tareas = _tareas_vencidas_del_user(user, ahora)
+    out_actividades = []
+    for a in actividades:
+        cliente_nombre = ''
+        opp_titulo = ''
+        try:
+            if a.oportunidad_id:
+                opp_titulo = (a.oportunidad.oportunidad or '')[:80]
+                if a.oportunidad.cliente_id:
+                    cliente_nombre = (a.oportunidad.cliente.nombre_empresa or '')[:80]
+        except Exception:
+            pass
+        out_actividades.append({
+            'id': f'actividad-{a.id}',
+            'tipo': 'actividad',
+            'titulo': (a.titulo or '')[:160],
+            'tipo_actividad': a.tipo_actividad or 'otro',
+            'venció': _to_iso_local(a.fecha_inicio),
+            'dias_vencida': _dias_desde(a.fecha_inicio),
+            'cliente': cliente_nombre,
+            'oportunidad': opp_titulo,
+            'descripcion': _trunc(a.descripcion or '', DESC_TRUNCATE),
+        })
+    out_tareas = []
+    for t in tareas:
+        proyecto = ''
+        try:
+            if t.proyecto_id:
+                proyecto = (t.proyecto.nombre or '')[:80]
+        except Exception:
+            pass
+        out_tareas.append({
+            'id': f'tarea-{t.id}',
+            'tipo': 'tarea',
+            'titulo': (t.titulo or '')[:160],
+            'venció': _to_iso_local(t.fecha_limite),
+            'dias_vencida': _dias_desde(t.fecha_limite),
+            'prioridad': t.prioridad,
+            'estado': t.estado,
+            'proyecto': proyecto,
+            'descripcion': _trunc(t.descripcion or '', DESC_TRUNCATE),
+        })
+    return {
+        'total': len(out_actividades) + len(out_tareas),
+        'actividades_vencidas': out_actividades,
+        'tareas_vencidas': out_tareas,
+        'ahora_local': timezone.localtime(ahora).strftime('%Y-%m-%dT%H:%M:%S'),
+    }
+
+
+def _run_consultar_agenda(user, desde_iso: str, hasta_iso: str) -> dict:
+    """Ejecuta server-side la tool read-only de agenda. Devuelve eventos
+    del usuario (actividades + tareas) entre [desde, hasta]."""
+    desde = _parse_iso_aware(desde_iso)
+    hasta = _parse_iso_aware(hasta_iso)
+    if not desde or not hasta:
+        return {
+            'error': 'Fechas inválidas. Usa ISO sin TZ: YYYY-MM-DDTHH:MM:SS',
+            'desde_iso_recibido': desde_iso,
+            'hasta_iso_recibido': hasta_iso,
+        }
+    if hasta <= desde:
+        return {
+            'error': 'hasta_iso debe ser posterior a desde_iso',
+        }
+    # Tope de rango — máximo 60 días para no explotar tokens.
+    if (hasta - desde).days > 60:
+        hasta = desde + timedelta(days=60)
+
+    actos = (Actividad.objects
+             .filter(creado_por=user, completada=False)
+             .filter(fecha_inicio__lt=hasta, fecha_fin__gt=desde)
+             .select_related('oportunidad', 'oportunidad__cliente')
+             .order_by('fecha_inicio'))
+    out_actividades = []
+    for a in actos[:80]:
+        cliente_nombre = ''
+        opp_titulo = ''
+        try:
+            if a.oportunidad_id:
+                opp_titulo = (a.oportunidad.oportunidad or '')[:80]
+                if a.oportunidad.cliente_id:
+                    cliente_nombre = (a.oportunidad.cliente.nombre_empresa or '')[:80]
+        except Exception:
+            pass
+        out_actividades.append({
+            'id': f'actividad-{a.id}',
+            'tipo_actividad': a.tipo_actividad or 'otro',
+            'titulo': (a.titulo or '')[:160],
+            'inicio': _to_iso_local(a.fecha_inicio),
+            'fin': _to_iso_local(a.fecha_fin),
+            'cliente': cliente_nombre,
+            'oportunidad': opp_titulo,
+        })
+
+    tareas = (Tarea.objects
+              .filter(fecha_limite__isnull=False)
+              .filter(fecha_limite__gte=desde, fecha_limite__lt=hasta)
+              .exclude(estado__in=['completada', 'cancelada'])
+              .filter(Q(creado_por=user) | Q(asignado_a=user))
+              .select_related('proyecto')
+              .order_by('fecha_limite')
+              .distinct())
+    out_tareas = []
+    for t in tareas[:50]:
+        proyecto = ''
+        try:
+            if t.proyecto_id:
+                proyecto = (t.proyecto.nombre or '')[:80]
+        except Exception:
+            pass
+        out_tareas.append({
+            'id': f'tarea-{t.id}',
+            'titulo': (t.titulo or '')[:160],
+            'fecha_limite': _to_iso_local(t.fecha_limite),
+            'prioridad': t.prioridad,
+            'estado': t.estado,
+            'proyecto': proyecto,
+        })
+
+    return {
+        'rango_desde': _to_iso_local(desde),
+        'rango_hasta': _to_iso_local(hasta),
+        'total_actividades': len(out_actividades),
+        'total_tareas': len(out_tareas),
+        'actividades': out_actividades,
+        'tareas': out_tareas,
+    }
+
+
+def _run_consultar_opps_sin_actividad(user) -> dict:
+    """Ejecuta server-side la tool read-only de opps sin actividad."""
+    ahora = timezone.now()
+    candidatos = _candidatos_rellenar(user, ahora)
+    out_opps = []
+    for opp in candidatos['oportunidades']:
+        cliente_nombre = ''
+        try:
+            if opp.cliente_id:
+                cliente_nombre = (opp.cliente.nombre_empresa or '')[:80]
+        except Exception:
+            pass
+        out_opps.append({
+            'fuente_tipo': 'oportunidad',
+            'fuente_id': opp.id,
+            'titulo': (opp.oportunidad or '')[:160],
+            'cliente': cliente_nombre,
+            'etapa': opp.etapa_corta or opp.etapa_completa or '',
+            'monto': float(opp.monto) if opp.monto is not None else None,
+            'probabilidad': getattr(opp, 'probabilidad_cierre', None),
+            'dias_sin_movimiento': _dias_desde(opp.fecha_actualizacion),
+            'comentarios': _trunc(opp.comentarios or '', DESC_TRUNCATE),
+        })
+    out_pros = []
+    for p in candidatos['prospectos']:
+        cliente_nombre = ''
+        try:
+            if p.cliente_id:
+                cliente_nombre = (p.cliente.nombre_empresa or '')[:80]
+        except Exception:
+            pass
+        out_pros.append({
+            'fuente_tipo': 'prospecto',
+            'fuente_id': p.id,
+            'nombre': (p.nombre or '')[:160],
+            'cliente': cliente_nombre,
+            'etapa': p.get_etapa_display() if hasattr(p, 'get_etapa_display') else '',
+            'producto': p.producto,
+            'dias_sin_movimiento': _dias_desde(p.fecha_actualizacion),
+            'comentarios': _trunc(p.comentarios or '', DESC_TRUNCATE),
+        })
+    return {
+        'total': len(out_opps) + len(out_pros),
+        'oportunidades_sin_actividad': out_opps,
+        'prospectos_sin_actividad': out_pros,
+    }
+
+
+def _validar_plan_reagendar(user, tool_args: dict) -> dict | None:
+    """Toma los args de proponer_plan_reagendamiento y los valida contra
+    las vencidas reales del user. Devuelve dict {accion, resumen, plan}
+    listo para el frontend, o None si no se pudo validar nada."""
+    ahora = timezone.now()
+    actividades = _actividades_vencidas_del_user(user, ahora)
+    tareas = _tareas_vencidas_del_user(user, ahora)
+    id_map = {}
+    for a in actividades:
+        id_map[f'actividad-{a.id}'] = a
+    for t in tareas:
+        id_map[f'tarea-{t.id}'] = t
+
+    resumen = (tool_args.get('resumen') or '').strip()
+    items_raw = tool_args.get('items') or []
+    plan_validado = []
+    for it in items_raw[:MAX_PLAN_REAGENDAR]:
+        item_id = (it.get('id') or '').strip()
+        if item_id not in id_map:
+            continue
+        obj = id_map[item_id]
+        if item_id.startswith('actividad-'):
+            tipo = 'actividad'
+            titulo = (obj.titulo or '')[:200]
+            fecha_anterior = _to_iso_local(obj.fecha_inicio)
+        elif item_id.startswith('tarea-'):
+            tipo = 'tarea'
+            titulo = (obj.titulo or '')[:200]
+            fecha_anterior = _to_iso_local(obj.fecha_limite)
+        else:
+            continue
+        nueva_fecha = (it.get('nueva_fecha') or '').strip()
+        dur = int(it.get('duracion_min') or 30)
+        if dur < 5:
+            dur = 30
+        if dur > 240:
+            dur = 240
+        razon = (it.get('razon') or '').strip()[:200]
+        plan_validado.append({
+            'id': item_id,
+            'tipo': tipo,
+            'titulo': titulo,
+            'fecha_anterior': fecha_anterior,
+            'fecha_nueva': nueva_fecha,
+            'duracion_min': dur,
+            'razon': razon,
+        })
+    if not plan_validado:
+        return None
+    return {
+        'accion': 'reagendar_vencidas',
+        'resumen': resumen or f'Plan de reagendamiento con {len(plan_validado)} items.',
+        'plan': plan_validado,
+    }
+
+
+def _validar_plan_rellenar(user, tool_args: dict) -> dict | None:
+    """Toma los args de proponer_plan_rellenar y los valida contra los
+    candidatos reales del user. Mismo cap diario que el flujo de preview."""
+    ahora = timezone.now()
+    candidatos = _candidatos_rellenar(user, ahora)
+    src_map = {}
+    for opp in candidatos['oportunidades']:
+        src_map[f'oportunidad-{opp.id}'] = opp
+    for p in candidatos['prospectos']:
+        src_map[f'prospecto-{p.id}'] = p
+
+    resumen = (tool_args.get('resumen') or '').strip()
+    items_raw = tool_args.get('items') or []
+    plan_validado = []
+    for it in items_raw[:MAX_PLAN_RELLENAR]:
+        fuente_tipo = (it.get('fuente_tipo') or '').strip()
+        if fuente_tipo not in FUENTES_VALIDAS:
+            continue
+        try:
+            fuente_id = int(it.get('fuente_id'))
+        except (TypeError, ValueError):
+            continue
+        key = f'{fuente_tipo}-{fuente_id}'
+        if key not in src_map:
+            continue
+        obj = src_map[key]
+        tipo_act = (it.get('tipo_actividad') or 'tarea').strip().lower()
+        if tipo_act not in {'llamada', 'reunion', 'email', 'tarea', 'otro'}:
+            tipo_act = 'tarea'
+        fecha = (it.get('fecha') or '').strip()
+        try:
+            dur = int(it.get('duracion_min') or 30)
+        except (TypeError, ValueError):
+            dur = 30
+        if dur < 5:
+            dur = 30
+        if dur > 240:
+            dur = 240
+        titulo = _trunc(it.get('titulo') or '', 120)
+        descripcion = _trunc(it.get('descripcion') or '', 500)
+        razon = _trunc(it.get('razon') or '', 200)
+        fuente_label = ''
+        cliente_label = ''
+        try:
+            if fuente_tipo == 'oportunidad':
+                fuente_label = (obj.oportunidad or '')[:80]
+                if obj.cliente_id:
+                    cliente_label = (obj.cliente.nombre_empresa or '')[:80]
+            else:
+                fuente_label = (obj.nombre or '')[:80]
+                if obj.cliente_id:
+                    cliente_label = (obj.cliente.nombre_empresa or '')[:80]
+        except Exception:
+            pass
+        plan_validado.append({
+            'tipo': 'actividad_nueva',
+            'fuente_tipo': fuente_tipo,
+            'fuente_id': fuente_id,
+            'fuente_label': fuente_label,
+            'cliente_label': cliente_label,
+            'tipo_actividad': tipo_act,
+            'fecha': fecha,
+            'duracion_min': dur,
+            'titulo': titulo,
+            'descripcion': descripcion,
+            'razon': razon,
+        })
+
+    # Mismo cap diario que el preview tradicional.
+    por_dia = {}
+    plan_final = []
+    for it in plan_validado:
+        fecha_obj = _parse_iso_aware(it.get('fecha') or '')
+        if not fecha_obj:
+            plan_final.append(it)
+            continue
+        dia_key = fecha_obj.date().isoformat()
+        por_dia.setdefault(dia_key, 0)
+        if por_dia[dia_key] >= MAX_RELLENAR_POR_DIA:
+            continue
+        por_dia[dia_key] += 1
+        plan_final.append(it)
+
+    if not plan_final:
+        return None
+    return {
+        'accion': 'rellenar_calendario',
+        'resumen': resumen or f'Sugerencias para rellenar: {len(plan_final)} items.',
+        'plan': plan_final,
+    }
+
+
+def _chat_libre(request) -> JsonResponse:
+    """Endpoint del chat libre del calendario. Loop de tool calling:
+    el LLM puede llamar tools de lectura (se ejecutan server-side y se
+    devuelven al modelo en el siguiente turno) o tools de plan (devuelven
+    el plan al frontend para que el user lo apruebe).
+    """
+    user = request.user
+    try:
+        body = json.loads(request.body or '{}')
+    except Exception:
+        body = {}
+    message = (body.get('message') or '').strip()
+    history_in = body.get('history') or []
+    if not message:
+        return JsonResponse({'ok': False, 'error': 'mensaje vacío'}, status=400)
+
+    cfg = AsistenteConfig.get_singleton()
+    if not cfg.activo:
+        return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
+
+    # Contexto inicial — fecha actual + ventana de días hábiles. Lo
+    # inyectamos como mensaje 'system' adicional para no inflar el SYS_CHAT.
+    ahora = timezone.now()
+    dias_habiles = _dias_habiles_siguientes(DIAS_HABILES_VENTANA)
+    dias_str = ', '.join(d.strftime('%a %Y-%m-%d') for d in dias_habiles)
+    ctx_block = (
+        f'Contexto de tiempo:\n'
+        f'- Fecha/hora actual local: '
+        f'{timezone.localtime(ahora).strftime("%Y-%m-%d %H:%M (%a)")}\n'
+        f'- Días hábiles próximos: {dias_str}\n'
+    )
+
+    # Sanitizar historial: solo aceptamos roles 'user' y 'assistant', y
+    # contenidos string. Cap blando por seguridad (no debería pasar de 16
+    # mensajes en práctica).
+    messages = [
+        {'role': 'system', 'content': SYS_CHAT},
+        {'role': 'system', 'content': ctx_block},
+    ]
+    for m in (history_in or [])[-30:]:
+        role = (m.get('role') or '').strip()
+        content = m.get('content') or ''
+        if role not in ('user', 'assistant'):
+            continue
+        if not isinstance(content, str):
+            continue
+        messages.append({'role': role, 'content': content[:4000]})
+    messages.append({'role': 'user', 'content': message[:4000]})
+
+    tools = [
+        _tool_consultar_vencidas(),
+        _tool_consultar_agenda(),
+        _tool_consultar_opps_sin_actividad(),
+        _tool_proponer_reagendar(),
+        _tool_proponer_rellenar(),
+    ]
+
+    model = cfg.modelo or MODEL_DEFAULT
+    reply_text = ''
+    plan_payload = None
+
+    try:
+        for ronda in range(MAX_TOOL_ROUNDS):
+            resp = chat(
+                messages=messages,
+                tools=tools,
+                model=model,
+                temperature=0.4,
+                max_tokens=2500,
+            )
+            tc_list = resp.get('tool_calls') or []
+            text_out = (resp.get('text') or '').strip()
+
+            if not tc_list:
+                # Respuesta final en texto, terminamos.
+                reply_text = text_out
+                break
+
+            # Detectar si llamó alguna tool de PLAN — si sí, sacamos plan
+            # y terminamos (la tool de plan no se ejecuta, regresa al
+            # frontend).
+            plan_tc = None
+            for tc in tc_list:
+                if tc.get('name') in ('proponer_plan_reagendamiento',
+                                      'proponer_plan_rellenar'):
+                    plan_tc = tc
+                    break
+            if plan_tc:
+                args = plan_tc.get('arguments') or {}
+                if plan_tc.get('name') == 'proponer_plan_reagendamiento':
+                    plan_payload = _validar_plan_reagendar(user, args)
+                else:
+                    plan_payload = _validar_plan_rellenar(user, args)
+                # Acompañar el plan con texto preliminar si el modelo
+                # dejó algo en `text_out`; muchas veces viene vacío.
+                reply_text = text_out
+                break
+
+            # Procesar tools de lectura: ejecutar server-side y agregar
+            # tool_result al stream de mensajes para que el modelo
+            # continúe.
+            # Primero agregamos el mensaje 'assistant' con los tool_calls
+            # tal cual los pidió el modelo, en formato OpenAI.
+            assistant_msg = {
+                'role': 'assistant',
+                'content': text_out or None,
+                'tool_calls': [
+                    {
+                        'id': tc.get('id') or f'call_{ronda}_{i}',
+                        'type': 'function',
+                        'function': {
+                            'name': tc.get('name') or '',
+                            'arguments': tc.get('arguments_str') or json.dumps(tc.get('arguments') or {}),
+                        },
+                    } for i, tc in enumerate(tc_list)
+                ],
+            }
+            messages.append(assistant_msg)
+
+            # Ejecutar cada tool de lectura y agregar el tool_result.
+            for i, tc in enumerate(tc_list):
+                name = tc.get('name') or ''
+                args = tc.get('arguments') or {}
+                call_id = tc.get('id') or f'call_{ronda}_{i}'
+                try:
+                    if name == 'consultar_vencidas':
+                        result = _run_consultar_vencidas(user)
+                    elif name == 'consultar_agenda':
+                        result = _run_consultar_agenda(
+                            user,
+                            args.get('desde_iso') or '',
+                            args.get('hasta_iso') or '',
+                        )
+                    elif name == 'consultar_opps_sin_actividad':
+                        result = _run_consultar_opps_sin_actividad(user)
+                    else:
+                        result = {'error': f'tool desconocida: {name}'}
+                except Exception as e:
+                    log.exception('Error ejecutando tool %s: %s', name, e)
+                    result = {'error': f'fallo ejecutando {name}: {e}'}
+                messages.append({
+                    'role': 'tool',
+                    'tool_call_id': call_id,
+                    'name': name,
+                    'content': json.dumps(result, ensure_ascii=False, default=str)[:14000],
+                })
+
+            # Loop sigue: el modelo verá los tool_results y responderá
+            # otra vez (puede llamar más tools o ya responder en texto).
+            continue
+        else:
+            # Salimos del for sin break — alcanzamos el cap. Devolvemos
+            # un mensaje honesto.
+            if not reply_text and not plan_payload:
+                reply_text = (
+                    'Estoy dando muchas vueltas con tus datos. Intenta '
+                    'reformular la pregunta o pídeme algo más concreto.'
+                )
+    except AsistenteError as e:
+        log.warning('Calendario asistente chat error: %s', e)
+        return JsonResponse({'ok': False, 'error': str(e)}, status=502)
+    except Exception as e:
+        log.exception('Error inesperado en chat calendario: %s', e)
+        return JsonResponse(
+            {'ok': False, 'error': f'Error inesperado: {str(e)[:200]}'},
+            status=500,
+        )
+
+    return JsonResponse({
+        'ok': True,
+        'reply': reply_text or '',
+        'plan': plan_payload,  # None o {accion, resumen, plan: [...]}
+    })
+
+
 # ─── Endpoints públicos ────────────────────────────────────────────────
+
+
+@login_required
+@require_POST
+def api_calendario_asistente_chat(request):
+    """Chat libre del asistente del calendario. Loop de tool calling
+    server-side. SIEMPRE devuelve JSON aunque algo explote internamente.
+    Body: {"message": str, "history": [{role, content}, ...]}.
+    Response: {ok, reply, plan: {accion, resumen, plan: [...]} | null}.
+    """
+    try:
+        return _chat_libre(request)
+    except Exception as e:
+        log.exception('Error en api_calendario_asistente_chat')
+        return JsonResponse(
+            {'ok': False, 'error': f'Error interno: {str(e)[:200]}'},
+            status=500,
+        )
 
 
 @login_required

@@ -216,9 +216,10 @@ urlpatterns = [
     path('api/oportunidades/<int:opp_id>/asistente/reset/', views_asistente_oportunidades.api_oportunidad_asistente_reset, name='api_oportunidad_asistente_reset'),
     path('api/oportunidades/<int:opp_id>/asistente/actividad-rapida/', views_asistente_oportunidades.api_oportunidad_actividad_rapida, name='api_oportunidad_actividad_rapida'),
 
-    # ── Asistente AI del Calendario (action-driven: reagendar / rellenar) ──
+    # ── Asistente AI del Calendario (action-driven + chat libre) ──────────
     path('api/calendario/asistente/preview/', views_asistente_calendario.api_calendario_asistente_preview, name='api_calendario_asistente_preview'),
     path('api/calendario/asistente/aplicar/', views_asistente_calendario.api_calendario_asistente_aplicar, name='api_calendario_asistente_aplicar'),
+    path('api/calendario/asistente/chat/', views_asistente_calendario.api_calendario_asistente_chat, name='api_calendario_asistente_chat'),
 
     # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
     path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),

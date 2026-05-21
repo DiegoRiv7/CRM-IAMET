@@ -1525,8 +1525,127 @@ un icono estático. Saludo personalizado con first_name del user.
     padding-bottom: 12px;
 }
 
+/* ── Chat libre del calendario (bubbles + planes inline) ───────────── */
+.asist-cal-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 4px 8px;
+}
+.asist-cal-chat .asist-msg {
+    margin: 0;
+}
+.asist-cal-bubble-err {
+    background: #FEF2F2;
+    border: 1px solid rgba(220, 38, 38, 0.18);
+    color: #7F1D1D;
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.asist-cal-retry-link {
+    background: transparent;
+    border: 0;
+    color: var(--ai-blue);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border-radius: 6px;
+}
+.asist-cal-retry-link:hover {
+    background: rgba(0, 102, 255, 0.08);
+}
+
+/* Plan inline dentro del chat ──────────────────────────────────────── */
+.asist-cal-plan-inline {
+    margin: 4px 0 4px 40px;  /* alineado con bubbles del bot (orb md 32px + gap) */
+    background: #FFFFFF;
+    border: 1px solid var(--ai-line);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+}
+.asist-cal-plan-inline-head {
+    padding: 12px 16px 6px;
+    background: linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%);
+}
+.asist-cal-plan-inline-headline {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    letter-spacing: -0.005em;
+}
+.asist-cal-plan-inline .asist-cal-resumen {
+    margin: 0 16px 8px;
+}
+.asist-cal-plan-inline .asist-cal-plan-list {
+    padding: 4px 12px 12px;
+}
+.asist-cal-plan-inline .asist-cal-plan-card {
+    margin-bottom: 6px;
+}
+.asist-cal-plan-inline-footer {
+    border-top: 1px solid var(--ai-line);
+    padding: 10px 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+    background: #FAFBFD;
+}
+.asist-cal-plan-inline-footer.is-applied {
+    color: #166534;
+    background: #ECFDF5;
+    font-size: 0.88rem;
+    font-weight: 600;
+    justify-content: center;
+}
+.asist-cal-plan-inline-footer.is-applied svg {
+    color: #16A34A;
+    margin-right: 4px;
+}
+.asist-cal-plan-inline-footer.is-applying {
+    color: var(--ai-muted);
+    font-size: 0.88rem;
+    justify-content: center;
+}
+.asist-cal-plan-inline--empty {
+    margin-left: 40px;
+    padding: 10px 14px;
+    color: var(--ai-muted);
+    font-size: 0.88rem;
+    border: 1px dashed var(--ai-line);
+    border-radius: 14px;
+    background: #FAFBFD;
+}
+.asist-cal-plan-inline-empty-text {
+    font-style: italic;
+}
+.asist-cal-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(15, 23, 42, 0.15);
+    border-top-color: var(--ai-blue);
+    animation: asist-cal-spin 0.7s linear infinite;
+}
+@keyframes asist-cal-spin {
+    to { transform: rotate(360deg); }
+}
+
 @media (max-width: 640px) {
     .asist-cal-root { padding: 18px 14px 8px; }
     .asist-cal-title, .asist-cal-done-title { font-size: 1.3rem; }
+    .asist-cal-plan-inline,
+    .asist-cal-plan-inline--empty { margin-left: 0; }
 }
 </style>
