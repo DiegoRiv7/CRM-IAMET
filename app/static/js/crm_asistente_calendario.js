@@ -365,11 +365,18 @@
                 : 'Plan propuesto');
         var applied = !!planData.applied;
         var applying = !!planData.applying;
+        // resumenOnly: el backend nos pide ocultar la lista de items y
+        // mostrar SOLO el resumen + botones. Se usa para reagendar masivo
+        // donde la lista detallada es ruido (el user ya sabe qué tiene
+        // vencido — solo quiere confirmar la cantidad).
+        var resumenOnly = !!planData.resumenOnly;
 
         var listHtml = '';
-        planData.plan.forEach(function (item, i) {
-            listHtml += renderPlanCard(item, i + 1, accion);
-        });
+        if (!resumenOnly) {
+            planData.plan.forEach(function (item, i) {
+                listHtml += renderPlanCard(item, i + 1, accion);
+            });
+        }
 
         var footer;
         if (applied) {
@@ -407,7 +414,9 @@
             + (planData.resumen
                 ? '<div class="asist-cal-resumen">' + esc(planData.resumen) + '</div>'
                 : '')
-            + '<div class="asist-cal-plan-list">' + listHtml + '</div>'
+            + (listHtml
+                ? '<div class="asist-cal-plan-list">' + listHtml + '</div>'
+                : '')
             + footer
             + '</div>';
     }
@@ -570,12 +579,14 @@
             }
             var plan = Array.isArray(res.data.plan) ? res.data.plan : [];
             var resumen = res.data.resumen || '';
+            var resumenOnly = !!res.data.resumen_only;
             STATE.history.push({role: 'assistant', content: plan.length ? '' : resumen});
             var idx = STATE.history.length - 1;
             STATE.plans[idx] = {
                 accion: accion,
                 resumen: resumen,
                 plan: plan,
+                resumenOnly: resumenOnly,
             };
             persist();
             render();

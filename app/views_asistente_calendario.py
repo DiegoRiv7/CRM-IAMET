@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 MODEL_DEFAULT = 'openrouter/openai/gpt-4o-mini'
 
 # Horario laboral del vendedor IAMET (TIME_ZONE = America/Tijuana).
-WORKDAY_START = dtime(9, 0)      # 9:00 am
+WORKDAY_START = dtime(8, 0)      # 8:00 am
 WORKDAY_END = dtime(18, 0)       # 6:00 pm
 LUNCH_START = dtime(13, 0)       # 1:00 pm
 LUNCH_END = dtime(14, 0)         # 2:00 pm
@@ -789,146 +789,261 @@ def _tool_proponer_rellenar() -> dict:
 
 
 # ─── Preview: reagendar_vencidas ───────────────────────────────────────
+# Esta acción es DETERMINISTA — no usa LLM. El usuario quiere que TODAS
+# sus vencidas se reagenden con el mismo título/descripción en los
+# próximos días hábiles, dentro de horario laboral (8am-6pm). El LLM no
+# aporta valor aquí (es solo redistribución mecánica) y meterlo cuesta
+# tokens, tiempo y puede inventar ids o fechas inválidas.
+
+
+def _slot_valido(slot_dt, dur_min) -> bool:
+    """Slot empieza en horario laboral, termina antes del cierre, y no
+    cruza la hora de comida (13-14)."""
+    slot_end = slot_dt + timedelta(minutes=dur_min)
+    if slot_end.date() != slot_dt.date():
+        return False
+    if slot_dt.time() < WORKDAY_START:
+        return False
+    # Permite que slot_end sea exactamente WORKDAY_END pero no después.
+    if slot_end.hour > WORKDAY_END.hour or (
+        slot_end.hour == WORKDAY_END.hour and slot_end.minute > 0
+    ):
+        return False
+    lunch_ini = slot_dt.replace(
+        hour=LUNCH_START.hour, minute=0, second=0, microsecond=0,
+    )
+    lunch_fin = slot_dt.replace(
+        hour=LUNCH_END.hour, minute=0, second=0, microsecond=0,
+    )
+    if slot_dt < lunch_fin and slot_end > lunch_ini:
+        return False
+    return True
+
+
+def _bloques_ocupados(user, desde_dt, hasta_dt) -> list:
+    """Lista de (inicio_aware, fin_aware) de eventos existentes del user
+    en la ventana [desde, hasta]. Combina Actividades + Tareas (estas
+    asumen 30 min de bloque alrededor de fecha_limite)."""
+    bloques = []
+    actos = (Actividad.objects
+             .filter(creado_por=user, completada=False)
+             .filter(fecha_inicio__lt=hasta_dt, fecha_fin__gt=desde_dt)
+             .values_list('fecha_inicio', 'fecha_fin'))
+    for ini, fin in actos:
+        bloques.append((ini, fin))
+    tareas = (Tarea.objects
+              .filter(fecha_limite__isnull=False)
+              .filter(fecha_limite__gte=desde_dt, fecha_limite__lt=hasta_dt)
+              .exclude(estado__in=['completada', 'cancelada'])
+              .filter(Q(creado_por=user) | Q(asignado_a=user))
+              .values_list('fecha_limite', flat=True).distinct())
+    for fl in tareas:
+        bloques.append((fl, fl + timedelta(minutes=30)))
+    return bloques
+
+
+def _reagendar_distribuir(actividades, tareas, user) -> list:
+    """Distribuye determinísticamente todas las vencidas en los próximos
+    días hábiles, 8am-6pm, evitando lunch y choques. Devuelve lista de
+    items listos para `_aplicar_reagendar`: cada uno con id, tipo,
+    titulo, fecha_anterior, fecha_nueva, duracion_min."""
+    tz = timezone.get_current_timezone()
+    hoy = timezone.localdate()
+    dia0 = _siguiente_dia_habil(hoy + timedelta(days=1))  # mañana o sig hábil
+
+    # Bloques ocupados existentes en una ventana generosa (60 días hábiles
+    # da espacio para distribuir cientos de vencidas).
+    desde_dt = timezone.make_aware(
+        datetime.combine(dia0, dtime(0, 0)), tz,
+    )
+    hasta_dt = desde_dt + timedelta(days=120)
+    bloques = _bloques_ocupados(user, desde_dt, hasta_dt)
+
+    # Normalizar todas las vencidas a una lista uniforme.
+    items = []
+    for a in actividades:
+        try:
+            dur = int((a.fecha_fin - a.fecha_inicio).total_seconds() // 60)
+        except Exception:
+            dur = 30
+        if dur < 15:
+            dur = 30
+        if dur > 240:
+            dur = 240
+        items.append({
+            'id': f'actividad-{a.id}',
+            'tipo': 'actividad',
+            'titulo': (a.titulo or '')[:200],
+            'fecha_anterior_dt': a.fecha_inicio,
+            'duracion_min': dur,
+        })
+    for t in tareas:
+        items.append({
+            'id': f'tarea-{t.id}',
+            'tipo': 'tarea',
+            'titulo': (t.titulo or '')[:200],
+            'fecha_anterior_dt': t.fecha_limite,
+            'duracion_min': 30,
+        })
+    # Las vencidas más antiguas van primero (más urgentes).
+    items.sort(key=lambda it: it['fecha_anterior_dt'])
+
+    # Iterar slots: 8:00, 8:30, 9:00, ..., 17:30 cada día hábil; saltar
+    # lunch automáticamente vía _slot_valido. Buffer de 5 min después de
+    # cada evento ya programado para evitar quedar pegados.
+    cursor_dia = dia0
+    cursor_slot = datetime.combine(cursor_dia, WORKDAY_START)
+    slot_step = timedelta(minutes=30)
+
+    plan = []
+    # Cap de seguridad: si por alguna razón no cabe ni en 365 días, salir.
+    LIMITE_DIAS = 365
+    fin_max = dia0 + timedelta(days=LIMITE_DIAS)
+
+    def slot_libre(slot_aware, dur):
+        slot_end = slot_aware + timedelta(minutes=dur)
+        for ini, fin in bloques:
+            # buffer 5 min entre eventos
+            if slot_aware < (fin + timedelta(minutes=BUFFER_ENTRE_EVENTOS_MIN)) \
+                    and slot_end > (ini - timedelta(minutes=BUFFER_ENTRE_EVENTOS_MIN)):
+                return False
+        return True
+
+    for it in items:
+        dur = it['duracion_min']
+        asignado = None
+        # Avanzar cursor hasta encontrar slot que cumpla todas las reglas.
+        while cursor_dia <= fin_max:
+            if not _es_dia_habil(cursor_dia):
+                cursor_dia = cursor_dia + timedelta(days=1)
+                cursor_slot = datetime.combine(cursor_dia, WORKDAY_START)
+                continue
+            slot_naive = cursor_slot
+            slot_aware = timezone.make_aware(slot_naive, tz)
+            # ¿Estamos fuera del workday? saltar al siguiente día hábil.
+            if not _slot_valido(slot_naive, dur):
+                cursor_slot = cursor_slot + slot_step
+                # Si el cursor cruzó las 18:00, ir al siguiente día.
+                if cursor_slot.time() >= WORKDAY_END or \
+                        cursor_slot.date() != cursor_dia:
+                    cursor_dia = cursor_dia + timedelta(days=1)
+                    cursor_slot = datetime.combine(cursor_dia, WORKDAY_START)
+                continue
+            if slot_libre(slot_aware, dur):
+                asignado = slot_aware
+                # Registrar como bloque ocupado para los siguientes items.
+                bloques.append((slot_aware, slot_aware + timedelta(minutes=dur)))
+                # Avanzar cursor para no reusar este slot.
+                cursor_slot = cursor_slot + timedelta(minutes=dur)
+                break
+            else:
+                cursor_slot = cursor_slot + slot_step
+                if cursor_slot.time() >= WORKDAY_END or \
+                        cursor_slot.date() != cursor_dia:
+                    cursor_dia = cursor_dia + timedelta(days=1)
+                    cursor_slot = datetime.combine(cursor_dia, WORKDAY_START)
+
+        if asignado is None:
+            log.warning(
+                'No se encontró slot para %s tras %d días — se omite.',
+                it['id'], LIMITE_DIAS,
+            )
+            continue
+
+        plan.append({
+            'id': it['id'],
+            'tipo': it['tipo'],
+            'titulo': it['titulo'],
+            'fecha_anterior': _to_iso_local(it['fecha_anterior_dt']),
+            'fecha_nueva': _to_iso_local(asignado),
+            'duracion_min': dur,
+            'razon': '',
+        })
+
+    return plan
+
+
+def _todas_vencidas_del_user(user, ahora):
+    """Como _actividades_vencidas / _tareas_vencidas pero SIN cap — para
+    reagendar TODAS, no solo las top N que el AI vería."""
+    actos_qs = (Actividad.objects
+                .filter(creado_por=user, completada=False,
+                        fecha_inicio__lt=ahora)
+                .select_related('oportunidad', 'oportunidad__cliente')
+                .order_by('fecha_inicio'))
+    vistos_grupos = set()
+    actividades = []
+    for a in actos_qs:
+        gid = a.recurrence_group_id
+        if gid is not None:
+            if gid in vistos_grupos:
+                continue
+            vistos_grupos.add(gid)
+        actividades.append(a)
+
+    tareas = list(Tarea.objects
+                  .filter(fecha_limite__isnull=False,
+                          fecha_limite__lt=ahora)
+                  .exclude(estado__in=['completada', 'cancelada'])
+                  .filter(Q(creado_por=user) | Q(asignado_a=user))
+                  .order_by('fecha_limite')
+                  .distinct())
+    return actividades, tareas
 
 
 def _preview_reagendar_vencidas(request) -> JsonResponse:
-    """Construye contexto, llama al AI, devuelve plan listo para mostrar.
-    NO toca DB."""
+    """Reagenda TODAS las vencidas del usuario de forma determinista en
+    los próximos días hábiles, horario 8-18, sin LLM."""
     user = request.user
     ahora = timezone.now()
 
-    actividades = _actividades_vencidas_del_user(user, ahora)
-    tareas = _tareas_vencidas_del_user(user, ahora)
+    actividades, tareas = _todas_vencidas_del_user(user, ahora)
     log.info(
-        'Reagendar: user=%s vencidas detectadas: %d actividades + %d tareas',
+        'Reagendar (determinista): user=%s vencidas=%d actividades + %d tareas',
         user.username, len(actividades), len(tareas),
     )
 
-    if not actividades and not tareas:
+    total = len(actividades) + len(tareas)
+    if total == 0:
         return JsonResponse({
             'ok': True,
             'accion': 'reagendar_vencidas',
             'resumen': 'No tienes actividades ni tareas vencidas. Buen trabajo.',
             'plan': [],
+            'resumen_only': True,
         })
 
-    # Ventana de huecos: ~5 días hábiles desde hoy
-    desde = ahora
-    hasta = ahora + timedelta(days=10)  # 10 naturales ~ 5-7 hábiles
-    slots = _slots_ocupados(user, desde, hasta)
-
-    vencidas_md, id_map = _formato_vencidas_para_ai(actividades, tareas)
-    slots_md = _formato_slots_para_ai(slots)
-    dias_habiles = _dias_habiles_siguientes(DIAS_HABILES_VENTANA)
-    dias_str = ', '.join(d.strftime('%a %Y-%m-%d') for d in dias_habiles)
-
-    user_block = (
-        f'## Contexto\n'
-        f'- **Fecha/hora actual (local)**: {timezone.localtime(ahora).strftime("%Y-%m-%d %H:%M (%a)")}\n'
-        f'- **Días hábiles a tu disposición**: {dias_str}\n'
-        f'- **Total vencidas**: {len(actividades)} actividades + {len(tareas)} tareas\n'
-        f'\n'
-        f'## Items vencidos a reagendar\n'
-        f'{vencidas_md}\n\n'
-        f'{slots_md}\n\n'
-        f'## Tu tarea\n'
-        f'Genera el plan de reagendamiento llamando '
-        f'`proponer_plan_reagendamiento`. Respeta las reglas duras de '
-        f'horario y prioriza por impacto del negocio.'
-    )
-
-    cfg = AsistenteConfig.get_singleton()
-    if not cfg.activo:
-        return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
-
-    messages = [
-        {'role': 'system', 'content': SYS_REAGENDAR},
-        {'role': 'user', 'content': user_block},
-    ]
-    tools = [_tool_proponer_reagendar()]
-
-    try:
-        resp = chat(
-            messages=messages,
-            tools=tools,
-            model=cfg.modelo or MODEL_DEFAULT,
-            temperature=0.3,
-            max_tokens=2000,
-        )
-    except AsistenteError as e:
-        log.warning('Calendario asistente (reagendar) error: %s', e)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=502)
-    except Exception as e:
-        log.exception('Error inesperado calendario asistente (reagendar): %s', e)
-        return JsonResponse({'ok': False, 'error': f'Error inesperado: {e}'}, status=500)
-
-    # Extraer tool call
-    tc_list = resp.get('tool_calls') or []
-    tool_args = None
-    for tc in tc_list:
-        if tc.get('name') == 'proponer_plan_reagendamiento':
-            tool_args = tc.get('arguments') or {}
-            break
-    if not tool_args:
-        log.warning('El AI no llamó la tool reagendar. text=%r', (resp.get('text') or '')[:200])
+    plan = _reagendar_distribuir(actividades, tareas, user)
+    n = len(plan)
+    if n == 0:
         return JsonResponse({
             'ok': False,
-            'error': (
-                'El asistente no devolvió un plan estructurado. '
-                'Intenta de nuevo en unos segundos.'
-            ),
-        }, status=502)
+            'error': 'No pude encontrar slots disponibles para reagendar.',
+        }, status=500)
 
-    resumen = (tool_args.get('resumen') or '').strip()
-    items_raw = tool_args.get('items') or []
+    # Calcular rango de días que abarca el plan para mostrarlo en el resumen.
+    fechas_nuevas = [_parse_iso_aware(it['fecha_nueva']) for it in plan]
+    fechas_nuevas = [f for f in fechas_nuevas if f is not None]
+    if fechas_nuevas:
+        ult = max(fechas_nuevas)
+        dias_label = ult.strftime('%a %d %b').lower()
+        rango_txt = f' (hasta el {dias_label})'
+    else:
+        rango_txt = ''
 
-    # Validar / enriquecer items contra id_map
-    plan_validado = []
-    for it in items_raw[:MAX_PLAN_REAGENDAR]:
-        item_id = (it.get('id') or '').strip()
-        if item_id not in id_map:
-            continue  # ignora ids inventados o mal escritos
-        obj = id_map[item_id]
-        # El tipo REAL lo determina el prefijo del id (id_map lo garantiza),
-        # NO lo que diga el AI en el campo `tipo`. El AI a veces miente y eso
-        # generaba AttributeError al leer obj.fecha_limite en una Actividad.
-        if item_id.startswith('actividad-'):
-            tipo = 'actividad'
-        elif item_id.startswith('tarea-'):
-            tipo = 'tarea'
-        else:
-            continue  # id con prefijo desconocido — saltar
-        nueva_fecha = (it.get('nueva_fecha') or '').strip()
-        dur = int(it.get('duracion_min') or 30)
-        if dur < 5:
-            dur = 30
-        if dur > 240:
-            dur = 240
-        razon = (it.get('razon') or '').strip()[:200]
-
-        # Datos del item original para mostrar en el frontend
-        if tipo == 'actividad':
-            titulo = (obj.titulo or '')[:200]
-            fecha_anterior = _to_iso_local(obj.fecha_inicio)
-        else:
-            titulo = (obj.titulo or '')[:200]
-            fecha_anterior = _to_iso_local(obj.fecha_limite)
-
-        plan_validado.append({
-            'id': item_id,
-            'tipo': tipo,
-            'titulo': titulo,
-            'fecha_anterior': fecha_anterior,
-            'fecha_nueva': nueva_fecha,
-            'duracion_min': dur,
-            'razon': razon,
-        })
-
+    s = 's' if n != 1 else ''
+    resumen = (
+        f'Reagendaré {n} vencida{s} en horario laboral (8am–6pm), '
+        f'de lunes a viernes{rango_txt}. Mantendré el título y la '
+        f'descripción de cada una.'
+    )
     return JsonResponse({
         'ok': True,
         'accion': 'reagendar_vencidas',
-        'resumen': resumen or f'Plan de reagendamiento con {len(plan_validado)} items.',
-        'plan': plan_validado,
+        'resumen': resumen,
+        'plan': plan,
+        'resumen_only': True,
+        'total': n,
     })
 
 
