@@ -110,6 +110,10 @@
             .cal-userpick-item .cal-userpick-check { width:14px; height:14px; flex-shrink:0; opacity:0; color:#1d4ed8; }
             .cal-userpick-item.is-active .cal-userpick-check { opacity:1; }
             .cal-userpick-empty { padding:14px 12px; text-align:center; color:#86868B; font-size:12px; }
+            /* Botón Asistente AI (calendario) — pill sutil con dejo de color */
+            .cal-ai-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; background:linear-gradient(135deg,#eef4ff 0%,#f5ecff 100%); border:1px solid rgba(99,102,241,0.18); border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; color:#4338CA; cursor:pointer; transition:all 0.15s; }
+            .cal-ai-btn:hover { background:linear-gradient(135deg,#e0eaff 0%,#ecdbff 100%); border-color:rgba(99,102,241,0.3); color:#3730A3; transform:translateY(-1px); box-shadow:0 2px 6px rgba(99,102,241,0.15); }
+            .cal-ai-btn svg { color:#6366F1; }
             /* ─── Recurrencia (Repetir actividad) ─── */
             .cal-recur-chip { width:30px; height:30px; border-radius:50%; border:1px solid #CBD5E1; background:#fff; color:#64748B; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; padding:0; display:inline-flex; align-items:center; justify-content:center; }
             .cal-recur-chip:hover { border-color:#3B82F6; color:#2563EB; background:#EFF6FF; }
@@ -275,6 +279,15 @@
                     </div>
                     <input type="hidden" id="calUserFilter" value="all">
                 </div>
+                {% comment %}
+                Asistente AI del calendario: abre el modal compartido en modo
+                'calendario' para reagendar vencidas o rellenar huecos con
+                actividades de seguimiento sobre opps/prospectos importantes.
+                {% endcomment %}
+                <button type="button" id="calAsistenteBtn" class="crm-period-pill cal-ai-btn" onclick="calAsistenteAbrir()" title="Asistente de calendario (AI)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
+                    <span>Asistente</span>
+                </button>
             </div>
             <!-- Dynamic island central: Mes / Semana / Día -->
             <div class="crm-tabs crm-tabs--dashboard">

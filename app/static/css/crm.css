@@ -2898,8 +2898,9 @@
     .widget-overlay.is-page-mode .cal-page-monthnav {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 0 12px 8px;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 12px 10px;
         flex-shrink: 0;
     }
     .cal-monthnav-arrow {
