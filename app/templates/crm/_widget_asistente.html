@@ -1105,4 +1105,428 @@ un icono estático. Saludo personalizado con first_name del user.
     color: #fff; background: #DC2626; border-color: #DC2626;
 }
 .asist-confirm-ok:hover { background: #B91C1C; border-color: #B91C1C; }
+
+/* ═════════ Asistente del Calendario (action-driven) ═════════
+   Mismas convenciones visuales que .asist-sugg-card y el welcome chat:
+   orb grande arriba, headline gradient, cards limpias clickables sin
+   gradients sólidos pesados. Se usa en lugar del antiguo .calai-* que
+   inyectaba estilos namespaceados desde JS. */
+.asist-cal-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 28px 24px 12px;
+    gap: 8px;
+}
+.asist-cal-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    width: 100%;
+}
+.asist-cal-welcome .asist-orb--lg { margin-bottom: 14px; }
+.asist-cal-title {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    background: linear-gradient(135deg, var(--ai-ink) 30%, var(--ai-blue) 70%, var(--ai-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 0;
+}
+.asist-cal-sub {
+    font-size: 0.95rem;
+    color: var(--ai-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+.asist-cal-sub strong { color: var(--ai-ink); font-weight: 600; }
+
+/* Lista de cards de acción (estilo .asist-sugg-card pero a 1 columna,
+   y con descripción más larga). Card completa clickable. */
+.asist-cal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 22px;
+}
+.asist-cal-action {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.12);
+    border-radius: 14px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 8px -4px rgba(0, 102, 255, 0.10);
+    width: 100%;
+}
+.asist-cal-action:hover {
+    border-color: var(--ai-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px -6px rgba(0, 102, 255, 0.22);
+}
+.asist-cal-action-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0, 102, 255, 0.10), rgba(99, 102, 241, 0.10));
+    color: var(--ai-blue);
+    transition: all 0.18s ease;
+}
+.asist-cal-action:hover .asist-cal-action-icon {
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+    color: #fff;
+}
+.asist-cal-action-icon svg { width: 18px; height: 18px; }
+.asist-cal-action-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+.asist-cal-action-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+}
+.asist-cal-action-desc {
+    font-size: 0.80rem;
+    color: var(--ai-muted);
+    line-height: 1.45;
+}
+
+/* Loading: orb pulsante (clase is-thinking ya existe) + texto shimmer */
+.asist-cal-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 50px 20px;
+    width: 100%;
+}
+.asist-cal-loading-text {
+    font-size: 0.92rem;
+    font-weight: 600;
+    background: linear-gradient(90deg, var(--ai-blue), var(--ai-magenta), var(--ai-blue));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: asist-shimmer 2s linear infinite;
+    text-align: center;
+}
+
+/* Header de plan (back + título) */
+.asist-cal-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--ai-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    align-self: flex-start;
+    transition: background 0.14s ease, color 0.14s ease;
+}
+.asist-cal-back:hover {
+    background: rgba(0, 102, 255, 0.08);
+    color: var(--ai-blue);
+}
+.asist-cal-plan-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 14px;
+}
+.asist-cal-plan-headline {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ai-ink);
+    line-height: 1.2;
+    margin: 0;
+}
+.asist-cal-resumen {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(0, 102, 255, 0.04);
+    border: 1px solid rgba(0, 102, 255, 0.10);
+    color: var(--ai-ink);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+.asist-cal-resumen strong { font-weight: 700; color: var(--ai-ink); }
+
+/* Lista de cards del plan — compactas, blancas, sin gradients pesados */
+.asist-cal-plan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+}
+.asist-cal-plan-card {
+    padding: 12px 14px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.10);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px -1px rgba(0, 102, 255, 0.06);
+    transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+}
+.asist-cal-plan-card:hover {
+    border-color: rgba(0, 102, 255, 0.28);
+    box-shadow: 0 6px 16px -6px rgba(0, 102, 255, 0.18);
+    transform: translateY(-1px);
+}
+.asist-cal-plan-row1 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.asist-cal-plan-num {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--ai-blue);
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    flex-shrink: 0;
+    min-width: 18px;
+}
+.asist-cal-plan-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ai-ink);
+    line-height: 1.35;
+    flex: 1;
+    min-width: 0;
+}
+.asist-cal-plan-meta {
+    margin-top: 4px;
+    padding-left: 26px;
+    font-size: 0.80rem;
+    color: var(--ai-muted);
+    line-height: 1.45;
+}
+.asist-cal-plan-meta .asist-cal-old {
+    color: #94A3B8;
+    text-decoration: line-through;
+}
+.asist-cal-plan-meta .asist-cal-new {
+    color: var(--ai-ink);
+    font-weight: 600;
+}
+.asist-cal-plan-meta .asist-cal-dot {
+    color: #CBD5E1;
+    margin: 0 6px;
+}
+.asist-cal-plan-meta .asist-cal-ctx {
+    color: var(--ai-blue-dark);
+    font-weight: 500;
+}
+.asist-cal-plan-razon {
+    margin-top: 6px;
+    margin-left: 26px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    font-size: 0.78rem;
+    color: #475569;
+    line-height: 1.45;
+}
+.asist-cal-plan-razon svg {
+    flex-shrink: 0;
+    color: #F59E0B;
+    margin-top: 1px;
+}
+
+/* Footer con botones — consistente con .asist-confirm-actions */
+.asist-cal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 102, 255, 0.08);
+}
+.asist-cal-btn {
+    padding: 9px 18px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.14s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.asist-cal-btn-secondary {
+    color: #475569;
+    background: #fff;
+    border-color: #E2E8F0;
+}
+.asist-cal-btn-secondary:hover {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+    color: var(--ai-ink);
+}
+.asist-cal-btn-primary {
+    color: #fff;
+    background: var(--ai-blue-dark);
+    border-color: var(--ai-blue-dark);
+    box-shadow: 0 4px 12px -4px rgba(0, 82, 212, 0.45);
+}
+.asist-cal-btn-primary:hover {
+    background: #0040A8;
+    border-color: #0040A8;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -4px rgba(0, 82, 212, 0.55);
+}
+.asist-cal-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Vista vacía dentro del flow del plan (no encontró nada que hacer) */
+.asist-cal-empty {
+    width: 100%;
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--ai-muted);
+}
+.asist-cal-empty-title {
+    font-size: 1.0rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    margin-bottom: 6px;
+}
+.asist-cal-empty-text {
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+/* Done — orb grande + check overlay verde discreto */
+.asist-cal-done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 28px 20px 12px;
+    width: 100%;
+}
+.asist-cal-done-orb-wrap {
+    position: relative;
+    margin-bottom: 18px;
+}
+.asist-cal-done-check {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px -4px rgba(16, 185, 129, 0.55), 0 0 0 3px #fff;
+    animation: asist-cal-pop 0.32s cubic-bezier(.18, .89, .32, 1.28);
+    z-index: 2;
+}
+@keyframes asist-cal-pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.asist-cal-done-title {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--ai-ink) 30%, var(--ai-blue) 70%, var(--ai-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1.15;
+    margin: 0;
+}
+.asist-cal-done-text {
+    font-size: 0.95rem;
+    color: var(--ai-muted);
+    line-height: 1.5;
+    max-width: 420px;
+}
+.asist-cal-done-text strong { color: var(--ai-ink); font-weight: 700; }
+.asist-cal-done-warn {
+    color: #B45309;
+    font-size: 0.84rem;
+    margin-top: 4px;
+}
+
+/* Error: panel sutil + footer con botones consistentes */
+.asist-cal-error-card {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+.asist-cal-error-details {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(153, 27, 27, 0.25);
+    font-size: 0.80rem;
+    line-height: 1.45;
+    color: #7F1D1D;
+}
+
+/* En modo calendario el contenedor del modal centra mejor (orb grande
+   se siente raro pegado arriba) — usamos justify-content sutil. */
+#widgetAsistente.is-calendar-mode .asist-messages {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+    .asist-cal-root { padding: 18px 14px 8px; }
+    .asist-cal-title, .asist-cal-done-title { font-size: 1.3rem; }
+}
 </style>
