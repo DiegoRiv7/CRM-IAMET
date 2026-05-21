@@ -1296,6 +1296,14 @@ def _aplicar_rellenar(user, plan: list) -> JsonResponse:
                 titulo = (prospecto.nombre or 'Seguimiento')[:200]
         descripcion = _trunc(it.get('descripcion') or '', 1000)
 
+        # Color de la actividad según la fuente, consistente con el
+        # resto del CRM:
+        #   - oportunidad → azul (mismo color que views_asistente_oportunidades
+        #     y la actividad generada al agendar seguimiento de opp)
+        #   - prospecto   → naranja oscuro (mismo color que
+        #     views_asistente_prospeccion al agendar actividad de prospecto)
+        # Verde se reserva para actividades de ingeniería completadas.
+        color_actividad = '#0052D4' if fuente_tipo == 'oportunidad' else '#B45309'
         try:
             act = Actividad.objects.create(
                 titulo=titulo,
@@ -1304,13 +1312,8 @@ def _aplicar_rellenar(user, plan: list) -> JsonResponse:
                 fecha_inicio=fecha,
                 fecha_fin=fecha + timedelta(minutes=dur),
                 creado_por=user,
-                # Solo seteamos oportunidad si la fuente es opp.
-                # Para prospectos no hay FK directo en Actividad; la opp
-                # asociada (si existe en prospecto.oportunidad_creada) la
-                # ignoramos a propósito: el prospecto aún no es opp y
-                # vincular podría ensuciar reportes.
                 oportunidad=opp if fuente_tipo == 'oportunidad' else None,
-                color='#34C759',  # verde — actividad sugerida por AI
+                color=color_actividad,
             )
             creadas_ids.append(act.id)
             aplicados += 1

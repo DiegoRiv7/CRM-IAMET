@@ -144,27 +144,36 @@
         try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { /* silent */ }
     }
 
-    /* ─── Greeting (usa el del modal compartido) ─── */
+    /* ─── Greeting (usa el del modal compartido) ───
+       Cacheamos el primer nombre que vemos para sobrevivir re-renders
+       (cuando reemplazamos #asistMessages, el id original del template
+       deja de existir; el welcome del calendario emite su propio span
+       sin id para evitar duplicados). */
+    var _cachedFirstName = null;
     function getFirstName() {
+        if (_cachedFirstName !== null) return _cachedFirstName;
         var el = document.getElementById('asistGreetName');
         var raw = el ? (el.textContent || '').trim() : '';
-        return raw || '';
+        _cachedFirstName = raw || '';
+        return _cachedFirstName;
     }
 
-    /* ─── Asegurar contenedor root dentro del modal ─── */
-    function ensureRoot() {
+    /* ─── Asegurar contenedor root dentro del modal ───
+       En welcome (.asist-cal-root) el contenedor es centrado y angosto
+       (max-width 560) para que las sugg cards no se vean estiradas.
+       En modo chat le quitamos esa restricción para que los bubbles se
+       comporten igual que los del consultor general. */
+    function ensureRoot(modeChat) {
         var box = document.getElementById('asistMessages');
         if (!box) return null;
         var root = document.getElementById('asistenteCalendarioRoot');
         if (!root) {
             root = document.createElement('div');
             root.id = 'asistenteCalendarioRoot';
-            root.className = 'asist-cal-root';
             box.innerHTML = '';
             box.appendChild(root);
-        } else {
-            root.className = 'asist-cal-root';
         }
+        root.className = modeChat ? 'asist-cal-rootchat' : 'asist-cal-root';
         return root;
     }
 
@@ -241,50 +250,52 @@
             + '</svg>';
     }
 
-    /* ─── Welcome (historial vacío) ─── */
+    /* ─── Welcome (historial vacío) ───
+       Reusa la misma estructura visual que el consultor general
+       (.asist-welcome + .asist-suggestions con .asist-sugg-card) para
+       que ambos asistentes se vean idénticos. Las cards usan data-prompt
+       — el handler global del modal las captura y manda al sendMessage,
+       que en modo calendar delega a _calAiSendMessage; ahí
+       interceptamos las frases conocidas para usar el preview rápido
+       en lugar de chat libre. */
     function renderWelcome(root) {
         var name = getFirstName();
         var greeting = name
-            ? 'Hola, <span style="color:var(--ai-muted);font-weight:500;">' + esc(name) + '</span>'
+            ? 'Hola, <span class="asist-greet-user">' + esc(name) + '</span>'
             : 'Hola';
         root.innerHTML = ''
-            + '<div class="asist-cal-welcome">'
+            + '<div class="asist-welcome">'
             +   orbLgHTML(false)
-            +   '<div style="font-size:1.05rem;font-weight:500;color:var(--ai-muted);margin-bottom:4px;">'
-            +     greeting
+            +   '<div class="asist-welcome-title">'
+            +     '<span class="asist-greeting">' + greeting + '</span>'
+            +     '<span class="asist-greeting-q">Asistente del Calendario</span>'
             +   '</div>'
-            +   '<h2 class="asist-cal-title">Asistente del Calendario</h2>'
-            +   '<div class="asist-cal-sub">Pregúntame por tu agenda o usa una acción rápida.</div>'
-            + '</div>'
-            + '<div class="asist-cal-actions">'
-            +   actionCardHTML({
-                    id: 'reagendar_vencidas',
+            +   '<div class="asist-welcome-sub">'
+            +     'Pregúntame por tu <strong>agenda</strong> o usa una <strong>acción rápida</strong>.'
+            +   '</div>'
+            +   '<div class="asist-suggestions">'
+            +     suggCardHTML({
+                    prompt: 'Reagendar mis vencidas',
                     icon: svgClockBack(),
                     title: 'Reagendar mis vencidas',
-                    desc: 'Reorganizo tus pendientes vencidos en los próximos 5 días hábiles, priorizando los más importantes.',
-                })
-            +   actionCardHTML({
-                    id: 'rellenar_calendario',
+                    sub: 'Reorganizo pendientes en 5 días',
+                  })
+            +     suggCardHTML({
+                    prompt: 'Rellenar mi calendario',
                     icon: svgWand(),
                     title: 'Rellenar mi calendario',
-                    desc: 'Detecto oportunidades sin seguimiento reciente y agendo en los huecos de tu semana.',
-                })
+                    sub: 'Agendo en los huecos de tu semana',
+                  })
+            +   '</div>'
             + '</div>';
-
-        root.querySelectorAll('.asist-cal-action').forEach(function (card) {
-            card.addEventListener('click', function () {
-                var accion = card.getAttribute('data-accion');
-                startQuickAction(accion);
-            });
-        });
     }
 
-    function actionCardHTML(opts) {
-        return '<button type="button" class="asist-cal-action" data-accion="' + esc(opts.id) + '">'
-            +   '<span class="asist-cal-action-icon">' + opts.icon + '</span>'
-            +   '<span class="asist-cal-action-text">'
-            +     '<span class="asist-cal-action-title">' + esc(opts.title) + '</span>'
-            +     '<span class="asist-cal-action-desc">' + esc(opts.desc) + '</span>'
+    function suggCardHTML(opts) {
+        return '<button type="button" class="asist-sugg-card" data-prompt="' + esc(opts.prompt) + '">'
+            +   '<span class="asist-sugg-icon">' + opts.icon + '</span>'
+            +   '<span class="asist-sugg-text">'
+            +     '<strong>' + esc(opts.title) + '</strong>'
+            +     '<em>' + esc(opts.sub) + '</em>'
             +   '</span>'
             + '</button>';
     }
@@ -516,12 +527,13 @@
 
     /* ─── Render principal ─── */
     function render() {
-        var root = ensureRoot();
+        var modeChat = STATE.history.length > 0;
+        var root = ensureRoot(modeChat);
         if (!root) return;
-        if (STATE.history.length === 0) {
-            renderWelcome(root);
-        } else {
+        if (modeChat) {
             renderChat(root);
+        } else {
+            renderWelcome(root);
         }
     }
     window._calAiRenderRoot = render;
@@ -620,6 +632,17 @@
     function sendChatMessage(text) {
         text = (text || '').trim();
         if (!text) return;
+        // Shortcut: si el texto matchea las labels de las cards del welcome,
+        // disparamos la acción rápida (endpoint /preview/ — sin tokens LLM)
+        // en vez de mandarlo al chat libre.
+        if (text === 'Reagendar mis vencidas') {
+            startQuickAction('reagendar_vencidas');
+            return;
+        }
+        if (text === 'Rellenar mi calendario') {
+            startQuickAction('rellenar_calendario');
+            return;
+        }
         if (STATE.sending) return;
         if (reachedTurnLimit(true)) return;
 

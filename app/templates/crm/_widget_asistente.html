@@ -1106,20 +1106,29 @@ un icono estático. Saludo personalizado con first_name del user.
 }
 .asist-confirm-ok:hover { background: #B91C1C; border-color: #B91C1C; }
 
-/* ═════════ Asistente del Calendario (action-driven) ═════════
-   Mismas convenciones visuales que .asist-sugg-card y el welcome chat:
-   orb grande arriba, headline gradient, cards limpias clickables sin
-   gradients sólidos pesados. Se usa en lugar del antiguo .calai-* que
-   inyectaba estilos namespaceados desde JS. */
-.asist-cal-root {
+/* ═════════ Asistente del Calendario ═════════
+   El welcome usa la misma estructura visual que el consultor general
+   (.asist-welcome + .asist-suggestions) para que ambos se vean idénticos.
+   En modo chat le quitamos las restricciones de ancho para que los
+   bubbles se comporten igual que en el consultor general.
+
+   .asist-cal-root      → welcome (orb + título + sugg cards)
+   .asist-cal-rootchat  → chat (bubbles + planes inline) */
+.asist-cal-root,
+.asist-cal-rootchat {
     display: flex;
     flex-direction: column;
-    align-items: center;
     width: 100%;
+}
+.asist-cal-root {
+    align-items: center;
     max-width: 560px;
     margin: 0 auto;
-    padding: 28px 24px 12px;
+    padding: 8px 0 0;
     gap: 8px;
+}
+.asist-cal-rootchat {
+    gap: 12px;
 }
 .asist-cal-welcome {
     display: flex;
@@ -1529,8 +1538,7 @@ un icono estático. Saludo personalizado con first_name del user.
 .asist-cal-chat {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 12px 4px 8px;
+    gap: 16px;
 }
 .asist-cal-chat .asist-msg {
     margin: 0;
