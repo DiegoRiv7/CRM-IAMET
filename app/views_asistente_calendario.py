@@ -889,9 +889,15 @@ def _preview_reagendar_vencidas(request) -> JsonResponse:
         if item_id not in id_map:
             continue  # ignora ids inventados o mal escritos
         obj = id_map[item_id]
-        tipo = it.get('tipo')
-        if tipo not in ('actividad', 'tarea'):
-            tipo = 'actividad' if item_id.startswith('actividad-') else 'tarea'
+        # El tipo REAL lo determina el prefijo del id (id_map lo garantiza),
+        # NO lo que diga el AI en el campo `tipo`. El AI a veces miente y eso
+        # generaba AttributeError al leer obj.fecha_limite en una Actividad.
+        if item_id.startswith('actividad-'):
+            tipo = 'actividad'
+        elif item_id.startswith('tarea-'):
+            tipo = 'tarea'
+        else:
+            continue  # id con prefijo desconocido — saltar
         nueva_fecha = (it.get('nueva_fecha') or '').strip()
         dur = int(it.get('duracion_min') or 30)
         if dur < 5:
