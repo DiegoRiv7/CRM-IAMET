@@ -60,9 +60,10 @@ DIAS_HABILES_VENTANA = 5
 
 # Topes para no inflar tokens.
 MAX_VENCIDAS_AL_AI = 30          # Las más urgentes (cap por seguridad).
-MAX_CANDIDATOS_RELLENAR = 20     # Top candidatos sin actividad próxima.
+MAX_CANDIDATOS_RELLENAR = 30     # Top candidatos sin actividad pendiente.
 MAX_PLAN_REAGENDAR = 15          # El plan final que el AI devuelve.
-MAX_PLAN_RELLENAR = 5            # Máximo 5 sugerencias nuevas por corrida.
+MAX_PLAN_RELLENAR = 20           # Máximo de sugerencias nuevas por corrida.
+MAX_RELLENAR_POR_DIA = 4         # Tope de actividades nuevas por día (anti-saturación).
 
 # Buffer entre eventos (lo aplica el AI; backend valida en aplicar).
 BUFFER_ENTRE_EVENTOS_MIN = 5
@@ -260,13 +261,14 @@ def _ultima_actividad_relacionada(user, oportunidad_id=None,
 
 
 def _candidatos_rellenar(user, ahora) -> dict:
-    """Devuelve dict con 'oportunidades' y 'prospectos' del usuario sin
-    actividad próxima (la siguiente actividad agendada está en >7 días, o
-    no hay ninguna). Cap al top MAX_CANDIDATOS_RELLENAR combinado.
+    """Devuelve dict con 'oportunidades' y 'prospectos' del usuario que
+    NO tienen ninguna actividad pendiente (completada=False), ni futura
+    ni vencida. La lógica: si una opp ya tiene una vencida, eso es trabajo
+    de "reagendar"; si tiene una futura sin completar, ya está cubierta.
+    Solo entran las que están "limpias" (sin pendientes) — es ahí donde
+    hay que rellenar el calendario. Cap a MAX_CANDIDATOS_RELLENAR combinado.
     """
-    horizonte = ahora + timedelta(days=7)
-
-    # OPORTUNIDADES activas del usuario sin actividad próxima
+    # OPORTUNIDADES activas del usuario sin NINGUNA actividad pendiente
     etapas_cerradas = ['Ganado', 'Pagado', 'Perdido', 'Cancelado']
     opps_activas = (TodoItem.objects
                     .filter(usuario=user)
@@ -277,46 +279,42 @@ def _candidatos_rellenar(user, ahora) -> dict:
                     .order_by('-fecha_actualizacion'))
 
     opps_sin_actividad = []
-    for opp in opps_activas[:60]:  # safety cap antes del filtro fino
-        prox = (Actividad.objects
-                .filter(creado_por=user, oportunidad=opp,
-                        completada=False, fecha_inicio__gte=ahora)
-                .order_by('fecha_inicio')
-                .values_list('fecha_inicio', flat=True)
-                .first())
-        if prox is None or prox > horizonte:
+    for opp in opps_activas[:80]:  # safety cap antes del filtro fino
+        tiene_pendientes = (Actividad.objects
+                            .filter(creado_por=user, oportunidad=opp,
+                                    completada=False)
+                            .exists())
+        if not tiene_pendientes:
             opps_sin_actividad.append(opp)
         if len(opps_sin_actividad) >= MAX_CANDIDATOS_RELLENAR:
             break
 
-    # PROSPECTOS activos del usuario sin actividad próxima
+    # PROSPECTOS activos del usuario sin NINGUNA actividad pendiente
     prospectos_activos = (Prospecto.objects
                           .filter(usuario=user)
                           .exclude(etapa__in=['cerrado_ganado', 'cerrado_perdido'])
                           .select_related('cliente')
                           .order_by('-fecha_actualizacion'))
     prospectos_sin = []
-    for p in prospectos_activos[:60]:
-        # ProspectoActividad vive en el prospecto; pero también puede haber
-        # una Actividad de calendario asociada vía oportunidad_creada.
-        # Para simplicidad consultamos ambos pero nos enfocamos en
-        # ProspectoActividad como fuente principal.
+    for p in prospectos_activos[:80]:
         try:
-            prox_pa = (p.actividades
-                       .filter(completada=False, fecha_programada__gte=ahora)
-                       .order_by('fecha_programada')
-                       .values_list('fecha_programada', flat=True)
-                       .first())
+            tiene_pendientes_p = (p.actividades
+                                  .filter(completada=False)
+                                  .exists())
         except Exception:
-            prox_pa = None
-        if prox_pa is None or prox_pa > horizonte:
+            tiene_pendientes_p = False
+        if not tiene_pendientes_p:
             prospectos_sin.append(p)
         if len(prospectos_sin) >= MAX_CANDIDATOS_RELLENAR:
             break
 
-    # Combinar y truncar al cap general
-    combinados_opps = opps_sin_actividad[:MAX_CANDIDATOS_RELLENAR // 2 + 2]
-    combinados_pros = prospectos_sin[:MAX_CANDIDATOS_RELLENAR - len(combinados_opps)]
+    # Combinar y truncar al cap general; dejamos espacio balanceado pero
+    # sin desperdiciar slots si una lista está vacía.
+    cap_opps = min(len(opps_sin_actividad),
+                   MAX_CANDIDATOS_RELLENAR // 2 + 4)
+    combinados_opps = opps_sin_actividad[:cap_opps]
+    espacio_pros = MAX_CANDIDATOS_RELLENAR - len(combinados_opps)
+    combinados_pros = prospectos_sin[:max(espacio_pros, 0)]
     return {
         'oportunidades': combinados_opps,
         'prospectos': combinados_pros,
@@ -561,16 +559,15 @@ SYS_REAGENDAR = (
 SYS_RELLENAR = (
     'Eres el asistente de calendario de IAMET en su rol de '
     '**proactivo del pipeline**. El vendedor tiene oportunidades y '
-    'prospectos activos que **no han tenido actividad reciente** (sin '
-    'siguiente actividad o con la próxima en >7 días). Tu trabajo: '
-    'proponer entre 1 y 5 actividades nuevas, bien pensadas, para '
-    'mover esos pendientes.\n\n'
+    'prospectos activos que **no tienen ninguna actividad pendiente** '
+    '(ya cumplieron todas las anteriores o nunca tuvieron). Tu trabajo: '
+    f'proponer entre 1 y {MAX_PLAN_RELLENAR} actividades nuevas, bien '
+    'pensadas y distribuidas en varios días, para mover esos pendientes.\n\n'
 
     '## Filosofía\n'
-    '- **Calidad sobre cantidad.** Mejor 2 sugerencias justificadas '
-    'que 5 genéricas.\n'
-    '- **Realista al ancho de banda.** No saturas el calendario del '
-    'vendedor con 10 cosas — sugieres POCAS pero útiles.\n'
+    '- **Calidad sobre cantidad.** Mejor 8 sugerencias justificadas '
+    f'que {MAX_PLAN_RELLENAR} genéricas, pero si tienes muchos '
+    'candidatos buenos no te quedes corto.\n'
     '- **Usa la señal del contexto**: monto, etapa, días sin '
     'movimiento, descripción. Una opp con $500k en negociación que '
     'lleva 21 días sin movimiento es PRIORIDAD ALTA. Un prospecto en '
@@ -582,6 +579,19 @@ SYS_RELLENAR = (
 
     + _REGLAS_HORARIO +
     '\n'
+
+    '## Reglas de distribución (CRÍTICAS)\n'
+    '- **DISTRIBUYE las actividades entre los próximos 5 días hábiles.** '
+    'NO agrupes todas en el mismo día — eso satura al vendedor.\n'
+    f'- **MÁXIMO {MAX_RELLENAR_POR_DIA} actividades nuevas por día.** '
+    'Si excedes este tope el backend descartará las extras.\n'
+    '- Si tienes <5 candidatos, está bien crear 1-2 items; pero si '
+    'tienes 15+ candidatos, **distribuye al menos 3 por día** para usar '
+    'bien la ventana de la semana.\n'
+    '- Deja **espacio entre actividades** (mínimo 30 minutos de buffer '
+    'cuando son del mismo día, además del buffer base de 5 min).\n'
+    '- Comienza por los días más cercanos pero balanceando: día 1 con '
+    'los más prioritarios, día 2 los siguientes, etc.\n\n'
 
     f'## Tope del plan: MÁXIMO {MAX_PLAN_RELLENAR} items.\n'
     'Si tienes más candidatos, **elige los más prioritarios**. El usuario '
@@ -789,6 +799,10 @@ def _preview_reagendar_vencidas(request) -> JsonResponse:
 
     actividades = _actividades_vencidas_del_user(user, ahora)
     tareas = _tareas_vencidas_del_user(user, ahora)
+    log.info(
+        'Reagendar: user=%s vencidas detectadas: %d actividades + %d tareas',
+        user.username, len(actividades), len(tareas),
+    )
 
     if not actividades and not tareas:
         return JsonResponse({
@@ -920,12 +934,21 @@ def _preview_rellenar_calendario(request) -> JsonResponse:
     ahora = timezone.now()
 
     candidatos = _candidatos_rellenar(user, ahora)
-    total_cand = len(candidatos['oportunidades']) + len(candidatos['prospectos'])
+    n_opps = len(candidatos['oportunidades'])
+    n_pros = len(candidatos['prospectos'])
+    total_cand = n_opps + n_pros
+    log.info(
+        'Rellenar: user=%s candidatos detectados=%d (opps=%d, prospectos=%d)',
+        user.username, total_cand, n_opps, n_pros,
+    )
     if total_cand == 0:
         return JsonResponse({
             'ok': True,
             'accion': 'rellenar_calendario',
-            'resumen': 'Todas tus oportunidades y prospectos activos tienen actividad próxima.',
+            'resumen': (
+                'No hay oportunidades ni prospectos sin actividad pendiente. '
+                'Todo tu pipeline ya está cubierto.'
+            ),
             'plan': [],
         })
 
@@ -942,15 +965,17 @@ def _preview_rellenar_calendario(request) -> JsonResponse:
         f'## Contexto\n'
         f'- **Fecha/hora actual (local)**: {timezone.localtime(ahora).strftime("%Y-%m-%d %H:%M (%a)")}\n'
         f'- **Días hábiles a tu disposición**: {dias_str}\n'
-        f'- **Total candidatos sin actividad próxima**: {total_cand}\n'
+        f'- **Total candidatos sin actividad pendiente**: {total_cand}\n'
         f'\n'
         f'## Candidatos\n'
         f'{candidatos_md}\n\n'
         f'{slots_md}\n\n'
         f'## Tu tarea\n'
         f'Sugiere entre 1 y {MAX_PLAN_RELLENAR} actividades nuevas '
-        f'llamando `proponer_plan_rellenar`. Prioriza por impacto y no '
-        f'satures el calendario.'
+        f'llamando `proponer_plan_rellenar`. **DISTRIBUYE entre los '
+        f'{DIAS_HABILES_VENTANA} días hábiles listados arriba**: máximo '
+        f'{MAX_RELLENAR_POR_DIA} por día. Prioriza por impacto y no '
+        f'satures un solo día.'
     )
 
     cfg = AsistenteConfig.get_singleton()
@@ -969,7 +994,9 @@ def _preview_rellenar_calendario(request) -> JsonResponse:
             tools=tools,
             model=cfg.modelo or MODEL_DEFAULT,
             temperature=0.4,
-            max_tokens=1500,
+            # Subimos max_tokens porque ahora el plan puede tener hasta
+            # MAX_PLAN_RELLENAR=20 items con titulo/descripcion/razon.
+            max_tokens=3500,
         )
     except AsistenteError as e:
         log.warning('Calendario asistente (rellenar) error: %s', e)
@@ -1058,11 +1085,34 @@ def _preview_rellenar_calendario(request) -> JsonResponse:
             'razon': razon,
         })
 
+    # Chequeo de distribución: rechazar items que excedan el cap diario.
+    # El AI tiene la regla en su prompt pero el backend valida por las
+    # dudas — si concentra todo en un día, descartamos los extras.
+    por_dia = {}
+    plan_final = []
+    for it in plan_validado:
+        fecha_obj = _parse_iso_aware(it.get('fecha') or '')
+        if not fecha_obj:
+            # Fecha inválida: la dejamos pasar (el endpoint de aplicar
+            # también valida) pero sin contar para el cap diario.
+            plan_final.append(it)
+            continue
+        dia_key = fecha_obj.date().isoformat()
+        por_dia.setdefault(dia_key, 0)
+        if por_dia[dia_key] >= MAX_RELLENAR_POR_DIA:
+            log.info(
+                'Rellenar: rechazo item %r del %s (cap día %d alcanzado)',
+                it.get('titulo'), dia_key, MAX_RELLENAR_POR_DIA,
+            )
+            continue
+        por_dia[dia_key] += 1
+        plan_final.append(it)
+
     return JsonResponse({
         'ok': True,
         'accion': 'rellenar_calendario',
-        'resumen': resumen or f'Sugerencias para rellenar: {len(plan_validado)} items.',
-        'plan': plan_validado,
+        'resumen': resumen or f'Sugerencias para rellenar: {len(plan_final)} items.',
+        'plan': plan_final,
     })
 
 
@@ -1279,43 +1329,72 @@ def _aplicar_rellenar(user, plan: list) -> JsonResponse:
 @require_POST
 def api_calendario_asistente_preview(request):
     """Genera el plan llamando al AI. NO toca la DB. El frontend muestra
-    el plan al usuario para que acepte o rechace."""
+    el plan al usuario para que acepte o rechace.
+
+    SIEMPRE devuelve JSON, nunca HTML 500. El frontend hace
+    `response.json()` y si el body es HTML revienta con "Respuesta
+    inválida"; por eso atrapamos toda Exception aquí.
+    """
     try:
-        body = json.loads(request.body or '{}')
-    except Exception:
-        body = {}
-    accion = (body.get('accion') or '').strip()
-    if accion == 'reagendar_vencidas':
-        return _preview_reagendar_vencidas(request)
-    if accion == 'rellenar_calendario':
-        return _preview_rellenar_calendario(request)
-    return JsonResponse(
-        {'ok': False, 'error': f'acción inválida: {accion!r}'},
-        status=400,
-    )
+        try:
+            body = json.loads(request.body or '{}')
+        except Exception:
+            body = {}
+        accion = (body.get('accion') or '').strip()
+        log.info(
+            'Preview asistente calendario: accion=%r user=%s',
+            accion, getattr(request.user, 'username', '?'),
+        )
+        if accion == 'reagendar_vencidas':
+            return _preview_reagendar_vencidas(request)
+        if accion == 'rellenar_calendario':
+            return _preview_rellenar_calendario(request)
+        return JsonResponse(
+            {'ok': False, 'error': f'acción inválida: {accion!r}'},
+            status=400,
+        )
+    except Exception as e:
+        log.exception('Error en api_calendario_asistente_preview')
+        return JsonResponse(
+            {'ok': False, 'error': f'Error interno: {str(e)[:200]}'},
+            status=500,
+        )
 
 
 @login_required
 @require_POST
 def api_calendario_asistente_aplicar(request):
     """Aplica el plan aceptado por el user. NO llama al AI — solo escribe
-    en DB. Valida pertenencia de cada item."""
+    en DB. Valida pertenencia de cada item. Garantiza respuesta JSON
+    (nunca HTML 500) por la misma razón que el preview."""
     try:
-        body = json.loads(request.body or '{}')
-    except Exception:
-        body = {}
-    accion = (body.get('accion') or '').strip()
-    plan = body.get('plan') or []
-    if not isinstance(plan, list):
+        try:
+            body = json.loads(request.body or '{}')
+        except Exception:
+            body = {}
+        accion = (body.get('accion') or '').strip()
+        plan = body.get('plan') or []
+        log.info(
+            'Aplicar asistente calendario: accion=%r items=%d user=%s',
+            accion, len(plan) if isinstance(plan, list) else -1,
+            getattr(request.user, 'username', '?'),
+        )
+        if not isinstance(plan, list):
+            return JsonResponse(
+                {'ok': False, 'error': 'plan debe ser lista'},
+                status=400,
+            )
+        if accion == 'reagendar_vencidas':
+            return _aplicar_reagendar(request.user, plan)
+        if accion == 'rellenar_calendario':
+            return _aplicar_rellenar(request.user, plan)
         return JsonResponse(
-            {'ok': False, 'error': 'plan debe ser lista'},
+            {'ok': False, 'error': f'acción inválida: {accion!r}'},
             status=400,
         )
-    if accion == 'reagendar_vencidas':
-        return _aplicar_reagendar(request.user, plan)
-    if accion == 'rellenar_calendario':
-        return _aplicar_rellenar(request.user, plan)
-    return JsonResponse(
-        {'ok': False, 'error': f'acción inválida: {accion!r}'},
-        status=400,
-    )
+    except Exception as e:
+        log.exception('Error en api_calendario_asistente_aplicar')
+        return JsonResponse(
+            {'ok': False, 'error': f'Error interno: {str(e)[:200]}'},
+            status=500,
+        )
