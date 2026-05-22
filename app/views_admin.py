@@ -69,6 +69,7 @@ def api_admin_usuarios(request):
                 'meta_cobrado': str(getattr(profile, 'meta_cobrado', 0)) if profile else '0',
                 'rol': getattr(profile, 'rol', 'vendedor') if profile else 'vendedor',
                 'can_manage_marketing': getattr(profile, 'can_manage_marketing', False) if profile else False,
+                'puede_levantamiento': getattr(profile, 'puede_levantamiento', False) if profile else False,
             })
         return JsonResponse({'usuarios': data})
 
@@ -385,6 +386,12 @@ def api_admin_permisos(request, user_id):
         profile.can_manage_marketing = bool(data['can_manage_marketing'])
         profile.save(update_fields=['can_manage_marketing'])
         response_data['can_manage_marketing'] = profile.can_manage_marketing
+
+    if 'puede_levantamiento' in data:
+        profile, _ = UserProfile.objects.get_or_create(user=usuario)
+        profile.puede_levantamiento = bool(data['puede_levantamiento'])
+        profile.save(update_fields=['puede_levantamiento'])
+        response_data['puede_levantamiento'] = profile.puede_levantamiento
 
     return JsonResponse(response_data)
 

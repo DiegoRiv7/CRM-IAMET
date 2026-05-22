@@ -63,6 +63,12 @@ class UserProfile(models.Model):
     # recursos). Independiente del rol — un vendedor puede tener este permiso
     # sin ser supervisor. Se administra desde el panel admin → Permisos.
     can_manage_marketing = models.BooleanField(default=False, verbose_name="Puede gestionar Marketing")
+    # Permiso granular para usar la app de Levantamientos (PWA móvil).
+    # Independiente del rol — un vendedor puede tener este permiso y poder
+    # iniciar levantamientos desde planta sin cambiar a perfil ingeniero
+    # (mantiene su vista de oportunidades). Los ingenieros y supervisores
+    # acceden siempre, sin necesidad de este flag.
+    puede_levantamiento = models.BooleanField(default=False, verbose_name="Puede iniciar Levantamientos")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
