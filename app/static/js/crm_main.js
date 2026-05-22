@@ -837,14 +837,21 @@
                         _cleanParams = true;
                     }
                 }
-                // Deep-link a proyecto: cambia a la vista Proyectos y abre el detalle
+                // Deep-link a proyecto: cambia a la vista Proyectos y abre el detalle.
+                // Usamos click() del sidebar para que el listener del ingeniero
+                // oculte dashIngRoot correctamente. Sin esto, el detalle queda
+                // por debajo del dashboard.
                 var _openProyId = _urlParams.get('open_proyecto');
                 if (_openProyId) {
                     var _openProyClean = parseInt(_openProyId, 10);
                     if (_openProyClean) {
                         setTimeout(function () {
-                            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
-                            if (typeof window.proyectosVerDetalle === 'function') window.proyectosVerDetalle(_openProyClean);
+                            var _bp = document.getElementById('btnProyectos');
+                            if (_bp) _bp.click();
+                            else if (typeof switchCrmView === 'function') switchCrmView('proyectos');
+                            setTimeout(function () {
+                                if (typeof window.proyectosVerDetalle === 'function') window.proyectosVerDetalle(_openProyClean);
+                            }, 80);
                         }, 600);
                         _urlParams.delete('open_proyecto');
                         _cleanParams = true;

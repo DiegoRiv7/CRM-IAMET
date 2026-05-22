@@ -437,15 +437,16 @@ window.addEventListener('resize', () => {
         if (r.type === 'proyecto' && r.id) {
             var urlP = '/app/todos/?tab=crm&open_proyecto=' + r.id;
             if (newTab) { window.open(urlP, '_blank'); return; }
-            // Ingeniero usa su modal específico (widgetProyectoDetalle del dashboard).
-            if (enCRM && window.ES_INGENIERO && typeof window.ingenieroAbrirProyecto === 'function') {
-                window.ingenieroAbrirProyecto(r.id);
-                return;
-            }
-            // Si estamos en el CRM, abrir el detalle del proyecto sin recargar
+            // En CRM: usar el click del botón Proyectos del sidebar. Ese
+            // listener dispara el cleanup correcto (oculta dashIngRoot del
+            // ingeniero, hace switchCrmView para vendedor/admin, etc). Luego
+            // abrimos el detalle con un pequeño delay para que la sección
+            // esté visible.
             if (enCRM && typeof window.proyectosVerDetalle === 'function') {
-                if (typeof window.switchCrmView === 'function') window.switchCrmView('proyectos');
-                window.proyectosVerDetalle(r.id);
+                var btnProy = document.getElementById('btnProyectos');
+                if (btnProy) btnProy.click();
+                else if (typeof window.switchCrmView === 'function') window.switchCrmView('proyectos');
+                setTimeout(function () { window.proyectosVerDetalle(r.id); }, 60);
                 return;
             }
             window.location.href = urlP;
