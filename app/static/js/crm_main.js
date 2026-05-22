@@ -8810,6 +8810,16 @@
             // Limpiar contenido stale ANTES de abrir para evitar flash de la tarea previa
             _crmTaskClearForLoading();
             modal.classList.add('active');
+            // Si se abre desde una opp que ya está en .z-elevated-top (caso típico:
+            // ingeniero → tarea → opp → click en una tarea del historial), el modal
+            // de tarea por defecto está en CAPA 4 (10400) y queda por DEBAJO de la
+            // opp (10750). Lo elevamos a 10900 para que aparezca encima.
+            var _opp = document.getElementById('widgetDetalle');
+            if (_opp && (_opp.classList.contains('z-elevated-top') || _opp.classList.contains('z-elevated'))) {
+                modal.classList.add('z-elevated-overlay');
+            } else {
+                modal.classList.remove('z-elevated-overlay');
+            }
             document.body.style.overflow = 'hidden';
             fetch('/app/api/tarea/' + tareaId + '/')
                 .then(function (r) {
@@ -9367,7 +9377,11 @@
 
         function crmTaskCerrarModal() {
             var modal = document.getElementById('crmTaskDetailModal');
-            if (modal) { modal.classList.remove('active'); modal.classList.remove('z-elevated'); }
+            if (modal) {
+                modal.classList.remove('active');
+                modal.classList.remove('z-elevated');
+                modal.classList.remove('z-elevated-overlay');
+            }
             document.body.style.overflow = '';
             // Refrescar widget oportunidad al cerrar si la tarea tenia oportunidad
             if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {

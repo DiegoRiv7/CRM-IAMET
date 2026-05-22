@@ -2385,6 +2385,15 @@
             var body = document.getElementById('widgetTodasTareasBody');
             if (!overlay) return;
             body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9CA3AF;font-size:0.85rem;">Cargando...</div>';
+            // Si la opp se abrió elevada (caso: tarea → opp), también
+            // elevamos este sub-widget. Sin esto, queda por detrás del
+            // widget de oportunidad (z 10200 vs 10750).
+            var _opp = document.getElementById('widgetDetalle');
+            if (_opp && (_opp.classList.contains('z-elevated-top') || _opp.classList.contains('z-elevated'))) {
+                overlay.classList.add('z-elevated-overlay');
+            } else {
+                overlay.classList.remove('z-elevated-overlay');
+            }
             overlay.style.display = 'flex';
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
@@ -2436,7 +2445,10 @@
             if (!overlay) return;
             card.style.transform = 'scale(0.92) translateY(40px)';
             card.style.opacity = '0';
-            setTimeout(function() { overlay.style.display = 'none'; }, 260);
+            setTimeout(function() {
+                overlay.style.display = 'none';
+                overlay.classList.remove('z-elevated-overlay');
+            }, 260);
         };
 
         window.woAbrirActividadReciente = function () {

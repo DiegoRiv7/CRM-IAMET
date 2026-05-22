@@ -29,15 +29,22 @@
  *   Para widgets abiertos desde un widget YA elevado.
  *   Ejemplo: drive abierto desde tarea que fue abierta desde chat de grupo.
  *
+ * CAPA ELEVADA-OVERLAY (10900) — .z-elevated-overlay
+ *   Para sub-widgets que se abren DESDE un widget que ya está en
+ *   .z-elevated-top. Ejemplo típico: ingeniero abre tarea → opp →
+ *   "Ver todas tareas" o click en una tarea del historial. Sin esto,
+ *   esos sub-widgets quedan detrás de la opp elevada.
+ *
  * CAPA TOP (10800) — Toasts y alertas transitorias
  *   macostToastContainer
  *
- * REGLA: nunca hardcodear style.zIndex en JS. Usar .z-elevated
- * o .z-elevated-top y quitarlas al cerrar.
+ * REGLA: nunca hardcodear style.zIndex en JS. Usar .z-elevated,
+ * .z-elevated-top o .z-elevated-overlay y quitarlas al cerrar.
  * ═══════════════════════════════════════════════════════════════════ */
 
     .z-elevated { z-index: 10700 !important; }
     .z-elevated-top { z-index: 10750 !important; }
+    .z-elevated-overlay { z-index: 10900 !important; }
 
     .main-content.container {
         max-width: none !important;
