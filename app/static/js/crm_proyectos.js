@@ -1260,6 +1260,21 @@
         var tab = _proyDetailNormalizeTab(initialTab);
         currentTab = tab;
 
+        // Defense in depth: garantiza que NADA esté visible debajo del
+        // detalle del proyecto. Cubre cualquier camino de entrada (Spotlight,
+        // deep-link, click en breadcrumb de tarea, etc). Para el ingeniero
+        // esto oculta dashIngRoot que sino quedaba flotando arriba.
+        var _dashIng = document.getElementById('dashIngRoot');
+        if (_dashIng) _dashIng.style.display = 'none';
+        var _crmContent = document.getElementById('crmContentSection');
+        if (_crmContent) _crmContent.style.display = 'none';
+        var _tareasSec = document.getElementById('tareasSection');
+        if (_tareasSec) _tareasSec.classList.remove('active');
+        var _calOv = document.getElementById('widgetCalendarioMaster');
+        if (_calOv && _calOv.classList.contains('is-page-mode')) {
+            _calOv.style.display = 'none';
+        }
+
         // Inline: el detalle vive como página dentro del flujo, no como
         // overlay. Ocultamos el listado completo y mostramos el detalle.
         var section = el('proyectosSection');
