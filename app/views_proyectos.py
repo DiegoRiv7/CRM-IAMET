@@ -1247,11 +1247,11 @@ def api_tareas(request):
                     ids_m2m_u = ids_part | ids_obs
                     tareas = Tarea.objects.filter(
                         Q(creado_por_id__in=uid_list) | Q(asignado_a_id__in=uid_list) | Q(id__in=ids_m2m_u)
-                    ).defer('descripcion').select_related(
+                    ).select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
                 elif request.user.is_superuser:
-                    tareas = Tarea.objects.defer('descripcion').select_related(
+                    tareas = Tarea.objects.select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
                 else:
@@ -1277,7 +1277,7 @@ def api_tareas(request):
                         Q(asignado_a=request.user) |
                         Q(id__in=ids_m2m) |
                         grupo_filter
-                    ).defer('descripcion').select_related(
+                    ).select_related(
                         'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
                     ).order_by('-fecha_creacion')
 
@@ -1324,6 +1324,13 @@ def api_tareas(request):
                     offset = (page - 1) * per_page
                     tareas = tareas[offset:offset + per_page]
             
+            # Prefetch comentarios + archivos solo cuando no se pidió un proyecto
+            # u oportunidad específicos (caso del listado global del CRM, donde
+            # la búsqueda extendida es relevante). Esto alimenta el search_blob.
+            include_search_blob = not proyecto_id and not oportunidad_id
+            if include_search_blob:
+                tareas = tareas.prefetch_related('comentarios', 'comentarios__archivos')
+
             # Cargar ids de tareas ancladas del usuario actual
             try:
                 profile_actual = UserProfile.objects.get(user=request.user)
@@ -1342,6 +1349,42 @@ def api_tareas(request):
                     seconds = total_seconds % 60
                     tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
                 
+                # Search blob: texto plano concatenado con todo lo que el
+                # buscador debe poder matchear: titulo, descripcion, comentarios,
+                # nombres de archivos adjuntos, proyecto, oportunidad y cliente.
+                # Se calcula solo cuando se prefetched comentarios (listado global)
+                # para no pagar el costo en vistas de proyecto/oportunidad.
+                search_blob = None
+                if include_search_blob:
+                    blob_parts = []
+                    if tarea.titulo:
+                        blob_parts.append(tarea.titulo)
+                    if tarea.descripcion:
+                        # Truncar descripción a 600 chars para no inflar la respuesta
+                        blob_parts.append(tarea.descripcion[:600])
+                    if tarea.proyecto and tarea.proyecto.nombre:
+                        blob_parts.append(tarea.proyecto.nombre)
+                    if tarea.oportunidad:
+                        if tarea.oportunidad.oportunidad:
+                            blob_parts.append(tarea.oportunidad.oportunidad)
+                        if tarea.oportunidad.cliente and tarea.oportunidad.cliente.nombre_empresa:
+                            blob_parts.append(tarea.oportunidad.cliente.nombre_empresa)
+                    if tarea.asignado_a:
+                        blob_parts.append(tarea.asignado_a.get_full_name() or tarea.asignado_a.username)
+                    if tarea.creado_por:
+                        blob_parts.append(tarea.creado_por.get_full_name() or tarea.creado_por.username)
+                    # Comentarios (todos, truncados) — usa prefetch, sin queries extra
+                    for c in tarea.comentarios.all():
+                        if c.contenido:
+                            blob_parts.append(c.contenido[:300])
+                        for a in c.archivos.all():
+                            if a.nombre_original:
+                                blob_parts.append(a.nombre_original)
+                    search_blob = ' '.join(blob_parts).lower()
+                    # Cap total length para mantener payload razonable
+                    if len(search_blob) > 5000:
+                        search_blob = search_blob[:5000]
+
                 tareas_data.append({
                     'id': tarea.id,
                     'titulo': tarea.titulo,
@@ -1363,6 +1406,7 @@ def api_tareas(request):
                     'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
                     'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
                     'esta_anclada': tarea.id in ancladas_ids,
+                    'search_blob': search_blob,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),

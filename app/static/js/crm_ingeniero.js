@@ -42,9 +42,8 @@
         };
         var _urlTab = '';
         try { _urlTab = new URL(window.location.href).searchParams.get('tab') || ''; } catch (e) { _urlTab = ''; }
-        if (!_isMobileViewport() && _urlTab !== 'calendario') {
-            ingenieroMostrarDashboard();
-        }
+        // El ingeniero ya no aterriza en el dashboard — entra directo a Tareas.
+        // El bloque restore-view de más abajo se encarga del btnTareas.click().
         var btnTareas = document.getElementById('btnTareas');
         if (btnTareas) btnTareas.addEventListener('click', function () {
             localStorage.setItem('crmView', 'tareas');
@@ -74,31 +73,19 @@
             var el = document.getElementById(id); if (el) el.style.display = 'none';
         });
 
-        // Restore view — el 'tablero' legacy ya NO se restaura (oculto).
-        // Desktop: respetamos 'tareas' y 'proyectos'; cualquier otro → dashboard.
-        // Móvil:   siempre abrimos Proyectos salvo que tengan guardado 'tareas'.
+        // Restore view — el ingeniero ya NO tiene dashboard como landing.
+        // Default: Tareas. Respetamos 'proyectos' si quedó guardado de la sesión
+        // anterior. Cualquier otro valor (incluido el legacy 'dashboard') cae a Tareas.
         var savedView = localStorage.getItem('crmView');
         var _btnProy = document.getElementById('btnProyectos');
+        if (document.body) document.body.classList.remove('eng-initial-hide');
+        _dashIngHide();
         if (_urlTab === 'calendario') {
-            if (document.body) document.body.classList.remove('eng-initial-hide');
-            _dashIngHide();
-        } else if (_isMobileViewport()) {
-            // Limpiar guardia anti-FOUC ANTES de activar la sección
-            // (el CSS body.eng-initial-hide tiene !important y ganaría
-            // sobre la clase .active si no la removemos primero).
-            if (document.body) document.body.classList.remove('eng-initial-hide');
-            if (savedView === 'tareas' && btnTareas) {
-                btnTareas.click();
-            } else {
-                if (_btnProy) _btnProy.click();
-            }
-        } else {
-            if (savedView === 'tareas') {
-                if (btnTareas) btnTareas.click();
-            } else if (savedView === 'proyectos') {
-                if (_btnProy) _btnProy.click();
-            }
-            // savedView === 'dashboard' | 'tablero' (legacy) | null → Dashboard (ya cargado)
+            // Calendar mode — no landing override.
+        } else if (savedView === 'proyectos' && _btnProy) {
+            _btnProy.click();
+        } else if (btnTareas) {
+            btnTareas.click();
         }
     });
 

@@ -6969,11 +6969,16 @@
                 });
             }
 
-            // Búsqueda
+            // Búsqueda: matchea contra search_blob (campo del API que concatena
+            // título + descripción + comentarios + nombres de archivos +
+            // proyecto + oportunidad + cliente + responsable + creado_por).
+            // Fallback a campos básicos cuando search_blob no viene en la
+            // respuesta (ej. vistas anidadas que no lo incluyen).
             var searchVal = ($tIn('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
                 var q = searchVal.trim().toLowerCase();
                 tareas = tareas.filter(function(t){
+                    if (t.search_blob) return t.search_blob.indexOf(q) !== -1;
                     return (t.titulo || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.oportunidad_nombre || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.responsable || '').toLowerCase().indexOf(q) !== -1;
