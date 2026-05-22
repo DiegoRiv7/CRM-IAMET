@@ -3599,7 +3599,18 @@ def api_completar_tarea(request, tarea_id):
             )
 
             preview = previsualizar_avance_etapa(tarea)
-            if preview and preview.get('requiere_descripcion'):
+            regla_origen = getattr(tarea, 'regla_origen', None)
+            # El widget bloqueante solo se muestra si la regla origen tiene
+            # requiere_verificacion=True. Si está apagado, la cadena reactiva
+            # corre automáticamente con los valores predeterminados de cada
+            # regla (título, descripción, responsable).
+            requiere_widget = bool(
+                preview
+                and preview.get('requiere_descripcion')
+                and regla_origen
+                and getattr(regla_origen, 'requiere_verificacion', False)
+            )
+            if requiere_widget:
                 # Crear (o reutilizar) un AvanceEtapaPendiente para el dueño
                 # de la oportunidad. NO avanzamos la etapa todavía.
                 opp = tarea.oportunidad

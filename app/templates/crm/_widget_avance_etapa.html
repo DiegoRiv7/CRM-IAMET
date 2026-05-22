@@ -30,7 +30,14 @@
                 <span style="padding:5px 12px;border-radius:999px;background:#eef2ff;color:#4338ca;font-weight:600;" id="waeEtapaActual">—</span>
                 <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 <span style="padding:5px 12px;border-radius:999px;background:#dcfce7;color:#15803d;font-weight:600;" id="waeEtapaSiguiente">—</span>
-                <span style="margin-left:auto;color:#94A3B8;font-size:0.74rem;" id="waeOppNombre"></span>
+                <button type="button" id="waeOppNombre" onclick="if(window.crmAvanceEtapa)window.crmAvanceEtapa.abrirOportunidad();"
+                        style="margin-left:auto;background:none;border:none;color:#3b82f6;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(59,130,246,0.3);padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;transition:background 0.12s,color 0.12s;"
+                        onmouseover="this.style.background='#EFF6FF';this.style.color='#1d4ed8';"
+                        onmouseout="this.style.background='transparent';this.style.color='#3b82f6';"
+                        title="Abrir oportunidad en otra ventana">
+                    <span id="waeOppNombreText">—</span>
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </button>
             </div>
         </header>
 

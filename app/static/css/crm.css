@@ -45,6 +45,10 @@
     .z-elevated { z-index: 10700 !important; }
     .z-elevated-top { z-index: 10750 !important; }
     .z-elevated-overlay { z-index: 10900 !important; }
+    /* Encima del widget bloqueante de Avance de Etapa (z 11500). Se usa
+       cuando, desde ese widget, el usuario abre la oportunidad para revisar
+       detalle antes de confirmar las próximas tareas. */
+    .z-above-avance { z-index: 12000 !important; }
 
     .main-content.container {
         max-width: none !important;
