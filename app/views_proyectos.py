@@ -3236,18 +3236,41 @@ def api_tarea_detalle(request, tarea_id):
                     any(_cg(request.user, u) for u in involucrados)
                 )
 
-                print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Resp: {getattr(tarea.asignado_a, 'username', None)}, Current: {request.user.username}, Can edit: {user_can_edit}")
-                
-                if not user_can_edit:
-                    return JsonResponse({'error': 'Sin permisos para modificar esta tarea'}, status=403)
-                
-                # Obtener datos de la petición
+                # Obtener datos de la petición (los necesitamos para el chequeo extendido del ingeniero)
                 user_id = data.get('user_id')
                 action = data.get('action')  # 'add' o 'remove'
                 tipo = data.get('tipo')      # 'participantes' o 'observadores'
-                
+
+                # Permiso extendido para ingenieros:
+                #   - Pueden agregar cualquier usuario como participante/observador en
+                #     cualquier tarea que puedan ver (el GET de esta misma vista es
+                #     abierto a autenticados).
+                #   - Pueden quitarse a sí mismos como participante/observador.
+                # (Para quitarse como responsable usan api_actualizar_tarea_real, que
+                # ya permite editar cuando el usuario actual es asignado_a.)
+                if not user_can_edit:
+                    try:
+                        _prof = getattr(request.user, 'userprofile', None)
+                        _es_ing = bool(_prof and getattr(_prof, 'rol', 'vendedor') == 'ingeniero')
+                    except Exception:
+                        _es_ing = False
+                    if _es_ing and tipo in ('participantes', 'observadores'):
+                        try:
+                            _uid_int = int(user_id) if user_id is not None else None
+                        except (TypeError, ValueError):
+                            _uid_int = None
+                        if action == 'add':
+                            user_can_edit = True
+                        elif action == 'remove' and _uid_int == request.user.id:
+                            user_can_edit = True
+
+                print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Resp: {getattr(tarea.asignado_a, 'username', None)}, Current: {request.user.username}, Can edit: {user_can_edit}")
+
+                if not user_can_edit:
+                    return JsonResponse({'error': 'Sin permisos para modificar esta tarea'}, status=403)
+
                 print(f"🔍 Datos: user_id={user_id}, action={action}, tipo={tipo}")
-                
+
                 if not all([user_id, action, tipo]):
                     return JsonResponse({'error': 'Datos faltantes: user_id, action y tipo son requeridos'}, status=400)
                 

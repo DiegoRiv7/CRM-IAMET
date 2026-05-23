@@ -8791,6 +8791,18 @@
             _crmTaskCanEdit = (
                 _curId === (tarea.creado_por_data && tarea.creado_por_data.id ? tarea.creado_por_data.id : -1) || _isSu
             );
+            // Ingeniero: aunque no sea creador puede:
+            //   • quitarse a sí mismo como participante/observador
+            //   • cambiar al responsable cuando él mismo es el asignado_a
+            // El backend (api_tarea_detalle PUT y api_actualizar_tarea_real)
+            // valida el permiso real; aquí solo gobernamos qué controles
+            // mostramos.
+            _crmTaskIsIngeniero = !!_CRM_CONFIG.esIngeniero;
+            var _crmTaskRespId = tarea.responsable_data ? tarea.responsable_data.id : null;
+            _crmTaskCanEditResponsable = (
+                _crmTaskCanEdit ||
+                (_crmTaskIsIngeniero && _crmTaskRespId === _curId)
+            );
             _crmTaskEdits = {};
             _crmTaskOriginal = {
                 titulo: tarea.titulo,
@@ -8958,6 +8970,8 @@
 
         // ── Inline edit state ──
         var _crmTaskCanEdit = false;
+        var _crmTaskIsIngeniero = false;
+        var _crmTaskCanEditResponsable = false;
         var _crmTaskEdits = {};
         var _crmTaskOriginal = {};
         var _crmTaskLastData = null;
@@ -8983,11 +8997,17 @@
                     cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
                     return;
                 }
+                var _curUid = _CRM_CONFIG.userId;
                 cont.innerHTML = people.map(function (p) {
                     var avInner = p.avatar_url
                         ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
                         : crmTaskGetInitials(p.nombre);
-                    var rm = _crmTaskCanEdit
+                    // Mostrar X (quitar) si:
+                    //   • el usuario actual tiene permiso pleno (creador/superuser), o
+                    //   • es ingeniero y el target es él mismo (quitarse).
+                    var canRemoveThis = _crmTaskCanEdit ||
+                        (_crmTaskIsIngeniero && p.id === _curUid);
+                    var rm = canRemoveThis
                         ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + grupo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
                         : '';
                     return '<div class="crm-tw-sb-row" title="' + p.nombre + '">' +
@@ -9002,13 +9022,21 @@
             crmTaskRenderSbList('crm-task-participantes-container', tarea.participantes || [], 'participantes', '#6366F1');
             crmTaskRenderSbList('crm-task-observadores-container', tarea.observadores || [], 'observadores', '#8B5CF6');
 
-            if (_crmTaskCanEdit) {
+            // Responsable: clickeable si tiene edición plena O si es ingeniero
+            // que actualmente está asignado a la tarea (puede quitarse o cambiar).
+            if (_crmTaskCanEditResponsable) {
                 var respContainer = document.getElementById('crm-task-responsable-container');
                 if (respContainer) {
                     respContainer.style.cursor = 'pointer';
-                    respContainer.title = 'Clic para cambiar responsable';
+                    respContainer.title = _crmTaskCanEdit
+                        ? 'Clic para cambiar responsable'
+                        : 'Clic para quitarte o asignar a otro';
                     respContainer.onclick = crmTaskEditarResponsable;
                 }
+            }
+            // Edición de campos generales (título, fecha, cliente, descripción)
+            // sigue restringida a creador/superuser.
+            if (_crmTaskCanEdit) {
                 var titleEl2 = document.getElementById('crm-task-titulo');
                 if (titleEl2 && titleEl2.tagName === 'H1') {
                     titleEl2.style.cursor = 'pointer';
