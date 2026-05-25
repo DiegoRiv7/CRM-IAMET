@@ -1036,11 +1036,6 @@
     // saltar a la vista Día. Sin esto, el usuario ve eventos squeezed en
     // columnas paralelas y se le dificulta darles seguimiento.
     var CAL_WEEK_DAY_BUSY_THRESHOLD = 6;
-    // Máximo de columnas paralelas que renderizamos en la vista Semana antes
-    // de colapsar. Más allá de 3 las cards quedan inservibles (~20px de ancho).
-    // Los eventos con col >= MAX se sustituyen por un único marcador
-    // "+N más" en col 2, agrupando por cluster de overlap.
-    var CAL_WEEK_MAX_PARALLEL = 3;
 
     function calRenderWeekHeader(weekStart, dayEventCounts) {
         var headerEl = document.getElementById('calWeekHeader');
@@ -1228,48 +1223,12 @@
                 it.numCols = maxC + 1;
             });
 
-            // Cap de columnas paralelas. Si hay clusters con más de
-            // CAL_WEEK_MAX_PARALLEL eventos solapados, hacemos:
-            //  - Ocultar las cards con col >= MAX (no se renderizan como tales)
-            //  - En col = MAX-1, mostrar UN SOLO marcador "+N más" por cluster
-            //    de overlap, con la suma de tiempos cubierta.
-            // Esto evita que el render se sature con cards de 20px de ancho.
-            var overflowMarkers = [];
-            if (actItems.some(function(it){ return it.numCols > CAL_WEEK_MAX_PARALLEL; })) {
-                // Identificar clusters: conjuntos de eventos conectados por overlap.
-                var visited = new Set();
-                actItems.forEach(function(seed, seedIdx) {
-                    if (visited.has(seedIdx)) return;
-                    var cluster = [seed]; visited.add(seedIdx);
-                    var queue = [seed];
-                    while (queue.length) {
-                        var cur = queue.shift();
-                        actItems.forEach(function(other, oi){
-                            if (visited.has(oi)) return;
-                            // Cluster por overlap visual (mismo criterio que numCols).
-                            if (cur.sMs < other.vMs && cur.vMs > other.sMs) {
-                                visited.add(oi); cluster.push(other); queue.push(other);
-                            }
-                        });
-                    }
-                    var hidden = cluster.filter(function(it){ return it.col >= CAL_WEEK_MAX_PARALLEL - 1; });
-                    if (hidden.length > 1) {
-                        // Hay overflow: marcador en col=MAX-1, cobertura de tiempo del overflow.
-                        var minS = hidden.reduce(function(acc,it){ return Math.min(acc, it.sMs); }, hidden[0].sMs);
-                        var maxE = hidden.reduce(function(acc,it){ return Math.max(acc, it.eMs); }, hidden[0].eMs);
-                        overflowMarkers.push({
-                            sMs: minS, eMs: maxE, count: hidden.length, items: hidden,
-                            numCols: Math.min(cluster[0].numCols, CAL_WEEK_MAX_PARALLEL),
-                        });
-                        // Ocultar las cards de overflow del flujo normal
-                        hidden.forEach(function(it){ it._hidden = true; });
-                    }
-                });
-            }
-
-            // Renderizar actividades
+            // Renderizar actividades (estilo Google Calendar: TODOS visibles
+            // en columnas paralelas, sin esconder. Cuando las cards quedan
+            // angostas, el render adapta lo que se muestra: <60px solo barra
+            // + dot, <100px sin hora ni participantes, etc. Hover tooltip y
+            // pill del día son el escape para densidad alta.)
             actItems.forEach(function(item){
-                if (item._hidden) return;
                 var ev = item.ev;
                 var ep = ev.extendedProps||{};
                 var hasOpp = ep.opportunity && ep.opportunity.id;
@@ -1299,13 +1258,17 @@
                 var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
                 var isOvAct = isToday && nowMs>endD.getTime();
 
-                // numCols visualmente limitado a CAL_WEEK_MAX_PARALLEL. Más allá
-                // de eso las cards quedan inservibles.
-                var n = Math.min(item.numCols, CAL_WEEK_MAX_PARALLEL), c = item.col;
+                // Estilo Google: todas las columnas visibles, sin cap. Si N es
+                // grande, colW termina pequeño y abajo adaptamos el contenido.
+                var n = item.numCols, c = item.col;
                 // Gap entre cards solapadas: 2px (siempre, también con 1 col tiene 0).
                 var gap = n > 1 ? 2 : 0;
                 var colW = Math.floor((actW - gap*(n-1)) / n);
                 var leftPx = dayLeft + c*(colW+gap);
+                // Card "angosta" → cambia layout: <60px solo barra+dot, sin
+                // texto. 60-100px solo título 1 línea. >100px layout completo.
+                var isNarrow = colW < 60;
+                var isMedium = colW >= 60 && colW < 100;
 
                 var shadowStyle = isNow
                     ? 'box-shadow:0 0 0 2px #34C759,0 2px 8px rgba(52,199,89,0.18);'
@@ -1318,46 +1281,35 @@
                 if (isNow) statusDot = '<div style="width:6px;height:6px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:2px;box-shadow:0 0 0 3px rgba(52,199,89,0.18);"></div>';
                 else if (isOvAct) statusDot = '<div style="width:6px;height:6px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:2px;"></div>';
 
-                // Layout adaptativo según altura:
-                //  - >40px: título (2 líneas) + hora + participantes truncados
-                //  - 30-40px: título (1 línea) + hora
-                //  - <30px (no debería darse, hay min-height): solo título
+                // Layout adaptativo según ANCHO y altura.
+                //   Card angosta (<60px): solo barra lateral + dot de estado.
+                //                          Hover muestra info completa (tooltip).
+                //   Card mediana (60-100px): título a 1 línea, sin hora ni
+                //                            participantes.
+                //   Card amplia (>=100px): título 2 líneas + hora + parts.
                 var titleLines = evH > 40 ? 2 : 1;
                 var partsTxt = '';
-                if (evH > 60) {
+                if (!isNarrow && !isMedium && evH > 60) {
                     var parts = (ep.participants||[]).map(function(p){return p.nombre || p.name || '';}).filter(Boolean);
                     if (parts.length) {
                         partsTxt = '<div style="font-size:0.62rem;color:'+mutedColor+';margin-top:1px;padding-left:'+(statusDot?'10px':'0')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+woEscape(parts.join(', '))+'</div>';
                     }
                 }
 
-                html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" data-draggable="1" data-orig-top="'+evTop+'" data-orig-left="'+leftPx+'" data-orig-width="'+colW+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:5px 6px 5px 7px;cursor:grab;box-sizing:border-box;overflow:hidden;border-left:4px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;user-select:none;'+compOpacity+'">'+
-                    '<div style="display:flex;align-items:flex-start;gap:4px;">'+statusDot+
-                    '<div style="font-size:0.74rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:'+titleLines+';-webkit-box-orient:vertical;line-height:1.25;letter-spacing:-0.005em;">'+woEscape(ev.title)+'</div>'+
-                    '</div>'+
-                    (evH > 40 ? '<div style="font-size:0.64rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'10px':'0')+';font-weight:600;">'+startFmt+(evH > 52 ? ' — '+endFmt : '')+'</div>' : '')+
-                    partsTxt +
-                    '</div>';
-            });
-
-            // Renderizar marcadores de overflow ("+N más") en la última columna
-            // visible (col = MAX-1). Click → vista Día centrada en este día.
-            overflowMarkers.forEach(function(m) {
-                var sD = new Date(m.sMs), eD = new Date(m.eMs);
-                var sMins = sD.getHours()*60+sD.getMinutes();
-                var eMins = (eD.toDateString() !== sD.toDateString()) ? 24*60 : (eD.getHours()*60+eD.getMinutes());
-                var mTop = (sMins/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
-                var mH = Math.max(((Math.max(eMins-sMins,30))/60)*CAL_HOUR_H, 30);
-                var mN = Math.min(m.numCols, CAL_WEEK_MAX_PARALLEL);
-                var mGap = mN > 1 ? 2 : 0;
-                var mColW = Math.floor((actW - mGap*(mN-1)) / mN);
-                var mC = CAL_WEEK_MAX_PARALLEL - 1;
-                var mLeft = dayLeft + mC*(mColW+mGap);
-                var dyr = day.getFullYear(), dmo = day.getMonth(), ddt = day.getDate();
-                html += '<div onclick="event.stopPropagation();calSwitchView(\'day\');_calCurrentDay=new Date('+dyr+','+dmo+','+ddt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();" style="position:absolute;top:'+mTop+'px;height:'+mH+'px;left:'+mLeft+'px;width:'+mColW+'px;border-radius:8px;padding:5px 6px;cursor:pointer;box-sizing:border-box;overflow:hidden;border:1.5px dashed rgba(0,82,212,0.4);background:rgba(0,82,212,0.06);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background 0.12s,border-color 0.12s;" onmouseover="this.style.background=\'rgba(0,82,212,0.12)\';this.style.borderColor=\'#0052D4\';" onmouseout="this.style.background=\'rgba(0,82,212,0.06)\';this.style.borderColor=\'rgba(0,82,212,0.4)\';" title="Abrir vista Día para ver todos los eventos">'+
-                    '<div style="font-size:0.78rem;font-weight:800;color:#0041a8;letter-spacing:-0.01em;line-height:1;">+'+m.count+'</div>'+
-                    (mH > 38 ? '<div style="font-size:0.6rem;font-weight:600;color:#0052D4;margin-top:3px;line-height:1;">más</div>' : '')+
-                    '</div>';
+                // En cards angostas: padding mínimo, sin texto, solo barra y dot.
+                if (isNarrow) {
+                    html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" data-draggable="1" data-orig-top="'+evTop+'" data-orig-left="'+leftPx+'" data-orig-width="'+colW+'" title="'+woEscape(ev.title)+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:6px;padding:4px 3px 4px 0;cursor:grab;box-sizing:border-box;overflow:hidden;border-left:4px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;user-select:none;'+compOpacity+'display:flex;align-items:flex-start;justify-content:center;">'+
+                        (statusDot ? '<div style="margin-top:1px;">'+statusDot+'</div>' : '') +
+                        '</div>';
+                } else {
+                    html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" data-draggable="1" data-orig-top="'+evTop+'" data-orig-left="'+leftPx+'" data-orig-width="'+colW+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:5px 6px 5px 7px;cursor:grab;box-sizing:border-box;overflow:hidden;border-left:4px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;user-select:none;'+compOpacity+'">'+
+                        '<div style="display:flex;align-items:flex-start;gap:4px;">'+statusDot+
+                        '<div style="font-size:0.74rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:'+(isMedium?1:titleLines)+';-webkit-box-orient:vertical;line-height:1.25;letter-spacing:-0.005em;">'+woEscape(ev.title)+'</div>'+
+                        '</div>'+
+                        (!isMedium && evH > 40 ? '<div style="font-size:0.64rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'10px':'0')+';font-weight:600;">'+startFmt+(evH > 52 ? ' — '+endFmt : '')+'</div>' : '')+
+                        partsTxt +
+                        '</div>';
+                }
             });
 
             // Separador y carril de tareas
