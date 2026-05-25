@@ -73,20 +73,20 @@
     }
 
     function renderProximoPaso(p) {
-        if (!p) return '<span style="color:#94A3B8;">—</span>';
+        if (!p) return '<span style="color:#9CA3AF;">—</span>';
         var ic = p.tipo === 'tarea'
             ? '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>'
             : '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
         var fecha = fmtFecha(p.fecha);
-        var fechaSpan = '';
+        var fechaParte = '';
         if (fecha) {
-            fechaSpan = p.vencida
-                ? '<span class="rep-overdue" style="font-size:0.72rem;margin-left:6px;">' + fecha + ' · vencida</span>'
-                : '<span style="font-size:0.72rem;color:#94A3B8;margin-left:6px;">' + fecha + '</span>';
+            fechaParte = p.vencida
+                ? '<span class="rep-overdue">' + fecha + ' · vencida</span>'
+                : '<span style="font-size:0.7rem;color:#9CA3AF;margin-left:6px;font-variant-numeric:tabular-nums;">' + fecha + '</span>';
         }
-        return '<span style="display:inline-flex;align-items:center;gap:5px;color:' + (p.vencida ? '#DC2626' : '#475569') + ';">'
+        return '<span style="display:inline-flex;align-items:center;gap:5px;color:' + (p.vencida ? '#B91C1C' : '#475569') + ';font-weight:500;">'
             + ic + escapeHTML(p.titulo)
-            + '</span>' + fechaSpan;
+            + '</span>' + fechaParte;
     }
 
     function renderOCC(archivos) {
@@ -129,7 +129,7 @@
                         + '<td><strong>' + escapeHTML(o.titulo || '(sin título)') + '</strong></td>'
                         + '<td>' + escapeHTML(o.cliente || '—') + '</td>'
                         + '<td>' + escapeHTML(o.vendedor || '—') + '</td>'
-                        + '<td class="rep-text-right rep-mono"><strong>' + fmtMoney(o.monto_mxn) + '</strong></td>'
+                        + '<td class="rep-text-right rep-monto">' + fmtMoney(o.monto_mxn) + '</td>'
                         + '<td>' + renderOCC(o.archivos_occ) + '</td>'
                         + '<td>' + renderProximoPaso(o.proximo_paso) + '</td>'
                         + '</tr>';
