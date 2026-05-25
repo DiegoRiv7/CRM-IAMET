@@ -12,6 +12,7 @@ from . import views_proyectos
 from . import views_iamet
 from . import views_levantamientos_app
 from . import views_compras
+from . import views_reportes
 from . import views_certificaciones
 from . import views_cursos
 from . import views_marketing
@@ -32,6 +33,10 @@ urlpatterns = [
     path('', views.crm_home, name='root_home'),
     path('home/', views.crm_home, name='home'),
     path('todos/', views.crm_home, name='todos'),  # alias histórico
+
+    # ── Módulo Reportes (canned reports, vista nativa sin AI) ────────────────
+    path('reportes/', views_reportes.reportes_index, name='reportes_index'),
+    path('reportes/<slug:slug>/', views_reportes.reporte_detalle, name='reporte_detalle'),
 
     # ── PWA Levantamientos (offline-capable, dedicada para planta) ───────────
     path('levantamientos/', views_levantamientos_app.levantamientos_app, name='levantamientos_app'),

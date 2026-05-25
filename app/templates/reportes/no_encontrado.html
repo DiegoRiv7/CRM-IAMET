@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load static %}
+
+{% block title %}Reporte no encontrado — CRM IAMET{% endblock %}
+
+{% block extra_head %}
+{% include "crm/_styles.html" %}
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260525-mvp">
+{% endblock %}
+
+{% block content %}
+<div class="crm-page crm-page-sidebar">
+    <form style="display:none;">{% csrf_token %}</form>
+    {% include "crm/_sidebar.html" %}
+    <main class="crm-main rep-shell">
+        <div class="rep-404">
+            <h1>Reporte no encontrado</h1>
+            <p>El reporte <code>{{ slug }}</code> no existe o todavía no está disponible.</p>
+            <a href="/app/reportes/" class="rep-btn rep-btn-primary">Ver reportes disponibles</a>
+        </div>
+    </main>
+</div>
+{% endblock %}

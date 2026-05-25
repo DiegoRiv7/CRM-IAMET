@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load static %}
+
+{% block title %}{{ reporte.titulo }} — Reportes{% endblock %}
+
+{% block extra_head %}
+{% include "crm/_styles.html" %}
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260525-mvp">
+{% endblock %}
+
+{% block content %}
+<div class="crm-page crm-page-sidebar">
+    <form style="display:none;">{% csrf_token %}</form>
+    {% include "crm/_sidebar.html" %}
+    <main class="crm-main rep-page-shell">
+        <header class="rep-page-topbar">
+            <div class="rep-page-topbar-left">
+                <a href="/app/reportes/" class="rep-back-btn" title="Volver a Reportes">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </a>
+                <div>
+                    <h1 class="rep-page-title">{{ reporte.titulo }}</h1>
+                    <p class="rep-page-subtitle">{{ reporte.descripcion }}</p>
+                </div>
+            </div>
+        </header>
+        <div class="rep-soon">
+            <h2>En construcción</h2>
+            <p>Este reporte se está armando. Pronto disponible.</p>
+        </div>
+    </main>
+</div>
+{% endblock %}
