@@ -1193,24 +1193,37 @@
             var taskLaneW = taskEvts.length > 0 ? Math.max(Math.round(dayW * 0.36), 52) : 0;
             var actW = dayW - taskLaneW - (taskEvts.length > 0 ? 1 : 0);
 
-            // Column-split actividades dentro de este día
+            // Column-split actividades dentro de este día.
+            // OJO: usamos `visualEnd` (end + min-height equivalente) en lugar
+            // del end real, porque las cards tienen min-height 30px (≈37 min
+            // visualmente con CAL_HOUR_H=48). Sin esto, dos eventos seguidos
+            // que NO se traslapan en tiempo (ej. 09:00-09:05 y 09:05-09:10)
+            // quedan en col=0 y sus cards (de 30px de alto cada una) se
+            // encadenan visualmente sobreponiéndose. Con visualEnd, el
+            // algoritmo los empuja a columnas paralelas.
+            var MIN_VISUAL_MS = Math.round((30 / CAL_HOUR_H) * 3600 * 1000); // ~37.5 min
             var actItems = actEvts.map(function(ev){
                 var sD = new Date(ev.start);
                 var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
-                return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1 };
+                var sMs = sD.getTime();
+                var eMs = eD.getTime();
+                var vMs = Math.max(eMs, sMs + MIN_VISUAL_MS);  // tope visual
+                return { ev:ev, sMs:sMs, eMs:eMs, vMs:vMs, col:0, numCols:1 };
             });
             var colEnds = [];
             actItems.forEach(function(it){
                 var placed = false;
                 for (var c=0; c<colEnds.length; c++){
-                    if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.eMs; placed=true; break; }
+                    if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.vMs; placed=true; break; }
                 }
-                if (!placed){ it.col=colEnds.length; colEnds.push(it.eMs); }
+                if (!placed){ it.col=colEnds.length; colEnds.push(it.vMs); }
             });
             actItems.forEach(function(it){
                 var maxC = it.col;
                 actItems.forEach(function(other){
-                    if (it.sMs < other.eMs && it.eMs > other.sMs) maxC = Math.max(maxC, other.col);
+                    // Overlap visual (no solo temporal) para asegurar que cards
+                    // contiguas se cuenten para numCols.
+                    if (it.sMs < other.vMs && it.vMs > other.sMs) maxC = Math.max(maxC, other.col);
                 });
                 it.numCols = maxC + 1;
             });
@@ -1233,7 +1246,8 @@
                         var cur = queue.shift();
                         actItems.forEach(function(other, oi){
                             if (visited.has(oi)) return;
-                            if (cur.sMs < other.eMs && cur.eMs > other.sMs) {
+                            // Cluster por overlap visual (mismo criterio que numCols).
+                            if (cur.sMs < other.vMs && cur.vMs > other.sMs) {
                                 visited.add(oi); cluster.push(other); queue.push(other);
                             }
                         });
