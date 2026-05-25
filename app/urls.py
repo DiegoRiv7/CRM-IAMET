@@ -37,6 +37,7 @@ urlpatterns = [
     # ── Módulo Reportes (canned reports, vista nativa sin AI) ────────────────
     path('reportes/', views_reportes.reportes_index, name='reportes_index'),
     path('reportes/<slug:slug>/', views_reportes.reporte_detalle, name='reporte_detalle'),
+    path('api/reportes/oportunidades-abiertas/', views_reportes.api_reporte_oportunidades_abiertas, name='api_reporte_oportunidades_abiertas'),
 
     # ── PWA Levantamientos (offline-capable, dedicada para planta) ───────────
     path('levantamientos/', views_levantamientos_app.levantamientos_app, name='levantamientos_app'),

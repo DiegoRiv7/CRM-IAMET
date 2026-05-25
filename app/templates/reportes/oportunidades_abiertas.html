@@ -12,6 +12,7 @@
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">
+        <!-- Topbar -->
         <header class="rep-page-topbar">
             <div class="rep-page-topbar-left">
                 <a href="/app/reportes/" class="rep-back-btn" title="Volver a Reportes">
@@ -22,12 +23,58 @@
                     <p class="rep-page-subtitle">{{ reporte.descripcion }}</p>
                 </div>
             </div>
+            <div class="rep-page-actions">
+                <button type="button" class="rep-btn rep-btn-secondary" id="repOAReload" title="Recargar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span>Recargar</span>
+                </button>
+                <button type="button" class="rep-btn rep-btn-primary" id="repOAExport" title="Exportar a Excel">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+                    <span>Exportar Excel</span>
+                </button>
+            </div>
         </header>
-        <div class="rep-soon">
-            <h2>En construcción</h2>
-            <p>Este reporte se está armando. Pronto disponible.</p>
+
+        <!-- KPIs (se llenan vía JS) -->
+        <section class="rep-kpis" id="repOAKpis"></section>
+
+        <!-- Body: filtros + contenido -->
+        <div class="rep-body">
+            <aside class="rep-filters" id="repOAFilters">
+                <h4 class="rep-filters-h">Filtros</h4>
+                <div class="rep-filter-group">
+                    <label class="rep-filter-label" for="repOAFiltroPipeline">Pipeline</label>
+                    <select class="rep-filter-select" id="repOAFiltroPipeline">
+                        <option value="">Ambos</option>
+                        <option value="runrate">Runrate</option>
+                        <option value="proyecto">Proyecto</option>
+                    </select>
+                </div>
+                <div class="rep-filter-group">
+                    <label class="rep-filter-label" for="repOAFiltroVendedor">Vendedor</label>
+                    <select class="rep-filter-select" id="repOAFiltroVendedor">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="rep-filter-group">
+                    <label class="rep-filter-label" for="repOAFiltroEtapa">Etapa</label>
+                    <select class="rep-filter-select" id="repOAFiltroEtapa">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="rep-filter-group">
+                    <label class="rep-filter-label" for="repOAFiltroBuscar">Buscar</label>
+                    <input type="text" class="rep-filter-input" id="repOAFiltroBuscar" placeholder="Título o cliente…">
+                </div>
+                <button type="button" class="rep-filter-clear" id="repOAFiltroClear">Limpiar filtros</button>
+            </aside>
+
+            <section class="rep-content" id="repOAContent">
+                <div class="rep-loading">Cargando reporte…</div>
+            </section>
         </div>
     </main>
 </div>
 <script src="{% static 'js/reportes_sidebar.js' %}?v=20260525-mvp"></script>
+<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260525-mvp"></script>
 {% endblock %}
