@@ -383,40 +383,40 @@
             .catch(function () { _checkingMio = false; });
     }
 
-    // ── API pública ──
+    // ══════════════════════════════════════════════════════════════════
+    // KILL SWITCH (urgent fix): el widget de avance de etapa quedó
+    // trabado en un usuario y le bloqueó el trabajo. Hasta resolver el
+    // diseño bien, deshabilitamos por completo: ni se abre, ni hace
+    // polling, ni responde a respuestas de completar tarea.
+    // El backend sigue creando AvanceEtapaPendiente; eso lo limpiamos
+    // en otro paso. Lo importante es que nadie más vea el modal.
+    // ══════════════════════════════════════════════════════════════════
     window.crmAvanceEtapa = {
-        abrirOportunidad: abrirOportunidad,
-        // Llamado por crm_main.js (u otros) cuando la respuesta de completar
-        // contiene `requiere_descripcion: true`. Si el usuario actual debe
-        // confirmar, abrimos el modal; si no, sólo mostramos un toast informativo.
-        handleCompletarResponse: function (data) {
-            if (!data || !data.requiere_descripcion || !data.avance_pendiente) return false;
-            var p = data.avance_pendiente;
-            window.__waeLastOppId = p.oportunidad_id || null;
-            if (p.debe_confirmar_actual) {
-                open(p);
-                return true;
-            } else {
-                showToast('Tarea cerrada. El responsable debe confirmar el avance de etapa.', 'info', 5000);
-                return false;
-            }
-        },
-        // Para abrir manualmente (debug / pruebas).
-        open: open,
-        checkMio: checkMio,
+        abrirOportunidad: function () { /* no-op */ },
+        handleCompletarResponse: function () { return false; },
+        open: function () { /* no-op */ },
+        checkMio: function () { /* no-op */ },
     };
 
-    // Botón Confirmar
     document.addEventListener('DOMContentLoaded', function () {
+        // Si el overlay quedó montado en el DOM, lo escondemos de todas
+        // formas por si algún script viejo cacheado intenta abrirlo.
+        var ov = $(OVERLAY_ID);
+        if (ov) {
+            ov.style.display = 'none';
+            ov.style.visibility = 'hidden';
+            ov.style.pointerEvents = 'none';
+        }
+        return; // corta el resto del init (botones, listeners, polling)
+        // Código original deshabilitado.
+        /*
         var btn = $('waeConfirmBtn');
         if (btn) btn.addEventListener('click', confirmar);
 
-        // Bloquear ESC y click-fuera sobre el overlay
-        var ov = $(OVERLAY_ID);
-        if (ov) {
-            ov.addEventListener('click', function (e) {
-                // No cerrar nunca: tragamos clicks fuera de la card.
-                if (e.target === ov) {
+        var ovBlock = $(OVERLAY_ID);
+        if (ovBlock) {
+            ovBlock.addEventListener('click', function (e) {
+                if (e.target === ovBlock) {
                     e.stopPropagation();
                     e.preventDefault();
                 }
@@ -424,18 +424,17 @@
         }
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                var ov = $(OVERLAY_ID);
-                if (ov && ov.style.display !== 'none') {
+                var ov2 = $(OVERLAY_ID);
+                if (ov2 && ov2.style.display !== 'none') {
                     e.stopPropagation();
                     e.preventDefault();
                 }
             }
         }, true);
 
-        // Polling inicial: ver si tengo un avance pendiente sin confirmar.
-        // Solo si el usuario está logueado (presencia del input csrf).
         if (document.querySelector('[name=csrfmiddlewaretoken]')) {
             setTimeout(checkMio, 1500);
         }
+        */
     });
 })();

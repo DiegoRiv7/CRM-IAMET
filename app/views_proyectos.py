@@ -3623,16 +3623,16 @@ def api_completar_tarea(request, tarea_id):
 
             preview = previsualizar_avance_etapa(tarea)
             regla_origen = getattr(tarea, 'regla_origen', None)
-            # El widget bloqueante solo se muestra si la regla origen tiene
-            # requiere_verificacion=True. Si está apagado, la cadena reactiva
-            # corre automáticamente con los valores predeterminados de cada
-            # regla (título, descripción, responsable).
-            requiere_widget = bool(
-                preview
-                and preview.get('requiere_descripcion')
-                and regla_origen
-                and getattr(regla_origen, 'requiere_verificacion', False)
-            )
+            # KILL SWITCH (urgent): el widget bloqueante de avance de etapa
+            # se desactivó tras un caso donde se trabó a un usuario y le
+            # impidió trabajar. Hasta resolver el flujo bien, nunca se
+            # crea AvanceEtapaPendiente — la cadena reactiva corre
+            # automática con los defaults de la regla (comportamiento de
+            # antes de la feature). Para reactivar, volver a la fórmula:
+            #   bool(preview and preview.get('requiere_descripcion')
+            #        and regla_origen
+            #        and getattr(regla_origen, 'requiere_verificacion', False))
+            requiere_widget = False
             if requiere_widget:
                 # Crear (o reutilizar) un AvanceEtapaPendiente para el dueño
                 # de la oportunidad. NO avanzamos la etapa todavía.
