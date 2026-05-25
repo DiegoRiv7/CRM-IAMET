@@ -2095,13 +2095,7 @@ _TERMINALES_LOWER = {'ganada', 'pagada', 'perdida', 'cerrada'}
 def _tool_oportunidades_abiertas_vendido(args: dict, user: User) -> dict:
     """Reporte de opps en "Vendido en adelante", agrupadas por pipeline +
     etapa. Excluye terminales (Ganada/Pagada/Perdida/Cerrada). Para cada
-    opp adjunta archivos OCC del Drive y la próxima tarea o actividad.
-
-    Cap defensivo: máximo 25 opps por etapa para no explotar el contexto
-    del modelo. Si una etapa tiene más, viene `truncated=True` y
-    `total_etapa` con el conteo real."""
-    MAX_POR_ETAPA = 25
-    MAX_ARCHIVOS_OCC = 3
+    opp adjunta archivos OCC del Drive y la próxima tarea o actividad."""
     pipeline_arg = (args.get('pipeline') or 'ambos').strip().lower()
     if pipeline_arg not in ('runrate', 'proyecto', 'ambos'):
         pipeline_arg = 'ambos'
@@ -2229,16 +2223,12 @@ def _tool_oportunidades_abiertas_vendido(args: dict, user: User) -> dict:
             ops_etapa = [o for o in opps_pl if (o.etapa_corta or '') == etapa_nombre]
             if not ops_etapa:
                 continue
-            total_etapa = len(ops_etapa)
-            monto_et = sum(_to_money(o.monto) for o in ops_etapa)
-            # Cap: tomamos solo las primeras MAX_POR_ETAPA (ya ordenadas por
-            # -monto en la query). El monto total y count son los reales.
-            ops_para_serializar = ops_etapa[:MAX_POR_ETAPA]
-            truncated = total_etapa > MAX_POR_ETAPA
             opps_list = []
-            for o in ops_para_serializar:
-                # Próximo paso: priorizar tarea sobre actividad. Trim de
-                # campos al mínimo necesario para el reporte.
+            monto_et = 0.0
+            for o in ops_etapa:
+                m = _to_money(o.monto)
+                monto_et += m
+                # Próximo paso: priorizar tarea sobre actividad.
                 proximo = None
                 if o.id in proxima_tarea:
                     t = proxima_tarea[o.id]
@@ -2246,6 +2236,7 @@ def _tool_oportunidades_abiertas_vendido(args: dict, user: User) -> dict:
                         'tipo': 'tarea',
                         'titulo': t.titulo,
                         'fecha': t.fecha_limite.strftime('%Y-%m-%d') if t.fecha_limite else None,
+                        'responsable': (t.asignado_a.get_full_name() or t.asignado_a.username) if t.asignado_a_id else None,
                         'vencida': bool(t.fecha_limite and t.fecha_limite < now),
                     }
                 elif o.id in proxima_act:
@@ -2254,33 +2245,28 @@ def _tool_oportunidades_abiertas_vendido(args: dict, user: User) -> dict:
                         'tipo': 'actividad',
                         'titulo': a.titulo,
                         'fecha': a.fecha_inicio.strftime('%Y-%m-%d %H:%M') if a.fecha_inicio else None,
+                        'responsable': (a.creado_por.get_full_name() or a.creado_por.username) if a.creado_por_id else None,
                         'vencida': bool(a.fecha_inicio and a.fecha_inicio < now),
                     }
-                # Limitar archivos OCC mostrados (los demás se cuentan).
-                archivos = archivos_por_opp.get(o.id, [])
-                archivos_show = archivos[:MAX_ARCHIVOS_OCC]
-                archivos_extra = len(archivos) - len(archivos_show)
                 opps_list.append({
                     'id': o.id,
                     'titulo': o.oportunidad,
                     'cliente': o.cliente.nombre_empresa if o.cliente_id else '—',
                     'vendedor': (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else '—',
-                    'monto_mxn': _to_money(o.monto),
-                    'archivos_occ': archivos_show,
-                    'archivos_extra': archivos_extra,
+                    'monto_mxn': m,
+                    'po_number': o.po_number or '',
+                    'factura_numero': o.factura_numero or '',
+                    'archivos_occ': archivos_por_opp.get(o.id, []),
                     'proximo_paso': proximo,
                 })
             etapas_out.append({
                 'etapa': etapa_nombre,
-                'count': total_etapa,
+                'count': len(ops_etapa),
                 'monto_mxn': monto_et,
-                'truncated': truncated,
-                'total_etapa': total_etapa,
-                'mostradas': len(opps_list),
                 'oportunidades': opps_list,
             })
             monto_pl += monto_et
-            count_pl += total_etapa
+            count_pl += len(ops_etapa)
         if etapas_out:
             pipelines_out.append({
                 'pipeline': pl,
