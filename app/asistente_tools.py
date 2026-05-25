@@ -25,6 +25,7 @@ from django.utils import timezone
 from .models import (
     Cliente, TodoItem, Cotizacion, Actividad, TareaOportunidad,
     UserProfile, ArchivoFacturacion, ArchivoCobrado,
+    Tarea, ArchivoOportunidad, EtapaPipeline,
 )
 from .views_utils import is_supervisor
 
@@ -2052,7 +2053,237 @@ TOOL_SCHEMAS: list[dict] = [
             },
         },
     },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'oportunidades_abiertas_vendido',
+            'description': (
+                'Reporte ejecutivo de oportunidades ACTIVAS en estado '
+                '"Vendido en adelante" — todas las etapas posteriores a '
+                '"Vendido" en cada pipeline (runrate y proyecto), EXCLUYENDO '
+                'las terminales (Ganada, Pagada, Perdida, Cerrada). Pensado '
+                'para que jefes y vendedores vean qué falta para facturar / '
+                'cerrar cada opp viva. Devuelve la lista agrupada por '
+                'pipeline y por etapa, con: nombre, cliente, vendedor, monto, '
+                'archivos OCC del Drive (nombre nada más), y la próxima '
+                'tarea/actividad pendiente. Disparadores típicos: "qué '
+                'oportunidades están abiertas", "qué falta facturar", "opp '
+                'vendidas pero no cerradas", "reporte de cierre", "opp '
+                'pendientes de cierre".'
+            ),
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'pipeline': {
+                        'type': 'string',
+                        'enum': ['runrate', 'proyecto', 'ambos'],
+                        'description': 'Pipeline a incluir. Default "ambos".',
+                    },
+                    'vendedor_username': {
+                        'type': 'string',
+                        'description': 'Filtrar por un vendedor específico (username). Default: todos.',
+                    },
+                },
+            },
+        },
+    },
 ]
+
+_TERMINALES_LOWER = {'ganada', 'pagada', 'perdida', 'cerrada'}
+
+
+def _tool_oportunidades_abiertas_vendido(args: dict, user: User) -> dict:
+    """Reporte de opps en "Vendido en adelante", agrupadas por pipeline +
+    etapa. Excluye terminales (Ganada/Pagada/Perdida/Cerrada). Para cada
+    opp adjunta archivos OCC del Drive y la próxima tarea o actividad."""
+    pipeline_arg = (args.get('pipeline') or 'ambos').strip().lower()
+    if pipeline_arg not in ('runrate', 'proyecto', 'ambos'):
+        pipeline_arg = 'ambos'
+    vendedor_kw = (args.get('vendedor_username') or '').strip()
+
+    # 1. Resolver etapas "Vendido en adelante" por pipeline desde la BD.
+    pipelines_objetivo = ['runrate', 'proyecto'] if pipeline_arg == 'ambos' else [pipeline_arg]
+    etapas_por_pipeline = {}  # {pipeline: [(nombre, orden), ...]}
+    for pl in pipelines_objetivo:
+        etapas_pl = list(
+            EtapaPipeline.objects.filter(pipeline=pl, activo=True)
+            .order_by('orden')
+            .values('nombre', 'orden')
+        )
+        if not etapas_pl:
+            continue
+        # Encontrar la primera etapa cuyo nombre empieza con "vendido".
+        vendido_orden = None
+        for e in etapas_pl:
+            if (e['nombre'] or '').strip().lower().startswith('vendido'):
+                vendido_orden = e['orden']
+                break
+        if vendido_orden is None:
+            continue
+        # Incluir todas las etapas con orden >= vendido_orden, excluyendo
+        # las terminales por nombre.
+        incluidas = [
+            e['nombre'] for e in etapas_pl
+            if e['orden'] >= vendido_orden
+            and (e['nombre'] or '').strip().lower() not in _TERMINALES_LOWER
+        ]
+        if incluidas:
+            etapas_por_pipeline[pl] = incluidas
+
+    if not etapas_por_pipeline:
+        return {
+            'total_global': 0,
+            'monto_total_global': 0.0,
+            'pipelines': [],
+            'nota': 'No se encontraron etapas "Vendido en adelante" configuradas.',
+        }
+
+    # 2. Query base con filtros de etapa por pipeline.
+    pipeline_filter = Q()
+    for pl, etapas in etapas_por_pipeline.items():
+        pipeline_filter |= Q(tipo_negociacion=pl, etapa_corta__in=etapas)
+    qs = TodoItem.objects.filter(pipeline_filter).select_related(
+        'cliente', 'usuario',
+    )
+
+    # 3. Visibilidad: respeta el scope que ve el user (mismo criterio que otras tools).
+    visible_ids = _visible_user_ids(user)
+    if visible_ids is not None:
+        qs = qs.filter(usuario_id__in=visible_ids)
+
+    # 4. Filtro por vendedor opcional.
+    if vendedor_kw:
+        u = User.objects.filter(
+            Q(username__iexact=vendedor_kw) |
+            Q(first_name__icontains=vendedor_kw) |
+            Q(last_name__icontains=vendedor_kw)
+        ).first()
+        if u:
+            qs = qs.filter(usuario=u)
+        else:
+            return {
+                'total_global': 0,
+                'monto_total_global': 0.0,
+                'pipelines': [],
+                'nota': f'No se encontró el vendedor "{vendedor_kw}".',
+            }
+
+    qs = qs.order_by('tipo_negociacion', 'etapa_corta', '-monto')
+
+    todos_opps = list(qs)
+    if not todos_opps:
+        return {
+            'total_global': 0,
+            'monto_total_global': 0.0,
+            'pipelines': [],
+        }
+
+    # 5. Prefetch en bulk: archivos OCC + tareas + actividades.
+    opp_ids = [o.id for o in todos_opps]
+    archivos_por_opp = {}
+    for a in ArchivoOportunidad.objects.filter(
+        oportunidad_id__in=opp_ids,
+        nombre_original__istartswith='OCC',
+    ).values('oportunidad_id', 'nombre_original'):
+        archivos_por_opp.setdefault(a['oportunidad_id'], []).append(a['nombre_original'])
+
+    now = timezone.now()
+    # Próxima tarea por opp (pendiente, fecha_limite >= now, la más próxima).
+    proxima_tarea = {}
+    for t in Tarea.objects.filter(
+        oportunidad_id__in=opp_ids,
+    ).exclude(estado__in=['completada', 'cancelada']).select_related('asignado_a').order_by('fecha_limite'):
+        if t.oportunidad_id not in proxima_tarea:
+            proxima_tarea[t.oportunidad_id] = t
+    # Próxima actividad por opp (no completada, la más próxima).
+    proxima_act = {}
+    for a in Actividad.objects.filter(
+        oportunidad_id__in=opp_ids,
+        completada=False,
+    ).select_related('creado_por').order_by('fecha_inicio'):
+        if a.oportunidad_id not in proxima_act:
+            proxima_act[a.oportunidad_id] = a
+
+    # 6. Armar el resultado agrupado por pipeline → etapa.
+    pipelines_out = []
+    monto_total_global = 0.0
+    total_global = 0
+    for pl in pipelines_objetivo:
+        if pl not in etapas_por_pipeline:
+            continue
+        opps_pl = [o for o in todos_opps if (o.tipo_negociacion or '') == pl]
+        if not opps_pl:
+            continue
+        # Mantener el orden de etapas según la config del pipeline.
+        orden_etapas_cfg = etapas_por_pipeline[pl]
+        etapas_out = []
+        monto_pl = 0.0
+        count_pl = 0
+        for etapa_nombre in orden_etapas_cfg:
+            ops_etapa = [o for o in opps_pl if (o.etapa_corta or '') == etapa_nombre]
+            if not ops_etapa:
+                continue
+            opps_list = []
+            monto_et = 0.0
+            for o in ops_etapa:
+                m = _to_money(o.monto)
+                monto_et += m
+                # Próximo paso: priorizar tarea sobre actividad.
+                proximo = None
+                if o.id in proxima_tarea:
+                    t = proxima_tarea[o.id]
+                    proximo = {
+                        'tipo': 'tarea',
+                        'titulo': t.titulo,
+                        'fecha': t.fecha_limite.strftime('%Y-%m-%d') if t.fecha_limite else None,
+                        'responsable': (t.asignado_a.get_full_name() or t.asignado_a.username) if t.asignado_a_id else None,
+                        'vencida': bool(t.fecha_limite and t.fecha_limite < now),
+                    }
+                elif o.id in proxima_act:
+                    a = proxima_act[o.id]
+                    proximo = {
+                        'tipo': 'actividad',
+                        'titulo': a.titulo,
+                        'fecha': a.fecha_inicio.strftime('%Y-%m-%d %H:%M') if a.fecha_inicio else None,
+                        'responsable': (a.creado_por.get_full_name() or a.creado_por.username) if a.creado_por_id else None,
+                        'vencida': bool(a.fecha_inicio and a.fecha_inicio < now),
+                    }
+                opps_list.append({
+                    'id': o.id,
+                    'titulo': o.oportunidad,
+                    'cliente': o.cliente.nombre_empresa if o.cliente_id else '—',
+                    'vendedor': (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else '—',
+                    'monto_mxn': m,
+                    'po_number': o.po_number or '',
+                    'factura_numero': o.factura_numero or '',
+                    'archivos_occ': archivos_por_opp.get(o.id, []),
+                    'proximo_paso': proximo,
+                })
+            etapas_out.append({
+                'etapa': etapa_nombre,
+                'count': len(ops_etapa),
+                'monto_mxn': monto_et,
+                'oportunidades': opps_list,
+            })
+            monto_pl += monto_et
+            count_pl += len(ops_etapa)
+        if etapas_out:
+            pipelines_out.append({
+                'pipeline': pl,
+                'count': count_pl,
+                'monto_mxn': monto_pl,
+                'etapas': etapas_out,
+            })
+            monto_total_global += monto_pl
+            total_global += count_pl
+
+    return {
+        'total_global': total_global,
+        'monto_total_global': monto_total_global,
+        'pipelines': pipelines_out,
+        'filtro_vendedor': vendedor_kw or None,
+    }
+
 
 TOOL_HANDLERS = {
     'clientes_sin_atender': _tool_clientes_sin_atender,
@@ -2071,6 +2302,7 @@ TOOL_HANDLERS = {
     'ranking_productos': _tool_ranking_productos,
     'rendimiento_equipo_completo': _tool_rendimiento_equipo_completo,
     'comparativa_kpi_mes': _tool_comparativa_kpi_mes,
+    'oportunidades_abiertas_vendido': _tool_oportunidades_abiertas_vendido,
 }
 
 
