@@ -2946,6 +2946,43 @@
         margin-left: 10px;
     }
 
+    /* ─── Top-nav compacto (page mode): vive en crm-bar-right a la izquierda
+           del botón "Nueva actividad". Sustituye a la barra completa
+           cal-page-monthnav que estaba debajo del topbar. ─── */
+    .cal-topnav-arrow {
+        width: 28px; height: 28px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #fff;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        color: #1D1D1F;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+        padding: 0;
+    }
+    .cal-topnav-arrow:hover { background: #F3F4F6; border-color: rgba(15,23,42,0.18); }
+    .cal-topnav-today {
+        padding: 0 12px; height: 28px;
+        border: 1px solid rgba(15,23,42,0.10);
+        background: #fff;
+        border-radius: 8px;
+        font-size: 0.78rem; font-weight: 600;
+        color: #1D1D1F;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .cal-topnav-today:hover { background: #F3F4F6; border-color: rgba(15,23,42,0.18); }
+    .cal-topnav-title {
+        font-size: 0.95rem; font-weight: 700;
+        color: #1D1D1F;
+        letter-spacing: -0.01em;
+        margin-left: 6px;
+        margin-right: 4px;
+        text-transform: capitalize;
+        white-space: nowrap;
+    }
+
     /* Body (calendar grid): ocupa todo el ancho (sin panel derecho) */
     .widget-overlay.is-page-mode .cal-page-body {
         gap: 0;

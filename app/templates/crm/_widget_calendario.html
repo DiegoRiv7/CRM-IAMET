@@ -317,23 +317,28 @@
                 <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                 <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
             </div>
-            <div class="crm-bar-right">
+            <div class="crm-bar-right" style="display:flex;align-items:center;gap:10px;">
+                {% comment %}
+                Navegación de fecha en el topbar (compacta): prev / next / Hoy +
+                título. Antes vivía debajo del topbar como cal-page-monthnav y
+                quitaba espacio vertical al calendario. Ahora va a la izquierda
+                del botón "Nueva actividad".
+                {% endcomment %}
+                <div class="cal-topnav" style="display:flex;align-items:center;gap:4px;">
+                    <button type="button" class="cal-topnav-arrow" onclick="calNavPrev()" title="Anterior">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button type="button" class="cal-topnav-arrow" onclick="calNavNext()" title="Siguiente">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <button type="button" class="cal-topnav-today" onclick="calNavToday()">Hoy</button>
+                    <span id="calNavTitlePage" class="cal-topnav-title">—</span>
+                </div>
                 <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     <span>Nueva actividad</span>
                 </button>
             </div>
-        </div>
-        <!-- Mini-barra de navegación del mes (page mode) -->
-        <div class="cal-page-monthnav">
-            <button type="button" class="cal-monthnav-arrow" onclick="calNavPrev()" title="Anterior">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button type="button" class="cal-monthnav-arrow" onclick="calNavNext()" title="Siguiente">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-            </button>
-            <button type="button" class="cal-monthnav-today" onclick="calNavToday()">Hoy</button>
-            <span id="calNavTitlePage" class="cal-monthnav-title">—</span>
         </div>
         {% else %}
         <!-- ── Outer header (widget mode tradicional) ── -->
@@ -1030,7 +1035,12 @@
     // Umbral a partir del cual un día "saturado" muestra un pill que invita a
     // saltar a la vista Día. Sin esto, el usuario ve eventos squeezed en
     // columnas paralelas y se le dificulta darles seguimiento.
-    var CAL_WEEK_DAY_BUSY_THRESHOLD = 10;
+    var CAL_WEEK_DAY_BUSY_THRESHOLD = 6;
+    // Máximo de columnas paralelas que renderizamos en la vista Semana antes
+    // de colapsar. Más allá de 3 las cards quedan inservibles (~20px de ancho).
+    // Los eventos con col >= MAX se sustituyen por un único marcador
+    // "+N más" en col 2, agrupando por cluster de overlap.
+    var CAL_WEEK_MAX_PARALLEL = 3;
 
     function calRenderWeekHeader(weekStart, dayEventCounts) {
         var headerEl = document.getElementById('calWeekHeader');
@@ -1205,8 +1215,47 @@
                 it.numCols = maxC + 1;
             });
 
+            // Cap de columnas paralelas. Si hay clusters con más de
+            // CAL_WEEK_MAX_PARALLEL eventos solapados, hacemos:
+            //  - Ocultar las cards con col >= MAX (no se renderizan como tales)
+            //  - En col = MAX-1, mostrar UN SOLO marcador "+N más" por cluster
+            //    de overlap, con la suma de tiempos cubierta.
+            // Esto evita que el render se sature con cards de 20px de ancho.
+            var overflowMarkers = [];
+            if (actItems.some(function(it){ return it.numCols > CAL_WEEK_MAX_PARALLEL; })) {
+                // Identificar clusters: conjuntos de eventos conectados por overlap.
+                var visited = new Set();
+                actItems.forEach(function(seed, seedIdx) {
+                    if (visited.has(seedIdx)) return;
+                    var cluster = [seed]; visited.add(seedIdx);
+                    var queue = [seed];
+                    while (queue.length) {
+                        var cur = queue.shift();
+                        actItems.forEach(function(other, oi){
+                            if (visited.has(oi)) return;
+                            if (cur.sMs < other.eMs && cur.eMs > other.sMs) {
+                                visited.add(oi); cluster.push(other); queue.push(other);
+                            }
+                        });
+                    }
+                    var hidden = cluster.filter(function(it){ return it.col >= CAL_WEEK_MAX_PARALLEL - 1; });
+                    if (hidden.length > 1) {
+                        // Hay overflow: marcador en col=MAX-1, cobertura de tiempo del overflow.
+                        var minS = hidden.reduce(function(acc,it){ return Math.min(acc, it.sMs); }, hidden[0].sMs);
+                        var maxE = hidden.reduce(function(acc,it){ return Math.max(acc, it.eMs); }, hidden[0].eMs);
+                        overflowMarkers.push({
+                            sMs: minS, eMs: maxE, count: hidden.length, items: hidden,
+                            numCols: Math.min(cluster[0].numCols, CAL_WEEK_MAX_PARALLEL),
+                        });
+                        // Ocultar las cards de overflow del flujo normal
+                        hidden.forEach(function(it){ it._hidden = true; });
+                    }
+                });
+            }
+
             // Renderizar actividades
             actItems.forEach(function(item){
+                if (item._hidden) return;
                 var ev = item.ev;
                 var ep = ev.extendedProps||{};
                 var hasOpp = ep.opportunity && ep.opportunity.id;
@@ -1236,7 +1285,9 @@
                 var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
                 var isOvAct = isToday && nowMs>endD.getTime();
 
-                var n = item.numCols, c = item.col;
+                // numCols visualmente limitado a CAL_WEEK_MAX_PARALLEL. Más allá
+                // de eso las cards quedan inservibles.
+                var n = Math.min(item.numCols, CAL_WEEK_MAX_PARALLEL), c = item.col;
                 // Gap entre cards solapadas: 2px (siempre, también con 1 col tiene 0).
                 var gap = n > 1 ? 2 : 0;
                 var colW = Math.floor((actW - gap*(n-1)) / n);
@@ -1272,6 +1323,26 @@
                     '</div>'+
                     (evH > 40 ? '<div style="font-size:0.64rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'10px':'0')+';font-weight:600;">'+startFmt+(evH > 52 ? ' — '+endFmt : '')+'</div>' : '')+
                     partsTxt +
+                    '</div>';
+            });
+
+            // Renderizar marcadores de overflow ("+N más") en la última columna
+            // visible (col = MAX-1). Click → vista Día centrada en este día.
+            overflowMarkers.forEach(function(m) {
+                var sD = new Date(m.sMs), eD = new Date(m.eMs);
+                var sMins = sD.getHours()*60+sD.getMinutes();
+                var eMins = (eD.toDateString() !== sD.toDateString()) ? 24*60 : (eD.getHours()*60+eD.getMinutes());
+                var mTop = (sMins/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
+                var mH = Math.max(((Math.max(eMins-sMins,30))/60)*CAL_HOUR_H, 30);
+                var mN = Math.min(m.numCols, CAL_WEEK_MAX_PARALLEL);
+                var mGap = mN > 1 ? 2 : 0;
+                var mColW = Math.floor((actW - mGap*(mN-1)) / mN);
+                var mC = CAL_WEEK_MAX_PARALLEL - 1;
+                var mLeft = dayLeft + mC*(mColW+mGap);
+                var dyr = day.getFullYear(), dmo = day.getMonth(), ddt = day.getDate();
+                html += '<div onclick="event.stopPropagation();calSwitchView(\'day\');_calCurrentDay=new Date('+dyr+','+dmo+','+ddt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();" style="position:absolute;top:'+mTop+'px;height:'+mH+'px;left:'+mLeft+'px;width:'+mColW+'px;border-radius:8px;padding:5px 6px;cursor:pointer;box-sizing:border-box;overflow:hidden;border:1.5px dashed rgba(0,82,212,0.4);background:rgba(0,82,212,0.06);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background 0.12s,border-color 0.12s;" onmouseover="this.style.background=\'rgba(0,82,212,0.12)\';this.style.borderColor=\'#0052D4\';" onmouseout="this.style.background=\'rgba(0,82,212,0.06)\';this.style.borderColor=\'rgba(0,82,212,0.4)\';" title="Abrir vista Día para ver todos los eventos">'+
+                    '<div style="font-size:0.78rem;font-weight:800;color:#0041a8;letter-spacing:-0.01em;line-height:1;">+'+m.count+'</div>'+
+                    (mH > 38 ? '<div style="font-size:0.6rem;font-weight:600;color:#0052D4;margin-top:3px;line-height:1;">más</div>' : '')+
                     '</div>';
             });
 
