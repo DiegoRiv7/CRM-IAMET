@@ -285,6 +285,9 @@
     try {
         var _u = new URL(window.location.href);
         if (_u.searchParams.get('tab') === 'calendario') return;
+        // Igual para páginas externas al CRM (reportes, etc.): el server marca
+        // la sección activa, no debemos sobreponer con crmView de localStorage.
+        if (_u.pathname && _u.pathname.indexOf('/app/reportes') === 0) return;
     } catch(e) { /* defensivo */ }
     var v = localStorage.getItem('crmView');
     if (v === 'tareas' || v === 'proyectos') {
