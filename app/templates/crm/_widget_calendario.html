@@ -1223,12 +1223,41 @@
                 it.numCols = maxC + 1;
             });
 
-            // Renderizar actividades (estilo Google Calendar: TODOS visibles
-            // en columnas paralelas, sin esconder. Cuando las cards quedan
-            // angostas, el render adapta lo que se muestra: <60px solo barra
-            // + dot, <100px sin hora ni participantes, etc. Hover tooltip y
-            // pill del día son el escape para densidad alta.)
+            // Cluster detection: para densidad alta (>= 4 eventos solapados),
+            // en lugar de columnas paralelas que quedan ilegibles, los
+            // apilamos verticalmente como lista compacta dentro del bloque
+            // temporal. Cada evento ocupa una fila de ~22px; si no caben
+            // todos, la lista scrollea verticalmente DENTRO del bloque.
+            var CAL_WEEK_LIST_THRESHOLD = 4;
+            var denseClusters = [];
+            (function _detectClusters() {
+                var visited = {};
+                actItems.forEach(function(seed, seedIdx) {
+                    if (visited[seedIdx]) return;
+                    var cluster = [seed]; visited[seedIdx] = true;
+                    var queue = [seed];
+                    while (queue.length) {
+                        var cur = queue.shift();
+                        actItems.forEach(function(other, oi){
+                            if (visited[oi]) return;
+                            if (cur.sMs < other.vMs && cur.vMs > other.sMs) {
+                                visited[oi] = true;
+                                cluster.push(other); queue.push(other);
+                            }
+                        });
+                    }
+                    if (cluster.length >= CAL_WEEK_LIST_THRESHOLD) {
+                        denseClusters.push(cluster);
+                        cluster.forEach(function(it){ it._inList = true; });
+                    }
+                });
+            })();
+
+            // Renderizar actividades (las que NO están en un cluster denso).
+            // Mantienen el render box clásico con altura = duración y columnas
+            // paralelas para overlaps 2-3.
             actItems.forEach(function(item){
+                if (item._inList) return;
                 var ev = item.ev;
                 var ep = ev.extendedProps||{};
                 var hasOpp = ep.opportunity && ep.opportunity.id;
@@ -1310,6 +1339,60 @@
                         partsTxt +
                         '</div>';
                 }
+            });
+
+            // Render de clusters densos: lista apilada vertical dentro del
+            // bloque temporal. Mantiene el eje de tiempo (el bloque está en
+            // su rango horario real), pero cada evento es una sola fila
+            // legible. Si la lista no cabe en el bloque, scroll interno.
+            denseClusters.forEach(function(cluster) {
+                var minS = cluster.reduce(function(a,it){ return Math.min(a, it.sMs); }, cluster[0].sMs);
+                var maxV = cluster.reduce(function(a,it){ return Math.max(a, it.vMs); }, cluster[0].vMs);
+                var cStart = new Date(minS);
+                var cEnd = new Date(maxV);
+                var cStartMins = cStart.getHours()*60 + cStart.getMinutes();
+                var cEndMins;
+                if (cEnd.toDateString() !== cStart.toDateString()) cEndMins = 24*60;
+                else cEndMins = cEnd.getHours()*60 + cEnd.getMinutes();
+                var cTop = (cStartMins/60 - CAL_WEEK_START_H) * CAL_HOUR_H;
+                var cH = Math.max(((cEndMins - cStartMins)/60) * CAL_HOUR_H, 60);
+
+                // Header del bloque (sticky con la suma)
+                var sortedCluster = cluster.slice().sort(function(a,b){ return a.sMs - b.sMs; });
+                var dyr = day.getFullYear(), dmo = day.getMonth(), ddt = day.getDate();
+                var headerHtml = '<div style="position:sticky;top:0;background:linear-gradient(180deg,#fff 0%,#fafbff 100%);border-bottom:1px solid rgba(0,82,212,0.10);padding:4px 8px;font-size:0.66rem;font-weight:700;color:#0041a8;letter-spacing:0.02em;display:flex;align-items:center;justify-content:space-between;z-index:2;">'+
+                    '<span>'+cluster.length+' actividades</span>'+
+                    '<span onclick="event.stopPropagation();calSwitchView(\'day\');_calCurrentDay=new Date('+dyr+','+dmo+','+ddt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();" style="font-weight:600;color:#0052D4;cursor:pointer;font-size:0.62rem;" title="Abrir vista Día">Ver Día →</span>'+
+                    '</div>';
+
+                var rowsHtml = '';
+                sortedCluster.forEach(function(it){
+                    var rev = it.ev;
+                    var rEp = rev.extendedProps||{};
+                    var rHasOpp = rEp.opportunity && rEp.opportunity.id;
+                    var rStartD = new Date(rev.start);
+                    var rEndD = rev.end ? new Date(rev.end) : new Date(rStartD.getTime()+3600000);
+                    var rBorderColor = rHasOpp ? '#0052D4' : '#8E8E93';
+                    var rTextColor = rHasOpp ? '#0041A8' : '#3A3A3C';
+                    var rIsNow = isToday && nowMs>=rStartD.getTime() && nowMs<=rEndD.getTime();
+                    var rIsOvAct = isToday && nowMs > rEndD.getTime();
+                    var rCompOpacity = rEp.completada ? 'opacity:0.45;' : '';
+                    var rStatusDot = '';
+                    if (rIsNow) rStatusDot = '<span style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;box-shadow:0 0 0 3px rgba(52,199,89,0.18);"></span>';
+                    else if (rIsOvAct && !rEp.completada) rStatusDot = '<span style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;"></span>';
+                    var rTime = pad(rStartD.getHours())+':'+pad(rStartD.getMinutes());
+                    var rSafeId = String(rev.id).replace(/'/g,'');
+                    rowsHtml += '<div class="cal-week-evt" data-evt-id="'+rSafeId+'" style="display:flex;align-items:center;gap:7px;padding:5px 8px;cursor:pointer;border-left:3px solid '+rBorderColor+';background:#fff;border-bottom:1px solid rgba(15,23,42,0.04);transition:background 0.12s;'+rCompOpacity+'" onmouseover="this.style.background=\'rgba(0,82,212,0.04)\'" onmouseout="this.style.background=\'#fff\'">'+
+                        (rStatusDot||'')+
+                        '<span style="font-size:0.66rem;font-weight:700;color:#94A3B8;font-variant-numeric:tabular-nums;flex-shrink:0;">'+rTime+'</span>'+
+                        '<span style="flex:1;min-width:0;font-size:0.74rem;font-weight:600;color:'+rTextColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(rEp.completada?'text-decoration:line-through;':'')+'">'+woEscape(rev.title)+'</span>'+
+                        '</div>';
+                });
+
+                html += '<div style="position:absolute;top:'+cTop+'px;height:'+cH+'px;left:'+dayLeft+'px;width:'+actW+'px;border-radius:8px;box-sizing:border-box;border:1px solid rgba(0,82,212,0.22);background:#fff;box-shadow:0 1px 4px rgba(0,82,212,0.08);z-index:5;overflow:hidden;display:flex;flex-direction:column;">'+
+                    headerHtml +
+                    '<div style="flex:1;overflow-y:auto;">' + rowsHtml + '</div>' +
+                    '</div>';
             });
 
             // Separador y carril de tareas
