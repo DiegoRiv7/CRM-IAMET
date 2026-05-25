@@ -47,56 +47,48 @@
             .cal-day-evt.is-compact .cal-day-evt-title { font-size:0.74rem; }
             .cal-day-evt.is-compact .cal-day-evt-time { font-size:0.66rem; margin-top:0; opacity:0.85; }
             .cal-day-evt.is-compact .cal-day-evt-status { display:none; }
-            /* ─── Day view en formato TABLA — aprovecha todo el ancho disponible ─── */
-            .cal-day-list { width:100%; padding:6px 18px 28px; }
-            .cal-day-list-empty { text-align:center; padding:80px 20px; color:#9CA3AF; }
-            .cal-day-list-empty-ic { width:68px; height:68px; border-radius:20px; background:#F3F4F6; color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
-            .cal-day-list-empty-t { font-size:1.05rem; font-weight:700; color:#1D1D1F; margin-bottom:6px; }
-            .cal-day-list-empty-s { font-size:0.86rem; color:#6B7280; }
-            .cal-day-table { width:100%; border-collapse:separate; border-spacing:0; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(20,20,18,0.04); }
-            .cal-day-table thead th { background:#FAFAFA; border-bottom:1px solid #E5E7EB; padding:11px 16px; text-align:left; font-size:0.7rem; font-weight:700; color:#6B7280; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; position:sticky; top:0; z-index:2; }
-            .cal-day-table thead th.cal-day-th-time { width:120px; }
-            .cal-day-table thead th.cal-day-th-kind { width:130px; }
-            .cal-day-table thead th.cal-day-th-owner { width:200px; }
-            .cal-day-table thead th.cal-day-th-status { width:130px; text-align:right; }
-            .cal-day-table tbody td { padding:14px 16px; border-bottom:1px solid #F0F2F5; vertical-align:middle; }
-            .cal-day-table tbody tr { cursor:pointer; transition:background .12s ease; position:relative; }
-            .cal-day-table tbody tr:hover { background:#F8FAFC; }
-            .cal-day-table tbody tr:last-child td { border-bottom:none; }
-            .cal-day-table tbody tr td:first-child { border-left:3px solid #9CA3AF; padding-left:14px; }
-            /* Cell: hora */
-            .cal-day-tbl-time { white-space:nowrap; }
-            .cal-day-tbl-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1; }
-            .cal-day-tbl-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:3px; }
-            /* Cell: tipo */
-            .cal-day-tbl-kind { display:inline-flex; align-items:center; gap:6px; font-size:0.74rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
-            .cal-day-tbl-kind::before { content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
-            /* Cell: título + sub */
-            .cal-day-tbl-title { font-size:0.95rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-            .cal-day-tbl-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
-            .cal-day-tbl-sub { font-size:0.78rem; color:#6B7280; margin-top:3px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
-            /* Cell: responsable (avatar de iniciales + nombre) */
-            .cal-day-tbl-owner { display:inline-flex; align-items:center; gap:8px; max-width:100%; min-width:0; }
-            .cal-day-tbl-owner-avatar { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:0.7rem; font-weight:700; letter-spacing:0.02em; }
-            .cal-day-tbl-owner-name { font-size:0.82rem; font-weight:600; color:#1D1D1F; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-            /* Cell: status (alineada a la derecha) */
-            .cal-day-tbl-status-cell { text-align:right; }
-            .cal-day-list-status { display:inline-flex; align-items:center; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:0.02em; white-space:nowrap; }
-            .cal-day-list-status.is-now { background:rgba(52,199,89,0.15); color:#34C759; }
-            .cal-day-list-status.is-over { background:rgba(255,59,48,0.1); color:#FF3B30; }
-            .cal-day-list-status.is-done { background:#F3F4F6; color:#6B7280; }
-            /* Row separador "Ahora" — TR especial entre actividades */
-            .cal-day-table tr.cal-day-now-tr td { padding:6px 16px; background:#FFFBFA; }
-            .cal-day-now-bar { display:flex; align-items:center; gap:10px; }
-            .cal-day-now-time { font-size:0.84rem; font-weight:700; color:#FF3B30; min-width:90px; }
-            .cal-day-now-line { flex:1; height:2px; background:#FF3B30; border-radius:2px; position:relative; }
-            .cal-day-now-line::before { content:''; position:absolute; left:-5px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
-            .cal-day-now-label { font-size:0.7rem; font-weight:700; color:#FF3B30; letter-spacing:0.06em; text-transform:uppercase; }
-            /* ─── Right panel ─── */
-            #calRightPanel { width:285px; min-width:285px; border-left:1px solid rgba(0,0,0,0.07); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
-            #calPanelOverview { display:flex; flex-direction:column; gap:1rem; padding:1.25rem; }
-            #calPanelDetail { display:none; flex-direction:column; padding:1.25rem; gap:0.9rem; min-height:100%; }
-            .cal-section-label { font-size:0.67rem; font-weight:700; color:#86868B; text-transform:uppercase; letter-spacing:0.06em; }
+            /* ─── Day view — Agenda con cards verticales tipo Apple Calendar ─── */
+            .cal-day-list { width:100%; padding:14px 22px 32px; max-width:980px; margin:0 auto; }
+            .cal-day-list-empty { text-align:center; padding:90px 20px; color:#9CA3AF; }
+            .cal-day-list-empty-ic { width:78px; height:78px; border-radius:22px; background:linear-gradient(180deg,#F3F4F6 0%,#E9ECF2 100%); color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(0,0,0,0.04); }
+            .cal-day-list-empty-t { font-size:1.15rem; font-weight:700; color:#1D1D1F; margin-bottom:6px; letter-spacing:-0.01em; }
+            .cal-day-list-empty-s { font-size:0.88rem; color:#6B7280; margin-bottom:20px; }
+            .cal-day-list-empty-btn { display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 18px; background:#0052D4; color:#fff; border:none; border-radius:10px; font-family:inherit; font-size:0.88rem; font-weight:700; cursor:pointer; transition:background 0.15s, transform 0.15s, box-shadow 0.15s; box-shadow:0 1px 2px rgba(0,82,212,0.18), 0 4px 12px rgba(0,82,212,0.18); }
+            .cal-day-list-empty-btn:hover { background:#0041A8; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,82,212,0.22), 0 6px 16px rgba(0,82,212,0.22); }
+            .cal-day-list-empty-btn:active { transform:translateY(0); }
+
+            /* Agenda — fila = [hora a la izquierda | card a la derecha] */
+            .cal-day-agenda { display:flex; flex-direction:column; gap:12px; }
+            .cal-day-agenda-row { display:flex; align-items:flex-start; gap:18px; }
+            .cal-day-agenda-time { flex:0 0 92px; padding-top:14px; text-align:right; }
+            .cal-day-agenda-time-start { font-size:1.05rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.01em; line-height:1.1; }
+            .cal-day-agenda-time-ampm { font-size:0.7rem; font-weight:700; color:#86868B; letter-spacing:0.04em; margin-left:2px; }
+            .cal-day-agenda-time-end { font-size:0.74rem; color:#9CA3AF; font-weight:500; margin-top:3px; }
+            .cal-day-agenda-card { flex:1; min-width:0; background:#FFFFFF; border:1px solid #E5E7EB; border-left:4px solid #9CA3AF; border-radius:14px; padding:14px 18px 14px 16px; box-shadow:0 1px 2px rgba(20,20,18,0.04), 0 4px 12px rgba(20,20,18,0.04); cursor:pointer; transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; position:relative; }
+            .cal-day-agenda-card:hover { transform:translateY(-1px); box-shadow:0 2px 4px rgba(20,20,18,0.06), 0 10px 24px rgba(20,20,18,0.08); }
+            .cal-day-agenda-card.is-done { opacity:0.55; }
+            .cal-day-agenda-card.is-now { box-shadow:0 0 0 2px rgba(52,199,89,0.18), 0 1px 2px rgba(20,20,18,0.04), 0 6px 16px rgba(20,20,18,0.06); }
+            .cal-day-agenda-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+            .cal-day-agenda-title { font-size:1rem; font-weight:700; color:#1D1D1F; line-height:1.35; letter-spacing:-0.005em; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; flex:1; min-width:0; }
+            .cal-day-agenda-title.is-strike { text-decoration:line-through; color:#9CA3AF; }
+            .cal-day-agenda-kind { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; font-size:0.66rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:4px 9px; border-radius:999px; color:#fff; white-space:nowrap; }
+            .cal-day-agenda-sub { font-size:0.84rem; color:#6B7280; margin-top:6px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+            .cal-day-agenda-people { display:flex; align-items:center; gap:8px; margin-top:10px; min-width:0; }
+            .cal-day-agenda-avatars { display:inline-flex; align-items:center; flex-shrink:0; }
+            .cal-day-agenda-avatar { width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:0.68rem; font-weight:700; letter-spacing:0.02em; border:2px solid #FFFFFF; box-sizing:content-box; margin-left:-6px; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+            .cal-day-agenda-avatar:first-child { margin-left:0; }
+            .cal-day-agenda-avatar.is-more { background:#E5E7EB; color:#6B7280; font-size:0.62rem; }
+            .cal-day-agenda-names { font-size:0.8rem; color:#4B5563; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+            .cal-day-agenda-status { display:inline-flex; align-items:center; font-size:0.66rem; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:0.04em; white-space:nowrap; text-transform:uppercase; margin-left:auto; flex-shrink:0; }
+            .cal-day-agenda-status.is-now { background:rgba(52,199,89,0.15); color:#1F8F40; }
+            .cal-day-agenda-status.is-over { background:rgba(255,59,48,0.12); color:#C2362E; }
+            .cal-day-agenda-status.is-done { background:#F3F4F6; color:#6B7280; }
+            /* Separador "Ahora" — barra horizontal entre cards */
+            .cal-day-agenda-now { display:flex; align-items:center; gap:14px; padding:2px 0; }
+            .cal-day-agenda-now-time { flex:0 0 92px; text-align:right; font-size:0.78rem; font-weight:700; color:#FF3B30; letter-spacing:-0.005em; }
+            .cal-day-agenda-now-line { flex:1; height:2px; background:#FF3B30; border-radius:2px; position:relative; }
+            .cal-day-agenda-now-line::before { content:''; position:absolute; left:-5px; top:-3px; width:8px; height:8px; border-radius:50%; background:#FF3B30; }
+            .cal-day-agenda-now-label { font-size:0.66rem; font-weight:700; color:#FF3B30; letter-spacing:0.08em; text-transform:uppercase; flex-shrink:0; }
             /* ─── User picker (custom dropdown) ─── */
             .cal-userpick-wrap { position:relative; }
             .cal-userpick-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; max-width:220px; background:#fff; border:1px solid rgba(0,0,0,0.11); border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; color:#1D1D1F; cursor:pointer; transition:background 0.12s, border-color 0.12s, box-shadow 0.12s; }
@@ -118,11 +110,160 @@
             .cal-userpick-item .cal-userpick-check { width:14px; height:14px; flex-shrink:0; opacity:0; color:#1d4ed8; }
             .cal-userpick-item.is-active .cal-userpick-check { opacity:1; }
             .cal-userpick-empty { padding:14px 12px; text-align:center; color:#86868B; font-size:12px; }
+            /* Botón Asistente AI (calendario) — pill sutil con dejo de color */
+            .cal-ai-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; background:linear-gradient(135deg,#eef4ff 0%,#f5ecff 100%); border:1px solid rgba(99,102,241,0.18); border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; color:#4338CA; cursor:pointer; transition:all 0.15s; }
+            .cal-ai-btn:hover { background:linear-gradient(135deg,#e0eaff 0%,#ecdbff 100%); border-color:rgba(99,102,241,0.3); color:#3730A3; transform:translateY(-1px); box-shadow:0 2px 6px rgba(99,102,241,0.15); }
+            .cal-ai-btn svg { color:#6366F1; }
             /* ─── Recurrencia (Repetir actividad) ─── */
             .cal-recur-chip { width:30px; height:30px; border-radius:50%; border:1px solid #CBD5E1; background:#fff; color:#64748B; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; padding:0; display:inline-flex; align-items:center; justify-content:center; }
             .cal-recur-chip:hover { border-color:#3B82F6; color:#2563EB; background:#EFF6FF; }
             .cal-recur-chip.active { background:#0052D4; color:#fff; border-color:#0052D4; }
             .cal-recur-chip.active:hover { background:#0041A8; border-color:#0041A8; }
+
+            /* ─── Hover popover (tooltip rico) ─── */
+            .cal-hover-popover {
+                position:fixed; z-index:10500; pointer-events:auto;
+                width:340px; max-width:380px;
+                background:#FFFFFF;
+                border:1px solid rgba(15,23,42,0.06);
+                border-radius:14px;
+                box-shadow:0 12px 32px rgba(15,23,42,0.16), 0 2px 6px rgba(15,23,42,0.06);
+                overflow:hidden;
+                font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+                animation:calHoverIn 0.14s ease-out;
+            }
+            @keyframes calHoverIn { from { opacity:0; transform:translateY(-3px) scale(0.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+            .cal-hover-head {
+                display:flex; align-items:center; gap:8px;
+                padding:10px 14px;
+                color:#fff;
+                font-size:0.7rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+            }
+            .cal-hover-head::before {
+                content:''; display:inline-block;
+                width:8px; height:8px; border-radius:50%;
+                background:rgba(255,255,255,0.95);
+                box-shadow:0 0 0 3px rgba(255,255,255,0.22);
+            }
+            .cal-hover-type { flex:1; }
+            .cal-hover-body { padding:14px 16px 16px; }
+            .cal-hover-title {
+                font-size:1rem; font-weight:700; color:#1D1D1F;
+                letter-spacing:-0.01em; line-height:1.3;
+                margin-bottom:10px;
+                display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+                overflow:hidden; text-overflow:ellipsis;
+            }
+            .cal-hover-when {
+                display:flex; align-items:center; gap:7px;
+                font-size:0.82rem; font-weight:600; color:#1D1D1F;
+                margin-bottom:6px;
+            }
+            .cal-hover-when::before {
+                content:''; display:inline-block;
+                width:14px; height:14px; flex-shrink:0;
+                background-color:#6B7280;
+                -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>");
+                        mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>");
+                -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+                -webkit-mask-size:contain; mask-size:contain;
+            }
+            .cal-hover-meta {
+                display:flex; align-items:flex-start; gap:7px;
+                font-size:0.8rem; color:#374151;
+                margin-top:6px; line-height:1.35;
+            }
+            .cal-hover-meta::before {
+                content:''; display:inline-block;
+                width:14px; height:14px; flex-shrink:0; margin-top:2px;
+                background-color:#6B7280;
+                -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+                -webkit-mask-size:contain; mask-size:contain;
+            }
+            .cal-hover-meta.is-people::before {
+                -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg>");
+                        mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg>");
+            }
+            .cal-hover-meta.is-creator::before {
+                -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg>");
+                        mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg>");
+            }
+            .cal-hover-meta.is-related::before {
+                -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 21h18'/><path d='M5 21V7l8-4v18'/><path d='M19 21V11l-6-4'/></svg>");
+                        mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 21h18'/><path d='M5 21V7l8-4v18'/><path d='M19 21V11l-6-4'/></svg>");
+            }
+            .cal-hover-meta.is-note::before {
+                -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='17' y1='10' x2='3' y2='10'/><line x1='21' y1='6' x2='3' y2='6'/><line x1='21' y1='14' x2='3' y2='14'/><line x1='17' y1='18' x2='3' y2='18'/></svg>");
+                        mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='17' y1='10' x2='3' y2='10'/><line x1='21' y1='6' x2='3' y2='6'/><line x1='21' y1='14' x2='3' y2='14'/><line x1='17' y1='18' x2='3' y2='18'/></svg>");
+            }
+            .cal-hover-meta-lbl {
+                font-size:0.66rem; font-weight:700; color:#9CA3AF;
+                letter-spacing:0.05em; text-transform:uppercase;
+                margin-right:6px; flex-shrink:0;
+            }
+            .cal-hover-meta-val {
+                flex:1; min-width:0;
+                overflow:hidden; text-overflow:ellipsis;
+                display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+                color:#1D1D1F; font-weight:500;
+            }
+            .cal-hover-desc {
+                margin-top:10px; padding-top:10px;
+                border-top:1px solid rgba(15,23,42,0.06);
+                font-size:0.78rem; color:#4B5563; line-height:1.45;
+                display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+                overflow:hidden; text-overflow:ellipsis;
+            }
+            .cal-hover-related {
+                display:flex; align-items:flex-start; gap:7px;
+                font-size:0.8rem; color:#374151;
+                margin-top:6px; line-height:1.35;
+            }
+
+            /* ─── Vista Semana: refinamiento de cards ─── */
+            #calWeekHeader { background:transparent; }
+            .cal-week-evt { transition:filter 0.15s, box-shadow 0.15s, transform 0.12s !important; }
+            .cal-week-evt:hover { filter:brightness(0.97); box-shadow:0 4px 14px rgba(0,0,0,0.14) !important; z-index:7 !important; transform:translateY(-1px); }
+            .cal-week-task { transition:filter 0.15s, box-shadow 0.15s, transform 0.12s !important; }
+            .cal-week-task:hover { filter:brightness(0.97); box-shadow:0 4px 14px rgba(0,0,0,0.14) !important; z-index:8 !important; transform:translateY(-1px); }
+
+            /* ─── Vista Semana: empty state cuando no hay eventos visibles ─── */
+            .cal-week-empty { position:absolute; left:60px; right:18px; top:90px; pointer-events:none; text-align:center; opacity:0.55; }
+            .cal-week-empty-ic { width:54px; height:54px; border-radius:16px; background:#F3F4F6; color:#9CA3AF; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; }
+            .cal-week-empty-t { font-size:0.92rem; font-weight:700; color:#6B7280; }
+            .cal-week-empty-s { font-size:0.78rem; color:#9CA3AF; margin-top:3px; }
+
+            /* ─── Vista Mes: eventos más legibles ─── */
+            #fullCalendarRoot .fc-daygrid-day-frame { padding:4px; }
+            #fullCalendarRoot .fc-daygrid-event { margin-top:3px !important; }
+            #fullCalendarRoot .fc-daygrid-event-harness { transition:transform 0.12s; }
+            #fullCalendarRoot .fc-daygrid-event-harness:hover { transform:translateY(-1px); z-index:6; }
+            #fullCalendarRoot .fc-event { box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+            #fullCalendarRoot .fc-event:hover { opacity:1 !important; filter:brightness(0.97); box-shadow:0 3px 10px rgba(0,0,0,0.10); }
+            #fullCalendarRoot .fc-daygrid-more-link { font-size:0.72rem !important; font-weight:600 !important; color:#0052D4 !important; padding:2px 6px !important; border-radius:5px; display:inline-flex; align-items:center; }
+            #fullCalendarRoot .fc-daygrid-more-link:hover { background:rgba(0,82,212,0.08); }
+            /* Popover nativo de FullCalendar (lista de "más eventos") */
+            #fullCalendarRoot .fc-popover {
+                background:#fff !important;
+                border:1px solid rgba(15,23,42,0.08) !important;
+                border-radius:12px !important;
+                box-shadow:0 12px 40px rgba(15,23,42,0.18) !important;
+                overflow:hidden;
+                font-family:inherit;
+            }
+            #fullCalendarRoot .fc-popover-header {
+                background:linear-gradient(180deg,#F9FAFB 0%,#fff 100%) !important;
+                color:#1D1D1F !important;
+                font-weight:700 !important;
+                font-size:0.85rem !important;
+                padding:10px 14px !important;
+                border-bottom:1px solid rgba(15,23,42,0.06) !important;
+                text-transform:capitalize;
+            }
+            #fullCalendarRoot .fc-popover-close { color:#6B7280 !important; opacity:0.7; font-size:1rem !important; }
+            #fullCalendarRoot .fc-popover-close:hover { opacity:1; }
+            #fullCalendarRoot .fc-popover-body { padding:8px !important; min-width:240px; max-width:320px; }
+            #fullCalendarRoot .fc-popover .fc-daygrid-event { margin:3px 0 !important; }
         </style>
 
         {% if tab_activo == 'calendario' %}
@@ -160,6 +301,15 @@
                     </div>
                     <input type="hidden" id="calUserFilter" value="all">
                 </div>
+                {% comment %}
+                Asistente AI del calendario: abre el modal compartido en modo
+                'calendario' para reagendar vencidas o rellenar huecos con
+                actividades de seguimiento sobre opps/prospectos importantes.
+                {% endcomment %}
+                <button type="button" id="calAsistenteBtn" class="crm-period-pill cal-ai-btn" onclick="calAsistenteAbrir()" title="Asistente de calendario (AI)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
+                    <span>Asistente</span>
+                </button>
             </div>
             <!-- Dynamic island central: Mes / Semana / Día -->
             <div class="crm-tabs crm-tabs--dashboard">
@@ -167,23 +317,28 @@
                 <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                 <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
             </div>
-            <div class="crm-bar-right">
+            <div class="crm-bar-right" style="display:flex;align-items:center;gap:10px;">
+                {% comment %}
+                Navegación de fecha en el topbar (compacta): prev / next / Hoy +
+                título. Antes vivía debajo del topbar como cal-page-monthnav y
+                quitaba espacio vertical al calendario. Ahora va a la izquierda
+                del botón "Nueva actividad".
+                {% endcomment %}
+                <div class="cal-topnav" style="display:flex;align-items:center;gap:4px;">
+                    <button type="button" class="cal-topnav-arrow" onclick="calNavPrev()" title="Anterior">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button type="button" class="cal-topnav-arrow" onclick="calNavNext()" title="Siguiente">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <button type="button" class="cal-topnav-today" onclick="calNavToday()">Hoy</button>
+                    <span id="calNavTitlePage" class="cal-topnav-title">—</span>
+                </div>
                 <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     <span>Nueva actividad</span>
                 </button>
             </div>
-        </div>
-        <!-- Mini-barra de navegación del mes (page mode) -->
-        <div class="cal-page-monthnav">
-            <button type="button" class="cal-monthnav-arrow" onclick="calNavPrev()" title="Anterior">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button type="button" class="cal-monthnav-arrow" onclick="calNavNext()" title="Siguiente">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-            </button>
-            <button type="button" class="cal-monthnav-today" onclick="calNavToday()">Hoy</button>
-            <span id="calNavTitlePage" class="cal-monthnav-title">—</span>
         </div>
         {% else %}
         <!-- ── Outer header (widget mode tradicional) ── -->
@@ -223,7 +378,7 @@
         </div>
         {% endif %}
 
-        <!-- ── Sub-nav: arrows + title + Mes/Día toggle (sólo en modo widget, en page-mode estos controles viven dentro del panel derecho y al pie del calendario) ── -->
+        <!-- ── Sub-nav: arrows + title + Mes/Día toggle (sólo en modo widget; en page-mode esto vive en la barra superior + cal-page-monthnav) ── -->
         <div class="cal-subnav-default" style="padding:0.65rem 1.6rem;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;{% if tab_activo == 'calendario' %}display:none;{% endif %}">
             <div style="display:flex;align-items:center;gap:6px;">
                 <button onclick="calNavPrev()" title="Anterior" style="background:#F2F2F7;border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">
@@ -242,11 +397,11 @@
             </div>
         </div>
 
-        <!-- ── Body: left + right ── -->
+        {% comment %} Body: el calendario ocupa el 100% del ancho (sin side panel). {% endcomment %}
         <div class="cal-page-body" style="flex:1;display:flex;overflow:hidden;min-height:0;">
 
-            <!-- Left: calendar views -->
-            <div style="flex:1;padding:0.8rem 0.8rem 0.8rem 1.4rem;overflow:hidden;display:flex;flex-direction:column;min-width:0;">
+            <!-- Calendar views (full width) -->
+            <div style="flex:1;padding:0.8rem 1.4rem;overflow:hidden;display:flex;flex-direction:column;min-width:0;">
                 <!-- Month view (FullCalendar) -->
                 <div id="fullCalendarRoot" style="flex:1;min-height:0;overflow:hidden;"></div>
                 <!-- Day view (custom timeline) -->
@@ -260,107 +415,6 @@
                 </div>
             </div>
 
-            <!-- Right: side panel -->
-            <div id="calRightPanel">
-
-                <!-- ── OVERVIEW STATE ── -->
-                <div id="calPanelOverview">
-                    <div id="calPanelOverviewTitle" style="font-size:1rem;font-weight:700;color:#1D1D1F;letter-spacing:-0.01em;">Tu mes de un vistazo</div>
-
-                    <!-- Efectividad card (dark) -->
-                    <div style="background:#1D1D1F;border-radius:16px;padding:1.1rem 1.2rem;">
-                        <div id="calSideEfectLabel" style="font-size:0.68rem;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Efectividad del Mes</div>
-                        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;">
-                            <div id="calSidePct" style="font-size:2.2rem;font-weight:700;color:#fff;line-height:1;">—%</div>
-                            <div id="calSideLisots" style="background:rgba(52,199,89,0.2);color:#34C759;font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:20px;">— listos</div>
-                        </div>
-                    </div>
-
-                    <!-- Stats row -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div style="background:#FFF8EE;border:1px solid rgba(255,149,0,0.2);border-radius:12px;padding:0.85rem 1rem;">
-                            <div id="calSideTareasN" style="font-size:1.55rem;font-weight:700;color:#FF9500;line-height:1.1;">0</div>
-                            <div style="font-size:0.7rem;color:#86868B;font-weight:600;margin-top:4px;line-height:1.3;">Tareas<br>Pendientes</div>
-                        </div>
-                        <div style="background:#EEF3FF;border:1px solid rgba(0,82,212,0.15);border-radius:12px;padding:0.85rem 1rem;">
-                            <div id="calSideOppsN" style="font-size:1.55rem;font-weight:700;color:#0052D4;line-height:1.1;">0</div>
-                            <div style="font-size:0.7rem;color:#86868B;font-weight:600;margin-top:4px;line-height:1.3;">Actividades<br>del Día</div>
-                        </div>
-                    </div>
-
-                    <!-- Siguiente en agenda -->
-                    <div>
-                        <div class="cal-section-label" style="display:flex;align-items:center;gap:4px;">
-                            <svg width="10" height="10" fill="#FF9500" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                            Siguiente en agenda
-                        </div>
-                        <div id="calSideNextContainer" style="border-left:3px solid #0052D4;padding:7px 0 7px 12px;margin-top:8px;transition:border-color 0.3s;">
-                            <div id="calSideNextTitle" style="font-weight:700;font-size:0.87rem;color:#1D1D1F;line-height:1.3;">—</div>
-                            <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
-                                <svg id="calSideNextIcon" width="11" height="11" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                <span id="calSideNextTime" style="font-size:0.75rem;color:#86868B;font-weight:500;">—</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tareas de hoy -->
-                    <div>
-                        <div class="cal-section-label">Tareas de hoy</div>
-                        <div id="calSideTareasList" class="cal-side-mini-list" style="display:flex;flex-direction:column;margin-top:8px;">
-                            <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
-                        </div>
-                    </div>
-
-                    <!-- Actividades de hoy -->
-                    <div>
-                        <div class="cal-section-label">Actividades de hoy</div>
-                        <div id="calSideActividadesList" class="cal-side-mini-list" style="display:flex;flex-direction:column;margin-top:8px;">
-                            <div style="color:#86868B;font-size:0.82rem;font-style:italic;">Cargando...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── DETAIL STATE ── -->
-                <div id="calPanelDetail">
-                    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-                        <div id="calDetailType" style="font-size:0.67rem;font-weight:700;color:#86868B;text-transform:uppercase;letter-spacing:0.07em;padding-top:3px;">—</div>
-                        <button onclick="calHidePanelDetail()" style="background:none;border:none;cursor:pointer;color:#86868B;font-size:1.5rem;line-height:1;padding:0;" onmouseover="this.style.color='#1D1D1F'" onmouseout="this.style.color='#86868B'">&times;</button>
-                    </div>
-                    <div id="calDetailTitle" style="font-size:1.15rem;font-weight:700;color:#1D1D1F;line-height:1.3;">—</div>
-                    <div style="display:flex;align-items:center;gap:7px;">
-                        <svg width="13" height="13" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        <span id="calDetailTime" style="font-size:0.86rem;color:#86868B;font-weight:500;">—</span>
-                    </div>
-                    <div id="calDetailAmountRow" style="display:none;align-items:center;gap:7px;">
-                        <svg width="13" height="13" fill="none" stroke="#34C759" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                        <span id="calDetailAmount" style="font-size:0.86rem;font-weight:700;color:#34C759;">—</span>
-                    </div>
-                    <div>
-                        <div class="cal-section-label">Estado actual</div>
-                        <div id="calDetailStatus" style="display:inline-block;font-size:0.78rem;font-weight:700;padding:5px 14px;border-radius:20px;background:#F2F2F7;color:#86868B;margin-top:6px;">—</div>
-                    </div>
-                    <div id="calDetailOppRow" style="display:none;">
-                        <div class="cal-section-label">Oportunidad</div>
-                        <button id="calDetailOppBtn" style="background:#EEF3FF;border:1px solid rgba(0,82,212,0.18);border-radius:8px;padding:6px 12px;font-size:0.81rem;font-weight:600;color:#0052D4;cursor:pointer;text-align:left;width:100%;margin-top:6px;font-family:inherit;">—</button>
-                    </div>
-                    <div id="calDetailCursoRow" style="display:none;">
-                        <div class="cal-section-label">Curso</div>
-                        <button id="calDetailCursoBtn" style="background:#E0F2FE;border:1px solid rgba(3,105,161,0.22);border-radius:8px;padding:6px 12px;font-size:0.81rem;font-weight:600;color:#075985;cursor:pointer;text-align:left;width:100%;margin-top:6px;font-family:inherit;display:inline-flex;align-items:center;gap:6px;">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                            <span>—</span>
-                        </button>
-                    </div>
-                    <div style="flex:1;">
-                        <div class="cal-section-label">Descripción</div>
-                        <div id="calDetailDesc" style="font-size:0.81rem;color:#3A3A3C;line-height:1.55;margin-top:6px;">—</div>
-                    </div>
-                    <div style="display:flex;gap:8px;padding-top:0.75rem;border-top:1px solid rgba(0,0,0,0.06);margin-top:auto;">
-                        <button id="calDetailBtnReprogram" onclick="calDetailReprogramar()" style="flex:1;background:#F2F2F7;border:none;border-radius:10px;padding:0.65rem;font-size:0.83rem;font-weight:700;color:#1D1D1F;cursor:pointer;font-family:inherit;transition:background 0.15s;" onmouseover="this.style.background='#E5E5EA'" onmouseout="this.style.background='#F2F2F7'">Reprogramar</button>
-                        <button id="calDetailBtnListo" onclick="calDetailVerCompleto()" style="flex:1;background:#34C759;border:none;border-radius:10px;padding:0.65rem;font-size:0.83rem;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;transition:background 0.15s;" onmouseover="this.style.background='#2DBD4E'" onmouseout="this.style.background='#34C759'">Ver Detalle</button>
-                    </div>
-                </div>
-
-            </div><!-- /calRightPanel -->
         </div><!-- /body -->
     </div>
 </div>
@@ -586,8 +640,14 @@
                     height: isPageMode ? 'auto' : '100%',
                     expandRows: !isPageMode,
                     headerToolbar: false,
-                    buttonText: { today: 'Hoy' },
+                    buttonText: { today: 'Hoy', more: 'más' },
                     eventInteractive: true,
+                    // Vista mes: máximo 4 eventos por día, el resto se colapsa
+                    // en un "+N más" que abre el popover nativo de FullCalendar
+                    // con la lista completa.
+                    dayMaxEvents: 4,
+                    moreLinkClick: 'popover',
+                    moreLinkContent: function (arg) { return '+ ' + arg.num + ' más'; },
                     views: {
                         dayGridMonth: { eventDisplay: 'list-item' }
                     },
@@ -601,6 +661,12 @@
                     datesSet: function () {
                         calUpdateNavTitle();
                         if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
+                        // Refetch al cambiar de mes en FullCalendar (botones prev/next/today
+                        // o gotoDate disparan datesSet). Sólo si el mes visible cambió
+                        // respecto al último fetch (evita requests duplicadas en re-render).
+                        if (_calViewMode === 'month' && typeof window.calMaybeRefetchOnMonthChange === 'function') {
+                            window.calMaybeRefetchOnMonthChange();
+                        }
                     },
                     eventContent: function (arg) {
                         var ev = arg.event;
@@ -626,9 +692,9 @@
                             ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.85;" title="Actividad recurrente"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
                             : '';
                         return { html:
-                            '<div style="display:flex;align-items:center;gap:5px;padding:2px 7px 2px 6px;border-radius:5px;background:'+bgTint+';border:1px solid '+borderC+';width:100%;overflow:hidden;box-sizing:border-box;'+opacityStyle+'">' +
-                            '<div style="width:5px;height:5px;border-radius:50%;background:'+color+';flex-shrink:0;"></div>' +
-                            '<div style="font-size:0.77rem;font-weight:600;color:'+color+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;'+strikeStyle+'">'+title+'</div>' +
+                            '<div style="display:flex;align-items:center;gap:6px;padding:4px 9px 4px 8px;border-radius:6px;background:'+bgTint+';border:1px solid '+borderC+';border-left:3px solid '+color+';width:100%;overflow:hidden;box-sizing:border-box;'+opacityStyle+'">' +
+                            '<div style="width:6px;height:6px;border-radius:50%;background:'+color+';flex-shrink:0;"></div>' +
+                            '<div style="font-size:0.82rem;font-weight:600;color:'+color+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;letter-spacing:-0.005em;'+strikeStyle+'">'+title+'</div>' +
                             recurIcon +
                             '</div>'
                         };
@@ -645,7 +711,7 @@
                             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
                             body: JSON.stringify({ title: ev.title, start: ev.startStr, end: ev.endStr || ev.startStr, description: stored.description || '', tipo: ep.tipo_actividad || 'otro', color: stored.color || '#1D1D1F', participants: (ep.participants || []).map(function(p){return p.id;}), opportunity: ep.opportunity ? ep.opportunity.id : null })
                         }).then(function(r){return r.json();}).then(function(res){
-                            if (res.error) { info.revert(); } else { stored.start = ev.startStr; stored.end = ev.endStr || ev.startStr; calUpdateSidePanel(); }
+                            if (res.error) { info.revert(); } else { stored.start = ev.startStr; stored.end = ev.endStr || ev.startStr; }
                         }).catch(function(){info.revert();});
                     },
                     eventResize: function (info) {
@@ -667,15 +733,26 @@
                         _calOpenFull(String(info.event.id));
                     },
                     eventDidMount: function (info) {
-                        // Hover preview con popover
+                        // Hover preview con popover (delay 400ms, posicionado junto al cursor)
                         var elId = String(info.event.id);
                         info.el.addEventListener('mouseenter', function (e) {
                             clearTimeout(window._calHoverTimer);
+                            var mx = e.clientX, my = e.clientY;
                             window._calHoverTimer = setTimeout(function () {
-                                _calShowHoverPreview(elId, info.el);
-                            }, 280);
+                                _calShowHoverPreview(elId, info.el, { mouseX: mx, mouseY: my });
+                            }, 400);
+                        });
+                        info.el.addEventListener('mousemove', function (e) {
+                            // refresca último cursor para que el tooltip salga junto a él
+                            info.el._calLastMouseX = e.clientX;
+                            info.el._calLastMouseY = e.clientY;
                         });
                         info.el.addEventListener('mouseleave', function () {
+                            clearTimeout(window._calHoverTimer);
+                            _calHideHoverPreview();
+                        });
+                        info.el.addEventListener('click', function () {
+                            // ocultar tooltip cuando se abre el detalle
                             clearTimeout(window._calHoverTimer);
                             _calHideHoverPreview();
                         });
@@ -744,19 +821,33 @@
     };
 
     /* ─── NAVEGACIÓN ─── */
+    // Helper: refetch sólo si el mes visible cambió respecto al último fetch.
+    // Evita requests duplicadas y nos asegura no quedarnos sin eventos al
+    // navegar de un mes a otro.
+    window.calMaybeRefetchOnMonthChange = function () {
+        var mes = _calCurrentMesParam();
+        if (mes !== _calLastFetchedMes) {
+            var sel = document.getElementById('calUserFilter');
+            calGlobalRefetch(sel ? sel.value : 'all');
+        }
+    };
+
     window.calNavPrev = function () {
         if (_calViewMode === 'month') {
+            // datesSet de FullCalendar disparará calMaybeRefetchOnMonthChange.
             if (_globalCalendar) { _globalCalendar.prev(); }
         } else if (_calViewMode === 'week') {
             _calWeekStart = new Date(_calWeekStart);
             _calWeekStart.setDate(_calWeekStart.getDate() - 7);
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() - 1);
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         }
     };
 
@@ -768,11 +859,13 @@
             _calWeekStart.setDate(_calWeekStart.getDate() + 7);
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() + 1);
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         }
     };
 
@@ -784,13 +877,16 @@
             _calWeekStart = calGetWeekStart(new Date());
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         } else {
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
+            calMaybeRefetchOnMonthChange();
         }
     };
 
     window.calSwitchView = function (mode) {
+        var prevMode = _calViewMode;
         _calViewMode = mode;
         try { localStorage.setItem('_crm_cal_view', mode); } catch (e) {}
         var fcRoot = document.getElementById('fullCalendarRoot');
@@ -813,25 +909,44 @@
             fcRoot.style.display = '';
             if (btnMes) btnMes.classList.add('active');
             if (btnMesP) btnMesP.classList.add('active');
-            if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
+            if (_globalCalendar) {
+                // Preservar la fecha visible entre vistas. Si venimos de
+                // 'week' usamos _calWeekStart, si venimos de 'day' usamos
+                // _calCurrentDay. Fallback a hoy.
+                var targetDate = null;
+                if (prevMode === 'week' && _calWeekStart) targetDate = _calWeekStart;
+                else if (prevMode === 'day' && _calCurrentDay) targetDate = _calCurrentDay;
+                if (targetDate) _globalCalendar.gotoDate(targetDate);
+                _globalCalendar.render();
+            }
         } else if (mode === 'week') {
             weekRoot.style.display = 'flex';
             weekRoot.style.flexDirection = 'column';
             if (btnSemana) btnSemana.classList.add('active');
             if (btnSemanaP) btnSemanaP.classList.add('active');
-            _calWeekStart = calGetWeekStart(new Date());
+            // Si venimos de 'month', usar el mes visible del FullCalendar.
+            // Si venimos de 'day', usar _calCurrentDay para que la semana lo contenga.
+            var weekSeed;
+            if (prevMode === 'day' && _calCurrentDay) weekSeed = _calCurrentDay;
+            else if (_globalCalendar) weekSeed = _globalCalendar.getDate();
+            else weekSeed = new Date();
+            _calWeekStart = calGetWeekStart(weekSeed);
             calRenderWeekView(_calWeekStart);
         } else {
             dayRoot.style.display = 'flex';
             dayRoot.style.flexDirection = 'column';
             if (btnDia) btnDia.classList.add('active');
             if (btnDiaP) btnDiaP.classList.add('active');
-            _calCurrentDay = new Date();
+            // Si venimos de 'week', usar inicio de la semana visible.
+            // Si venimos de 'month', usar la fecha visible del FullCalendar.
+            var daySeed;
+            if (prevMode === 'week' && _calWeekStart) daySeed = _calWeekStart;
+            else if (_globalCalendar) daySeed = _globalCalendar.getDate();
+            else daySeed = new Date();
+            _calCurrentDay = new Date(daySeed);
             calRenderDayView(_calCurrentDay);
         }
-        calHidePanelDetail();
         calUpdateNavTitle();
-        calUpdateSidePanel();
     };
 
     function calUpdateNavTitle() {
@@ -906,16 +1021,26 @@
     var _calWeekStart = null; // Monday of current week
 
     function calGetWeekStart(date) {
+        // Semana empieza en LUNES (consistente con FullCalendar firstDay:1).
+        // getDay(): 0=Dom, 1=Lun, ..., 6=Sáb.
+        // offset hacia lunes: domingo retrocede 6, otros retroceden day-1.
         var d = new Date(date);
-        var day = d.getDay(); // 0=Sun
-        d.setDate(d.getDate() - day); // go to Sunday
+        var day = d.getDay();
+        var offset = (day === 0) ? 6 : day - 1;
+        d.setDate(d.getDate() - offset);
         d.setHours(0,0,0,0);
         return d;
     }
 
-    function calRenderWeekHeader(weekStart) {
+    // Umbral a partir del cual un día "saturado" muestra un pill que invita a
+    // saltar a la vista Día. Sin esto, el usuario ve eventos squeezed en
+    // columnas paralelas y se le dificulta darles seguimiento.
+    var CAL_WEEK_DAY_BUSY_THRESHOLD = 6;
+
+    function calRenderWeekHeader(weekStart, dayEventCounts) {
         var headerEl = document.getElementById('calWeekHeader');
         if (!headerEl) return;
+        var counts = dayEventCounts || [0,0,0,0,0,0,0];
         var now = new Date();
         var DAY_NAMES = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
         var html = '<div style="width:56px;min-width:56px;flex-shrink:0;"></div>';
@@ -926,12 +1051,22 @@
             var dayN = d.getDate();
             var dayName = DAY_NAMES[d.getDay()];
             var yr = d.getFullYear(), mo = d.getMonth(), dt = d.getDate();
-            html += '<div style="flex:1;text-align:center;padding:6px 2px 8px;cursor:pointer;border-left:'+(i>0?'1px solid rgba(0,0,0,0.05)':'none')+';"' +
+            var n = counts[i] || 0;
+            // Pill solo si supera el umbral. Click separado del click del día
+            // (stopPropagation) — abre vista Día centrada en esa fecha.
+            var pillHtml = '';
+            if (n > CAL_WEEK_DAY_BUSY_THRESHOLD) {
+                pillHtml = '<div onclick="event.stopPropagation();calSwitchView(\'day\');_calCurrentDay=new Date('+yr+','+mo+','+dt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();" style="margin-top:5px;display:inline-flex;align-items:center;gap:4px;font-size:0.66rem;font-weight:700;letter-spacing:0.02em;color:#0041a8;background:rgba(0,82,212,0.10);padding:3px 8px;border-radius:999px;cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background=\'rgba(0,82,212,0.18)\'" onmouseout="this.style.background=\'rgba(0,82,212,0.10)\'" title="Ver vista Día de esta fecha">'+
+                    '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>'+
+                    'Ver '+n+' eventos</div>';
+            }
+            html += '<div style="flex:1;text-align:center;padding:9px 2px 11px;cursor:pointer;border-left:'+(i>0?'1px solid rgba(0,0,0,0.04)':'none')+';transition:background 0.12s;" onmouseover="this.style.background=\'rgba(0,0,0,0.02)\'" onmouseout="this.style.background=\'\'"' +
                 ' onclick="calSwitchView(\'day\');_calCurrentDay=new Date('+yr+','+mo+','+dt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();">'+
-                '<div style="font-size:0.63rem;font-weight:700;letter-spacing:0.07em;color:'+(isToday?'#0052D4':'#AEAEB2')+';">'+dayName+'</div>'+
-                '<div style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;margin-top:3px;font-size:1.05rem;font-weight:700;'+
-                (isToday?'background:#0052D4;color:#fff;':'color:#1D1D1F;')+
+                '<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;color:'+(isToday?'#0052D4':'#9CA3AF')+';">'+dayName+'</div>'+
+                '<div style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;margin-top:5px;font-size:1.2rem;font-weight:700;letter-spacing:-0.01em;'+
+                (isToday?'background:#0052D4;color:#fff;box-shadow:0 2px 8px rgba(0,82,212,0.25);':'color:#1D1D1F;')+
                 '">'+dayN+'</div>'+
+                pillHtml +
                 '</div>';
         }
         headerEl.innerHTML = html;
@@ -951,7 +1086,24 @@
             _calCurrentDay = new Date(weekStart);
         }
         if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
-        calRenderWeekHeader(weekStart);
+
+        // Pre-calcular counts por día (incluyendo filtros activos) para que
+        // el header sepa cuáles días están saturados y muestre el pill.
+        var _wkAll = window._calAllEvents || _globalEvents;
+        var _wkSel = document.getElementById('calUserFilter');
+        var _wkFilterVal = _wkSel ? _wkSel.value : 'all';
+        var _wkFiltered = _calFilterEventsForSelection(_wkAll, _wkFilterVal);
+        var _wkCounts = [0,0,0,0,0,0,0];
+        var _wkPad = function(n){ return String(n).padStart(2,'0'); };
+        for (var _wkI = 0; _wkI < 7; _wkI++) {
+            var _wkD = new Date(weekStart);
+            _wkD.setDate(_wkD.getDate() + _wkI);
+            var _wkDateStr = _wkD.getFullYear()+'-'+_wkPad(_wkD.getMonth()+1)+'-'+_wkPad(_wkD.getDate());
+            _wkCounts[_wkI] = _wkFiltered.filter(function(ev){
+                return ev.start && ev.start.substring(0,10) === _wkDateStr;
+            }).length;
+        }
+        calRenderWeekHeader(weekStart, _wkCounts);
 
         var CAL_HOUR_H = 48;
         // Vista semana: misma ventana visible que vista día (06:00 a 23:00).
@@ -1010,6 +1162,15 @@
         var filterVal = sel ? sel.value : 'all';
         var filtered = _calFilterEventsForSelection(allEvts, filterVal);
 
+        // ── Empty state: cuenta eventos dentro del rango visible de la semana ──
+        var weekStartMs = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()).getTime();
+        var weekEndMs = weekStartMs + 7*24*3600*1000;
+        var visibleCount = filtered.filter(function(ev){
+            if (!ev.start) return false;
+            var t = new Date(ev.start).getTime();
+            return t >= weekStartMs && t < weekEndMs;
+        }).length;
+
         // Render each day column
         days.forEach(function(day, dayIdx) {
             var dateStr = day.getFullYear()+'-'+pad(day.getMonth()+1)+'-'+pad(day.getDate());
@@ -1027,39 +1188,96 @@
             var taskLaneW = taskEvts.length > 0 ? Math.max(Math.round(dayW * 0.36), 52) : 0;
             var actW = dayW - taskLaneW - (taskEvts.length > 0 ? 1 : 0);
 
-            // Column-split actividades dentro de este día
+            // Column-split actividades dentro de este día.
+            // OJO: usamos `visualEnd` (end + min-height equivalente) en lugar
+            // del end real, porque las cards tienen min-height 30px (≈37 min
+            // visualmente con CAL_HOUR_H=48). Sin esto, dos eventos seguidos
+            // que NO se traslapan en tiempo (ej. 09:00-09:05 y 09:05-09:10)
+            // quedan en col=0 y sus cards (de 30px de alto cada una) se
+            // encadenan visualmente sobreponiéndose. Con visualEnd, el
+            // algoritmo los empuja a columnas paralelas.
+            var MIN_VISUAL_MS = Math.round((30 / CAL_HOUR_H) * 3600 * 1000); // ~37.5 min
             var actItems = actEvts.map(function(ev){
                 var sD = new Date(ev.start);
                 var eD = ev.end ? new Date(ev.end) : new Date(sD.getTime()+3600000);
-                return { ev:ev, sMs:sD.getTime(), eMs:eD.getTime(), col:0, numCols:1 };
+                var sMs = sD.getTime();
+                var eMs = eD.getTime();
+                var vMs = Math.max(eMs, sMs + MIN_VISUAL_MS);  // tope visual
+                return { ev:ev, sMs:sMs, eMs:eMs, vMs:vMs, col:0, numCols:1 };
             });
             var colEnds = [];
             actItems.forEach(function(it){
                 var placed = false;
                 for (var c=0; c<colEnds.length; c++){
-                    if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.eMs; placed=true; break; }
+                    if (it.sMs >= colEnds[c]){ it.col=c; colEnds[c]=it.vMs; placed=true; break; }
                 }
-                if (!placed){ it.col=colEnds.length; colEnds.push(it.eMs); }
+                if (!placed){ it.col=colEnds.length; colEnds.push(it.vMs); }
             });
             actItems.forEach(function(it){
                 var maxC = it.col;
                 actItems.forEach(function(other){
-                    if (it.sMs < other.eMs && it.eMs > other.sMs) maxC = Math.max(maxC, other.col);
+                    // Overlap visual (no solo temporal) para asegurar que cards
+                    // contiguas se cuenten para numCols.
+                    if (it.sMs < other.vMs && it.vMs > other.sMs) maxC = Math.max(maxC, other.col);
                 });
                 it.numCols = maxC + 1;
             });
 
-            // Renderizar actividades
+            // Cluster detection: para densidad alta (>= 4 eventos solapados),
+            // en lugar de columnas paralelas que quedan ilegibles, los
+            // apilamos verticalmente como lista compacta dentro del bloque
+            // temporal. Cada evento ocupa una fila de ~22px; si no caben
+            // todos, la lista scrollea verticalmente DENTRO del bloque.
+            var CAL_WEEK_LIST_THRESHOLD = 4;
+            var denseClusters = [];
+            (function _detectClusters() {
+                var visited = {};
+                actItems.forEach(function(seed, seedIdx) {
+                    if (visited[seedIdx]) return;
+                    var cluster = [seed]; visited[seedIdx] = true;
+                    var queue = [seed];
+                    while (queue.length) {
+                        var cur = queue.shift();
+                        actItems.forEach(function(other, oi){
+                            if (visited[oi]) return;
+                            if (cur.sMs < other.vMs && cur.vMs > other.sMs) {
+                                visited[oi] = true;
+                                cluster.push(other); queue.push(other);
+                            }
+                        });
+                    }
+                    if (cluster.length >= CAL_WEEK_LIST_THRESHOLD) {
+                        denseClusters.push(cluster);
+                        cluster.forEach(function(it){ it._inList = true; });
+                    }
+                });
+            })();
+
+            // Renderizar actividades (las que NO están en un cluster denso).
+            // Mantienen el render box clásico con altura = duración y columnas
+            // paralelas para overlaps 2-3.
             actItems.forEach(function(item){
+                if (item._inList) return;
                 var ev = item.ev;
                 var ep = ev.extendedProps||{};
                 var hasOpp = ep.opportunity && ep.opportunity.id;
                 var startD = new Date(ev.start);
                 var endD = ev.end ? new Date(ev.end) : new Date(startD.getTime()+3600000);
                 var startMins = startD.getHours()*60+startD.getMinutes();
-                var endMins = endD.getHours()*60+endD.getMinutes();
+                // Para eventos multi-día: si endD cae en un día posterior al de
+                // inicio (la columna en la que se renderiza), extender hasta el
+                // final del día (24:00). Sin esto, endMins = hora del día siguiente
+                // (p.ej. 02:00 → 120) y endMins-startMins quedaba negativo o
+                // clampado al mínimo de 30 min, mostrando un bloque diminuto.
+                var endMins;
+                if (endD.toDateString() !== startD.toDateString()) {
+                    endMins = 24*60;
+                } else {
+                    endMins = endD.getHours()*60+endD.getMinutes();
+                }
                 var evTop = (startMins/60 - CAL_WEEK_START_H)*CAL_HOUR_H;
-                var evH = Math.max(((Math.max(endMins-startMins,30))/60)*CAL_HOUR_H, 28);
+                // min-height de la card: 30px para garantizar área clickeable y legibilidad.
+                var evH = Math.max(((Math.max(endMins-startMins,30))/60)*CAL_HOUR_H, 30);
                 var safeId = String(ev.id).replace(/'/g,'');
 
                 var bg = hasOpp ? 'linear-gradient(135deg,#EEF3FF 0%,#E8EFFF 100%)' : 'linear-gradient(135deg,#F5F5F7 0%,#EFEFEF 100%)';
@@ -1069,10 +1287,17 @@
                 var isNow = isToday && nowMs>=startD.getTime() && nowMs<=endD.getTime();
                 var isOvAct = isToday && nowMs>endD.getTime();
 
+                // Estilo Google: todas las columnas visibles, sin cap. Si N es
+                // grande, colW termina pequeño y abajo adaptamos el contenido.
                 var n = item.numCols, c = item.col;
+                // Gap entre cards solapadas: 2px (siempre, también con 1 col tiene 0).
                 var gap = n > 1 ? 2 : 0;
                 var colW = Math.floor((actW - gap*(n-1)) / n);
                 var leftPx = dayLeft + c*(colW+gap);
+                // Card "angosta" → cambia layout: <60px solo barra+dot, sin
+                // texto. 60-100px solo título 1 línea. >100px layout completo.
+                var isNarrow = colW < 60;
+                var isMedium = colW >= 60 && colW < 100;
 
                 var shadowStyle = isNow
                     ? 'box-shadow:0 0 0 2px #34C759,0 2px 8px rgba(52,199,89,0.18);'
@@ -1080,15 +1305,93 @@
                 var compOpacity = ep.completada ? 'opacity:0.38;' : '';
 
                 var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
+                var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
                 var statusDot = '';
-                if (isNow) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:1px;"></div>';
-                else if (isOvAct) statusDot = '<div style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:1px;"></div>';
+                if (isNow) statusDot = '<div style="width:6px;height:6px;border-radius:50%;background:#34C759;flex-shrink:0;margin-top:2px;box-shadow:0 0 0 3px rgba(52,199,89,0.18);"></div>';
+                else if (isOvAct) statusDot = '<div style="width:6px;height:6px;border-radius:50%;background:#FF3B30;flex-shrink:0;margin-top:2px;"></div>';
 
-                html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:4px 5px;cursor:pointer;box-sizing:border-box;overflow:hidden;border-left:3px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;'+compOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
-                    '<div style="display:flex;align-items:flex-start;gap:3px;">'+statusDot+
-                    '<div style="font-size:0.71rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;">'+woEscape(ev.title)+'</div>'+
-                    '</div>'+
-                    (evH > 46 ? '<div style="font-size:0.63rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'8px':'0px')+';">'+startFmt+'</div>' : '')+
+                // Layout adaptativo según ANCHO y altura.
+                //   Card angosta (<60px): solo barra lateral + dot de estado.
+                //                          Hover muestra info completa (tooltip).
+                //   Card mediana (60-100px): título a 1 línea, sin hora ni
+                //                            participantes.
+                //   Card amplia (>=100px): título 2 líneas + hora + parts.
+                var titleLines = evH > 40 ? 2 : 1;
+                var partsTxt = '';
+                if (!isNarrow && !isMedium && evH > 60) {
+                    var parts = (ep.participants||[]).map(function(p){return p.nombre || p.name || '';}).filter(Boolean);
+                    if (parts.length) {
+                        partsTxt = '<div style="font-size:0.62rem;color:'+mutedColor+';margin-top:1px;padding-left:'+(statusDot?'10px':'0')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+woEscape(parts.join(', '))+'</div>';
+                    }
+                }
+
+                // En cards angostas: padding mínimo, sin texto, solo barra y dot.
+                if (isNarrow) {
+                    html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" data-draggable="1" data-orig-top="'+evTop+'" data-orig-left="'+leftPx+'" data-orig-width="'+colW+'" title="'+woEscape(ev.title)+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:6px;padding:4px 3px 4px 0;cursor:grab;box-sizing:border-box;overflow:hidden;border-left:4px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;user-select:none;'+compOpacity+'display:flex;align-items:flex-start;justify-content:center;">'+
+                        (statusDot ? '<div style="margin-top:1px;">'+statusDot+'</div>' : '') +
+                        '</div>';
+                } else {
+                    html += '<div class="cal-week-evt" data-evt-id="'+safeId+'" data-draggable="1" data-orig-top="'+evTop+'" data-orig-left="'+leftPx+'" data-orig-width="'+colW+'" style="position:absolute;top:'+evTop+'px;height:'+evH+'px;left:'+leftPx+'px;width:'+colW+'px;border-radius:8px;padding:5px 6px 5px 7px;cursor:grab;box-sizing:border-box;overflow:hidden;border-left:4px solid '+borderColor+';background:'+bg+';'+shadowStyle+'z-index:5;transition:filter 0.15s;user-select:none;'+compOpacity+'">'+
+                        '<div style="display:flex;align-items:flex-start;gap:4px;">'+statusDot+
+                        '<div style="font-size:0.74rem;font-weight:700;color:'+textColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:'+(isMedium?1:titleLines)+';-webkit-box-orient:vertical;line-height:1.25;letter-spacing:-0.005em;">'+woEscape(ev.title)+'</div>'+
+                        '</div>'+
+                        (!isMedium && evH > 40 ? '<div style="font-size:0.64rem;color:'+mutedColor+';margin-top:2px;padding-left:'+(statusDot?'10px':'0')+';font-weight:600;">'+startFmt+(evH > 52 ? ' — '+endFmt : '')+'</div>' : '')+
+                        partsTxt +
+                        '</div>';
+                }
+            });
+
+            // Render de clusters densos: lista apilada vertical dentro del
+            // bloque temporal. Mantiene el eje de tiempo (el bloque está en
+            // su rango horario real), pero cada evento es una sola fila
+            // legible. Si la lista no cabe en el bloque, scroll interno.
+            denseClusters.forEach(function(cluster) {
+                var minS = cluster.reduce(function(a,it){ return Math.min(a, it.sMs); }, cluster[0].sMs);
+                var maxV = cluster.reduce(function(a,it){ return Math.max(a, it.vMs); }, cluster[0].vMs);
+                var cStart = new Date(minS);
+                var cEnd = new Date(maxV);
+                var cStartMins = cStart.getHours()*60 + cStart.getMinutes();
+                var cEndMins;
+                if (cEnd.toDateString() !== cStart.toDateString()) cEndMins = 24*60;
+                else cEndMins = cEnd.getHours()*60 + cEnd.getMinutes();
+                var cTop = (cStartMins/60 - CAL_WEEK_START_H) * CAL_HOUR_H;
+                var cH = Math.max(((cEndMins - cStartMins)/60) * CAL_HOUR_H, 60);
+
+                // Header del bloque (sticky con la suma)
+                var sortedCluster = cluster.slice().sort(function(a,b){ return a.sMs - b.sMs; });
+                var dyr = day.getFullYear(), dmo = day.getMonth(), ddt = day.getDate();
+                var headerHtml = '<div style="position:sticky;top:0;background:linear-gradient(180deg,#fff 0%,#fafbff 100%);border-bottom:1px solid rgba(0,82,212,0.10);padding:4px 8px;font-size:0.66rem;font-weight:700;color:#0041a8;letter-spacing:0.02em;display:flex;align-items:center;justify-content:space-between;z-index:2;">'+
+                    '<span>'+cluster.length+' actividades</span>'+
+                    '<span onclick="event.stopPropagation();calSwitchView(\'day\');_calCurrentDay=new Date('+dyr+','+dmo+','+ddt+');calRenderDayView(_calCurrentDay);calUpdateNavTitle();" style="font-weight:600;color:#0052D4;cursor:pointer;font-size:0.62rem;" title="Abrir vista Día">Ver Día →</span>'+
+                    '</div>';
+
+                var rowsHtml = '';
+                sortedCluster.forEach(function(it){
+                    var rev = it.ev;
+                    var rEp = rev.extendedProps||{};
+                    var rHasOpp = rEp.opportunity && rEp.opportunity.id;
+                    var rStartD = new Date(rev.start);
+                    var rEndD = rev.end ? new Date(rev.end) : new Date(rStartD.getTime()+3600000);
+                    var rBorderColor = rHasOpp ? '#0052D4' : '#8E8E93';
+                    var rTextColor = rHasOpp ? '#0041A8' : '#3A3A3C';
+                    var rIsNow = isToday && nowMs>=rStartD.getTime() && nowMs<=rEndD.getTime();
+                    var rIsOvAct = isToday && nowMs > rEndD.getTime();
+                    var rCompOpacity = rEp.completada ? 'opacity:0.45;' : '';
+                    var rStatusDot = '';
+                    if (rIsNow) rStatusDot = '<span style="width:5px;height:5px;border-radius:50%;background:#34C759;flex-shrink:0;box-shadow:0 0 0 3px rgba(52,199,89,0.18);"></span>';
+                    else if (rIsOvAct && !rEp.completada) rStatusDot = '<span style="width:5px;height:5px;border-radius:50%;background:#FF3B30;flex-shrink:0;"></span>';
+                    var rTime = pad(rStartD.getHours())+':'+pad(rStartD.getMinutes());
+                    var rSafeId = String(rev.id).replace(/'/g,'');
+                    rowsHtml += '<div class="cal-week-evt" data-evt-id="'+rSafeId+'" style="display:flex;align-items:center;gap:7px;padding:5px 8px;cursor:pointer;border-left:3px solid '+rBorderColor+';background:#fff;border-bottom:1px solid rgba(15,23,42,0.04);transition:background 0.12s;'+rCompOpacity+'" onmouseover="this.style.background=\'rgba(0,82,212,0.04)\'" onmouseout="this.style.background=\'#fff\'">'+
+                        (rStatusDot||'')+
+                        '<span style="font-size:0.66rem;font-weight:700;color:#94A3B8;font-variant-numeric:tabular-nums;flex-shrink:0;">'+rTime+'</span>'+
+                        '<span style="flex:1;min-width:0;font-size:0.74rem;font-weight:600;color:'+rTextColor+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+(rEp.completada?'text-decoration:line-through;':'')+'">'+woEscape(rev.title)+'</span>'+
+                        '</div>';
+                });
+
+                html += '<div style="position:absolute;top:'+cTop+'px;height:'+cH+'px;left:'+dayLeft+'px;width:'+actW+'px;border-radius:8px;box-sizing:border-box;border:1px solid rgba(0,82,212,0.22);background:#fff;box-shadow:0 1px 4px rgba(0,82,212,0.08);z-index:5;overflow:hidden;display:flex;flex-direction:column;">'+
+                    headerHtml +
+                    '<div style="flex:1;overflow-y:auto;">' + rowsHtml + '</div>' +
                     '</div>';
             });
 
@@ -1111,7 +1414,7 @@
                     var tOpacity = tCompletada ? 'opacity:0.38;' : '';
 
                     html += '<div style="position:absolute;top:'+evTop+'px;left:'+taskX+'px;width:'+(taskLaneW-2)+'px;height:1px;background:'+tColor+';opacity:0.25;pointer-events:none;"></div>';
-                    html += '<div class="cal-week-task" data-evt-id="'+safeId+'" style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:3px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);'+tOpacity+'"' +
+                    html += '<div class="cal-week-task" data-evt-id="'+safeId+'" style="position:absolute;top:'+(evTop-20)+'px;left:'+(taskX+2)+'px;width:'+(taskLaneW-6)+'px;min-height:40px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer;z-index:6;padding:5px 6px;border-radius:8px;background:'+tBg+';border:1.5px solid '+tBorder+';border-left:4px solid '+tColor+';box-shadow:0 1px 4px rgba(0,0,0,0.07);'+tOpacity+'"' +
                         ' onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'+
                         '<div style="font-size:0.68rem;font-weight:700;color:'+tColor+';overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;'+(tCompletada?'text-decoration:line-through;':'')+'">'+woEscape(ev.title)+'</div>'+
                         '<div style="font-size:0.6rem;color:'+tColor+';opacity:0.75;">'+deadlineFmt+'</div>'+
@@ -1120,13 +1423,25 @@
             }
         });
 
+        // Empty state — overlay sutil cuando no hay eventos en la semana.
+        if (visibleCount === 0) {
+            html += '<div class="cal-week-empty">'+
+                '<div class="cal-week-empty-ic">'+
+                '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'+
+                '</div>'+
+                '<div class="cal-week-empty-t">No hay eventos esta semana</div>'+
+                '<div class="cal-week-empty-s">Agenda actividades, tareas o eventos con el botón Nueva actividad.</div>'+
+                '</div>';
+        }
+
         html += '</div>';
         container.innerHTML = html;
         // Ya no necesitamos auto-scroll a las 7am porque el grid arranca en 06:00.
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
         // Hover preview en cards de evento y tarea de la vista semana.
         _calWeekBindHoverHandlers();
-        calUpdateSidePanel();
+        // Drag & drop para reagendar actividades (no aplica a tareas).
+        _calWeekBindDragHandlers();
     }
 
     /* ─── Hover preview en vista Semana ───
@@ -1139,18 +1454,184 @@
             if (card._calHoverBound) return;
             card._calHoverBound = true;
             var evtId = card.getAttribute('data-evt-id');
-            card.addEventListener('mouseenter', function () {
+            card.addEventListener('mouseenter', function (e) {
                 clearTimeout(window._calHoverTimer);
+                var mx = e.clientX, my = e.clientY;
                 window._calHoverTimer = setTimeout(function () {
-                    _calShowHoverPreview(evtId, card);
-                }, 280);
+                    _calShowHoverPreview(evtId, card, { mouseX: mx, mouseY: my });
+                }, 400);
             });
             card.addEventListener('mouseleave', function () {
                 clearTimeout(window._calHoverTimer);
                 _calHideHoverPreview();
             });
+            card.addEventListener('click', function () {
+                clearTimeout(window._calHoverTimer);
+                _calHideHoverPreview();
+            });
         });
     }
+
+    /* ─── DRAG & DROP de actividades en vista Semana ───
+       Permite arrastrar una card de actividad para cambiar hora y/o día.
+       Snap a 15 minutos. Mantiene la duración del evento. Las tareas
+       (id que empieza con "tarea-") quedan excluidas (editable:false).
+       Si el PUT al backend falla, revierte visualmente la card. */
+    var _calWeekDrag = null;
+
+    function _calWeekBindDragHandlers() {
+        var cards = document.querySelectorAll('#calWeekTimeline .cal-week-evt[data-draggable="1"]');
+        cards.forEach(function (card) {
+            if (card._calWeekDragBound) return;
+            card._calWeekDragBound = true;
+            card.addEventListener('mousedown', _calWeekCardMouseDown);
+        });
+    }
+
+    function _calWeekCardMouseDown(ev) {
+        if (ev.button !== 0) return;
+        var card = ev.currentTarget;
+        var evtId = card.getAttribute('data-evt-id');
+        if (!evtId) return;
+        // Tareas no son arrastrables (editable:false). Defensa extra por si
+        // alguna card con id 'tarea-' obtuviera data-draggable="1".
+        if (String(evtId).indexOf('tarea-') === 0) return;
+        var stored = _globalEvents.find(function (x) { return String(x.id) === String(evtId); });
+        if (!stored) return;
+        var sD = new Date(stored.start);
+        var eD = stored.end ? new Date(stored.end) : new Date(sD.getTime() + 3600000);
+        var container = document.getElementById('calWeekTimeline');
+        if (!container) return;
+        var hoursW = 56;
+        var dayW = Math.floor((container.offsetWidth - hoursW) / 7);
+        _calWeekDrag = {
+            card: card,
+            evtId: evtId,
+            startX: ev.clientX,
+            startY: ev.clientY,
+            startTop: parseFloat(card.style.top) || 0,
+            startLeft: parseFloat(card.style.left) || 0,
+            startWidth: parseFloat(card.style.width) || 0,
+            origDataTop: parseFloat(card.getAttribute('data-orig-top')) || (parseFloat(card.style.top) || 0),
+            origDataLeft: parseFloat(card.getAttribute('data-orig-left')) || (parseFloat(card.style.left) || 0),
+            origDataWidth: parseFloat(card.getAttribute('data-orig-width')) || (parseFloat(card.style.width) || 0),
+            originalStartMs: sD.getTime(),
+            originalEndMs: eD.getTime(),
+            moved: false,
+            stored: stored,
+            dayW: dayW,
+            lastDeltaMin: 0,
+            lastDeltaDays: 0,
+        };
+        // Cerramos cualquier hover preview antes de empezar el drag.
+        if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview();
+        clearTimeout(window._calHoverTimer);
+        ev.preventDefault();
+        ev.stopPropagation();
+    }
+
+    function _calWeekDragMoveGlobal(ev) {
+        if (!_calWeekDrag) return;
+        var dx = ev.clientX - _calWeekDrag.startX;
+        var dy = ev.clientY - _calWeekDrag.startY;
+        // Threshold 2px para distinguir click de drag (igual que vista Día).
+        if (!_calWeekDrag.moved && Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return;
+        if (!_calWeekDrag.moved) {
+            _calWeekDrag.moved = true;
+            _calWeekDrag.card.style.opacity = '0.7';
+            _calWeekDrag.card.style.zIndex = '30';
+            _calWeekDrag.card.style.cursor = 'grabbing';
+            _calWeekDrag.card.style.boxShadow = '0 8px 24px rgba(0,82,212,0.35), 0 0 0 2px #0052D4';
+            // Mientras arrastra, expandir al ancho completo de la columna-día
+            // para evitar confusión visual con el column-split de eventos solapados.
+            _calWeekDrag.card.style.width = _calWeekDrag.dayW + 'px';
+        }
+        var pxPerMin = CAL_HOUR_H / 60;
+        var deltaMin = Math.round(dy / pxPerMin / 15) * 15;
+        var deltaDays = Math.round(dx / _calWeekDrag.dayW);
+        _calWeekDrag.lastDeltaMin = deltaMin;
+        _calWeekDrag.lastDeltaDays = deltaDays;
+        _calWeekDrag.card.style.top = (_calWeekDrag.startTop + deltaMin * pxPerMin) + 'px';
+        _calWeekDrag.card.style.left = (_calWeekDrag.startLeft + deltaDays * _calWeekDrag.dayW) + 'px';
+    }
+
+    function _calWeekDragUpGlobal(ev) {
+        if (!_calWeekDrag) return;
+        var drag = _calWeekDrag;
+        _calWeekDrag = null;
+        drag.card.style.opacity = '';
+        drag.card.style.zIndex = '';
+        drag.card.style.cursor = '';
+        drag.card.style.boxShadow = '';
+        if (!drag.moved) {
+            // Click puro → abrir detalle (sustituye al onclick inline removido).
+            if (typeof window._calOpenFull === 'function') window._calOpenFull(drag.evtId);
+            return;
+        }
+        var deltaMin = drag.lastDeltaMin || 0;
+        var deltaDays = drag.lastDeltaDays || 0;
+        // Sin cambio neto → revertir a posición original y salir.
+        if (deltaMin === 0 && deltaDays === 0) {
+            drag.card.style.top = drag.startTop + 'px';
+            drag.card.style.left = drag.startLeft + 'px';
+            drag.card.style.width = drag.startWidth + 'px';
+            return;
+        }
+        var deltaMs = deltaMin * 60000 + deltaDays * 86400000;
+        var newStart = new Date(drag.originalStartMs + deltaMs);
+        var newEnd = new Date(drag.originalEndMs + deltaMs);
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        function localIso(d) {
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+                'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':00';
+        }
+        var ep = drag.stored.extendedProps || {};
+        var csrf = (function () { var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; })();
+        var newStartIso = localIso(newStart);
+        var newEndIso = localIso(newEnd);
+        fetch('/app/api/actividades/' + drag.evtId + '/', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                title: drag.stored.title,
+                start: newStartIso,
+                end: newEndIso,
+                description: drag.stored.description || '',
+                tipo: ep.tipo_actividad || 'otro',
+                color: drag.stored.color || '#1D1D1F',
+                participants: (ep.participants || []).map(function (p) { return p.id; }),
+                opportunity: ep.opportunity ? ep.opportunity.id : null,
+            })
+        }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function (res) {
+            if (res && res.error) throw new Error(res.error);
+            // Update local sin refetch al server.
+            drag.stored.start = newStartIso;
+            drag.stored.end = newEndIso;
+            // Sincronizar el evento en FullCalendar (vista Mes) para que al
+            // cambiar de vista refleje la nueva fecha sin refetch.
+            if (_globalCalendar) {
+                var fcEv = _globalCalendar.getEventById(drag.evtId);
+                if (fcEv) fcEv.setDates(newStart, newEnd);
+            }
+            // Re-render local para reposicionar la card (column-split, separadores, etc.).
+            calRenderWeekView(_calWeekStart);
+        }).catch(function (err) {
+            console.error('[cal-drag-week] PUT failed:', err);
+            // Revertir visualmente a la posición original.
+            drag.card.style.top = drag.origDataTop + 'px';
+            drag.card.style.left = drag.origDataLeft + 'px';
+            drag.card.style.width = drag.origDataWidth + 'px';
+            alert('No se pudo mover el evento: ' + (err.message || 'error desconocido'));
+        });
+    }
+
+    // Handlers globales para move/up — siempre activos (no-op cuando _calWeekDrag es null).
+    document.addEventListener('mousemove', _calWeekDragMoveGlobal);
+    document.addEventListener('mouseup', _calWeekDragUpGlobal);
 
     /* ─── DAY VIEW RENDER ─── */
     /* Vista Día — formato LISTA (no timeline tradicional).
@@ -1178,44 +1659,65 @@
             return ev.start && ev.start.substring(0,10) === dateStr;
         }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
 
-        // Empty state
+        // Helper: formato 12h con AM/PM, p.ej. "9:00 AM"
+        function fmt12(d) {
+            var h = d.getHours();
+            var m = d.getMinutes();
+            var ampm = h >= 12 ? 'PM' : 'AM';
+            var h12 = h % 12; if (h12 === 0) h12 = 12;
+            return { hm: h12 + ':' + pad(m), ampm: ampm };
+        }
+
+        // Empty state — card centrada con icono, texto y botón "Crear evento"
         if (!dayEvts.length) {
             container.innerHTML = ''
-                + '<div class="cal-day-list-empty">'
-                +   '<div class="cal-day-list-empty-ic">'
-                +     '<svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+                + '<div class="cal-day-list">'
+                +   '<div class="cal-day-list-empty">'
+                +     '<div class="cal-day-list-empty-ic">'
+                +       '<svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+                +     '</div>'
+                +     '<div class="cal-day-list-empty-t">No tienes eventos hoy</div>'
+                +     '<div class="cal-day-list-empty-s">Disfruta tu día libre o crea un nuevo evento.</div>'
+                +     '<button type="button" class="cal-day-list-empty-btn" onclick="calGlobalAbrirCrearActividad()">'
+                +       '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+                +       '<span>Crear evento</span>'
+                +     '</button>'
                 +   '</div>'
-                +   '<div class="cal-day-list-empty-t">Sin actividades este día</div>'
-                +   '<div class="cal-day-list-empty-s">Disfruta el día libre o agenda algo con + Nueva actividad.</div>'
                 + '</div>';
             _calDayBindHoverHandlers();
             if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
-            calUpdateSidePanel();
             return;
         }
 
         var nowInserted = false;
-        var html = '<div class="cal-day-list">'
-            + '<table class="cal-day-table">'
-            +   '<thead><tr>'
-            +     '<th class="cal-day-th-time">Hora</th>'
-            +     '<th class="cal-day-th-kind">Tipo</th>'
-            +     '<th>Actividad</th>'
-            +     '<th class="cal-day-th-owner">Responsable</th>'
-            +     '<th class="cal-day-th-status">Estado</th>'
-            +   '</tr></thead>'
-            + '<tbody>';
+        var html = '<div class="cal-day-list"><div class="cal-day-agenda">';
 
         function renderNowRow() {
+            var t = fmt12(now);
             html += ''
-                + '<tr class="cal-day-now-tr"><td colspan="5">'
-                +   '<div class="cal-day-now-bar">'
-                +     '<div class="cal-day-now-time">' + pad(now.getHours())+':'+pad(now.getMinutes()) + '</div>'
-                +     '<div class="cal-day-now-line"></div>'
-                +     '<div class="cal-day-now-label">Ahora</div>'
-                +   '</div>'
-                + '</td></tr>';
+                + '<div class="cal-day-agenda-now">'
+                +   '<div class="cal-day-agenda-now-time">' + t.hm + ' ' + t.ampm + '</div>'
+                +   '<div class="cal-day-agenda-now-line"></div>'
+                +   '<div class="cal-day-agenda-now-label">Ahora</div>'
+                + '</div>';
             nowInserted = true;
+        }
+
+        // Helper: iniciales del nombre completo (avatares)
+        function _ini(full) {
+            var p = String(full || '').trim().split(/\s+/);
+            if (!p[0]) return '?';
+            if (p.length === 1) return p[0].substring(0, 2).toUpperCase();
+            return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+        }
+
+        // Helper: color HSL estable derivado del nombre (avatares variados)
+        function _avatarColor(name) {
+            var s = String(name || '?');
+            var h = 0;
+            for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
+            var hue = Math.abs(h) % 360;
+            return 'hsl(' + hue + ', 55%, 52%)';
         }
 
         dayEvts.forEach(function(ev) {
@@ -1231,41 +1733,29 @@
             var ep = ev.extendedProps || {};
             var isTask = String(ev.id).indexOf('tarea-') === 0;
             var hasOpp = !isTask && ep.opportunity && ep.opportunity.id;
-            var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-            var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
+
+            var start12 = fmt12(startD);
+            var end12 = fmt12(endD);
 
             var isNowEvt = isToday && nowMs >= startD.getTime() && nowMs <= endD.getTime();
             var isOverEvt = isToday && nowMs > endD.getTime();
             var completada = isTask ? (ep.estado === 'completada') : !!ep.completada;
 
-            // Responsable: primer participant (si hay) o el creador como fallback.
-            // En el modelo del calendario el "responsable" es típicamente el
-            // primer participante asignado; si no hay participants, el creador.
+            // Participantes (avatares apilados + texto de nombres).
             // OJO: la API usa .text para nombres (no .nombre / .name).
             var _pickName = function (o) {
                 if (!o) return '';
                 return o.text || o.nombre || o.name || o.full_name || o.username || '';
             };
-            var responsable = '—';
-            var parts = ep.participants || [];
-            var firstPartName = parts.length ? _pickName(parts[0]) : '';
-            var creadorName = _pickName(ep.creado_por);
-            if (firstPartName) {
-                responsable = firstPartName;
-            } else if (creadorName) {
-                responsable = creadorName;
+            var parts = (ep.participants || []).slice();
+            var partNames = parts.map(_pickName).filter(Boolean);
+            // Fallback al creador si no hay participantes asignados.
+            if (!partNames.length) {
+                var creadorName = _pickName(ep.creado_por);
+                if (creadorName) partNames.push(creadorName);
             }
-            // Si hay más participantes, agregamos un "+N" para mostrar que es grupo.
-            var responsableExtra = parts.length > 1 ? ' +' + (parts.length - 1) : '';
-            // Avatar de iniciales para visualizar el responsable.
-            var responsableIni = (function (full) {
-                var p = String(full).trim().split(/\s+/);
-                if (!p[0]) return '?';
-                if (p.length === 1) return p[0].substring(0, 2).toUpperCase();
-                return (p[0][0] + p[p.length - 1][0]).toUpperCase();
-            })(responsable);
 
-            // Color por tipo (mismo criterio que el timeline anterior)
+            // Color por tipo + etiqueta
             var stripColor, kindLabel;
             if (isTask) {
                 kindLabel = 'Tarea';
@@ -1285,53 +1775,75 @@
             }
             if (ev.color) stripColor = ev.color;
 
+            // Línea 2 — cliente/contexto. Con opp: "Cliente: X"; si no, descripción limpia.
+            var subText = '';
+            if (hasOpp) {
+                var oppTitle = ep.opportunity.title || ep.opportunity.titulo || '';
+                if (oppTitle) subText = 'Cliente: ' + oppTitle;
+            } else if (ev.description) {
+                subText = String(ev.description).replace(/\[.*?\]/g, '').trim();
+            }
+
             // Status badge
             var statusHTML = '';
             if (completada) {
-                statusHTML = '<span class="cal-day-list-status is-done">Completada</span>';
+                statusHTML = '<span class="cal-day-agenda-status is-done">Completada</span>';
             } else if (isNowEvt) {
-                statusHTML = '<span class="cal-day-list-status is-now">En curso</span>';
+                statusHTML = '<span class="cal-day-agenda-status is-now">En curso</span>';
             } else if (isOverEvt) {
-                statusHTML = '<span class="cal-day-list-status is-over">Vencido</span>';
+                statusHTML = '<span class="cal-day-agenda-status is-over">Vencido</span>';
             }
 
-            // Subtítulo: oportunidad ligada o descripción corta
-            var subText = '';
-            if (hasOpp) subText = ep.opportunity.title || ep.opportunity.titulo || '';
-            else if (ev.description) subText = String(ev.description).replace(/\[.*?\]/g, '').trim();
+            // Avatares apilados (máx 3) + nombres (hasta 2 explícitos + "+N")
+            var avatarsHTML = '';
+            var namesHTML = '';
+            if (partNames.length) {
+                var shown = partNames.slice(0, 3);
+                shown.forEach(function (n) {
+                    avatarsHTML += '<span class="cal-day-agenda-avatar" style="background:' + _avatarColor(n) + ';" title="' + woEscape(n) + '">' + woEscape(_ini(n)) + '</span>';
+                });
+                if (partNames.length > 3) {
+                    avatarsHTML += '<span class="cal-day-agenda-avatar is-more">+' + (partNames.length - 3) + '</span>';
+                }
+                var displayNames = partNames.slice(0, 2).join(', ');
+                if (partNames.length > 2) displayNames += ', +' + (partNames.length - 2);
+                namesHTML = '<span class="cal-day-agenda-names" title="' + woEscape(partNames.join(', ')) + '">' + woEscape(displayNames) + '</span>';
+            }
 
-            var rowOpacity = completada ? 'opacity:0.55;' : '';
+            var cardClass = 'cal-day-agenda-card';
+            if (completada) cardClass += ' is-done';
+            else if (isNowEvt) cardClass += ' is-now';
 
             html += ''
-                + '<tr data-evt-id="'+safeId+'" style="'+rowOpacity+'" onclick="event.stopPropagation();_calOpenFull(\''+safeId+'\')">'
-                +   '<td style="border-left-color:'+stripColor+';">'
-                +     '<div class="cal-day-tbl-time">'
-                +       '<div class="cal-day-tbl-start">' + startFmt + '</div>'
-                +       '<div class="cal-day-tbl-end">→ ' + endFmt + '</div>'
+                + '<div class="cal-day-agenda-row">'
+                +   '<div class="cal-day-agenda-time">'
+                +     '<div><span class="cal-day-agenda-time-start">' + start12.hm + '</span><span class="cal-day-agenda-time-ampm"> ' + start12.ampm + '</span></div>'
+                +     '<div class="cal-day-agenda-time-end">→ ' + end12.hm + ' ' + end12.ampm + '</div>'
+                +   '</div>'
+                +   '<div class="' + cardClass + '" data-evt-id="' + safeId + '" style="border-left-color:' + stripColor + ';" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">'
+                +     '<div class="cal-day-agenda-card-top">'
+                +       '<div class="cal-day-agenda-title' + (completada ? ' is-strike' : '') + '">' + woEscape(ev.title) + '</div>'
+                +       '<span class="cal-day-agenda-kind" style="background:' + stripColor + ';">' + woEscape(kindLabel) + '</span>'
                 +     '</div>'
-                +   '</td>'
-                +   '<td><span class="cal-day-tbl-kind" style="color:'+stripColor+';">' + kindLabel + '</span></td>'
-                +   '<td>'
-                +     '<div class="cal-day-tbl-title' + (completada?' is-strike':'') + '">' + woEscape(ev.title) + '</div>'
-                +     (subText ? '<div class="cal-day-tbl-sub">' + woEscape(subText.substring(0,180)) + '</div>' : '')
-                +   '</td>'
-                +   '<td>'
-                +     '<div class="cal-day-tbl-owner">'
-                +       '<span class="cal-day-tbl-owner-avatar" style="background:'+stripColor+';">' + woEscape(responsableIni) + '</span>'
-                +       '<span class="cal-day-tbl-owner-name" title="' + woEscape(responsable) + '">' + woEscape(responsable) + responsableExtra + '</span>'
-                +     '</div>'
-                +   '</td>'
-                +   '<td class="cal-day-tbl-status-cell">' + statusHTML + '</td>'
-                + '</tr>';
+                +     (subText ? '<div class="cal-day-agenda-sub">' + woEscape(subText.substring(0, 180)) + '</div>' : '')
+                +     ((avatarsHTML || statusHTML) ?
+                          '<div class="cal-day-agenda-people">'
+                        +   (avatarsHTML ? '<span class="cal-day-agenda-avatars">' + avatarsHTML + '</span>' : '')
+                        +   namesHTML
+                        +   statusHTML
+                        + '</div>'
+                        : '')
+                +   '</div>'
+                + '</div>';
         });
 
-        // Si la hora actual es DESPUÉS de todos los eventos pero seguimos
-        // en el día, marcamos "ahora" al final igual.
+        // Si la hora actual es DESPUÉS de todos los eventos pero seguimos en el día,
+        // marcamos "ahora" al final igual.
         if (isToday && !nowInserted) {
             renderNowRow();
         }
 
-        html += '</tbody></table></div>';
+        html += '</div></div>';
         container.innerHTML = html;
 
         setTimeout(function(){ if(container) container.scrollTop = 0; }, 50);
@@ -1340,8 +1852,6 @@
         // Mantener el hover preview que sí aporta valor.
         _calDayBindHoverHandlers();
         if (typeof _calFiltroBindCheckboxes === 'function') _calFiltroBindCheckboxes();
-
-        calUpdateSidePanel();
     }
 
     /* ─── Hover preview en vista Día ───
@@ -1350,8 +1860,8 @@
        FullCalendar en vista Mes via eventDidMount). Idempotente: se llama en
        cada render y solo añade el listener si la card aún no fue bindeada. */
     function _calDayBindHoverHandlers() {
-        // Acepta cards del timeline antiguo + filas <tr> de la vista tabla.
-        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id], #calDayTimeline .cal-day-table tbody tr[data-evt-id]');
+        // Acepta cards del timeline antiguo + cards de la vista agenda (nueva).
+        var cards = document.querySelectorAll('#calDayTimeline .cal-day-evt[data-evt-id], #calDayTimeline .cal-day-task[data-evt-id], #calDayTimeline .cal-day-agenda-card[data-evt-id]');
         cards.forEach(function (card) {
             if (card._calHoverBound) return;
             card._calHoverBound = true;
@@ -1522,413 +2032,40 @@
         document.getElementById('widgetGlobalCrearActividad').style.display = 'flex';
     };
 
-    /* ─── RIGHT PANEL ─── */
+    /* ─── RIGHT PANEL (removed) ───
+       El side panel fue eliminado; los clicks sobre eventos abren directamente
+       el widget de detalle correspondiente vía _calOpenFull (→ woVerActividadGenerica
+       / crmTaskVerDetalle / eventoDetalleAbrir / cursoDetalleAbrir). */
+    {% comment %} Wrapper retrocompatible: cualquier código (interno o externo)
+       que aún llame calShowEventDetail() ahora abre el modal completo igual
+       que un click directo sobre el evento. {% endcomment %}
     window.calShowEventDetail = function (id) {
-        var evt = _globalEvents.find(function(ev){ return String(ev.id)===String(id); });
-        if (!evt) return;
-        var ep = evt.extendedProps || {};
-        // Si esta actividad es un espejo de un Evento de Marketing, abrir el
-        // widget de detalle del Evento en lugar del modal genérico.
-        if (ep.evento && ep.evento.id && typeof window.eventoDetalleAbrir === 'function') {
-            window.eventoDetalleAbrir(ep.evento.id);
-            return;
-        }
-        // Solo es "tarea real" (Tarea model) si el id tiene formato 'tarea-X'
-        // Las actividades con tipo_actividad='tarea' son actividades normales sin tarea_id
-        var esTarea = String(evt.id).indexOf('tarea-') === 0;
-        var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
-        var startD = new Date(evt.start);
-        var endD = evt.end ? new Date(evt.end) : new Date(startD.getTime()+60*60*1000);
-        var pad = function(n){return String(n).padStart(2,'0');};
-        var startFmt = pad(startD.getHours())+':'+pad(startD.getMinutes());
-        var endFmt = pad(endD.getHours())+':'+pad(endD.getMinutes());
-        var now = new Date();
-        var isNow = now>=startD && now<=endD;
-        var isOverdue = now>endD;
-
-        var esProspecto = (evt.color === '#8B5CF6' || evt.color === '#B45309' || evt.color === '#5856D6');
-        document.getElementById('calDetailType').textContent = esTarea ? 'Tarea' : esProspecto ? 'Prospecto' : hasOpp ? 'Oportunidad' : 'Actividad';
-        document.getElementById('calDetailTitle').textContent = evt.title || '—';
-        document.getElementById('calDetailTime').textContent = startFmt + ' – ' + endFmt;
-
-        var monto = (hasOpp && ep.opportunity.monto) ? ep.opportunity.monto : 0;
-        var amtRow = document.getElementById('calDetailAmountRow');
-        if (monto > 0) {
-            document.getElementById('calDetailAmount').textContent = '$' + Number(monto).toLocaleString('es-MX') + ' USD';
-            amtRow.style.display = 'flex';
-        } else { amtRow.style.display = 'none'; }
-
-        var isCompletada = esTarea ? (ep.estado === 'completada') : ep.completada;
-        var statusEl = document.getElementById('calDetailStatus');
-        if (isCompletada) { statusEl.textContent='Completada'; statusEl.style.background='rgba(174,174,178,0.18)'; statusEl.style.color='#8E8E93'; }
-        else if (isNow) { statusEl.textContent='En Curso Ahora'; statusEl.style.background='rgba(52,199,89,0.14)'; statusEl.style.color='#34C759'; }
-        else if (isOverdue) { statusEl.textContent='Vencido'; statusEl.style.background='rgba(255,59,48,0.1)'; statusEl.style.color='#FF3B30'; }
-        else { statusEl.textContent='Próximo'; statusEl.style.background='#EEF3FF'; statusEl.style.color='#0052D4'; }
-
-        var oppRow = document.getElementById('calDetailOppRow');
-        var oppBtn = document.getElementById('calDetailOppBtn');
-        if (hasOpp && ep.opportunity.text) {
-            oppRow.style.display = 'block';
-            oppBtn.textContent = ep.opportunity.text;
-            (function(oid){ oppBtn.onclick = function(){ if(typeof window.openDetalle==='function') window.openDetalle(oid); }; })(ep.opportunity.id);
-        } else { oppRow.style.display = 'none'; }
-
-        // Sección "Curso" — si la actividad está vinculada a un Curso,
-        // mostrar un botón que abre el widget de detalle del curso.
-        var cursoRow = document.getElementById('calDetailCursoRow');
-        var cursoBtn = document.getElementById('calDetailCursoBtn');
-        if (ep.curso && ep.curso.id) {
-            cursoRow.style.display = 'block';
-            cursoBtn.querySelector('span').textContent = ep.curso.nombre || 'Curso';
-            (function(cid){ cursoBtn.onclick = function(){ if(typeof window.cursoDetalleAbrir==='function') window.cursoDetalleAbrir(cid); }; })(ep.curso.id);
-        } else { cursoRow.style.display = 'none'; }
-
-        var descEl = document.getElementById('calDetailDesc');
-        var rawDesc = evt.description || '';
-        // Detectar actividad de programa de obra (proyecto)
-        var progMatch = rawDesc.match(/\[programacion_actividad_id:(\d+)\]/);
-        var progActId = progMatch ? parseInt(progMatch[1]) : null;
-        // Limpiar TODA metadata de prospecto y de programa de obra
-        var descClean = rawDesc;
-        descClean = descClean.replace(/\[programacion_actividad_id:\d+\]/g, '');
-        descClean = descClean.replace(/\[asignado_por_id:\d+\]/g, '');
-        var cut = descClean.indexOf('prospecto_id:');
-        if (cut > 0) { descClean = descClean.substring(0, cut); }
-        else if (cut === 0) { descClean = ''; }
-        cut = descClean.indexOf('Prospecto:');
-        if (cut === 0) { descClean = ''; }
-        descClean = descClean.replace(/[-\s]+$/, '').trim();
-        descEl.textContent = descClean || 'Sin descripción.';
-        // Guardar para uso posterior en los botones
-        window._calCurrentProgActId = progActId;
-
-        window._calCurrentActividadId = esTarea ? null : id;
-        window._calCurrentOppId = hasOpp ? ep.opportunity.id : null;
-        // Para tareas reales (id='tarea-X') extraer el ID numérico del evento
-        var rawTareaId = null;
-        if (esTarea) {
-            rawTareaId = ep.tarea_id || parseInt(String(evt.id).replace('tarea-', '')) || null;
-        }
-        window._calCurrentTareaId = rawTareaId;
-
-        var btnListo = document.getElementById('calDetailBtnListo');
-        var btnReprogram = document.getElementById('calDetailBtnReprogram');
-        if (esTarea) {
-            // Tarea: solo "Abrir Tarea" naranja, sin botón izquierdo
-            btnReprogram.style.display = 'none';
-            btnListo.textContent = 'Abrir Tarea';
-            btnListo.style.background = '#FF9500';
-            btnListo.style.color = '#fff';
-            btnListo.dataset.tid = rawTareaId ? String(rawTareaId) : '';
-            btnListo.onclick = function(){ calDetailVerCompleto(); };
-            btnListo.onmouseover = function(){ this.style.background='#CC7600'; };
-            btnListo.onmouseout = function(){ this.style.background='#FF9500'; };
-        } else {
-            // Actividad: izquierda "Ver Detalle" gris, derecha "Completar" verde
-            btnReprogram.style.display = '';
-            btnReprogram.textContent = 'Ver Detalle';
-            btnReprogram.style.background = '#F2F2F7';
-            btnReprogram.style.color = '#1D1D1F';
-            btnReprogram.onclick = function(){
-                if (window._calCurrentProgActId && typeof window.proyectosVerActividadDetalle === 'function') {
-                    window.proyectosVerActividadDetalle(window._calCurrentProgActId);
-                } else if (esProspecto && typeof _calMostrarInfoProspecto === 'function') {
-                    _calMostrarInfoProspecto(evt);
-                } else if (typeof woVerActividadGenerica === 'function') {
-                    woVerActividadGenerica(window._calCurrentActividadId);
-                }
-            };
-            btnReprogram.onmouseover = function(){ this.style.background='#E5E5EA'; };
-            btnReprogram.onmouseout = function(){ this.style.background='#F2F2F7'; };
-            if (isCompletada) {
-                btnListo.textContent = 'Ya completada';
-                btnListo.disabled = true;
-                btnListo.style.background = '#E5E5EA';
-                btnListo.style.color = '#8E8E93';
-                btnListo.onclick = null;
-                btnListo.onmouseover = null;
-                btnListo.onmouseout = null;
-            } else {
-                btnListo.textContent = 'Completar';
-                btnListo.disabled = false;
-                btnListo.style.background = '#34C759';
-                btnListo.style.color = '#fff';
-                btnListo.dataset.tid = '';
-                btnListo.onclick = function(){
-                    // Si es actividad de programa de obra, abrir widget de evidencia
-                    if (window._calCurrentProgActId && typeof window.proyectosVerActividadDetalle === 'function') {
-                        window.proyectosVerActividadDetalle(window._calCurrentProgActId);
-                        // Esperar a que cargue y disparar el flujo de completar
-                        setTimeout(function(){
-                            if (typeof window.proyectosIniciarCompletar === 'function') {
-                                window.proyectosIniciarCompletar();
-                            }
-                        }, 400);
-                    } else {
-                        calDetailCompletar();
-                    }
-                };
-                btnListo.onmouseover = function(){ this.style.background='#2DBD4E'; };
-                btnListo.onmouseout = function(){ this.style.background='#34C759'; };
-            }
-        }
-
-        document.getElementById('calPanelOverview').style.display = 'none';
-        var det = document.getElementById('calPanelDetail');
-        det.style.display = 'flex';
-
-        // Fetch descripción fresca
-        if (esTarea && rawTareaId) {
-            fetch('/app/api/tarea/'+rawTareaId+'/')
-                .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){ if(!d) return; var f=d.descripcion||d.description||''; descEl.textContent=f||'Sin descripción.'; })
-                .catch(function(){});
-        } else if (!esTarea) {
-            fetch('/app/api/actividades/'+id+'/')
-                .then(function(r){ return r.ok?r.json():null; })
-                .then(function(d){
-                    if(!d) return;
-                    var f=d.description||d.descripcion||'';
-                    evt.description=f;
-                    // Detectar y guardar id de programa de obra (para Ver Detalle)
-                    var pm = f.match(/\[programacion_actividad_id:(\d+)\]/);
-                    window._calCurrentProgActId = pm ? parseInt(pm[1]) : null;
-                    // Limpiar marcador de programa de obra
-                    var clean = f.replace(/\[programacion_actividad_id:\d+\]/g, '');
-                    // Limpiar metadata de prospecto
-                    var ci = clean.indexOf('prospecto_id:');
-                    if (ci > 0) clean = clean.substring(0, ci);
-                    else if (ci === 0) clean = '';
-                    if (clean.indexOf('Prospecto:') === 0) clean = '';
-                    clean = clean.replace(/[-\s]+$/, '').trim();
-                    descEl.textContent = clean || 'Sin descripción.';
-                })
-                .catch(function(){});
+        if (typeof window._calOpenFull === 'function') {
+            window._calOpenFull(id);
+        } else if (typeof window.woVerActividadGenerica === 'function') {
+            window.woVerActividadGenerica(id);
         }
     };
-
-    window.calHidePanelDetail = function () {
-        document.getElementById('calPanelDetail').style.display = 'none';
-        document.getElementById('calPanelOverview').style.display = 'flex';
-        document.getElementById('calPanelOverview').style.flexDirection = 'column';
-    };
-
-    window.calDetailReprogramar = function () {
-        calHidePanelDetail();
-        calEditarActividad();
-    };
-
-    window.calDetailVerCompleto = function () {
-        var btnListo = document.getElementById('calDetailBtnListo');
-        var tId = window._calCurrentTareaId || (btnListo && btnListo.dataset.tid ? parseInt(btnListo.dataset.tid) || null : null);
-        var id = window._calCurrentActividadId;
-
-        if (tId) {
-            if (typeof window.crmTaskVerDetalle === 'function') {
-                window.crmTaskVerDetalle(tId);
-            } else {
-                // Fallback: abrir el modal directamente
-                var modal = document.getElementById('crmTaskDetailModal');
-                if (modal) { modal.classList.add('active'); }
-            }
-        } else if (id) {
-            woVerActividadGenerica(id);
-        }
-    };
-
-    window.calDetailCompletar = function () {
-        var id = window._calCurrentActividadId;
-        if (!id) return;
-        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
-        var btn = document.getElementById('calDetailBtnListo');
-        if (btn) { btn.textContent = '...'; btn.disabled = true; }
-        fetch('/app/api/actividades/' + id + '/', {
-            method: 'PATCH',
-            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ completada: true })
-        })
-            .then(function (r) {
-                if (btn) { btn.textContent = 'Completar'; btn.disabled = false; }
-                if (r.ok) {
-                    calHidePanelDetail();
-                    calGlobalRefetch();
-                    // Abrir widget de la oportunidad o prospecto para forzar nueva actividad
-                    var evt = _globalEvents.find(function(ev){ return String(ev.id) === String(id); });
-                    if (evt) {
-                        var ep = evt.extendedProps || {};
-                        if (evt.color === '#8B5CF6' || evt.color === '#B45309' || evt.color === '#5856D6') {
-                            // Prospecto: extraer prospecto_id y abrir widget
-                            var pMatch = (evt.description || '').match(/prospecto_id:(\d+)/);
-                            if (pMatch && typeof abrirWidgetProspecto === 'function') {
-                                setTimeout(function(){ abrirWidgetProspecto(parseInt(pMatch[1])); }, 600);
-                            }
-                        } else if (ep.opportunity && ep.opportunity.id) {
-                            // Oportunidad: abrir widget de oportunidad (delay para que PATCH se procese)
-                            if (typeof openDetalle === 'function') {
-                                setTimeout(function(){ openDetalle(ep.opportunity.id); }, 600);
-                            }
-                        }
-                    }
-                } else {
-                    r.json().then(function(d){ alert(d.error || 'No se pudo completar la actividad.'); }).catch(function(){ alert('No se pudo completar la actividad.'); });
-                }
-            })
-            .catch(function () {
-                if (btn) { btn.textContent = 'Completar'; btn.disabled = false; }
-                alert('Error de conexión al completar la actividad.');
-            });
-    };
-
-    /* ─── SIDE PANEL UPDATE ─── */
-    function calUpdateSidePanel() {
-        var now = new Date();
-        var pad = function(n){return String(n).padStart(2,'0');};
-
-        // Fecha de referencia para estadísticas del día: vista día → día navegado, mes → hoy
-        var refDate = (_calViewMode === 'day') ? _calCurrentDay : now;
-        var refStr = refDate.getFullYear()+'-'+pad(refDate.getMonth()+1)+'-'+pad(refDate.getDate());
-
-        var allEvts = window._calAllEvents || _globalEvents;
-        var sel = document.getElementById('calUserFilter');
-        var filterVal = sel ? sel.value : 'all';
-        var filtered = _calFilterEventsForSelection(allEvts, filterVal);
-
-        // ── Efectividad: mes o día según vista ──
-        var efecEvts, efecLabel;
-        if (_calViewMode === 'month' && _globalCalendar && _globalCalendar.view) {
-            var vs = _globalCalendar.view.activeStart;
-            var ve = _globalCalendar.view.activeEnd;
-            efecEvts = filtered.filter(function(ev){ if(!ev.start) return false; var s=new Date(ev.start); return s>=vs && s<ve; });
-            efecLabel = 'Efectividad del Mes';
-        } else {
-            efecEvts = filtered.filter(function(ev){ return ev.start && ev.start.substring(0,10)===refStr; });
-            efecLabel = 'Efectividad del Día';
-        }
-        var ejecutadas = efecEvts.filter(function(ev){
-            var endD=ev.end?new Date(ev.end):new Date(new Date(ev.start).getTime()+60*60*1000);
-            return endD<now;
-        });
-        var total = efecEvts.length;
-        var efectPct = total>0 ? Math.round((ejecutadas.length/total)*100) : 100;
-
-        var panelTitle=document.getElementById('calPanelOverviewTitle');
-        if (panelTitle) panelTitle.textContent = _calViewMode==='day' ? 'Tu día de un vistazo' : (_calViewMode==='week' ? 'Tu semana de un vistazo' : 'Tu mes de un vistazo');
-        var efectLabelEl=document.getElementById('calSideEfectLabel');
-        var pctEl=document.getElementById('calSidePct');
-        var listosEl=document.getElementById('calSideLisots');
-        if (efectLabelEl) efectLabelEl.textContent = efecLabel;
-        if (pctEl) pctEl.textContent = efectPct+'%';
-        if (listosEl) {
-            listosEl.textContent = ejecutadas.length+'/'+total+' listos';
-            var lColor = efectPct>=80?'#34C759':efectPct>=50?'#FF9500':'#FF3B30';
-            var lBg = efectPct>=80?'rgba(52,199,89,0.2)':efectPct>=50?'rgba(255,149,0,0.2)':'rgba(255,59,48,0.15)';
-            listosEl.style.color = lColor; listosEl.style.background = lBg;
-        }
-
-        // ── Stats del día de referencia ──
-        var refEvts = filtered.filter(function(ev){ return ev.start && ev.start.substring(0,10)===refStr; });
-        var tareas = refEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') === 0; });
-        var actividades = refEvts.filter(function(ev){ return String(ev.id).indexOf('tarea-') !== 0; });
-
-        var tareasNEl=document.getElementById('calSideTareasN');
-        var oppsNEl=document.getElementById('calSideOppsN');
-        if (tareasNEl) tareasNEl.textContent = tareas.length;
-        if (oppsNEl) oppsNEl.textContent = actividades.length;
-
-        // ── Siguiente en agenda: evento en curso ahora o el próximo (busca en todos, no solo hoy) ──
-        var nowMs = now.getTime();
-        var inProgress = filtered.filter(function(ev){
-            if (!ev.start) return false;
-            var s=new Date(ev.start).getTime();
-            var e=ev.end?new Date(ev.end).getTime():s+60*60*1000;
-            return nowMs>=s && nowMs<=e;
-        });
-        var upcoming = filtered.filter(function(ev){ return ev.start && new Date(ev.start).getTime()>nowMs; })
-            .sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
-
-        var nextEvent = inProgress.length>0 ? inProgress[0] : (upcoming.length>0 ? upcoming[0] : null);
-        var isNowHappening = inProgress.length>0;
-
-        var nextTitleEl=document.getElementById('calSideNextTitle');
-        var nextTimeEl=document.getElementById('calSideNextTime');
-        var nextContainer=document.getElementById('calSideNextContainer');
-        var nextIcon=document.getElementById('calSideNextIcon');
-
-        if (nextEvent) {
-            if (nextTitleEl) nextTitleEl.textContent = nextEvent.title;
-            var tStart=calFmt12(new Date(nextEvent.start));
-            var tEnd=nextEvent.end?calFmt12(new Date(nextEvent.end)):'';
-            var timeLabel=(tEnd?tStart+' – '+tEnd:tStart);
-            if (isNowHappening) timeLabel = 'En curso · '+timeLabel;
-            if (nextTimeEl) {
-                nextTimeEl.textContent = timeLabel;
-                nextTimeEl.style.color = isNowHappening ? '#34C759' : '#86868B';
-                nextTimeEl.style.fontWeight = isNowHappening ? '700' : '500';
-            }
-            if (nextContainer) {
-                nextContainer.style.borderLeftColor = isNowHappening ? '#34C759' : '#0052D4';
-                nextContainer.style.cursor = 'pointer';
-                (function(evId){ nextContainer.onclick = function(){ calShowEventDetail(String(evId)); }; })(nextEvent.id);
-            }
-            if (nextIcon) nextIcon.setAttribute('stroke', isNowHappening ? '#34C759' : '#86868B');
-        } else {
-            if (nextTitleEl) nextTitleEl.textContent = 'Sin eventos próximos';
-            if (nextTimeEl) { nextTimeEl.textContent = '—'; nextTimeEl.style.color='#86868B'; nextTimeEl.style.fontWeight='500'; }
-            if (nextContainer) { nextContainer.style.borderLeftColor = '#0052D4'; nextContainer.style.cursor = 'default'; nextContainer.onclick = null; }
-        }
-
-        // ── Tareas de hoy ──
-        var tareasListEl = document.getElementById('calSideTareasList');
-        if (tareasListEl) {
-            if (tareas.length===0) {
-                tareasListEl.innerHTML = '<div style="color:#86868B;font-size:0.82rem;font-style:italic;padding:4px 0;">Sin tareas para hoy</div>';
-            } else {
-                tareasListEl.innerHTML = tareas.map(function(t){
-                    var tD=new Date(t.start);
-                    var timeFmt=calFmt12(tD);
-                    var isOverdue=tD<now;
-                    var textStyle=isOverdue?'text-decoration:line-through;color:#AEAEB2;':'color:#1D1D1F;';
-                    var safeId=String(t.id).replace(/'/g,'');
-                    return '<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05);cursor:pointer;" onclick="calShowEventDetail(\''+safeId+'\')">'+
-                        '<div style="width:16px;height:16px;border-radius:4px;border:2px solid '+(isOverdue?'#D1D1D6':'#FF9500')+';flex-shrink:0;margin-top:2px;"></div>'+
-                        '<div><div style="font-size:0.82rem;font-weight:600;'+textStyle+'line-height:1.3;">'+woEscape(t.title)+'</div>'+
-                        '<div style="font-size:0.72rem;color:#86868B;">'+timeFmt+'</div></div></div>';
-                }).join('');
-            }
-        }
-
-        // ── Actividades de hoy ──
-        var actListEl = document.getElementById('calSideActividadesList');
-        if (actListEl) {
-            if (actividades.length===0) {
-                actListEl.innerHTML = '<div style="color:#86868B;font-size:0.82rem;font-style:italic;padding:4px 0;">Sin actividades para hoy</div>';
-            } else {
-                actListEl.innerHTML = actividades.map(function(a){
-                    var aD=new Date(a.start);
-                    var timeFmt=calFmt12(aD);
-                    var ep=a.extendedProps||{};
-                    var hasOpp=ep.opportunity&&ep.opportunity.id;
-                    var dotColor=hasOpp?'#0052D4':'#8E8E93';
-                    var aEnd=a.end?new Date(a.end):new Date(aD.getTime()+60*60*1000);
-                    var isNowA=now>=aD&&now<=aEnd;
-                    var isOverA=aEnd<now;
-                    var textStyle=isOverA?'color:#AEAEB2;':'color:#1D1D1F;';
-                    var timeFmtFull=calFmt12(aD)+(a.end?' – '+calFmt12(aEnd):'');
-                    return '<div style="display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05);cursor:pointer;" onclick="calShowEventDetail(\''+String(a.id).replace(/'/g,'')+'\')">'+
-                        '<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0;margin-top:5px;"'+(isNowA?' style="box-shadow:0 0 0 2px rgba(0,82,212,0.3);"':'')+' ></div>'+
-                        '<div style="min-width:0;flex:1;">'+
-                        '<div style="font-size:0.82rem;font-weight:600;'+textStyle+'line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+woEscape(a.title)+'</div>'+
-                        '<div style="font-size:0.72rem;color:'+(isNowA?'#34C759':'#86868B')+';font-weight:'+(isNowA?'700':'400')+';">'+
-                        (isNowA?'En curso · ':'')+timeFmtFull+'</div></div></div>';
-                }).join('');
-            }
-        }
-    }
-
+    /* ───── Bloque legacy eliminado: el panel-detail ya no existe ─────
+       Funciones removidas (sólo manipulaban el side panel):
+         calHidePanelDetail, calDetailReprogramar, calDetailVerCompleto,
+         calDetailCompletar, calUpdateSidePanel.
+       Sus IDs (calDetail*, calSide*) ya no están en el DOM. */
     /* ─── FETCH EVENTS ─── */
+    // Convierte cualquier fecha a string local sin sufijo timezone (p.ej. "2026-03-20T14:30:00")
+    // así FullCalendar y las vistas personalizadas la tratan como hora local consistente.
+    // Vive en scope del IIFE para que el .map() de actividades también pueda normalizar
+    // (antes estaba dentro del callback Promise.all().then(); se movió arriba para evitar
+    // que actividades con offset UTC quedaran sin normalizar y se vieran al día siguiente).
+    function _calToLocalISO(dateStr) {
+        var d = new Date(dateStr);
+        var p = function(n){ return String(n).padStart(2,'0'); };
+        return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':00';
+    }
     // userId opcional: cuando se pasa, refetchea el calendario como lo vería
     // ese usuario (actividades + tareas donde es creador/participante/asignado).
     // Permite al selector mostrar el calendario completo de otra persona.
+    var _calLastFetchedMes = null;  // último mes (YYYY-MM) fetcheado, para detectar cambios al navegar.
     window.calGlobalRefetch = function (userVal) {
         // userVal puede ser 'all', un id ('12') o un CSV ('12,34,56').
         var csrf = (typeof getCsrf==='function')?getCsrf():(function(){ var v=document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v?v.pop():''; })();
@@ -1938,8 +2075,17 @@
                 ? ('?user_ids=' + encodeURIComponent(userVal))
                 : ('?user_id=' + encodeURIComponent(userVal));
         }
-        var pActividades = fetch('/app/api/actividades/' + qs,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
-        var pTareas = fetch('/app/api/tareas/' + qs).then(function(r){return r.json();});
+        // Filtro por mes para evitar bajar todo el histórico.
+        // Backend de /api/actividades/ y /api/tareas/ soporta ?mes=YYYY-MM.
+        // /api/tareas/ pagina a 50 por default; per_page=500 garantiza traer
+        // todas las tareas del mes visible sin perder ninguna.
+        var mes = _calCurrentMesParam();
+        var sep = qs ? '&' : '?';
+        var actividadesUrl = '/app/api/actividades/' + qs + sep + 'mes=' + encodeURIComponent(mes);
+        var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500';
+        _calLastFetchedMes = mes;
+        var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
+        var pTareas = fetch(tareasUrl).then(function(r){return r.json();});
 
         Promise.all([pActividades,pTareas]).then(function(results){
             var actividades=results[0];
@@ -1949,18 +2095,18 @@
                 var evtColor = e.color || (e.opportunity ? '#0052D4' : '#1D1D1F');
                 // Migrar morado legacy #8B5CF6 → café #B45309 para prospectos
                 if (evtColor === '#8B5CF6') evtColor = '#B45309';
-                return { id:e.id, title:e.title, start:e.start, end:e.end, description:e.description, color:evtColor,
+                // Normalizar start/end a hora local sin sufijo timezone. El backend
+                // manda ISO con offset UTC; sin esto, ev.start.substring(0,10) en
+                // las vistas Día/Semana saca el día UTC y eventos creados 17:00+
+                // Tijuana (UTC-7/UTC-8) "saltan" al día siguiente.
+                return { id:e.id, title:e.title,
+                    start: e.start ? _calToLocalISO(e.start) : null,
+                    end: e.end ? _calToLocalISO(e.end) : null,
+                    description:e.description, color:evtColor,
                     // Top-level para que eventContent lo encuentre en `stored`.
                     recurrence_group_id: e.recurrence_group_id || null,
                     extendedProps:{ participants:e.participants, opportunity:e.opportunity, evento:e.evento || null, curso:e.curso || null, creado_por:e.creado_por, tipo_actividad:e.tipo, completada:e.completada, recurrence_group_id: e.recurrence_group_id || null } };
             });
-            // Convierte cualquier fecha a string local sin sufijo timezone (p.ej. "2026-03-20T14:30:00")
-            // así FullCalendar y las vistas personalizadas la tratan como hora local consistente.
-            function _calToLocalISO(dateStr) {
-                var d = new Date(dateStr);
-                var p = function(n){ return String(n).padStart(2,'0'); };
-                return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':00';
-            }
             tareas.forEach(function(t){
                 if (!t.fecha_limite) return;
                 // Tarea.asignado_a es el "responsable" en el modelo Tarea (general),
@@ -1969,9 +2115,17 @@
                 // el text para que la vista del día lo pueda renderizar.
                 var tParticipants=[];
                 if (t.asignado_a_id) tParticipants.push({id:t.asignado_a_id, text:t.responsable||''});
-                var tStart = _calToLocalISO(t.fecha_limite);
-                var _dEnd = new Date(t.fecha_limite); _dEnd.setMinutes(_dEnd.getMinutes()+5);
-                var tEnd = _calToLocalISO(_dEnd.toISOString());
+                // Heurística: si la tarea quedó en 00:00:00 local (deadline sin hora
+                // real, p.ej. cuando el usuario solo eligió fecha), tratarla como
+                // cierre del día (23:59) para que aparezca al atardecer en el
+                // calendario en lugar de al amanecer.
+                var dStart = new Date(t.fecha_limite);
+                if (dStart.getHours() === 0 && dStart.getMinutes() === 0 && dStart.getSeconds() === 0) {
+                    dStart.setHours(23, 59, 0, 0);
+                }
+                var tStart = _calToLocalISO(dStart.toISOString());
+                var dEnd = new Date(dStart.getTime() + 5*60*1000);
+                var tEnd = _calToLocalISO(dEnd.toISOString());
                 _globalEvents.push({ id:'tarea-'+t.id, title:t.titulo, start:tStart, end:tEnd, color:'#FF9500', editable:false,
                     extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id, text:t.creado_por||''}, estado:t.estado } });
             });
@@ -1982,7 +2136,6 @@
             // 'all' para no perder tareas donde el usuario sólo es participante/observador.
             var filterVal = (userVal && userVal !== 'all') ? 'all' : (sel ? sel.value : 'all');
             calApplyFilter(filterVal);
-            calUpdateSidePanel();
             if (_calViewMode==='day') { calRenderDayView(_calCurrentDay); }
             else if (_calViewMode==='week') { calRenderWeekView(_calWeekStart); }
         });
@@ -1999,7 +2152,18 @@
     var _calInitialSelectionDone = false;
 
     function _calCurrentMesParam() {
-        var d = _calCurrentDay || new Date();
+        // Devuelve el "mes visible" actual según la vista activa.
+        // En vista mes usamos la fecha del FullCalendar (puede no estar en
+        // _calCurrentDay si el usuario navegó con prev/next).
+        var d;
+        if (_calViewMode === 'month' && _globalCalendar) {
+            try { d = _globalCalendar.getDate(); } catch (e) { d = null; }
+        } else if (_calViewMode === 'week') {
+            d = _calWeekStart || _calCurrentDay;
+        } else {
+            d = _calCurrentDay;
+        }
+        if (!d) d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
     }
 
@@ -2267,12 +2431,21 @@
         var endD = evt.end ? new Date(evt.end) : null;
         var pad = function(n){return String(n).padStart(2,'0');};
         var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        var fechaStr = startD.getDate() + ' ' + MESES[startD.getMonth()] + ' ' + startD.getFullYear() +
+        var DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        // Día abreviado + fecha + rango horario, p.ej.: "Lun 25 Mar · 09:00 — 10:30"
+        var fechaStr = DIAS[startD.getDay()] + ' ' + startD.getDate() + ' ' + MESES[startD.getMonth()] +
             ' · ' + pad(startD.getHours()) + ':' + pad(startD.getMinutes()) +
-            (endD ? ' – ' + pad(endD.getHours()) + ':' + pad(endD.getMinutes()) : '');
+            (endD ? ' — ' + pad(endD.getHours()) + ':' + pad(endD.getMinutes()) : '');
         var esTarea = String(evt.id).indexOf('tarea-') === 0;
         var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
-        var tipo = esTarea ? 'Tarea' : (ep.evento ? 'Evento' : (ep.curso ? 'Curso' : 'Actividad'));
+        // Detecta tipo más específico para el badge.
+        var tipo;
+        if (esTarea) tipo = 'Tarea';
+        else if (ep.evento) tipo = 'Evento';
+        else if (ep.curso) tipo = 'Curso';
+        else if (ep.prospecto) tipo = 'Prospección';
+        else if (hasOpp) tipo = 'Oportunidad';
+        else tipo = 'Actividad';
         // Respeta el color real del evento (mismo cálculo que el grid del calendario):
         // - color custom si está definido (incluye negro #1D1D1F, café, etc.)
         // - tareas: naranja
@@ -2283,28 +2456,41 @@
         var tipoColor = evColor || (esTarea ? '#FF9500' : (hasOpp ? '#0052D4' : '#3A3A3C'));
         var participantes = (ep.participants || []).map(function (p) { return p.nombre || p.name || ''; }).filter(Boolean);
         var creador = ep.creado_por ? (ep.creado_por.nombre || ep.creado_por.name || '') : '';
+        // Cliente (vinculado vía oportunidad o prospección).
+        var clienteName = '';
+        if (ep.opportunity && (ep.opportunity.cliente || ep.opportunity.client || ep.opportunity.empresa)) {
+            var oc = ep.opportunity.cliente || ep.opportunity.client || ep.opportunity.empresa;
+            clienteName = typeof oc === 'string' ? oc : (oc.nombre || oc.name || oc.razon_social || '');
+        } else if (ep.cliente) {
+            clienteName = typeof ep.cliente === 'string' ? ep.cliente : (ep.cliente.nombre || ep.cliente.name || '');
+        }
         var oppHTML = '';
         if (ep.opportunity && ep.opportunity.id) {
-            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Oportunidad</span><span>' + _calEsc(ep.opportunity.title || ep.opportunity.titulo || '—') + '</span></div>';
+            var oppTitle = _calEsc(ep.opportunity.title || ep.opportunity.titulo || '—');
+            oppHTML += '<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Oportunidad</span><span class="cal-hover-meta-val">' + oppTitle + '</span></div>';
         } else if (ep.curso) {
-            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Curso</span><span>' + _calEsc(ep.curso.titulo || ep.curso.title || '—') + '</span></div>';
+            oppHTML += '<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Curso</span><span class="cal-hover-meta-val">' + _calEsc(ep.curso.titulo || ep.curso.title || '—') + '</span></div>';
         } else if (ep.evento) {
-            oppHTML = '<div class="cal-hover-related"><span class="cal-hover-meta-lbl">Evento</span><span>' + _calEsc(ep.evento.titulo || ep.evento.title || '—') + '</span></div>';
+            oppHTML += '<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Evento</span><span class="cal-hover-meta-val">' + _calEsc(ep.evento.titulo || ep.evento.title || '—') + '</span></div>';
+        } else if (ep.prospecto) {
+            oppHTML += '<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Prospecto</span><span class="cal-hover-meta-val">' + _calEsc(ep.prospecto.nombre || ep.prospecto.title || '—') + '</span></div>';
         }
-        var descHTML = '';
+        if (clienteName) {
+            oppHTML += '<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Cliente</span><span class="cal-hover-meta-val">' + _calEsc(clienteName) + '</span></div>';
+        }
         var desc = evt.description || ep.description || '';
-        if (desc) descHTML = '<div class="cal-hover-desc">' + _calEsc(desc) + '</div>';
+        // Construye HTML final.
         pop.innerHTML =
-            '<div class="cal-hover-head" style="background:linear-gradient(135deg,'+tipoColor+'CC 0%,'+tipoColor+' 100%);">'+
-            '  <span class="cal-hover-type">'+tipo+'</span>'+
+            '<div class="cal-hover-head" style="background:linear-gradient(135deg,'+tipoColor+'D9 0%,'+tipoColor+' 100%);">'+
+            '  <span class="cal-hover-type">'+_calEsc(tipo)+'</span>'+
             '</div>'+
             '<div class="cal-hover-body">'+
             '  <div class="cal-hover-title">'+_calEsc(evt.title)+'</div>'+
             '  <div class="cal-hover-when">'+fechaStr+'</div>'+
-            descHTML +
-            (creador ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Creador</span><span>'+_calEsc(creador)+'</span></div>' : '') +
-            (participantes.length ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Participantes</span><span>'+_calEsc(participantes.join(', '))+'</span></div>' : '') +
+            (participantes.length ? '<div class="cal-hover-meta is-people"><span class="cal-hover-meta-val">'+_calEsc(participantes.join(', '))+'</span></div>' : '') +
+            (creador ? '<div class="cal-hover-meta is-creator"><span class="cal-hover-meta-lbl">Creador</span><span class="cal-hover-meta-val">'+_calEsc(creador)+'</span></div>' : '') +
             oppHTML +
+            (desc ? '<div class="cal-hover-meta is-note"><span class="cal-hover-meta-val" style="-webkit-line-clamp:3;">'+_calEsc(desc.length > 240 ? desc.substring(0,240) + '…' : desc)+'</span></div>' : '') +
             '</div>';
         // Posicionar cerca del anchor o del cursor (cuando se proveen
         // coords del mouse, se prefiere para que el popover salga al lado
@@ -2317,12 +2503,14 @@
         var vh = window.innerHeight;
         var left, top;
         if (typeof opts.mouseX === 'number' && typeof opts.mouseY === 'number') {
-            // Modo cursor: a la derecha del mouse + offset
+            // Modo cursor: a la derecha del mouse + offset (smart)
             left = opts.mouseX + 16;
             top  = opts.mouseY + 14;
             // Si se sale por la derecha, ponerlo a la izquierda del cursor.
             if (left + pW + 8 > vw) left = opts.mouseX - pW - 16;
             if (left < 8) left = 8;
+            // Si se sale por abajo, ponerlo arriba del cursor.
+            if (top + pH + 8 > vh) top = opts.mouseY - pH - 14;
         } else {
             // Modo anchor (FullCalendar mes view): rect a la derecha
             var rect = anchorEl.getBoundingClientRect();
@@ -2364,8 +2552,6 @@
         }
         if (typeof window.woVerActividadGenerica === 'function') {
             window.woVerActividadGenerica(id);
-        } else if (typeof window.calShowEventDetail === 'function') {
-            window.calShowEventDetail(id);
         }
     };
 

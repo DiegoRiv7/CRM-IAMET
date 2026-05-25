@@ -82,6 +82,20 @@
             border-color: #0052D4 !important;
             box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.1) !important;
         }
+        /* Highlight rojo para inputs con validación fallida — sobrescribe :focus
+           para que sea evidente aún cuando el cursor entra al input. */
+        .input-field.cot-invalid,
+        .textarea-field.cot-invalid {
+            border-color: #DC2626 !important;
+            background-color: #FEF2F2 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+            animation: cotShake 0.35s ease-in-out;
+        }
+        @keyframes cotShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
 
         select.input-field {
             background-color: #FFFFFF !important;
@@ -1427,8 +1441,8 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     noParte = columns[1].trim();
                     quantity = parseMoneyField(columns[2]);
                     description = columns[3].trim();
-                    discount = parseMoneyField(columns[4]); // Descuento
-                    price = parseMoneyField(columns[5]); // Precio
+                    price = parseMoneyField(columns[4]); // Precio Lista (col 4)
+                    discount = parseMoneyField(columns[5]); // Descuento (col 5)
                 }
                 // Formato mínimo: Marca, No. Parte, Cantidad, Descripcion, Precio, Descuento
                 else {
@@ -2105,55 +2119,69 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             const validationErrorText = document.getElementById('validation-error-text');
 
             // Función para validar campos de cantidad y precio
+            function clearValidationHighlights() {
+                document.querySelectorAll('#productos-tbody .input-field.cot-invalid, #productos-tbody .textarea-field.cot-invalid')
+                    .forEach(el => el.classList.remove('cot-invalid'));
+            }
+
             function validateProductFields() {
                 const productRows = document.querySelectorAll('#productos-tbody tr.product-row');
                 const emptyFields = [];
-                
+                let firstBadInput = null;
+                clearValidationHighlights();
+
                 productRows.forEach((row, index) => {
                     const rowNumber = index + 1;
                     const cantidadInput = row.querySelector('input[name*="[cantidad]"]');
                     const precioInput = row.querySelector('input[name*="[precio]"]');
                     const descripcionInput = row.querySelector('textarea[name*="[descripcion]"]');
-                    
-                    // Solo validar si la fila tiene descripción (no está vacía)
+
                     if (descripcionInput && descripcionInput.value.trim() !== '') {
                         if (cantidadInput && (cantidadInput.value === '' || parseFloat(cantidadInput.value) <= 0)) {
-                            emptyFields.push(`Partida ${rowNumber}: Falta agregar cantidad`);
+                            emptyFields.push(`Partida ${rowNumber}: cantidad`);
+                            cantidadInput.classList.add('cot-invalid');
+                            if (!firstBadInput) firstBadInput = cantidadInput;
                         }
-                        
                         if (precioInput && (precioInput.value === '' || parseFloat(precioInput.value) <= 0)) {
-                            emptyFields.push(`Partida ${rowNumber}: Falta agregar precio unitario`);
+                            emptyFields.push(`Partida ${rowNumber}: precio unitario`);
+                            precioInput.classList.add('cot-invalid');
+                            if (!firstBadInput) firstBadInput = precioInput;
                         }
                     }
                 });
-                
-                return emptyFields;
+                return { emptyFields, firstBadInput };
             }
 
             cotizacionForm.addEventListener('submit', (event) => {
-                // Validar campos antes de enviar
-                const emptyFields = validateProductFields();
+                const { emptyFields, firstBadInput } = validateProductFields();
 
                 if (emptyFields.length > 0) {
-                    event.preventDefault(); // Prevenir el envío del formulario
+                    event.preventDefault();
 
-                    // Mostrar mensaje de error
-                    validationErrorText.textContent = 'Por favor, completa los siguientes campos obligatorios: ' + emptyFields.join(', ');
+                    // Banner sticky (sin auto-hide) hasta que el user corrija.
+                    validationErrorText.textContent = 'Faltan datos en ' + emptyFields.length + ' campo(s): ' + emptyFields.join(' · ');
                     validationErrorMessage.classList.remove('hidden');
 
-                    // Scroll hacia el mensaje de error
-                    validationErrorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Scroll + focus al primer input con error (más útil que scroll al banner).
+                    if (firstBadInput) {
+                        firstBadInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => { try { firstBadInput.focus(); } catch (e) {} }, 350);
+                    } else {
+                        validationErrorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
 
-                    // Ocultar el mensaje después de 5 segundos
-                    setTimeout(() => {
-                        validationErrorMessage.classList.add('hidden');
-                    }, 5000);
-
+                    // Si fallaron ≥3 partidas (típicamente paste de Excel mal parseado),
+                    // alert nativo para garantizar que el user vea el problema.
+                    if (emptyFields.length >= 3) {
+                        alert('No se pudo crear la cotización: faltan cantidad o precio en varias partidas.\n\n' +
+                              'Revisa los campos resaltados en rojo. Esto suele pasar al pegar de Excel ' +
+                              'si las columnas no quedaron alineadas — verifica precio y descuento.');
+                    }
                     return;
                 }
 
-                // Ocultar mensaje de error si existe
                 validationErrorMessage.classList.add('hidden');
+                clearValidationHighlights();
 
                 // Asegurar que las posiciones de títulos estén actualizadas antes de enviar
                 updateRowNumbers();
@@ -2248,10 +2276,10 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             function hideValidationError() {
                 const validationErrorMessage = document.getElementById('validation-error-message');
                 if (validationErrorMessage && !validationErrorMessage.classList.contains('hidden')) {
-                    // Verificar si ya no hay campos vacíos
-                    const emptyFields = validateProductFields();
-                    if (emptyFields.length === 0) {
+                    const result = validateProductFields();
+                    if (result.emptyFields.length === 0) {
                         validationErrorMessage.classList.add('hidden');
+                        clearValidationHighlights();
                     }
                 }
             }

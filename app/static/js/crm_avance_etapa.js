@@ -25,6 +25,8 @@
     var OVERLAY_ID = 'widgetAvanceEtapa';
     var _currentPendiente = null;       // datos del avance que se está mostrando
     var _checkingMio = false;           // evitar polls simultáneos
+    var _usuariosCache = null;          // lista de usuarios cargada una sola vez
+    var _usuariosLoading = false;
 
     function $(id) { return document.getElementById(id); }
 
@@ -66,6 +68,39 @@
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    function _buildUsuariosOptions(selectedId) {
+        var opts = '<option value="">— sin asignar —</option>';
+        (_usuariosCache || []).forEach(function (u) {
+            if (!u.is_active) return;
+            var name = (u.first_name + ' ' + u.last_name).trim() || u.username;
+            var sel = String(selectedId) === String(u.id) ? ' selected' : '';
+            opts += '<option value="' + u.id + '"' + sel + '>' + escapeHTML(name) + '</option>';
+        });
+        return opts;
+    }
+
+    function _populateResponsableSelects() {
+        var cont = $('waeListContainer');
+        if (!cont) return;
+        cont.querySelectorAll('select.wae-responsable').forEach(function (sel) {
+            var current = sel.getAttribute('data-current') || '';
+            sel.innerHTML = _buildUsuariosOptions(current);
+        });
+    }
+
+    function ensureUsuariosLoaded() {
+        if (_usuariosCache || _usuariosLoading) return;
+        _usuariosLoading = true;
+        fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                _usuariosLoading = false;
+                _usuariosCache = (data && data.usuarios) || [];
+                _populateResponsableSelects();
+            })
+            .catch(function () { _usuariosLoading = false; });
+    }
+
     function renderProximas(pendiente) {
         var cont = $('waeListContainer');
         if (!cont) return;
@@ -79,6 +114,13 @@
             var rid = r.regla_id;
             var titulo = escapeHTML(r.titulo || ('Tarea #' + (idx + 1)));
             var sugerida = escapeHTML(r.descripcion_sugerida || '');
+            var respId = r.responsable_id || '';
+            var respNombre = escapeHTML(r.responsable_nombre || 'Sin asignar');
+            // El select se rellena cuando _usuariosCache esté listo. Mientras
+            // tanto mostramos solo la opción actual para que se vea el nombre.
+            var initialOption = respId
+                ? '<option value="' + respId + '" selected>' + respNombre + '</option>'
+                : '<option value="">— sin asignar —</option>';
             html += '' +
                 '<div class="wae-item" data-regla-id="' + rid + '" style="margin-bottom:18px;padding:14px 16px;border:1.5px solid #E5E7EB;border-radius:12px;background:#fff;transition:border-color 0.15s;">' +
                 '  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
@@ -87,9 +129,24 @@
                 '    <span class="wae-status" data-regla-id="' + rid + '" style="font-size:0.7rem;color:#DC2626;font-weight:600;flex-shrink:0;">Falta descripción</span>' +
                 '  </div>' +
                 '  <textarea class="wae-desc" data-regla-id="' + rid + '" rows="3" placeholder="Describe esta tarea (requerido)…" style="width:100%;box-sizing:border-box;border:1.5px solid #E5E7EB;border-radius:9px;padding:10px 12px;font-size:0.85rem;font-family:inherit;resize:vertical;outline:none;color:#1D1D1F;background:#FAFBFC;">' + sugerida + '</textarea>' +
+                '  <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">' +
+                '    <svg width="13" height="13" fill="none" stroke="#64748B" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
+                '    <label style="font-size:0.74rem;font-weight:600;color:#64748B;letter-spacing:0.02em;flex-shrink:0;">Responsable:</label>' +
+                '    <select class="wae-responsable" data-regla-id="' + rid + '" data-current="' + respId + '" style="flex:1;border:1px solid #E5E7EB;border-radius:7px;padding:6px 8px;font-size:0.82rem;font-family:inherit;background:#fff;color:#1D1D1F;outline:none;">' +
+                       initialOption +
+                '    </select>' +
+                '  </div>' +
                 '</div>';
         });
         cont.innerHTML = html;
+
+        // Si ya hay usuarios cargados, poblamos los selects de una. Si no,
+        // disparamos el fetch y se poblan cuando llegue.
+        if (_usuariosCache) {
+            _populateResponsableSelects();
+        } else {
+            ensureUsuariosLoaded();
+        }
 
         // Listeners para validar y para feedback visual del input título
         cont.querySelectorAll('textarea.wae-desc').forEach(function (ta) {
@@ -160,10 +217,12 @@
         window.__waeLastOppId = pendiente.oportunidad_id || window.__waeLastOppId || null;
         var elActual = $('waeEtapaActual');
         var elSig = $('waeEtapaSiguiente');
-        var elOpp = $('waeOppNombre');
+        var elOppText = $('waeOppNombreText');
+        var elOppBtn = $('waeOppNombre');
         if (elActual) elActual.textContent = pendiente.etapa_actual || '—';
         if (elSig) elSig.textContent = pendiente.etapa_siguiente || '—';
-        if (elOpp) elOpp.textContent = pendiente.oportunidad_nombre || '';
+        if (elOppText) elOppText.textContent = pendiente.oportunidad_nombre || 'Sin oportunidad';
+        if (elOppBtn) elOppBtn.style.display = pendiente.oportunidad_id ? 'inline-flex' : 'none';
         renderProximas(pendiente);
         setOverlayVisible(true);
         // Foco al primer textarea
@@ -171,6 +230,36 @@
             var first = document.querySelector('#waeListContainer textarea.wae-desc');
             if (first) first.focus();
         }, 60);
+    }
+
+    // Abre el widget de oportunidad encima del avance (z-index .z-above-avance
+    // = 12000). El widget de avance queda atrás pero VISIBLE (no se cierra)
+    // para que el usuario pueda regresar a llenar las descripciones.
+    function abrirOportunidad() {
+        var oppId = (_currentPendiente && _currentPendiente.oportunidad_id) || window.__waeLastOppId;
+        if (!oppId) return;
+        // Marcar widgetDetalle para que se renderice por encima del avance.
+        var dl = document.getElementById('widgetDetalle');
+        if (dl) dl.classList.add('z-above-avance');
+        // Hook al close del widgetDetalle: cuando el usuario lo cierre, limpiar
+        // la clase. La función oficial de cierre es `cerrarDetalle` (crm_main.js).
+        if (typeof window.openDetalle === 'function') {
+            window.openDetalle(oppId);
+            // Limpiar la clase cuando el widget se cierre. Como no hay un evento
+            // global, parchamos cerrarDetalle una vez para que también remueva
+            // la clase. Es idempotente.
+            if (!window.__waeCerrarDetallePatched && typeof window.cerrarDetalle === 'function') {
+                var origCerrar = window.cerrarDetalle;
+                window.cerrarDetalle = function () {
+                    try {
+                        var d = document.getElementById('widgetDetalle');
+                        if (d) d.classList.remove('z-above-avance');
+                    } catch (_) {}
+                    return origCerrar.apply(this, arguments);
+                };
+                window.__waeCerrarDetallePatched = true;
+            }
+        }
     }
 
     function recolectarDescripciones() {
@@ -197,6 +286,19 @@
         return out;
     }
 
+    function recolectarResponsables() {
+        var out = {};
+        var cont = $('waeListContainer');
+        if (!cont) return out;
+        cont.querySelectorAll('select.wae-responsable').forEach(function (sel) {
+            var rid = sel.getAttribute('data-regla-id');
+            if (!rid) return;
+            var v = sel.value;
+            if (v) out[rid] = parseInt(v, 10);
+        });
+        return out;
+    }
+
     function confirmar() {
         if (!_currentPendiente || !validar()) return;
         var btn = $('waeConfirmBtn');
@@ -213,6 +315,7 @@
             body: JSON.stringify({
                 descripciones: recolectarDescripciones(),
                 titulos: recolectarTitulos(),
+                responsables: recolectarResponsables(),
             }),
         })
             .then(function (r) { return r.json(); })
@@ -282,6 +385,7 @@
 
     // ── API pública ──
     window.crmAvanceEtapa = {
+        abrirOportunidad: abrirOportunidad,
         // Llamado por crm_main.js (u otros) cuando la respuesta de completar
         // contiene `requiere_descripcion: true`. Si el usuario actual debe
         // confirmar, abrimos el modal; si no, sólo mostramos un toast informativo.

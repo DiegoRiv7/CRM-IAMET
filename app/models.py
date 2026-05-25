@@ -63,6 +63,12 @@ class UserProfile(models.Model):
     # recursos). Independiente del rol — un vendedor puede tener este permiso
     # sin ser supervisor. Se administra desde el panel admin → Permisos.
     can_manage_marketing = models.BooleanField(default=False, verbose_name="Puede gestionar Marketing")
+    # Permiso granular para usar la app de Levantamientos (PWA móvil).
+    # Independiente del rol — un vendedor puede tener este permiso y poder
+    # iniciar levantamientos desde planta sin cambiar a perfil ingeniero
+    # (mantiene su vista de oportunidades). Los ingenieros y supervisores
+    # acceden siempre, sin necesidad de este flag.
+    puede_levantamiento = models.BooleanField(default=False, verbose_name="Puede iniciar Levantamientos")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
@@ -370,6 +376,16 @@ class TodoItem(models.Model):
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
     po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO")
     factura_numero = models.CharField(max_length=100, blank=True, default='', verbose_name="Factura")
+    # FK directo al prospecto del que se generó esta oportunidad. A
+    # diferencia de Prospecto.oportunidad_creada (FK al revés que solo
+    # apunta a UNA opp), aquí CADA opp generada apunta al mismo
+    # prospecto. Permite contar correctamente cuántas opps salieron de
+    # cada prospecto en los dashboards.
+    prospecto_origen_directo = models.ForeignKey(
+        'Prospecto', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='opps_generadas',
+        verbose_name="Prospecto de origen (directo)",
+    )
 
     # Campos para seguimiento de facturación
     monto_facturacion = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name="Monto de Facturación")
@@ -2895,6 +2911,29 @@ class ArchivoOportunidad(models.Model):
 def chat_imagen_upload_path(instance, filename):
     return f'chat/{instance.oportunidad_id}/{filename}'
 
+class OportunidadAsistenteMensaje(models.Model):
+    """Mensajes del chat con el asistente AI sobre una oportunidad
+    específica. Hilo independiente del consultor general, del
+    asistente de ideas y del de prospección. Cada oportunidad
+    mantiene su propia conversación con el coach táctico de cierre."""
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('assistant', 'Asistente'),
+    ]
+    oportunidad = models.ForeignKey(
+        'TodoItem', on_delete=models.CASCADE, related_name='asistente_mensajes'
+    )
+    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    contenido = models.TextField(blank=True, default='')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.oportunidad_id}:{self.role}:{self.contenido[:30]}'
+
+
 class MensajeOportunidad(models.Model):
     """Mensajes de chat/bitácora vinculados a una Oportunidad."""
     oportunidad = models.ForeignKey(
@@ -3360,6 +3399,13 @@ class MailCorreo(models.Model):
         'TodoItem', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='correos_vinculados'
     )
+    # Vínculo opcional con un Prospecto — análogo a `oportunidad` pero para la
+    # etapa de prospección (pre-conversión). Cuando el envío sale del widget
+    # del prospecto, el correo queda guardado aquí como evidencia.
+    prospecto = models.ForeignKey(
+        'Prospecto', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='correos_vinculados'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -3735,6 +3781,18 @@ class ReglaAutomatizacion(models.Model):
         default=False,
         verbose_name="Avanzar etapa al completar",
         help_text="Al completar la tarea creada por esta regla, avanzar automaticamente la oportunidad a la siguiente etapa"
+    )
+    requiere_verificacion = models.BooleanField(
+        default=False,
+        verbose_name="Requiere verificación al avanzar",
+        help_text=(
+            "Solo aplica si 'avanzar etapa al completar' está activo. Cuando "
+            "es True, al completar esta tarea NO se avanza directo: se "
+            "muestra un widget al responsable de la oportunidad para que "
+            "revise/edite título, descripción y responsable de las próximas "
+            "tareas antes de confirmar. Cuando es False, la cadena reactiva "
+            "se ejecuta automáticamente con los valores predeterminados."
+        ),
     )
 
     class Meta:
@@ -4514,6 +4572,29 @@ class ProspectoComentario(models.Model):
 
     def __str__(self):
         return f'Comentario de {self.usuario} en {self.prospecto}'
+
+
+class ProspectoAsistenteMensaje(models.Model):
+    """Mensajes de la conversación entre el user y el asistente AI sobre
+    un prospecto específico. Cada prospecto tiene su propio hilo
+    independiente del consultor general y del asistente de ideas. Mismo
+    patrón que IdeaAsistenteMensaje."""
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('assistant', 'Asistente'),
+    ]
+    prospecto = models.ForeignKey(
+        Prospecto, on_delete=models.CASCADE, related_name='asistente_mensajes'
+    )
+    role = models.CharField(max_length=12, choices=ROLE_CHOICES)
+    contenido = models.TextField(blank=True, default='')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha']
+
+    def __str__(self):
+        return f'{self.prospecto_id}:{self.role}:{self.contenido[:30]}'
 
 
 class ProspectoActividad(models.Model):

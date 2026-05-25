@@ -31,6 +31,13 @@ from .views_utils import is_supervisor
 log = logging.getLogger(__name__)
 
 
+def _can_see_all(user) -> bool:
+    """¿El user ve todos los registros, no sólo los suyos?
+    Mismo criterio que en views_ideas: supervisor o superuser.
+    """
+    return is_supervisor(user) or user.is_superuser
+
+
 # ─── Helpers de visibilidad ────────────────────────────────────────────
 
 def _visible_user_ids(user: User) -> list[int] | None:

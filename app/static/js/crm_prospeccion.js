@@ -556,8 +556,9 @@ document.addEventListener('click', function(ev) {
         // Actividades
         cargarActividadesProspecto(data.id);
 
-        // Cotizaciones
-        cargarCotizacionesProspecto(data);
+        // Correos vinculados (antes "Cotizaciones"; cambio de scope para
+        // prospectos pre-conversión — el cotizador se abre solo al convertir).
+        cargarCorreosProspecto(data.id, data);
 
         // Vendedor/Cliente cards
         renderStakeholders(data);
@@ -707,8 +708,249 @@ document.addEventListener('click', function(ev) {
     }
     window.confirmarCerrar = function(etapa) {
         document.getElementById('cerrarSelector').remove();
+        // ── Ganado: abre el modal "Crear Oportunidad(es) en serie". El cambio
+        // de etapa se aplica al CERRAR el modal sólo si se creó >=1 opp.
+        if (etapa === 'cerrado_ganado') {
+            wpAbrirModalCrearOpp();
+            return;
+        }
         cambiarEtapaProspecto(etapa);
     };
+
+    // ══════════════════════════════════════════════════════════════
+    // CERRAR GANADO → MODAL CREAR OPORTUNIDAD(ES) EN SERIE
+    // ══════════════════════════════════════════════════════════════
+    // Estado del flow durante la sesión del modal abierto:
+    var _wcoOppsCreadas = [];  // [{id, titulo, monto, tipo_negociacion}]
+
+    function wpAbrirModalCrearOpp() {
+        var data = window._currentProspectoData || {};
+        var modal = document.getElementById('widgetCrearOppDesdeProspecto');
+        if (!modal) return;
+        // Reset estado de sesión
+        _wcoOppsCreadas = [];
+        _wcoRenderCreatedList();
+        _wcoResetForm(true);
+
+        // Prellenar campos read-only desde el prospecto
+        var setVal = function(id, v) { var el = document.getElementById(id); if (el) el.value = v == null ? '' : v; };
+        setVal('wcoTitulo', data.nombre || '');
+        setVal('wcoCliente', data.cliente || '-');
+        setVal('wcoContacto', data.contacto || '-');
+        setVal('wcoProducto', data.producto || 'SOFTWARE');
+        setVal('wcoArea', data.area || 'SISTEMAS');
+        setVal('wcoMonto', '');
+        setVal('wcoTipoNeg', data.tipo_pipeline || '');
+        setVal('wcoNotas', '');
+
+        // Cargar dropdown de responsable. Default = vendedor del prospecto.
+        // Si el user es supervisor/admin, podemos cargar la lista completa
+        // de vendedores visibles para que elija a quién asignar.
+        _wcoPoblarResponsables();
+
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        setTimeout(function() {
+            var t = document.getElementById('wcoTitulo');
+            if (t) t.focus();
+        }, 60);
+    }
+
+    function _wcoPoblarResponsables() {
+        var sel = document.getElementById('wcoResponsable');
+        if (!sel) return;
+        var data = window._currentProspectoData || {};
+        var vendedorIdProspecto = (data.usuario && data.usuario.id) || data.usuario_id || null;
+        var vendedorNombre = (data.usuario && (data.usuario.nombre || data.usuario.first_name)) || data.vendedor || 'Vendedor del prospecto';
+        // Vista base: vacío = vendedor del prospecto (default backend).
+        sel.innerHTML = '<option value="">— ' + escapeHtml(vendedorNombre) + ' (default) —</option>';
+        // Si el user actual es supervisor, intentamos cargar la lista
+        // completa para que pueda elegir reasignar.
+        fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(payload) {
+                if (!payload) return;
+                var users = (payload.usuarios || payload.users || []);
+                if (!users.length) return;
+                users.forEach(function(u) {
+                    var nombre = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = nombre + (u.id === vendedorIdProspecto ? ' (vendedor del prospecto)' : '');
+                    sel.appendChild(opt);
+                });
+            })
+            .catch(function() { /* vendor sin permisos — solo verá la opción default */ });
+    }
+    window.wpAbrirModalCrearOpp = wpAbrirModalCrearOpp;
+
+    function _wcoResetForm(keepReadonly) {
+        // Limpia los campos editables; los read-only (cliente/contacto) se
+        // re-aplican desde el prospecto en cada apertura.
+        ['wcoMonto', 'wcoNotas'].forEach(function(id){
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        // Para "Crear otra" reiniciamos también título a "Nombre prospecto - oportunidad N"
+        var data = window._currentProspectoData || {};
+        var titEl = document.getElementById('wcoTitulo');
+        if (titEl) {
+            var n = _wcoOppsCreadas.length;
+            titEl.value = (n === 0)
+                ? (data.nombre || '')
+                : ((data.nombre || 'Oportunidad') + ' #' + (n + 1));
+        }
+        // Pipeline conserva valor previo (si hubo). Si no, vacío.
+        if (!keepReadonly) {
+            var t = document.getElementById('wcoTipoNeg');
+            if (t) t.value = '';
+        }
+    }
+
+    function _wcoRenderCreatedList() {
+        var listWrap = document.getElementById('wcoCreatedList');
+        var items = document.getElementById('wcoCreatedItems');
+        var status = document.getElementById('wcoFooterStatus');
+        if (!listWrap || !items || !status) return;
+
+        if (_wcoOppsCreadas.length === 0) {
+            listWrap.style.display = 'none';
+            items.innerHTML = '';
+            status.textContent = 'Aún no se ha creado ninguna oportunidad.';
+            return;
+        }
+        listWrap.style.display = 'block';
+        items.innerHTML = _wcoOppsCreadas.map(function(o) {
+            var monto = (o.monto || 0).toLocaleString('es-MX', { style:'currency', currency:'MXN', maximumFractionDigits:0 });
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;">' +
+                '<span style="width:22px;height:22px;border-radius:50%;background:#16A34A;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+                '</span>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:0.84rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(o.titulo) + '</div>' +
+                    '<div style="font-size:0.7rem;color:#6B7280;">' + (o.tipo_negociacion === 'proyecto' ? 'Proyecto' : 'Runrate') + ' · ' + escapeHtml(monto) + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        var n = _wcoOppsCreadas.length;
+        status.textContent = n === 1 ? '1 oportunidad creada.' : (n + ' oportunidades creadas.');
+    }
+
+    function _wcoCerrarModal() {
+        var modal = document.getElementById('widgetCrearOppDesdeProspecto');
+        if (modal) modal.style.display = 'none';
+
+        // Si se creó al menos una oportunidad, marcar el prospecto como ganado.
+        // Si no, dejar la etapa anterior intacta.
+        if (_wcoOppsCreadas.length > 0) {
+            cambiarEtapaProspecto('cerrado_ganado');
+        }
+        _wcoOppsCreadas = [];
+    }
+
+    // ── Hooks DOM del modal — registrar una sola vez ──
+    (function _wcoHookOnce() {
+        var form = document.getElementById('wcoForm');
+        var btnClose = document.getElementById('wcoCloseBtn');
+        var btnReset = document.getElementById('wcoResetBtn');
+        var btnTerm = document.getElementById('wcoTerminarBtn');
+        var overlay = document.getElementById('widgetCrearOppDesdeProspecto');
+
+        if (form && !form._wcoHooked) {
+            form._wcoHooked = true;
+            form.addEventListener('submit', function(ev) {
+                ev.preventDefault();
+                _wcoEnviar();
+            });
+        }
+        if (btnClose && !btnClose._wcoHooked) {
+            btnClose._wcoHooked = true;
+            btnClose.addEventListener('click', _wcoCerrarModal);
+        }
+        if (btnTerm && !btnTerm._wcoHooked) {
+            btnTerm._wcoHooked = true;
+            btnTerm.addEventListener('click', _wcoCerrarModal);
+        }
+        if (btnReset && !btnReset._wcoHooked) {
+            btnReset._wcoHooked = true;
+            btnReset.addEventListener('click', function() { _wcoResetForm(false); });
+        }
+        if (overlay && !overlay._wcoHooked) {
+            overlay._wcoHooked = true;
+            overlay.addEventListener('click', function(ev) {
+                // Click en backdrop (fuera del card) cierra el modal con la
+                // misma lógica que el botón Terminar.
+                if (ev.target === overlay) _wcoCerrarModal();
+            });
+        }
+    })();
+
+    function _wcoEnviar() {
+        var id = window._currentProspectoId;
+        if (!id) return;
+
+        var titulo = (document.getElementById('wcoTitulo').value || '').trim();
+        var tipoNeg = (document.getElementById('wcoTipoNeg').value || '').trim();
+        var monto = (document.getElementById('wcoMonto').value || '').trim();
+        var producto = (document.getElementById('wcoProducto').value || '').trim();
+        var area = (document.getElementById('wcoArea').value || '').trim();
+        var notas = (document.getElementById('wcoNotas').value || '').trim();
+        var responsableId = (document.getElementById('wcoResponsable')
+            ? document.getElementById('wcoResponsable').value
+            : '').trim();
+
+        if (!titulo) {
+            alert('El título de la oportunidad es requerido.');
+            document.getElementById('wcoTitulo').focus();
+            return;
+        }
+        if (!tipoNeg) {
+            alert('Selecciona el tipo de pipeline (Runrate / Proyecto).');
+            document.getElementById('wcoTipoNeg').focus();
+            return;
+        }
+
+        var btn = document.getElementById('wcoSubmitBtn');
+        var orig = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Creando…'; }
+
+        fetch('/app/api/prospecto/' + id + '/crear-oportunidad/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({
+                titulo: titulo,
+                tipo_negociacion: tipoNeg,
+                monto: monto || '0',
+                producto: producto,
+                area: area,
+                comentarios: notas,
+                probabilidad_cierre: 25,
+                // Si está vacío, el backend usa prospecto.usuario por default.
+                usuario_id: responsableId ? parseInt(responsableId, 10) : null,
+            })
+        }).then(function(r){ return r.json(); }).then(function(data) {
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            if (!data || !data.success) {
+                alert((data && data.error) || 'Error al crear la oportunidad.');
+                return;
+            }
+            _wcoOppsCreadas.push({
+                id: data.oportunidad_id,
+                titulo: data.titulo || titulo,
+                monto: data.monto || 0,
+                tipo_negociacion: data.tipo_negociacion || tipoNeg
+            });
+            _wcoRenderCreatedList();
+            // Listo para crear otra: limpiar editables pero conservar pipeline.
+            _wcoResetForm(true);
+            var titEl = document.getElementById('wcoTitulo');
+            if (titEl) titEl.focus();
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            alert('Error de red al crear oportunidad.');
+            console.error('[Prospecto→Opp] error', err);
+        });
+    }
 
     function _showProspectoMissingActivityWarning() {
         var existing = document.getElementById('warnMissingProspectoActivity');
@@ -802,6 +1044,131 @@ document.addEventListener('click', function(ev) {
     }
 
     // ── Comentarios (chat style) ──
+    /* Menú de 3 puntos en cada comentario del prospecto.
+       Soporta editar inline + eliminar con custom confirm. Solo
+       montamos los listeners UNA vez (delegación) por contenedor. */
+    function wireProspectoComMenus(container) {
+        if (!container || container._comMenuWired) return;
+        container._comMenuWired = true;
+        // Cerrar menús abiertos al clickear fuera
+        document.addEventListener('click', function () {
+            container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+        });
+        // Delegación de clicks: abrir menú / editar / eliminar
+        container.addEventListener('click', function (e) {
+            var btnMenu = e.target.closest('[data-com-menu]');
+            if (btnMenu) {
+                e.stopPropagation();
+                var cid = btnMenu.getAttribute('data-com-menu');
+                var existing = container.querySelector('.wp-com-menu[data-com-menu-for="' + cid + '"]');
+                container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+                if (existing) return;
+                var menu = document.createElement('div');
+                menu.className = 'wp-com-menu';
+                menu.setAttribute('data-com-menu-for', cid);
+                menu.innerHTML = ''
+                    + '<button type="button" data-com-edit="' + cid + '">'
+                    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+                    +   'Editar'
+                    + '</button>'
+                    + '<button type="button" class="wp-com-menu-danger" data-com-del="' + cid + '">'
+                    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+                    +   'Eliminar'
+                    + '</button>';
+                btnMenu.parentNode.appendChild(menu);
+                return;
+            }
+            var editBtn = e.target.closest('[data-com-edit]');
+            if (editBtn) {
+                e.stopPropagation();
+                container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+                startEditProspectoComentario(editBtn.getAttribute('data-com-edit'));
+                return;
+            }
+            var delBtn = e.target.closest('[data-com-del]');
+            if (delBtn) {
+                e.stopPropagation();
+                container.querySelectorAll('.wp-com-menu').forEach(function (m) { m.remove(); });
+                deleteProspectoComentario(delBtn.getAttribute('data-com-del'));
+                return;
+            }
+        });
+    }
+
+    function startEditProspectoComentario(comId) {
+        var container = document.getElementById('wpComentariosList');
+        if (!container) return;
+        var textEl = container.querySelector('[data-com-text="' + comId + '"]');
+        if (!textEl || textEl.classList.contains('editing')) return;
+        var original = textEl.textContent;
+        textEl.classList.add('editing');
+        textEl.innerHTML = ''
+            + '<textarea class="wp-com-edit-area"></textarea>'
+            + '<div class="wp-com-edit-actions">'
+            +   '<button type="button" class="wp-com-edit-cancel">Cancelar</button>'
+            +   '<button type="button" class="wp-com-edit-save">Guardar</button>'
+            + '</div>';
+        var ta = textEl.querySelector('textarea');
+        ta.value = original;
+        ta.focus();
+        textEl.querySelector('.wp-com-edit-cancel').addEventListener('click', function () {
+            textEl.classList.remove('editing');
+            textEl.textContent = original;
+        });
+        textEl.querySelector('.wp-com-edit-save').addEventListener('click', function () {
+            var nuevo = (ta.value || '').trim();
+            if (!nuevo) {
+                if (typeof window.showFlash === 'function') {
+                    window.showFlash('El comentario no puede quedar vacío', 'error');
+                }
+                return;
+            }
+            fetch('/app/api/prospecto-comentarios/' + comId + '/', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ texto: nuevo }),
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                if (!d || !d.success) {
+                    if (typeof window.showFlash === 'function') {
+                        window.showFlash((d && d.error) || 'No se pudo guardar', 'error');
+                    }
+                    return;
+                }
+                textEl.classList.remove('editing');
+                textEl.textContent = d.comentario.texto;
+            });
+        });
+    }
+
+    function deleteProspectoComentario(comId) {
+        var doDelete = function () {
+            fetch('/app/api/prospecto-comentarios/' + comId + '/', {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': csrf() },
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                if (!d || !d.success) {
+                    if (typeof window.showFlash === 'function') {
+                        window.showFlash((d && d.error) || 'No se pudo eliminar', 'error');
+                    }
+                    return;
+                }
+                // Quitamos el comentario del DOM sin recargar todo.
+                var node = document.querySelector('#wpComentariosList [data-com-id="' + comId + '"]');
+                if (node) node.remove();
+            });
+        };
+        if (typeof window.customConfirm === 'function') {
+            window.customConfirm({
+                title: '¿Eliminar comentario?',
+                message: 'Esta acción no se puede deshacer.',
+                okText: 'Eliminar',
+            }, doDelete);
+        } else {
+            // Fallback si customConfirm no está disponible (debería estarlo).
+            if (confirm('¿Eliminar este comentario? No se puede deshacer.')) doDelete();
+        }
+    }
+
     function cargarComentariosProspecto(id, comentarioInicial, fechaCreacion) {
         fetch('/app/api/prospecto/' + id + '/comentarios/')
             .then(function(r) { return r.json(); })
@@ -832,17 +1199,28 @@ document.addEventListener('click', function(ev) {
                 (data.comentarios || []).forEach(function(c) {
                     var msg = document.createElement('div');
                     msg.className = 'wp-chat-msg';
+                    msg.setAttribute('data-com-id', c.id);
+                    // Menú de 3 puntos: solo si el user puede editar.
+                    var menuBtn = c.puede_editar
+                        ? '<button type="button" class="wp-com-menu-btn" data-com-menu="' + c.id + '" title="Opciones">' +
+                            '<svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>' +
+                          '</button>'
+                        : '';
                     msg.innerHTML =
                         '<div class="wp-chat-avatar">' + getInitials(c.usuario) + '</div>' +
                         '<div class="wp-chat-bubble">' +
                             '<div class="wp-chat-meta">' +
                                 '<span class="wp-chat-author">' + escapeHtml(c.usuario) + '</span>' +
-                                '<span class="wp-chat-time">' + escapeHtml(c.fecha) + '</span>' +
+                                '<span class="wp-chat-meta-right">' +
+                                    '<span class="wp-chat-time">' + escapeHtml(c.fecha) + '</span>' +
+                                    menuBtn +
+                                '</span>' +
                             '</div>' +
-                            '<div class="wp-chat-text">' + escapeHtml(c.texto) + '</div>' +
+                            '<div class="wp-chat-text" data-com-text="' + c.id + '">' + escapeHtml(c.texto) + '</div>' +
                         '</div>';
                     container.appendChild(msg);
                 });
+                wireProspectoComMenus(container);
 
                 if (!comentarioInicial && !(data.comentarios || []).length) {
                     container.innerHTML = '<div style="padding:2rem;text-align:center;color:#C7C7CC;font-size:0.8rem;font-style:italic;">Sin comentarios aun</div>';
@@ -873,6 +1251,33 @@ document.addEventListener('click', function(ev) {
             });
         }
     });
+
+    // Botón orb del asistente AI sobre este prospecto.
+    // Abre el modal del consultor general en "modo prospecto" — chat
+    // específico atado al prospecto actual.
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'wpBtnAsistente' || e.target.closest('#wpBtnAsistente')) {
+            e.preventDefault();
+            var id = window._currentProspectoId;
+            var d = window._currentProspectoData;
+            if (!id) return;
+            if (typeof window.asistenteAbrir === 'function') {
+                window.asistenteAbrir({prospecto: {
+                    id: id,
+                    titulo: (d && (d.nombre || (d.cliente && d.cliente.nombre_empresa))) || 'Prospecto',
+                }});
+            }
+        }
+    });
+
+    // Refresh hook usado por el asistente AI cuando guarda un resumen
+    // (manual o auto-save) para que el comentario nuevo aparezca al
+    // instante en la bitácora sin tener que cerrar/reabrir el prospecto.
+    window.refreshProspectoDetalle = function (prospectoId) {
+        if (!prospectoId || prospectoId !== window._currentProspectoId) return;
+        var d = window._currentProspectoData;
+        cargarComentariosProspecto(prospectoId, d ? d.comentarios : null, d ? d.fecha_creacion : null);
+    };
 
     // ── Actividades Programadas ──
     function cargarActividadesProspecto(id) {
@@ -916,14 +1321,20 @@ document.addEventListener('click', function(ev) {
             'reunion': '#92400E', 'tarea': '#34C759', 'otro': '#8E8E93'
         };
         var color = tipoColors[act.tipo] || '#8E8E93';
+        // Título compacto = nombre del prospecto (mismo criterio que el
+        // header del modal de actividad). La descripción larga vive en
+        // el modal, no aquí — antes desbordaba el layout cuando la
+        // acción era de más de 1-2 líneas.
+        var prospData = window._currentProspectoData;
+        var titulo = (prospData && prospData.nombre) ? prospData.nombre : 'Actividad';
 
         body.innerHTML =
             '<div style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0;"></div>' +
-            '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:0.8rem;font-weight:600;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(act.descripcion) + '</div>' +
-                '<div style="font-size:0.7rem;color:#86868B;display:flex;gap:6px;align-items:center;">' +
+            '<div style="flex:1;min-width:0;overflow:hidden;">' +
+                '<div style="font-size:0.8rem;font-weight:600;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(titulo) + '</div>' +
+                '<div style="font-size:0.7rem;color:#86868B;display:flex;gap:6px;align-items:center;white-space:nowrap;">' +
                     '<span style="text-transform:uppercase;font-weight:600;color:' + color + ';font-size:0.65rem;">' + escapeHtml((act.tipo || '').toUpperCase()) + '</span>' +
-                    '<span>' + escapeHtml(act.fecha_programada || '') + '</span>' +
+                    '<span style="overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(act.fecha_programada || '') + '</span>' +
                 '</div>' +
             '</div>';
         body.style.cursor = 'pointer';
@@ -1062,13 +1473,14 @@ document.addEventListener('click', function(ev) {
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:10400;display:flex;align-items:center;justify-content:center;';
         overlay.innerHTML =
             '<div style="background:#fff;border-radius:16px;width:480px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">' +
-                // Header morado
+                // Header morado — TÍTULO = nombre del prospecto.
+                // La descripcion (la acción concreta) va en el body.
                 '<div style="background:linear-gradient(135deg,#B45309,#78350F);padding:1.5rem;position:relative;">' +
                     '<button onclick="document.getElementById(\'wpActInfoOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>' +
                     '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
                         '<svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
                     '</div>' +
-                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + escapeHtml(act.descripcion) + '</div>' +
+                    '<div style="font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px;">' + escapeHtml(prospectoNombre || 'Actividad') + '</div>' +
                     '<div style="font-size:0.82rem;color:rgba(255,255,255,0.8);">' + escapeHtml(act.fecha_programada || '') + '</div>' +
                 '</div>' +
                 // Body
@@ -1178,33 +1590,166 @@ document.addEventListener('click', function(ev) {
         }).join('');
     }
 
-    // ── Cotizaciones ──
-    function cargarCotizacionesProspecto(data) {
-        var container = document.getElementById('wpQuoteList');
+    // ── Correos vinculados ──
+    // Reemplaza la antigua sección de Cotizaciones del widget.
+    // Lista los MailCorreo (enviados/recibidos) vinculados al prospecto.
+    // Click en una card → window.woCorreoVerDetalle (definido en
+    // _widget_oportunidad.html — solo carga el correo por id, sirve igual).
+    function cargarCorreosProspecto(prospectoId, prospData) {
+        var container = document.getElementById('wpCorreosList');
         if (!container) return;
 
-        // If the API returns cotizaciones, render them
-        if (data.cotizaciones && data.cotizaciones.length) {
-            container.innerHTML = '';
-            data.cotizaciones.forEach(function(cot) {
-                var card = document.createElement('div');
-                card.className = 'wo-quote-card';
-                card.innerHTML =
-                    '<div class="wo-quote-left">' +
-                        '<div class="wo-quote-badge">' + escapeHtml(cot.folio || 'COT') + '</div>' +
-                    '</div>' +
-                    '<div class="wo-quote-info">' +
-                        '<div class="wo-quote-title">' + escapeHtml(cot.titulo || cot.folio || 'Cotizacion') + '</div>' +
-                        '<div class="wo-quote-meta">' + escapeHtml(cot.fecha || '') + ' &middot; ' + escapeHtml(cot.estado || '') + '</div>' +
-                    '</div>';
-                container.appendChild(card);
-            });
-        } else {
-            container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin cotizaciones aun</div>';
-        }
-    }
+        container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;color:#86868B;">Cargando correos…</div>';
 
-    // Nueva cotizacion button — confirm conversion to oportunidad, then open cotizador
+        fetch('/app/api/prospecto/' + prospectoId + '/correos/', {
+            credentials: 'same-origin'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (!res || !res.success) {
+                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">No se pudo cargar la lista de correos</div>';
+                return;
+            }
+            var correos = res.correos || [];
+            if (!correos.length) {
+                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Sin correos vinculados aún</div>';
+                return;
+            }
+            container.innerHTML = correos.map(function(c) {
+                var enviado = c.sentido === 'enviado';
+                var accentBg = enviado ? '#EFF6FF' : '#F4F4F5';
+                var accentBorder = enviado ? '#DBEAFE' : '#E5E7EB';
+                var badgeText = enviado ? 'Enviado' : 'Recibido';
+                var badgeColor = enviado ? '#1E40AF' : '#52525B';
+                var attTag = c.tiene_adjuntos
+                    ? '<span style="display:inline-block;margin-left:6px;font-size:0.62rem;color:#92400E;background:#FEF3C7;padding:1px 6px;border-radius:9999px;font-weight:600;">ADJ</span>'
+                    : '';
+                return ''
+                    + '<div onclick="if(typeof window.woCorreoVerDetalle===\'function\')window.woCorreoVerDetalle(' + c.id + ');" '
+                    +      'style="cursor:pointer;background:' + accentBg + ';border:1px solid ' + accentBorder + ';border-radius:10px;padding:9px 11px;transition:transform 0.15s,box-shadow 0.15s;" '
+                    +      'onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 12px -4px rgba(0,0,0,0.15)\'" '
+                    +      'onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">'
+                    +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">'
+                    +     '<span style="font-size:0.62rem;font-weight:700;color:' + badgeColor + ';letter-spacing:0.04em;text-transform:uppercase;">' + badgeText + attTag + '</span>'
+                    +     '<span style="font-size:0.68rem;color:#86868B;">' + escapeHtml(c.fecha) + '</span>'
+                    +   '</div>'
+                    +   '<div style="font-size:0.82rem;font-weight:600;color:#1C1C1E;margin-bottom:2px;line-height:1.25;">' + escapeHtml(c.asunto || '(Sin asunto)') + '</div>'
+                    +   (c.snippet ? '<div style="font-size:0.72rem;color:#3C3C43;line-height:1.3;">' + escapeHtml(c.snippet) + '</div>' : '')
+                    + '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Error al cargar correos</div>';
+        });
+    }
+    window.cargarCorreosProspecto = cargarCorreosProspecto;
+
+    // ── Composer de correo con contexto del prospecto ──
+    // Análogo a woConvAbrirCorreoComposer (oportunidades): abre el widget
+    // Mail en modo "Redactar" y deja marcado window._mailCorreoContextoProspectoId
+    // para que el envío vincule el correo al prospecto vía FormData.
+    function wpAbrirComposerConPrellenado(correo) {
+        correo = correo || {};
+        var prospData = window._currentProspectoData || {};
+        var prospectoId = window._currentProspectoId || prospData.id;
+        if (!prospectoId) return;
+
+        // Marcamos el contexto antes de abrir Mail.
+        window._mailCorreoContextoProspectoId = prospectoId;
+        window._mailCorreoContextoProspectoNombre = prospData.nombre || '';
+
+        if (typeof window.mailAbrir !== 'function') return;
+        window.mailAbrir();
+        // Subir el z-index para que quede encima del widget de prospecto.
+        var mailWidget = document.getElementById('widgetMail');
+        if (mailWidget) mailWidget.style.zIndex = '11000';
+
+        setTimeout(function() {
+            if (typeof window.mailRedactar === 'function') window.mailRedactar();
+            setTimeout(function() {
+                var paraEl = document.getElementById('mailCompPara');
+                var asuntoEl = document.getElementById('mailCompAsunto');
+                var editorEl = document.getElementById('mailCompEditor');
+                var prefillTo = correo.destinatario_email || prospData.cliente_email || (prospData.contacto_email || '');
+                if (paraEl && prefillTo) paraEl.value = prefillTo;
+                if (asuntoEl) {
+                    if (correo.asunto) asuntoEl.value = correo.asunto;
+                    else if (!asuntoEl.value) asuntoEl.value = prospData.nombre || '';
+                }
+                if (editorEl) {
+                    if (correo.cuerpo) {
+                        // Convertimos saltos de línea simples a <br> para preservar
+                        // el formato del cuerpo redactado por el AI.
+                        editorEl.innerHTML = String(correo.cuerpo)
+                            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br>');
+                    }
+                    editorEl.focus();
+                }
+            }, 120);
+        }, 220);
+    }
+    window.wpAbrirComposerConPrellenado = wpAbrirComposerConPrellenado;
+
+    // Botón "Nuevo correo" — atajo que dispara la AI DIRECTAMENTE y
+    // abre el composer con todo redactado. NO abre el chat del AI.
+    // Bajo el cofre: llamamos al endpoint /redactar-correo-directo/
+    // que internamente ejecuta 1 sola llamada al LLM con la tool de
+    // redacción y devuelve el payload listo.
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest && e.target.closest('#wpNuevoCorreo');
+        if (!btn && e.target.id !== 'wpNuevoCorreo') return;
+        var pid = window._currentProspectoId;
+        if (!pid) return;
+        // Feedback visual: deshabilita el botón mientras la AI redacta.
+        var origLabel = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.innerHTML = '<span style="font-size:0.75rem;">Redactando…</span>';
+        }
+        fetch('/app/api/prospectos/' + pid + '/asistente/redactar-correo-directo/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify({}),
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.innerHTML = origLabel;
+            }
+            if (!data || !data.ok) {
+                // Fallback: abrir composer en blanco para que el user redacte solo.
+                var prospData = window._currentProspectoData || {};
+                wpAbrirComposerConPrellenado({
+                    asunto: '',
+                    cuerpo: '',
+                    destinatario_email: prospData.cliente_email || prospData.contacto_email || '',
+                });
+                return;
+            }
+            wpAbrirComposerConPrellenado(data.correo_preparado || {});
+        }).catch(function() {
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.innerHTML = origLabel;
+            }
+            var prospData = window._currentProspectoData || {};
+            wpAbrirComposerConPrellenado({
+                asunto: '',
+                cuerpo: '',
+                destinatario_email: prospData.cliente_email || prospData.contacto_email || '',
+            });
+        });
+    });
+
+    // Nota: el flujo de cotización para prospectos (botón antiguo wpNuevaCot)
+    // se removió del template. La conversión a oportunidad se sigue ofreciendo
+    // desde el pipeline; el handler de abajo queda como referencia histórica
+    // por si en el futuro queremos volver a exponer "Convertir y cotizar"
+    // desde el widget. El listener no hace nada porque #wpNuevaCot ya no
+    // existe en el DOM.
     document.addEventListener('click', function(e) {
         if (e.target.id === 'wpNuevaCot' || e.target.closest('#wpNuevaCot')) {
             var data = window._currentProspectoData;

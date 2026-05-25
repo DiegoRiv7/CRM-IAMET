@@ -828,6 +828,18 @@ def api_mail_enviar(request):
         except (TypeError, ValueError):
             oportunidad_obj = None
 
+    # Vínculo opcional con un Prospecto — equivalente al de oportunidad pero
+    # para la etapa de prospección. El composer del widget de prospecto setea
+    # `prospecto_id` en el FormData de envío.
+    prospecto_obj = None
+    prosp_id = data.get('prospecto_id')
+    if prosp_id:
+        try:
+            from .models import Prospecto
+            prospecto_obj = Prospecto.objects.filter(id=int(prosp_id)).first()
+        except (TypeError, ValueError):
+            prospecto_obj = None
+
     # Save to sent cache
     correo_sent = MailCorreo.objects.create(
         usuario=request.user,
@@ -847,6 +859,7 @@ def api_mail_enviar(request):
         cuerpo_cargado=True,
         tiene_adjuntos=bool(archivos),
         oportunidad=oportunidad_obj,
+        prospecto=prospecto_obj,
     )
 
     # Save attachments metadata
@@ -940,6 +953,7 @@ def api_mail_responder(request, correo_id):
         leido=True,
         cuerpo_cargado=True,
         oportunidad=original.oportunidad,
+        prospecto=original.prospecto,
         tiene_adjuntos=bool(archivos),
     )
 

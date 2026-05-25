@@ -32,10 +32,38 @@ log = logging.getLogger(__name__)
 
 # Máximo de mensajes que mandamos al LLM por turno (ventana de contexto).
 # La conversación completa se persiste; solo limitamos lo que reenviamos.
+# Máximo de mensajes en la ventana de contexto que mandamos al LLM.
 MAX_HISTORY_MSGS = 20
+
+# Cuántos turnos del USUARIO permitimos antes de forzar auto-save (estilo
+# Claude: cuando llega al tope, guardamos resumen, vaciamos el hilo, y
+# la siguiente respuesta arranca con el resumen previo inyectado como
+# contexto). Mantiene el costo en tokens acotado y obliga al user a
+# avanzar en lugar de chatear infinito.
+MAX_USER_TURNS = 8
+
+# Prefijo que usamos para reconocer un IdeaComentario como "resumen
+# generado por el AI" (vs. un comentario manual del user). Se usa para
+# inyectar el último resumen como contexto en hilos nuevos.
+RESUMEN_AI_PREFIX = 'Resumen de IAMET AI'
 
 
 # ─── Helpers ───────────────────────────────────────────────────────────
+
+
+def _count_user_turns(idea: Idea) -> int:
+    """Cuenta cuántos mensajes role=user hay en la conversación actual."""
+    return IdeaAsistenteMensaje.objects.filter(idea=idea, role='user').count()
+
+
+def _ultimo_resumen_ai(idea: Idea) -> str:
+    """Devuelve el texto del último IdeaComentario que parezca un resumen
+    generado por el AI (empieza con el prefijo conocido), o '' si no hay."""
+    c = (IdeaComentario.objects
+         .filter(idea=idea, texto__startswith=RESUMEN_AI_PREFIX)
+         .order_by('-fecha')
+         .first())
+    return c.texto if c else ''
 
 
 def _get_idea_for_user(idea_id: int, user) -> Idea | None:
@@ -50,6 +78,38 @@ def _get_idea_for_user(idea_id: int, user) -> Idea | None:
     if idea.autor_id != user.id and not user.is_superuser:
         return None
     return idea
+
+
+def _get_idea_with_access(idea_id: int, user):
+    """Como _get_idea_for_user pero distingue entre 'no existe' y
+    'existe pero no eres el autor'. Devuelve (idea, access) donde
+    access es:
+      - 'not_found': la idea no existe.
+      - 'not_owner': existe pero el user no es su autor (y no es admin).
+      - 'ok': existe y el user puede usar el AI sobre ella.
+    Usado por los endpoints del asistente para devolver un mensaje
+    amigable en lugar de 404 cuando un user visita la idea de otro.
+    """
+    try:
+        idea = Idea.objects.select_related('cliente').get(pk=idea_id)
+    except Idea.DoesNotExist:
+        return (None, 'not_found')
+    if idea.autor_id != user.id and not user.is_superuser:
+        return (idea, 'not_owner')
+    return (idea, 'ok')
+
+
+def _msg_not_owner(idea: Idea) -> str:
+    """Mensaje amigable que el AI 'manda' cuando un user que no es el
+    autor intenta usarlo. Se entrega como respuesta normal del bot, no
+    como error, así no rompe la UX del chat."""
+    autor = idea.autor.first_name or idea.autor.username if idea.autor_id else 'su autor'
+    return (
+        f'Esta idea es de **{autor}**, así que no puedo darte mi '
+        f'opinión aquí — solo le contesto al autor de la idea. '
+        f'Si quieres que la AI evalúe una idea tuya, captúrala desde '
+        f'el kanban de Ideas y ahí sí podemos aterrizarla juntos.'
+    )
 
 
 def _idea_context_block(idea: Idea) -> str:
@@ -74,7 +134,46 @@ def _idea_context_block(idea: Idea) -> str:
     )
 
 
-def _system_prompt(idea: Idea, config: AsistenteConfig, user) -> dict:
+def _closure_guidance(turn_number: int) -> str:
+    """Guía dinámica al AI para que vaya cerrando la conversación antes
+    de tocar el límite duro (MAX_USER_TURNS). Evita que se enganche en
+    un loop de preguntas y al user le den ganas de seguir indefinidamente.
+    `turn_number` es el número del turno del user que estamos por
+    procesar (1 = primer mensaje del user en este hilo)."""
+    if turn_number <= 2:
+        return (
+            'ETAPA TEMPRANA del chat. Puedes hacer 1 pregunta clave al '
+            'final si genuinamente la necesitas para aterrizar la idea.'
+        )
+    if turn_number <= 4:
+        return (
+            'ETAPA INTERMEDIA. Ya tienes contexto suficiente — reduce '
+            'preguntas. Si vas a hacer una, asegúrate que sea la ÚNICA '
+            'clave para avanzar; de otro modo termina con una propuesta '
+            'concreta en lugar de pregunta.'
+        )
+    if turn_number <= 6:
+        return (
+            'ETAPA DE CIERRE. NO termines con pregunta nueva. Resume el '
+            'avance en 2-3 líneas y propone explícitamente: "Con esto '
+            'creo que tenemos un primer aterrizaje claro. Te recomiendo '
+            'darle a Guardar resumen para tenerlo en la bitácora y '
+            'continuar otro día con lo que decidas explorar." Solo '
+            'hazle al user UNA pregunta si pidió expresamente otro '
+            f'tema. Estás en el turno {turn_number} de {MAX_USER_TURNS}.'
+        )
+    return (
+        'ÚLTIMOS TURNOS DISPONIBLES. NO hagas preguntas. Tu respuesta '
+        'debe ser un wrap-up: 2-3 líneas con lo aterrizado + UN '
+        'próximo paso concreto. Termina con: "Ya cubrimos lo '
+        'principal — guarda el resumen para empezar otro chat con '
+        f'lo aterrizado." Estás en el turno {turn_number} de '
+        f'{MAX_USER_TURNS} (próximo turno se auto-guardará el resumen).'
+    )
+
+
+def _system_prompt(idea: Idea, config: AsistenteConfig, user,
+                   turn_number: int = 1, previous_resumen: str = '') -> dict:
     """System prompt del asistente de ideas. Hereda el formateo del
     consultor (KPI cards, headings, tablas) pero el rol cambia a sparring
     de brainstorming, anclado a una metodología explícita para evitar
@@ -279,7 +378,29 @@ def _system_prompt(idea: Idea, config: AsistenteConfig, user) -> dict:
         'desde el botón ‘Convertir a prospección’ aquí mismo."\n'
         'NO inventes nombres de eventos/cursos específicos.\n'
     )
-    return {'role': 'system', 'content': base + _idea_context_block(idea)}
+    # Bloque dinámico de cierre (depende del turno) — empuja al AI a no
+    # quedarse haciendo preguntas para siempre.
+    closure_block = (
+        '\n\n## Etapa de cierre (turno actual)\n'
+        + _closure_guidance(turn_number) + '\n'
+    )
+    # Si hubo un auto-save previo, inyectamos el resumen guardado para
+    # que el AI tenga continuidad sin tener que ver toda la transcripción
+    # original.
+    resumen_block = ''
+    if previous_resumen:
+        resumen_block = (
+            '\n\n## Resumen de la conversación anterior (continuidad)\n'
+            'Anteriormente conversaste con el user sobre esta misma '
+            'idea. Cuando se llenó el chat, guardaste este resumen en '
+            'la bitácora. Úsalo como base — NO le hagas al user las '
+            'mismas preguntas que ya respondió arriba:\n\n'
+            + previous_resumen.strip() + '\n'
+        )
+    return {
+        'role': 'system',
+        'content': base + _idea_context_block(idea) + resumen_block + closure_block,
+    }
 
 
 def _build_context(idea: Idea) -> list[dict]:
@@ -308,11 +429,16 @@ def _msg_to_dict(m: IdeaAsistenteMensaje) -> dict:
 @login_required
 @require_http_methods(['GET'])
 def api_idea_asistente_mensajes(request, idea_id: int):
-    """Devuelve el historial de la conversación AI de una idea."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
-    msgs = IdeaAsistenteMensaje.objects.filter(idea=idea).order_by('fecha')
+    """Devuelve el historial de la conversación AI de una idea.
+    Si el user no es el autor, devolvemos historial vacío (sin error)
+    para que el modal abra y el primer mensaje que mande dispare el
+    aviso amigable de "no puedo opinar sobre la idea de otro"."""
+    idea_obj, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        return JsonResponse({'ok': True, 'mensajes': []})
+    msgs = IdeaAsistenteMensaje.objects.filter(idea=idea_obj).order_by('fecha')
     return JsonResponse({'ok': True, 'mensajes': [_msg_to_dict(m) for m in msgs]})
 
 
@@ -321,9 +447,21 @@ def api_idea_asistente_mensajes(request, idea_id: int):
 def api_idea_asistente_mensaje(request, idea_id: int):
     """Recibe un mensaje del user, lo persiste, llama al LLM y devuelve
     la respuesta del asistente."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
+    idea_obj, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        # Mensaje amigable del bot — no es un error técnico.
+        return JsonResponse({
+            'ok': True,
+            'mensaje': {
+                'id': None,
+                'role': 'assistant',
+                'contenido': _msg_not_owner(idea_obj),
+                'fecha': None,
+            },
+        })
+    idea = idea_obj
     try:
         payload = json.loads(request.body or '{}')
     except Exception:
@@ -336,13 +474,58 @@ def api_idea_asistente_mensaje(request, idea_id: int):
     if not cfg.activo:
         return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
 
-    # 1) Guarda el mensaje del user.
+    # Auto-save: si el user ya gastó MAX_USER_TURNS turnos, antes de
+    # procesar el mensaje nuevo generamos resumen, lo guardamos en
+    # bitácora, vaciamos el hilo, y continuamos en un chat fresco que
+    # tiene el resumen previo inyectado como contexto. Esto mantiene el
+    # uso de tokens acotado y simula el "manejo automático" de Claude.
+    auto_saved_resumen = None
+    turnos_previos = _count_user_turns(idea)
+    if turnos_previos >= MAX_USER_TURNS:
+        msgs_existentes = list(IdeaAsistenteMensaje.objects.filter(idea=idea).order_by('fecha'))
+        resumen_auto, err_auto = _generar_resumen_llm(idea, msgs_existentes, cfg)
+        if err_auto:
+            # Si el resumen falla, NO borramos los mensajes — devolvemos
+            # error para que el user reintente o llame a Guardar resumen
+            # manualmente. Mejor avisar que perder el hilo.
+            return JsonResponse({
+                'ok': False,
+                'error': (
+                    'Llegamos al límite del chat pero no pude generar '
+                    'el resumen automático. Intenta de nuevo o usa el '
+                    'botón "Guardar resumen" manualmente. '
+                    f'Detalle: {err_auto}'
+                ),
+            }, status=502)
+        # Guardamos el resumen en bitácora.
+        auto_saved_comentario = IdeaComentario.objects.create(
+            idea=idea, usuario=request.user, texto=resumen_auto,
+        )
+        # Borramos los mensajes del hilo para que el siguiente turno
+        # arranque fresco (el resumen vive en bitácora y se inyecta como
+        # contexto via _ultimo_resumen_ai).
+        IdeaAsistenteMensaje.objects.filter(idea=idea).delete()
+        auto_saved_resumen = {
+            'id': auto_saved_comentario.id,
+            'texto': auto_saved_comentario.texto,
+            'fecha': auto_saved_comentario.fecha.isoformat() if auto_saved_comentario.fecha else None,
+        }
+
+    # 1) Guarda el mensaje del user (después del posible auto-save).
     IdeaAsistenteMensaje.objects.create(
         idea=idea, role='user', contenido=texto,
     )
 
-    # 2) Llama al LLM con el contexto de la idea.
-    sys_msg = _system_prompt(idea, cfg, request.user)
+    # Turno actual = mensajes de user incluyendo este nuevo.
+    turn_actual = _count_user_turns(idea)
+    previous_resumen = _ultimo_resumen_ai(idea) if (turn_actual == 1) else ''
+
+    # 2) Llama al LLM con el contexto de la idea + guidance dinámico.
+    sys_msg = _system_prompt(
+        idea, cfg, request.user,
+        turn_number=turn_actual,
+        previous_resumen=previous_resumen,
+    )
     history = _build_context(idea)
     messages = [sys_msg] + history
 
@@ -362,29 +545,36 @@ def api_idea_asistente_mensaje(request, idea_id: int):
         log.exception('Error inesperado en idea asistente: %s', e)
         return JsonResponse({'ok': False, 'error': f'Error inesperado: {e}'}, status=500)
 
+    # Si fue auto-save, prepend al final_text una nota explícita al user
+    # para que sepa que su conversación se reinició con resumen guardado.
+    if auto_saved_resumen:
+        final_text = (
+            'Llegamos al tope de este chat. Guardé un resumen en la '
+            'bitácora de la idea y arranqué un chat nuevo con ese '
+            'resumen como contexto — así seguimos sin perder lo '
+            'aterrizado. Aquí va mi respuesta a tu pregunta:\n\n'
+            + final_text
+        )
+
     assistant_msg = IdeaAsistenteMensaje.objects.create(
         idea=idea, role='assistant', contenido=final_text,
     )
-    return JsonResponse({'ok': True, 'mensaje': _msg_to_dict(assistant_msg)})
+    payload = {'ok': True, 'mensaje': _msg_to_dict(assistant_msg)}
+    if auto_saved_resumen:
+        payload['auto_saved_resumen'] = auto_saved_resumen
+    return JsonResponse(payload)
 
 
-@login_required
-@require_http_methods(['POST'])
-def api_idea_asistente_resumen(request, idea_id: int):
-    """Genera un resumen de la conversación AI y lo guarda como
-    IdeaComentario en la bitácora de la idea."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
+def _generar_resumen_llm(idea: Idea, msgs, cfg: AsistenteConfig) -> tuple[str, str]:
+    """Llama al LLM con la transcripción de `msgs` y devuelve
+    (resumen_texto, error_msg). Si error_msg != '' significa que algo
+    falló y resumen_texto debe ignorarse.
 
-    msgs = list(IdeaAsistenteMensaje.objects.filter(idea=idea).order_by('fecha'))
+    Factorizado del endpoint público para poder llamarlo también desde
+    el auto-save cuando el chat llega al límite de turnos.
+    """
     if not msgs:
-        return JsonResponse({'ok': False, 'error': 'No hay conversación que resumir todavía.'}, status=400)
-
-    cfg = AsistenteConfig.get_singleton()
-    if not cfg.activo:
-        return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
-
+        return ('', 'No hay conversación que resumir todavía.')
     transcript = '\n\n'.join(
         f'[{m.role.upper()}] {m.contenido}' for m in msgs if m.contenido
     )
@@ -441,7 +631,6 @@ def api_idea_asistente_resumen(request, idea_id: int):
             f'Transcripción de la conversación:\n\n{transcript}'
         ),
     }
-
     try:
         resp = chat(
             messages=[sys_msg, user_msg],
@@ -453,13 +642,13 @@ def api_idea_asistente_resumen(request, idea_id: int):
         resumen = (resp.get('text') or '').strip()
     except AsistenteError as e:
         log.warning('Idea resumen error: %s', e)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=502)
+        return ('', str(e))
     except Exception as e:
         log.exception('Error inesperado en idea resumen: %s', e)
-        return JsonResponse({'ok': False, 'error': f'Error inesperado: {e}'}, status=500)
+        return ('', f'Error inesperado: {e}')
 
     if not resumen:
-        return JsonResponse({'ok': False, 'error': 'El asistente no generó resumen.'}, status=502)
+        return ('', 'El asistente no generó resumen.')
 
     # Defensa extra: si el modelo se rebeló y metió ** o ##, los limpiamos
     # para garantizar plain text en la bitácora.
@@ -467,6 +656,34 @@ def api_idea_asistente_resumen(request, idea_id: int):
     resumen = _re.sub(r'\*\*', '', resumen)
     resumen = _re.sub(r'^#+\s*', '', resumen, flags=_re.MULTILINE)
     resumen = _re.sub(r'^[-*]\s+', '· ', resumen, flags=_re.MULTILINE)
+    return (resumen, '')
+
+
+@login_required
+@require_http_methods(['POST'])
+def api_idea_asistente_resumen(request, idea_id: int):
+    """Genera un resumen de la conversación AI y lo guarda como
+    IdeaComentario en la bitácora de la idea."""
+    idea, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        return JsonResponse({
+            'ok': False,
+            'error': 'Solo el autor de la idea puede guardar resúmenes del AI.',
+        }, status=403)
+
+    msgs = list(IdeaAsistenteMensaje.objects.filter(idea=idea).order_by('fecha'))
+    if not msgs:
+        return JsonResponse({'ok': False, 'error': 'No hay conversación que resumir todavía.'}, status=400)
+
+    cfg = AsistenteConfig.get_singleton()
+    if not cfg.activo:
+        return JsonResponse({'ok': False, 'error': 'Asistente desactivado.'}, status=403)
+
+    resumen, err = _generar_resumen_llm(idea, msgs, cfg)
+    if err:
+        return JsonResponse({'ok': False, 'error': err}, status=502)
 
     # Inserta como IdeaComentario. usuario = quien aprieta el botón.
     comentario = IdeaComentario.objects.create(
@@ -488,8 +705,13 @@ def api_idea_asistente_resumen(request, idea_id: int):
 def api_idea_asistente_reset(request, idea_id: int):
     """Borra todos los mensajes de la conversación AI de una idea
     (el botón ‘Nuevo chat’ del widget)."""
-    idea = _get_idea_for_user(idea_id, request.user)
-    if not idea:
-        return JsonResponse({'ok': False, 'error': 'Idea no encontrada o sin acceso.'}, status=404)
+    idea, access = _get_idea_with_access(idea_id, request.user)
+    if access == 'not_found':
+        return JsonResponse({'ok': False, 'error': 'Idea no encontrada.'}, status=404)
+    if access == 'not_owner':
+        return JsonResponse({
+            'ok': False,
+            'error': 'Solo el autor de la idea puede resetear el chat.',
+        }, status=403)
     deleted, _ = IdeaAsistenteMensaje.objects.filter(idea=idea).delete()
     return JsonResponse({'ok': True, 'borrados': deleted})

@@ -42,9 +42,8 @@
         };
         var _urlTab = '';
         try { _urlTab = new URL(window.location.href).searchParams.get('tab') || ''; } catch (e) { _urlTab = ''; }
-        if (!_isMobileViewport() && _urlTab !== 'calendario') {
-            ingenieroMostrarDashboard();
-        }
+        // El ingeniero ya no aterriza en el dashboard — entra directo a Tareas.
+        // El bloque restore-view de más abajo se encarga del btnTareas.click().
         var btnTareas = document.getElementById('btnTareas');
         if (btnTareas) btnTareas.addEventListener('click', function () {
             localStorage.setItem('crmView', 'tareas');
@@ -74,31 +73,19 @@
             var el = document.getElementById(id); if (el) el.style.display = 'none';
         });
 
-        // Restore view — el 'tablero' legacy ya NO se restaura (oculto).
-        // Desktop: respetamos 'tareas' y 'proyectos'; cualquier otro → dashboard.
-        // Móvil:   siempre abrimos Proyectos salvo que tengan guardado 'tareas'.
+        // Restore view — el ingeniero ya NO tiene dashboard como landing.
+        // Default: Tareas. Respetamos 'proyectos' si quedó guardado de la sesión
+        // anterior. Cualquier otro valor (incluido el legacy 'dashboard') cae a Tareas.
         var savedView = localStorage.getItem('crmView');
         var _btnProy = document.getElementById('btnProyectos');
+        if (document.body) document.body.classList.remove('eng-initial-hide');
+        _dashIngHide();
         if (_urlTab === 'calendario') {
-            if (document.body) document.body.classList.remove('eng-initial-hide');
-            _dashIngHide();
-        } else if (_isMobileViewport()) {
-            // Limpiar guardia anti-FOUC ANTES de activar la sección
-            // (el CSS body.eng-initial-hide tiene !important y ganaría
-            // sobre la clase .active si no la removemos primero).
-            if (document.body) document.body.classList.remove('eng-initial-hide');
-            if (savedView === 'tareas' && btnTareas) {
-                btnTareas.click();
-            } else {
-                if (_btnProy) _btnProy.click();
-            }
-        } else {
-            if (savedView === 'tareas') {
-                if (btnTareas) btnTareas.click();
-            } else if (savedView === 'proyectos') {
-                if (_btnProy) _btnProy.click();
-            }
-            // savedView === 'dashboard' | 'tablero' (legacy) | null → Dashboard (ya cargado)
+            // Calendar mode — no landing override.
+        } else if (savedView === 'proyectos' && _btnProy) {
+            _btnProy.click();
+        } else if (btnTareas) {
+            btnTareas.click();
         }
     });
 
@@ -1205,9 +1192,24 @@
     window.wpdTab = wpdTab;
 
     function ingenieroAbrirProyecto(id) {
+        // El modal legacy (wpd-titulo/wpdPanelTareas/...) vivía en
+        // _actividades_board.html y ya no se incluye en el dashboard. Si
+        // proyectosVerDetalle está disponible (siempre lo está cuando se
+        // carga crm_proyectos.js), delegamos al flujo estándar — eso oculta
+        // dashIngRoot via el click del sidebar y abre el detalle inline.
+        if (typeof window.proyectosVerDetalle === 'function') {
+            var btnProy = document.getElementById('btnProyectos');
+            if (btnProy) btnProy.click();
+            else if (typeof window.switchCrmView === 'function') window.switchCrmView('proyectos');
+            setTimeout(function () { window.proyectosVerDetalle(id); }, 60);
+            return;
+        }
+        // Fallback al modal legacy si por alguna razón el flujo nuevo no carga.
         var widget = document.getElementById('widgetProyectoDetalle');
         if (!widget) return;
-        document.getElementById('wpd-titulo').textContent = 'Cargando...';
+        var titEl = document.getElementById('wpd-titulo');
+        if (!titEl) return;  // modal legacy ausente — sin DOM, no hacemos nada.
+        titEl.textContent = 'Cargando...';
         document.getElementById('wpd-desc').textContent = '';
         document.getElementById('wpdPanelTareas').innerHTML = '<div style="padding:20px;text-align:center;color:#86868B;font-size:0.85rem;">Cargando...</div>';
         document.getElementById('wpdPanelDrive').innerHTML = '';

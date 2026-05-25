@@ -2285,7 +2285,10 @@ def api_crm_table_data(request):
             # Ventas generadas desde prospeccion
             ventas_prosp = Decimal('0')
             try:
-                opps_from_prosp = base_qs.filter(prospecto_origen__isnull=False)
+                opps_from_prosp = base_qs.filter(
+                    Q(prospecto_origen_directo__isnull=False)
+                    | Q(prospecto_origen__isnull=False)
+                ).distinct()
                 opps_vendidas = opps_from_prosp.filter(
                     Q(etapa_corta__icontains='vendido') | Q(etapa_corta__icontains='comprando') |
                     Q(etapa_corta__icontains='transito') | Q(etapa_corta__icontains='entregado') |
@@ -6316,7 +6319,13 @@ def _dashboard_prosp_qs(request):
 def _dashboard_prosp_opps_qs(request):
     """TodoItem queryset filtrado al periodo y origen prospección."""
     anios_list, meses_list, vendedores_ids, es_supervisor, user = _dashboard_prosp_period_filters(request)
-    qs = TodoItem.objects.select_related('cliente', 'usuario').filter(prospecto_origen__isnull=False)
+    # Cuenta TODAS las opps que provengan de un prospecto, no solo la
+    # primera (prospecto_origen__isnull es la reverse a Prospecto.oportunidad_creada
+    # que solo apunta a UNA; prospecto_origen_directo es FK directo en cada opp).
+    qs = TodoItem.objects.select_related('cliente', 'usuario').filter(
+        Q(prospecto_origen_directo__isnull=False)
+        | Q(prospecto_origen__isnull=False)
+    ).distinct()
     if anios_list is not None:
         qs = qs.filter(anio_cierre__in=anios_list)
     if meses_list is not None:

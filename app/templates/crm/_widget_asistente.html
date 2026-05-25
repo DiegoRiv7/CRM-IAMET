@@ -428,6 +428,20 @@ un icono estático. Saludo personalizado con first_name del user.
     background: rgba(16, 185, 129, 0.18);
     border-color: #059669;
 }
+/* Estado "guardando" — opacidad sutil y sin hover. */
+.asist-save-resumen-btn.is-saving {
+    opacity: 0.75;
+    cursor: progress;
+}
+/* Estado "guardado" — verde sólido por 2.5s para feedback inequívoco
+   y evitar que el user le dé doble-click. */
+.asist-save-resumen-btn.is-saved {
+    background: #059669 !important;
+    color: #fff !important;
+    border-color: #047857 !important;
+    box-shadow: 0 1px 2px rgba(5,150,105,0.18), 0 6px 16px rgba(5,150,105,0.22);
+}
+.asist-save-resumen-btn.is-saved svg { display: none; }
 
 /* ═════════ Mensajes ═════════ */
 .asist-messages {
@@ -794,6 +808,15 @@ un icono estático. Saludo personalizado con first_name del user.
     grid-template-columns: minmax(260px, 360px);
     justify-content: center;
 }
+/* Cuando hay exactamente 3 cards (modo oportunidad: Cómo va · Próximo
+   paso · Redactar seguimiento), la tercera se CENTRA en su propia
+   fila — en lugar de quedar alineada a la izquierda dejando un hueco
+   donde "faltaría" una cuarta card. */
+.asist-suggestions:has(> .asist-sugg-card:nth-child(3):last-child) > .asist-sugg-card:nth-child(3) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 5px);
+}
 .asist-sugg-card {
     display: flex; align-items: center; gap: 12px;
     padding: 12px 14px;
@@ -892,5 +915,745 @@ un icono estático. Saludo personalizado con first_name del user.
     .asist-card { height: 100vh; width: 100vw; border-radius: 0; }
     .asist-suggestions { grid-template-columns: 1fr; }
     .asist-greeting-q { font-size: 1.5rem; }
+}
+
+/* ═════════ Card "Agendar seguimiento" (modo prospecto) ═════════
+   Aparece debajo del mensaje del bot cuando el user pidió próximo
+   paso. Ofrece 1 click para crear la ProspectoActividad. */
+.asist-agendar-card {
+    display: flex; align-items: center; gap: 12px;
+    margin: 8px 28px 8px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px -8px rgba(99, 102, 241, 0.25);
+    animation: asist-agendar-fade-in 0.22s ease-out;
+}
+@keyframes asist-agendar-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.asist-agendar-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0EA5E9, #6366F1);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.asist-agendar-icon--ok {
+    background: linear-gradient(135deg, #10B981, #059669);
+}
+.asist-agendar-body { flex: 1; min-width: 0; }
+.asist-agendar-title {
+    font-size: 0.82rem; font-weight: 700; color: #0F172A;
+    line-height: 1.2;
+}
+.asist-agendar-fecha {
+    font-size: 0.74rem; color: #64748B; margin-top: 2px;
+    text-transform: capitalize;
+}
+.asist-agendar-actions {
+    display: flex; gap: 6px; flex-shrink: 0;
+}
+.asist-agendar-btn {
+    padding: 6px 12px;
+    font-size: 0.74rem; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s;
+}
+.asist-agendar-btn:disabled { opacity: 0.6; cursor: default; }
+.asist-agendar-skip {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.asist-agendar-skip:hover { background: #F1F5F9; }
+.asist-agendar-ok {
+    color: #fff; background: #0052D4; border-color: #0052D4;
+}
+.asist-agendar-ok:hover { background: #0040A8; border-color: #0040A8; }
+
+/* ═════════ Card "Correo preparado" (modo oportunidad) ═════════
+   Similar a la card de Agendar pero con preview de asunto + cuerpo
+   y action "Abrir correo" que abre el composer del módulo Mail. */
+.asist-correo-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin: 8px 28px 8px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FEF6EC 100%);
+    border: 1px solid rgba(180, 83, 9, 0.30);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px -8px rgba(180, 83, 9, 0.25);
+    animation: asist-agendar-fade-in 0.22s ease-out;
+}
+.asist-correo-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #F59E0B, #B45309);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.asist-correo-icon--ok {
+    background: linear-gradient(135deg, #10B981, #059669);
+}
+.asist-correo-body { flex: 1; min-width: 0; }
+.asist-correo-title {
+    font-size: 0.78rem; font-weight: 700; color: #92400E;
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.asist-correo-asunto {
+    font-size: 0.86rem; font-weight: 600; color: #0F172A;
+    margin-top: 4px; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.asist-correo-dest {
+    font-size: 0.7rem; color: #64748B; margin-top: 2px;
+}
+.asist-correo-preview {
+    font-size: 0.74rem; color: #475569; margin-top: 4px;
+    line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.asist-correo-actions {
+    display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+    align-self: center;
+}
+.asist-correo-btn {
+    padding: 6px 12px;
+    font-size: 0.74rem; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    white-space: nowrap;
+}
+.asist-correo-skip {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.asist-correo-skip:hover { background: #F1F5F9; }
+.asist-correo-open {
+    color: #fff; background: #B45309; border-color: #B45309;
+}
+.asist-correo-open:hover { background: #92400E; border-color: #92400E; }
+
+/* ═════════ Custom confirm modal (global, reutilizable) ═════════
+   Reemplazo de confirm() del browser. Lo expone crm_asistente.js
+   como window.customConfirm — cualquier módulo del CRM puede llamarlo. */
+.asist-confirm-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.50);
+    backdrop-filter: blur(4px);
+    z-index: 10600;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: asist-confirm-fade 0.16s ease-out;
+}
+@keyframes asist-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+.asist-confirm-modal {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 24px 48px -16px rgba(15, 23, 42, 0.40);
+    animation: asist-confirm-pop 0.18s ease-out;
+}
+@keyframes asist-confirm-pop {
+    from { opacity: 0; transform: scale(0.95) translateY(6px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.asist-confirm-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #FEF2F2; color: #DC2626;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+}
+.asist-confirm-icon svg { width: 24px; height: 24px; }
+.asist-confirm-title {
+    font-size: 1.05rem; font-weight: 700; color: #0F172A;
+    text-align: center; margin: 0 0 6px;
+    letter-spacing: -0.01em;
+}
+.asist-confirm-message {
+    font-size: 0.82rem; color: #64748B;
+    text-align: center; margin: 0 0 18px;
+    line-height: 1.4;
+}
+.asist-confirm-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+}
+.asist-confirm-actions button {
+    padding: 9px 16px;
+    font-size: 0.80rem; font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.asist-confirm-cancel {
+    color: #475569; background: #fff; border-color: #E2E8F0;
+}
+.asist-confirm-cancel:hover { background: #F1F5F9; }
+.asist-confirm-ok {
+    color: #fff; background: #DC2626; border-color: #DC2626;
+}
+.asist-confirm-ok:hover { background: #B91C1C; border-color: #B91C1C; }
+
+/* ═════════ Asistente del Calendario ═════════
+   El welcome usa la misma estructura visual que el consultor general
+   (.asist-welcome + .asist-suggestions) para que ambos se vean idénticos.
+   En modo chat le quitamos las restricciones de ancho para que los
+   bubbles se comporten igual que en el consultor general.
+
+   .asist-cal-root      → welcome (orb + título + sugg cards)
+   .asist-cal-rootchat  → chat (bubbles + planes inline) */
+.asist-cal-root,
+.asist-cal-rootchat {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+.asist-cal-root {
+    align-items: center;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 8px 0 0;
+    gap: 8px;
+}
+.asist-cal-rootchat {
+    gap: 12px;
+}
+.asist-cal-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    width: 100%;
+}
+.asist-cal-welcome .asist-orb--lg { margin-bottom: 14px; }
+.asist-cal-title {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    background: linear-gradient(135deg, var(--ai-ink) 30%, var(--ai-blue) 70%, var(--ai-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 0;
+}
+.asist-cal-sub {
+    font-size: 0.95rem;
+    color: var(--ai-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+.asist-cal-sub strong { color: var(--ai-ink); font-weight: 600; }
+
+/* Lista de cards de acción (estilo .asist-sugg-card pero a 1 columna,
+   y con descripción más larga). Card completa clickable. */
+.asist-cal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 22px;
+}
+.asist-cal-action {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.12);
+    border-radius: 14px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 8px -4px rgba(0, 102, 255, 0.10);
+    width: 100%;
+}
+.asist-cal-action:hover {
+    border-color: var(--ai-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px -6px rgba(0, 102, 255, 0.22);
+}
+.asist-cal-action-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0, 102, 255, 0.10), rgba(99, 102, 241, 0.10));
+    color: var(--ai-blue);
+    transition: all 0.18s ease;
+}
+.asist-cal-action:hover .asist-cal-action-icon {
+    background: linear-gradient(135deg, var(--ai-blue), var(--ai-violet));
+    color: #fff;
+}
+.asist-cal-action-icon svg { width: 18px; height: 18px; }
+.asist-cal-action-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+.asist-cal-action-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+}
+.asist-cal-action-desc {
+    font-size: 0.80rem;
+    color: var(--ai-muted);
+    line-height: 1.45;
+}
+
+/* Loading: orb pulsante (clase is-thinking ya existe) + texto shimmer */
+.asist-cal-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 50px 20px;
+    width: 100%;
+}
+.asist-cal-loading-text {
+    font-size: 0.92rem;
+    font-weight: 600;
+    background: linear-gradient(90deg, var(--ai-blue), var(--ai-magenta), var(--ai-blue));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: asist-shimmer 2s linear infinite;
+    text-align: center;
+}
+
+/* Header de plan (back + título) */
+.asist-cal-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--ai-muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    align-self: flex-start;
+    transition: background 0.14s ease, color 0.14s ease;
+}
+.asist-cal-back:hover {
+    background: rgba(0, 102, 255, 0.08);
+    color: var(--ai-blue);
+}
+.asist-cal-plan-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 14px;
+}
+.asist-cal-plan-headline {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ai-ink);
+    line-height: 1.2;
+    margin: 0;
+}
+.asist-cal-resumen {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(0, 102, 255, 0.04);
+    border: 1px solid rgba(0, 102, 255, 0.10);
+    color: var(--ai-ink);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+.asist-cal-resumen strong { font-weight: 700; color: var(--ai-ink); }
+
+/* Lista de cards del plan — compactas, blancas, sin gradients pesados */
+.asist-cal-plan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+}
+.asist-cal-plan-card {
+    padding: 12px 14px;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 102, 255, 0.10);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px -1px rgba(0, 102, 255, 0.06);
+    transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+}
+.asist-cal-plan-card:hover {
+    border-color: rgba(0, 102, 255, 0.28);
+    box-shadow: 0 6px 16px -6px rgba(0, 102, 255, 0.18);
+    transform: translateY(-1px);
+}
+.asist-cal-plan-row1 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.asist-cal-plan-num {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--ai-blue);
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    flex-shrink: 0;
+    min-width: 18px;
+}
+.asist-cal-plan-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ai-ink);
+    line-height: 1.35;
+    flex: 1;
+    min-width: 0;
+}
+.asist-cal-plan-meta {
+    margin-top: 4px;
+    padding-left: 26px;
+    font-size: 0.80rem;
+    color: var(--ai-muted);
+    line-height: 1.45;
+}
+.asist-cal-plan-meta .asist-cal-old {
+    color: #94A3B8;
+    text-decoration: line-through;
+}
+.asist-cal-plan-meta .asist-cal-new {
+    color: var(--ai-ink);
+    font-weight: 600;
+}
+.asist-cal-plan-meta .asist-cal-dot {
+    color: #CBD5E1;
+    margin: 0 6px;
+}
+.asist-cal-plan-meta .asist-cal-ctx {
+    color: var(--ai-blue-dark);
+    font-weight: 500;
+}
+.asist-cal-plan-razon {
+    margin-top: 6px;
+    margin-left: 26px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    font-size: 0.78rem;
+    color: #475569;
+    line-height: 1.45;
+}
+.asist-cal-plan-razon svg {
+    flex-shrink: 0;
+    color: #F59E0B;
+    margin-top: 1px;
+}
+
+/* Footer con botones — consistente con .asist-confirm-actions */
+.asist-cal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 102, 255, 0.08);
+}
+.asist-cal-btn {
+    padding: 9px 18px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.14s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.asist-cal-btn-secondary {
+    color: #475569;
+    background: #fff;
+    border-color: #E2E8F0;
+}
+.asist-cal-btn-secondary:hover {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+    color: var(--ai-ink);
+}
+.asist-cal-btn-primary {
+    color: #fff;
+    background: var(--ai-blue-dark);
+    border-color: var(--ai-blue-dark);
+    box-shadow: 0 4px 12px -4px rgba(0, 82, 212, 0.45);
+}
+.asist-cal-btn-primary:hover {
+    background: #0040A8;
+    border-color: #0040A8;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -4px rgba(0, 82, 212, 0.55);
+}
+.asist-cal-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Vista vacía dentro del flow del plan (no encontró nada que hacer) */
+.asist-cal-empty {
+    width: 100%;
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--ai-muted);
+}
+.asist-cal-empty-title {
+    font-size: 1.0rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    margin-bottom: 6px;
+}
+.asist-cal-empty-text {
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+/* Done — orb grande + check overlay verde discreto */
+.asist-cal-done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 28px 20px 12px;
+    width: 100%;
+}
+.asist-cal-done-orb-wrap {
+    position: relative;
+    margin-bottom: 18px;
+}
+.asist-cal-done-check {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px -4px rgba(16, 185, 129, 0.55), 0 0 0 3px #fff;
+    animation: asist-cal-pop 0.32s cubic-bezier(.18, .89, .32, 1.28);
+    z-index: 2;
+}
+@keyframes asist-cal-pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.asist-cal-done-title {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--ai-ink) 30%, var(--ai-blue) 70%, var(--ai-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1.15;
+    margin: 0;
+}
+.asist-cal-done-text {
+    font-size: 0.95rem;
+    color: var(--ai-muted);
+    line-height: 1.5;
+    max-width: 420px;
+}
+.asist-cal-done-text strong { color: var(--ai-ink); font-weight: 700; }
+.asist-cal-done-warn {
+    color: #B45309;
+    font-size: 0.84rem;
+    margin-top: 4px;
+}
+
+/* Error: panel sutil + footer con botones consistentes */
+.asist-cal-error-card {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+.asist-cal-error-details {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(153, 27, 27, 0.25);
+    font-size: 0.80rem;
+    line-height: 1.45;
+    color: #7F1D1D;
+}
+
+/* En modo calendario el contenedor del modal centra mejor (orb grande
+   se siente raro pegado arriba) — usamos justify-content sutil. */
+#widgetAsistente.is-calendar-mode .asist-messages {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+/* ── Chat libre del calendario (bubbles + planes inline) ───────────── */
+.asist-cal-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.asist-cal-chat .asist-msg {
+    margin: 0;
+}
+.asist-cal-bubble-err {
+    background: #FEF2F2;
+    border: 1px solid rgba(220, 38, 38, 0.18);
+    color: #7F1D1D;
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.asist-cal-retry-link {
+    background: transparent;
+    border: 0;
+    color: var(--ai-blue);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border-radius: 6px;
+}
+.asist-cal-retry-link:hover {
+    background: rgba(0, 102, 255, 0.08);
+}
+
+/* Plan inline dentro del chat ──────────────────────────────────────── */
+.asist-cal-plan-inline {
+    margin: 4px 0 4px 40px;  /* alineado con bubbles del bot (orb md 32px + gap) */
+    background: #FFFFFF;
+    border: 1px solid var(--ai-line);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+}
+.asist-cal-plan-inline-head {
+    padding: 12px 16px 6px;
+    background: linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%);
+}
+.asist-cal-plan-inline-headline {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--ai-ink);
+    letter-spacing: -0.005em;
+}
+.asist-cal-plan-inline .asist-cal-resumen {
+    margin: 0 16px 8px;
+}
+.asist-cal-plan-inline .asist-cal-plan-list {
+    padding: 4px 12px 12px;
+}
+.asist-cal-plan-inline .asist-cal-plan-card {
+    margin-bottom: 6px;
+}
+.asist-cal-plan-inline-footer {
+    border-top: 1px solid var(--ai-line);
+    padding: 10px 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+    background: #FAFBFD;
+}
+.asist-cal-plan-inline-footer.is-applied {
+    color: #166534;
+    background: #ECFDF5;
+    font-size: 0.88rem;
+    font-weight: 600;
+    justify-content: center;
+}
+.asist-cal-plan-inline-footer.is-applied svg {
+    color: #16A34A;
+    margin-right: 4px;
+}
+.asist-cal-plan-inline-footer.is-applying {
+    color: var(--ai-muted);
+    font-size: 0.88rem;
+    justify-content: center;
+}
+.asist-cal-plan-inline--empty {
+    margin-left: 40px;
+    padding: 10px 14px;
+    color: var(--ai-muted);
+    font-size: 0.88rem;
+    border: 1px dashed var(--ai-line);
+    border-radius: 14px;
+    background: #FAFBFD;
+}
+.asist-cal-plan-inline-empty-text {
+    font-style: italic;
+}
+.asist-cal-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(15, 23, 42, 0.15);
+    border-top-color: var(--ai-blue);
+    animation: asist-cal-spin 0.7s linear infinite;
+}
+@keyframes asist-cal-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+    .asist-cal-root { padding: 18px 14px 8px; }
+    .asist-cal-title, .asist-cal-done-title { font-size: 1.3rem; }
+    .asist-cal-plan-inline,
+    .asist-cal-plan-inline--empty { margin-left: 0; }
 }
 </style>

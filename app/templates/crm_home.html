@@ -125,11 +125,11 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% include "crm/_scripts_main.html" %}
-<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260514-cli-smart"></script>
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260522-verif-toggle"></script>
 {% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
-<script src="{% static 'js/crm_proyectos.js' %}?v=20260508-revert-gantt"></script>
+<script src="{% static 'js/crm_proyectos.js' %}?v=20260522-eng-proy-fix"></script>
 <script src="{% static 'js/gantt_programa_obra.js' %}?v=20260508-revert-gantt"></script>
 <script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss"></script>
 <script src="{% static 'js/crm_levantamiento.js' %}?v=20260507-vendor-compact"></script>
@@ -140,8 +140,10 @@
 <script>
     var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
 </script>
-<script src="{% static 'js/crm_asistente.js' %}?v=20260519-26"></script>
-<script src="{% static 'js/crm_prospeccion.js' %}"></script>
+<script src="{% static 'js/crm_asistente.js' %}?v=20260521-cal-chat"></script>
+<script src="{% static 'js/crm_asistente_oportunidades.js' %}?v=20260520-prosp-resp"></script>
+<script src="{% static 'js/crm_asistente_calendario.js' %}?v=20260521-cal-chat"></script>
+<script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp"></script>
 <script src="{% static 'js/crm_prospectos_kanban.js' %}"></script>
 <script src="{% static 'js/crm_campanas.js' %}"></script>
 

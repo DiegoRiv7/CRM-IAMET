@@ -85,6 +85,7 @@ def _regla_to_dict(regla):
         'fecha_fija': regla.fecha_fija.strftime('%Y-%m-%d') if regla.fecha_fija else None,
         'orden': regla.orden,
         'avanzar_etapa_al_completar': regla.avanzar_etapa_al_completar,
+        'requiere_verificacion': regla.requiere_verificacion,
         'incluir_dueno_participante': regla.incluir_dueno_participante,
         'incluir_dueno_observador': regla.incluir_dueno_observador,
         'responsable': {
@@ -210,6 +211,7 @@ def api_automatizacion_crear(request):
         fecha_fija=fecha_fija,
         orden=int(data.get('orden', 0)),
         avanzar_etapa_al_completar=bool(data.get('avanzar_etapa_al_completar', False)),
+        requiere_verificacion=bool(data.get('requiere_verificacion', False)),
         incluir_dueno_participante=bool(data.get('incluir_dueno_participante', False)),
         incluir_dueno_observador=bool(data.get('incluir_dueno_observador', False)),
         responsable_predeterminado=responsable,
@@ -274,6 +276,8 @@ def api_automatizacion_editar(request, regla_id):
         regla.orden = int(data['orden'] or 0)
     if 'avanzar_etapa_al_completar' in data:
         regla.avanzar_etapa_al_completar = bool(data['avanzar_etapa_al_completar'])
+    if 'requiere_verificacion' in data:
+        regla.requiere_verificacion = bool(data['requiere_verificacion'])
     if 'incluir_dueno_participante' in data:
         regla.incluir_dueno_participante = bool(data['incluir_dueno_participante'])
     if 'incluir_dueno_observador' in data:
@@ -408,14 +412,22 @@ def previsualizar_avance_etapa(tarea):
         ).values_list('regla_id', flat=True)
     )
     proximas = []
+    # Si la regla origen no tiene responsable explícito, el fallback es el
+    # dueño de la oportunidad (mismo criterio que `ejecutar_automatizaciones`).
+    fallback_resp = oportunidad.usuario
     for r in reglas_qs:
         if r.id in ya_ejecutadas_ids:
             continue
+        resp_obj = r.responsable_predeterminado or fallback_resp
         proximas.append({
             'regla_id': r.id,
             'titulo': r.titulo_tarea,
             'descripcion_sugerida': r.descripcion_tarea or '',
             'prioridad': r.prioridad_tarea,
+            'responsable_id': resp_obj.id if resp_obj else None,
+            'responsable_nombre': (
+                resp_obj.get_full_name() or resp_obj.username
+            ) if resp_obj else '',
         })
 
     return {
@@ -430,7 +442,7 @@ def previsualizar_avance_etapa(tarea):
     }
 
 
-def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_por_regla=None, titulos_por_regla=None):
+def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_por_regla=None, titulos_por_regla=None, responsables_por_regla=None):
     """
     Busca reglas activas para la etapa dada y crea las tareas correspondientes.
     Llamar desde views_crm.py cuando se cambia la etapa de una oportunidad.
@@ -445,12 +457,16 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
         titulos_por_regla: dict opcional {regla_id (int|str): str} con títulos
             editados por el usuario que reemplazan el titulo_tarea de la regla
             en la tarea creada.
+        responsables_por_regla: dict opcional {regla_id (int|str): user_id (int)}
+            con el responsable elegido por el usuario, que reemplaza al
+            responsable_predeterminado de la regla.
     """
     # Buscar reglas activas para esta etapa
     reglas = _reglas_para_etapa(oportunidad, nueva_etapa)
 
     descripciones_por_regla = descripciones_por_regla or {}
     titulos_por_regla = titulos_por_regla or {}
+    responsables_por_regla = responsables_por_regla or {}
 
     def _norm(d):
         out = {}
@@ -460,6 +476,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
         return out
     descripciones_norm = _norm(descripciones_por_regla)
     titulos_norm = _norm(titulos_por_regla)
+    responsables_norm = _norm(responsables_por_regla)
 
     tareas_creadas = []
 
@@ -476,8 +493,18 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
         # Calcular fecha límite
         fecha_limite = _calcular_fecha_limite(regla)
 
-        # Determinar responsable: usar el de la regla, o el dueño de la oportunidad como fallback
-        responsable = regla.responsable_predeterminado or oportunidad.usuario
+        # Determinar responsable: override del usuario, luego el de la regla,
+        # luego el dueño de la oportunidad como fallback.
+        responsable = None
+        override_uid = responsables_norm.get(regla.id)
+        if override_uid:
+            try:
+                override_uid_int = int(override_uid)
+                responsable = User.objects.filter(id=override_uid_int).first()
+            except (TypeError, ValueError):
+                responsable = None
+        if responsable is None:
+            responsable = regla.responsable_predeterminado or oportunidad.usuario
 
         # Crear la tarea
         try:
@@ -581,7 +608,7 @@ def ejecutar_automatizaciones(oportunidad, nueva_etapa, usuario, descripciones_p
 MAX_AVANCES_CADENA = 10  # Proteccion contra loops infinitos
 
 
-def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None, titulos_por_regla=None):
+def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None, titulos_por_regla=None, responsables_por_regla=None):
     """
     Al completar una tarea creada por automatizacion, verifica si la regla
     tiene avanzar_etapa_al_completar=True. Si es asi, avanza la oportunidad
@@ -594,6 +621,8 @@ def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None, titul
             que reemplazan la descripción default al crear las nuevas tareas.
         titulos_por_regla: dict opcional {regla_id: str} con títulos editados
             que reemplazan el titulo_tarea default al crear las nuevas tareas.
+        responsables_por_regla: dict opcional {regla_id: user_id} con el
+            responsable elegido por el usuario para cada próxima tarea.
 
     Retorna dict con info de lo que sucedio, o None si no aplica.
     """
@@ -643,6 +672,7 @@ def procesar_cadena_reactiva(tarea, usuario, descripciones_por_regla=None, titul
             oportunidad, siguiente, usuario,
             descripciones_por_regla=descripciones_por_regla,
             titulos_por_regla=titulos_por_regla,
+            responsables_por_regla=responsables_por_regla,
         )
         resultado['tareas_creadas'].extend(nuevas_tareas)
 
@@ -706,6 +736,9 @@ def api_confirmar_avance_etapa(request, pendiente_id):
     titulos = data.get('titulos') or {}
     if not isinstance(titulos, dict):
         titulos = {}
+    responsables = data.get('responsables') or {}
+    if not isinstance(responsables, dict):
+        responsables = {}
 
     tarea = pendiente.tarea
     if tarea is None:
@@ -728,6 +761,7 @@ def api_confirmar_avance_etapa(request, pendiente_id):
         tarea, request.user,
         descripciones_por_regla=descripciones,
         titulos_por_regla=titulos,
+        responsables_por_regla=responsables,
     )
 
     pendiente.estado = 'confirmado'

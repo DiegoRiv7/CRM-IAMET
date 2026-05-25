@@ -11,11 +11,13 @@ upload offline) y lógica en JS — este archivo queda como el
 entrypoint oficial del PWA.
 """
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
+
+from .views_utils import is_supervisor
 
 
 #: Días de duración de la cookie de sesión para usuarios del PWA.
@@ -24,6 +26,26 @@ from django.views.decorators.http import require_GET
 #  sync al reconectar da 401/403 y todo su trabajo queda varado. 60 días
 #  es un buen trade-off entre seguridad y usabilidad para este caso.
 PWA_SESSION_DAYS = 60
+
+
+def _puede_usar_levantamientos(user):
+    """Quién entra a la PWA de Levantamientos:
+      - Supervisores y administradores: siempre.
+      - Ingenieros (userprofile.rol == 'ingeniero'): siempre.
+      - Vendedores: solo si userprofile.puede_levantamiento == True.
+
+    Esto se administra desde el panel admin → Permisos → Levantamiento.
+    """
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser or is_supervisor(user):
+        return True
+    profile = getattr(user, 'userprofile', None)
+    if not profile:
+        return False
+    if getattr(profile, 'rol', 'vendedor') == 'ingeniero':
+        return True
+    return bool(getattr(profile, 'puede_levantamiento', False))
 
 
 @never_cache
@@ -35,7 +57,15 @@ def levantamientos_app(request):
 
     Extiende la sesión a PWA_SESSION_DAYS cada vez que el usuario
     abre la PWA — así no pierde la sesión si pasa semanas en planta.
+
+    El acceso se restringe vía _puede_usar_levantamientos: ingenieros
+    siempre, vendedores solo con el flag puede_levantamiento.
     """
+    if not _puede_usar_levantamientos(request.user):
+        return HttpResponseForbidden(
+            'Tu usuario no tiene permiso para usar la app de Levantamientos. '
+            'Solicita acceso al administrador.'
+        )
     request.session.set_expiry(PWA_SESSION_DAYS * 24 * 60 * 60)
     return render(request, 'levantamientos_app.html')
 

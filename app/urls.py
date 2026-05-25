@@ -12,12 +12,16 @@ from . import views_proyectos
 from . import views_iamet
 from . import views_levantamientos_app
 from . import views_compras
+from . import views_reportes
 from . import views_certificaciones
 from . import views_cursos
 from . import views_marketing
 from . import views_ideas
 from . import views_asistente
 from . import views_asistente_ideas
+from . import views_asistente_prospeccion
+from . import views_asistente_oportunidades
+from . import views_asistente_calendario
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -29,6 +33,11 @@ urlpatterns = [
     path('', views.crm_home, name='root_home'),
     path('home/', views.crm_home, name='home'),
     path('todos/', views.crm_home, name='todos'),  # alias histórico
+
+    # ── Módulo Reportes (canned reports, vista nativa sin AI) ────────────────
+    path('reportes/', views_reportes.reportes_index, name='reportes_index'),
+    path('reportes/<slug:slug>/', views_reportes.reporte_detalle, name='reporte_detalle'),
+    path('api/reportes/oportunidades-abiertas/', views_reportes.api_reporte_oportunidades_abiertas, name='api_reporte_oportunidades_abiertas'),
 
     # ── PWA Levantamientos (offline-capable, dedicada para planta) ───────────
     path('levantamientos/', views_levantamientos_app.levantamientos_app, name='levantamientos_app'),
@@ -198,6 +207,25 @@ urlpatterns = [
     path('api/ideas/<int:idea_id>/asistente/mensaje/', views_asistente_ideas.api_idea_asistente_mensaje, name='api_idea_asistente_mensaje'),
     path('api/ideas/<int:idea_id>/asistente/resumen/', views_asistente_ideas.api_idea_asistente_resumen, name='api_idea_asistente_resumen'),
     path('api/ideas/<int:idea_id>/asistente/reset/', views_asistente_ideas.api_idea_asistente_reset, name='api_idea_asistente_reset'),
+    # ── Asistente AI de Prospección (coach táctico por prospecto) ──────
+    path('api/prospectos/<int:prospecto_id>/asistente/mensajes/', views_asistente_prospeccion.api_prospecto_asistente_mensajes, name='api_prospecto_asistente_mensajes'),
+    path('api/prospectos/<int:prospecto_id>/asistente/mensaje/', views_asistente_prospeccion.api_prospecto_asistente_mensaje, name='api_prospecto_asistente_mensaje'),
+    path('api/prospectos/<int:prospecto_id>/asistente/resumen/', views_asistente_prospeccion.api_prospecto_asistente_resumen, name='api_prospecto_asistente_resumen'),
+    path('api/prospectos/<int:prospecto_id>/asistente/reset/', views_asistente_prospeccion.api_prospecto_asistente_reset, name='api_prospecto_asistente_reset'),
+    path('api/prospectos/<int:prospecto_id>/asistente/actividad-rapida/', views_asistente_prospeccion.api_prospecto_actividad_rapida, name='api_prospecto_actividad_rapida'),
+    path('api/prospectos/<int:prospecto_id>/asistente/redactar-correo-directo/', views_asistente_prospeccion.api_prospecto_redactar_correo_directo, name='api_prospecto_redactar_correo_directo'),
+    path('api/prospecto-comentarios/<int:comentario_id>/', views.api_prospecto_comentario_detalle, name='api_prospecto_comentario_detalle'),
+    # ── Asistente AI de Oportunidades (coach táctico de cierre) ────────
+    path('api/oportunidades/<int:opp_id>/asistente/mensajes/', views_asistente_oportunidades.api_oportunidad_asistente_mensajes, name='api_oportunidad_asistente_mensajes'),
+    path('api/oportunidades/<int:opp_id>/asistente/mensaje/', views_asistente_oportunidades.api_oportunidad_asistente_mensaje, name='api_oportunidad_asistente_mensaje'),
+    path('api/oportunidades/<int:opp_id>/asistente/resumen/', views_asistente_oportunidades.api_oportunidad_asistente_resumen, name='api_oportunidad_asistente_resumen'),
+    path('api/oportunidades/<int:opp_id>/asistente/reset/', views_asistente_oportunidades.api_oportunidad_asistente_reset, name='api_oportunidad_asistente_reset'),
+    path('api/oportunidades/<int:opp_id>/asistente/actividad-rapida/', views_asistente_oportunidades.api_oportunidad_actividad_rapida, name='api_oportunidad_actividad_rapida'),
+
+    # ── Asistente AI del Calendario (action-driven + chat libre) ──────────
+    path('api/calendario/asistente/preview/', views_asistente_calendario.api_calendario_asistente_preview, name='api_calendario_asistente_preview'),
+    path('api/calendario/asistente/aplicar/', views_asistente_calendario.api_calendario_asistente_aplicar, name='api_calendario_asistente_aplicar'),
+    path('api/calendario/asistente/chat/', views_asistente_calendario.api_calendario_asistente_chat, name='api_calendario_asistente_chat'),
 
     # ── Asistente AI (LiteLLM + tool use) ───────────────────────────────────
     path('api/asistente/config/', views_asistente.api_asistente_config, name='api_asistente_config'),
@@ -323,9 +351,14 @@ urlpatterns = [
     path('api/prospecto/<int:prospecto_id>/detalle/', views.api_prospecto_detalle, name='api_prospecto_detalle'),
     path('api/prospecto/<int:prospecto_id>/etapa/', views.api_prospecto_etapa, name='api_prospecto_etapa'),
     path('api/prospecto/<int:prospecto_id>/convertir/', views.api_prospecto_convertir, name='api_prospecto_convertir'),
+    path('api/prospecto/<int:prospecto_id>/crear-oportunidad/', views.api_crear_oportunidad_desde_prospecto, name='api_crear_oportunidad_desde_prospecto'),
     path('api/prospecto/<int:prospecto_id>/comentarios/', views.api_prospecto_comentarios, name='api_prospecto_comentarios'),
     path('api/prospecto/<int:prospecto_id>/actividades/', views.api_prospecto_actividades, name='api_prospecto_actividades'),
     path('api/prospecto-actividad/<int:actividad_id>/toggle/', views.api_prospecto_actividad_toggle, name='api_prospecto_actividad_toggle'),
+    # Correos vinculados al prospecto (lista / vincular / desvincular)
+    path('api/prospecto/<int:prospecto_id>/correos/', views.api_prospecto_correos, name='api_prospecto_correos'),
+    path('api/prospecto/<int:prospecto_id>/correos/vincular/', views.api_prospecto_vincular_correo, name='api_prospecto_vincular_correo'),
+    path('api/prospecto/<int:prospecto_id>/correos/<int:correo_id>/desvincular/', views.api_prospecto_desvincular_correo, name='api_prospecto_desvincular_correo'),
 
     # ── Campañas ────────────────────────────────────────────────────────
     path('api/campana/templates/', views.api_campana_templates, name='api_campana_templates'),

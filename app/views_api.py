@@ -337,28 +337,40 @@ def spotlight_search_api(request):
             })
 
     # ── Proyectos ────────────────────────────────────────
+    # Usamos ProyectoIAMET (la sección "Proyectos" del CRM) en vez del
+    # modelo legacy Proyecto, así el Spotlight regresa exactamente los
+    # mismos proyectos que aparecen en /Proyectos.
     if scope in ('all', 'proyecto') and query:
-        proy_qs = Proyecto.objects.filter(
-            Q(nombre__icontains=query) | Q(descripcion__icontains=query)
-        ).select_related('creado_por')
+        from .models import ProyectoIAMET
+        proy_qs = ProyectoIAMET.objects.filter(
+            Q(nombre__icontains=query) | Q(descripcion__icontains=query) | Q(cliente_nombre__icontains=query)
+        ).select_related('usuario')
         if filter_user_obj:
-            proy_qs = proy_qs.filter(Q(creado_por=filter_user_obj) | Q(miembros=filter_user_obj)).distinct()
-        if not is_supervisor(request.user):
-            proy_qs = proy_qs.filter(
-                Q(privacidad='publico') | Q(creado_por=request.user) | Q(miembros=request.user)
-            ).distinct()
+            proy_qs = proy_qs.filter(Q(usuario=filter_user_obj) | Q(miembros=filter_user_obj)).distinct()
+        # Sin filtro de visibilidad: igual que api_proyectos_lista, todos
+        # los usuarios (vendedor / ingeniero / supervisor) ven todos los
+        # proyectos. Ver _get_proyectos_qs en views_iamet.py.
+        proy_qs = proy_qs.order_by('-updated_at')
+        _PROY_STATUS_LABELS = {
+            'planning': ('warning', 'Planificación'),
+            'active': ('success', 'Activo'),
+            'paused': ('neutral', 'Pausado'),
+            'completed': ('success', 'Completado'),
+            'archived': ('neutral', 'Archivado'),
+        }
         for proy in proy_qs[:lim.get('proyecto', 4)]:
+            st_class, st_label = _PROY_STATUS_LABELS.get(proy.status, ('neutral', proy.status or 'Proyecto'))
             results.append({
                 'type': 'proyecto',
                 'id': proy.id,
                 'title': proy.nombre,
-                'subtitle': proy.get_tipo_display() or 'Proyecto',
-                'url': f'/app/todos/?tab=crm',
-                'status_class': 'info' if proy.privacidad == 'privado' else 'neutral',
-                'status_label': proy.get_privacidad_display(),
-                'responsable': _user_dict(proy.creado_por),
-                'fecha_iso': proy.fecha_creacion.isoformat() if proy.fecha_creacion else None,
-                'fecha_relative': _rel_date(proy.fecha_creacion),
+                'subtitle': proy.cliente_nombre or 'Sin cliente',
+                'url': f'/app/todos/?tab=crm&open_proyecto={proy.id}',
+                'status_class': st_class,
+                'status_label': st_label,
+                'responsable': _user_dict(proy.usuario),
+                'fecha_iso': proy.updated_at.isoformat() if proy.updated_at else None,
+                'fecha_relative': _rel_date(proy.updated_at),
                 'priority': 6,
             })
 

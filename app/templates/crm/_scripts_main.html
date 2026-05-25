@@ -11,10 +11,11 @@ var _CRM_CONFIG = {
     isSuperuser:      "{{ user.is_superuser|yesno:'true,false' }}" === "true",
     esSupervisor:     "{{ es_supervisor|yesno:'true,false' }}" === "true",
     esAdministrador:  "{{ es_administrador|yesno:'true,false' }}" === "true",
+    esIngeniero:      "{{ es_ingeniero|yesno:'true,false' }}" === "true",
     etapasPipeline:   {{ etapas_pipeline_json|safe }}
 };
 </script>
-<script src="{% static 'js/crm_main.js' %}?v=20260519-excel-fallback"></script>
+<script src="{% static 'js/crm_main.js' %}?v=20260522-eng-task-perms"></script>
 <script>
 /* Contador workspace: # real de filas (excluye Ganado/Perdido/Pagado) */
 (function(){

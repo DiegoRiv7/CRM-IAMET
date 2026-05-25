@@ -4,10 +4,11 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from decimal import Decimal
 
@@ -17,9 +18,22 @@ from .models import (
     Prospecto, ProspectoComentario, ProspectoActividad,
     TodoItem, Cliente, Contacto, UserProfile,
     MensajeOportunidad, Actividad, Notificacion,
+    MailCorreo,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _siguiente_dia_habil(base_dt):
+    """Devuelve el siguiente día hábil (L-V) a la misma hora de base_dt.
+
+    Si hoy es viernes, sábado o domingo, empuja al próximo lunes. Para
+    cualquier otro día, suma 1 día. weekday(): 0=L, 1=M, 2=X, 3=J, 4=V, 5=S, 6=D.
+    """
+    nxt = base_dt + timedelta(days=1)
+    while nxt.weekday() >= 5:  # 5=sábado, 6=domingo
+        nxt = nxt + timedelta(days=1)
+    return nxt
 
 
 @login_required
@@ -278,7 +292,10 @@ def api_crear_prospecto(request):
     contacto_id = data.get('contacto_id')
     producto = data.get('producto', 'ZEBRA')
     area = data.get('area', 'SISTEMAS')
-    tipo_pipeline = data.get('tipo_pipeline', 'runrate')
+    # tipo_pipeline es OPCIONAL desde el frontend. Si llega vacío o no llega,
+    # se omite del create_kwargs para que el modelo use el default ('runrate').
+    tipo_pipeline_raw = (data.get('tipo_pipeline') or '').strip()
+    tipo_pipeline = tipo_pipeline_raw if tipo_pipeline_raw else None
     comentarios = data.get('comentarios', '')
     etapa = data.get('etapa', '')
 
@@ -344,9 +361,11 @@ def api_crear_prospecto(request):
         contacto=contacto,
         producto=producto,
         area=area,
-        tipo_pipeline=tipo_pipeline,
         comentarios=comentarios,
     )
+    # tipo_pipeline solo se setea si llegó; si no, el modelo usa default 'runrate'.
+    if tipo_pipeline:
+        create_kwargs['tipo_pipeline'] = tipo_pipeline
     if asignacion_externa:
         create_kwargs['asignado_por'] = request.user
     if etapa and etapa in etapas_validas:
@@ -365,6 +384,53 @@ def api_crear_prospecto(request):
     if evento_origen_obj:
         from .models import EventoAsistente
         EventoAsistente.objects.create(evento=evento_origen_obj, prospecto=prospecto)
+
+    # ── AUTO-ACTIVIDAD POR DEFAULT (Task 2) ──
+    # Si NO hubo asignación externa con actividad inicial explícita, creamos
+    # una ProspectoActividad + Actividad de calendario automáticamente para
+    # el vendedor dueño del prospecto, programada al siguiente día hábil a la
+    # misma hora actual. Esto garantiza que cada prospecto nuevo tenga al
+    # menos una tarea pendiente y aparezca en el calendario.
+    if not asignacion_externa:
+        try:
+            ahora = timezone.now()
+            fecha_auto = _siguiente_dia_habil(ahora)
+            # Título y descripción: tomados del prospecto. Si hay comentarios
+            # iniciales, los anexamos para dar contexto al vendedor.
+            titulo_auto = prospecto.nombre
+            comentarios_iniciales = (prospecto.comentarios or '').strip()
+            if comentarios_iniciales:
+                desc_auto = f'{titulo_auto}\n\n{comentarios_iniciales}'
+            else:
+                desc_auto = titulo_auto
+
+            ProspectoActividad.objects.create(
+                prospecto=prospecto,
+                usuario=asignar_a,
+                tipo='tarea',
+                descripcion=desc_auto,
+                fecha_programada=fecha_auto,
+            )
+
+            # Replicar en el calendario (Actividad) — patrón Bajanet usado en
+            # api_prospecto_actividades. Metadata `---prospecto_id:...` permite
+            # al modal del calendario abrir la sección "Relacionado a → prospecto".
+            cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+            desc_cal = (
+                desc_auto
+                + f'\n---prospecto_id:{prospecto.id}|{prospecto.nombre}|{cliente_nombre}'
+            )
+            Actividad.objects.create(
+                titulo=titulo_auto[:200],
+                tipo_actividad='tarea',
+                descripcion=desc_cal,
+                fecha_inicio=fecha_auto,
+                fecha_fin=fecha_auto + timedelta(hours=1),
+                creado_por=asignar_a,
+                color='#B45309',
+            )
+        except Exception as e:
+            logger.warning('Prospecto: no se pudo crear auto-actividad: %s', e)
 
     # Si fue asignación externa, crear actividad inicial + evento de calendario
     # para el vendedor asignado, con metadata para enlazar de vuelta al prospecto.
@@ -460,13 +526,28 @@ def api_prospecto_detalle(request, prospecto_id):
     if asig_por:
         asignado_por_nombre = (asig_por.get_full_name() or asig_por.username).strip()
 
+    # Emails del contacto/cliente — el composer del widget los usa como
+    # destinatario sugerido al abrir el botón "Nuevo correo".
+    contacto_email = ''
+    if p.contacto:
+        contacto_email = (getattr(p.contacto, 'email', '') or '').strip()
+    cliente_email = ''
+    if p.cliente:
+        for attr in ('email', 'correo', 'correo_electronico'):
+            val = (getattr(p.cliente, attr, '') or '').strip()
+            if val:
+                cliente_email = val
+                break
+
     return JsonResponse({
         'id': p.id,
         'nombre': p.nombre,
         'cliente': p.cliente.nombre_empresa if p.cliente else '-',
         'cliente_id': p.cliente_id,
+        'cliente_email': cliente_email,
         'contacto': p.contacto.nombre if p.contacto else '-',
         'contacto_id': p.contacto_id,
+        'contacto_email': contacto_email,
         'producto': p.producto,
         'area': p.area,
         'tipo_pipeline': p.tipo_pipeline,
@@ -517,24 +598,30 @@ def api_prospecto_etapa(request, prospecto_id):
     oportunidad_id = None
 
     if nueva_etapa == 'cerrado_ganado':
-        # Crear oportunidad (TodoItem) con datos del prospecto
-        opp = TodoItem.objects.create(
-            usuario=prospecto.usuario,
-            oportunidad=prospecto.nombre,
-            cliente=prospecto.cliente,
-            contacto=prospecto.contacto,
-            producto=prospecto.producto,
-            area=prospecto.area,
-            tipo_negociacion=prospecto.tipo_pipeline,
-            monto=Decimal('0.00'),
-            probabilidad_cierre=5,
-            mes_cierre=str(timezone.now().month).zfill(2),
-            anio_cierre=timezone.now().year,
-            comentarios=prospecto.comentarios,
-            estado_crm='nueva',
-        )
-        prospecto.oportunidad_creada = opp
-        oportunidad_id = opp.id
+        # Si ya hay oportunidad asociada (flujo modal "Crear opps en serie"),
+        # no creamos otra vacía — solo reportamos la existente.
+        if prospecto.oportunidad_creada_id:
+            oportunidad_id = prospecto.oportunidad_creada_id
+        else:
+            # Compatibilidad hacia atrás: cierre directo sin pasar por el modal —
+            # crea una oportunidad stub con los datos del prospecto.
+            opp = TodoItem.objects.create(
+                usuario=prospecto.usuario,
+                oportunidad=prospecto.nombre,
+                cliente=prospecto.cliente,
+                contacto=prospecto.contacto,
+                producto=prospecto.producto,
+                area=prospecto.area,
+                tipo_negociacion=prospecto.tipo_pipeline,
+                monto=Decimal('0.00'),
+                probabilidad_cierre=5,
+                mes_cierre=str(timezone.now().month).zfill(2),
+                anio_cierre=timezone.now().year,
+                comentarios=prospecto.comentarios,
+                estado_crm='nueva',
+            )
+            prospecto.oportunidad_creada = opp
+            oportunidad_id = opp.id
 
     prospecto.save()
 
@@ -611,6 +698,194 @@ def api_prospecto_convertir(request, prospecto_id):
 
 
 @login_required
+def api_crear_oportunidad_desde_prospecto(request, prospecto_id):
+    """POST: crea una nueva Oportunidad (TodoItem) a partir de un prospecto.
+
+    Pensado para el flujo "Cerrar Ganado → Crear Oportunidad(es) en serie":
+    el modal permite crear varias oportunidades para el mismo prospecto.
+    NO cambia la etapa del prospecto — el frontend lo hace cuando el user
+    cierra el modal habiendo creado al menos una opp.
+
+    La PRIMERA opp creada se vincula via Prospecto.oportunidad_creada (FK)
+    para mantener trazabilidad principal. Las subsecuentes quedan asociadas
+    por el campo `comentarios` (que incluye un link al prospecto origen) y
+    por estar en el mismo cliente/contacto.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.select_related('cliente', 'contacto', 'usuario').get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON invalido'}, status=400)
+
+    titulo = (data.get('titulo') or '').strip() or prospecto.nombre
+    tipo_negociacion = (data.get('tipo_negociacion') or '').strip()
+    if tipo_negociacion not in {c[0] for c in TodoItem.TIPO_NEGOCIACION_CHOICES}:
+        return JsonResponse({'success': False, 'error': 'Tipo de negociación requerido (runrate/proyecto)'}, status=400)
+
+    monto_raw = data.get('monto', '0')
+    try:
+        monto = Decimal(str(monto_raw))
+    except Exception:
+        monto = Decimal('0.00')
+
+    producto = (data.get('producto') or prospecto.producto or 'SOFTWARE').strip()
+    area = (data.get('area') or prospecto.area or 'SISTEMAS').strip()
+    probabilidad = data.get('probabilidad_cierre', 25)
+    try:
+        probabilidad = int(probabilidad)
+    except Exception:
+        probabilidad = 25
+    comentarios_extra = (data.get('comentarios') or '').strip()
+
+    # Responsable de la opp. Por default = vendedor del prospecto.
+    # Reglas de quién puede asignar a quién (usuario_id en el payload):
+    #   - System supervisor / admin / superuser → cualquier user.
+    #   - Group supervisor (supervisor_grupo de un GrupoTrabajo activo) →
+    #     cualquier miembro de ese mismo grupo.
+    #   - Vendor normal → solo a sí mismo o al vendedor del prospecto.
+    responsable = prospecto.usuario
+    raw_uid = data.get('usuario_id')
+    if raw_uid:
+        try:
+            uid = int(raw_uid)
+        except (TypeError, ValueError):
+            uid = None
+        if uid:
+            puede = False
+            if request.user.is_superuser:
+                puede = True
+            elif is_supervisor(request.user) or is_administrador(request.user):
+                puede = True
+            elif uid == prospecto.usuario_id or uid == request.user.id:
+                puede = True
+            else:
+                # Group supervisor: ¿supervisa un grupo activo que
+                # contenga al target uid como miembro?
+                try:
+                    from .models import GrupoTrabajo
+                    es_jefe_de_grupo = GrupoTrabajo.objects.filter(
+                        supervisor_grupo=request.user,
+                        activo=True,
+                        miembros__id=uid,
+                    ).exists()
+                    if es_jefe_de_grupo:
+                        puede = True
+                except Exception:
+                    pass
+            if puede:
+                try:
+                    from django.contrib.auth.models import User as _User
+                    responsable = _User.objects.get(pk=uid)
+                except Exception:
+                    responsable = prospecto.usuario
+
+    # Comentario inicial: deja rastro del prospecto origen para auditoría.
+    comentario_link = f'[Creada desde prospecto #{prospecto.id} "{prospecto.nombre}"]'
+    comentarios_final = comentario_link
+    if comentarios_extra:
+        comentarios_final = f'{comentario_link}\n{comentarios_extra}'
+
+    now_dt = timezone.now()
+    opp = TodoItem.objects.create(
+        usuario=responsable,
+        oportunidad=titulo[:200],
+        cliente=prospecto.cliente,
+        contacto=prospecto.contacto,
+        producto=producto,
+        area=area,
+        tipo_negociacion=tipo_negociacion,
+        monto=monto,
+        probabilidad_cierre=probabilidad,
+        mes_cierre=str(now_dt.month).zfill(2),
+        anio_cierre=now_dt.year,
+        comentarios=comentarios_final,
+        estado_crm='nueva',
+        # FK directo para que los dashboards cuenten TODAS las opps que
+        # salieron de este prospecto, no solo la primera.
+        prospecto_origen_directo=prospecto,
+    )
+
+    # Replicar el comentario inicial en la conversación de la oportunidad
+    # para que el vendedor lo vea como primer mensaje del chat.
+    try:
+        MensajeOportunidad.objects.create(
+            oportunidad=opp,
+            usuario=request.user,
+            texto=comentarios_final,
+        )
+    except Exception:
+        pass
+
+    # Vincular sólo la PRIMERA oportunidad creada al prospecto (trazabilidad
+    # principal). Las demás siguen asociadas por cliente/contacto/comentario.
+    if not prospecto.oportunidad_creada_id:
+        prospecto.oportunidad_creada = opp
+        prospecto.save(update_fields=['oportunidad_creada', 'fecha_actualizacion'])
+
+    # Auto-actividad para el responsable: aparece en su calendario para
+    # que atienda la opp recién creada. Mismo patrón que la auto-actividad
+    # de prospectos pero apuntando a la opp en lugar del prospecto.
+    fecha_act = _siguiente_dia_habil(timezone.now())
+    cliente_nombre = prospecto.cliente.nombre_empresa if prospecto.cliente else 'Sin cliente'
+    desc_act = (
+        f'Atender oportunidad recién convertida desde prospecto '
+        f'«{prospecto.nombre}». Cliente: {cliente_nombre}.'
+    )
+    try:
+        from datetime import timedelta as _td
+        Actividad.objects.create(
+            titulo=opp.oportunidad[:200],
+            tipo_actividad='tarea',
+            descripcion=desc_act,
+            fecha_inicio=fecha_act,
+            fecha_fin=fecha_act + _td(hours=1),
+            creado_por=responsable,
+            oportunidad=opp,
+            color='#0052D4',
+        )
+    except Exception as e:
+        logger.warning('No se pudo crear actividad de calendario para nueva opp: %s', e)
+
+    # Notificación al responsable cuando es distinto del que creó la opp
+    # (típicamente supervisor asignando a un vendedor del equipo). Aparece
+    # en el ícono de campana del CRM.
+    if responsable.id != request.user.id:
+        try:
+            sup_nombre = (request.user.get_full_name() or request.user.username).strip()
+            Notificacion.objects.create(
+                usuario_destinatario=responsable,
+                usuario_remitente=request.user,
+                tipo='oportunidad_asignada',
+                titulo=f'{sup_nombre} te asignó una oportunidad',
+                mensaje=(
+                    f'"{opp.oportunidad}" — viene del prospecto '
+                    f'"{prospecto.nombre}". Cliente: {cliente_nombre}.'
+                ),
+            )
+        except Exception as e:
+            logger.warning('No se pudo crear notificación de asignación de opp: %s', e)
+
+    return JsonResponse({
+        'success': True,
+        'oportunidad_id': opp.id,
+        'titulo': opp.oportunidad,
+        'monto': float(opp.monto or 0),
+        'tipo_negociacion': opp.tipo_negociacion,
+        'responsable': {
+            'id': responsable.id,
+            'nombre': (responsable.get_full_name() or responsable.username),
+        },
+    })
+
+
+@login_required
 def api_prospecto_comentarios(request, prospecto_id):
     """GET: listar comentarios. POST: agregar comentario."""
     try:
@@ -619,6 +894,12 @@ def api_prospecto_comentarios(request, prospecto_id):
         return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
 
     if request.method == 'GET':
+        # Para decidir el flag puede_editar de cada comentario.
+        try:
+            from .views_utils import is_supervisor as _is_sup
+            es_sup = bool(_is_sup(request.user) or request.user.is_superuser)
+        except Exception:
+            es_sup = bool(request.user.is_superuser)
         comentarios = ProspectoComentario.objects.filter(prospecto=prospecto).select_related('usuario')
         return JsonResponse({
             'comentarios': [
@@ -627,6 +908,8 @@ def api_prospecto_comentarios(request, prospecto_id):
                     'usuario': c.usuario.get_full_name() or c.usuario.username,
                     'texto': c.texto,
                     'fecha': c.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                    # El frontend usa esto para pintar el menú 3 puntos.
+                    'puede_editar': (c.usuario_id == request.user.id) or es_sup,
                 }
                 for c in comentarios
             ]
@@ -642,14 +925,68 @@ def api_prospecto_comentarios(request, prospecto_id):
         if not texto:
             return JsonResponse({'success': False, 'error': 'Texto requerido'}, status=400)
 
-        ProspectoComentario.objects.create(
+        c = ProspectoComentario.objects.create(
             prospecto=prospecto,
             usuario=request.user,
             texto=texto,
         )
-        return JsonResponse({'success': True})
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': c.id,
+                'usuario': c.usuario.get_full_name() or c.usuario.username,
+                'texto': c.texto,
+                'fecha': c.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'puede_editar': True,
+            },
+        })
 
     return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+
+
+@login_required
+@require_http_methods(['PATCH', 'PUT', 'DELETE'])
+def api_prospecto_comentario_detalle(request, comentario_id):
+    """Editar (PATCH/PUT) o eliminar (DELETE) un comentario del
+    seguimiento de un prospecto. Solo el autor o supervisor/admin."""
+    try:
+        c = ProspectoComentario.objects.select_related('usuario', 'prospecto').get(pk=comentario_id)
+    except ProspectoComentario.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Comentario no encontrado'}, status=404)
+
+    try:
+        from .views_utils import is_supervisor as _is_sup
+        es_sup = bool(_is_sup(request.user) or request.user.is_superuser)
+    except Exception:
+        es_sup = bool(request.user.is_superuser)
+    es_autor = (c.usuario_id == request.user.id)
+    if not (es_autor or es_sup):
+        return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
+
+    if request.method == 'DELETE':
+        c.delete()
+        return JsonResponse({'success': True})
+
+    # PATCH / PUT — actualizar texto
+    try:
+        data = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    texto = (data.get('texto') or '').strip()
+    if not texto:
+        return JsonResponse({'success': False, 'error': 'Texto requerido'}, status=400)
+    c.texto = texto
+    c.save(update_fields=['texto'])
+    return JsonResponse({
+        'success': True,
+        'comentario': {
+            'id': c.id,
+            'usuario': c.usuario.get_full_name() or c.usuario.username,
+            'texto': c.texto,
+            'fecha': c.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'puede_editar': True,
+        },
+    })
 
 
 @login_required
@@ -766,3 +1103,111 @@ def api_prospecto_actividad_toggle(request, actividad_id):
         'success': True,
         'completada': actividad.completada,
     })
+
+
+# ──────────────────────────────────────────────
+# CORREOS VINCULADOS AL PROSPECTO
+# ──────────────────────────────────────────────
+# Análogo al patrón usado en oportunidades: el MailCorreo tiene una FK
+# opcional `prospecto`, y desde el widget del prospecto el usuario puede:
+#   - Ver los correos vinculados (enviados / recibidos).
+#   - Redactar un correo nuevo desde el contexto del prospecto (el envío
+#     queda automáticamente vinculado vía el composer del módulo Mail).
+#   - Vincular/desvincular un correo existente (admin, debug, corrección).
+# Los 3 endpoints siguientes alimentan esa UI.
+
+def _correo_to_card_dict(correo):
+    """Serializa un MailCorreo a un dict ligero apto para listas de cards
+    (timeline del prospecto). Cuerpo capeado a 240 chars (snippet)."""
+    import re as _re
+    import html as _html_lib
+
+    cuerpo = ''
+    if correo.cuerpo_texto:
+        cuerpo = correo.cuerpo_texto.strip()
+    elif correo.cuerpo_html:
+        cuerpo = _re.sub(r'<[^>]+>', ' ', correo.cuerpo_html)
+        cuerpo = _html_lib.unescape(cuerpo)
+    cuerpo = ' '.join(cuerpo.split())[:240]
+
+    return {
+        'id': correo.id,
+        'sentido': 'enviado' if correo.carpeta_display == 'SENT' else 'recibido',
+        'asunto': correo.asunto or '(Sin asunto)',
+        'remitente_nombre': correo.remitente_nombre or '',
+        'remitente_email': correo.remitente_email or '',
+        'fecha': correo.fecha_envio.strftime('%d/%m/%Y %H:%M') if correo.fecha_envio else '',
+        'fecha_iso': correo.fecha_envio.isoformat() if correo.fecha_envio else '',
+        'snippet': cuerpo,
+        'tiene_adjuntos': bool(correo.tiene_adjuntos),
+    }
+
+
+@login_required
+def api_prospecto_correos(request, prospecto_id):
+    """GET: lista de correos vinculados al prospecto, más recientes primero."""
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    qs = MailCorreo.objects.filter(prospecto=prospecto).order_by('-fecha_envio')[:50]
+    return JsonResponse({
+        'success': True,
+        'correos': [_correo_to_card_dict(c) for c in qs],
+    })
+
+
+@login_required
+def api_prospecto_vincular_correo(request, prospecto_id):
+    """POST {correo_id}: vincula un MailCorreo existente al prospecto."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requerido'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    try:
+        data = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
+    correo_id = data.get('correo_id')
+    if not correo_id:
+        return JsonResponse({'success': False, 'error': 'correo_id requerido'}, status=400)
+
+    try:
+        # Solo correos del propio usuario para evitar fugas entre cuentas.
+        correo = MailCorreo.objects.get(id=int(correo_id), usuario=request.user)
+    except (MailCorreo.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Correo no encontrado'}, status=404)
+
+    correo.prospecto = prospecto
+    correo.save(update_fields=['prospecto'])
+    return JsonResponse({'success': True, 'correo': _correo_to_card_dict(correo)})
+
+
+@login_required
+def api_prospecto_desvincular_correo(request, prospecto_id, correo_id):
+    """POST / DELETE: desvincula el correo del prospecto (prospecto = None)."""
+    if request.method not in ('POST', 'DELETE'):
+        return JsonResponse({'success': False, 'error': 'POST o DELETE'}, status=405)
+
+    try:
+        prospecto = Prospecto.objects.get(id=prospecto_id)
+    except Prospecto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, prospecto=prospecto)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Correo no vinculado a este prospecto'}, status=404)
+
+    correo.prospecto = None
+    correo.save(update_fields=['prospecto'])
+    return JsonResponse({'success': True})

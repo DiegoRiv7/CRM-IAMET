@@ -837,14 +837,21 @@
                         _cleanParams = true;
                     }
                 }
-                // Deep-link a proyecto: cambia a la vista Proyectos y abre el detalle
+                // Deep-link a proyecto: cambia a la vista Proyectos y abre el detalle.
+                // Usamos click() del sidebar para que el listener del ingeniero
+                // oculte dashIngRoot correctamente. Sin esto, el detalle queda
+                // por debajo del dashboard.
                 var _openProyId = _urlParams.get('open_proyecto');
                 if (_openProyId) {
                     var _openProyClean = parseInt(_openProyId, 10);
                     if (_openProyClean) {
                         setTimeout(function () {
-                            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
-                            if (typeof window.proyectosVerDetalle === 'function') window.proyectosVerDetalle(_openProyClean);
+                            var _bp = document.getElementById('btnProyectos');
+                            if (_bp) _bp.click();
+                            else if (typeof switchCrmView === 'function') switchCrmView('proyectos');
+                            setTimeout(function () {
+                                if (typeof window.proyectosVerDetalle === 'function') window.proyectosVerDetalle(_openProyClean);
+                            }, 80);
                         }, 600);
                         _urlParams.delete('open_proyecto');
                         _cleanParams = true;
@@ -6962,11 +6969,16 @@
                 });
             }
 
-            // Búsqueda
+            // Búsqueda: matchea contra search_blob (campo del API que concatena
+            // título + descripción + comentarios + nombres de archivos +
+            // proyecto + oportunidad + cliente + responsable + creado_por).
+            // Fallback a campos básicos cuando search_blob no viene en la
+            // respuesta (ej. vistas anidadas que no lo incluyen).
             var searchVal = ($tIn('tareasSearchInput') || {}).value || '';
             if (searchVal.trim()) {
                 var q = searchVal.trim().toLowerCase();
                 tareas = tareas.filter(function(t){
+                    if (t.search_blob) return t.search_blob.indexOf(q) !== -1;
                     return (t.titulo || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.oportunidad_nombre || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.responsable || '').toLowerCase().indexOf(q) !== -1;
@@ -8779,6 +8791,18 @@
             _crmTaskCanEdit = (
                 _curId === (tarea.creado_por_data && tarea.creado_por_data.id ? tarea.creado_por_data.id : -1) || _isSu
             );
+            // Ingeniero: aunque no sea creador puede:
+            //   • quitarse a sí mismo como participante/observador
+            //   • cambiar al responsable cuando él mismo es el asignado_a
+            // El backend (api_tarea_detalle PUT y api_actualizar_tarea_real)
+            // valida el permiso real; aquí solo gobernamos qué controles
+            // mostramos.
+            _crmTaskIsIngeniero = !!_CRM_CONFIG.esIngeniero;
+            var _crmTaskRespId = tarea.responsable_data ? tarea.responsable_data.id : null;
+            _crmTaskCanEditResponsable = (
+                _crmTaskCanEdit ||
+                (_crmTaskIsIngeniero && _crmTaskRespId === _curId)
+            );
             _crmTaskEdits = {};
             _crmTaskOriginal = {
                 titulo: tarea.titulo,
@@ -8798,6 +8822,16 @@
             // Limpiar contenido stale ANTES de abrir para evitar flash de la tarea previa
             _crmTaskClearForLoading();
             modal.classList.add('active');
+            // Si se abre desde una opp que ya está en .z-elevated-top (caso típico:
+            // ingeniero → tarea → opp → click en una tarea del historial), el modal
+            // de tarea por defecto está en CAPA 4 (10400) y queda por DEBAJO de la
+            // opp (10750). Lo elevamos a 10900 para que aparezca encima.
+            var _opp = document.getElementById('widgetDetalle');
+            if (_opp && (_opp.classList.contains('z-elevated-top') || _opp.classList.contains('z-elevated'))) {
+                modal.classList.add('z-elevated-overlay');
+            } else {
+                modal.classList.remove('z-elevated-overlay');
+            }
             document.body.style.overflow = 'hidden';
             fetch('/app/api/tarea/' + tareaId + '/')
                 .then(function (r) {
@@ -8936,6 +8970,8 @@
 
         // ── Inline edit state ──
         var _crmTaskCanEdit = false;
+        var _crmTaskIsIngeniero = false;
+        var _crmTaskCanEditResponsable = false;
         var _crmTaskEdits = {};
         var _crmTaskOriginal = {};
         var _crmTaskLastData = null;
@@ -8961,11 +8997,17 @@
                     cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
                     return;
                 }
+                var _curUid = _CRM_CONFIG.userId;
                 cont.innerHTML = people.map(function (p) {
                     var avInner = p.avatar_url
                         ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
                         : crmTaskGetInitials(p.nombre);
-                    var rm = _crmTaskCanEdit
+                    // Mostrar X (quitar) si:
+                    //   • el usuario actual tiene permiso pleno (creador/superuser), o
+                    //   • es ingeniero y el target es él mismo (quitarse).
+                    var canRemoveThis = _crmTaskCanEdit ||
+                        (_crmTaskIsIngeniero && p.id === _curUid);
+                    var rm = canRemoveThis
                         ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + grupo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
                         : '';
                     return '<div class="crm-tw-sb-row" title="' + p.nombre + '">' +
@@ -8980,13 +9022,21 @@
             crmTaskRenderSbList('crm-task-participantes-container', tarea.participantes || [], 'participantes', '#6366F1');
             crmTaskRenderSbList('crm-task-observadores-container', tarea.observadores || [], 'observadores', '#8B5CF6');
 
-            if (_crmTaskCanEdit) {
+            // Responsable: clickeable si tiene edición plena O si es ingeniero
+            // que actualmente está asignado a la tarea (puede quitarse o cambiar).
+            if (_crmTaskCanEditResponsable) {
                 var respContainer = document.getElementById('crm-task-responsable-container');
                 if (respContainer) {
                     respContainer.style.cursor = 'pointer';
-                    respContainer.title = 'Clic para cambiar responsable';
+                    respContainer.title = _crmTaskCanEdit
+                        ? 'Clic para cambiar responsable'
+                        : 'Clic para quitarte o asignar a otro';
                     respContainer.onclick = crmTaskEditarResponsable;
                 }
+            }
+            // Edición de campos generales (título, fecha, cliente, descripción)
+            // sigue restringida a creador/superuser.
+            if (_crmTaskCanEdit) {
                 var titleEl2 = document.getElementById('crm-task-titulo');
                 if (titleEl2 && titleEl2.tagName === 'H1') {
                     titleEl2.style.cursor = 'pointer';
@@ -9355,7 +9405,11 @@
 
         function crmTaskCerrarModal() {
             var modal = document.getElementById('crmTaskDetailModal');
-            if (modal) { modal.classList.remove('active'); modal.classList.remove('z-elevated'); }
+            if (modal) {
+                modal.classList.remove('active');
+                modal.classList.remove('z-elevated');
+                modal.classList.remove('z-elevated-overlay');
+            }
             document.body.style.overflow = '';
             // Refrescar widget oportunidad al cerrar si la tarea tenia oportunidad
             if (_crmTaskLastData && _crmTaskLastData.oportunidad_id) {
