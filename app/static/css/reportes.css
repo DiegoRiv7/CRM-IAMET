@@ -78,6 +78,16 @@
 .rep-chip-active {
     background: #EBF5FF; color: #0052D4; border-color: #0052D4;
 }
+.rep-chip-config {
+    border-style: dashed;
+    color: #6B7280;
+}
+.rep-chip-config:hover {
+    border-style: solid;
+    border-color: #0052D4;
+    color: #0052D4;
+    background: #fff;
+}
 
 /* Tabs de los 3 reportes */
 .rep-tabs {

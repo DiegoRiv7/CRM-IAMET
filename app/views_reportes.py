@@ -20,7 +20,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q, Sum
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils import timezone
 
 from .models import (
@@ -91,13 +91,14 @@ REPORTES_BY_SLUG = {r['slug']: r for r in REPORTES_CATALOGO}
 
 @login_required
 def reportes_index(request):
-    """Landing del módulo Reportes — grilla de reportes disponibles."""
-    ctx = _sidebar_context(request)
-    ctx.update({
-        'reportes': REPORTES_CATALOGO,
-        'tab_activo': 'reportes',
-    })
-    return render(request, 'reportes/index.html', ctx)
+    """Landing del módulo Reportes — redirige al primer reporte (Abiertas).
+
+    El landing como grilla intermedia de cards (versión inicial) se eliminó
+    a favor de mostrar directo el reporte principal con sus tabs visibles
+    en el header — el usuario alterna entre los 3 reportes sin pasos
+    extra. La grilla puede volver más adelante si la biblioteca crece.
+    """
+    return redirect('/app/reportes/oportunidades-abiertas/')
 
 
 @login_required
@@ -185,7 +186,7 @@ def api_reporte_oportunidades_abiertas(request):
         pipeline=runrate|proyecto    (sin valor → ambos)
         vendedor=<user_id>           (sin valor → todos los visibles)
         etapa=<nombre>               (sin valor → todas las "Vendido en adelante")
-        marca=<nombre>               (filtra por proveedor/marca)
+        producto=<nombre>               (filtra por proveedor/producto)
         monto_min=<int>              (monto mínimo)
         q=<texto>                    (busca en título y nombre de cliente)
 
@@ -201,7 +202,7 @@ def api_reporte_oportunidades_abiertas(request):
             'ok': True,
             'oportunidades': [],
             'kpis': _kpis_vacio(),
-            'filtros_disponibles': {'vendedores': [], 'etapas_por_pipeline': {}, 'marcas': []},
+            'filtros_disponibles': {'vendedores': [], 'etapas_por_pipeline': {}, 'productos': []},
             'nota': 'No se encontraron etapas "Vendido en adelante" configuradas.',
         })
 
@@ -213,7 +214,7 @@ def api_reporte_oportunidades_abiertas(request):
         pipelines_objetivo = list(etapas_map.keys())
 
     etapa_filter = (qp.get('etapa') or '').strip()
-    marca_filter = (qp.get('marca') or '').strip()
+    producto_filter = (qp.get('producto') or '').strip()
     q_text = (qp.get('q') or '').strip()
 
     vendedor_id = None
@@ -257,8 +258,8 @@ def api_reporte_oportunidades_abiertas(request):
     if vendedor_id:
         qs = qs.filter(usuario_id=vendedor_id)
 
-    if marca_filter:
-        qs = qs.filter(marca=marca_filter)
+    if producto_filter:
+        qs = qs.filter(producto=producto_filter)
 
     if monto_min is not None:
         qs = qs.filter(monto__gte=monto_min)
@@ -339,7 +340,7 @@ def api_reporte_oportunidades_abiertas(request):
             'pipeline': o.tipo_negociacion or '',
             'pipeline_label': (o.tipo_negociacion or '').capitalize(),
             'etapa': o.etapa_corta or '',
-            'marca': o.marca or '',
+            'producto': o.producto or '',
             'monto_mxn': m,
             'monto_ponderado_mxn': round(m * (prob / 100.0), 2),
             'probabilidad': prob,
@@ -373,7 +374,7 @@ def _kpis_vacio():
 
 
 def _filtros_disponibles(user, etapas_map):
-    """Lista de vendedores, etapas y marcas que el user puede elegir."""
+    """Lista de vendedores, etapas y productos que el user puede elegir."""
     visible_ids = get_usuarios_visibles_ids(user)
     qs = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
     if visible_ids:
@@ -386,12 +387,12 @@ def _filtros_disponibles(user, etapas_map):
     pipeline_filter = Q()
     for pl, etapas in etapas_map.items():
         pipeline_filter |= Q(tipo_negociacion=pl, etapa_corta__in=etapas)
-    marcas_qs = TodoItem.objects.filter(pipeline_filter)
+    productos_qs = TodoItem.objects.filter(pipeline_filter)
     if visible_ids:
-        marcas_qs = marcas_qs.filter(usuario_id__in=visible_ids)
-    marcas = sorted({m for m in marcas_qs.exclude(marca='').exclude(marca__isnull=True).values_list('marca', flat=True) if m})
+        productos_qs = productos_qs.filter(usuario_id__in=visible_ids)
+    productos = sorted({m for m in productos_qs.exclude(producto='').exclude(producto__isnull=True).values_list('producto', flat=True) if m})
     return {
         'vendedores': vendedores,
         'etapas_por_pipeline': etapas_map,
-        'marcas': marcas,
+        'productos': productos,
     }

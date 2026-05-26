@@ -21,7 +21,7 @@
         pipeline: '',
         vendedor: '',
         etapa: '',
-        marca: '',
+        producto: '',
         monto_min: '',
         q: '',
     };
@@ -122,10 +122,10 @@
         PALOALTO: '#EC4899', MERAKI: '#10B981',
     };
 
-    function marcaChip(marca) {
-        if (!marca) return '<span class="rep-muted">—</span>';
-        var col = MARCA_COLORS[marca.toUpperCase()] || '#94A3B8';
-        return '<span class="rep-marca-chip"><span class="rep-marca-dot" style="background:' + col + ';"></span>' + escapeHTML(marca) + '</span>';
+    function productoChip(producto) {
+        if (!producto) return '<span class="rep-muted">—</span>';
+        var col = MARCA_COLORS[producto.toUpperCase()] || '#94A3B8';
+        return '<span class="rep-producto-chip"><span class="rep-producto-dot" style="background:' + col + ';"></span>' + escapeHTML(producto) + '</span>';
     }
 
     function proximoPaso(p) {
@@ -174,7 +174,7 @@
         { k: 'monto_mxn',      l: 'Monto',        right: true  },
         { k: 'probabilidad',   l: 'Prob.',        right: true  },
         { k: 'fecha_cierre',   l: 'Cierre est.',  right: false },
-        { k: 'marca',          l: 'Proveedor',    right: false },
+        { k: 'producto',          l: 'Proveedor',    right: false },
         { k: 'vendedor',       l: 'Vendedor',     right: false },
         { k: 'dias_abierto',   l: 'Días abto.',   right: true  },
     ];
@@ -205,7 +205,7 @@
                 + '<td class="rep-text-right rep-mono"><strong class="rep-monto">' + fmtFull(o.monto_mxn) + '</strong></td>'
                 + '<td class="rep-text-right">' + probBar(o.probabilidad) + '</td>'
                 + '<td class="rep-mono rep-fecha">' + escapeHTML(o.fecha_cierre || '—') + '</td>'
-                + '<td>' + marcaChip(o.marca) + '</td>'
+                + '<td>' + productoChip(o.producto) + '</td>'
                 + '<td class="rep-vendedor">' + escapeHTML(o.vendedor || '—') + '</td>'
                 + '<td class="rep-text-right">' + daysBadge(o.dias_abierto) + '</td>'
                 + '</tr>';
@@ -266,7 +266,7 @@
             $('repFltEtapa').appendChild(og);
         });
         // Marcas
-        (filtrosDisp.marcas || []).forEach(function (m) {
+        (filtrosDisp.productos || []).forEach(function (m) {
             var o = document.createElement('option');
             o.value = m; o.textContent = m;
             $('repFltMarca').appendChild(o);
@@ -315,7 +315,7 @@
         $('repFltPipeline').value = _filtros.pipeline || '';
         $('repFltVendedor').value = _filtros.vendedor || '';
         $('repFltEtapa').value = _filtros.etapa || '';
-        $('repFltMarca').value = _filtros.marca || '';
+        $('repFltMarca').value = _filtros.producto || '';
         $('repFltMontoMin').value = _filtros.monto_min || '';
     }
     function closeDrawer() {
@@ -327,7 +327,7 @@
         _filtros.pipeline = $('repFltPipeline').value || '';
         _filtros.vendedor = $('repFltVendedor').value || '';
         _filtros.etapa = $('repFltEtapa').value || '';
-        _filtros.marca = $('repFltMarca').value || '';
+        _filtros.producto = $('repFltMarca').value || '';
         _filtros.monto_min = $('repFltMontoMin').value || '';
         closeDrawer();
         load();
@@ -351,7 +351,7 @@
             return [
                 o.titulo || '', o.cliente || '', o.pipeline_label || '', o.etapa || '',
                 o.monto_mxn || 0, o.probabilidad || 0, o.fecha_cierre || '',
-                o.marca || '', o.vendedor || '', o.dias_abierto || 0,
+                o.producto || '', o.vendedor || '', o.dias_abierto || 0,
                 o.po_number || '', (o.archivos_occ || []).join('; '), prox,
             ];
         });
@@ -399,6 +399,10 @@
         // Botones del header
         $('repBtnFilter').addEventListener('click', openDrawer);
         $('repBtnExport').addEventListener('click', exportarCSV);
+
+        // Chip "Configurar reporte" → mismo comportamiento que botón Filtros.
+        var btnConfig = $('repChipConfig');
+        if (btnConfig) btnConfig.addEventListener('click', openDrawer);
 
         // Drawer
         $('repDrawerClose').addEventListener('click', closeDrawer);
