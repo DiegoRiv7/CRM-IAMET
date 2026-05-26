@@ -163,6 +163,20 @@ def _money(v):
         return 0.0
 
 
+_MES_NOMBRES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+
+def _fmt_fecha_cierre(mes_cierre, anio_cierre):
+    """'05' + 2026 → '15 May 2026'. Sin día específico — usamos día 15."""
+    try:
+        m = int(mes_cierre)
+        if 1 <= m <= 12:
+            return f'15 {_MES_NOMBRES[m]} {anio_cierre}'
+    except (TypeError, ValueError):
+        pass
+    return ''
+
+
 @login_required
 def api_reporte_oportunidades_abiertas(request):
     """GET /app/api/reportes/oportunidades-abiertas/
@@ -171,9 +185,12 @@ def api_reporte_oportunidades_abiertas(request):
         pipeline=runrate|proyecto    (sin valor → ambos)
         vendedor=<user_id>           (sin valor → todos los visibles)
         etapa=<nombre>               (sin valor → todas las "Vendido en adelante")
+        marca=<nombre>               (filtra por proveedor/marca)
+        monto_min=<int>              (monto mínimo)
         q=<texto>                    (busca en título y nombre de cliente)
 
-    Devuelve JSON agrupado por pipeline → etapa.
+    Devuelve JSON flat (lista de opps + KPIs + filtros disponibles).
+    El agrupado por pipeline/etapa lo hace el frontend si quiere.
     """
     user = request.user
     qp = request.GET
@@ -182,10 +199,9 @@ def api_reporte_oportunidades_abiertas(request):
     if not etapas_map:
         return JsonResponse({
             'ok': True,
-            'total_global': 0,
-            'monto_total_global': 0.0,
-            'pipelines': [],
-            'filtros_disponibles': {'vendedores': [], 'etapas_por_pipeline': {}},
+            'oportunidades': [],
+            'kpis': _kpis_vacio(),
+            'filtros_disponibles': {'vendedores': [], 'etapas_por_pipeline': {}, 'marcas': []},
             'nota': 'No se encontraron etapas "Vendido en adelante" configuradas.',
         })
 
@@ -197,6 +213,7 @@ def api_reporte_oportunidades_abiertas(request):
         pipelines_objetivo = list(etapas_map.keys())
 
     etapa_filter = (qp.get('etapa') or '').strip()
+    marca_filter = (qp.get('marca') or '').strip()
     q_text = (qp.get('q') or '').strip()
 
     vendedor_id = None
@@ -205,6 +222,13 @@ def api_reporte_oportunidades_abiertas(request):
             vendedor_id = int(qp.get('vendedor'))
         except (TypeError, ValueError):
             vendedor_id = None
+
+    monto_min = None
+    if qp.get('monto_min'):
+        try:
+            monto_min = float(qp.get('monto_min'))
+        except (TypeError, ValueError):
+            monto_min = None
 
     # ── Query base con filtros de etapa por pipeline ────────────────
     pipeline_filter = Q()
@@ -218,9 +242,8 @@ def api_reporte_oportunidades_abiertas(request):
     if not pipeline_filter:
         return JsonResponse({
             'ok': True,
-            'total_global': 0,
-            'monto_total_global': 0.0,
-            'pipelines': [],
+            'oportunidades': [],
+            'kpis': _kpis_vacio(),
             'filtros_disponibles': _filtros_disponibles(user, etapas_map),
         })
 
@@ -234,13 +257,19 @@ def api_reporte_oportunidades_abiertas(request):
     if vendedor_id:
         qs = qs.filter(usuario_id=vendedor_id)
 
+    if marca_filter:
+        qs = qs.filter(marca=marca_filter)
+
+    if monto_min is not None:
+        qs = qs.filter(monto__gte=monto_min)
+
     if q_text:
         qs = qs.filter(
             Q(oportunidad__icontains=q_text) |
             Q(cliente__nombre_empresa__icontains=q_text)
         )
 
-    qs = qs.order_by('tipo_negociacion', 'etapa_corta', '-monto')
+    qs = qs.order_by('-monto')
     opps = list(qs)
 
     # ── Prefetch en bulk ────────────────────────────────────────────
@@ -268,86 +297,83 @@ def api_reporte_oportunidades_abiertas(request):
         if a.oportunidad_id and a.oportunidad_id not in proxima_act:
             proxima_act[a.oportunidad_id] = a
 
-    # ── Armar resultado agrupado ────────────────────────────────────
-    pipelines_out = []
-    total_global = 0
-    monto_total_global = 0.0
-    for pl in pipelines_objetivo:
-        if pl not in etapas_map:
-            continue
-        opps_pl = [o for o in opps if (o.tipo_negociacion or '') == pl]
-        if not opps_pl:
-            continue
-        orden_etapas = etapas_map[pl]
-        etapas_out = []
-        monto_pl = 0.0
-        count_pl = 0
-        for etapa_nombre in orden_etapas:
-            ops_etapa = [o for o in opps_pl if (o.etapa_corta or '') == etapa_nombre]
-            if not ops_etapa:
-                continue
-            opps_list = []
-            monto_et = 0.0
-            for o in ops_etapa:
-                m = _money(o.monto)
-                monto_et += m
-                proximo = None
-                if o.id in proxima_tarea:
-                    t = proxima_tarea[o.id]
-                    proximo = {
-                        'tipo': 'tarea',
-                        'titulo': t.titulo,
-                        'fecha': t.fecha_limite.isoformat() if t.fecha_limite else None,
-                        'vencida': bool(t.fecha_limite and t.fecha_limite < now),
-                    }
-                elif o.id in proxima_act:
-                    a = proxima_act[o.id]
-                    proximo = {
-                        'tipo': 'actividad',
-                        'titulo': a.titulo,
-                        'fecha': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
-                        'vencida': bool(a.fecha_inicio and a.fecha_inicio < now),
-                    }
-                opps_list.append({
-                    'id': o.id,
-                    'titulo': o.oportunidad,
-                    'cliente': o.cliente.nombre_empresa if o.cliente_id else None,
-                    'vendedor': (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else None,
-                    'monto_mxn': m,
-                    'po_number': o.po_number or '',
-                    'archivos_occ': archivos_por_opp.get(o.id, []),
-                    'proximo_paso': proximo,
-                })
-            etapas_out.append({
-                'etapa': etapa_nombre,
-                'count': len(ops_etapa),
-                'monto_mxn': monto_et,
-                'oportunidades': opps_list,
-            })
-            monto_pl += monto_et
-            count_pl += len(ops_etapa)
-        if etapas_out:
-            pipelines_out.append({
-                'pipeline': pl,
-                'pipeline_label': pl.capitalize(),
-                'count': count_pl,
-                'monto_mxn': monto_pl,
-                'etapas': etapas_out,
-            })
-            total_global += count_pl
-            monto_total_global += monto_pl
+    # ── Serializar opps + acumular KPIs ─────────────────────────────
+    oportunidades = []
+    monto_total = 0.0
+    monto_ponderado = 0.0
+    prob_acum = 0
+    for o in opps:
+        m = _money(o.monto)
+        prob = int(o.probabilidad_cierre or 0)
+        monto_total += m
+        monto_ponderado += m * (prob / 100.0)
+        prob_acum += prob
+        # Días abierto: días desde fecha_creacion
+        dias_abierto = 0
+        if o.fecha_creacion:
+            dias_abierto = max(0, (now - o.fecha_creacion).days)
+        # Próximo paso
+        proximo = None
+        if o.id in proxima_tarea:
+            t = proxima_tarea[o.id]
+            proximo = {
+                'tipo': 'tarea',
+                'titulo': t.titulo,
+                'fecha': t.fecha_limite.isoformat() if t.fecha_limite else None,
+                'vencida': bool(t.fecha_limite and t.fecha_limite < now),
+            }
+        elif o.id in proxima_act:
+            a = proxima_act[o.id]
+            proximo = {
+                'tipo': 'actividad',
+                'titulo': a.titulo,
+                'fecha': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
+                'vencida': bool(a.fecha_inicio and a.fecha_inicio < now),
+            }
+        oportunidades.append({
+            'id': o.id,
+            'titulo': o.oportunidad,
+            'cliente': o.cliente.nombre_empresa if o.cliente_id else None,
+            'vendedor': (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else None,
+            'vendedor_id': o.usuario_id,
+            'pipeline': o.tipo_negociacion or '',
+            'pipeline_label': (o.tipo_negociacion or '').capitalize(),
+            'etapa': o.etapa_corta or '',
+            'marca': o.marca or '',
+            'monto_mxn': m,
+            'monto_ponderado_mxn': round(m * (prob / 100.0), 2),
+            'probabilidad': prob,
+            'dias_abierto': dias_abierto,
+            'fecha_cierre': _fmt_fecha_cierre(o.mes_cierre, o.anio_cierre),
+            'po_number': o.po_number or '',
+            'archivos_occ': archivos_por_opp.get(o.id, []),
+            'proximo_paso': proximo,
+        })
+
+    total = len(opps)
+    prob_prom = round(prob_acum / total) if total else 0
+
+    kpis = {
+        'total': total,
+        'pipeline_total_mxn': monto_total,
+        'monto_ponderado_mxn': round(monto_ponderado, 2),
+        'prob_promedio': prob_prom,
+    }
 
     return JsonResponse({
         'ok': True,
-        'total_global': total_global,
-        'monto_total_global': monto_total_global,
-        'pipelines': pipelines_out,
+        'oportunidades': oportunidades,
+        'kpis': kpis,
         'filtros_disponibles': _filtros_disponibles(user, etapas_map),
     })
 
 
+def _kpis_vacio():
+    return {'total': 0, 'pipeline_total_mxn': 0.0, 'monto_ponderado_mxn': 0.0, 'prob_promedio': 0}
+
+
 def _filtros_disponibles(user, etapas_map):
-    """Lista de vendedores y etapas que el user puede elegir como filtros."""
+    """Lista de vendedores, etapas y marcas que el user puede elegir."""
     visible_ids = get_usuarios_visibles_ids(user)
     qs = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
     if visible_ids:
@@ -356,7 +382,16 @@ def _filtros_disponibles(user, etapas_map):
         {'id': u.id, 'nombre': u.get_full_name() or u.username}
         for u in qs
     ]
+    # Marcas que existen en opps "vendido en adelante" — usamos distinct().
+    pipeline_filter = Q()
+    for pl, etapas in etapas_map.items():
+        pipeline_filter |= Q(tipo_negociacion=pl, etapa_corta__in=etapas)
+    marcas_qs = TodoItem.objects.filter(pipeline_filter)
+    if visible_ids:
+        marcas_qs = marcas_qs.filter(usuario_id__in=visible_ids)
+    marcas = sorted({m for m in marcas_qs.exclude(marca='').exclude(marca__isnull=True).values_list('marca', flat=True) if m})
     return {
         'vendedores': vendedores,
         'etapas_por_pipeline': etapas_map,
+        'marcas': marcas,
     }
