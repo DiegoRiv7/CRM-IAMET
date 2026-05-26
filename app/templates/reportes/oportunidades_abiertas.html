@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260526-capsule">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260526-island">
 {% endblock %}
 
 {% block content %}
@@ -13,12 +13,20 @@
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">
 
-        <!-- Header: título + acciones -->
+        <!-- Header: título · dynamic island con los 3 reportes · acciones -->
         <header class="rep-header">
             <div class="rep-header-left">
                 <h1 class="rep-h1">Reportes</h1>
                 <p class="rep-h1-sub">CRM IAMET &middot; Gestión de Ventas</p>
             </div>
+
+            <!-- Dynamic island: tipos de reporte (centro del header) -->
+            <div class="rep-tabs">
+                <button type="button" class="rep-tab rep-tab-active">Oportunidades Abiertas</button>
+                <a href="/app/reportes/oportunidades-cerradas/" class="rep-tab">Oportunidades Cerradas</a>
+                <a href="/app/reportes/clientes/" class="rep-tab">Por Cliente</a>
+            </div>
+
             <div class="rep-header-actions">
                 <div class="rep-search">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -35,21 +43,6 @@
                 </button>
             </div>
         </header>
-
-        <!-- Cápsula del módulo (estilo Proyectos) -->
-        <div class="rep-capsule-wrap">
-            <div class="rep-capsule">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>
-                <span>Reportes</span>
-            </div>
-        </div>
-
-        <!-- Sub-bar 1: tipos de reporte (siempre visible, contextual) -->
-        <div class="rep-tabs">
-            <button type="button" class="rep-tab rep-tab-active">Oportunidades Abiertas</button>
-            <a href="/app/reportes/oportunidades-cerradas/" class="rep-tab">Oportunidades Cerradas</a>
-            <a href="/app/reportes/clientes/" class="rep-tab">Por Cliente</a>
-        </div>
 
         <!-- Sub-bar 2: opciones (plantillas) del reporte activo — cambia según el tipo -->
         <div class="rep-plantillas">
@@ -115,6 +108,6 @@
     </footer>
 </aside>
 
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260526-capsule"></script>
-<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260526-capsule"></script>
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260526-island"></script>
+<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260526-island"></script>
 {% endblock %}
