@@ -294,12 +294,29 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'WARNING',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        # Silenciar el spam de fontTools (subset de fuentes para PDFs):
+        # emite "Glyph IDs: [...]" por cada PDF generado.
+        'fontTools': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'fontTools.subset': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'weasyprint': {
+            'handlers': ['console'],
+            'level': 'WARNING',
             'propagate': False,
         },
         'django.request': {

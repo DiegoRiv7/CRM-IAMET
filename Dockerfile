@@ -43,4 +43,8 @@ EXPOSE 8000
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Comando para ejecutar la aplicación con Gunicorn
-CMD ["gunicorn", "cartera_clientes.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--worker-class", "gevent"]
+# workers=5: la máquina tiene 7.7 GiB libres; con polling cada 15s desde varios
+# usuarios + PDFs ocasionales, 3 workers gevent se saturaban. 5 deja ~2 libres
+# para PDFs o queries pesadas sin bloquear el resto del tráfico.
+# timeout=120: requests más largos que esto se matan (PDFs muy grandes mejor offline).
+CMD ["gunicorn", "cartera_clientes.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "5", "--worker-class", "gevent", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "100"]
