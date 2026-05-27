@@ -103,9 +103,20 @@ def reportes_index(request):
 
 @login_required
 def reporte_detalle(request, slug):
-    """Vista de un reporte individual. Despacha por slug."""
+    """Vista de un reporte individual. Despacha por slug.
+
+    Además de las variables del sidebar, pasa las que necesita el widget de
+    oportunidad (incluido en la página para abrir opps inline sin navegar al
+    CRM): etapas_pipeline_json para _CRM_CONFIG, y campos placeholder para
+    los filtros de mes/anio/vendedor que crm_main.js espera.
+    """
+    from .views_crm import _get_etapas_pipeline_json
     reporte = REPORTES_BY_SLUG.get(slug)
     ctx = _sidebar_context(request)
+    ctx.update({
+        'etapas_pipeline_json': _get_etapas_pipeline_json(),
+        'vendedores_filter': '',
+    })
     if not reporte:
         ctx.update({'slug': slug, 'tab_activo': 'reportes'})
         return render(request, 'reportes/no_encontrado.html', ctx, status=404)

@@ -217,11 +217,18 @@
             + '</footer>';
         wrap.innerHTML = html;
 
-        // Click en fila → abre la opp
+        // Click en fila → abre el widget de la opp inline (sin navegar al CRM).
+        // openDetalle viene de crm_main.js, que está cargado en esta página.
+        // Fallback: si por alguna razón no está disponible, redirige al CRM.
         wrap.querySelectorAll('tr[data-opp-id]').forEach(function (tr) {
             tr.addEventListener('click', function () {
                 var id = tr.getAttribute('data-opp-id');
-                if (id) window.location.href = '/app/todos/?tab=crm&open_opp=' + id;
+                if (!id) return;
+                if (typeof window.openDetalle === 'function') {
+                    window.openDetalle(parseInt(id, 10));
+                } else {
+                    window.location.href = '/app/todos/?tab=crm&open_opp=' + id;
+                }
             });
         });
         // Click en header → ordenar
