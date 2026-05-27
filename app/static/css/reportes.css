@@ -9,21 +9,20 @@
  * ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Header (rediseño 2026-05-26) ─────────────────────────────── */
+/* Header en 3 columnas: plantillas (izq) · dynamic island (centro absoluto) · acciones (der).
+   Grid garantiza que el dynamic island queda centrado en el viewport, sin importar el
+   ancho de plantillas y acciones. */
 .rep-header {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px; flex-wrap: wrap;
-    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
 }
-.rep-header-left { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-.rep-h1 {
-    margin: 0;
-    font-size: 1.55rem; font-weight: 800; color: #1D1D1F;
-    letter-spacing: -0.025em;
+.rep-header-actions {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    justify-self: end;
 }
-.rep-h1-sub {
-    margin: 0; font-size: 0.74rem; color: #86868B; font-weight: 500;
-}
-.rep-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .rep-search {
     display: inline-flex; align-items: center; gap: 6px;
@@ -51,10 +50,10 @@
     display: inline-block; margin-left: 2px;
 }
 
-/* Plantillas (chips de atajos) */
+/* Plantillas (chips de atajos) — viven dentro del header, columna izquierda */
 .rep-plantillas {
     display: flex; gap: 7px; flex-wrap: wrap; align-items: center;
-    margin-bottom: 14px;
+    min-width: 0; /* deja que se compacte si falta espacio */
 }
 .rep-plantillas-label {
     font-size: 0.6rem; font-weight: 700; color: #86868B;
@@ -121,6 +120,18 @@
     box-shadow: 0 2px 8px rgba(0,82,212,0.25);
 }
 .rep-tab-active:hover { color: #fff; }
+
+/* En pantallas medianas/chicas el grid de 3 columnas se vería apretado:
+   colapsa a filas — dynamic island arriba, plantillas y acciones debajo. */
+@media (max-width: 1280px) {
+    .rep-header {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 10px;
+    }
+    .rep-header-actions { justify-self: center; }
+    .rep-plantillas { justify-content: center; }
+}
 
 /* KPI con accent vertical */
 .rep-kpis {
