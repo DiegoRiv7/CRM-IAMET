@@ -20,7 +20,7 @@
     margin-bottom: 18px;
 }
 .rep-header-actions {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
     justify-self: end;
 }
 
@@ -40,7 +40,7 @@
 .rep-search input {
     border: none; background: transparent; outline: none;
     font-size: 0.78rem; font-family: inherit; color: #1D1D1F;
-    width: 220px;
+    width: 170px;
 }
 .rep-search input::placeholder { color: #9CA3AF; }
 
@@ -50,10 +50,11 @@
     display: inline-block; margin-left: 2px;
 }
 
-/* Plantillas (chips de atajos) — viven dentro del header, columna izquierda */
+/* Plantillas (chips de atajos) — viven dentro del header, columna izquierda.
+   nowrap: TODO el header en una sola línea, sin saltos. */
 .rep-plantillas {
-    display: flex; gap: 7px; flex-wrap: wrap; align-items: center;
-    min-width: 0; /* deja que se compacte si falta espacio */
+    display: flex; gap: 6px; flex-wrap: nowrap; align-items: center;
+    min-width: 0;
 }
 .rep-plantillas-label {
     font-size: 0.6rem; font-weight: 700; color: #86868B;
@@ -61,15 +62,16 @@
     margin-right: 4px;
 }
 .rep-chip {
-    padding: 5px 13px;
+    padding: 5px 11px;
     border: 1px solid #E5E7EB;
     background: #fff;
     color: #3A3A3C;
     border-radius: 9999px;
-    font-size: 0.72rem; font-weight: 600;
+    font-size: 0.7rem; font-weight: 600;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.15s;
+    white-space: nowrap;
 }
 .rep-chip:hover {
     border-color: #CBD5E1; background: #F1F5F9;
@@ -121,16 +123,16 @@
 }
 .rep-tab-active:hover { color: #fff; }
 
-/* En pantallas medianas/chicas el grid de 3 columnas se vería apretado:
-   colapsa a filas — dynamic island arriba, plantillas y acciones debajo. */
-@media (max-width: 1280px) {
+/* Solo en pantallas realmente chicas (<1100px) el header colapsa a filas.
+   Arriba de eso, se mantiene en UNA SOLA LÍNEA (lo que pidió el usuario). */
+@media (max-width: 1100px) {
     .rep-header {
         grid-template-columns: 1fr;
         justify-items: center;
         gap: 10px;
     }
-    .rep-header-actions { justify-self: center; }
-    .rep-plantillas { justify-content: center; }
+    .rep-header-actions { justify-self: center; flex-wrap: wrap; }
+    .rep-plantillas { justify-content: center; flex-wrap: wrap; }
 }
 
 /* KPI con accent vertical */
