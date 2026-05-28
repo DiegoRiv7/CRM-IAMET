@@ -4,11 +4,11 @@
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-fix-terminales">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-natscroll">
 {% endblock %}
 
 {% block content %}
-<div class="crm-page crm-page-sidebar">
+<div class="crm-page crm-page-sidebar crm-page-natural-scroll">
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">

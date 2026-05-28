@@ -4,12 +4,12 @@
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-personalizado">
-<link rel="stylesheet" href="{% static 'css/reportes_personalizado.css' %}?v=20260528-personalizado">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-natscroll">
+<link rel="stylesheet" href="{% static 'css/reportes_personalizado.css' %}?v=20260528-natscroll">
 {% endblock %}
 
 {% block content %}
-<div class="crm-page crm-page-sidebar">
+<div class="crm-page crm-page-sidebar crm-page-natural-scroll">
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_sidebar.html" %}
 
@@ -210,8 +210,8 @@ oportunidad inline (sin navegar fuera). Mismo patrón que el Reporte 1.
     window._REP_PERSONALIZADO_API = "{% url 'api_reporte_personalizado' %}";
 </script>
 
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-personalizado"></script>
-<script src="{% static 'js/reportes_personalizado.js' %}?v=20260528-personalizado"></script>
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-natscroll"></script>
+<script src="{% static 'js/reportes_personalizado.js' %}?v=20260528-natscroll"></script>
 
 {% comment %}
 crm_main.js define openDetalle(id) que abre el widget. Si el partial está

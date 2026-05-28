@@ -386,18 +386,30 @@
     padding: 18px 24px 60px;
     background: #F5F5F7;
     box-sizing: border-box;
-    /* El padre .crm-page-sidebar fija height: 100vh y es display:flex.
-       Para que overflow-y:auto active scroll interno necesitamos altura
-       LIMITADA — `min-height: 100vh` permitía al shell crecer con el
-       contenido y nunca activaba el scroll (la paginación quedaba debajo
-       del viewport, invisible). Con `height: 100%` el shell se ajusta al
-       padre y el contenido excedente sí scrollea. `min-height: 0` evita
-       el min-content-size trap clásico de flex items. */
+    min-height: 100vh;
     flex: 1;
-    min-height: 0;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Scroll natural del body para páginas de Reportes.
+
+   Por default .crm-page-sidebar tiene `height: 100vh` (necesario para
+   que el CRM home, con sus tabs internas y kanbans, no haga scroll
+   doble). Pero en Reportes la tabla puede ser muy larga y el scroll
+   interno del shell era frágil — la paginación quedaba debajo del
+   viewport sin forma visible de llegar a ella.
+
+   Con la clase `crm-page-natural-scroll` aplicada al contenedor de la
+   página de Reportes, dejamos que el body scrollee naturalmente. El
+   `<aside>` sigue con position:sticky y queda visible al lado.
+   ───────────────────────────────────────────────────────────────── */
+.crm-page.crm-page-natural-scroll {
+    height: auto;
+}
+.crm-page.crm-page-natural-scroll .rep-page-shell {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
 }
 
 /* ── Topbar (estilo .crm-bar) ────────────────────────────────────── */
