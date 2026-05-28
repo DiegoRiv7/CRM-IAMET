@@ -235,6 +235,34 @@ def comparten_grupo(user1, user2):
     ).exists()
 
 
+def puede_actuar_sobre(actor, owner):
+    """Helper canónico para "¿actor puede ver/editar/cotizar contenido cuyo dueño es owner?".
+
+    Centraliza el patrón que estaba repetido en views_crm / views_cotizaciones:
+      `if not is_supervisor(u) and obj.usuario != u: return 403`
+
+    Devuelve True si:
+      - El objeto no tiene dueño claro (owner es None).
+      - El actor es supervisor global.
+      - El actor ES el dueño.
+      - El actor y el dueño comparten al menos un grupo activo
+        (miembro-miembro, miembro-supervisor_grupo, o cruzado).
+
+    Usar en cualquier endpoint donde antes se bloqueaba a compañeros de
+    grupo. Sin esto, los miembros de un mismo grupo no podían cotizar con
+    clientes/opps de su compañero, editar sus opps, descargar sus PDFs, etc.
+    """
+    if owner is None:
+        return True
+    if not actor or not actor.is_authenticated:
+        return False
+    if is_supervisor(actor):
+        return True
+    if actor.id == owner.id:
+        return True
+    return comparten_grupo(actor, owner)
+
+
 def usuario_puede_acceder_grupo(user, grupo):
     """True si el usuario es miembro, supervisor del grupo, o supervisor global."""
     if is_supervisor(user):

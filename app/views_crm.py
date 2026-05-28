@@ -5272,11 +5272,12 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
         
         # Obtener la oportunidad
         oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
-        
+
         # Validar que el usuario puede modificar esta oportunidad
-        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+        from .views_grupos import puede_actuar_sobre
+        if not puede_actuar_sobre(request.user, oportunidad.usuario):
             return JsonResponse({'error': 'No tienes permisos para modificar esta oportunidad'}, status=403)
-        
+
         # Guardar estado anterior para actividad
         estado_anterior = oportunidad.estado_crm
         
@@ -5334,11 +5335,12 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         
         # Obtener la oportunidad
         oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
-        
-        # Verificar permisos: supervisores ven todo, usuarios solo sus propias oportunidades
-        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+
+        # Verificar permisos: supervisores, dueño y compañeros de grupo
+        from .views_grupos import puede_actuar_sobre
+        if not puede_actuar_sobre(request.user, oportunidad.usuario):
             return JsonResponse({'error': 'No tienes permisos para comentar en esta oportunidad'}, status=403)
-        
+
         # Verificar que hay contenido o archivos
         archivos_subidos = []
         archivos_keys = [key for key in request.FILES.keys() if key.startswith('archivo_')]
@@ -5496,9 +5498,10 @@ def timeline_oportunidad(request, oportunidad_id):
     from datetime import timedelta
     
     oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
-    
-    # Verificar permisos: supervisores ven todo, usuarios solo sus propias oportunidades
-    if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+
+    # Verificar permisos: supervisores, dueño y compañeros de grupo
+    from .views_grupos import puede_actuar_sobre
+    if not puede_actuar_sobre(request.user, oportunidad.usuario):
         return JsonResponse({'error': 'No tienes permisos para ver este timeline'}, status=403)
     
     try:
@@ -5769,11 +5772,12 @@ def descargar_archivo_oportunidad(request, archivo_id):
     """
     try:
         archivo = get_object_or_404(OportunidadArchivo, id=archivo_id)
-        
-        # Verificar permisos: supervisores ven todo, usuarios solo archivos de sus oportunidades
-        if not is_supervisor(request.user) and archivo.oportunidad.usuario != request.user:
+
+        # Verificar permisos: supervisores, dueño y compañeros de grupo
+        from .views_grupos import puede_actuar_sobre
+        if not puede_actuar_sobre(request.user, archivo.oportunidad.usuario):
             return JsonResponse({'error': 'No tienes permisos para descargar este archivo'}, status=403)
-        
+
         # Verificar que el archivo existe
         if not archivo.archivo:
             return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
@@ -5818,11 +5822,12 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
     """
     try:
         archivo = get_object_or_404(OportunidadArchivo, id=archivo_id)
-        
-        # Verificar permisos: supervisores ven todo, usuarios solo archivos de sus oportunidades
-        if not is_supervisor(request.user) and archivo.oportunidad.usuario != request.user:
+
+        # Verificar permisos: supervisores, dueño y compañeros de grupo
+        from .views_grupos import puede_actuar_sobre
+        if not puede_actuar_sobre(request.user, archivo.oportunidad.usuario):
             return HttpResponse('No tienes permisos para ver este archivo', status=403)
-        
+
         # Verificar que el archivo existe
         if not archivo.archivo:
             return HttpResponse('Archivo no encontrado', status=404)
