@@ -797,6 +797,94 @@ def _kpis_vacio_clientes():
     }
 
 
+def _cobrado_total_por_cliente(clientes):
+    """Suma todo el cobrado histórico (todos los ArchivoCobrado) y lo
+    devuelve indexado por cliente.id.
+
+    Misma lógica de matching por nombre + alias que usa el Dashboard
+    (views_crm._extract_cobrado_entries). Centralizar este helper aquí
+    evitaría duplicar; por ahora replicamos el patrón básico para no
+    crear acoplamiento con views_crm.
+
+    Args:
+        clientes: lista de instancias Cliente (las que se mostrarán en el
+                  reporte). Solo matcheamos contra estos para evitar
+                  cruzar nombres con clientes que el usuario no ve.
+
+    Returns:
+        dict {cliente_id: monto_total_float}
+    """
+    from .models import ArchivoCobrado, AliasCliente
+
+    if not clientes:
+        return {}
+
+    # Alias map: palabra_clave (UPPER) → buscar_como (UPPER)
+    alias_map = {
+        a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
+        for a in AliasCliente.objects.all()
+    }
+
+    # Acumulador final por cliente_id
+    total_by_id = {}
+
+    # Iterar TODOS los archivos de cobrado (histórico completo).
+    for ac in ArchivoCobrado.objects.all().only('datos_json'):
+        if not ac.datos_json:
+            continue
+        for key, val in ac.datos_json.items():
+            if not isinstance(val, dict) or 'monto' not in val:
+                continue
+            nombre = (val.get('nombre') or key or '').upper().strip()
+            if not nombre:
+                continue
+            # Aplicar alias
+            if nombre in alias_map:
+                nombre = alias_map[nombre]
+            try:
+                monto = float(val['monto'] or 0)
+            except (TypeError, ValueError):
+                continue
+
+            # Match contra los clientes del reporte:
+            # 1) exacto
+            # 2) substring
+            # 3) palabras significativas (2+)
+            target = None
+            for c in clientes:
+                if c.nombre_empresa and c.nombre_empresa.upper().strip() == nombre:
+                    target = c
+                    break
+            if not target:
+                for c in clientes:
+                    if not c.nombre_empresa:
+                        continue
+                    crm_u = c.nombre_empresa.upper().strip()
+                    if crm_u in nombre or nombre in crm_u:
+                        target = c
+                        break
+            if not target:
+                pw = [
+                    w for w in nombre.split()
+                    if len(w) > 2 and w not in (
+                        'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'SA', 'CV', 'SAS', 'INC', 'MEXICO'
+                    )
+                ]
+                if len(pw) >= 2:
+                    for c in clientes:
+                        if not c.nombre_empresa:
+                            continue
+                        n_up = c.nombre_empresa.upper()
+                        if pw[0] in n_up and pw[1] in n_up:
+                            target = c
+                            break
+
+            if target:
+                total_by_id[target.id] = total_by_id.get(target.id, 0.0) + monto
+
+    return total_by_id
+
+
 @login_required
 def api_reporte_clientes(request):
     """GET /app/api/reportes/clientes/
@@ -807,6 +895,9 @@ def api_reporte_clientes(request):
 
     Las opps abiertas se cuentan dinámicamente (etapas "Vendido en adelante"
     leídas de EtapaPipeline, igual que el Reporte 1).
+
+    El "Cobrado total" por cliente NO viene de las oportunidades — viene
+    del Dashboard (modelo ArchivoCobrado). Ver _cobrado_total_por_cliente.
 
     Devuelve KPIs globales + lista flat de clientes.
     """
@@ -865,20 +956,16 @@ def api_reporte_clientes(request):
             filter=Q(oportunidades__etapa_corta__in=_ETAPAS_PERDIDAS),
             distinct=True,
         ),
-        monto_ganado=Sum(
-            'oportunidades__monto',
-            filter=Q(oportunidades__etapa_corta__in=_ETAPAS_GANADAS),
-        ),
     )
 
     if opps_min > 0:
         qs = qs.filter(opps_abiertas__gte=opps_min)
 
-    qs = qs.select_related('asignado_a').order_by('-opps_abiertas', '-monto_ganado', 'nombre_empresa')
+    qs = qs.select_related('asignado_a').order_by('-opps_abiertas', 'nombre_empresa')
     clientes = list(qs)
     cliente_ids = [c.id for c in clientes]
 
-    # ── Actividad última y próxima (queries agregadas separadas) ────
+    # ── Actividad última (ya no calculamos próxima, esa columna se quitó) ──
     now = timezone.now()
     ultima_act = dict(
         Actividad.objects
@@ -888,37 +975,24 @@ def api_reporte_clientes(request):
         .values_list('oportunidad__cliente_id', 'ultima')
     )
 
-    # Próxima actividad: titulo + fecha. Hacemos values_list ordenado y
-    # nos quedamos con la primera de cada cliente.
-    proxima_por_cliente = {}
-    for a in (
-        Actividad.objects
-        .filter(
-            oportunidad__cliente_id__in=cliente_ids,
-            completada=False,
-            fecha_inicio__gte=now,
-        )
-        .order_by('fecha_inicio')
-        .values('oportunidad__cliente_id', 'titulo', 'fecha_inicio')
-    ):
-        cid = a['oportunidad__cliente_id']
-        if cid and cid not in proxima_por_cliente:
-            proxima_por_cliente[cid] = {
-                'titulo': a['titulo'],
-                'fecha': a['fecha_inicio'].isoformat() if a['fecha_inicio'] else None,
-            }
+    # ── Cobrado total por cliente (desde ArchivoCobrado) ────────────
+    # El "Cobrado" del Dashboard NO se calcula desde oportunidades — viene
+    # de los CSVs subidos por administración (modelo ArchivoCobrado). Para
+    # mostrar el "Cobrado Total" por cliente en este reporte, sumamos todo
+    # el histórico (todos los meses/años) y matcheamos por nombre (con
+    # alias del modelo AliasCliente, igual que el Dashboard).
+    cobrado_por_cliente_id = _cobrado_total_por_cliente(clientes)
 
     # ── Serializar + KPIs ───────────────────────────────────────────
     treinta_dias_atras = now - timedelta(days=30)
     out = []
     con_opps_abiertas = 0
-    monto_ganado_total = 0.0
+    cobrado_total_global = 0.0
     sin_act_reciente = 0
     for c in clientes:
         ult = ultima_act.get(c.id)
-        prox = proxima_por_cliente.get(c.id)
-        monto_g = float(c.monto_ganado or 0)
-        monto_ganado_total += monto_g
+        cobrado_c = cobrado_por_cliente_id.get(c.id, 0.0)
+        cobrado_total_global += cobrado_c
         if c.opps_abiertas > 0:
             con_opps_abiertas += 1
         if not ult or ult < treinta_dias_atras:
@@ -935,15 +1009,14 @@ def api_reporte_clientes(request):
             'opps_abiertas': c.opps_abiertas,
             'opps_ganadas': c.opps_ganadas,
             'opps_perdidas': c.opps_perdidas,
-            'monto_ganado_mxn': monto_g,
+            'cobrado_total_mxn': cobrado_c,
             'ultima_actividad': ult.isoformat() if ult else None,
-            'proxima_actividad': prox,
         })
 
     kpis = {
         'total_clientes': len(clientes),
         'con_opps_abiertas': con_opps_abiertas,
-        'monto_ganado_total_mxn': round(monto_ganado_total, 2),
+        'cobrado_total_global_mxn': round(cobrado_total_global, 2),
         'sin_actividad_reciente': sin_act_reciente,
     }
 

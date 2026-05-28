@@ -1,35 +1,41 @@
 /* ═══════════════════════════════════════════════════════════════════
  * reportes_clientes.js
  * Reporte 3: Por Cliente — 1 fila por cliente con conteos de opps y
- * actividad. Útil para que un jefe vea "¿con qué clientes estamos
- * descuidando?" y "¿quién es nuestro cliente más rentable?".
+ * cobrado total (del Dashboard, NO del CRM).
  *
- * KPIs: Total clientes · Con opps abiertas · Ganado total · Sin actividad
- *       reciente (>30 días).
- * Tabla: Cliente · Categoría · Abiertas · Ganadas · Perdidas · Ganado
- *        total · Última actividad · Próxima.
- * Plantillas: Todas · Con opps abiertas · Sin actividad >30d.
- * Click en fila → abre /app/todos/?tab=crm&cliente=ID (vista cliente).
+ * Cambios respecto a la versión anterior (2026-05-28):
+ *   - Patrón "limpio" igual a Abiertas/Cerradas: botón Ordenar dropdown,
+ *     vista rápida en el drawer, paginación 50, export CSV con metadatos.
+ *   - Quitadas las columnas "Cat." (Categoría) y "Próxima" (Próxima
+ *     actividad).
+ *   - Columna "Cobrado total" en vez de "Ganado total" — viene del CSV
+ *     de ingresos (ArchivoCobrado) del Dashboard, NO de oportunidades.
+ *   - Click en cliente abre el widget inline (#widgetClienteOportunidades
+ *     vía window.openClienteModal). Ya no navega al CRM.
  * ═══════════════════════════════════════════════════════════════════ */
 (function () {
     'use strict';
 
     var ENDPOINT = '/app/api/reportes/clientes/';
+    var PAGE_SIZE = 50;
 
+    // ── Estado ───────────────────────────────────────────────────────
     var _filtros = { vendedor: '', opps_min: '', q: '' };
     var _plantillaActiva = 'todas';
-    var _sortKey = 'opps_abiertas';
-    var _sortDir = 'desc';
+    var _sortMode = 'abiertas_desc';
+    var _currentPage = 1;
     var _lastData = null;
     var _filtrosUICargados = false;
     var _searchDebounce = null;
 
     function $(id) { return document.getElementById(id); }
+
     function escapeHTML(s) {
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
+    function pluralize(n, sing, plur) { return n === 1 ? sing : plur; }
     function fmtShort(n) {
         if (n == null) return '$0';
         if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
@@ -54,13 +60,40 @@
         return Math.floor((new Date() - d) / (1000 * 60 * 60 * 24));
     }
 
+    // ── Sort modes ───────────────────────────────────────────────────
+    // Cada modo retorna su label (para el botón) y la función de orden.
+    // Para "sin actividad" usamos un número derivado: días desde última
+    // actividad (cuanto más grande, más viejo). Sin actividad → +Infinity.
+    function _diasDesdeUltima(c) {
+        if (!c.ultima_actividad) return Number.POSITIVE_INFINITY;
+        var d = diasDesde(c.ultima_actividad);
+        return d == null ? Number.POSITIVE_INFINITY : d;
+    }
+
+    var SORT_MODES = {
+        abiertas_desc:      { label: 'Más opps abiertas',                cmp: function (a, b) { return (b.opps_abiertas || 0) - (a.opps_abiertas || 0); } },
+        ganadas_desc:       { label: 'Más opps ganadas',                 cmp: function (a, b) { return (b.opps_ganadas || 0) - (a.opps_ganadas || 0); } },
+        perdidas_desc:      { label: 'Más opps perdidas',                cmp: function (a, b) { return (b.opps_perdidas || 0) - (a.opps_perdidas || 0); } },
+        cobrado_desc:       { label: 'Mayor cobrado',                    cmp: function (a, b) { return (b.cobrado_total_mxn || 0) - (a.cobrado_total_mxn || 0); } },
+        cobrado_asc:        { label: 'Menor cobrado',                    cmp: function (a, b) { return (a.cobrado_total_mxn || 0) - (b.cobrado_total_mxn || 0); } },
+        actividad_vieja:    { label: 'Sin actividad reciente primero',   cmp: function (a, b) { return _diasDesdeUltima(b) - _diasDesdeUltima(a); } },
+        actividad_reciente: { label: 'Actividad más reciente',           cmp: function (a, b) { return _diasDesdeUltima(a) - _diasDesdeUltima(b); } },
+        nombre_asc:         { label: 'Cliente (A-Z)',                    cmp: function (a, b) { return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'); } },
+        vendedor_asc:       { label: 'Vendedor (A-Z)',                   cmp: function (a, b) { return String(a.asignado_a || '').localeCompare(String(b.asignado_a || ''), 'es'); } },
+    };
+
+    function ordenar(clientes) {
+        var mode = SORT_MODES[_sortMode] || SORT_MODES.abiertas_desc;
+        return clientes.slice().sort(mode.cmp);
+    }
+
     // ── KPIs ─────────────────────────────────────────────────────────
     function renderKpis(kpis) {
         var cards = [
-            { label: 'Total Clientes',     value: String(kpis.total_clientes),         sub: 'visibles para ti',                                                       accent: '#0052D4' },
-            { label: 'Con Opps Abiertas',  value: String(kpis.con_opps_abiertas),      sub: 'en pipeline activo',                                                     accent: '#4364F7' },
-            { label: 'Ganado Total',       value: fmtShort(kpis.monto_ganado_total_mxn), sub: 'histórico acumulado',                                                  accent: '#15803D' },
-            { label: 'Sin Actividad >30d', value: String(kpis.sin_actividad_reciente), sub: 'requieren follow-up',                                                    accent: '#DC2626' },
+            { label: 'Total Clientes',     value: String(kpis.total_clientes),                   sub: 'visibles para ti',     accent: '#0052D4' },
+            { label: 'Con Opps Abiertas',  value: String(kpis.con_opps_abiertas),                sub: 'en pipeline activo',    accent: '#4364F7' },
+            { label: 'Cobrado Total',      value: fmtShort(kpis.cobrado_total_global_mxn),       sub: 'histórico (Dashboard)', accent: '#15803D' },
+            { label: 'Sin Actividad >30d', value: String(kpis.sin_actividad_reciente),           sub: 'requieren follow-up',   accent: '#DC2626' },
         ];
         $('repKpis').innerHTML = cards.map(function (c) {
             return '<div class="rep-kpi" style="border-left-color:' + c.accent + ';">'
@@ -84,18 +117,7 @@
             + v + '</span>';
     }
 
-    function categoriaPill(cat) {
-        var palette = {
-            'A': ['#FEF3C7', '#92400E'],
-            'B': ['#DBEAFE', '#1D4ED8'],
-            'C': ['#F1F5F9', '#475569'],
-        };
-        var pair = palette[cat] || palette['C'];
-        return '<span class="rep-etapa-pill" style="background:' + pair[0] + ';color:' + pair[1] + ';font-weight:700;">'
-            + escapeHTML(cat) + '</span>';
-    }
-
-    function ultimaActividad(iso) {
+    function ultimaActividadCell(iso) {
         if (!iso) return '<span class="rep-muted">Sin actividad</span>';
         var dias = diasDesde(iso);
         var col, bg;
@@ -107,21 +129,7 @@
             + '<div class="rep-td-sub" style="margin-top:3px;">' + fmtFecha(iso) + '</div>';
     }
 
-    function proximaActividad(p) {
-        if (!p) return '<span class="rep-muted">—</span>';
-        var dias = diasDesde(p.fecha);
-        // dias negativo = futura (porque diasDesde da días pasados)
-        var txt = '';
-        if (dias === 0) txt = 'hoy';
-        else if (dias === -1) txt = 'mañana';
-        else if (dias < 0) txt = 'en ' + Math.abs(dias) + 'd';
-        else txt = fmtFecha(p.fecha);
-        return '<span class="rep-next-step">'
-            + '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '
-            + escapeHTML(p.titulo) + '<span class="rep-next-date"> · ' + txt + '</span></span>';
-    }
-
-    // ── Plantillas client-side ──────────────────────────────────────
+    // ── Plantillas (Vista rápida) ───────────────────────────────────
     function aplicarPlantilla(clientes) {
         switch (_plantillaActiva) {
             case 'con-abiertas':  return clientes.filter(function (c) { return c.opps_abiertas > 0; });
@@ -134,83 +142,161 @@
         }
     }
 
-    function ordenar(clientes) {
-        var k = _sortKey, dir = _sortDir === 'desc' ? -1 : 1;
-        return clientes.slice().sort(function (a, b) {
-            var av = a[k], bv = b[k];
-            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-            return String(av || '').localeCompare(String(bv || ''), 'es') * dir;
+    function activarPlantilla(plantilla) {
+        _plantillaActiva = plantilla || 'todas';
+        document.querySelectorAll('#repFltPlantilla .rep-fg-chip').forEach(function (b) {
+            var on = b.getAttribute('data-plantilla') === _plantillaActiva;
+            b.classList.toggle('rep-fg-chip-active', on);
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
         });
+        _currentPage = 1;
+        actualizarFilterDot();
+        renderTabla();
     }
 
-    // ── Tabla ───────────────────────────────────────────────────────
+    // ── Tabla + paginación ──────────────────────────────────────────
+    // Columnas (sin Categoría ni Próxima — el usuario las pidió quitar).
     var COLS = [
-        { k: 'nombre',           l: 'Cliente',          right: false },
-        { k: 'categoria',        l: 'Cat.',             right: false },
-        { k: 'opps_abiertas',    l: 'Abiertas',         right: true  },
-        { k: 'opps_ganadas',     l: 'Ganadas',          right: true  },
-        { k: 'opps_perdidas',    l: 'Perdidas',         right: true  },
-        { k: 'monto_ganado_mxn', l: 'Ganado total',     right: true  },
-        { k: 'ultima_actividad', l: 'Última actividad', right: false },
-        { k: 'proxima_actividad',l: 'Próxima',          right: false },
+        { l: 'Cliente',           right: false },
+        { l: 'Abiertas',          right: true  },
+        { l: 'Ganadas',           right: true  },
+        { l: 'Perdidas',          right: true  },
+        { l: 'Cobrado total',     right: true  },
+        { l: 'Última actividad',  right: false },
     ];
 
-    function renderTabla(clientes) {
+    function renderTabla() {
+        if (!_lastData) return;
         var wrap = $('repTableWrap');
-        if (!clientes.length) {
+        var allFiltradas = ordenar(aplicarPlantilla(_lastData.clientes || []));
+        if (!allFiltradas.length) {
             wrap.innerHTML = '<div class="rep-empty">'
                 + '<svg width="32" height="32" fill="none" stroke="#CBD5E1" stroke-width="1.6" viewBox="0 0 24 24" style="margin-bottom:8px;"><path d="M3 21h18M3 7v14M21 7v14M9 7V3h6v4M9 21V11h6v10"/></svg>'
                 + '<h3>Sin resultados</h3><p>No hay clientes con los filtros actuales.</p>'
                 + '</div>';
             return;
         }
-        var totalGanado = clientes.reduce(function (s, c) { return s + (c.monto_ganado_mxn || 0); }, 0);
+
+        var totalFiltrado = allFiltradas.length;
+        var totalCobrado = allFiltradas.reduce(function (s, c) { return s + (c.cobrado_total_mxn || 0); }, 0);
+
+        var totalPages = Math.max(1, Math.ceil(totalFiltrado / PAGE_SIZE));
+        if (_currentPage > totalPages) _currentPage = totalPages;
+        if (_currentPage < 1) _currentPage = 1;
+        var ini = (_currentPage - 1) * PAGE_SIZE;
+        var fin = Math.min(ini + PAGE_SIZE, totalFiltrado);
+        var pagina = allFiltradas.slice(ini, fin);
+
         var html = '<div class="rep-table-scroll"><table class="rep-table"><thead><tr>';
         COLS.forEach(function (c) {
-            var arrow = '';
-            if (c.k === _sortKey) arrow = _sortDir === 'desc' ? ' ↓' : ' ↑';
-            html += '<th class="' + (c.right ? 'rep-text-right' : '') + '" data-sort-key="' + c.k + '">'
-                + escapeHTML(c.l) + '<span class="rep-sort-arrow">' + arrow + '</span></th>';
+            html += '<th class="' + (c.right ? 'rep-text-right' : '') + ' rep-th-nosort">'
+                + escapeHTML(c.l) + '</th>';
         });
         html += '</tr></thead><tbody>';
-        clientes.forEach(function (c) {
-            html += '<tr data-cliente-id="' + c.id + '">'
+        pagina.forEach(function (c) {
+            html += '<tr data-cliente-id="' + c.id + '" data-cliente-nombre="' + escapeHTML(c.nombre || '') + '">'
                 + '<td><div class="rep-td-title">' + escapeHTML(c.nombre || '(sin nombre)') + '</div>'
                 +     '<div class="rep-td-sub">' + escapeHTML(c.asignado_a || 'Sin vendedor') + '</div></td>'
-                + '<td>' + categoriaPill(c.categoria) + '</td>'
                 + '<td class="rep-text-right">' + countBadge(c.opps_abiertas, 'abiertas') + '</td>'
                 + '<td class="rep-text-right">' + countBadge(c.opps_ganadas, 'ganadas') + '</td>'
                 + '<td class="rep-text-right">' + countBadge(c.opps_perdidas, 'perdidas') + '</td>'
-                + '<td class="rep-text-right rep-mono"><strong class="rep-monto">' + fmtFull(c.monto_ganado_mxn) + '</strong></td>'
-                + '<td>' + ultimaActividad(c.ultima_actividad) + '</td>'
-                + '<td>' + proximaActividad(c.proxima_actividad) + '</td>'
+                + '<td class="rep-text-right rep-mono"><strong class="rep-monto">' + fmtFull(c.cobrado_total_mxn) + '</strong></td>'
+                + '<td>' + ultimaActividadCell(c.ultima_actividad) + '</td>'
                 + '</tr>';
         });
         html += '</tbody></table></div>';
+
+        // Footer: paginación + totales globales del dataset filtrado.
+        var pagHtml = '';
+        if (totalPages > 1) {
+            pagHtml = '<div class="rep-pag">'
+                + '<button type="button" class="rep-pag-btn" id="repPagPrev" ' + (_currentPage <= 1 ? 'disabled' : '') + '>← Anterior</button>'
+                + '<span class="rep-pag-info">'
+                +   'Página <strong>' + _currentPage + '</strong> de <strong>' + totalPages + '</strong>'
+                +   '<span class="rep-pag-sep"> · </span>'
+                +   (ini + 1) + '–' + fin + ' de ' + totalFiltrado
+                + '</span>'
+                + '<button type="button" class="rep-pag-btn" id="repPagNext" ' + (_currentPage >= totalPages ? 'disabled' : '') + '>Siguiente →</button>'
+                + '</div>';
+        }
         html += '<footer class="rep-table-foot">'
-            + '<span class="rep-table-foot-left">' + clientes.length + ' ' + (clientes.length === 1 ? 'cliente' : 'clientes') + '</span>'
-            + '<span class="rep-table-foot-right">Ganado total: <strong>' + fmtFull(totalGanado) + '</strong></span>'
+            + '<span class="rep-table-foot-left">'
+            +   totalFiltrado + ' ' + pluralize(totalFiltrado, 'cliente', 'clientes')
+            +   (_plantillaActiva !== 'todas' ? ' <span class="rep-table-foot-flt">(filtro: ' + escapeHTML(_plantillaActiva) + ')</span>' : '')
+            + '</span>'
+            + pagHtml
+            + '<span class="rep-table-foot-right">Cobrado total: <strong>' + fmtFull(totalCobrado) + '</strong></span>'
             + '</footer>';
         wrap.innerHTML = html;
 
-        // Click en fila → vista CRM filtrada por cliente
+        // Click en fila → abre el widget del cliente inline. NO navega.
+        // openClienteModal viene de crm_main.js (incluido en esta página).
         wrap.querySelectorAll('tr[data-cliente-id]').forEach(function (tr) {
             tr.addEventListener('click', function () {
-                var id = tr.getAttribute('data-cliente-id');
-                if (id) window.location.href = '/app/todos/?tab=crm&cliente=' + id;
+                var id = parseInt(tr.getAttribute('data-cliente-id'), 10);
+                var nombre = tr.getAttribute('data-cliente-nombre') || '';
+                if (!id) return;
+                if (typeof window.openClienteModal === 'function') {
+                    window.openClienteModal(id, nombre, 'oportunidades');
+                } else {
+                    // Fallback: si por algún motivo el JS del CRM no cargó,
+                    // navegar al CRM filtrado por cliente.
+                    window.location.href = '/app/todos/?tab=crm&cliente=' + id;
+                }
             });
         });
-        wrap.querySelectorAll('th[data-sort-key]').forEach(function (th) {
-            th.addEventListener('click', function () {
-                var k = th.getAttribute('data-sort-key');
-                if (_sortKey === k) _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
-                else { _sortKey = k; _sortDir = 'desc'; }
-                if (_lastData) renderTabla(ordenar(aplicarPlantilla(_lastData.clientes)));
-            });
+
+        var prev = $('repPagPrev');
+        if (prev) prev.addEventListener('click', function () {
+            if (_currentPage > 1) { _currentPage--; renderTabla(); scrollToTable(); }
+        });
+        var next = $('repPagNext');
+        if (next) next.addEventListener('click', function () {
+            if (_currentPage < totalPages) { _currentPage++; renderTabla(); scrollToTable(); }
         });
     }
 
-    // ── Endpoint ────────────────────────────────────────────────────
+    function scrollToTable() {
+        var t = $('repTableWrap');
+        if (t && typeof t.scrollIntoView === 'function') {
+            t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // ── Ordenar dropdown ────────────────────────────────────────────
+    function toggleSortMenu(forceState) {
+        var btn = $('repSortBtn');
+        var menu = $('repSortMenu');
+        if (!btn || !menu) return;
+        var open = forceState !== undefined ? forceState : menu.hidden;
+        if (open) {
+            menu.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+        } else {
+            menu.hidden = true;
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function actualizarSortLabel() {
+        var lbl = $('repSortLabel');
+        var mode = SORT_MODES[_sortMode] || SORT_MODES.abiertas_desc;
+        if (lbl) lbl.textContent = mode.label;
+        document.querySelectorAll('.rep-sort-item').forEach(function (it) {
+            it.classList.toggle('is-active', it.getAttribute('data-sort') === _sortMode);
+        });
+    }
+
+    function pickSort(key) {
+        if (!SORT_MODES[key]) return;
+        _sortMode = key;
+        actualizarSortLabel();
+        toggleSortMenu(false);
+        _currentPage = 1;
+        renderTabla();
+    }
+
+    // ── Endpoint + filtros UI ───────────────────────────────────────
     function getQS() {
         var p = new URLSearchParams();
         Object.keys(_filtros).forEach(function (k) {
@@ -230,7 +316,8 @@
     }
 
     function actualizarFilterDot() {
-        var hasFilter = Object.keys(_filtros).some(function (k) { return _filtros[k]; });
+        var hasFilter = Object.keys(_filtros).some(function (k) { return _filtros[k]; })
+                     || (_plantillaActiva && _plantillaActiva !== 'todas');
         $('repFilterDot').style.display = hasFilter ? 'inline-block' : 'none';
     }
 
@@ -246,12 +333,11 @@
                     return;
                 }
                 _lastData = data;
+                _currentPage = 1;
                 cargarFiltrosUI(data.filtros_disponibles || {});
                 actualizarFilterDot();
-                var rows = aplicarPlantilla(data.clientes || []);
-                rows = ordenar(rows);
-                renderKpis(data.kpis);
-                renderTabla(rows);
+                renderKpis(data.kpis || {});
+                renderTabla();
             })
             .catch(function (err) {
                 wrap.innerHTML = '<div class="rep-empty"><h3>Error de conexión</h3><p>' + escapeHTML(String(err)) + '</p></div>';
@@ -280,31 +366,67 @@
     function clearDrawer() {
         $('repFltVendedor').value = '';
         $('repFltOppsMin').value = '';
+        activarPlantilla('todas');
     }
 
-    // ── Export CSV ──────────────────────────────────────────────────
+    // ── Export CSV con bloque de metadatos ──────────────────────────
+    function nowLocal() {
+        var d = new Date();
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+            + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+    function vendedorLabel(id) {
+        if (!id || !_lastData || !_lastData.filtros_disponibles) return id;
+        var v = (_lastData.filtros_disponibles.vendedores || []).filter(function (x) { return String(x.id) === String(id); })[0];
+        return v ? v.nombre : id;
+    }
+    function csvEscape(cell) {
+        var s = String(cell == null ? '' : cell);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+            s = '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
+
     function exportarCSV() {
         if (!_lastData) return;
         var rows = ordenar(aplicarPlantilla(_lastData.clientes || []));
         if (!rows.length) { alert('No hay datos para exportar.'); return; }
-        var headers = ['Cliente', 'Categoría', 'Vendedor', 'Opps Abiertas', 'Opps Ganadas', 'Opps Perdidas', 'Ganado Total MXN', 'Última actividad', 'Próxima actividad'];
+
+        var sortLabel = (SORT_MODES[_sortMode] || SORT_MODES.abiertas_desc).label;
+        var totalCobrado = rows.reduce(function (s, c) { return s + (c.cobrado_total_mxn || 0); }, 0);
+
+        var metaLines = [
+            '# Reporte: Por Cliente',
+            '# Exportado por: ' + (window._REP_USER || '—'),
+            '# Fecha y hora de exportación: ' + nowLocal(),
+            '# Filtros aplicados:',
+            '#   - Vendedor asignado: ' + (_filtros.vendedor ? vendedorLabel(_filtros.vendedor) : 'Todos los visibles'),
+            '#   - Mínimo de opps abiertas: ' + (_filtros.opps_min || '0'),
+            '#   - Búsqueda: ' + (_filtros.q || '—'),
+            '#   - Vista rápida: ' + _plantillaActiva,
+            '#   - Orden: ' + sortLabel,
+            '# Total clientes exportados: ' + rows.length,
+            '# Cobrado total MXN (histórico, del Dashboard): $' + Math.round(totalCobrado).toLocaleString('en-US'),
+            '',
+        ];
+
+        var headers = ['Cliente', 'Vendedor', 'Opps Abiertas', 'Opps Ganadas', 'Opps Perdidas', 'Cobrado Total MXN', 'Última actividad'];
         var csvRows = rows.map(function (c) {
-            var prox = c.proxima_actividad ? (c.proxima_actividad.titulo + ' (' + (c.proxima_actividad.fecha || '') + ')') : '';
             return [
-                c.nombre || '', c.categoria || '', c.asignado_a || '',
+                c.nombre || '', c.asignado_a || '',
                 c.opps_abiertas || 0, c.opps_ganadas || 0, c.opps_perdidas || 0,
-                c.monto_ganado_mxn || 0, c.ultima_actividad || '', prox,
+                c.cobrado_total_mxn || 0,
+                c.ultima_actividad || '',
             ];
         });
-        var csv = [headers].concat(csvRows).map(function (row) {
-            return row.map(function (cell) {
-                var s = String(cell == null ? '' : cell);
-                if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
-                    s = '"' + s.replace(/"/g, '""') + '"';
-                }
-                return s;
-            }).join(',');
-        }).join('\n');
+
+        var csv = metaLines.join('\n') + '\n'
+            + [headers].concat(csvRows).map(function (row) {
+                return row.map(csvEscape).join(',');
+            }).join('\n');
+
         var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
@@ -326,30 +448,51 @@
             }, 280);
         });
 
-        document.querySelectorAll('.rep-chip[data-plantilla]').forEach(function (btn) {
+        // Chips de Vista rápida (dentro del drawer)
+        document.querySelectorAll('#repFltPlantilla .rep-fg-chip').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                document.querySelectorAll('.rep-chip[data-plantilla]').forEach(function (b) { b.classList.remove('rep-chip-active'); });
-                btn.classList.add('rep-chip-active');
-                _plantillaActiva = btn.getAttribute('data-plantilla') || 'todas';
-                if (_lastData) renderTabla(ordenar(aplicarPlantilla(_lastData.clientes || [])));
+                activarPlantilla(btn.getAttribute('data-plantilla') || 'todas');
             });
         });
 
+        // Botón Ordenar (dropdown)
+        var sortBtn = $('repSortBtn');
+        if (sortBtn) sortBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleSortMenu();
+        });
+        document.querySelectorAll('.rep-sort-item').forEach(function (it) {
+            it.addEventListener('click', function (e) {
+                e.stopPropagation();
+                pickSort(it.getAttribute('data-sort'));
+            });
+        });
+        document.addEventListener('click', function (e) {
+            var menu = $('repSortMenu');
+            if (!menu || menu.hidden) return;
+            var wrap = menu.closest('.rep-sort-wrap');
+            if (wrap && !wrap.contains(e.target)) toggleSortMenu(false);
+        });
+
+        // Header
         $('repBtnFilter').addEventListener('click', openDrawer);
         $('repBtnExport').addEventListener('click', exportarCSV);
 
-        var btnConfig = $('repChipConfig');
-        if (btnConfig) btnConfig.addEventListener('click', openDrawer);
-
+        // Drawer
         $('repDrawerClose').addEventListener('click', closeDrawer);
         $('repDrawerOverlay').addEventListener('click', closeDrawer);
         $('repFltApply').addEventListener('click', applyDrawer);
         $('repFltClear').addEventListener('click', clearDrawer);
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && $('repDrawer').classList.contains('open')) closeDrawer();
+            if (e.key === 'Escape') {
+                if ($('repDrawer').classList.contains('open')) closeDrawer();
+                var m = $('repSortMenu');
+                if (m && !m.hidden) toggleSortMenu(false);
+            }
         });
 
+        actualizarSortLabel();
         load();
     });
 })();
