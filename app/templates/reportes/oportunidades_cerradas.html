@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-natscroll">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-cerradas-clean">
 {% endblock %}
 
 {% block content %}
@@ -13,17 +13,38 @@
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">
 
-        <!-- Header: plantillas (izq) · dynamic island (centro) · acciones (der) -->
+        {% comment %}
+        Header de Cerradas (alineado al patrón de Abiertas, 2026-05-28):
+            izquierda  → Botón Ordenar (dropdown).
+            centro     → Dynamic island con los 4 tabs de reportes.
+            derecha    → Búsqueda + Filtros (drawer) + Exportar CSV.
+        Los antiguos chips "Plantillas" y "Configurar reporte" se removieron.
+        Las 3 vistas rápidas (Todas / Ganadas / Perdidas) viven ahora dentro
+        del drawer de Filtros.
+        {% endcomment %}
         <header class="rep-header">
             <div class="rep-plantillas">
-                <span class="rep-plantillas-label">Plantillas</span>
-                <button type="button" class="rep-chip rep-chip-active" data-plantilla="todas">Todas</button>
-                <button type="button" class="rep-chip" data-plantilla="ganadas">Solo ganadas</button>
-                <button type="button" class="rep-chip" data-plantilla="perdidas">Solo perdidas</button>
-                <button type="button" class="rep-chip rep-chip-config" id="repChipConfig">
-                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:-1px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    Configurar reporte
-                </button>
+                <div class="rep-sort-wrap">
+                    <button type="button" class="rep-sort-btn" id="repSortBtn" aria-haspopup="menu" aria-expanded="false">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                        <span class="rep-sort-label" id="repSortLabel">Mayor monto</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="rep-sort-menu" id="repSortMenu" role="menu" hidden>
+                        <div class="rep-sort-section">Monto</div>
+                        <button type="button" class="rep-sort-item is-active" data-sort="monto_desc" role="menuitem">Mayor monto</button>
+                        <button type="button" class="rep-sort-item" data-sort="monto_asc" role="menuitem">Menor monto</button>
+                        <div class="rep-sort-section">Cierre</div>
+                        <button type="button" class="rep-sort-item" data-sort="cierre_desc" role="menuitem">Cierre más reciente</button>
+                        <button type="button" class="rep-sort-item" data-sort="cierre_asc" role="menuitem">Cierre más antiguo</button>
+                        <div class="rep-sort-section">Resultado</div>
+                        <button type="button" class="rep-sort-item" data-sort="ganadas_first" role="menuitem">Ganadas primero</button>
+                        <button type="button" class="rep-sort-item" data-sort="perdidas_first" role="menuitem">Perdidas primero</button>
+                        <div class="rep-sort-section">Alfabético</div>
+                        <button type="button" class="rep-sort-item" data-sort="cliente_asc" role="menuitem">Cliente (A-Z)</button>
+                        <button type="button" class="rep-sort-item" data-sort="vendedor_asc" role="menuitem">Vendedor (A-Z)</button>
+                    </div>
+                </div>
             </div>
 
             <div class="rep-tabs">
@@ -68,6 +89,18 @@
         <button type="button" class="rep-drawer-close" id="repDrawerClose" aria-label="Cerrar">&times;</button>
     </header>
     <div class="rep-drawer-body">
+        {% comment %}
+        Vista rápida — antes vivían como chips en el header. Los movimos
+        al drawer porque son filtros y conviven mejor con el resto.
+        {% endcomment %}
+        <div class="rep-fg">
+            <label class="rep-fg-label">Vista rápida</label>
+            <div class="rep-fg-chips" id="repFltPlantilla" role="radiogroup">
+                <button type="button" class="rep-fg-chip rep-fg-chip-active" data-plantilla="todas" role="radio" aria-checked="true">Todas</button>
+                <button type="button" class="rep-fg-chip" data-plantilla="ganadas" role="radio" aria-checked="false" title="Solo ganadas/pagadas">Solo ganadas</button>
+                <button type="button" class="rep-fg-chip" data-plantilla="perdidas" role="radio" aria-checked="false" title="Solo perdidas">Solo perdidas</button>
+            </div>
+        </div>
         <div class="rep-fg">
             <label class="rep-fg-label">Pipeline</label>
             <select class="rep-fg-select" id="repFltPipeline">
@@ -129,8 +162,16 @@
 {% include "crm/_widget_extras.html" %}
 {% include "crm/_widget_avance_etapa.html" %}
 
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260527-cerradas"></script>
-<script src="{% static 'js/reportes_oportunidades_cerradas.js' %}?v=20260527-cerradas"></script>
+{% comment %}
+Exponemos el nombre humano del usuario actual a JS para el bloque de
+metadatos del export CSV ("# Exportado por: ...").
+{% endcomment %}
+<script>
+    window._REP_USER = "{{ request.user.get_full_name|default:request.user.username|escapejs }}";
+</script>
+
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-cerradas-clean"></script>
+<script src="{% static 'js/reportes_oportunidades_cerradas.js' %}?v=20260528-cerradas-clean"></script>
 
 {% include "crm/_scripts_main.html" %}
 <script src="{% static 'js/crm_avance_etapa.js' %}?v=20260528-kill-verif"></script>
