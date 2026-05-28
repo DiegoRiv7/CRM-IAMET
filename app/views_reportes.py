@@ -18,13 +18,15 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models import Q, Sum
+from datetime import timedelta
+
+from django.db.models import Q, Sum, Count, Max, Min
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
 from .models import (
-    TodoItem, EtapaPipeline, ArchivoOportunidad, Tarea, Actividad,
+    TodoItem, EtapaPipeline, ArchivoOportunidad, Tarea, Actividad, Cliente,
 )
 from .views_grupos import get_usuarios_visibles_ids
 from .views_utils import is_supervisor, is_administrador
@@ -612,4 +614,188 @@ def api_reporte_oportunidades_cerradas(request):
         'oportunidades': oportunidades,
         'kpis': kpis,
         'filtros_disponibles': _filtros_disponibles_cerradas(user),
+    })
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPORTE 3: Por Cliente — cómo vamos con cada cliente
+# ═══════════════════════════════════════════════════════════════════════════
+
+_ETAPAS_GANADAS = ['ganada', 'ganado', 'pagada', 'pagado']
+_ETAPAS_PERDIDAS = ['perdida', 'perdido']
+
+
+def _kpis_vacio_clientes():
+    return {
+        'total_clientes': 0,
+        'con_opps_abiertas': 0,
+        'monto_ganado_total_mxn': 0.0,
+        'sin_actividad_reciente': 0,
+    }
+
+
+@login_required
+def api_reporte_clientes(request):
+    """GET /app/api/reportes/clientes/
+
+    Una fila por cliente con conteos de opps + actividad. Soporta filtros
+    de vendedor asignado (asignado_a), mínimo de opps abiertas y búsqueda
+    por nombre de empresa.
+
+    Las opps abiertas se cuentan dinámicamente (etapas "Vendido en adelante"
+    leídas de EtapaPipeline, igual que el Reporte 1).
+
+    Devuelve KPIs globales + lista flat de clientes.
+    """
+    user = request.user
+    qp = request.GET
+
+    # ── Filtros ─────────────────────────────────────────────────────
+    vendedor_id = None
+    if qp.get('vendedor'):
+        try:
+            vendedor_id = int(qp.get('vendedor'))
+        except (TypeError, ValueError):
+            vendedor_id = None
+
+    opps_min = 0
+    if qp.get('opps_min'):
+        try:
+            opps_min = int(qp.get('opps_min'))
+        except (TypeError, ValueError):
+            opps_min = 0
+
+    q_text = (qp.get('q') or '').strip()
+
+    # ── Etapas abiertas (dinámicas) ─────────────────────────────────
+    etapas_map = _etapas_vendido_en_adelante()
+    etapas_abiertas = []
+    for pl_etapas in etapas_map.values():
+        etapas_abiertas.extend(pl_etapas)
+
+    # ── Visibilidad: clientes asignados a usuarios visibles ─────────
+    visible_ids = get_usuarios_visibles_ids(user)
+    qs = Cliente.objects.all()
+    if visible_ids:
+        # Cliente puede tener asignado_a NULL — incluimos también esos al
+        # supervisor (los huérfanos son visibles para que no se pierdan).
+        qs = qs.filter(Q(asignado_a_id__in=visible_ids) | Q(asignado_a__isnull=True))
+    if vendedor_id:
+        qs = qs.filter(asignado_a_id=vendedor_id)
+    if q_text:
+        qs = qs.filter(nombre_empresa__icontains=q_text)
+
+    # ── Annotations agregadas (1 sola query a TodoItem) ─────────────
+    qs = qs.annotate(
+        opps_abiertas=Count(
+            'oportunidades',
+            filter=Q(oportunidades__etapa_corta__in=etapas_abiertas),
+            distinct=True,
+        ),
+        opps_ganadas=Count(
+            'oportunidades',
+            filter=Q(oportunidades__etapa_corta__in=_ETAPAS_GANADAS),
+            distinct=True,
+        ),
+        opps_perdidas=Count(
+            'oportunidades',
+            filter=Q(oportunidades__etapa_corta__in=_ETAPAS_PERDIDAS),
+            distinct=True,
+        ),
+        monto_ganado=Sum(
+            'oportunidades__monto',
+            filter=Q(oportunidades__etapa_corta__in=_ETAPAS_GANADAS),
+        ),
+    )
+
+    if opps_min > 0:
+        qs = qs.filter(opps_abiertas__gte=opps_min)
+
+    qs = qs.select_related('asignado_a').order_by('-opps_abiertas', '-monto_ganado', 'nombre_empresa')
+    clientes = list(qs)
+    cliente_ids = [c.id for c in clientes]
+
+    # ── Actividad última y próxima (queries agregadas separadas) ────
+    now = timezone.now()
+    ultima_act = dict(
+        Actividad.objects
+        .filter(oportunidad__cliente_id__in=cliente_ids)
+        .values('oportunidad__cliente_id')
+        .annotate(ultima=Max('fecha_inicio'))
+        .values_list('oportunidad__cliente_id', 'ultima')
+    )
+
+    # Próxima actividad: titulo + fecha. Hacemos values_list ordenado y
+    # nos quedamos con la primera de cada cliente.
+    proxima_por_cliente = {}
+    for a in (
+        Actividad.objects
+        .filter(
+            oportunidad__cliente_id__in=cliente_ids,
+            completada=False,
+            fecha_inicio__gte=now,
+        )
+        .order_by('fecha_inicio')
+        .values('oportunidad__cliente_id', 'titulo', 'fecha_inicio')
+    ):
+        cid = a['oportunidad__cliente_id']
+        if cid and cid not in proxima_por_cliente:
+            proxima_por_cliente[cid] = {
+                'titulo': a['titulo'],
+                'fecha': a['fecha_inicio'].isoformat() if a['fecha_inicio'] else None,
+            }
+
+    # ── Serializar + KPIs ───────────────────────────────────────────
+    treinta_dias_atras = now - timedelta(days=30)
+    out = []
+    con_opps_abiertas = 0
+    monto_ganado_total = 0.0
+    sin_act_reciente = 0
+    for c in clientes:
+        ult = ultima_act.get(c.id)
+        prox = proxima_por_cliente.get(c.id)
+        monto_g = float(c.monto_ganado or 0)
+        monto_ganado_total += monto_g
+        if c.opps_abiertas > 0:
+            con_opps_abiertas += 1
+        if not ult or ult < treinta_dias_atras:
+            sin_act_reciente += 1
+        out.append({
+            'id': c.id,
+            'nombre': c.nombre_empresa,
+            'categoria': c.categoria or 'C',
+            'asignado_a': (
+                (c.asignado_a.get_full_name() or c.asignado_a.username)
+                if c.asignado_a_id else None
+            ),
+            'asignado_a_id': c.asignado_a_id,
+            'opps_abiertas': c.opps_abiertas,
+            'opps_ganadas': c.opps_ganadas,
+            'opps_perdidas': c.opps_perdidas,
+            'monto_ganado_mxn': monto_g,
+            'ultima_actividad': ult.isoformat() if ult else None,
+            'proxima_actividad': prox,
+        })
+
+    kpis = {
+        'total_clientes': len(clientes),
+        'con_opps_abiertas': con_opps_abiertas,
+        'monto_ganado_total_mxn': round(monto_ganado_total, 2),
+        'sin_actividad_reciente': sin_act_reciente,
+    }
+
+    # Filtros disponibles: solo vendedores con clientes asignados visibles.
+    qs_u = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    if visible_ids:
+        qs_u = qs_u.filter(id__in=visible_ids)
+    vendedores = [
+        {'id': u.id, 'nombre': u.get_full_name() or u.username}
+        for u in qs_u
+    ]
+
+    return JsonResponse({
+        'ok': True,
+        'clientes': out,
+        'kpis': kpis,
+        'filtros_disponibles': {'vendedores': vendedores},
     })
