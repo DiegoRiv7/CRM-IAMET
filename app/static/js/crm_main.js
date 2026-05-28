@@ -6728,7 +6728,16 @@
         var _urlTab = null;
         try { _urlTab = new URL(window.location.href).searchParams.get('tab'); } catch (e) {}
         var _savedView = localStorage.getItem('crmView');
-        if (_urlTab !== 'calendario' && _savedView === 'tareas') {
+        // Guard: páginas externas al CRM (como /app/reportes/) también cargan
+        // crm_main.js para tener openDetalle, pero NO deben restaurar el sidebar
+        // — el server-render ya marcó el botón correcto. Sin este guard se veía
+        // doble-active (ej. Reportes + Tareas ambos azules en /app/reportes/).
+        var _isCrmHome = window.location.pathname.indexOf('/app/todos') === 0
+                      || window.location.pathname === '/app/'
+                      || window.location.pathname === '/app';
+        if (!_isCrmHome) {
+            // No-op: no restaurar nada del CRM en páginas externas.
+        } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');
