@@ -196,6 +196,22 @@ def _fmt_fecha_cierre(mes_cierre, anio_cierre):
     return ''
 
 
+def _fecha_cierre_sort_key(mes_cierre, anio_cierre):
+    """Devuelve un entero comparable (anio*100 + mes) para sort por fecha
+    estimada de cierre. Sin fecha → muy alto (10**9) para que caigan al
+    final en sort ascendente y al inicio en descendente — el usuario verá
+    los desconocidos donde corresponde sin contaminar los datos válidos.
+    """
+    try:
+        a = int(anio_cierre or 0)
+        m = int(mes_cierre or 0)
+        if a >= 1900 and 1 <= m <= 12:
+            return a * 100 + m
+    except (TypeError, ValueError):
+        pass
+    return 10 ** 9
+
+
 @login_required
 def api_reporte_oportunidades_abiertas(request):
     """GET /app/api/reportes/oportunidades-abiertas/
@@ -317,38 +333,93 @@ def api_reporte_oportunidades_abiertas(request):
             proxima_act[a.oportunidad_id] = a
 
     # ── Serializar opps + acumular KPIs ─────────────────────────────
+    # KPIs extra del rediseño "hablante" (2026-05-28):
+    #   - cerrara_este_mes: opp con mes_cierre == mes actual Y anio_cierre == año actual
+    #   - necesita_atencion: próx. paso vencido O (estancada >45d AND prob <40)
+    #   - alta_prob: prob >= 70
+    # Estos atributos también van por-opp para que el frontend pueda
+    # resaltarlas, filtrarlas y mostrar el header narrativo.
+    mes_actual = now.month
+    anio_actual = now.year
+
     oportunidades = []
     monto_total = 0.0
     monto_ponderado = 0.0
     prob_acum = 0
+    cerrara_este_mes_count = 0
+    cerrara_este_mes_monto = 0.0
+    necesita_atencion_count = 0
+    necesita_atencion_monto = 0.0
+    alta_prob_count = 0
+    alta_prob_monto = 0.0
+    estancadas_count = 0
+    vencidas_count = 0
+    montos_para_top = []
     for o in opps:
         m = _money(o.monto)
         prob = int(o.probabilidad_cierre or 0)
         monto_total += m
         monto_ponderado += m * (prob / 100.0)
         prob_acum += prob
+        montos_para_top.append(m)
         # Días abierto: días desde fecha_creacion
         dias_abierto = 0
         if o.fecha_creacion:
             dias_abierto = max(0, (now - o.fecha_creacion).days)
         # Próximo paso
         proximo = None
+        proximo_vencido = False
+        proximo_dias = None  # negativo = vencida hace X días, positivo = vence en X días
         if o.id in proxima_tarea:
             t = proxima_tarea[o.id]
+            proximo_vencido = bool(t.fecha_limite and t.fecha_limite < now)
+            if t.fecha_limite:
+                proximo_dias = (t.fecha_limite.date() - now.date()).days
             proximo = {
                 'tipo': 'tarea',
                 'titulo': t.titulo,
                 'fecha': t.fecha_limite.isoformat() if t.fecha_limite else None,
-                'vencida': bool(t.fecha_limite and t.fecha_limite < now),
+                'vencida': proximo_vencido,
+                'dias_rel': proximo_dias,
             }
         elif o.id in proxima_act:
             a = proxima_act[o.id]
+            proximo_vencido = bool(a.fecha_inicio and a.fecha_inicio < now)
+            if a.fecha_inicio:
+                proximo_dias = (a.fecha_inicio.date() - now.date()).days
             proximo = {
                 'tipo': 'actividad',
                 'titulo': a.titulo,
                 'fecha': a.fecha_inicio.isoformat() if a.fecha_inicio else None,
-                'vencida': bool(a.fecha_inicio and a.fecha_inicio < now),
+                'vencida': proximo_vencido,
+                'dias_rel': proximo_dias,
             }
+        # Flags "hablantes"
+        cierra_este_mes = False
+        try:
+            if o.mes_cierre and o.anio_cierre:
+                cierra_este_mes = (int(o.mes_cierre) == mes_actual and int(o.anio_cierre) == anio_actual)
+        except (TypeError, ValueError):
+            cierra_este_mes = False
+        estancada = dias_abierto > 45
+        alta_prob = prob >= 70
+        # "Necesita atención": próx paso vencido O estancada con prob baja.
+        necesita_atencion = bool(proximo_vencido or (estancada and prob < 40))
+
+        if cierra_este_mes:
+            cerrara_este_mes_count += 1
+            cerrara_este_mes_monto += m
+        if necesita_atencion:
+            necesita_atencion_count += 1
+            necesita_atencion_monto += m
+        if alta_prob:
+            alta_prob_count += 1
+            alta_prob_monto += m
+        if estancada:
+            estancadas_count += 1
+        if proximo_vencido:
+            vencidas_count += 1
+
         oportunidades.append({
             'id': o.id,
             'titulo': o.oportunidad,
@@ -364,19 +435,75 @@ def api_reporte_oportunidades_abiertas(request):
             'probabilidad': prob,
             'dias_abierto': dias_abierto,
             'fecha_cierre': _fmt_fecha_cierre(o.mes_cierre, o.anio_cierre),
+            # Numérico para sort por cierre más próximo/lejano:
+            'fecha_cierre_sort': _fecha_cierre_sort_key(o.mes_cierre, o.anio_cierre),
             'po_number': o.po_number or '',
             'archivos_occ': archivos_por_opp.get(o.id, []),
             'proximo_paso': proximo,
+            # Flags "hablantes" (nuevos 2026-05-28):
+            'cierra_este_mes': cierra_este_mes,
+            'estancada': estancada,
+            'alta_prob': alta_prob,
+            'necesita_atencion': necesita_atencion,
+            'proximo_vencido': proximo_vencido,
+            'proximo_dias_rel': proximo_dias,
         })
 
     total = len(opps)
     prob_prom = round(prob_acum / total) if total else 0
+
+    # Top-20% por monto (umbral para "caliente")
+    top20_threshold = 0.0
+    if montos_para_top:
+        montos_sorted = sorted(montos_para_top, reverse=True)
+        idx = max(0, int(len(montos_sorted) * 0.2) - 1)
+        top20_threshold = montos_sorted[idx] if idx < len(montos_sorted) else (montos_sorted[0] if montos_sorted else 0.0)
+
+    # Marca "caliente" en cada opp ahora que ya tenemos el umbral.
+    for op in oportunidades:
+        op['caliente'] = bool(
+            op['alta_prob']
+            and op['monto_mxn'] >= top20_threshold
+            and op['monto_mxn'] > 0
+            and not op['necesita_atencion']
+        )
+
+    # Meta agregada del mes (suma de meta_mensual de los vendedores visibles
+    # — o solo del vendedor filtrado). Se usa para el progress hacia meta
+    # del header. Si nadie tiene meta_mensual, devolvemos 0 y el frontend
+    # oculta el bar.
+    from .models import UserProfile  # local import — evita circular en cold start
+    meta_users_q = User.objects.filter(is_active=True)
+    if visible_ids:
+        meta_users_q = meta_users_q.filter(id__in=visible_ids)
+    if vendedor_id:
+        meta_users_q = meta_users_q.filter(id=vendedor_id)
+    meta_mes_total = 0.0
+    try:
+        for prof in UserProfile.objects.filter(user__in=meta_users_q):
+            meta_mes_total += float(prof.meta_mensual or 0)
+    except Exception:
+        meta_mes_total = 0.0
 
     kpis = {
         'total': total,
         'pipeline_total_mxn': monto_total,
         'monto_ponderado_mxn': round(monto_ponderado, 2),
         'prob_promedio': prob_prom,
+        # Nuevos (no rompen contrato — sólo agregan):
+        'cerrara_este_mes_count': cerrara_este_mes_count,
+        'cerrara_este_mes_monto_mxn': cerrara_este_mes_monto,
+        'necesita_atencion_count': necesita_atencion_count,
+        'necesita_atencion_monto_mxn': necesita_atencion_monto,
+        'alta_prob_count': alta_prob_count,
+        'alta_prob_monto_mxn': alta_prob_monto,
+        'estancadas_count': estancadas_count,
+        'vencidas_count': vencidas_count,
+        'top20_threshold_mxn': top20_threshold,
+        'meta_mes_mxn': meta_mes_total,
+        'mes_actual': mes_actual,
+        'anio_actual': anio_actual,
+        'mes_actual_label': _MES_NOMBRES[mes_actual] if 1 <= mes_actual <= 12 else '',
     }
 
     return JsonResponse({
@@ -388,7 +515,27 @@ def api_reporte_oportunidades_abiertas(request):
 
 
 def _kpis_vacio():
-    return {'total': 0, 'pipeline_total_mxn': 0.0, 'monto_ponderado_mxn': 0.0, 'prob_promedio': 0}
+    now = timezone.now()
+    return {
+        'total': 0,
+        'pipeline_total_mxn': 0.0,
+        'monto_ponderado_mxn': 0.0,
+        'prob_promedio': 0,
+        # Nuevos (rediseño 2026-05-28):
+        'cerrara_este_mes_count': 0,
+        'cerrara_este_mes_monto_mxn': 0.0,
+        'necesita_atencion_count': 0,
+        'necesita_atencion_monto_mxn': 0.0,
+        'alta_prob_count': 0,
+        'alta_prob_monto_mxn': 0.0,
+        'estancadas_count': 0,
+        'vencidas_count': 0,
+        'top20_threshold_mxn': 0.0,
+        'meta_mes_mxn': 0.0,
+        'mes_actual': now.month,
+        'anio_actual': now.year,
+        'mes_actual_label': _MES_NOMBRES[now.month] if 1 <= now.month <= 12 else '',
+    }
 
 
 def _filtros_disponibles(user, etapas_map):

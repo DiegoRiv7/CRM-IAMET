@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-fix-terminales">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-hablante">
 {% endblock %}
 
 {% block content %}
@@ -13,21 +13,58 @@
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">
 
-        <!-- Header: plantillas (izq) · dynamic island (centro) · acciones (der) -->
+        {% comment %}
+        Header del reporte (rediseño "hablante" 2026-05-28):
+            izquierda  → Botón Ordenar (dropdown) + chips secundarios
+                         (Alta prob · Estancadas · Vencidas) como quick-filters
+                         visuales sutiles. Reemplaza al antiguo bloque
+                         "Plantillas" + "Configurar reporte".
+            centro     → Dynamic island con los 3 tabs de reportes (intacto).
+            derecha    → Búsqueda + Filtros (drawer) + Exportar CSV.
+        {% endcomment %}
         <header class="rep-header">
-            <!-- Plantillas (sustituyen al bloque "Reportes / CRM IAMET" anterior) -->
             <div class="rep-plantillas">
-                <span class="rep-plantillas-label">Plantillas</span>
-                <button type="button" class="rep-chip rep-chip-active" data-plantilla="todas">Todas</button>
-                <button type="button" class="rep-chip" data-plantilla="alta-prob">Alta probabilidad (≥70%)</button>
-                <button type="button" class="rep-chip" data-plantilla="estancadas">Estancadas (&gt;45 días)</button>
-                <button type="button" class="rep-chip rep-chip-config" id="repChipConfig">
-                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:-1px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    Configurar reporte
-                </button>
+                <div class="rep-sort-wrap">
+                    <button type="button" class="rep-sort-btn" id="repSortBtn" aria-haspopup="menu" aria-expanded="false">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                        <span class="rep-sort-label" id="repSortLabel">Mayor monto</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="rep-sort-menu" id="repSortMenu" role="menu" hidden>
+                        <div class="rep-sort-section">Monto</div>
+                        <button type="button" class="rep-sort-item is-active" data-sort="monto_desc" role="menuitem">Mayor monto</button>
+                        <button type="button" class="rep-sort-item" data-sort="monto_asc" role="menuitem">Menor monto</button>
+                        <div class="rep-sort-section">Probabilidad</div>
+                        <button type="button" class="rep-sort-item" data-sort="prob_desc" role="menuitem">Mayor probabilidad</button>
+                        <button type="button" class="rep-sort-item" data-sort="prob_asc" role="menuitem">Menor probabilidad</button>
+                        <div class="rep-sort-section">Cierre</div>
+                        <button type="button" class="rep-sort-item" data-sort="cierre_asc" role="menuitem">Cierre más próximo</button>
+                        <button type="button" class="rep-sort-item" data-sort="cierre_desc" role="menuitem">Cierre más lejano</button>
+                        <div class="rep-sort-section">Antigüedad</div>
+                        <button type="button" class="rep-sort-item" data-sort="dias_desc" role="menuitem">Más días abierta (estancadas)</button>
+                        <button type="button" class="rep-sort-item" data-sort="dias_asc" role="menuitem">Menos días abierta (más nuevas)</button>
+                        <div class="rep-sort-section">Urgencia</div>
+                        <button type="button" class="rep-sort-item" data-sort="vencido_first" role="menuitem">Próximo paso vencido primero</button>
+                        <div class="rep-sort-section">Alfabético</div>
+                        <button type="button" class="rep-sort-item" data-sort="cliente_asc" role="menuitem">Cliente (A-Z)</button>
+                        <button type="button" class="rep-sort-item" data-sort="vendedor_asc" role="menuitem">Vendedor (A-Z)</button>
+                    </div>
+                </div>
+
+                {% comment %}
+                Quick-filters: chips secundarios que combinan con el sort.
+                Son "filtros" client-side sobre el dataset, lo mismo que las
+                viejas "plantillas" — sólo se rebautiza visualmente porque
+                quien manda ahora es el botón Ordenar.
+                {% endcomment %}
+                <span class="rep-quick-sep" aria-hidden="true"></span>
+                <button type="button" class="rep-chip rep-chip-quick rep-chip-active" data-plantilla="todas">Todas</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="alta-prob" title="Probabilidad ≥ 70%">Alta prob.</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="estancadas" title="Más de 45 días abiertas">Estancadas</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="vencidas" title="Próximo paso vencido">Vencidas</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="cierre-mes" title="Cierran este mes">Cierran este mes</button>
             </div>
 
-            <!-- Dynamic island: tipos de reporte (centro absoluto del header) -->
             <div class="rep-tabs">
                 <button type="button" class="rep-tab rep-tab-active">Oportunidades Abiertas</button>
                 <a href="/app/reportes/oportunidades-cerradas/" class="rep-tab">Oportunidades Cerradas</a>
@@ -51,10 +88,22 @@
             </div>
         </header>
 
-        <!-- KPI cards -->
+        {% comment %}
+        Narrativa "hablante": una línea sutil que resume QUÉ debe atender el
+        usuario hoy. La pinta JS a partir del dataset (#repNarrativa).
+        Va arriba de los KPIs porque es lo PRIMERO que el ojo debe leer.
+        {% endcomment %}
+        <section class="rep-narrativa" id="repNarrativa" hidden></section>
+
+        {% comment %}
+        Barra de progreso hacia la meta del mes — sólo se muestra si
+        meta_mes_mxn > 0 (lectura de UserProfile.meta_mensual de los
+        vendedores visibles / del vendedor filtrado).
+        {% endcomment %}
+        <section class="rep-meta-bar" id="repMetaBar" hidden></section>
+
         <section class="rep-kpis" id="repKpis"></section>
 
-        <!-- Tabla principal -->
         <section class="rep-table-wrap" id="repTableWrap">
             <div class="rep-loading">Cargando reporte…</div>
         </section>
@@ -113,13 +162,19 @@ son dependencias del flujo completo.
 {% include "crm/_widget_extras.html" %}
 {% include "crm/_widget_avance_etapa.html" %}
 
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260527-widget"></script>
-<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260527-widget"></script>
+<script>
+    // Nombre del usuario que está viendo el reporte — lo consume el export
+    // CSV para escribirlo en el bloque de metadatos.
+    window._REP_USER = "{{ request.user.get_full_name|default:request.user.username|escapejs }}";
+</script>
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-hablante"></script>
+<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260528-hablante"></script>
 
 {% comment %}
 Scripts del CRM para que openDetalle(id) funcione. _scripts_main.html define
 window._CRM_CONFIG y carga crm_main.js (donde vive openDetalle).
 {% endcomment %}
 {% include "crm/_scripts_main.html" %}
-<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260525-restore-verif"></script>
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260525-restore-verif">
+</script>
 {% endblock %}
