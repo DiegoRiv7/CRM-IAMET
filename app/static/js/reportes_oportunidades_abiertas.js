@@ -193,75 +193,6 @@
         });
     }
 
-    // ─── Narrativa "hablante" ─────────────────────────────────────────
-    // Una línea que resume QUÉ tiene que mirar el dueño hoy.
-    function renderNarrativa(kpis) {
-        var el = $('repNarrativa');
-        if (!el) return;
-        if (!kpis || !kpis.total) {
-            el.hidden = true;
-            return;
-        }
-        var partes = [];
-        if (kpis.cerrara_este_mes_count > 0) {
-            partes.push('Tienes <strong>' + kpis.cerrara_este_mes_count + ' '
-                + pluralize(kpis.cerrara_este_mes_count, 'oportunidad', 'oportunidades')
-                + '</strong> que pueden cerrar este mes, valuadas en <strong>'
-                + fmtShort(kpis.cerrara_este_mes_monto_mxn) + '</strong>.');
-        } else {
-            partes.push('No hay oportunidades con fecha estimada de cierre este mes — revisa si hay que actualizar fechas.');
-        }
-        if (kpis.necesita_atencion_count > 0) {
-            partes.push('Foco en las <strong class="rep-narr-warn">'
-                + kpis.necesita_atencion_count + '</strong> que necesitan atención ('
-                + kpis.vencidas_count + ' '
-                + pluralize(kpis.vencidas_count, 'con próximo paso vencido', 'con próximo paso vencido')
-                + ').');
-        } else if (kpis.alta_prob_count > 0) {
-            partes.push('Empuja las <strong>' + kpis.alta_prob_count + ' de alta probabilidad</strong> ('
-                + fmtShort(kpis.alta_prob_monto_mxn) + ').');
-        }
-        el.innerHTML = '<span class="rep-narr-dot"></span><span class="rep-narr-text">' + partes.join(' ') + '</span>';
-        el.hidden = false;
-    }
-
-    // ─── Barra meta del mes ───────────────────────────────────────────
-    function renderMetaBar(kpis) {
-        var el = $('repMetaBar');
-        if (!el) return;
-        var meta = kpis.meta_mes_mxn || 0;
-        if (meta <= 0) {
-            el.hidden = true;
-            return;
-        }
-        // Avance = suma ponderada de las opps que cierran este mes,
-        // multiplicada por su probabilidad. Es la lectura más honesta:
-        // "qué tan cerca estás de la meta CON LO QUE YA ESTÁ EN EL PIPELINE".
-        var avance = (kpis.cerrara_este_mes_monto_mxn || 0);
-        var pct = Math.max(0, Math.min(100, (avance / meta) * 100));
-        var col = pct >= 100 ? '#15803D' : pct >= 70 ? '#0052D4' : pct >= 40 ? '#B45309' : '#DC2626';
-        var faltante = Math.max(0, meta - avance);
-        el.innerHTML =
-            '<div class="rep-meta-row">'
-            +   '<div class="rep-meta-head">'
-            +     '<span class="rep-meta-label">Meta del mes (' + escapeHTML(kpis.mes_actual_label || '') + ')</span>'
-            +     '<span class="rep-meta-nums">'
-            +       '<strong>' + fmtShort(avance) + '</strong>'
-            +       '<span class="rep-meta-sep"> / </span>'
-            +       fmtShort(meta)
-            +       ' <span class="rep-meta-pct" style="color:' + col + ';">· ' + pct.toFixed(0) + '%</span>'
-            +     '</span>'
-            +   '</div>'
-            +   '<div class="rep-meta-track"><div class="rep-meta-fill" style="width:' + pct + '%;background:' + col + ';"></div></div>'
-            +   '<div class="rep-meta-foot">'
-            + (pct >= 100
-                ? '<span class="rep-meta-ok">Meta cubierta con el pipeline actual.</span>'
-                : '<span class="rep-meta-faltante">Faltan <strong>' + fmtShort(faltante) + '</strong> para cerrar la meta.</span>')
-            +   '</div>'
-            + '</div>';
-        el.hidden = false;
-    }
-
     // ─── Renderers de celdas ──────────────────────────────────────────
     var ETAPA_PALETTE = {
         'vendido':    ['#EBF5FF', '#1D4ED8'],
@@ -533,12 +464,20 @@
         renderTabla();
     }
 
+    // Activa plantilla (Vista rápida) y sincroniza:
+    //   - los chips del drawer (rep-fg-chip)
+    //   - resetea paginación a 1
+    //   - re-render tabla
+    //   - actualiza el dot del botón Filtros (porque plantilla ≠ 'todas' cuenta como filtro)
     function activarPlantilla(plantilla) {
         _plantillaActiva = plantilla || 'todas';
-        document.querySelectorAll('.rep-chip[data-plantilla]').forEach(function (b) {
-            b.classList.toggle('rep-chip-active', b.getAttribute('data-plantilla') === _plantillaActiva);
+        document.querySelectorAll('#repFltPlantilla .rep-fg-chip').forEach(function (b) {
+            var on = b.getAttribute('data-plantilla') === _plantillaActiva;
+            b.classList.toggle('rep-fg-chip-active', on);
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
         });
         _currentPage = 1;
+        actualizarFilterDot();
         renderTabla();
     }
 
@@ -578,7 +517,8 @@
     }
 
     function actualizarFilterDot() {
-        var hasFilter = Object.keys(_filtros).some(function (k) { return _filtros[k]; });
+        var hasFilter = Object.keys(_filtros).some(function (k) { return _filtros[k]; })
+                     || (_plantillaActiva && _plantillaActiva !== 'todas');
         $('repFilterDot').style.display = hasFilter ? 'inline-block' : 'none';
     }
 
@@ -598,8 +538,6 @@
                 cargarFiltrosUI(data.filtros_disponibles || {});
                 actualizarFilterDot();
                 renderKpis(data.kpis || {});
-                renderNarrativa(data.kpis || {});
-                renderMetaBar(data.kpis || {});
                 renderTabla();
             })
             .catch(function (err) {
@@ -638,6 +576,7 @@
         $('repFltEtapa').value = '';
         $('repFltMarca').value = '';
         $('repFltMontoMin').value = '';
+        activarPlantilla('todas');
     }
 
     // ─── Export CSV con bloque de metadatos ───────────────────────────
@@ -727,8 +666,8 @@
             }, 280);
         });
 
-        // Chips quick-filter (plantillas)
-        document.querySelectorAll('.rep-chip[data-plantilla]').forEach(function (btn) {
+        // Chips de Vista rápida (dentro del drawer de Filtros)
+        document.querySelectorAll('#repFltPlantilla .rep-fg-chip').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 activarPlantilla(btn.getAttribute('data-plantilla') || 'todas');
             });
