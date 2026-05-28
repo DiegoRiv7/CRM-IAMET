@@ -131,7 +131,12 @@ def reporte_detalle(request, slug):
 # REPORTE 1: Oportunidades Abiertas (Vendido en adelante, sin cerrar)
 # ═══════════════════════════════════════════════════════════════════════════
 
-_ETAPAS_TERMINALES = {'ganada', 'pagada', 'perdida', 'cerrada'}
+_ETAPAS_TERMINALES = {
+    'ganada', 'ganado',
+    'pagada', 'pagado',
+    'perdida', 'perdido',
+    'cerrada', 'cerrado',
+}
 
 
 def _etapas_vendido_en_adelante():

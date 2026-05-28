@@ -76,8 +76,14 @@
 .rep-chip:hover {
     border-color: #CBD5E1; background: #F1F5F9;
 }
+/* Chip activa = pill neutra oscura (filtro de plantilla). Se diferencia a
+   propósito del .rep-tab-active (azul brand de navegación) para que el ojo
+   no las lea como "dos cosas seleccionadas del mismo tipo". */
 .rep-chip-active {
-    background: #EBF5FF; color: #0052D4; border-color: #0052D4;
+    background: #1D1D1F; color: #fff; border-color: #1D1D1F;
+}
+.rep-chip-active:hover {
+    background: #000; border-color: #000;
 }
 .rep-chip-config {
     border-style: dashed;
