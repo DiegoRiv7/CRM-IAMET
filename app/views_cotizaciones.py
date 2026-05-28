@@ -225,8 +225,9 @@ def view_cotizacion_pdf(request, cotizacion_id):
     """
     print(f"DEBUG: Iniciando view_cotizacion_pdf para la cotización ID: {cotizacion_id}")
     cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    
-    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
+
+    from .views_grupos import puede_actuar_sobre
+    if not puede_actuar_sobre(request.user, cotizacion.created_by):
         return HttpResponse("Acceso denegado.", status=403)
 
     detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('orden')
@@ -362,10 +363,17 @@ def oportunidades_por_cliente_view(request, cliente_id):
     """
     cliente = get_object_or_404(Cliente, pk=cliente_id)
 
+    # Visibilidad por grupo: el vendedor ve las opps del cliente que son
+    # suyas Y las de cualquier compañero de grupo (mismo grupo activo).
+    from .views_grupos import get_usuarios_visibles_ids
     if is_supervisor(request.user):
         oportunidades = TodoItem.objects.filter(cliente=cliente).order_by('-fecha_creacion')
     else:
-        oportunidades = TodoItem.objects.filter(cliente=cliente, usuario=request.user).order_by('-fecha_creacion')
+        _vis = get_usuarios_visibles_ids(request.user)
+        if _vis:
+            oportunidades = TodoItem.objects.filter(cliente=cliente, usuario_id__in=_vis).order_by('-fecha_creacion')
+        else:
+            oportunidades = TodoItem.objects.filter(cliente=cliente, usuario=request.user).order_by('-fecha_creacion')
 
     context = {
         'cliente_id': cliente_id,
@@ -849,11 +857,11 @@ def editar_cotizacion_view(request, cotizacion_id):
         'tipo': getattr(d, 'tipo', 'producto') or 'producto',  # Incluir el tipo (producto o titulo)
     } for d in detalles_originales]
 
-    # Obtener todos los clientes para el dropdown
+    # Obtener todos los clientes para el dropdown (incluyendo los del grupo).
     if is_supervisor(request.user):
         clientes_django = Cliente.objects.all().order_by('nombre_empresa')
     else:
-        clientes_django = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
+        clientes_django = Cliente.objects.filter(get_clientes_visibles_q(request.user)).order_by('nombre_empresa')
 
     clientes_data_json = []
     for c in clientes_django:
@@ -862,13 +870,19 @@ def editar_cotizacion_view(request, cotizacion_id):
             'name': c.nombre_empresa,
         })
 
-    # Obtener oportunidades del cliente para el dropdown
+    # Opps del cliente para el dropdown (incluye las del grupo, no solo
+    # las del usuario logueado, para que un compañero de grupo pueda
+    # cotizar contra cualquier opp del cliente del grupo).
     oportunidades_data_json = []
     if cotizacion_original.cliente:
         if is_supervisor(request.user):
             oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente).order_by('-fecha_creacion')
         else:
-            oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente, usuario=request.user).order_by('-fecha_creacion')
+            _vis = get_usuarios_visibles_ids(request.user)
+            if _vis:
+                oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente, usuario_id__in=_vis).order_by('-fecha_creacion')
+            else:
+                oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente, usuario=request.user).order_by('-fecha_creacion')
         
         for o in oportunidades:
             oportunidades_data_json.append({
@@ -925,13 +939,14 @@ def download_and_redirect_cotizacion(request, cotizacion_id, oportunidad_id):
     
     # Verificar que la cotización existe y el usuario tiene permisos
     cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
+    from .views_grupos import puede_actuar_sobre
+    if not puede_actuar_sobre(request.user, cotizacion.created_by):
         messages.error(request, "No tienes permisos para descargar esta cotización.")
         return redirect('cotizaciones')
-    
+
     # Verificar que la oportunidad existe
     oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
-    if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+    if not puede_actuar_sobre(request.user, oportunidad.usuario):
         messages.error(request, "No tienes permisos para acceder a esta oportunidad.")
         return redirect('todos')
     
@@ -1032,7 +1047,8 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     View to generate the PDF of a specific quote.
     """
     cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
+    from .views_grupos import puede_actuar_sobre
+    if not puede_actuar_sobre(request.user, cotizacion.created_by):
         return HttpResponse("Acceso denegado.", status=403)
 
     try:
