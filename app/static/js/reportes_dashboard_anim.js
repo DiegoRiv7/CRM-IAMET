@@ -1,41 +1,46 @@
 /* ═══════════════════════════════════════════════════════════════════
  * reportes_dashboard_anim.js
- * Bridge entre el Dashboard del CRM y el módulo de Reportes.
+ * Bridge SPA Dashboard ↔ Reportes.
  *
- * Cuando el usuario entra al módulo de Reportes desde el tab "Reportes"
- * de la dynamic island del Dashboard, esa navegación trae un query
- * param `?from=dashboard`. Este script:
+ * Cuando un reporte se carga DENTRO del iframe del dashboard
+ * (?embedded=1 en la URL), este script:
  *
- *   1) Detecta la flag.
- *   2) Aplica una animación de "barrido hacia la izquierda" al header
- *      del reporte (.rep-header) — entra desde la derecha.
- *   3) Inyecta un botón "← Dashboard" al inicio del bloque izquierdo
- *      del header (.rep-plantillas), antes del Ordenar / Volver.
- *   4) Al hacer click en el botón Dashboard: anima slide-out-to-right
- *      y navega a /app/home/?tab=clientes&from=reportes. El dashboard
- *      detecta `from=reportes` y reproduce la animación inversa al
- *      cargar — sensación de "barrido de regreso" sin que sea SPA real.
+ *   1) Aplica body.rep-embedded → oculta el sidebar (que ya vive en el
+ *      dashboard padre) y maximiza el main.
+ *   2) Inyecta un botón "← Dashboard" al inicio del header del reporte.
+ *      Su click envía postMessage({type:'rep:close'}) al parent — el
+ *      dashboard cierra el iframe con animación inversa.
+ *   3) Intercepta clicks en los .rep-tabs del dynamic island del header
+ *      del reporte. En lugar de navegar (que recargaría el iframe), envía
+ *      postMessage({type:'rep:navigate', slug:'...'}) al parent — el
+ *      dashboard cambia el iframe.src sin reload de la página principal.
+ *   4) Sobreescribe window.openDetalle y window.openClienteModal para
+ *      que envíen postMessage al parent. Así los widgets de oportunidad
+ *      / cliente se abren en el contexto del dashboard, no dentro del
+ *      iframe (donde quedarían "encajonados").
+ *   5) Aplica animación de "barrido" al header del reporte al cargar.
  *
- * Para incluir en cualquier template de reporte basta con cargar este
- * archivo después del JS específico del reporte y del reportes.css.
- * Los 4 templates de reportes lo incluyen.
+ * Cuando un reporte se abre directo (sin iframe, navegación normal a
+ * /app/reportes/<slug>/), este script es no-op — el reporte funciona
+ * como página independiente.
  * ═══════════════════════════════════════════════════════════════════ */
 (function () {
     'use strict';
 
-    var DASHBOARD_URL = '/app/home/?tab=clientes&from=reportes';
+    var DASHBOARD_FALLBACK_URL = '/app/home/?tab=clientes';
 
-    function getFlag() {
+    function isEmbedded() {
         try {
-            return new URL(window.location.href).searchParams.get('from') === 'dashboard';
+            return new URL(window.location.href).searchParams.get('embedded') === '1';
         } catch (e) {
             return false;
         }
     }
 
-    // Botón "← Dashboard" inyectado al inicio de .rep-plantillas. Imita el
-    // estilo del botón Ordenar (.rep-sort-btn) para no romper el header,
-    // pero con un acento más sutil porque es "navegación", no acción.
+    function inIframe() {
+        try { return window.self !== window.top; } catch (e) { return true; }
+    }
+
     function buildBackBtn() {
         var btn = document.createElement('button');
         btn.type = 'button';
@@ -48,69 +53,90 @@
         return btn;
     }
 
-    function navigateBack() {
+    function postToParent(msg) {
+        try {
+            (window.parent || window.opener || window).postMessage(msg, '*');
+        } catch (e) { /* defensivo */ }
+    }
+
+    function navigateBack(embedded) {
         var header = document.querySelector('.rep-header');
         if (header) header.classList.add('rep-header-sliding-out-right');
-        // Esperar a que termine la animación antes de navegar.
         setTimeout(function () {
-            window.location.href = DASHBOARD_URL;
+            if (embedded) {
+                postToParent({ type: 'rep:close' });
+            } else {
+                window.location.href = DASHBOARD_FALLBACK_URL;
+            }
         }, 240);
     }
 
+    function slugFromHref(href) {
+        try {
+            var u = new URL(href, window.location.origin);
+            var m = u.pathname.match(/^\/app\/reportes\/([^\/?#]+)/);
+            return m ? m[1] : null;
+        } catch (e) { return null; }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        if (!getFlag()) return;
+        var embedded = isEmbedded();
+
+        // Modo embedded: ocultar sidebar via body class + sobreescribir
+        // funciones de widgets para que se abran en el padre.
+        if (embedded) {
+            document.body.classList.add('rep-embedded');
+
+            // Wrappers de openDetalle / openClienteModal → postMessage al
+            // parent. crm_main.js (que viene en _scripts_main.html) ya las
+            // definió antes; las sobreescribimos para SPA.
+            window.openDetalle = function (id) {
+                postToParent({ type: 'rep:opendetalle', id: id });
+            };
+            window.openClienteModal = function (id, nombre, tab) {
+                postToParent({ type: 'rep:opencliente', id: id, nombre: nombre || '', tab: tab || 'oportunidades' });
+            };
+        }
+
         var header = document.querySelector('.rep-header');
         if (!header) return;
 
-        // Activar animación de entrada (slide desde la derecha).
+        // Animación de entrada del header (slide desde la derecha).
         header.classList.add('rep-header-sliding-in-from-right');
         setTimeout(function () {
             header.classList.remove('rep-header-sliding-in-from-right');
         }, 350);
 
-        // Inyectar botón "← Dashboard" al inicio del bloque izquierdo.
-        // Si .rep-plantillas no existe (algún template viejo), usamos el
-        // propio header como host.
-        var izq = header.querySelector('.rep-plantillas') || header;
+        // En modo embedded el dynamic island con tabs vive en el dashboard
+        // padre, no aquí — el CSS body.rep-embedded oculta .rep-tabs y
+        // .rep-back-to-dashboard. Por eso solo inyectamos el botón "←
+        // Dashboard" cuando NO estamos embedded (caso legacy: usuario
+        // que llegó directo a la URL /app/reportes/<slug>/, sin pasar
+        // por el iframe).
+        if (!embedded) {
+            var izq = header.querySelector('.rep-plantillas') || header;
+            var existingBack = izq.querySelector('a[href="/app/reportes/"], a[href^="/app/reportes/"]:not(.rep-tab)');
+            if (existingBack) existingBack.style.display = 'none';
 
-        // El Personalizado YA tiene su propio botón "← Volver a Reportes"
-        // como primer hijo. Cuando venimos del Dashboard, ese botón pierde
-        // sentido (porque el "/app/reportes/" index ahora es el Dashboard
-        // del CRM). Lo ocultamos para no duplicar acción de "back".
-        var existingBack = izq.querySelector('a[href="/app/reportes/"], a[href^="/app/reportes/"]:not(.rep-tab)');
-        if (existingBack) existingBack.style.display = 'none';
-
-        var btn = buildBackBtn();
-        if (izq.firstChild) {
-            izq.insertBefore(btn, izq.firstChild);
-        } else {
-            izq.appendChild(btn);
+            var btn = buildBackBtn();
+            if (izq.firstChild) {
+                izq.insertBefore(btn, izq.firstChild);
+            } else {
+                izq.appendChild(btn);
+            }
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                navigateBack(false);
+            });
         }
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            navigateBack();
-        });
 
-        // Propagar la flag ?from=dashboard a los tabs del dynamic island
-        // del header (Abiertas / Cerradas / Por Cliente / Personalizado).
-        // Sin esto, al cambiar entre reportes la flag se pierde y el
-        // botón "← Dashboard" desaparece a partir del segundo reporte.
-        document.querySelectorAll('.rep-tabs .rep-tab').forEach(function (t) {
-            if (t.tagName !== 'A' || !t.href) return;
-            try {
-                var u = new URL(t.href, window.location.origin);
-                u.searchParams.set('from', 'dashboard');
-                t.setAttribute('href', u.pathname + u.search);
-            } catch (_) { /* defensivo */ }
-        });
-
-        // ESC también vuelve al dashboard (atajo natural).
+        // ESC vuelve al dashboard (atajo natural). Respeta drawer/popover
+        // abierto: ESC ahí los cierra primero.
         document.addEventListener('keydown', function (e) {
-            // No interceptar si hay un drawer / modal abierto: los
-            // reportes usan ESC para cerrar drawer/menu.
+            if (e.key !== 'Escape') return;
             var drawerOpen = document.querySelector('.rep-drawer.open, .repp-popover.open');
             if (drawerOpen) return;
-            if (e.key === 'Escape') navigateBack();
+            navigateBack(embedded);
         });
     });
 })();

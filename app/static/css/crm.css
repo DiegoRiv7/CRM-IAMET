@@ -17193,3 +17193,104 @@ body.cert-d-lock {
 .crm-tabs.crm-tabs-sliding-in-from-left {
     animation: crmDashIslandSlideInFromLeft 0.32s cubic-bezier(.16,1,.3,1);
 }
+
+
+/* ─── Overlay del iframe SPA de Reportes ─────────────────────────── */
+.crm-reportes-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    /* left = ancho del sidebar (60px típico colapsado, 220px expandido) */
+    left: var(--crm-sidebar-width, 76px);
+    background: #F5F5F7;
+    z-index: 80;
+    opacity: 0;
+    transform: translateX(28px);
+    transition: opacity 0.28s cubic-bezier(.16,1,.3,1), transform 0.28s cubic-bezier(.16,1,.3,1);
+    pointer-events: none;
+}
+.crm-reportes-overlay[hidden] {
+    display: none !important;
+}
+.crm-reportes-overlay-active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+.crm-reportes-overlay-leaving {
+    opacity: 0;
+    transform: translateX(28px);
+    pointer-events: none;
+}
+.crm-reportes-overlay iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #F5F5F7;
+    display: block;
+}
+
+/* En layouts donde el sidebar tiene otro ancho, el overlay lo respeta
+   leyendo --crm-sidebar-width del root. Como fallback, queryamos el
+   sidebar real al cargar. */
+@media (max-width: 900px) {
+    .crm-reportes-overlay { left: 0; }
+}
+
+/* ─── Modo embedded (cuando el reporte carga dentro del iframe) ──── */
+body.rep-embedded .crm-sidebar { display: none !important; }
+body.rep-embedded .crm-page-sidebar { padding: 0 !important; }
+body.rep-embedded .crm-main { padding-left: 0 !important; padding-right: 0 !important; }
+body.rep-embedded .rep-page-shell { padding: 14px 18px 40px !important; }
+
+
+/* ─── Dynamic island de Reportes (crm-tabs--reportes) ────────────── */
+/* Misma estética que la del dashboard (crm-tabs--dashboard) — solo
+   tweaks: el botón back es más compacto y el tab Personalizado lleva
+   el ícono sparkle morado que ya usamos en el módulo de Reportes. */
+.crm-tabs--reportes {
+    /* Hereda todo de .crm-tabs--dashboard, solo override de cosas
+       específicas si las hay. */
+}
+.crm-tab-reportes-back {
+    padding: 6px 9px !important;
+    color: #6B7280;
+}
+.crm-tab-reportes-back:hover {
+    color: #0052D4;
+    background: rgba(0,82,212,0.06);
+    border-radius: 999px;
+}
+.crm-tab-personalizado {
+    display: inline-flex !important;
+    align-items: center;
+}
+.crm-tabs--reportes [hidden] { display: none !important; }
+
+/* Animación cross-slide entre los 2 dynamic islands del dashboard
+   (el de los modos del CRM y el de reportes). */
+@keyframes crmIslandSlideOutLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-28px); }
+}
+@keyframes crmIslandSlideOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(28px); }
+}
+@keyframes crmIslandSlideInFromRight {
+    from { opacity: 0; transform: translateX(28px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.crm-tabs.crm-tabs-sliding-out-right {
+    animation: crmIslandSlideOutRight 0.24s cubic-bezier(.5,0,.75,0) forwards;
+}
+.crm-tabs.crm-tabs-sliding-in-from-right {
+    animation: crmIslandSlideInFromRight 0.32s cubic-bezier(.16,1,.3,1);
+}
+/* Reusamos las dos que ya estaban (sliding-out-left / sliding-in-from-left). */
+
+/* Modo embedded extras: ocultar también el dynamic island INTERNO del
+   reporte (lo controla el del padre). */
+body.rep-embedded .rep-tabs { display: none !important; }
+body.rep-embedded .rep-back-to-dashboard { display: none !important; }
