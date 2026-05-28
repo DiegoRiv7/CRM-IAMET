@@ -1,10 +1,10 @@
 {% extends "base.html" %}{% load static %}
 
-{% block title %}{{ reporte.titulo }} — Reportes{% endblock %}
+{% block title %}Reportes — CRM IAMET{% endblock %}
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260525-style-align">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260527-cerradas">
 {% endblock %}
 
 {% block content %}
@@ -12,22 +12,125 @@
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">
-        <header class="rep-page-topbar">
-            <div class="rep-page-topbar-left">
-                <a href="/app/reportes/" class="rep-back-btn" title="Volver a Reportes">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                </a>
-                <div>
-                    <h1 class="rep-page-title">{{ reporte.titulo }}</h1>
-                    <p class="rep-page-subtitle">{{ reporte.descripcion }}</p>
+
+        <!-- Header: plantillas (izq) · dynamic island (centro) · acciones (der) -->
+        <header class="rep-header">
+            <div class="rep-plantillas">
+                <span class="rep-plantillas-label">Plantillas</span>
+                <button type="button" class="rep-chip rep-chip-active" data-plantilla="todas">Todas</button>
+                <button type="button" class="rep-chip" data-plantilla="ganadas">Solo ganadas</button>
+                <button type="button" class="rep-chip" data-plantilla="perdidas">Solo perdidas</button>
+                <button type="button" class="rep-chip rep-chip-config" id="repChipConfig">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:-1px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Configurar reporte
+                </button>
+            </div>
+
+            <div class="rep-tabs">
+                <a href="/app/reportes/oportunidades-abiertas/" class="rep-tab">Oportunidades Abiertas</a>
+                <button type="button" class="rep-tab rep-tab-active">Oportunidades Cerradas</button>
+                <a href="/app/reportes/clientes/" class="rep-tab">Por Cliente</a>
+            </div>
+
+            <div class="rep-header-actions">
+                <div class="rep-search">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="repSearch" placeholder="Buscar oportunidad o cliente…" autocomplete="off">
                 </div>
+                <button type="button" class="rep-btn rep-btn-icon" id="repBtnFilter">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filtros</span>
+                    <span class="rep-filter-dot" id="repFilterDot" style="display:none;"></span>
+                </button>
+                <button type="button" class="rep-btn rep-btn-primary" id="repBtnExport">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Exportar CSV</span>
+                </button>
             </div>
         </header>
-        <div class="rep-soon">
-            <h2>En construcción</h2>
-            <p>Este reporte se está armando. Pronto disponible.</p>
-        </div>
+
+        <section class="rep-kpis" id="repKpis"></section>
+
+        <section class="rep-table-wrap" id="repTableWrap">
+            <div class="rep-loading">Cargando reporte…</div>
+        </section>
     </main>
 </div>
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260525-style-align"></script>
+
+<div class="rep-drawer-overlay" id="repDrawerOverlay"></div>
+<aside class="rep-drawer" id="repDrawer" aria-hidden="true">
+    <header class="rep-drawer-head">
+        <div>
+            <div class="rep-drawer-title">Filtros</div>
+            <div class="rep-drawer-sub">Personaliza el reporte</div>
+        </div>
+        <button type="button" class="rep-drawer-close" id="repDrawerClose" aria-label="Cerrar">&times;</button>
+    </header>
+    <div class="rep-drawer-body">
+        <div class="rep-fg">
+            <label class="rep-fg-label">Pipeline</label>
+            <select class="rep-fg-select" id="repFltPipeline">
+                <option value="">Ambos</option>
+                <option value="runrate">Runrate</option>
+                <option value="proyecto">Proyecto</option>
+            </select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Vendedor</label>
+            <select class="rep-fg-select" id="repFltVendedor"><option value="">Todos</option></select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Resultado</label>
+            <select class="rep-fg-select" id="repFltResultado">
+                <option value="">Ambos</option>
+                <option value="ganada">Ganadas</option>
+                <option value="perdida">Perdidas</option>
+            </select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Año</label>
+            <select class="rep-fg-select" id="repFltAnio"><option value="">Todos</option></select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Mes</label>
+            <select class="rep-fg-select" id="repFltMes">
+                <option value="">Todos</option>
+                <option value="01">Enero</option>
+                <option value="02">Febrero</option>
+                <option value="03">Marzo</option>
+                <option value="04">Abril</option>
+                <option value="05">Mayo</option>
+                <option value="06">Junio</option>
+                <option value="07">Julio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Proveedor</label>
+            <select class="rep-fg-select" id="repFltMarca"><option value="">Todos</option></select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Monto mínimo</label>
+            <input type="number" class="rep-fg-input" id="repFltMontoMin" placeholder="$0" min="0">
+        </div>
+    </div>
+    <footer class="rep-drawer-foot">
+        <button type="button" class="rep-btn" id="repFltClear">Limpiar</button>
+        <button type="button" class="rep-btn rep-btn-primary" id="repFltApply">Aplicar</button>
+    </footer>
+</aside>
+
+{% include "crm/_widget_oportunidad.html" %}
+{% include "crm/_widget_extras.html" %}
+{% include "crm/_widget_avance_etapa.html" %}
+
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260527-cerradas"></script>
+<script src="{% static 'js/reportes_oportunidades_cerradas.js' %}?v=20260527-cerradas"></script>
+
+{% include "crm/_scripts_main.html" %}
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260525-restore-verif"></script>
 {% endblock %}

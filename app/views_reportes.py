@@ -407,3 +407,209 @@ def _filtros_disponibles(user, etapas_map):
         'etapas_por_pipeline': etapas_map,
         'productos': productos,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPORTE 2: Oportunidades Cerradas (Ganadas / Perdidas)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Resultado por etapa_corta. Las etapas terminales se mapean a "ganada" o
+# "perdida". El resto (cerrada, etc.) se ignora — son ambiguas y no aportan
+# a KPIs de cierre.
+_RESULTADO_POR_ETAPA = {
+    'ganada': 'ganada', 'ganado': 'ganada',
+    'pagada': 'ganada', 'pagado': 'ganada',
+    'perdida': 'perdida', 'perdido': 'perdida',
+}
+
+
+def _filtros_disponibles_cerradas(user):
+    """Vendedores y productos disponibles para filtrar opps cerradas.
+    Diferente de la versión de Abiertas porque acá no hay restricción de
+    "Vendido en adelante" — son etapas terminales."""
+    visible_ids = get_usuarios_visibles_ids(user)
+    qs_u = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    if visible_ids:
+        qs_u = qs_u.filter(id__in=visible_ids)
+    vendedores = [
+        {'id': u.id, 'nombre': u.get_full_name() or u.username}
+        for u in qs_u
+    ]
+    qs_p = TodoItem.objects.filter(
+        etapa_corta__in=list(_RESULTADO_POR_ETAPA.keys())
+    )
+    if visible_ids:
+        qs_p = qs_p.filter(usuario_id__in=visible_ids)
+    productos = sorted({
+        m for m in qs_p.exclude(producto='').exclude(producto__isnull=True)
+        .values_list('producto', flat=True)
+        if m
+    })
+    # Años con datos: mejora el selector de periodo en el frontend.
+    anios = sorted({
+        a for a in qs_p.exclude(anio_cierre__isnull=True)
+        .values_list('anio_cierre', flat=True)
+        if a
+    }, reverse=True)
+    return {
+        'vendedores': vendedores,
+        'productos': productos,
+        'anios_con_datos': anios,
+    }
+
+
+def _kpis_vacio_cerradas():
+    return {
+        'total': 0, 'ganadas': 0, 'perdidas': 0,
+        'monto_ganado_mxn': 0.0, 'monto_perdido_mxn': 0.0,
+        'ticket_promedio_mxn': 0.0, 'pct_cierre': 0,
+    }
+
+
+@login_required
+def api_reporte_oportunidades_cerradas(request):
+    """GET /app/api/reportes/oportunidades-cerradas/
+
+    Query params (filtros opcionales):
+        pipeline=runrate|proyecto   (sin valor → ambos)
+        vendedor=<user_id>          (sin valor → todos los visibles)
+        resultado=ganada|perdida    (sin valor → ambos)
+        producto=<nombre>           (filtra por proveedor/producto)
+        anio=<int>                  (filtra por año de cierre)
+        mes=<01-12>                 (filtra por mes de cierre; requiere anio)
+        monto_min=<int>             (monto mínimo)
+        q=<texto>                   (busca en título y nombre de cliente)
+
+    Devuelve JSON: lista de opps cerradas + KPIs + filtros disponibles.
+    KPIs incluyen monto ganado/perdido, % cierre y ticket promedio.
+    """
+    user = request.user
+    qp = request.GET
+
+    # ── Filtros ─────────────────────────────────────────────────────
+    pipeline_arg = (qp.get('pipeline') or '').strip().lower()
+    resultado_arg = (qp.get('resultado') or '').strip().lower()
+    producto_filter = (qp.get('producto') or '').strip()
+    q_text = (qp.get('q') or '').strip()
+
+    vendedor_id = None
+    if qp.get('vendedor'):
+        try:
+            vendedor_id = int(qp.get('vendedor'))
+        except (TypeError, ValueError):
+            vendedor_id = None
+
+    monto_min = None
+    if qp.get('monto_min'):
+        try:
+            monto_min = float(qp.get('monto_min'))
+        except (TypeError, ValueError):
+            monto_min = None
+
+    anio_filter = None
+    if qp.get('anio'):
+        try:
+            anio_filter = int(qp.get('anio'))
+        except (TypeError, ValueError):
+            anio_filter = None
+
+    mes_filter_arg = (qp.get('mes') or '').strip().zfill(2) if qp.get('mes') else ''
+
+    # Etapas a incluir según resultado pedido
+    if resultado_arg == 'ganada':
+        etapas_incluir = [e for e, r in _RESULTADO_POR_ETAPA.items() if r == 'ganada']
+    elif resultado_arg == 'perdida':
+        etapas_incluir = [e for e, r in _RESULTADO_POR_ETAPA.items() if r == 'perdida']
+    else:
+        etapas_incluir = list(_RESULTADO_POR_ETAPA.keys())
+
+    # ── Query base ──────────────────────────────────────────────────
+    qs = TodoItem.objects.filter(
+        etapa_corta__in=etapas_incluir
+    ).select_related('cliente', 'usuario')
+
+    if pipeline_arg in ('runrate', 'proyecto'):
+        qs = qs.filter(tipo_negociacion=pipeline_arg)
+
+    visible_ids = get_usuarios_visibles_ids(user)
+    if visible_ids:
+        qs = qs.filter(usuario_id__in=visible_ids)
+
+    if vendedor_id:
+        qs = qs.filter(usuario_id=vendedor_id)
+
+    if producto_filter:
+        qs = qs.filter(producto=producto_filter)
+
+    if monto_min is not None:
+        qs = qs.filter(monto__gte=monto_min)
+
+    if anio_filter:
+        qs = qs.filter(anio_cierre=anio_filter)
+
+    if mes_filter_arg:
+        qs = qs.filter(mes_cierre=mes_filter_arg)
+
+    if q_text:
+        qs = qs.filter(
+            Q(oportunidad__icontains=q_text) |
+            Q(cliente__nombre_empresa__icontains=q_text)
+        )
+
+    qs = qs.order_by('-anio_cierre', '-mes_cierre', '-monto')
+    opps = list(qs)
+
+    # ── Serializar opps + acumular KPIs ─────────────────────────────
+    oportunidades = []
+    monto_ganado = 0.0
+    monto_perdido = 0.0
+    ganadas = 0
+    perdidas = 0
+    for o in opps:
+        m = _money(o.monto)
+        etapa_norm = (o.etapa_corta or '').strip().lower()
+        resultado = _RESULTADO_POR_ETAPA.get(etapa_norm, 'otro')
+        if resultado == 'ganada':
+            ganadas += 1
+            monto_ganado += m
+        elif resultado == 'perdida':
+            perdidas += 1
+            monto_perdido += m
+        oportunidades.append({
+            'id': o.id,
+            'titulo': o.oportunidad,
+            'cliente': o.cliente.nombre_empresa if o.cliente_id else None,
+            'vendedor': (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else None,
+            'vendedor_id': o.usuario_id,
+            'pipeline': o.tipo_negociacion or '',
+            'pipeline_label': (o.tipo_negociacion or '').capitalize(),
+            'etapa': o.etapa_corta or '',
+            'resultado': resultado,  # 'ganada' | 'perdida' | 'otro'
+            'producto': o.producto or '',
+            'monto_mxn': m,
+            'fecha_cierre': _fmt_fecha_cierre(o.mes_cierre, o.anio_cierre),
+            'mes_cierre': o.mes_cierre or '',
+            'anio_cierre': o.anio_cierre,
+            'po_number': o.po_number or '',
+        })
+
+    total = ganadas + perdidas
+    pct = round((ganadas / total) * 100) if total else 0
+    ticket_prom = (monto_ganado / ganadas) if ganadas else 0
+
+    kpis = {
+        'total': total,
+        'ganadas': ganadas,
+        'perdidas': perdidas,
+        'monto_ganado_mxn': round(monto_ganado, 2),
+        'monto_perdido_mxn': round(monto_perdido, 2),
+        'ticket_promedio_mxn': round(ticket_prom, 2),
+        'pct_cierre': pct,
+    }
+
+    return JsonResponse({
+        'ok': True,
+        'oportunidades': oportunidades,
+        'kpis': kpis,
+        'filtros_disponibles': _filtros_disponibles_cerradas(user),
+    })

@@ -38,6 +38,7 @@ urlpatterns = [
     path('reportes/', views_reportes.reportes_index, name='reportes_index'),
     path('reportes/<slug:slug>/', views_reportes.reporte_detalle, name='reporte_detalle'),
     path('api/reportes/oportunidades-abiertas/', views_reportes.api_reporte_oportunidades_abiertas, name='api_reporte_oportunidades_abiertas'),
+    path('api/reportes/oportunidades-cerradas/', views_reportes.api_reporte_oportunidades_cerradas, name='api_reporte_oportunidades_cerradas'),
 
     # ── PWA Levantamientos (offline-capable, dedicada para planta) ───────────
     path('levantamientos/', views_levantamientos_app.levantamientos_app, name='levantamientos_app'),
