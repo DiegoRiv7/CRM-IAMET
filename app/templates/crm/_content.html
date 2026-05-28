@@ -274,13 +274,54 @@
                 <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
                 <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
             </div>
-            <!-- Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes (todo JS, sin recargar) -->
-            <div class="crm-tabs crm-tabs--dashboard">
+            {% comment %}
+            Dashboard: dynamic island con toggle Oportunidades/Prospectos/Proyectos/Clientes/Reportes.
+            Los 4 primeros switchean modo via JS (sin recargar). "Reportes"
+            navega a /app/reportes/oportunidades-abiertas/?from=dashboard,
+            donde un script (reportes_dashboard_anim.js) detecta la flag y
+            aplica una animación de "barrido hacia la izquierda" en el
+            header del reporte + inyecta un botón "← Dashboard" para
+            volver con la animación inversa.
+            {% endcomment %}
+            <div class="crm-tabs crm-tabs--dashboard" id="dashDynamicIsland">
                 <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
                 <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
                 <button type="button" id="crmModeClientes" onclick="window._crmSetMode('clientes_tabla')" class="crm-tab">Clientes</button>
+                <button type="button" id="crmModeReportes" class="crm-tab crm-tab-reportes" title="Ir a Reportes">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>Reportes
+                </button>
             </div>
+            <script>
+            (function(){
+                // Click en "Reportes" del dashboard → animación slide-out
+                // del island + navegación a reportes con flag ?from=dashboard.
+                var btnR = document.getElementById('crmModeReportes');
+                var island = document.getElementById('dashDynamicIsland');
+                if (btnR && island) {
+                    btnR.addEventListener('click', function () {
+                        island.classList.add('crm-tabs-sliding-out-left');
+                        setTimeout(function () {
+                            window.location.href = '/app/reportes/oportunidades-abiertas/?from=dashboard';
+                        }, 240);
+                    });
+                }
+                // Si la URL trae ?from=reportes (volvimos del módulo de
+                // reportes vía el botón ← Dashboard), animar el island con
+                // slide-in-from-left y limpiar el query param.
+                try {
+                    var _u = new URL(window.location.href);
+                    if (_u.searchParams.get('from') === 'reportes' && island) {
+                        island.classList.add('crm-tabs-sliding-in-from-left');
+                        setTimeout(function () {
+                            island.classList.remove('crm-tabs-sliding-in-from-left');
+                        }, 350);
+                        _u.searchParams.delete('from');
+                        window.history.replaceState({}, '', _u.toString());
+                    }
+                } catch (e) { /* defensivo */ }
+            })();
+            </script>
             {% else %}
             {# Ocultar dynamic island cuando estamos en una sub-vista de Marketing (?vista=campanas|eventos): el usuario ya está "adentro" y vuelve con el breadcrumb. #}
             {% if tab_activo != 'prospeccion' or not request.GET.vista %}

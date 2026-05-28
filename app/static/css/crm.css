@@ -17150,3 +17150,46 @@ body.cert-d-lock {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * Bridge Dashboard ↔ Reportes — animación de "barrido"
+ * (2026-05-28: tab Reportes agregado a la dynamic del Dashboard)
+ *
+ * El tab "Reportes" del dashboard navega a /app/reportes/?from=dashboard.
+ * Al hacer clic, animamos el island slide-out-to-left antes de navegar.
+ * Al volver del módulo de Reportes con ?from=reportes, animamos el
+ * island slide-in-from-left para dar continuidad visual.
+ * Las animaciones del header de los reportes (slide-in-from-right /
+ * slide-out-to-right) viven en reportes.css.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Acento sutil al tab Reportes — ícono + texto, en línea con el
+   ícono que ya aparece en el sidebar del CRM. Mantiene el peso visual
+   del resto de tabs (no destaca de más) pero queda diferenciado. */
+.crm-tabs--dashboard .crm-tab-reportes {
+    display: inline-flex;
+    align-items: center;
+}
+.crm-tabs--dashboard .crm-tab-reportes:hover {
+    color: #0052D4;
+}
+
+/* Animaciones del dynamic island del dashboard al entrar/salir del
+   módulo de Reportes. El tab "Reportes" se sale hacia la izquierda y
+   las opciones del reporte aparecen "desde la derecha" en la página
+   siguiente — la sensación es continua. */
+@keyframes crmDashIslandSlideOutLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-24px); }
+}
+@keyframes crmDashIslandSlideInFromLeft {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.crm-tabs.crm-tabs-sliding-out-left {
+    animation: crmDashIslandSlideOutLeft 0.24s cubic-bezier(.5,0,.75,0) forwards;
+}
+.crm-tabs.crm-tabs-sliding-in-from-left {
+    animation: crmDashIslandSlideInFromLeft 0.32s cubic-bezier(.16,1,.3,1);
+}
