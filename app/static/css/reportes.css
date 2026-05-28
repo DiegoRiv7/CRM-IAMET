@@ -385,13 +385,17 @@
 .rep-shell, .rep-page-shell {
     padding: 18px 24px 60px;
     background: #F5F5F7;
-    min-height: 100vh;
     box-sizing: border-box;
-    /* El padre .crm-page-sidebar fija height: 100vh, así que necesitamos
-       scroll INTERNO del shell para que el contenido (incluida la paginación
-       al pie de la tabla) sea visible. Sin esto, el footer queda fuera del
-       viewport y el usuario no lo encuentra. */
+    /* El padre .crm-page-sidebar fija height: 100vh y es display:flex.
+       Para que overflow-y:auto active scroll interno necesitamos altura
+       LIMITADA — `min-height: 100vh` permitía al shell crecer con el
+       contenido y nunca activaba el scroll (la paginación quedaba debajo
+       del viewport, invisible). Con `height: 100%` el shell se ajusta al
+       padre y el contenido excedente sí scrollea. `min-height: 0` evita
+       el min-content-size trap clásico de flex items. */
     flex: 1;
+    min-height: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
 }
