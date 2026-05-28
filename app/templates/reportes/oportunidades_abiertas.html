@@ -1,10 +1,10 @@
 {% extends "base.html" %}{% load static %}
 
-{% block title %}{{ reporte.titulo }} — Reportes{% endblock %}
+{% block title %}Reportes — CRM IAMET{% endblock %}
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260525-mvp">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-hablante">
 {% endblock %}
 
 {% block content %}
@@ -12,69 +12,170 @@
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_sidebar.html" %}
     <main class="crm-main rep-page-shell">
-        <!-- Topbar -->
-        <header class="rep-page-topbar">
-            <div class="rep-page-topbar-left">
-                <a href="/app/reportes/" class="rep-back-btn" title="Volver a Reportes">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                </a>
-                <div>
-                    <h1 class="rep-page-title">{{ reporte.titulo }}</h1>
-                    <p class="rep-page-subtitle">{{ reporte.descripcion }}</p>
+
+        {% comment %}
+        Header del reporte (rediseño "hablante" 2026-05-28):
+            izquierda  → Botón Ordenar (dropdown) + chips secundarios
+                         (Alta prob · Estancadas · Vencidas) como quick-filters
+                         visuales sutiles. Reemplaza al antiguo bloque
+                         "Plantillas" + "Configurar reporte".
+            centro     → Dynamic island con los 3 tabs de reportes (intacto).
+            derecha    → Búsqueda + Filtros (drawer) + Exportar CSV.
+        {% endcomment %}
+        <header class="rep-header">
+            <div class="rep-plantillas">
+                <div class="rep-sort-wrap">
+                    <button type="button" class="rep-sort-btn" id="repSortBtn" aria-haspopup="menu" aria-expanded="false">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                        <span class="rep-sort-label" id="repSortLabel">Mayor monto</span>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="rep-sort-menu" id="repSortMenu" role="menu" hidden>
+                        <div class="rep-sort-section">Monto</div>
+                        <button type="button" class="rep-sort-item is-active" data-sort="monto_desc" role="menuitem">Mayor monto</button>
+                        <button type="button" class="rep-sort-item" data-sort="monto_asc" role="menuitem">Menor monto</button>
+                        <div class="rep-sort-section">Probabilidad</div>
+                        <button type="button" class="rep-sort-item" data-sort="prob_desc" role="menuitem">Mayor probabilidad</button>
+                        <button type="button" class="rep-sort-item" data-sort="prob_asc" role="menuitem">Menor probabilidad</button>
+                        <div class="rep-sort-section">Cierre</div>
+                        <button type="button" class="rep-sort-item" data-sort="cierre_asc" role="menuitem">Cierre más próximo</button>
+                        <button type="button" class="rep-sort-item" data-sort="cierre_desc" role="menuitem">Cierre más lejano</button>
+                        <div class="rep-sort-section">Antigüedad</div>
+                        <button type="button" class="rep-sort-item" data-sort="dias_desc" role="menuitem">Más días abierta (estancadas)</button>
+                        <button type="button" class="rep-sort-item" data-sort="dias_asc" role="menuitem">Menos días abierta (más nuevas)</button>
+                        <div class="rep-sort-section">Urgencia</div>
+                        <button type="button" class="rep-sort-item" data-sort="vencido_first" role="menuitem">Próximo paso vencido primero</button>
+                        <div class="rep-sort-section">Alfabético</div>
+                        <button type="button" class="rep-sort-item" data-sort="cliente_asc" role="menuitem">Cliente (A-Z)</button>
+                        <button type="button" class="rep-sort-item" data-sort="vendedor_asc" role="menuitem">Vendedor (A-Z)</button>
+                    </div>
                 </div>
+
+                {% comment %}
+                Quick-filters: chips secundarios que combinan con el sort.
+                Son "filtros" client-side sobre el dataset, lo mismo que las
+                viejas "plantillas" — sólo se rebautiza visualmente porque
+                quien manda ahora es el botón Ordenar.
+                {% endcomment %}
+                <span class="rep-quick-sep" aria-hidden="true"></span>
+                <button type="button" class="rep-chip rep-chip-quick rep-chip-active" data-plantilla="todas">Todas</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="alta-prob" title="Probabilidad ≥ 70%">Alta prob.</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="estancadas" title="Más de 45 días abiertas">Estancadas</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="vencidas" title="Próximo paso vencido">Vencidas</button>
+                <button type="button" class="rep-chip rep-chip-quick" data-plantilla="cierre-mes" title="Cierran este mes">Cierran este mes</button>
             </div>
-            <div class="rep-page-actions">
-                <button type="button" class="rep-btn rep-btn-secondary" id="repOAReload" title="Recargar">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                    <span>Recargar</span>
+
+            <div class="rep-tabs">
+                <button type="button" class="rep-tab rep-tab-active">Oportunidades Abiertas</button>
+                <a href="/app/reportes/oportunidades-cerradas/" class="rep-tab">Oportunidades Cerradas</a>
+                <a href="/app/reportes/clientes/" class="rep-tab">Por Cliente</a>
+                <a href="/app/reportes/personalizado/" class="rep-tab rep-tab-custom">Personalizado</a>
+            </div>
+
+            <div class="rep-header-actions">
+                <div class="rep-search">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="repSearch" placeholder="Buscar oportunidad o cliente…" autocomplete="off">
+                </div>
+                <button type="button" class="rep-btn rep-btn-icon" id="repBtnFilter">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filtros</span>
+                    <span class="rep-filter-dot" id="repFilterDot" style="display:none;"></span>
                 </button>
-                <button type="button" class="rep-btn rep-btn-primary" id="repOAExport" title="Exportar a Excel">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
-                    <span>Exportar Excel</span>
+                <button type="button" class="rep-btn rep-btn-primary" id="repBtnExport">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Exportar CSV</span>
                 </button>
             </div>
         </header>
 
-        <!-- KPIs (se llenan vía JS) -->
-        <section class="rep-kpis" id="repOAKpis"></section>
+        {% comment %}
+        Narrativa "hablante": una línea sutil que resume QUÉ debe atender el
+        usuario hoy. La pinta JS a partir del dataset (#repNarrativa).
+        Va arriba de los KPIs porque es lo PRIMERO que el ojo debe leer.
+        {% endcomment %}
+        <section class="rep-narrativa" id="repNarrativa" hidden></section>
 
-        <!-- Body: filtros + contenido -->
-        <div class="rep-body">
-            <aside class="rep-filters" id="repOAFilters">
-                <h4 class="rep-filters-h">Filtros</h4>
-                <div class="rep-filter-group">
-                    <label class="rep-filter-label" for="repOAFiltroPipeline">Pipeline</label>
-                    <select class="rep-filter-select" id="repOAFiltroPipeline">
-                        <option value="">Ambos</option>
-                        <option value="runrate">Runrate</option>
-                        <option value="proyecto">Proyecto</option>
-                    </select>
-                </div>
-                <div class="rep-filter-group">
-                    <label class="rep-filter-label" for="repOAFiltroVendedor">Vendedor</label>
-                    <select class="rep-filter-select" id="repOAFiltroVendedor">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-                <div class="rep-filter-group">
-                    <label class="rep-filter-label" for="repOAFiltroEtapa">Etapa</label>
-                    <select class="rep-filter-select" id="repOAFiltroEtapa">
-                        <option value="">Todas</option>
-                    </select>
-                </div>
-                <div class="rep-filter-group">
-                    <label class="rep-filter-label" for="repOAFiltroBuscar">Buscar</label>
-                    <input type="text" class="rep-filter-input" id="repOAFiltroBuscar" placeholder="Título o cliente…">
-                </div>
-                <button type="button" class="rep-filter-clear" id="repOAFiltroClear">Limpiar filtros</button>
-            </aside>
+        {% comment %}
+        Barra de progreso hacia la meta del mes — sólo se muestra si
+        meta_mes_mxn > 0 (lectura de UserProfile.meta_mensual de los
+        vendedores visibles / del vendedor filtrado).
+        {% endcomment %}
+        <section class="rep-meta-bar" id="repMetaBar" hidden></section>
 
-            <section class="rep-content" id="repOAContent">
-                <div class="rep-loading">Cargando reporte…</div>
-            </section>
-        </div>
+        <section class="rep-kpis" id="repKpis"></section>
+
+        <section class="rep-table-wrap" id="repTableWrap">
+            <div class="rep-loading">Cargando reporte…</div>
+        </section>
     </main>
 </div>
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260525-mvp"></script>
-<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260525-mvp"></script>
+
+<!-- Drawer de filtros (oculto por default) -->
+<div class="rep-drawer-overlay" id="repDrawerOverlay"></div>
+<aside class="rep-drawer" id="repDrawer" aria-hidden="true">
+    <header class="rep-drawer-head">
+        <div>
+            <div class="rep-drawer-title">Filtros</div>
+            <div class="rep-drawer-sub">Personaliza el reporte</div>
+        </div>
+        <button type="button" class="rep-drawer-close" id="repDrawerClose" aria-label="Cerrar">&times;</button>
+    </header>
+    <div class="rep-drawer-body">
+        <div class="rep-fg">
+            <label class="rep-fg-label">Pipeline</label>
+            <select class="rep-fg-select" id="repFltPipeline">
+                <option value="">Ambos</option>
+                <option value="runrate">Runrate</option>
+                <option value="proyecto">Proyecto</option>
+            </select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Vendedor</label>
+            <select class="rep-fg-select" id="repFltVendedor"><option value="">Todos</option></select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Etapa</label>
+            <select class="rep-fg-select" id="repFltEtapa"><option value="">Todas</option></select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Proveedor</label>
+            <select class="rep-fg-select" id="repFltMarca"><option value="">Todos</option></select>
+        </div>
+        <div class="rep-fg">
+            <label class="rep-fg-label">Monto mínimo</label>
+            <input type="number" class="rep-fg-input" id="repFltMontoMin" placeholder="$0" min="0">
+        </div>
+    </div>
+    <footer class="rep-drawer-foot">
+        <button type="button" class="rep-btn" id="repFltClear">Limpiar</button>
+        <button type="button" class="rep-btn rep-btn-primary" id="repFltApply">Aplicar</button>
+    </footer>
+</aside>
+
+{% comment %}
+Widgets reusados del CRM para abrir oportunidades inline (sin navegar fuera
+de Reportes). _widget_oportunidad provee el overlay #widgetDetalle que
+crm_main.js manipula con openDetalle(id). _widget_extras y _widget_avance_etapa
+son dependencias del flujo completo.
+{% endcomment %}
+{% include "crm/_widget_oportunidad.html" %}
+{% include "crm/_widget_extras.html" %}
+{% include "crm/_widget_avance_etapa.html" %}
+
+<script>
+    // Nombre del usuario que está viendo el reporte — lo consume el export
+    // CSV para escribirlo en el bloque de metadatos.
+    window._REP_USER = "{{ request.user.get_full_name|default:request.user.username|escapejs }}";
+</script>
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-hablante"></script>
+<script src="{% static 'js/reportes_oportunidades_abiertas.js' %}?v=20260528-hablante"></script>
+
+{% comment %}
+Scripts del CRM para que openDetalle(id) funcione. _scripts_main.html define
+window._CRM_CONFIG y carga crm_main.js (donde vive openDetalle).
+{% endcomment %}
+{% include "crm/_scripts_main.html" %}
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260525-restore-verif">
+</script>
 {% endblock %}

@@ -47,8 +47,7 @@
             <span class="crm-sb-label">Compras</span>
         </button>
 
-        {% if feature_reportes_visible %}
-        <!-- Reportes (admin) — visible solo cuando FEATURE_REPORTES_VISIBLE=1 -->
+        <!-- Reportes (admin) -->
         <a href="/app/reportes/" class="crm-sb-btn{% if tab_activo == 'reportes' %} active{% endif %}" id="btnReportes" data-tooltip="Reportes">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -58,7 +57,6 @@
             </svg>
             <span class="crm-sb-label">Reportes</span>
         </a>
-        {% endif %}
 
         <div class="crm-sb-divider"></div>
 
@@ -166,8 +164,7 @@
             </svg>
             <span class="crm-sb-label">Dashboard</span>
         </a>
-        {% if feature_reportes_visible %}
-        <!-- Reportes (vendedor/supervisor) — visible solo cuando FEATURE_REPORTES_VISIBLE=1 -->
+        <!-- Reportes (vendedor/supervisor) -->
         <a href="/app/reportes/" class="crm-sb-btn{% if tab_activo == 'reportes' %} active{% endif %}" id="btnReportes" data-tooltip="Reportes">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -177,7 +174,6 @@
             </svg>
             <span class="crm-sb-label">Reportes</span>
         </a>
-        {% endif %}
         {% endif %}
 
         <!-- Tareas -->

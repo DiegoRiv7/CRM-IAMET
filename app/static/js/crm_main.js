@@ -6553,7 +6553,10 @@
         // Recalcula minutos_hasta_proxima / minutos_vencida cada minuto
         // para que el rojo avance visiblemente a medida que una actividad
         // se acerca a vencer — el usuario ve el color moverse sin recargar.
+        // Pausa cuando el tab no es visible (evita polling fantasma que satura
+        // browser y servidor cuando el usuario deja la pestaña abierta horas).
         setInterval(function() {
+            if (document.hidden) return;
             if (window._crmTareasMode) return; // solo en vista CRM
             // Si hay drill-down (sub-tabla) activo en clientes, no clobber-ear el detalle.
             if (window._ckDetalleOpen) return;
@@ -6565,10 +6568,17 @@
         }, 60000); // 1 minuto
 
         // ── Polling ligero: detectar tareas nuevas/cambiadas de grupo cada 15s ──
+        // Pausa con tab oculto. Aborta el fetch previo si el siguiente arranca
+        // antes (evita stacking de fetches lentos cuando el server va saturado).
         var _tareasPollHash = null;
+        var _tareasPollAbort = null;
         setInterval(function() {
+            if (document.hidden) return;
             if (!window._crmTareasMode) return;
-            fetch('/app/api/tareas/?estado=pendientes')
+            if (_tareasPollAbort) { try { _tareasPollAbort.abort(); } catch(_) {} }
+            _tareasPollAbort = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            var opts = _tareasPollAbort ? { signal: _tareasPollAbort.signal } : {};
+            fetch('/app/api/tareas/?estado=pendientes', opts)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.success && Array.isArray(data.tareas)) {
@@ -6583,6 +6593,15 @@
                     }
                 }).catch(function(){});
         }, 15000);
+
+        // Al volver a la pestaña, refresca de inmediato (sin esperar el próximo
+        // tick del interval) para que el usuario no vea datos viejos.
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) return;
+            if (window._crmTareasMode && typeof renderTareasCRM === 'function') {
+                _tareasPollHash = null; // forzar repintado al siguiente poll
+            }
+        });
 
         function _actualizarDropdownResponsables(tareas) {
             var list = document.getElementById('tareasFilterResponsableList');
@@ -6709,7 +6728,16 @@
         var _urlTab = null;
         try { _urlTab = new URL(window.location.href).searchParams.get('tab'); } catch (e) {}
         var _savedView = localStorage.getItem('crmView');
-        if (_urlTab !== 'calendario' && _savedView === 'tareas') {
+        // Guard: páginas externas al CRM (como /app/reportes/) también cargan
+        // crm_main.js para tener openDetalle, pero NO deben restaurar el sidebar
+        // — el server-render ya marcó el botón correcto. Sin este guard se veía
+        // doble-active (ej. Reportes + Tareas ambos azules en /app/reportes/).
+        var _isCrmHome = window.location.pathname.indexOf('/app/todos') === 0
+                      || window.location.pathname === '/app/'
+                      || window.location.pathname === '/app';
+        if (!_isCrmHome) {
+            // No-op: no restaurar nada del CRM en páginas externas.
+        } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
             document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
             var btnTareasInit = document.getElementById('btnTareas');

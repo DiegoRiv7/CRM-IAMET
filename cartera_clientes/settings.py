@@ -35,11 +35,6 @@ MAIL_ENCRYPTION_KEY = os.environ.get('MAIL_ENCRYPTION_KEY', '')
 # Tipo de cambio USD → MXN para conversión de cotizaciones a monto de oportunidad
 TIPO_CAMBIO_USD_MXN = os.environ.get('TIPO_CAMBIO_USD_MXN', '20.00')
 
-# Feature flag — Módulo Reportes. Por defecto OFF para no exponerlo en
-# producción todavía. Para verlo en pruebas/dev, agregar al entorno:
-#   FEATURE_REPORTES_VISIBLE=1
-FEATURE_REPORTES_VISIBLE = os.environ.get('FEATURE_REPORTES_VISIBLE', '0') == '1'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
@@ -299,12 +294,29 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'WARNING',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        # Silenciar el spam de fontTools (subset de fuentes para PDFs):
+        # emite "Glyph IDs: [...]" por cada PDF generado.
+        'fontTools': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'fontTools.subset': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'weasyprint': {
+            'handlers': ['console'],
+            'level': 'WARNING',
             'propagate': False,
         },
         'django.request': {

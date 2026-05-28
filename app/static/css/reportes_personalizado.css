@@ -1,0 +1,753 @@
+/* ═══════════════════════════════════════════════════════════════════
+ * Reporte 4 — Constructor Personalizado
+ *
+ * Estilos PROPIOS de este reporte. No tocan reportes.css (otro agente
+ * edita ese archivo en paralelo). Reusa solo las clases compartidas
+ * "rep-*" del header, kpis, drawer y tabla cuando coincide visualmente.
+ *
+ * Paleta: #0052D4 azul brand · #1D1D1F gris carbón · #F5F5F7 superficie
+ * Estética: Apple-like, sombras suaves, radios 10-14px, system font.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Layout 2 paneles ───────────────────────────────────────── */
+.repp-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 18px;
+    align-items: flex-start;
+}
+
+@media (max-width: 1100px) {
+    .repp-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Panel izquierdo: configuración ─────────────────────────── */
+.repp-config {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 16px 16px 12px;
+    position: sticky;
+    top: 18px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+    max-height: calc(100vh - 36px);
+    overflow-y: auto;
+}
+
+.repp-config::-webkit-scrollbar { width: 6px; }
+.repp-config::-webkit-scrollbar-track { background: transparent; }
+.repp-config::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+.repp-config::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* Bloques colapsables del panel */
+.repp-block {
+    padding: 12px 0;
+    border-bottom: 1px solid #F2F2F7;
+}
+.repp-block:first-child { padding-top: 0; }
+.repp-block:last-child { border-bottom: none; padding-bottom: 0; }
+
+.repp-block-h {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+}
+.repp-block-title {
+    font-size: 0.62rem; font-weight: 800; color: #86868B;
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.repp-block-hint {
+    font-size: 0.66rem; color: #9CA3AF; font-weight: 500;
+}
+
+/* ── Puntos de partida (templates pre-armados) ─────────────── */
+.repp-starters {
+    display: flex; flex-wrap: wrap; gap: 6px;
+}
+.repp-starter {
+    padding: 6px 11px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    color: #3A3A3C;
+    border-radius: 9999px;
+    font-size: 0.7rem; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 4px;
+}
+.repp-starter:hover {
+    border-color: #0052D4;
+    background: #F0F7FF;
+    color: #0052D4;
+}
+.repp-starter-icon {
+    width: 11px; height: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.repp-starter-mine {
+    border-style: dashed;
+    border-color: #C7D2FE;
+    background: #FAFBFF;
+    color: #4338CA;
+}
+.repp-starter-mine:hover {
+    border-style: solid;
+    border-color: #4338CA;
+    background: #EEF2FF;
+    color: #4338CA;
+}
+
+/* Botón eliminar de "Mis reportes" — aparece sobre el chip */
+.repp-starter-mine {
+    position: relative;
+}
+.repp-starter-x {
+    margin-left: 4px;
+    width: 14px; height: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    color: #9CA3AF;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.repp-starter-x:hover {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+/* ── Entidad: segmented control ─────────────────────────────── */
+.repp-segmented {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 3px;
+    background: #F2F2F7;
+    border-radius: 10px;
+}
+.repp-seg-btn {
+    padding: 7px 8px;
+    border: none;
+    background: transparent;
+    color: #3A3A3C;
+    font-size: 0.74rem; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+}
+.repp-seg-btn:hover { color: #1D1D1F; }
+.repp-seg-btn-active {
+    background: #fff;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.10);
+}
+.repp-seg-btn-active:hover { color: #0052D4; }
+
+/* ── Filtros como chips agregables ──────────────────────────── */
+.repp-chips-list {
+    display: flex; flex-wrap: wrap; gap: 5px;
+    min-height: 28px;
+}
+.repp-empty-hint {
+    font-size: 0.7rem; color: #9CA3AF; font-style: italic;
+    padding: 4px 2px;
+}
+
+.repp-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 4px 4px 10px;
+    background: #EBF5FF;
+    border: 1px solid #BFDBFE;
+    color: #0052D4;
+    border-radius: 9999px;
+    font-size: 0.7rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    max-width: 100%;
+}
+.repp-chip:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+}
+.repp-chip-text {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 220px;
+}
+.repp-chip-x {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: rgba(0, 82, 212, 0.15);
+    color: #0052D4;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; line-height: 1;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.repp-chip-x:hover {
+    background: #DC2626;
+    color: #fff;
+}
+
+/* Botón + agregar */
+.repp-add-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    background: #fff;
+    border: 1px dashed #C7D2FE;
+    color: #4338CA;
+    border-radius: 9999px;
+    font-size: 0.7rem; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.repp-add-btn:hover {
+    background: #EEF2FF;
+    border-color: #4338CA;
+    border-style: solid;
+}
+
+/* ── Lista reordenable de columnas ──────────────────────────── */
+.repp-cols-list {
+    display: flex; flex-direction: column; gap: 4px;
+}
+.repp-col-row {
+    display: grid;
+    grid-template-columns: 18px 1fr 18px;
+    gap: 6px; align-items: center;
+    padding: 6px 8px;
+    background: #FAFBFC;
+    border: 1px solid #F2F2F7;
+    border-radius: 8px;
+    cursor: grab;
+    transition: all 0.15s;
+}
+.repp-col-row:hover {
+    background: #F8FAFC;
+    border-color: #E5E7EB;
+}
+.repp-col-row.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+.repp-col-row.drop-target {
+    border-color: #0052D4;
+    background: #EBF5FF;
+}
+.repp-col-handle {
+    color: #C7D2FE; display: inline-flex; align-items: center;
+    cursor: grab;
+}
+.repp-col-row:active .repp-col-handle { cursor: grabbing; }
+.repp-col-label {
+    font-size: 0.74rem; color: #1D1D1F; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.repp-col-x {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: transparent;
+    color: #C7D2FE;
+    border: none;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; line-height: 1;
+    transition: all 0.12s;
+}
+.repp-col-x:hover {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+/* ── Selects pequeños ───────────────────────────────────────── */
+.repp-select {
+    width: 100%; box-sizing: border-box;
+    padding: 7px 10px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    background: #FAFBFC;
+    font-size: 0.78rem;
+    font-family: inherit;
+    color: #1D1D1F;
+    outline: none;
+    cursor: pointer;
+}
+.repp-select:focus {
+    border-color: #0052D4;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    background: #fff;
+}
+.repp-select:hover { background: #fff; }
+
+/* ── Acciones del panel ─────────────────────────────────────── */
+.repp-actions {
+    display: flex; gap: 6px; margin-top: 4px;
+}
+.repp-action-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    color: #3A3A3C;
+    border-radius: 9px;
+    font-size: 0.72rem; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+}
+.repp-action-btn:hover {
+    border-color: #0052D4;
+    color: #0052D4;
+    background: #F0F7FF;
+}
+.repp-action-btn-primary {
+    background: #0052D4;
+    border-color: #0052D4;
+    color: #fff;
+}
+.repp-action-btn-primary:hover {
+    background: #003FA0;
+    border-color: #003FA0;
+    color: #fff;
+}
+.repp-action-btn-danger:hover {
+    border-color: #DC2626;
+    color: #DC2626;
+    background: #FEF2F2;
+}
+
+/* ── Panel derecho: preview ─────────────────────────────────── */
+.repp-preview {
+    display: flex; flex-direction: column; gap: 14px;
+    min-width: 0; /* permite shrink en grid */
+}
+
+/* Hero del preview: nombre del reporte que el usuario está armando */
+.repp-preview-hero {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+.repp-hero-left { min-width: 0; }
+.repp-hero-name {
+    font-size: 0.95rem; font-weight: 700; color: #1D1D1F;
+    margin: 0 0 2px 0;
+    letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.repp-hero-name input {
+    border: 1px solid transparent;
+    background: transparent;
+    font: inherit;
+    color: #1D1D1F;
+    padding: 2px 6px;
+    border-radius: 6px;
+    outline: none;
+    width: 360px; max-width: 100%;
+    transition: all 0.12s;
+}
+.repp-hero-name input:hover {
+    border-color: #E5E7EB;
+    background: #FAFBFC;
+}
+.repp-hero-name input:focus {
+    border-color: #0052D4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+}
+.repp-hero-natural {
+    font-size: 0.74rem; color: #64748B; line-height: 1.4;
+    margin: 0;
+}
+.repp-hero-natural em { color: #0052D4; font-style: normal; font-weight: 600; }
+.repp-hero-pulse {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.66rem; color: #64748B; font-weight: 600;
+}
+.repp-pulse-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #34C759;
+    box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.6);
+    animation: reppPulse 2.4s ease-out infinite;
+}
+.repp-pulse-dot.loading {
+    background: #FF9500;
+    animation: reppPulse 0.9s ease-out infinite;
+}
+@keyframes reppPulse {
+    0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+}
+
+/* KPIs */
+.repp-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+.repp-kpi {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-left: 3px solid #0052D4;
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+.repp-kpi-label {
+    font-size: 0.6rem; font-weight: 800; color: #86868B;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 5px;
+}
+.repp-kpi-value {
+    font-size: 1.4rem; font-weight: 800; color: #1D1D1F;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+}
+.repp-kpi-sub {
+    font-size: 0.66rem; color: #86868B; margin-top: 3px;
+}
+
+/* Tabla */
+.repp-table-wrap {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+.repp-table-scroll { overflow-x: auto; }
+.repp-table {
+    width: 100%;
+    border-collapse: separate; border-spacing: 0;
+    font-size: 0.78rem;
+    min-width: 100%;
+}
+.repp-table thead th {
+    padding: 9px 12px;
+    font-size: 0.6rem; font-weight: 800; color: #0052D4;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    background: #F8FAFC;
+    border-bottom: 1px solid #E9ECF1;
+    text-align: left;
+    white-space: nowrap;
+    position: sticky; top: 0;
+    z-index: 1;
+}
+.repp-table thead th.repp-right { text-align: right; }
+.repp-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #F2F2F7;
+    color: #1D1D1F;
+    vertical-align: middle;
+    background: #fff;
+    transition: background 0.1s;
+    white-space: nowrap;
+}
+.repp-table tbody td.repp-right { text-align: right; }
+.repp-table tbody tr { cursor: pointer; }
+.repp-table tbody tr:hover td { background: #EBF5FF; }
+.repp-table tbody tr:last-child td { border-bottom: none; }
+.repp-mono { font-variant-numeric: tabular-nums; }
+.repp-muted { color: #9CA3AF; }
+.repp-group-row td {
+    background: #F8FAFC !important;
+    font-weight: 700;
+    color: #0052D4;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.68rem;
+    padding: 6px 12px !important;
+    border-bottom: 1px solid #E9ECF1 !important;
+}
+
+/* Footer de tabla */
+.repp-table-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 18px;
+    border-top: 1px solid #F2F2F7;
+    font-size: 0.74rem;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.repp-table-foot-left { color: #86868B; }
+.repp-table-foot-right { color: #1D1D1F; display: inline-flex; align-items: center; gap: 10px; }
+.repp-table-foot-right strong { color: #0052D4; }
+.repp-pager {
+    display: inline-flex; align-items: center; gap: 4px;
+}
+.repp-pager-btn {
+    padding: 4px 10px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    border-radius: 7px;
+    font-size: 0.72rem; font-weight: 600;
+    color: #3A3A3C;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: inherit;
+}
+.repp-pager-btn:hover:not(:disabled) {
+    border-color: #0052D4;
+    color: #0052D4;
+}
+.repp-pager-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.repp-pager-label {
+    font-size: 0.72rem; color: #64748B;
+    padding: 0 6px;
+}
+
+/* Loading / vacío */
+.repp-loading {
+    padding: 50px 20px;
+    text-align: center;
+    color: #94A3B8;
+    font-size: 0.84rem;
+}
+.repp-empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: #94A3B8;
+}
+.repp-empty h3 { color: #475569; font-weight: 700; margin: 6px 0; font-size: 0.95rem; }
+.repp-empty p { font-size: 0.8rem; margin: 4px 0; }
+
+/* ── Popover de filtros (cuando hay click en chip o "+ filtro") ── */
+.repp-popover-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.25);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.18s;
+    z-index: 10800;
+}
+.repp-popover-overlay.open { opacity: 1; pointer-events: auto; }
+.repp-popover {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(15,23,42,0.18);
+    padding: 18px 20px;
+    width: 380px; max-width: calc(100vw - 40px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.18s, transform 0.22s cubic-bezier(.16,1,.3,1);
+    z-index: 10801;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+.repp-popover.open {
+    opacity: 1; pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
+.repp-popover-h {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #F2F2F7;
+}
+.repp-popover-title {
+    font-size: 0.92rem; font-weight: 700; color: #1D1D1F;
+    letter-spacing: -0.01em;
+}
+.repp-popover-x {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #F2F2F7; border: none;
+    color: #86868B;
+    font-size: 1.1rem; line-height: 1;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.repp-popover-x:hover { background: #E5E7EB; color: #1D1D1F; }
+
+.repp-form-row {
+    margin-bottom: 12px;
+}
+.repp-form-label {
+    display: block;
+    font-size: 0.62rem; font-weight: 800; color: #86868B;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 5px;
+}
+.repp-form-input, .repp-form-select {
+    width: 100%; box-sizing: border-box;
+    padding: 8px 11px;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 9px;
+    background: #FAFBFC;
+    font-size: 0.84rem;
+    font-family: inherit;
+    color: #1D1D1F;
+    outline: none;
+}
+.repp-form-input:focus, .repp-form-select:focus {
+    border-color: #0052D4;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+    background: #fff;
+}
+.repp-form-row-2 {
+    display: grid; grid-template-columns: 140px 1fr; gap: 8px;
+}
+
+.repp-popover-foot {
+    display: flex; gap: 8px;
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px solid #F2F2F7;
+}
+.repp-popover-foot .repp-action-btn { flex: 1; }
+
+/* Lista de opciones (multiselect en filtros) */
+.repp-options-list {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 4px;
+    background: #FAFBFC;
+}
+.repp-option-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: #1D1D1F;
+    transition: background 0.1s;
+}
+.repp-option-row:hover { background: #fff; }
+.repp-option-row input[type="checkbox"] {
+    accent-color: #0052D4;
+    width: 14px; height: 14px;
+    cursor: pointer;
+}
+.repp-options-empty {
+    padding: 16px;
+    text-align: center;
+    color: #9CA3AF;
+    font-size: 0.78rem;
+    font-style: italic;
+}
+
+/* Toast diminuto para "guardado" */
+.repp-toast {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1D1D1F;
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 0.82rem; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.25s cubic-bezier(.16,1,.3,1);
+    z-index: 11000;
+    pointer-events: none;
+}
+.repp-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.repp-toast-ok { background: #047857; }
+.repp-toast-err { background: #991B1B; }
+
+/* Group toggle (collapsable) */
+.repp-block-collapsable .repp-block-h {
+    cursor: pointer;
+    user-select: none;
+}
+.repp-block-collapsable .repp-collapse-arrow {
+    color: #C7D2FE;
+    transition: transform 0.18s;
+}
+.repp-block-collapsable.collapsed .repp-collapse-arrow {
+    transform: rotate(-90deg);
+}
+.repp-block-collapsable.collapsed .repp-block-content {
+    display: none;
+}
+
+/* Topbar */
+.repp-topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    background: #fff;
+    border: 1px solid rgba(15,23,42,0.05);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+.repp-topbar-title {
+    margin: 0;
+    font-size: 1rem; font-weight: 700; color: #1D1D1F;
+    letter-spacing: -0.01em;
+}
+.repp-topbar-sub {
+    font-size: 0.72rem; color: #86868B;
+}
+.repp-topbar-spacer { flex: 1; }
+
+/* Dynamic island en topbar (tabs entre los 4 reportes) */
+.repp-tabs {
+    display: flex; gap: 3px;
+    background: #F5F5F7;
+    padding: 4px;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+.repp-tab {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.74rem; font-weight: 600;
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    color: #86868B;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+.repp-tab:hover { color: #1D1D1F; }
+.repp-tab-active {
+    background: #0052D4;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,82,212,0.25);
+}
+.repp-tab-active:hover { color: #fff; }
+
+.repp-back-btn {
+    width: 30px; height: 30px;
+    border: 1px solid rgba(15,23,42,0.10);
+    background: #fff;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #475569;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.repp-back-btn:hover { background: #F1F5F9; border-color: rgba(15,23,42,0.18); }
+
+.repp-shell {
+    padding: 18px 24px 60px;
+    background: #F5F5F7;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
