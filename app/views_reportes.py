@@ -13,12 +13,12 @@ Estructura general:
 Cada reporte tiene su propio handler en este archivo. La biblioteca crece
 agregando entradas a REPORTES_CATALOGO + las funciones correspondientes.
 """
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from datetime import timedelta
 
 from django.db.models import Q, Sum, Count, Max, Min
 from django.http import JsonResponse
@@ -83,6 +83,17 @@ REPORTES_CATALOGO = [
         ),
         'icono': 'building',
         'color': '#7C3AED',
+    },
+    {
+        'slug': 'personalizado',
+        'titulo': 'Reporte Personalizado',
+        'descripcion': (
+            'Constructor visual: arma el reporte que quieras con los datos '
+            'que quieras. Elige entidad, filtros, columnas, agrupación y '
+            'orden. Guarda tus configuraciones favoritas.'
+        ),
+        'icono': 'sparkles',
+        'color': '#0052D4',
     },
 ]
 
@@ -951,3 +962,690 @@ def api_reporte_clientes(request):
         'kpis': kpis,
         'filtros_disponibles': {'vendedores': vendedores},
     })
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPORTE 4: Constructor Personalizado
+#
+# El usuario arma su reporte con: entidad (oportunidades / clientes /
+# actividades), filtros, columnas, agrupación y orden. El endpoint
+# valida todo con whitelist estricta — NUNCA construye queries con
+# campos arbitrarios del request.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ── Schema autoritativo: lo que el backend reconoce y permite. ─────────────
+# Para cada entidad: campos válidos (key → mapping ORM + tipo + formato),
+# filtros permitidos, columnas, agrupables. El JS tiene un mirror visual,
+# pero el backend es la verdad — si no está aquí, no pasa.
+
+_TIPOS_OPERADORES = {
+    'texto': {'contains', 'eq', 'neq'},
+    'numero': {'gt', 'gte', 'lt', 'lte', 'eq', 'between'},
+    'fecha': {'gte', 'lte', 'between', 'this_month', 'this_year', 'last_30d'},
+    'opciones': {'in', 'not_in'},
+}
+
+
+# Para oportunidades, los nombres "humanos" de campos se mapean a
+# expresiones ORM. Las funciones row_value extraen el valor para la fila
+# serializada. Esto evita pasar nombres de campo de Django desde el front.
+
+def _ent_oportunidades_schema():
+    """Campos válidos para entidad=oportunidades.
+
+    Cada entry:
+      key (str)       — nombre que ve el front
+      label (str)     — etiqueta humana
+      tipo            — texto / numero / fecha / opciones
+      orm_field       — campo Django para filter/order
+      align           — 'left' o 'right' (para tabla)
+      formato         — 'money' / 'fecha' / 'number' / None (texto)
+      row_value       — fn(opp) -> valor serializado
+    """
+    def f_titulo(o):    return o.oportunidad
+    def f_cliente(o):   return o.cliente.nombre_empresa if o.cliente_id else None
+    def f_vendedor(o):  return (o.usuario.get_full_name() or o.usuario.username) if o.usuario_id else None
+    def f_pipeline(o):  return o.tipo_negociacion
+    def f_etapa(o):     return o.etapa_corta
+    def f_producto(o):  return o.producto
+    def f_area(o):      return o.area
+    def f_monto(o):     return float(o.monto or 0)
+    def f_prob(o):      return o.probabilidad_cierre
+    def f_mes(o):       return o.mes_cierre
+    def f_anio(o):      return o.anio_cierre
+    def f_fcrea(o):     return o.fecha_creacion.isoformat() if o.fecha_creacion else None
+    def f_fact(o):      return o.fecha_actualizacion.isoformat() if o.fecha_actualizacion else None
+    def f_po(o):        return o.po_number or ''
+    def f_cat(o):       return o.cliente.categoria if o.cliente_id else None
+
+    return {
+        'titulo':              {'label': 'Oportunidad', 'tipo': 'texto', 'orm_field': 'oportunidad', 'row_value': f_titulo},
+        'cliente':             {'label': 'Cliente', 'tipo': 'texto', 'orm_field': 'cliente__nombre_empresa', 'row_value': f_cliente},
+        'vendedor':            {'label': 'Vendedor', 'tipo': 'opciones', 'orm_field': 'usuario_id', 'row_value': f_vendedor, 'opciones_key': 'vendedores'},
+        'pipeline':            {'label': 'Pipeline', 'tipo': 'opciones', 'orm_field': 'tipo_negociacion', 'row_value': f_pipeline},
+        'etapa':               {'label': 'Etapa', 'tipo': 'opciones', 'orm_field': 'etapa_corta', 'row_value': f_etapa, 'opciones_key': 'etapas'},
+        'producto':            {'label': 'Producto / Marca', 'tipo': 'opciones', 'orm_field': 'producto', 'row_value': f_producto, 'opciones_key': 'productos'},
+        'area':                {'label': 'Área', 'tipo': 'opciones', 'orm_field': 'area', 'row_value': f_area, 'opciones_key': 'areas'},
+        'monto_mxn':           {'label': 'Monto MXN', 'tipo': 'numero', 'orm_field': 'monto', 'row_value': f_monto, 'align': 'right', 'formato': 'money'},
+        'probabilidad':        {'label': 'Probabilidad %', 'tipo': 'numero', 'orm_field': 'probabilidad_cierre', 'row_value': f_prob, 'align': 'right', 'formato': 'number'},
+        'mes_cierre':          {'label': 'Mes cierre', 'tipo': 'opciones', 'orm_field': 'mes_cierre', 'row_value': f_mes},
+        'anio_cierre':         {'label': 'Año cierre', 'tipo': 'numero', 'orm_field': 'anio_cierre', 'row_value': f_anio, 'align': 'right', 'formato': 'number'},
+        'fecha_creacion':      {'label': 'Creada el', 'tipo': 'fecha', 'orm_field': 'fecha_creacion', 'row_value': f_fcrea, 'formato': 'fecha'},
+        'fecha_actualizacion': {'label': 'Actualizada el', 'tipo': 'fecha', 'orm_field': 'fecha_actualizacion', 'row_value': f_fact, 'formato': 'fecha'},
+        'po_number':           {'label': 'PO', 'tipo': 'texto', 'orm_field': 'po_number', 'row_value': f_po},
+        'categoria_cliente':   {'label': 'Categoría cliente', 'tipo': 'opciones', 'orm_field': 'cliente__categoria', 'row_value': f_cat},
+    }
+
+
+def _ent_clientes_schema():
+    def f_nombre(c):     return c.nombre_empresa
+    def f_rfc(c):        return c.rfc or ''
+    def f_categoria(c):  return c.categoria or 'C'
+    def f_asignado(c):   return (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else None
+    def f_ab(c):         return getattr(c, '_opps_abiertas', 0)
+    def f_ga(c):         return getattr(c, '_opps_ganadas', 0)
+    def f_pe(c):         return getattr(c, '_opps_perdidas', 0)
+    def f_mg(c):         return float(getattr(c, '_monto_ganado', 0) or 0)
+    def f_ma(c):         return float(getattr(c, '_monto_abierto', 0) or 0)
+    def f_fc(c):         return c.fecha_creacion.isoformat() if c.fecha_creacion else None
+    def f_meta(c):       return float(c.meta_mensual or 0)
+
+    return {
+        'nombre':            {'label': 'Cliente', 'tipo': 'texto', 'orm_field': 'nombre_empresa', 'row_value': f_nombre},
+        'rfc':               {'label': 'RFC', 'tipo': 'texto', 'orm_field': 'rfc', 'row_value': f_rfc},
+        'categoria':         {'label': 'Categoría', 'tipo': 'opciones', 'orm_field': 'categoria', 'row_value': f_categoria},
+        'asignado_a':        {'label': 'Asignado a', 'tipo': 'opciones', 'orm_field': 'asignado_a_id', 'row_value': f_asignado, 'opciones_key': 'vendedores'},
+        'opps_abiertas':     {'label': 'Opps abiertas', 'tipo': 'numero', 'orm_field': '_opps_abiertas', 'row_value': f_ab, 'align': 'right', 'formato': 'number', 'es_annotation': True},
+        'opps_ganadas':      {'label': 'Opps ganadas', 'tipo': 'numero', 'orm_field': '_opps_ganadas', 'row_value': f_ga, 'align': 'right', 'formato': 'number', 'es_annotation': True},
+        'opps_perdidas':     {'label': 'Opps perdidas', 'tipo': 'numero', 'orm_field': '_opps_perdidas', 'row_value': f_pe, 'align': 'right', 'formato': 'number', 'es_annotation': True},
+        'monto_ganado_mxn':  {'label': 'Monto ganado MXN', 'tipo': 'numero', 'orm_field': '_monto_ganado', 'row_value': f_mg, 'align': 'right', 'formato': 'money', 'es_annotation': True},
+        'monto_abierto_mxn': {'label': 'Monto abierto MXN', 'tipo': 'numero', 'orm_field': '_monto_abierto', 'row_value': f_ma, 'align': 'right', 'formato': 'money', 'es_annotation': True},
+        'fecha_creacion':    {'label': 'Cliente desde', 'tipo': 'fecha', 'orm_field': 'fecha_creacion', 'row_value': f_fc, 'formato': 'fecha'},
+        'meta_mensual':      {'label': 'Meta facturado', 'tipo': 'numero', 'orm_field': 'meta_mensual', 'row_value': f_meta, 'align': 'right', 'formato': 'money'},
+    }
+
+
+def _ent_actividades_schema():
+    def f_titulo(a):    return a.titulo
+    def f_tipo(a):      return a.tipo_actividad
+    def f_creado(a):    return (a.creado_por.get_full_name() or a.creado_por.username) if a.creado_por_id else None
+    def f_opp(a):       return a.oportunidad.oportunidad if a.oportunidad_id else None
+    def f_cli(a):       return a.oportunidad.cliente.nombre_empresa if (a.oportunidad_id and a.oportunidad.cliente_id) else None
+    def f_compl(a):     return a.completada
+    def f_ini(a):       return a.fecha_inicio.isoformat() if a.fecha_inicio else None
+    def f_fin(a):       return a.fecha_fin.isoformat() if a.fecha_fin else None
+
+    return {
+        'titulo':          {'label': 'Actividad', 'tipo': 'texto', 'orm_field': 'titulo', 'row_value': f_titulo},
+        'tipo_actividad':  {'label': 'Tipo', 'tipo': 'opciones', 'orm_field': 'tipo_actividad', 'row_value': f_tipo},
+        'creado_por':      {'label': 'Creado por', 'tipo': 'opciones', 'orm_field': 'creado_por_id', 'row_value': f_creado, 'opciones_key': 'vendedores'},
+        'oportunidad':     {'label': 'Oportunidad', 'tipo': 'texto', 'orm_field': 'oportunidad__oportunidad', 'row_value': f_opp},
+        'cliente':         {'label': 'Cliente', 'tipo': 'texto', 'orm_field': 'oportunidad__cliente__nombre_empresa', 'row_value': f_cli},
+        'completada':      {'label': 'Completada', 'tipo': 'opciones', 'orm_field': 'completada', 'row_value': f_compl, 'formato': 'bool'},
+        'fecha_inicio':    {'label': 'Inicio', 'tipo': 'fecha', 'orm_field': 'fecha_inicio', 'row_value': f_ini, 'formato': 'fecha'},
+        'fecha_fin':       {'label': 'Fin', 'tipo': 'fecha', 'orm_field': 'fecha_fin', 'row_value': f_fin, 'formato': 'fecha'},
+    }
+
+
+_SCHEMAS_PERSONALIZADO = {
+    'oportunidades': {
+        'schema_fn': _ent_oportunidades_schema,
+        'agrupables': ['vendedor', 'etapa', 'pipeline', 'cliente', 'producto', 'mes_cierre', 'anio_cierre', 'area', 'categoria_cliente'],
+    },
+    'clientes': {
+        'schema_fn': _ent_clientes_schema,
+        'agrupables': ['categoria', 'asignado_a'],
+    },
+    'actividades': {
+        'schema_fn': _ent_actividades_schema,
+        'agrupables': ['tipo_actividad', 'creado_por', 'completada'],
+    },
+}
+
+
+def _construir_q_filtro(campo_meta, op, valor):
+    """Construye una Q() para un filtro {campo, op, valor} usando el schema.
+    Retorna None si la combinación no es válida.
+    """
+    tipo = campo_meta['tipo']
+    field = campo_meta['orm_field']
+    # Annotation flag: en clientes algunos "campos" son annotations Count/Sum
+    # — sobre ellas se filtra igual que sobre cualquier campo (Django soporta
+    # filter sobre annotations).
+    if op not in _TIPOS_OPERADORES.get(tipo, set()):
+        return None
+
+    try:
+        if tipo == 'texto':
+            if op == 'contains':
+                return Q(**{f'{field}__icontains': str(valor)})
+            if op == 'eq':
+                return Q(**{f'{field}__iexact': str(valor)})
+            if op == 'neq':
+                return ~Q(**{f'{field}__iexact': str(valor)})
+
+        if tipo == 'numero':
+            if op == 'gt':  return Q(**{f'{field}__gt':  _to_number(valor)})
+            if op == 'gte': return Q(**{f'{field}__gte': _to_number(valor)})
+            if op == 'lt':  return Q(**{f'{field}__lt':  _to_number(valor)})
+            if op == 'lte': return Q(**{f'{field}__lte': _to_number(valor)})
+            if op == 'eq':  return Q(**{f'{field}': _to_number(valor)})
+            if op == 'between':
+                if not isinstance(valor, list) or len(valor) != 2:
+                    return None
+                a, b = _to_number(valor[0]), _to_number(valor[1])
+                if a is None and b is None:
+                    return None
+                q = Q()
+                if a is not None: q &= Q(**{f'{field}__gte': a})
+                if b is not None: q &= Q(**{f'{field}__lte': b})
+                return q
+
+        if tipo == 'fecha':
+            now = timezone.now()
+            if op == 'this_month':
+                start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                return Q(**{f'{field}__gte': start})
+            if op == 'this_year':
+                start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                return Q(**{f'{field}__gte': start})
+            if op == 'last_30d':
+                start = now - timedelta(days=30)
+                return Q(**{f'{field}__gte': start})
+            if op == 'gte':
+                d = _to_date(valor)
+                if not d: return None
+                return Q(**{f'{field}__gte': d})
+            if op == 'lte':
+                d = _to_date(valor)
+                if not d: return None
+                return Q(**{f'{field}__lte': d})
+            if op == 'between':
+                if not isinstance(valor, list) or len(valor) != 2:
+                    return None
+                da, db = _to_date(valor[0]), _to_date(valor[1])
+                if da is None and db is None: return None
+                q = Q()
+                if da: q &= Q(**{f'{field}__gte': da})
+                if db: q &= Q(**{f'{field}__lte': db})
+                return q
+
+        if tipo == 'opciones':
+            if not isinstance(valor, list):
+                valor = [valor]
+            valor = [v for v in valor if v not in (None, '')]
+            if not valor:
+                return None
+            # Para campos booleanos / FK: convertimos strings
+            if field.endswith('_id') or field == 'usuario_id':
+                valor = [int(v) for v in valor]
+            elif field == 'completada':
+                valor = [str(v).lower() in ('true','1','yes') for v in valor]
+            if op == 'in':
+                return Q(**{f'{field}__in': valor})
+            if op == 'not_in':
+                return ~Q(**{f'{field}__in': valor})
+    except (TypeError, ValueError):
+        return None
+    return None
+
+
+def _to_number(v):
+    if v is None or v == '':
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_date(v):
+    if not v:
+        return None
+    try:
+        if isinstance(v, str):
+            # YYYY-MM-DD o ISO
+            return datetime.fromisoformat(v.replace('Z', '+00:00'))
+        return v
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_config_personalizado(request):
+    """Acepta JSON body (POST) o query params (GET) y devuelve un dict
+    normalizado. Si algo falla, devuelve dict con defaults seguros."""
+    body = {}
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body.decode('utf-8') or '{}')
+        except (ValueError, UnicodeDecodeError):
+            body = {}
+    else:
+        body = {
+            'entidad': request.GET.get('entidad', 'oportunidades'),
+            'page': request.GET.get('page', 1),
+            'page_size': request.GET.get('page_size', 50),
+        }
+
+    entidad = body.get('entidad') or 'oportunidades'
+    if entidad not in _SCHEMAS_PERSONALIZADO:
+        entidad = 'oportunidades'
+
+    filtros = body.get('filtros') or []
+    if not isinstance(filtros, list):
+        filtros = []
+
+    columnas = body.get('columnas') or []
+    if not isinstance(columnas, list):
+        columnas = []
+
+    agrupar_por = body.get('agrupar_por') or None
+    if agrupar_por == '':
+        agrupar_por = None
+
+    ordenar_por = body.get('ordenar_por') or None
+    if ordenar_por == '':
+        ordenar_por = None
+
+    orden_dir = body.get('orden_dir') or 'desc'
+    if orden_dir not in ('asc', 'desc'):
+        orden_dir = 'desc'
+
+    try:
+        page = max(1, int(body.get('page') or 1))
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        page_size = int(body.get('page_size') or 50)
+    except (TypeError, ValueError):
+        page_size = 50
+    # 0 = sin paginar (para export). Cap defensivo a 5000.
+    if page_size != 0:
+        page_size = max(1, min(page_size, 500))
+    else:
+        page_size = 5000
+
+    export_mode = bool(body.get('export'))
+
+    return {
+        'entidad': entidad,
+        'filtros': filtros,
+        'columnas': columnas,
+        'agrupar_por': agrupar_por,
+        'ordenar_por': ordenar_por,
+        'orden_dir': orden_dir,
+        'page': page,
+        'page_size': page_size,
+        'export_mode': export_mode,
+    }
+
+
+def _opciones_para_entidad(entidad, user):
+    """Para los filtros de tipo "opciones": devuelve listas para los
+    campos que dependen de la BD (vendedores, etapas, productos, áreas).
+    """
+    visible_ids = get_usuarios_visibles_ids(user)
+    qs_u = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    if visible_ids:
+        qs_u = qs_u.filter(id__in=visible_ids)
+    vendedores = [
+        {'id': u.id, 'nombre': u.get_full_name() or u.username}
+        for u in qs_u
+    ]
+
+    etapas = []
+    for nombre in (
+        EtapaPipeline.objects
+        .filter(activo=True)
+        .order_by('pipeline', 'orden')
+        .values_list('nombre', flat=True)
+        .distinct()
+    ):
+        if nombre and nombre not in etapas:
+            etapas.append(nombre)
+    etapas_dict = [{'id': n, 'nombre': n} for n in etapas]
+
+    productos = [{'id': p[0], 'nombre': p[1]} for p in TodoItem.PRODUCTO_CHOICES]
+    areas = [{'id': a[0], 'nombre': a[1]} for a in TodoItem.AREA_CHOICES]
+
+    return {
+        'vendedores': vendedores,
+        'etapas': etapas_dict,
+        'productos': productos,
+        'areas': areas,
+    }
+
+
+@login_required
+def reporte_personalizado(request):
+    """Vista del constructor visual de reportes."""
+    ctx = _sidebar_context(request)
+    reporte = REPORTES_BY_SLUG.get('personalizado', {
+        'slug': 'personalizado',
+        'titulo': 'Reporte Personalizado',
+    })
+    # Username humano para los metadatos del CSV
+    user = request.user
+    nombre_humano = user.get_full_name() or user.username
+
+    # _scripts_main.html (incluido al final para que openDetalle exista)
+    # depende de algunas variables del CRM. Las llenamos con valores
+    # mínimos para que el partial no truene y la JS quede armada.
+    etapas_pipeline_json = json.dumps([
+        {'nombre': n, 'color': c, 'pipeline': pl}
+        for pl, n, c in EtapaPipeline.objects
+            .filter(activo=True)
+            .order_by('pipeline', 'orden')
+            .values_list('pipeline', 'nombre', 'color')
+    ])
+
+    ctx.update({
+        'reporte': reporte,
+        'tab_activo': 'reportes',
+        'usuario_full_name': json.dumps(nombre_humano),
+        'etapas_pipeline_json': etapas_pipeline_json,
+        'vendedores_filter': '',
+    })
+    return render(request, 'reportes/personalizado.html', ctx)
+
+
+@login_required
+def api_reporte_personalizado(request):
+    """POST /app/api/reportes/personalizado/  (también acepta GET)
+
+    Body JSON:
+      {
+        "entidad": "oportunidades" | "clientes" | "actividades",
+        "filtros": [{"campo":..., "op":..., "valor":...}, ...],
+        "columnas": ["campo1", "campo2", ...],
+        "agrupar_por": "campo" | null,
+        "ordenar_por": "campo" | null,
+        "orden_dir": "asc" | "desc",
+        "page": 1,
+        "page_size": 50,
+        "export": false
+      }
+
+    Devuelve:
+      {
+        "ok": true,
+        "entidad": ...,
+        "agrupar_por": ...,
+        "kpis": [{"label":..., "value":..., "value_display":..., "sub":...}],
+        "columnas": [{"key":..., "label":..., "tipo":..., "align":..., "formato":...}],
+        "filas": [{...}],
+        "total_filas": N,
+        "total_paginas": M,
+        "total_monto": ...,         # cuando aplica
+        "opciones": {vendedores, etapas, productos, areas},
+      }
+    """
+    user = request.user
+    cfg = _parse_config_personalizado(request)
+    entidad = cfg['entidad']
+    schema = _SCHEMAS_PERSONALIZADO[entidad]['schema_fn']()
+
+    # Whitelist columnas / orden / agrupar contra el schema
+    columnas_validas = [c for c in cfg['columnas'] if c in schema]
+    agrupar_por = cfg['agrupar_por'] if cfg['agrupar_por'] in schema else None
+    if agrupar_por and agrupar_por not in _SCHEMAS_PERSONALIZADO[entidad]['agrupables']:
+        agrupar_por = None
+    ordenar_por = cfg['ordenar_por'] if cfg['ordenar_por'] in schema else None
+
+    # Si no nos pasaron columnas, ponemos 5 por defecto del schema
+    if not columnas_validas:
+        columnas_validas = list(schema.keys())[:5]
+    if not ordenar_por:
+        ordenar_por = columnas_validas[0]
+
+    # ── Construcción del queryset según entidad ────────────────────
+    if entidad == 'oportunidades':
+        qs, total_filas, filas_paginadas, total_monto = _query_oportunidades(
+            user, schema, cfg['filtros'], columnas_validas, agrupar_por,
+            ordenar_por, cfg['orden_dir'], cfg['page'], cfg['page_size'],
+        )
+    elif entidad == 'clientes':
+        qs, total_filas, filas_paginadas, total_monto = _query_clientes(
+            user, schema, cfg['filtros'], columnas_validas, agrupar_por,
+            ordenar_por, cfg['orden_dir'], cfg['page'], cfg['page_size'],
+        )
+    else:  # actividades
+        qs, total_filas, filas_paginadas, total_monto = _query_actividades(
+            user, schema, cfg['filtros'], columnas_validas, agrupar_por,
+            ordenar_por, cfg['orden_dir'], cfg['page'], cfg['page_size'],
+        )
+
+    # ── Serializar filas ───────────────────────────────────────────
+    filas_out = []
+    last_group = None
+    grupo_meta = schema.get(agrupar_por) if agrupar_por else None
+    for obj in filas_paginadas:
+        row = {}
+        for k in columnas_validas:
+            row[k] = schema[k]['row_value'](obj)
+        # Si entidad lo permite, exponemos el id para click-to-open
+        if entidad == 'oportunidades':
+            row['id'] = obj.id
+        if grupo_meta:
+            grupo_label = grupo_meta['row_value'](obj)
+            if grupo_label is None:
+                grupo_label = '(sin valor)'
+            row['__grupo_label'] = str(grupo_label)
+        filas_out.append(row)
+
+    # ── Columnas serializadas (con metadatos para el front) ────────
+    columnas_out = []
+    for k in columnas_validas:
+        m = schema[k]
+        columnas_out.append({
+            'key': k,
+            'label': m['label'],
+            'tipo': m['tipo'],
+            'align': m.get('align', 'left'),
+            'formato': m.get('formato'),
+        })
+
+    # ── KPIs dinámicos según entidad ───────────────────────────────
+    kpis = _kpis_personalizado(entidad, schema, total_filas, total_monto, cfg, filas_paginadas)
+
+    # ── Paginación ─────────────────────────────────────────────────
+    if cfg['page_size'] >= 5000:  # export
+        total_paginas = 1
+    else:
+        total_paginas = max(1, (total_filas + cfg['page_size'] - 1) // cfg['page_size'])
+
+    return JsonResponse({
+        'ok': True,
+        'entidad': entidad,
+        'agrupar_por': agrupar_por,
+        'kpis': kpis,
+        'columnas': columnas_out,
+        'filas': filas_out,
+        'total_filas': total_filas,
+        'total_paginas': total_paginas,
+        'total_monto': total_monto,
+        'opciones': _opciones_para_entidad(entidad, user),
+    })
+
+
+def _kpis_personalizado(entidad, schema, total_filas, total_monto, cfg, filas):
+    """Genera 3-4 KPIs útiles según la entidad."""
+    kpis = [{
+        'label': 'Total registros',
+        'value': total_filas,
+        'value_display': f'{total_filas:,}'.replace(',', ','),
+    }]
+
+    if total_monto is not None:
+        kpis.append({
+            'label': 'Suma monto',
+            'value': total_monto,
+            'value_display': _money_display(total_monto),
+            'sub': 'MXN',
+        })
+        if total_filas > 0:
+            avg = total_monto / total_filas
+            kpis.append({
+                'label': 'Promedio',
+                'value': avg,
+                'value_display': _money_display(avg),
+                'sub': 'por registro',
+            })
+
+    if entidad == 'oportunidades':
+        # Si hay filas paginadas, calculamos promedio de probabilidad
+        if filas:
+            probs = [getattr(o, 'probabilidad_cierre', 0) or 0 for o in filas]
+            if probs:
+                avg_prob = sum(probs) / len(probs)
+                kpis.append({
+                    'label': 'Prob. promedio',
+                    'value': round(avg_prob, 1),
+                    'value_display': f'{round(avg_prob, 1)}%',
+                    'sub': 'en la página',
+                })
+
+    return kpis
+
+
+def _money_display(n):
+    try:
+        n = float(n)
+    except (TypeError, ValueError):
+        return '$0'
+    abs_n = abs(n)
+    if abs_n >= 1_000_000:
+        return f'${n/1_000_000:.1f}M'.replace('.0M', 'M')
+    if abs_n >= 1_000:
+        return f'${n/1_000:.0f}K'
+    return f'${int(round(n)):,}'
+
+
+def _aplicar_filtros(qs, schema, filtros):
+    """Aplica los filtros del request al queryset con whitelist."""
+    for f in filtros:
+        if not isinstance(f, dict):
+            continue
+        campo = f.get('campo')
+        op = f.get('op')
+        valor = f.get('valor')
+        if campo not in schema:
+            continue
+        q = _construir_q_filtro(schema[campo], op, valor)
+        if q is not None:
+            qs = qs.filter(q)
+    return qs
+
+
+def _query_oportunidades(user, schema, filtros, columnas, agrupar_por, ordenar_por, orden_dir, page, page_size):
+    qs = TodoItem.objects.select_related('cliente', 'usuario')
+
+    # Visibilidad
+    visible_ids = get_usuarios_visibles_ids(user)
+    if visible_ids is not None:
+        qs = qs.filter(usuario_id__in=visible_ids)
+
+    # Filtros
+    qs = _aplicar_filtros(qs, schema, filtros)
+
+    # Orden — primero por agrupación, luego por ordenar_por
+    orden = []
+    if agrupar_por:
+        orden.append(schema[agrupar_por]['orm_field'])
+    if ordenar_por:
+        prefix = '-' if orden_dir == 'desc' else ''
+        orden.append(prefix + schema[ordenar_por]['orm_field'])
+    if orden:
+        qs = qs.order_by(*orden)
+
+    total_filas = qs.count()
+
+    # Total monto (siempre lo calculamos para opps)
+    total_monto = qs.aggregate(s=Sum('monto'))['s']
+    total_monto = float(total_monto or 0)
+
+    # Paginación
+    offset = (page - 1) * page_size
+    filas = list(qs[offset:offset + page_size])
+
+    return qs, total_filas, filas, total_monto
+
+
+def _query_clientes(user, schema, filtros, columnas, agrupar_por, ordenar_por, orden_dir, page, page_size):
+    visible_ids = get_usuarios_visibles_ids(user)
+
+    # Reusar la lógica de etapas abiertas / ganadas / perdidas
+    etapas_map = _etapas_vendido_en_adelante()
+    etapas_abiertas = []
+    for arr in etapas_map.values():
+        etapas_abiertas.extend(arr)
+
+    # Etapas terminales reconocidas (mismas que los Reportes 2 y 3 de
+    # pruebas). Usamos minúsculas: el TodoItem guarda etapa_corta con la
+    # capitalización original — pero el catálogo del CRM normaliza a
+    # title case, así que ambos sets de prueba cubren el matching.
+    etapas_ganadas = ['Ganada', 'Ganado', 'Pagada', 'Pagado', 'ganada', 'pagada']
+    etapas_perdidas = ['Perdida', 'Perdido', 'perdida']
+
+    qs = Cliente.objects.select_related('asignado_a')
+
+    if visible_ids is not None:
+        qs = qs.filter(Q(asignado_a_id__in=visible_ids) | Q(asignado_a__isnull=True))
+
+    qs = qs.annotate(
+        _opps_abiertas=Count('oportunidades', filter=Q(oportunidades__etapa_corta__in=etapas_abiertas), distinct=True),
+        _opps_ganadas=Count('oportunidades', filter=Q(oportunidades__etapa_corta__in=etapas_ganadas), distinct=True),
+        _opps_perdidas=Count('oportunidades', filter=Q(oportunidades__etapa_corta__in=etapas_perdidas), distinct=True),
+        _monto_ganado=Sum('oportunidades__monto', filter=Q(oportunidades__etapa_corta__in=etapas_ganadas)),
+        _monto_abierto=Sum('oportunidades__monto', filter=Q(oportunidades__etapa_corta__in=etapas_abiertas)),
+    )
+
+    # Filtros (algunos campos son annotations — se filtra igual)
+    qs = _aplicar_filtros(qs, schema, filtros)
+
+    # Orden
+    orden = []
+    if agrupar_por:
+        orden.append(schema[agrupar_por]['orm_field'])
+    if ordenar_por:
+        prefix = '-' if orden_dir == 'desc' else ''
+        orden.append(prefix + schema[ordenar_por]['orm_field'])
+    if orden:
+        qs = qs.order_by(*orden)
+
+    total_filas = qs.count()
+    total_monto = qs.aggregate(s=Sum('_monto_ganado'))['s']
+    total_monto = float(total_monto or 0)
+
+    offset = (page - 1) * page_size
+    filas = list(qs[offset:offset + page_size])
+
+    return qs, total_filas, filas, total_monto
+
+
+def _query_actividades(user, schema, filtros, columnas, agrupar_por, ordenar_por, orden_dir, page, page_size):
+    qs = Actividad.objects.select_related('creado_por', 'oportunidad', 'oportunidad__cliente')
+
+    visible_ids = get_usuarios_visibles_ids(user)
+    if visible_ids is not None:
+        qs = qs.filter(creado_por_id__in=visible_ids)
+
+    qs = _aplicar_filtros(qs, schema, filtros)
+
+    orden = []
+    if agrupar_por:
+        orden.append(schema[agrupar_por]['orm_field'])
+    if ordenar_por:
+        prefix = '-' if orden_dir == 'desc' else ''
+        orden.append(prefix + schema[ordenar_por]['orm_field'])
+    if orden:
+        qs = qs.order_by(*orden)
+
+    total_filas = qs.count()
+    offset = (page - 1) * page_size
+    filas = list(qs[offset:offset + page_size])
+
+    return qs, total_filas, filas, None
+

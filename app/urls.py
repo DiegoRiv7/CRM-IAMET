@@ -34,12 +34,16 @@ urlpatterns = [
     path('home/', views.crm_home, name='home'),
     path('todos/', views.crm_home, name='todos'),  # alias histórico
 
-    # ── Módulo Reportes (canned reports, vista nativa sin AI) ────────────────
+    # ── Módulo Reportes (canned reports + constructor personalizado) ─────────
     path('reportes/', views_reportes.reportes_index, name='reportes_index'),
+    # Reporte 4: Personalizado (constructor visual). Va ANTES del slug-router
+    # para que la URL fija "personalizado" no entre por reporte_detalle.
+    path('reportes/personalizado/', views_reportes.reporte_personalizado, name='reporte_personalizado'),
     path('reportes/<slug:slug>/', views_reportes.reporte_detalle, name='reporte_detalle'),
     path('api/reportes/oportunidades-abiertas/', views_reportes.api_reporte_oportunidades_abiertas, name='api_reporte_oportunidades_abiertas'),
     path('api/reportes/oportunidades-cerradas/', views_reportes.api_reporte_oportunidades_cerradas, name='api_reporte_oportunidades_cerradas'),
     path('api/reportes/clientes/', views_reportes.api_reporte_clientes, name='api_reporte_clientes'),
+    path('api/reportes/personalizado/', views_reportes.api_reporte_personalizado, name='api_reporte_personalizado'),
 
     # ── PWA Levantamientos (offline-capable, dedicada para planta) ───────────
     path('levantamientos/', views_levantamientos_app.levantamientos_app, name='levantamientos_app'),

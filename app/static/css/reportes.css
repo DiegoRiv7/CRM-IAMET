@@ -1044,3 +1044,24 @@
     display: inline-block;
 }
 
+
+
+/* === Tab "Personalizado" — acento sutil para diferenciar al constructor === */
+/* El 4to tab no es un reporte canned: es un constructor creativo donde el
+   usuario arma el suyo. Un sparkle delante del texto lo marca como "creativo"
+   sin romper la consistencia visual del dynamic island. */
+.rep-tab-custom::before {
+    content: '';
+    display: inline-block;
+    width: 11px; height: 11px;
+    margin-right: 5px;
+    vertical-align: -1px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A78BFA' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3l1.9 5.8L19.7 11l-5.8 1.9L12 19l-1.9-5.8L4.3 11l5.8-1.9z'/></svg>");
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.85;
+}
+.rep-tab-custom:hover::before { opacity: 1; }
+.rep-tab-custom.rep-tab-active::before {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3l1.9 5.8L19.7 11l-5.8 1.9L12 19l-1.9-5.8L4.3 11l5.8-1.9z'/></svg>");
+}
