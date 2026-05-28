@@ -211,7 +211,8 @@ def api_automatizacion_crear(request):
         fecha_fija=fecha_fija,
         orden=int(data.get('orden', 0)),
         avanzar_etapa_al_completar=bool(data.get('avanzar_etapa_al_completar', False)),
-        requiere_verificacion=bool(data.get('requiere_verificacion', False)),
+        # requiere_verificacion: feature removida en 2026-05-28, siempre False.
+        requiere_verificacion=False,
         incluir_dueno_participante=bool(data.get('incluir_dueno_participante', False)),
         incluir_dueno_observador=bool(data.get('incluir_dueno_observador', False)),
         responsable_predeterminado=responsable,
@@ -276,8 +277,9 @@ def api_automatizacion_editar(request, regla_id):
         regla.orden = int(data['orden'] or 0)
     if 'avanzar_etapa_al_completar' in data:
         regla.avanzar_etapa_al_completar = bool(data['avanzar_etapa_al_completar'])
-    if 'requiere_verificacion' in data:
-        regla.requiere_verificacion = bool(data['requiere_verificacion'])
+    # requiere_verificacion: feature removida en 2026-05-28 — siempre forzar False,
+    # ignorando lo que mande el front (por si quedó algún cliente con JS viejo cacheado).
+    regla.requiere_verificacion = False
     if 'incluir_dueno_participante' in data:
         regla.incluir_dueno_participante = bool(data['incluir_dueno_participante'])
     if 'incluir_dueno_observador' in data:

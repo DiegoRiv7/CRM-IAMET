@@ -3604,70 +3604,15 @@ def api_completar_tarea(request, tarea_id):
             print(f"[registrar_accion_grupo] Error en completar_tarea: {e}")
 
         # --- Cadena reactiva: si la tarea fue creada por automatizacion ---
-        # Si la regla origen tiene avanzar_etapa_al_completar=True Y hay reglas
-        # en la siguiente etapa (es decir, hay próximas tareas que describir),
-        # NO avanzamos todavía: dejamos un AvanceEtapaPendiente y el frontend
-        # del responsable abrirá el widget bloqueante para capturar las
-        # descripciones. Si el que cierra la tarea NO es el responsable de la
-        # oportunidad, igual creamos el pendiente para que el responsable lo
-        # vea cuando entre a la app.
+        # La feature "Requiere verificación al avanzar" fue removida en
+        # 2026-05-28: la cadena reactiva SIEMPRE se ejecuta automáticamente
+        # cuando la regla tiene avanzar_etapa_al_completar=True. Ya no se
+        # crean AvanceEtapaPendiente ni se abre widget bloqueante.
         cadena_resultado = None
         avance_pendiente_info = None
         try:
-            from .views_automatizacion import (
-                procesar_cadena_reactiva,
-                previsualizar_avance_etapa,
-                crear_avance_pendiente,
-                _serializar_pendiente,
-            )
-
-            preview = previsualizar_avance_etapa(tarea)
-            regla_origen = getattr(tarea, 'regla_origen', None)
-            # El widget bloqueante solo se muestra si la regla origen tiene
-            # requiere_verificacion=True. Si está apagado, la cadena reactiva
-            # corre automáticamente con los valores predeterminados de cada
-            # regla (título, descripción, responsable).
-            requiere_widget = bool(
-                preview
-                and preview.get('requiere_descripcion')
-                and regla_origen
-                and getattr(regla_origen, 'requiere_verificacion', False)
-            )
-            if requiere_widget:
-                # Crear (o reutilizar) un AvanceEtapaPendiente para el dueño
-                # de la oportunidad. NO avanzamos la etapa todavía.
-                opp = tarea.oportunidad
-                responsable = opp.usuario if opp else None
-                if responsable is None:
-                    # Sin responsable claro → fallback al usuario actual.
-                    responsable = request.user
-                pendiente = crear_avance_pendiente(tarea, responsable)
-                if pendiente:
-                    avance_pendiente_info = _serializar_pendiente(pendiente)
-                    # Indicar si el usuario que acaba de cerrar la tarea es el
-                    # que tiene que confirmar (es el responsable).
-                    avance_pendiente_info['debe_confirmar_actual'] = (
-                        request.user == responsable
-                    )
-                    # Notificar al responsable si no es quien cerró.
-                    if responsable and responsable != request.user:
-                        crear_notificacion(
-                            usuario_destinatario=responsable,
-                            tipo='sistema',
-                            titulo='Confirma avance de etapa',
-                            mensaje=(
-                                f'Se completó la tarea "{tarea.titulo}" de la '
-                                f'oportunidad "{opp.oportunidad}". Para avanzar '
-                                f'la etapa, ingresa la descripción de las '
-                                f'próximas tareas.'
-                            ),
-                            oportunidad=opp,
-                            usuario_remitente=request.user,
-                        )
-            else:
-                # No requiere descripción (o no aplica avance). Comportamiento
-                # original: ejecutar la cadena reactiva inmediatamente.
-                cadena_resultado = procesar_cadena_reactiva(tarea, request.user)
+            from .views_automatizacion import procesar_cadena_reactiva
+            cadena_resultado = procesar_cadena_reactiva(tarea, request.user)
         except Exception as e_cadena:
             print(f'[Cadena reactiva] Error: {e_cadena}')
 

@@ -384,58 +384,16 @@
     }
 
     // ── API pública ──
+    // Kill switch (2026-05-28): la feature "Requiere verificación al avanzar"
+    // fue removida. El backend ya no devuelve `requiere_descripcion: true` y
+    // no crea AvanceEtapaPendiente. Para defensa-en-profundidad ante JS viejo
+    // cacheado en algún navegador, dejamos los hooks pero como NO-OP: nunca
+    // abrimos el modal y nunca polleamos. Asegura que ningún usuario vuelva
+    // a quedar bloqueado por este widget.
     window.crmAvanceEtapa = {
-        abrirOportunidad: abrirOportunidad,
-        // Llamado por crm_main.js (u otros) cuando la respuesta de completar
-        // contiene `requiere_descripcion: true`. Si el usuario actual debe
-        // confirmar, abrimos el modal; si no, sólo mostramos un toast informativo.
-        handleCompletarResponse: function (data) {
-            if (!data || !data.requiere_descripcion || !data.avance_pendiente) return false;
-            var p = data.avance_pendiente;
-            window.__waeLastOppId = p.oportunidad_id || null;
-            if (p.debe_confirmar_actual) {
-                open(p);
-                return true;
-            } else {
-                showToast('Tarea cerrada. El responsable debe confirmar el avance de etapa.', 'info', 5000);
-                return false;
-            }
-        },
-        // Para abrir manualmente (debug / pruebas).
-        open: open,
-        checkMio: checkMio,
+        abrirOportunidad: function () { /* no-op: feature removida */ },
+        handleCompletarResponse: function () { return false; /* no-op */ },
+        open: function () { /* no-op */ },
+        checkMio: function () { /* no-op: ya no se pollea */ },
     };
-
-    // Botón Confirmar
-    document.addEventListener('DOMContentLoaded', function () {
-        var btn = $('waeConfirmBtn');
-        if (btn) btn.addEventListener('click', confirmar);
-
-        // Bloquear ESC y click-fuera sobre el overlay
-        var ov = $(OVERLAY_ID);
-        if (ov) {
-            ov.addEventListener('click', function (e) {
-                // No cerrar nunca: tragamos clicks fuera de la card.
-                if (e.target === ov) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                }
-            });
-        }
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                var ov = $(OVERLAY_ID);
-                if (ov && ov.style.display !== 'none') {
-                    e.stopPropagation();
-                    e.preventDefault();
-                }
-            }
-        }, true);
-
-        // Polling inicial: ver si tengo un avance pendiente sin confirmar.
-        // Solo si el usuario está logueado (presencia del input csrf).
-        if (document.querySelector('[name=csrfmiddlewaretoken]')) {
-            setTimeout(checkMio, 1500);
-        }
-    });
 })();
