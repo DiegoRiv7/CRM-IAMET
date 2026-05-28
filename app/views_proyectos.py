@@ -4819,11 +4819,12 @@ def ver_tarea_compartida(request, token):
     """Vista pública read-only de una tarea a partir de un token firmado.
     No requiere login. Renderiza el template tarea_compartida.html.
 
-    Si el usuario YA tiene sesión activa, lo redirigimos directo al
-    home del CRM con ?open_task=<id> para abrir el widget de detalle —
-    ahorra el extra-click de "Ir a la tarea". Los crawlers de Open
-    Graph (WhatsApp, Slack, etc.) no están autenticados, así que ellos
-    siguen recibiendo el HTML con meta tags para el preview.
+    Si el usuario YA tiene sesión activa, redirigimos SERVER-SIDE directo
+    al home del CRM con ?open_task=<id> — el redirect JS de antes era
+    flakey (algunos browsers in-app no lo ejecutaban y dejaban al usuario
+    atascado en la vista previa). Los crawlers de Open Graph (WhatsApp,
+    Slack, etc.) NO están autenticados, así que ellos siguen recibiendo
+    el HTML con meta tags para el preview enriquecido.
     """
     from django.core import signing
     from django.http import Http404
@@ -4835,10 +4836,9 @@ def ver_tarea_compartida(request, token):
     tarea_id = data.get('t')
     tarea = get_object_or_404(Tarea, id=tarea_id)
 
-    # NOTA: el redirect "rápido al widget si hay sesión" antes vivía aquí
-    # (server-side) pero rompía el preview de WhatsApp Web. Ahora ese
-    # redirect vive en el template (client-side, JS) — los crawlers de
-    # OG no ejecutan JS y reciben el HTML con og tags intactos.
+    # Redirect server-side para usuarios autenticados: nada de vista previa.
+    if request.user.is_authenticated:
+        return redirect(f'/app/home/?tab=tareas&open_task={tarea.id}')
 
     creador_nombre = (tarea.creado_por.get_full_name() or tarea.creado_por.username) if tarea.creado_por else '—'
     responsable_nombre = None

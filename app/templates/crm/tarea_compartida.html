@@ -25,17 +25,13 @@
     <meta name="twitter:description" content="{% if tarea.descripcion %}{{ tarea.descripcion|truncatewords:30|striptags }}{% else %}Tarea CRM IAMET{% endif %}">
     <meta name="twitter:image" content="https://{{ request.get_host }}{% url 'og_image_tarea' token=preview_token %}">
 
-    <!-- Redirect client-side: si tienes sesión, te llevamos al widget. Los crawlers
-         de OG no ejecutan JS y reciben el HTML intacto. -->
-    {% if autenticado %}
-    <script>
-        // `tarea.id|stringformat:"d"` evita el separador de miles que mete
-        // Django en locale es-* (ej. id 13341 → "13 341" con espacio invisible
-        // que rompía parseInt en el destino).
-        var _shareTId = '{{ tarea.id|stringformat:"d" }}';
-        window.location.replace('/app/home/?tab=tareas&open_task=' + _shareTId);
-    </script>
-    {% endif %}
+    {% comment %}
+    Antes había aquí un redirect client-side (window.location.replace) para
+    autenticados. Se removió porque era flakey en browsers in-app (WhatsApp,
+    etc.) y el usuario quedaba atascado en la vista previa. Ahora el
+    redirect lo hace el server cuando el user está autenticado, ANTES de
+    renderizar este HTML — ver views_proyectos.ver_tarea_compartida.
+    {% endcomment %}
     <style>
         :root {
             --slate-50:#F8FAFC; --slate-100:#F1F5F9; --slate-200:#E2E8F0;
@@ -180,7 +176,7 @@
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             Vista previa · solo lectura
         </div>
-        <a class="preview-bar-cta" href="{% if autenticado %}/app/?tarea={{ tarea.id }}{% else %}/app/accounts/login/?next=/app/?tarea={{ tarea.id }}{% endif %}">
+        <a class="preview-bar-cta" href="/app/accounts/login/?next=/app/home/%3Ftab%3Dtareas%26open_task%3D{{ tarea.id|stringformat:"d" }}">
             Ir a la tarea
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
