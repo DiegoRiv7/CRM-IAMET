@@ -291,6 +291,19 @@
                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>Reportes
                 </button>
             </div>
+            {% comment %}
+            Proxy "Ordenar" del SPA — solo visible cuando reportes está
+            activo. Las opciones del menú las popula el iframe al cargar
+            (postMessage rep:ready con sort_options del reporte activo).
+            {% endcomment %}
+            <div class="rep-spa-sort-wrap" id="repSpaSortWrap" hidden>
+                <button type="button" class="rep-spa-sort-btn" id="repSpaSortBtn" aria-haspopup="menu" aria-expanded="false">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                    <span id="repSpaSortLabel">Ordenar</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="rep-spa-sort-menu" id="repSpaSortMenu" hidden role="menu"></div>
+            </div>
             <div class="crm-tabs crm-tabs--dashboard crm-tabs--reportes" id="repDynamicIsland" hidden>
                 <button type="button" id="repDynBack" class="crm-tab crm-tab-reportes-back" title="Volver al Dashboard">
                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -393,6 +406,7 @@
                     }
                     _abierto = true;
                     document.body.classList.add('crm-reportes-active');
+                    showProxies(true);
                     // Cross-slide entre los dos dynamic islands.
                     dashIsland.classList.add('crm-tabs-sliding-out-left');
                     setTimeout(function () {
@@ -431,6 +445,7 @@
                     if (!_abierto) return;
                     _abierto = false;
                     document.body.classList.remove('crm-reportes-active');
+                    showProxies(false);
                     // Cross-slide inverso.
                     repIsland.classList.add('crm-tabs-sliding-out-right');
                     setTimeout(function () {
@@ -459,6 +474,133 @@
 
                 btnR.addEventListener('click', function () { abrirReportes('oportunidades-abiertas'); });
                 btnBack.addEventListener('click', function () { cerrarReportes(true); });
+
+                // ─── Proxies (Ordenar, Búsqueda, Filtros, Exportar) ───
+                var sortWrap = document.getElementById('repSpaSortWrap');
+                var sortBtn  = document.getElementById('repSpaSortBtn');
+                var sortMenu = document.getElementById('repSpaSortMenu');
+                var sortLabel = document.getElementById('repSpaSortLabel');
+                var spaSearchWrap = document.getElementById('repSpaSearchWrap');
+                var spaSearchInput = document.getElementById('repSpaSearch');
+                var spaFilter = document.getElementById('repSpaFilter');
+                var spaFilterDot = document.getElementById('repSpaFilterDot');
+                var spaExport = document.getElementById('repSpaExport');
+
+                function showProxies(visible) {
+                    [sortWrap, spaSearchWrap, spaFilter, spaExport].forEach(function (el) {
+                        if (!el) return;
+                        el.hidden = !visible;
+                    });
+                    if (!visible) {
+                        // Limpiar estado: dot apagado, input vacío, menu cerrado.
+                        if (sortMenu) sortMenu.hidden = true;
+                        if (sortBtn) sortBtn.setAttribute('aria-expanded', 'false');
+                        if (spaFilterDot) spaFilterDot.hidden = true;
+                        if (spaSearchInput) spaSearchInput.value = '';
+                    }
+                }
+
+                function popularSortMenu(config) {
+                    if (!sortMenu || !config) return;
+                    sortMenu.innerHTML = '';
+                    var sections = config.sort_options || [];
+                    sections.forEach(function (sec) {
+                        var h = document.createElement('div');
+                        h.className = 'rep-spa-sort-section';
+                        h.textContent = sec.section || '';
+                        sortMenu.appendChild(h);
+                        (sec.items || []).forEach(function (it) {
+                            var btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'rep-spa-sort-item';
+                            btn.setAttribute('data-sort', it.key);
+                            btn.textContent = it.label;
+                            if (it.key === config.current_sort) btn.classList.add('is-active');
+                            btn.addEventListener('click', function (e) {
+                                e.stopPropagation();
+                                frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:sort:pick', key: it.key }, '*');
+                                sortMenu.hidden = true;
+                                sortBtn.setAttribute('aria-expanded', 'false');
+                                // Optimistic: actualizar label inmediato
+                                if (sortLabel) sortLabel.textContent = it.label;
+                                sortMenu.querySelectorAll('.rep-spa-sort-item').forEach(function (b) {
+                                    b.classList.toggle('is-active', b === btn);
+                                });
+                            });
+                            sortMenu.appendChild(btn);
+                        });
+                    });
+                    if (sortLabel && config.current_label) sortLabel.textContent = config.current_label;
+                    if (sortWrap) sortWrap.hidden = !sections.length;
+                }
+
+                function configurarProxies(meta) {
+                    if (!meta) return;
+                    if (spaSearchInput) {
+                        spaSearchInput.placeholder = meta.search_placeholder || 'Buscar…';
+                        spaSearchInput.value = meta.search_value || '';
+                    }
+                    if (spaSearchWrap) spaSearchWrap.hidden = !meta.has_search;
+                    if (spaFilter) spaFilter.hidden = !meta.has_filters;
+                    if (spaFilterDot) spaFilterDot.hidden = !meta.has_active_filters;
+                    if (spaExport) spaExport.hidden = !meta.has_export;
+                    popularSortMenu(meta);
+                }
+
+                if (sortBtn && sortMenu) {
+                    sortBtn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        var open = sortMenu.hidden;
+                        sortMenu.hidden = !open;
+                        sortBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    });
+                    document.addEventListener('click', function (e) {
+                        if (sortMenu.hidden) return;
+                        if (!sortWrap.contains(e.target)) {
+                            sortMenu.hidden = true;
+                            sortBtn.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                }
+                if (spaSearchInput) {
+                    var _searchT;
+                    spaSearchInput.addEventListener('input', function () {
+                        clearTimeout(_searchT);
+                        var v = spaSearchInput.value;
+                        _searchT = setTimeout(function () {
+                            frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:search', q: v }, '*');
+                        }, 280);
+                    });
+                }
+                if (spaFilter) {
+                    spaFilter.addEventListener('click', function () {
+                        frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:filters:open' }, '*');
+                    });
+                }
+                if (spaExport) {
+                    spaExport.addEventListener('click', function () {
+                        frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:export' }, '*');
+                    });
+                }
+
+                // ─── Propagación dinámica de pills del dashboard al iframe ─
+                // Escuchamos cambios en la URL del dashboard (pills hacen
+                // history.replaceState o full reload). Detectamos vía
+                // MutationObserver sobre los labels de las pills (más
+                // robusto que monitorear URL).
+                function syncFiltrosAlIframe() {
+                    if (!_abierto || !frame.contentWindow) return;
+                    var f = leerFiltrosDashboard();
+                    frame.contentWindow.postMessage({ type: 'rep:filters:update', filters: f }, '*');
+                }
+                ['pillPeriodoLabel', 'pillVendedorLabel'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    var mo = new MutationObserver(function () {
+                        if (_abierto) syncFiltrosAlIframe();
+                    });
+                    mo.observe(el, { childList: true, characterData: true, subtree: true });
+                });
 
                 // Tabs del repIsland → cambiar reporte (sin reload del padre).
                 repIsland.querySelectorAll('[data-rep-slug]').forEach(function (t) {
@@ -492,6 +634,14 @@
                         if (typeof window.openClienteModal === 'function') {
                             window.openClienteModal(parseInt(d.id, 10), d.nombre || '', d.tab || 'oportunidades');
                         }
+                    } else if (d.type === 'rep:ready') {
+                        // El iframe terminó de cargar y nos envía su config
+                        // (sort_options, current_sort, search_placeholder,
+                        // has_filters, has_active_filters, has_export, etc.).
+                        configurarProxies(d);
+                    } else if (d.type === 'rep:filterdot') {
+                        // Drawer aplicó/limpió filtros → actualizar el dot.
+                        if (spaFilterDot) spaFilterDot.hidden = !d.active;
                     }
                 });
 
@@ -575,6 +725,26 @@
                     </button>
                     {% endif %}
                 </div>
+                {% comment %}
+                Proxies SPA Reportes — visibles solo cuando reportes activo.
+                Búsqueda + Filtros + Exportar, todos comunican con el
+                iframe via postMessage.
+                {% endcomment %}
+                {% if tab_activo == 'clientes' %}
+                <div class="rep-spa-search" id="repSpaSearchWrap" hidden>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="repSpaSearch" placeholder="Buscar…" autocomplete="off">
+                </div>
+                <button type="button" class="rep-spa-btn rep-spa-btn-icon" id="repSpaFilter" hidden>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filtros</span>
+                    <span class="rep-spa-filter-dot" id="repSpaFilterDot" hidden></span>
+                </button>
+                <button type="button" class="rep-spa-btn rep-spa-btn-primary" id="repSpaExport" hidden>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Exportar CSV</span>
+                </button>
+                {% endif %}
                 {% endif %}
                 {% if tab_activo == 'crm' %}
                 <button type="button" class="crm-facet-btn" id="btnCotizarRapido" title="Cotizar rápido" onclick="if(typeof cotizarRapidoAbrir==='function')cotizarRapidoAbrir();">

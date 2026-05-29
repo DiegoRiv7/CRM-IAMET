@@ -17311,3 +17311,129 @@ body.rep-embedded .rep-page-shell { padding: 14px 18px 40px !important; }
    reporte (lo controla el del padre). */
 body.rep-embedded .rep-tabs { display: none !important; }
 body.rep-embedded .rep-back-to-dashboard { display: none !important; }
+
+
+/* ─── Modo embedded: ocultar el header completo del reporte ──────── */
+/* Los controles (Ordenar/Búsqueda/Filtros/Exportar) viven en proxies
+   del dashboard padre. La dynamic island interna también se va. */
+body.rep-embedded .rep-header { display: none !important; }
+
+/* ─── Proxies SPA en el header del dashboard ─────────────────────── */
+
+/* Botón Ordenar + dropdown (lado izquierdo, junto al repIsland). */
+.rep-spa-sort-wrap {
+    position: relative;
+    display: inline-block;
+    margin-right: 8px;
+}
+.rep-spa-sort-wrap[hidden] { display: none !important; }
+.rep-spa-sort-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    color: #1D1D1F;
+    font-size: 0.74rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.rep-spa-sort-btn:hover {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+}
+.rep-spa-sort-menu {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 240px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.06);
+    z-index: 200;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.rep-spa-sort-menu[hidden] { display: none !important; }
+.rep-spa-sort-section {
+    font-size: 0.6rem; font-weight: 700; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 6px 10px 4px;
+}
+.rep-spa-sort-item {
+    display: block; width: 100%;
+    text-align: left;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: #1D1D1F;
+    font-size: 0.74rem;
+    font-weight: 500;
+    font-family: inherit;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.rep-spa-sort-item:hover { background: #F1F5F9; }
+.rep-spa-sort-item.is-active {
+    color: #0052D4;
+    background: #EFF6FF;
+    font-weight: 600;
+}
+
+/* Búsqueda + Filtros + Exportar (lado derecho, junto a las pills). */
+.rep-spa-search {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    background: #fff;
+    margin-left: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rep-spa-search[hidden] { display: none !important; }
+.rep-spa-search:focus-within {
+    border-color: #0052D4;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.10);
+}
+.rep-spa-search svg { color: #9CA3AF; flex-shrink: 0; }
+.rep-spa-search input {
+    border: none; background: transparent; outline: none;
+    font-size: 0.76rem; font-family: inherit; color: #1D1D1F;
+    width: 170px;
+}
+.rep-spa-search input::placeholder { color: #9CA3AF; }
+
+.rep-spa-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    color: #1D1D1F;
+    font-size: 0.74rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: background 0.15s, border-color 0.15s;
+    position: relative;
+}
+.rep-spa-btn[hidden] { display: none !important; }
+.rep-spa-btn:hover { background: #F1F5F9; border-color: #CBD5E1; }
+.rep-spa-btn-primary {
+    background: #0052D4;
+    color: #fff;
+    border-color: #0052D4;
+}
+.rep-spa-btn-primary:hover {
+    background: #0047B8;
+    border-color: #0047B8;
+}
+.rep-spa-filter-dot {
+    width: 6px; height: 6px; background: #0052D4; border-radius: 50%;
+    display: inline-block; margin-left: 2px;
+}
+.rep-spa-filter-dot[hidden] { display: none !important; }
