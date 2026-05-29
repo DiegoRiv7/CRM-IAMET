@@ -335,3 +335,56 @@ class HistorialIntercambioAdmin(admin.ModelAdmin):
     
     def has_change_permission(self, request, obj=None):
         return False  # No permitir editar registros
+
+from .models import Instalacion
+
+
+@admin.register(Instalacion)
+class InstalacionAdmin(admin.ModelAdmin):
+    """Admin del calendario de instalaciones (Plan de Trabajo Bajanet).
+    Pensado para que el equipo administrativo gestione el plan desde la
+    UI del admin mientras desarrollamos forms más amigables en el CRM."""
+
+    list_display = (
+        'cliente_nombre', 'proyecto_corto', 'po',
+        'fecha_programada', 'jornadas_count', 'jornadas_tipo',
+        'estado', 'monto_po', 'utilidad', 'creado_por',
+    )
+    list_filter = ('estado', 'jornadas_tipo', 'fecha_programada', 'cliente')
+    search_fields = ('cliente_nombre', 'po', 'proyecto', 'observaciones', 'notas')
+    date_hierarchy = 'fecha_programada'
+    autocomplete_fields = ('cliente', 'oportunidad')
+    ordering = ('-fecha_programada', '-fecha_creacion')
+
+    fieldsets = (
+        ('Identificación', {
+            'fields': ('cliente_nombre', 'po', 'proyecto', 'cliente', 'oportunidad'),
+        }),
+        ('Planificación', {
+            'fields': (
+                'fecha_programada', 'fecha_tentativa_texto',
+                'jornadas_count', 'jornadas_tipo',
+                'personal_descripcion',
+            ),
+        }),
+        ('Económicos', {
+            'fields': ('monto_po', 'utilidad'),
+        }),
+        ('Notas y estado', {
+            'fields': ('estado', 'observaciones', 'notas'),
+        }),
+        ('Auditoría', {
+            'classes': ('collapse',),
+            'fields': ('creado_por', 'fecha_creacion', 'fecha_actualizacion'),
+        }),
+    )
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+
+    def proyecto_corto(self, obj):
+        return (obj.proyecto[:60] + '…') if obj.proyecto and len(obj.proyecto) > 60 else (obj.proyecto or '—')
+    proyecto_corto.short_description = 'Proyecto'
+
+    def save_model(self, request, obj, form, change):
+        if not change and not obj.creado_por_id:
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
