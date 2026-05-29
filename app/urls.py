@@ -281,6 +281,8 @@ urlpatterns = [
     path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),
     path('api/calendario/usuarios-con-eventos/', views.api_calendario_usuarios_con_eventos, name='api_calendario_usuarios_con_eventos'),
     path('api/calendario/seleccionables-responsable/', views.api_calendario_seleccionables_responsable, name='api_calendario_seleccionables_responsable'),
+    # Calendario de Instalaciones (toggle alternativo en el header del calendario).
+    path('api/calendario/instalaciones/', views_proyectos.api_instalaciones_calendario, name='api_instalaciones_calendario'),
     path('api/users/', views.user_list_api, name='user_list_api'),
     path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
 

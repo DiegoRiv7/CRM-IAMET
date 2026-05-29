@@ -857,11 +857,10 @@ def editar_cotizacion_view(request, cotizacion_id):
         'tipo': getattr(d, 'tipo', 'producto') or 'producto',  # Incluir el tipo (producto o titulo)
     } for d in detalles_originales]
 
-    # Obtener todos los clientes para el dropdown (incluyendo los del grupo).
-    if is_supervisor(request.user):
-        clientes_django = Cliente.objects.all().order_by('nombre_empresa')
-    else:
-        clientes_django = Cliente.objects.filter(get_clientes_visibles_q(request.user)).order_by('nombre_empresa')
+    # Cualquier usuario autenticado puede editar cualquier cotización:
+    # el dropdown muestra todos los clientes y todas las opps del cliente,
+    # igual que en crear_cotizacion_view.
+    clientes_django = Cliente.objects.all().order_by('nombre_empresa')
 
     clientes_data_json = []
     for c in clientes_django:
@@ -870,20 +869,9 @@ def editar_cotizacion_view(request, cotizacion_id):
             'name': c.nombre_empresa,
         })
 
-    # Opps del cliente para el dropdown (incluye las del grupo, no solo
-    # las del usuario logueado, para que un compañero de grupo pueda
-    # cotizar contra cualquier opp del cliente del grupo).
     oportunidades_data_json = []
     if cotizacion_original.cliente:
-        if is_supervisor(request.user):
-            oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente).order_by('-fecha_creacion')
-        else:
-            _vis = get_usuarios_visibles_ids(request.user)
-            if _vis:
-                oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente, usuario_id__in=_vis).order_by('-fecha_creacion')
-            else:
-                oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente, usuario=request.user).order_by('-fecha_creacion')
-        
+        oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente).order_by('-fecha_creacion')
         for o in oportunidades:
             oportunidades_data_json.append({
                 'id': str(o.id),

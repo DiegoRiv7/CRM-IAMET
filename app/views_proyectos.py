@@ -5835,3 +5835,104 @@ def api_gantt_actividad_archivo_detalle(request, archivo_id):
     f.delete()
     return JsonResponse({'success': True})
 
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INSTALACIONES (Plan de Trabajo Bajanet) — calendario alternativo
+# ═══════════════════════════════════════════════════════════════════════════
+
+from .models import Instalacion
+
+
+def _instalacion_to_dict(inst):
+    """Serializa una Instalacion al formato que entiende el calendario.
+    Casi idéntico al shape de Actividad — el JS lo renderiza con
+    `data-source="instalacion"` para pintarla con color distinto."""
+    fecha = inst.fecha_programada.isoformat() if inst.fecha_programada else None
+    return {
+        'id': inst.id,
+        'source': 'instalacion',
+        'titulo': f'{inst.cliente_nombre} — {(inst.proyecto or "")[:80]}',
+        'cliente': inst.cliente_nombre,
+        'po': inst.po,
+        'proyecto': inst.proyecto,
+        'fecha': fecha,
+        'fecha_inicio': fecha,
+        'fecha_fin': fecha,
+        'all_day': True,
+        'jornadas_count': inst.jornadas_count,
+        'jornadas_tipo': inst.jornadas_tipo,
+        'jornadas_tipo_label': inst.get_jornadas_tipo_display(),
+        'personal': inst.personal_descripcion,
+        'fecha_tentativa_texto': inst.fecha_tentativa_texto,
+        'monto_po': float(inst.monto_po or 0),
+        'utilidad': float(inst.utilidad or 0),
+        'observaciones': inst.observaciones,
+        'notas': inst.notas,
+        'estado': inst.estado,
+        'estado_label': inst.get_estado_display(),
+        'oportunidad_id': inst.oportunidad_id,
+        'cliente_id': inst.cliente_id,
+        'color': '#FF9500',  # naranja Apple (diferenciar de actividades azules)
+    }
+
+
+@login_required
+def api_instalaciones_calendario(request):
+    """GET /app/api/calendario/instalaciones/
+
+    Lista las instalaciones del calendario en un rango. Params:
+        ?start=YYYY-MM-DD&end=YYYY-MM-DD  (rango exacto)
+        ?mes=05&anio=2026                  (alternativa: un mes completo)
+
+    Sin parámetros → instalaciones del mes en curso.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    qs = Instalacion.objects.all()
+
+    start_raw = (request.GET.get('start') or '').strip()
+    end_raw = (request.GET.get('end') or '').strip()
+    mes_raw = (request.GET.get('mes') or '').strip()
+    anio_raw = (request.GET.get('anio') or '').strip()
+
+    from datetime import date, timedelta
+    if start_raw and end_raw:
+        try:
+            start = date.fromisoformat(start_raw)
+            end = date.fromisoformat(end_raw)
+            qs = qs.filter(fecha_programada__range=(start, end))
+        except ValueError:
+            pass
+    elif mes_raw and anio_raw:
+        try:
+            mes = int(mes_raw)
+            anio = int(anio_raw)
+            start = date(anio, mes, 1)
+            if mes == 12:
+                end = date(anio + 1, 1, 1) - timedelta(days=1)
+            else:
+                end = date(anio, mes + 1, 1) - timedelta(days=1)
+            qs = qs.filter(fecha_programada__range=(start, end))
+        except (ValueError, TypeError):
+            pass
+
+    # Filtros opcionales adicionales.
+    estado = (request.GET.get('estado') or '').strip()
+    if estado:
+        qs = qs.filter(estado=estado)
+    cliente_q = (request.GET.get('q') or '').strip()
+    if cliente_q:
+        qs = qs.filter(
+            Q(cliente_nombre__icontains=cliente_q)
+            | Q(proyecto__icontains=cliente_q)
+            | Q(po__icontains=cliente_q)
+        )
+
+    qs = qs.select_related('cliente', 'oportunidad', 'creado_por').order_by('fecha_programada', 'cliente_nombre')
+
+    return JsonResponse({
+        'success': True,
+        'instalaciones': [_instalacion_to_dict(i) for i in qs],
+    })

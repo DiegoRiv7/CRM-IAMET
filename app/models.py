@@ -5820,3 +5820,81 @@ class MensajeAsistente(models.Model):
 
     def __str__(self):
         return f'[{self.role}] {self.contenido[:40]}'
+
+
+class Instalacion(models.Model):
+    """
+    Calendario de instalaciones (Plan de Trabajo Bajanet).
+
+    Cada fila es una instalación programada en un cliente: cuántas
+    jornadas, tipo, personal, monto, utilidad y observaciones. Origen:
+    el "PLAN DE TRABAJO BAJANET" que administración llevaba en Excel —
+    ahora se gestiona desde el calendario del CRM con un toggle entre
+    "Actividades" e "Instalaciones".
+    """
+    TIPO_JORNADA_CHOICES = [
+        ('normal', 'Normal'),
+        ('sabado', 'Sábado'),
+        ('domingo', 'Domingo'),
+        ('noche', 'Noche'),
+        ('extraordinaria', 'Extraordinaria'),
+    ]
+    ESTADO_CHOICES = [
+        ('programada', 'Programada'),
+        ('en_curso', 'En curso'),
+        ('completada', 'Completada'),
+        ('cancelada', 'Cancelada'),
+    ]
+
+    cliente_nombre = models.CharField(max_length=200, verbose_name='Cliente')
+    po = models.CharField(max_length=80, blank=True, default='', verbose_name='PO')
+    proyecto = models.CharField(max_length=400, verbose_name='Proyecto')
+    jornadas_count = models.PositiveIntegerField(default=1, verbose_name='Cantidad de jornadas')
+    jornadas_tipo = models.CharField(max_length=20, choices=TIPO_JORNADA_CHOICES, default='normal')
+    personal_descripcion = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='Texto libre: ej. "1 SUPERVISOR Y 3 TECNICOS"',
+    )
+    fecha_programada = models.DateField(null=True, blank=True, verbose_name='Fecha')
+    fecha_tentativa_texto = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text='Cuando no hay fecha exacta. Ej: "JULIO", "SABADO 23 MAYO".',
+    )
+    monto_po = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Monto PO')
+    utilidad = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    observaciones = models.TextField(blank=True, default='')
+    notas = models.TextField(
+        blank=True, default='',
+        help_text='Notas internas (personal asignado, hora, instrucciones).',
+    )
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='programada')
+
+    # Links opcionales al CRM existente.
+    cliente = models.ForeignKey(
+        'Cliente', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='instalaciones', help_text='Si está en el CRM, link al Cliente.',
+    )
+    oportunidad = models.ForeignKey(
+        'TodoItem', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='instalaciones', help_text='Opp ligada (si aplica).',
+    )
+
+    # Auditoría.
+    creado_por = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='instalaciones_creadas',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Instalación'
+        verbose_name_plural = 'Instalaciones'
+        ordering = ['-fecha_programada', '-fecha_creacion']
+        indexes = [
+            models.Index(fields=['fecha_programada']),
+            models.Index(fields=['estado']),
+        ]
+
+    def __str__(self):
+        return f'{self.cliente_nombre} — {self.proyecto[:50]}'

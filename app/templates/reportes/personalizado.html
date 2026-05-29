@@ -4,36 +4,54 @@
 
 {% block extra_head %}
 {% include "crm/_styles.html" %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-personalizado">
-<link rel="stylesheet" href="{% static 'css/reportes_personalizado.css' %}?v=20260528-personalizado">
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}?v=20260528-personalizado-header">
+<link rel="stylesheet" href="{% static 'css/reportes_personalizado.css' %}?v=20260528-personalizado-header">
 {% endblock %}
 
 {% block content %}
-<div class="crm-page crm-page-sidebar">
+<div class="crm-page crm-page-sidebar crm-page-natural-scroll">
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_sidebar.html" %}
 
     <main class="crm-main repp-shell">
 
         {% comment %}
-        Topbar simple. La integración del tab "Personalizado" dentro del
-        dynamic island compartido con los otros 3 reportes la hace el
-        integrador (no tocamos los otros templates desde aquí).
+        Header alineado al patrón de los otros 3 reportes (.rep-header):
+            izquierda  → botón Volver (sutil, equivalente al "Ordenar" del resto).
+            centro     → Dynamic island con los 4 tabs (Personalizado activo).
+            derecha    → Acciones específicas del constructor (Guardar / CSV / Resetear).
+        Usa clases `.rep-*` de reportes.css (grid 3 cols centradas) en
+        lugar del antiguo `.repp-topbar` (flex con spacer) que empujaba
+        los tabs a la derecha y rompía el patrón visual del módulo.
         {% endcomment %}
-        <header class="repp-topbar">
-            <a href="/app/reportes/" class="repp-back-btn" title="Volver a Reportes">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </a>
-            <div>
-                <h1 class="repp-topbar-title">{{ reporte.titulo|default:"Constructor de reporte" }}</h1>
-                <div class="repp-topbar-sub">Arma el reporte que necesitas con los datos que quieras.</div>
+        <header class="rep-header">
+            <div class="rep-plantillas">
+                <a href="/app/reportes/" class="rep-sort-btn" title="Volver a Reportes" style="text-decoration:none;">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span>Volver</span>
+                </a>
             </div>
-            <div class="repp-topbar-spacer"></div>
-            <div class="repp-tabs" id="reppNavTabs">
-                <a href="/app/reportes/oportunidades-abiertas/" class="repp-tab">Oportunidades Abiertas</a>
-                <a href="/app/reportes/oportunidades-cerradas/" class="repp-tab">Oportunidades Cerradas</a>
-                <a href="/app/reportes/clientes/" class="repp-tab">Por Cliente</a>
-                <button type="button" class="repp-tab repp-tab-active">Personalizado</button>
+
+            <div class="rep-tabs">
+                <a href="/app/reportes/oportunidades-abiertas/" class="rep-tab">Oportunidades Abiertas</a>
+                <a href="/app/reportes/oportunidades-cerradas/" class="rep-tab">Oportunidades Cerradas</a>
+                <a href="/app/reportes/clientes/" class="rep-tab">Por Cliente</a>
+                <button type="button" class="rep-tab rep-tab-active rep-tab-custom">Personalizado</button>
+            </div>
+
+            <div class="rep-header-actions">
+                <button type="button" class="rep-btn rep-btn-icon" id="reppResetear" title="Resetear constructor">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span>Resetear</span>
+                </button>
+                <button type="button" class="rep-btn rep-btn-icon" id="reppExportar" title="Exportar a CSV">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Exportar CSV</span>
+                </button>
+                <button type="button" class="rep-btn rep-btn-primary" id="reppGuardar" title="Guardar como mi reporte">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Guardar</span>
+                </button>
             </div>
         </header>
 
@@ -119,23 +137,6 @@
                     </div>
                 </section>
 
-                {# Acciones #}
-                <section class="repp-block">
-                    <div class="repp-actions">
-                        <button type="button" class="repp-action-btn repp-action-btn-primary" id="reppGuardar" title="Guardar como mi reporte">
-                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            <span>Guardar</span>
-                        </button>
-                        <button type="button" class="repp-action-btn" id="reppExportar" title="Exportar a CSV">
-                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            <span>CSV</span>
-                        </button>
-                        <button type="button" class="repp-action-btn repp-action-btn-danger" id="reppResetear" title="Resetear">
-                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                        </button>
-                    </div>
-                </section>
-
             </aside>
 
             {# ── Panel derecho: preview en vivo ─────────────────── #}
@@ -210,8 +211,9 @@ oportunidad inline (sin navegar fuera). Mismo patrón que el Reporte 1.
     window._REP_PERSONALIZADO_API = "{% url 'api_reporte_personalizado' %}";
 </script>
 
-<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-personalizado"></script>
-<script src="{% static 'js/reportes_personalizado.js' %}?v=20260528-personalizado"></script>
+<script src="{% static 'js/reportes_sidebar.js' %}?v=20260528-personalizado-header"></script>
+<script src="{% static 'js/reportes_personalizado.js' %}?v=20260528-personalizado-header"></script>
+<script src="{% static 'js/reportes_dashboard_anim.js' %}?v=20260528-spa-proxies"></script>
 
 {% comment %}
 crm_main.js define openDetalle(id) que abre el widget. Si el partial está

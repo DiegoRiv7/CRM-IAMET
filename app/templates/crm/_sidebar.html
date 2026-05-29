@@ -47,16 +47,11 @@
             <span class="crm-sb-label">Compras</span>
         </button>
 
-        <!-- Reportes (admin) -->
-        <a href="/app/reportes/" class="crm-sb-btn{% if tab_activo == 'reportes' %} active{% endif %}" id="btnReportes" data-tooltip="Reportes">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="8" y1="13" x2="14" y2="13"/>
-                <line x1="8" y1="17" x2="14" y2="17"/>
-            </svg>
-            <span class="crm-sb-label">Reportes</span>
-        </a>
+        {% comment %}
+        Reportes removido del sidebar (2026-05-28): el módulo vive ahora
+        como pestaña dentro de la dynamic island del Dashboard. Ya no se
+        accede desde aquí.
+        {% endcomment %}
 
         <div class="crm-sb-divider"></div>
 
@@ -81,7 +76,7 @@
         <div class="crm-sb-divider"></div>
 
         <!-- Calendario -->
-        <a href="?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+        <a href="/app/home/?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
@@ -147,14 +142,14 @@
         {% else %}
         <!-- CRM -->
         <button type="button" class="crm-sb-btn {% if tab_activo == 'crm' or not tab_activo %}active{% endif %}" id="btnCRM" data-tooltip="CRM"
-            {% if tab_activo and tab_activo != 'crm' %}onclick="try{localStorage.setItem('crmView','crm');}catch(e){};window.location.href='?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}'"{% endif %}>
+            {% if tab_activo and tab_activo != 'crm' %}onclick="try{localStorage.setItem('crmView','crm');}catch(e){};window.location.href='/app/home/?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}'"{% endif %}>
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/>
             </svg>
             <span class="crm-sb-label">CRM</span>
         </button>
         <!-- Dashboard (vendedor/supervisor) — ícono de bar chart para diferenciarlo del grid del CRM -->
-        <a href="?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Dashboard"
+        <a href="/app/home/?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Dashboard"
             onclick="try{localStorage.setItem('crmView','crm');}catch(e){}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="20" x2="21" y2="20"/>
@@ -164,16 +159,10 @@
             </svg>
             <span class="crm-sb-label">Dashboard</span>
         </a>
-        <!-- Reportes (vendedor/supervisor) -->
-        <a href="/app/reportes/" class="crm-sb-btn{% if tab_activo == 'reportes' %} active{% endif %}" id="btnReportes" data-tooltip="Reportes">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="8" y1="13" x2="14" y2="13"/>
-                <line x1="8" y1="17" x2="14" y2="17"/>
-            </svg>
-            <span class="crm-sb-label">Reportes</span>
-        </a>
+        {% comment %}
+        Reportes removido del sidebar (2026-05-28): el módulo vive ahora
+        como pestaña dentro de la dynamic island del Dashboard.
+        {% endcomment %}
         {% endif %}
 
         <!-- Tareas -->
@@ -203,7 +192,7 @@
         {% endif %}
 
         <!-- Calendario -->
-        <a href="?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+        <a href="/app/home/?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
@@ -280,14 +269,61 @@
 
 <script>
 (function(){
+    // ─── Sidebar fuera del CRM home (ej. /app/reportes/) ───
+    // Tareas, Proyectos, Correo, Muro, Notificaciones, Buscar, Admin y
+    // Perfil están como buttons con onclick que invoca funciones del CRM
+    // main (mailAbrir, proyectosAbrir, etc.). Esas funciones NO existen
+    // fuera del CRM home, así que el click no hace nada y el usuario
+    // se queda atascado en reportes/etc.
+    //
+    // Fix: si NO estás en CRM home, sobrescribimos los handlers con un
+    // navigate-to-home que (opcional) persiste un "intent" en
+    // localStorage para que la home, al cargar, abra el overlay/sección
+    // correspondiente.
+    var _path = window.location.pathname || '';
+    var _isCrmHome = _path === '/app/' || _path === '/app'
+                  || _path.indexOf('/app/home') === 0
+                  || _path.indexOf('/app/todos') === 0;
+    if (!_isCrmHome) {
+        var _nav = function (crmView) {
+            return function (e) {
+                if (e && e.preventDefault) e.preventDefault();
+                if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+                if (crmView) {
+                    try { localStorage.setItem('crmView', crmView); } catch (_) {}
+                }
+                window.location.href = '/app/home/';
+            };
+        };
+        var _wire = function (id, crmView) {
+            var b = document.getElementById(id);
+            if (!b) return;
+            b.onclick = null;  // anular onclick inline que invoca funciones del CRM no disponibles
+            b.addEventListener('click', _nav(crmView), true);
+        };
+        // Tareas/Proyectos: persisten la vista para que crm_main.js la
+        // restaure al cargar el CRM home (ya tiene esa lógica).
+        _wire('btnTareas',         'tareas');
+        _wire('btnProyectos',      'proyectos');
+        // Overlays (Correo, Muro, Grupos, Notificaciones, Buscar, Admin,
+        // Compras): solo navegamos al CRM home — el usuario re-clickea
+        // allá para abrir el overlay. Más simple que coordinar un
+        // "open-on-load" entre páginas.
+        _wire('btnMail',           null);
+        _wire('btnMuro',           null);
+        _wire('btnGrupo',          null);
+        _wire('btnNotificaciones', null);
+        _wire('btnSpotlight',      null);
+        _wire('btnAdminPanel',     null);
+        _wire('btnCompras',        null);
+        return;  // No correr el restorer del CRM home; aquí estás en otra página.
+    }
+
     // Si la URL define tab=calendario, ignoramos el crmView persistido: la
     // página activa la marca el server-render (btnCalendario).
     try {
         var _u = new URL(window.location.href);
         if (_u.searchParams.get('tab') === 'calendario') return;
-        // Igual para páginas externas al CRM (reportes, etc.): el server marca
-        // la sección activa, no debemos sobreponer con crmView de localStorage.
-        if (_u.pathname && _u.pathname.indexOf('/app/reportes') === 0) return;
     } catch(e) { /* defensivo */ }
     var v = localStorage.getItem('crmView');
     if (v === 'tareas' || v === 'proyectos') {

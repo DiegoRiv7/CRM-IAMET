@@ -29,6 +29,10 @@
         producto: '',
         monto_min: '',
         q: '',
+        // mes / anio: filtros del dashboard SPA (pills de periodo). El
+        // endpoint backend filtra por mes_cierre / anio_cierre.
+        mes: '',
+        anio: '',
     };
 
     // Quick-filter client-side ("plantilla")
@@ -654,8 +658,23 @@
     }
 
     // ─── Wire up ──────────────────────────────────────────────────────
+    // Lee filtros iniciales del URL (cuando el reporte se carga dentro
+    // del iframe del dashboard SPA, las pills de periodo/vendedor del
+    // dashboard se propagan al iframe como query params — ej:
+    // ?embedded=1&vendedor=15&mes=05&anio=2026).
+    function _aplicarFiltrosUrl() {
+        try {
+            var u = new URL(window.location.href);
+            Object.keys(_filtros).forEach(function (k) {
+                var v = u.searchParams.get(k);
+                if (v != null && v !== '') _filtros[k] = v;
+            });
+        } catch (e) { /* defensivo */ }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         if (!$('repKpis')) return;
+        _aplicarFiltrosUrl();
 
         // Búsqueda
         $('repSearch').addEventListener('input', function (e) {

@@ -385,15 +385,31 @@
 .rep-shell, .rep-page-shell {
     padding: 18px 24px 60px;
     background: #F5F5F7;
-    min-height: 100vh;
     box-sizing: border-box;
-    /* El padre .crm-page-sidebar fija height: 100vh, así que necesitamos
-       scroll INTERNO del shell para que el contenido (incluida la paginación
-       al pie de la tabla) sea visible. Sin esto, el footer queda fuera del
-       viewport y el usuario no lo encuentra. */
+    min-height: 100vh;
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Scroll natural del body para páginas de Reportes.
+
+   Por default .crm-page-sidebar tiene `height: 100vh` (necesario para
+   que el CRM home, con sus tabs internas y kanbans, no haga scroll
+   doble). Pero en Reportes la tabla puede ser muy larga y el scroll
+   interno del shell era frágil — la paginación quedaba debajo del
+   viewport sin forma visible de llegar a ella.
+
+   Con la clase `crm-page-natural-scroll` aplicada al contenedor de la
+   página de Reportes, dejamos que el body scrollee naturalmente. El
+   `<aside>` sigue con position:sticky y queda visible al lado.
+   ───────────────────────────────────────────────────────────────── */
+.crm-page.crm-page-natural-scroll {
+    height: auto;
+}
+.crm-page.crm-page-natural-scroll .rep-page-shell {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
 }
 
 /* ── Topbar (estilo .crm-bar) ────────────────────────────────────── */
@@ -1000,3 +1016,62 @@
 .rep-tab-custom.rep-tab-active::before {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3l1.9 5.8L19.7 11l-5.8 1.9L12 19l-1.9-5.8L4.3 11l5.8-1.9z'/></svg>");
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * Bridge Dashboard → Reportes (2026-05-28)
+ *
+ * Cuando el usuario entra al módulo de Reportes desde el tab "Reportes"
+ * del Dashboard, la URL incluye ?from=dashboard. El script
+ * reportes_dashboard_anim.js detecta la flag y:
+ *   - Aplica .rep-header-sliding-in-from-right al header (anim de
+ *     entrada).
+ *   - Inyecta un botón "← Dashboard" al inicio de .rep-plantillas
+ *     (estilo .rep-back-to-dashboard).
+ *
+ * Al click en "← Dashboard", el script aplica
+ * .rep-header-sliding-out-right al header y navega al dashboard con
+ * ?from=reportes — el dashboard reproduce la animación de regreso.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes repHeaderSlideInFromRight {
+    from { opacity: 0; transform: translateX(28px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes repHeaderSlideOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(28px); }
+}
+.rep-header.rep-header-sliding-in-from-right {
+    animation: repHeaderSlideInFromRight 0.32s cubic-bezier(.16,1,.3,1);
+}
+.rep-header.rep-header-sliding-out-right {
+    animation: repHeaderSlideOutRight 0.24s cubic-bezier(.5,0,.75,0) forwards;
+}
+
+/* Botón "← Dashboard" — inyectado por JS al inicio de .rep-plantillas
+   cuando ?from=dashboard. Estilo coherente con los otros pills del
+   header (mismo tamaño que .rep-sort-btn), pero color de "navegación"
+   (gris-azul) para diferenciarlo de las acciones (sort, filtros). */
+.rep-back-to-dashboard {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    color: #475569;
+    font-size: 0.74rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    margin-right: 4px;
+}
+.rep-back-to-dashboard:hover {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+    color: #1D4ED8;
+}
+.rep-back-to-dashboard svg { flex-shrink: 0; }
