@@ -317,31 +317,16 @@
                 <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                 <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
             </div>
-            {% comment %}
-            Toggle Fuente: Actividades / Instalaciones. Segmented control
-            con 2 pills. "Actividades" es el calendario tradicional (eventos
-            agendados por usuarios). "Instalaciones" es el calendario del
-            Plan de Trabajo Bajanet (modelo Instalacion).
-            Default: actividades. El JS (calSetSource) cambia la fuente y
-            recarga los eventos visibles.
-            {% endcomment %}
-            <div class="cal-source-toggle" id="calSourceToggle" role="tablist" style="display:inline-flex;gap:2px;background:#F2F2F7;padding:3px;border-radius:999px;margin-left:12px;">
-                <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Calendario de actividades (default)">
-                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-                    Actividades
-                </button>
-                <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Calendario de instalaciones (Plan de Trabajo)">
-                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M14.7 6.3a1 1 0 010 1.4l-7 7-3-3a1 1 0 011.4-1.4l1.6 1.6 5.6-5.6a1 1 0 011.4 0z"/><circle cx="12" cy="12" r="10"/></svg>
-                    Instalaciones
-                </button>
-            </div>
             <style>
+                /* Toggle Fuente del Calendario: Actividades / Instalaciones.
+                   Vive en la barra derecha (junto a la navegación de fechas)
+                   para no competir con la dynamic island central. */
                 .cal-source-btn {
                     border: none;
                     background: transparent;
-                    padding: 5px 12px;
+                    padding: 5px 11px;
                     border-radius: 999px;
-                    font-size: 0.72rem;
+                    font-size: 0.7rem;
                     font-weight: 600;
                     font-family: inherit;
                     color: #86868B;
@@ -358,6 +343,23 @@
                 .cal-source-btn-active:hover { color: #1D1D1F; }
             </style>
             <div class="crm-bar-right" style="display:flex;align-items:center;gap:10px;">
+                {% comment %}
+                Toggle "Actividades / Instalaciones" — fuente del calendario.
+                Vive aquí (lado derecho, junto a la navegación de fecha) para
+                no quitarle protagonismo a la dynamic island central
+                Mes/Semana/Día. Default: Actividades. El JS (calSetSource)
+                cambia la fuente y recarga los eventos visibles.
+                {% endcomment %}
+                <div class="cal-source-toggle" id="calSourceToggle" role="tablist" style="display:inline-flex;gap:2px;background:#F2F2F7;padding:3px;border-radius:999px;">
+                    <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Calendario de actividades (default)">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+                        Actividades
+                    </button>
+                    <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Calendario de instalaciones (Plan de Trabajo)">
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M14.7 6.3a1 1 0 010 1.4l-7 7-3-3a1 1 0 011.4-1.4l1.6 1.6 5.6-5.6a1 1 0 011.4 0z"/><circle cx="12" cy="12" r="10"/></svg>
+                        Instalaciones
+                    </button>
+                </div>
                 {% comment %}
                 Navegación de fecha en el topbar (compacta): prev / next / Hoy +
                 título. Antes vivía debajo del topbar como cal-page-monthnav y
