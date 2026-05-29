@@ -437,8 +437,21 @@
     }
 
     // ── Wire up ─────────────────────────────────────────────────────
+    // Lee filtros iniciales del URL (cuando el reporte se carga dentro
+    // del iframe del dashboard SPA, las pills del dashboard se propagan).
+    function _aplicarFiltrosUrl() {
+        try {
+            var u = new URL(window.location.href);
+            Object.keys(_filtros).forEach(function (k) {
+                var v = u.searchParams.get(k);
+                if (v != null && v !== '') _filtros[k] = v;
+            });
+        } catch (e) { /* defensivo */ }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         if (!$('repKpis')) return;
+        _aplicarFiltrosUrl();
 
         $('repSearch').addEventListener('input', function (e) {
             clearTimeout(_searchDebounce);

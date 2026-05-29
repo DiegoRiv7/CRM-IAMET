@@ -276,6 +276,17 @@ def api_reporte_oportunidades_abiertas(request):
         except (TypeError, ValueError):
             monto_min = None
 
+    # mes_cierre / anio_cierre: filtros del Dashboard SPA. Cuando el reporte
+    # se abre con las pills "Mayo 2026", solo opps con fecha estimada de
+    # cierre en mayo de 2026.
+    mes_filter = (qp.get('mes') or '').strip()
+    anio_filter = None
+    if qp.get('anio'):
+        try:
+            anio_filter = int(qp.get('anio'))
+        except (TypeError, ValueError):
+            anio_filter = None
+
     # ── Query base con filtros de etapa por pipeline ────────────────
     pipeline_filter = Q()
     for pl in pipelines_objetivo:
@@ -308,6 +319,16 @@ def api_reporte_oportunidades_abiertas(request):
 
     if monto_min is not None:
         qs = qs.filter(monto__gte=monto_min)
+
+    if mes_filter and mes_filter != 'todos':
+        # Soporta '05', '5', o lista 'todos'/único.
+        try:
+            mes_int = int(mes_filter)
+            qs = qs.filter(mes_cierre=str(mes_int).zfill(2))
+        except (TypeError, ValueError):
+            pass
+    if anio_filter:
+        qs = qs.filter(anio_cierre=anio_filter)
 
     if q_text:
         qs = qs.filter(

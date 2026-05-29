@@ -303,21 +303,12 @@
                 </button>
             </div>
             {% comment %}
-            SPA Reportes — iframe overlay
-            -----------------------------
-            El iframe vive dentro del area de trabajo del CRM (no toca el
-            sidebar lateral). Al click en "Reportes":
-              1) Animacion slide-out de la dynamic del dashboard.
-              2) Se monta el iframe con src=/app/reportes/<slug>/?embedded=1.
-              3) Se muestra el overlay con animacion slide-in.
-              4) Se usa history.pushState para que la URL refleje el reporte
-                 activo, sin recargar la pagina.
-            Para volver al dashboard, el iframe envia postMessage al parent
-            ({type:'rep:close'}) — el parent oculta el overlay con animacion
-            inversa y restaura el dashboard.
-            Para cambiar entre reportes, el iframe envia postMessage
-            ({type:'rep:navigate', href:'/app/reportes/<slug>/'}) — el parent
-            actualiza el iframe.src sin reload del padre.
+            SPA Reportes — iframe overlay.
+            El overlay vive como position: fixed; top = altura de la barra
+            del dashboard (calculada al abrir). Asi las pills de periodo y
+            vendedor de .crm-bar-right SIGUEN visibles arriba del iframe y
+            sus filtros afectan al reporte cargado (pasados como query
+            params al iframe URL).
             {% endcomment %}
             <div id="crmReportesOverlay" class="crm-reportes-overlay" hidden>
                 <iframe id="crmReportesFrame" title="Reportes" frameborder="0"></iframe>
@@ -341,8 +332,46 @@
                 var _dashUrlBefore = null;
                 var _abierto = false;
 
+                // Filtros del dashboard (mes, año, vendedor) que se pasan
+                // al iframe. Los reportes los respetan: si dice "Mayo 2026,
+                // Roberto Lopez" → el reporte filtra opps de Roberto Lopez
+                // con cierre en mayo 2026.
+                function leerFiltrosDashboard() {
+                    var p = {};
+                    try {
+                        var u = new URL(window.location.href);
+                        var keys = ['mes', 'anio', 'vendedores', 'desde', 'hasta'];
+                        keys.forEach(function (k) {
+                            var v = u.searchParams.get(k);
+                            if (v != null && v !== '') p[k] = v;
+                        });
+                    } catch (e) { /* defensivo */ }
+                    return p;
+                }
                 function urlEmbedded(slug) {
-                    return '/app/reportes/' + slug + '/?embedded=1';
+                    var qs = new URLSearchParams({ embedded: '1' });
+                    var f = leerFiltrosDashboard();
+                    Object.keys(f).forEach(function (k) {
+                        // Renombrar 'vendedores' (del dashboard) → 'vendedor'
+                        // (param del reporte, single id). Si trae varios IDs
+                        // separados por coma, tomamos el primero.
+                        if (k === 'vendedores' && f[k]) {
+                            var first = String(f[k]).split(',')[0].trim();
+                            if (first) qs.set('vendedor', first);
+                        } else {
+                            qs.set(k, f[k]);
+                        }
+                    });
+                    return '/app/reportes/' + slug + '/?' + qs.toString();
+                }
+
+                // Calcula el top del overlay = base inferior de la barra
+                // del dashboard. Se invoca al abrir y al hacer resize.
+                function ajustarTopOverlay() {
+                    var bar = document.querySelector('#crmContentSection .crm-bar');
+                    if (!bar) return;
+                    var rect = bar.getBoundingClientRect();
+                    overlay.style.top = Math.max(0, Math.round(rect.bottom + 6)) + 'px';
                 }
                 function slugFromUrl(href) {
                     try {
@@ -363,6 +392,7 @@
                         _dashUrlBefore = window.location.href;
                     }
                     _abierto = true;
+                    document.body.classList.add('crm-reportes-active');
                     // Cross-slide entre los dos dynamic islands.
                     dashIsland.classList.add('crm-tabs-sliding-out-left');
                     setTimeout(function () {
@@ -377,7 +407,8 @@
                         }, 320);
                     }, 220);
                     setRepTabActive(s);
-                    // Overlay con iframe
+                    // Overlay con iframe (top ajustado a la barra del dashboard).
+                    ajustarTopOverlay();
                     overlay.hidden = false;
                     void overlay.offsetWidth;
                     overlay.classList.add('crm-reportes-overlay-active');
@@ -399,6 +430,7 @@
                 function cerrarReportes(push) {
                     if (!_abierto) return;
                     _abierto = false;
+                    document.body.classList.remove('crm-reportes-active');
                     // Cross-slide inverso.
                     repIsland.classList.add('crm-tabs-sliding-out-right');
                     setTimeout(function () {
@@ -461,6 +493,22 @@
                             window.openClienteModal(parseInt(d.id, 10), d.nombre || '', d.tab || 'oportunidades');
                         }
                     }
+                });
+
+                // Cambios de filtros del dashboard (pills) mientras reportes
+                // está abierto → actualizar el iframe.src con los nuevos
+                // params. Los pills disparan navegación con location.href
+                // change; el SPA detecta el cambio escuchando hashchange
+                // (no aplica) y mejor: el dashboard ya hace recarga al
+                // cambiar pills, así que en SPA tenemos que escuchar otro
+                // evento. Por simplicidad: cuando el usuario cambia un pill
+                // estando en reportes, la página recarga el dashboard +
+                // overlay se reabre con los nuevos params (popstate).
+
+                // Resize: re-ajustar top del overlay (la barra puede cambiar
+                // de altura en ciertos tabs).
+                window.addEventListener('resize', function () {
+                    if (_abierto) ajustarTopOverlay();
                 });
 
                 // Carga inicial: si la URL es /app/reportes/<slug>/, abrir directo.

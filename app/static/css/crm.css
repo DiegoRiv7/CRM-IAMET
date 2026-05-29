@@ -17196,12 +17196,15 @@ body.cert-d-lock {
 
 
 /* ─── Overlay del iframe SPA de Reportes ─────────────────────────── */
+/* Position: fixed con top dinámico calculado por JS (ajustarTopOverlay).
+   Top = base inferior de la .crm-bar del dashboard, así las pills de
+   periodo y vendedor siguen visibles arriba del iframe y sus filtros
+   aplican al reporte cargado dentro. */
 .crm-reportes-overlay {
     position: fixed;
-    top: 0;
+    top: 80px; /* fallback; JS recalcula al abrir */
     right: 0;
     bottom: 0;
-    /* left = ancho del sidebar (60px típico colapsado, 220px expandido) */
     left: var(--crm-sidebar-width, 76px);
     background: #F5F5F7;
     z-index: 80;
@@ -17231,11 +17234,25 @@ body.cert-d-lock {
     display: block;
 }
 
-/* En layouts donde el sidebar tiene otro ancho, el overlay lo respeta
-   leyendo --crm-sidebar-width del root. Como fallback, queryamos el
-   sidebar real al cargar. */
 @media (max-width: 900px) {
     .crm-reportes-overlay { left: 0; }
+}
+
+/* Cuando reportes está activo, ocultar el contenido del dashboard que
+   vive abajo de la barra (chips de filtros, KPI cards, charts).
+   La .crm-bar se queda visible para que las pills y dynamic island
+   sigan accesibles. */
+body.crm-reportes-active .crm-facet-chips-row,
+body.crm-reportes-active #crmTableWrap > :not(.crm-bar) {
+    display: none !important;
+}
+
+/* Fix de prioridad: [hidden] debe ganar sobre display:inline-flex de
+   .crm-tabs (que tiene mayor specificity via .crm-page-sidebar). */
+.crm-tabs[hidden],
+.crm-tabs--dashboard[hidden],
+.crm-tabs--reportes[hidden] {
+    display: none !important;
 }
 
 /* ─── Modo embedded (cuando el reporte carga dentro del iframe) ──── */
