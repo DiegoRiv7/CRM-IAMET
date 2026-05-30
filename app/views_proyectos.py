@@ -5841,7 +5841,7 @@ def api_gantt_actividad_archivo_detalle(request, archivo_id):
 # INSTALACIONES (Plan de Trabajo Bajanet) — calendario alternativo
 # ═══════════════════════════════════════════════════════════════════════════
 
-from .models import Instalacion
+from .models import Instalacion, Tecnico, InstalacionAsignacion
 
 
 def _instalacion_to_dict(inst):
@@ -5935,4 +5935,114 @@ def api_instalaciones_calendario(request):
     return JsonResponse({
         'success': True,
         'instalaciones': [_instalacion_to_dict(i) for i in qs],
+    })
+
+
+@login_required
+def api_grid_tecnicos(request):
+    """GET /app/api/calendario/instalaciones/grid/
+
+    Devuelve la matriz Técnico × Día para el rango pedido. Params:
+        ?start=YYYY-MM-DD&end=YYYY-MM-DD  (rango inclusivo)
+        ?solo_activos=1                    (default: 1, incluye solo
+                                            técnicos con activo=True)
+
+    Sin start/end → semana en curso (lunes a domingo).
+
+    Respuesta:
+      {
+        "success": true,
+        "rango": {"start": "...", "end": "..."},
+        "dias": ["2026-05-25", "2026-05-26", ...],
+        "tecnicos": [
+          {"id": 1, "nombre": "URIEL", "rol": "tecnico", "color": ""}
+        ],
+        "celdas": [
+          {
+            "tecnico_id": 1, "fecha": "2026-05-25",
+            "instalacion_id": 12, "cliente_nombre": "VOLVO",
+            "proyecto": "60 NODOS EN VOLVO", "po": "4517218663",
+            "estado": "programada", "estado_label": "Programada",
+            "hora_inicio": "08:00", "hora_fin": "17:00",
+            "notas": ""
+          }
+        ]
+      }
+
+    Una celda (tecnico_id, fecha) puede aparecer múltiples veces si el
+    técnico está asignado a más de una instalación ese día — el frontend
+    decide cómo mostrarlas (stack vertical, abreviar, etc.).
+    """
+    from datetime import date, timedelta
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    start_raw = (request.GET.get('start') or '').strip()
+    end_raw = (request.GET.get('end') or '').strip()
+
+    if start_raw and end_raw:
+        try:
+            start = date.fromisoformat(start_raw)
+            end = date.fromisoformat(end_raw)
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Fechas inválidas'}, status=400)
+    else:
+        hoy = date.today()
+        start = hoy - timedelta(days=hoy.weekday())  # lunes de esta semana
+        end = start + timedelta(days=6)              # domingo
+
+    if end < start:
+        return JsonResponse({'success': False, 'error': 'end < start'}, status=400)
+
+    dias = []
+    cursor = start
+    while cursor <= end:
+        dias.append(cursor.isoformat())
+        cursor += timedelta(days=1)
+
+    solo_activos = request.GET.get('solo_activos', '1') != '0'
+    tecnicos_qs = Tecnico.objects.all()
+    if solo_activos:
+        tecnicos_qs = tecnicos_qs.filter(activo=True)
+    tecnicos_qs = tecnicos_qs.order_by('nombre')
+
+    tecnicos_data = [{
+        'id': t.id,
+        'nombre': t.nombre,
+        'rol': t.rol,
+        'rol_label': t.get_rol_display(),
+        'color': t.color or '',
+    } for t in tecnicos_qs]
+
+    asignaciones_qs = (
+        InstalacionAsignacion.objects
+        .filter(fecha__range=(start, end), tecnico__in=tecnicos_qs)
+        .select_related('instalacion', 'tecnico')
+        .order_by('fecha', 'tecnico__nombre')
+    )
+
+    celdas = []
+    for a in asignaciones_qs:
+        inst = a.instalacion
+        celdas.append({
+            'tecnico_id': a.tecnico_id,
+            'fecha': a.fecha.isoformat(),
+            'instalacion_id': inst.id,
+            'cliente_nombre': inst.cliente_nombre,
+            'proyecto': inst.proyecto,
+            'po': inst.po,
+            'estado': inst.estado,
+            'estado_label': inst.get_estado_display(),
+            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
+            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
+            'notas': a.notas,
+        })
+
+    return JsonResponse({
+        'success': True,
+        'rango': {'start': start.isoformat(), 'end': end.isoformat()},
+        'dias': dias,
+        'tecnicos': tecnicos_data,
+        'celdas': celdas,
     })
