@@ -5898,3 +5898,86 @@ class Instalacion(models.Model):
 
     def __str__(self):
         return f'{self.cliente_nombre} — {self.proyecto[:50]}'
+
+
+class Tecnico(models.Model):
+    """
+    Personal de campo asignable a instalaciones (URIEL, ARMANDO, GOYO,
+    CHUY, EDGAR, JULIO, TOÑO, JORGE...). Origen: la columna izquierda del
+    grid Técnico × Día del Excel PLAN DE TRABAJO BAJANET.
+
+    Es un catálogo plano, no requiere login (no es FK a User). Si más
+    adelante un técnico se da de alta como usuario del CRM, el campo
+    `usuario` permite ligarlo opcionalmente.
+    """
+    ROL_CHOICES = [
+        ('tecnico', 'Técnico'),
+        ('supervisor', 'Supervisor'),
+        ('ingeniero', 'Ingeniero'),
+    ]
+
+    nombre = models.CharField(max_length=120, verbose_name='Nombre')
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='tecnico')
+    activo = models.BooleanField(default=True)
+    color = models.CharField(
+        max_length=7, blank=True, default='',
+        help_text='Color hex opcional para distinguirlo en el grid (#RRGGBB).',
+    )
+    usuario = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='tecnico_perfil',
+        help_text='Si el técnico también es usuario del CRM.',
+    )
+    notas = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Técnico'
+        verbose_name_plural = 'Técnicos'
+        ordering = ['nombre']
+        indexes = [
+            models.Index(fields=['activo']),
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
+class InstalacionAsignacion(models.Model):
+    """
+    Una asignación de un técnico a una instalación en una fecha concreta.
+
+    El grid Técnico × Día del Excel funciona así: el mismo técnico puede
+    estar en VOLVO de lunes a jueves y en CARLZEISS el sábado — cada
+    celda del Excel es una fila aquí. Por eso la tabla intermedia no
+    vive sobre `Instalacion` (que tiene UNA fecha "principal") sino
+    sobre (instalacion, tecnico, fecha).
+    """
+    instalacion = models.ForeignKey(
+        Instalacion, on_delete=models.CASCADE, related_name='asignaciones',
+    )
+    tecnico = models.ForeignKey(
+        Tecnico, on_delete=models.CASCADE, related_name='asignaciones',
+    )
+    fecha = models.DateField()
+    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_fin = models.TimeField(null=True, blank=True)
+    notas = models.CharField(max_length=200, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Asignación de técnico'
+        verbose_name_plural = 'Asignaciones de técnicos'
+        ordering = ['fecha', 'tecnico__nombre']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['instalacion', 'tecnico', 'fecha'],
+                name='uniq_instalacion_tecnico_fecha',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['fecha']),
+            models.Index(fields=['tecnico', 'fecha']),
+        ]
+
+    def __str__(self):
+        return f'{self.tecnico.nombre} @ {self.instalacion.cliente_nombre} ({self.fecha})'
