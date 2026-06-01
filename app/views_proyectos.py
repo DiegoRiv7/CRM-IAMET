@@ -6156,8 +6156,14 @@ def api_oportunidad_instalacion_detalle(request, oportunidad_id, instalacion_id)
 
 
 @login_required
-def api_oportunidad_proyectos(request, oportunidad_id):
-    """GET/POST proyectos ligados a una oportunidad (Proyecto.oportunidades_ligadas M2M).
+def api_oportunidad_proyectos_ligados(request, oportunidad_id):
+    """GET/POST/DELETE proyectos ligados a una oportunidad vía el M2M
+    plano Proyecto.oportunidades_ligadas.
+
+    Nota: existe otro endpoint legacy `api_oportunidad_proyectos` (línea
+    ~4640) que maneja `ProyectoOportunidadLink` (sugerencias con score
+    + confirmar/rechazar). Son DOS sistemas paralelos; este es para el
+    widget de Pipeline Proyecto donde el vendedor liga manualmente.
 
     GET → lista los proyectos ligados.
     POST → vincula un proyecto existente. Body: {proyecto_id}.

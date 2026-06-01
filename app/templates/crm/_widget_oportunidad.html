@@ -3958,7 +3958,7 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
         var listEl = document.getElementById('woProyectoList');
         if (!listEl) return;
         listEl.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;">Cargando…</div>';
-        fetch('/app/api/oportunidad/' + oppId + '/proyectos/', { credentials: 'same-origin' })
+        fetch('/app/api/oportunidad/' + oppId + '/proyectos-ligados/', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!data || !data.success) {
@@ -4056,7 +4056,7 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
     window.wopDesvincularProyecto = function (proyectoId) {
         if (!_wopActiveOppId) return;
         if (!confirm('¿Desvincular este proyecto de la oportunidad?')) return;
-        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/proyectos/', {
+        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/proyectos-ligados/', {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
@@ -4095,7 +4095,7 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
     function _ejecutarBusquedaProyectos(q) {
         var resWrap = document.getElementById('wopSearchResultados');
         if (resWrap) resWrap.innerHTML = '<div style="color:#86868B;font-size:0.84rem;padding:8px;">Buscando…</div>';
-        fetch('/app/api/proyectos/buscar/?q=' + encodeURIComponent(q || ''), { credentials: 'same-origin' })
+        fetch('/app/api/proyectos-ligados/buscar/?q=' + encodeURIComponent(q || ''), { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 _renderSearchResultados((data && data.proyectos) || []);
@@ -4120,7 +4120,7 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
     }
     window.wopConfirmarVincular = function (proyectoId) {
         if (!_wopActiveOppId) return;
-        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/proyectos/', {
+        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/proyectos-ligados/', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
