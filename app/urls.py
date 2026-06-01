@@ -284,6 +284,10 @@ urlpatterns = [
     # Calendario de Instalaciones (toggle alternativo en el header del calendario).
     path('api/calendario/instalaciones/', views_proyectos.api_instalaciones_calendario, name='api_instalaciones_calendario'),
     path('api/calendario/instalaciones/grid/', views_proyectos.api_grid_tecnicos, name='api_grid_tecnicos'),
+    path('api/oportunidad/<int:oportunidad_id>/instalaciones/', views_proyectos.api_oportunidad_instalaciones, name='api_oportunidad_instalaciones'),
+    path('api/oportunidad/<int:oportunidad_id>/instalaciones/<int:instalacion_id>/', views_proyectos.api_oportunidad_instalacion_detalle, name='api_oportunidad_instalacion_detalle'),
+    path('api/oportunidad/<int:oportunidad_id>/proyectos/', views_proyectos.api_oportunidad_proyectos, name='api_oportunidad_proyectos'),
+    path('api/proyectos/buscar/', views_proyectos.api_proyectos_buscar, name='api_proyectos_buscar'),
     path('api/users/', views.user_list_api, name='user_list_api'),
     path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
 

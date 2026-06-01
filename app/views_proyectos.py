@@ -30,7 +30,7 @@ from django.db.models import Value
 from datetime import date, datetime, timedelta, time
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import decimal
 from django.utils.html import json_script
 
@@ -6046,3 +6046,174 @@ def api_grid_tecnicos(request):
         'tecnicos': tecnicos_data,
         'celdas': celdas,
     })
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Endpoints para el widget de oportunidad pipeline Proyecto:
+# bloque "Proyecto ligado" + bloque "Programa de Obra (Instalaciones)".
+# ─────────────────────────────────────────────────────────────────────
+
+@login_required
+def api_oportunidad_instalaciones(request, oportunidad_id):
+    """GET/POST instalaciones ligadas a una oportunidad.
+
+    GET → lista las instalaciones ordenadas por fecha_programada (las sin
+          fecha al final). Cada item incluye los campos del Excel.
+    POST → crea una instalación nueva con la opp pre-ligada. Body JSON:
+          {po, descripcion, fecha (YYYY-MM-DD), jornadas_count, jornadas_tipo,
+           personal, monto_po, utilidad, estado, observaciones, notas}
+    """
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+
+    if request.method == 'GET':
+        qs = (
+            Instalacion.objects
+            .filter(oportunidad=opp)
+            .order_by(F('fecha_programada').asc(nulls_last=True), 'fecha_creacion')
+        )
+        items = []
+        for inst in qs:
+            items.append({
+                'id': inst.id,
+                'po': inst.po,
+                'descripcion': inst.proyecto,
+                'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
+                'fecha_tentativa_texto': inst.fecha_tentativa_texto,
+                'jornadas_count': inst.jornadas_count,
+                'jornadas_tipo': inst.jornadas_tipo,
+                'jornadas_tipo_label': inst.get_jornadas_tipo_display(),
+                'personal': inst.personal_descripcion,
+                'monto_po': str(inst.monto_po),
+                'utilidad': str(inst.utilidad),
+                'estado': inst.estado,
+                'estado_label': inst.get_estado_display(),
+                'observaciones': inst.observaciones,
+                'notas': inst.notas,
+            })
+        return JsonResponse({'success': True, 'instalaciones': items})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8') or '{}')
+        except (ValueError, AttributeError):
+            data = {}
+
+        descripcion = (data.get('descripcion') or '').strip()
+        if not descripcion:
+            return JsonResponse({'success': False, 'error': 'La descripción es obligatoria.'}, status=400)
+
+        fecha_raw = (data.get('fecha') or '').strip()
+        fecha_programada = None
+        if fecha_raw:
+            try:
+                from datetime import date as _date
+                fecha_programada = _date.fromisoformat(fecha_raw)
+            except ValueError:
+                return JsonResponse({'success': False, 'error': 'Fecha inválida (usa YYYY-MM-DD).'}, status=400)
+
+        def _dec(v, default='0'):
+            try:
+                return Decimal(str(v if v not in (None, '') else default))
+            except (InvalidOperation, ValueError):
+                return Decimal(default)
+
+        inst = Instalacion.objects.create(
+            cliente_nombre=(opp.cliente.nombre_empresa if opp.cliente else (data.get('cliente_nombre') or '')),
+            cliente=opp.cliente,
+            oportunidad=opp,
+            po=(data.get('po') or opp.po_number or '').strip()[:80],
+            proyecto=descripcion[:400],
+            fecha_programada=fecha_programada,
+            fecha_tentativa_texto=(data.get('fecha_tentativa_texto') or '').strip()[:120],
+            jornadas_count=int(data.get('jornadas_count') or 1),
+            jornadas_tipo=(data.get('jornadas_tipo') or 'normal'),
+            personal_descripcion=(data.get('personal') or '').strip()[:200],
+            monto_po=_dec(data.get('monto_po')),
+            utilidad=_dec(data.get('utilidad')),
+            observaciones=(data.get('observaciones') or '').strip(),
+            notas=(data.get('notas') or '').strip(),
+            estado=(data.get('estado') or 'programada'),
+            creado_por=request.user,
+        )
+        return JsonResponse({'success': True, 'instalacion_id': inst.id})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_oportunidad_instalacion_detalle(request, oportunidad_id, instalacion_id):
+    """DELETE → quita la instalación. Solo se aceptan instalaciones que
+    pertenezcan a la oportunidad indicada (defensa en profundidad).
+    """
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    inst = get_object_or_404(Instalacion, pk=instalacion_id, oportunidad=opp)
+
+    if request.method == 'DELETE':
+        inst.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_oportunidad_proyectos(request, oportunidad_id):
+    """GET/POST proyectos ligados a una oportunidad (Proyecto.oportunidades_ligadas M2M).
+
+    GET → lista los proyectos ligados.
+    POST → vincula un proyecto existente. Body: {proyecto_id}.
+    DELETE → desvincula. Body: {proyecto_id}.
+    """
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+
+    if request.method == 'GET':
+        proyectos = (
+            Proyecto.objects
+            .filter(oportunidades_ligadas=opp)
+            .order_by('-fecha_actualizacion')
+        )
+        items = [{
+            'id': p.id,
+            'nombre': p.nombre,
+            'tipo': p.tipo,
+            'tipo_label': p.get_tipo_display(),
+            'privacidad': p.privacidad,
+        } for p in proyectos]
+        return JsonResponse({'success': True, 'proyectos': items})
+
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, AttributeError):
+        data = {}
+    proy_id = data.get('proyecto_id')
+    if not proy_id:
+        return JsonResponse({'success': False, 'error': 'Falta proyecto_id'}, status=400)
+    proy = get_object_or_404(Proyecto, pk=proy_id)
+
+    if request.method == 'POST':
+        proy.oportunidades_ligadas.add(opp)
+        return JsonResponse({'success': True, 'proyecto_id': proy.id})
+
+    if request.method == 'DELETE':
+        proy.oportunidades_ligadas.remove(opp)
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_proyectos_buscar(request):
+    """GET ?q=… → busca proyectos por nombre (máximo 20). Usado por el
+    picker de "Vincular proyecto existente" del widget de oportunidad.
+    """
+    q = (request.GET.get('q') or '').strip()
+    qs = Proyecto.objects.all()
+    if q:
+        qs = qs.filter(nombre__icontains=q)
+    qs = qs.order_by('-fecha_actualizacion')[:20]
+    items = [{
+        'id': p.id,
+        'nombre': p.nombre,
+        'tipo': p.tipo,
+        'tipo_label': p.get_tipo_display(),
+    } for p in qs]
+    return JsonResponse({'success': True, 'proyectos': items})

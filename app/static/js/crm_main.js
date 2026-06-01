@@ -1130,6 +1130,12 @@
                         el.style.cursor = 'default'; el.onclick = null;
                     });
                 }
+
+                // Fila inferior pipeline Proyecto: bloques Proyecto + Instalaciones.
+                // El handler vive en _widget_oportunidad.html y es no-op si tipo=runrate.
+                if (typeof window.woRenderProyectoSection === 'function') {
+                    try { window.woRenderProyectoSection(d); } catch (e) { console.error('woRenderProyectoSection', e); }
+                }
             }
 
             // ══════════════════════════════════════════════
