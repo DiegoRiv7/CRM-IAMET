@@ -775,7 +775,15 @@
                         }).catch(function(){info.revert();});
                     },
                     eventClick: function (info) {
-                        // Click directo → modal completo (oportunidad/curso/evento/actividad/tarea)
+                        // Si es una instalación (modo Instalaciones), abrir el
+                        // modal del Programa de Obra. Las actividades/tareas/
+                        // eventos siguen su flujo normal.
+                        var ep = info.event.extendedProps || {};
+                        var instId = ep.instalacion_id || (ep.source === 'instalacion' ? null : null);
+                        if (instId && typeof window.pobAbrirModal === 'function') {
+                            window.pobAbrirModal(instId);
+                            return;
+                        }
                         _calOpenFull(String(info.event.id));
                     },
                     eventDidMount: function (info) {
@@ -2366,9 +2374,13 @@
     }
 
     window.calOpenInstalacionFromGrid = function (instId) {
-        // Placeholder: hasta tener el modal detalle del paso 4, abrimos
-        // /admin/ en tab nuevo. Cuando el modal exista, se reemplaza.
-        window.open('/admin/app/instalacion/' + instId + '/change/', '_blank');
+        // Abre el modal único del Programa de Obra (definido en
+        // programa_obra.js). Reemplaza el placeholder /admin/ anterior.
+        if (typeof window.pobAbrirModal === 'function') {
+            window.pobAbrirModal(instId);
+        } else {
+            window.open('/admin/app/instalacion/' + instId + '/change/', '_blank');
+        }
     };
 
     window.calGlobalRefetch = function (userVal) {

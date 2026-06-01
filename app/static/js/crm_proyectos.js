@@ -1257,6 +1257,9 @@
     //   (?open_proyecto=N&tab=tareas). Si no se pasa, abrimos en "Resumen".
     window.proyectosVerDetalle = function(projectId, initialTab) {
         currentProjectId = projectId;
+        // Expone el id activo para que otros módulos (ej. programa_obra.js)
+        // sepan qué proyecto está abierto sin tener que pasarlo por args.
+        window._proyectoActualId = projectId;
         var tab = _proyDetailNormalizeTab(initialTab);
         currentTab = tab;
 
@@ -1317,6 +1320,7 @@
 
     window.proyectosVolverLista = function() {
         currentProjectId = null;
+        window._proyectoActualId = null;
         // Inline: cierra el detalle (quita .is-open) y restaura la lista.
         var detail = el('widgetProyectoDetalle');
         if (detail) detail.classList.remove('is-open');
