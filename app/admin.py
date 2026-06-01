@@ -353,7 +353,7 @@ class InstalacionAdmin(admin.ModelAdmin):
     list_filter = ('estado', 'jornadas_tipo', 'fecha_programada', 'cliente')
     search_fields = ('cliente_nombre', 'po', 'proyecto', 'observaciones', 'notas')
     date_hierarchy = 'fecha_programada'
-    autocomplete_fields = ('cliente', 'oportunidad')
+    autocomplete_fields = ('cliente', 'oportunidad', 'proyecto')
     ordering = ('-fecha_programada', '-fecha_creacion')
 
     fieldsets = (

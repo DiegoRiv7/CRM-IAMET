@@ -284,12 +284,16 @@ urlpatterns = [
     # Calendario de Instalaciones (toggle alternativo en el header del calendario).
     path('api/calendario/instalaciones/', views_proyectos.api_instalaciones_calendario, name='api_instalaciones_calendario'),
     path('api/calendario/instalaciones/grid/', views_proyectos.api_grid_tecnicos, name='api_grid_tecnicos'),
-    path('api/oportunidad/<int:oportunidad_id>/instalaciones/', views_proyectos.api_oportunidad_instalaciones, name='api_oportunidad_instalaciones'),
-    path('api/oportunidad/<int:oportunidad_id>/instalaciones/<int:instalacion_id>/', views_proyectos.api_oportunidad_instalacion_detalle, name='api_oportunidad_instalacion_detalle'),
     # 'proyectos-ligados' (no 'proyectos') para no chocar con la ruta histórica
     # /api/oportunidad/<id>/proyectos/ que usa ProyectoOportunidadLink (sugerencias automáticas).
     path('api/oportunidad/<int:oportunidad_id>/proyectos-ligados/', views_proyectos.api_oportunidad_proyectos_ligados, name='api_oportunidad_proyectos_ligados'),
     path('api/proyectos-ligados/buscar/', views_proyectos.api_proyectos_buscar, name='api_proyectos_buscar'),
+    # Programa de Obra (Instalaciones) — viven dentro de un Proyecto.
+    path('api/proyecto/<int:proyecto_id>/instalaciones/', views_proyectos.api_proyecto_instalaciones, name='api_proyecto_instalaciones'),
+    path('api/instalacion/<int:instalacion_id>/', views_proyectos.api_instalacion_detalle, name='api_instalacion_detalle'),
+    path('api/instalacion/<int:instalacion_id>/asignaciones/', views_proyectos.api_instalacion_asignaciones, name='api_instalacion_asignaciones'),
+    path('api/instalacion/<int:instalacion_id>/asignaciones/<int:asignacion_id>/', views_proyectos.api_instalacion_asignacion_detalle, name='api_instalacion_asignacion_detalle'),
+    path('api/tecnicos/', views_proyectos.api_tecnicos_list, name='api_tecnicos_list'),
     path('api/users/', views.user_list_api, name='user_list_api'),
     path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
 

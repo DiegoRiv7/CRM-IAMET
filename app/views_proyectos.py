@@ -6054,21 +6054,107 @@ def api_grid_tecnicos(request):
 # ─────────────────────────────────────────────────────────────────────
 
 @login_required
-def api_oportunidad_instalaciones(request, oportunidad_id):
-    """GET/POST instalaciones ligadas a una oportunidad.
+def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
+    """Helper: convierte un body JSON del modal en kwargs para Instalacion.
 
-    GET → lista las instalaciones ordenadas por fecha_programada (las sin
-          fecha al final). Cada item incluye los campos del Excel.
-    POST → crea una instalación nueva con la opp pre-ligada. Body JSON:
-          {po, descripcion, fecha (YYYY-MM-DD), jornadas_count, jornadas_tipo,
-           personal, monto_po, utilidad, estado, observaciones, notas}
+    Devuelve (kwargs, error_text). Si error_text no es None, hubo un
+    problema de validación y se debe devolver 400. Tolerante con strings
+    vacíos para Decimal y fecha.
     """
-    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+    descripcion = (data.get('descripcion') or '').strip()
+    if not descripcion:
+        return None, 'La descripción es obligatoria.'
+
+    fecha_raw = (data.get('fecha') or '').strip()
+    fecha_programada = None
+    if fecha_raw:
+        try:
+            from datetime import date as _date
+            fecha_programada = _date.fromisoformat(fecha_raw)
+        except ValueError:
+            return None, 'Fecha inválida (usa YYYY-MM-DD).'
+
+    def _dec(v, default='0'):
+        try:
+            return Decimal(str(v if v not in (None, '') else default))
+        except (InvalidOperation, ValueError):
+            return Decimal(default)
+
+    kwargs = {
+        'po': (data.get('po') or po_default or '').strip()[:80],
+        'proyecto': descripcion[:400],
+        'fecha_programada': fecha_programada,
+        'fecha_tentativa_texto': (data.get('fecha_tentativa_texto') or '').strip()[:120],
+        'jornadas_count': int(data.get('jornadas_count') or 1),
+        'jornadas_tipo': (data.get('jornadas_tipo') or 'normal'),
+        'personal_descripcion': (data.get('personal') or '').strip()[:200],
+        'monto_po': _dec(data.get('monto_po')),
+        'utilidad': _dec(data.get('utilidad')),
+        'observaciones': (data.get('observaciones') or '').strip(),
+        'notas': (data.get('notas') or '').strip(),
+        'estado': (data.get('estado') or 'programada'),
+    }
+    if cliente_default is not None:
+        kwargs['cliente_nombre'] = data.get('cliente_nombre') or (cliente_default.nombre_empresa if cliente_default else '')
+        kwargs['cliente'] = cliente_default
+    else:
+        kwargs['cliente_nombre'] = (data.get('cliente_nombre') or '').strip()[:200]
+    return kwargs, None
+
+
+def _instalacion_to_full_dict(inst):
+    """Serialización completa para el modal detalle (incluye asignaciones)."""
+    asignaciones = []
+    for a in inst.asignaciones.select_related('tecnico').order_by('fecha', 'tecnico__nombre'):
+        asignaciones.append({
+            'id': a.id,
+            'tecnico_id': a.tecnico_id,
+            'tecnico_nombre': a.tecnico.nombre,
+            'tecnico_rol': a.tecnico.get_rol_display(),
+            'fecha': a.fecha.isoformat(),
+            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
+            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
+            'notas': a.notas,
+        })
+    return {
+        'id': inst.id,
+        'po': inst.po,
+        'descripcion': inst.proyecto,
+        'cliente_nombre': inst.cliente_nombre,
+        'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
+        'fecha_tentativa_texto': inst.fecha_tentativa_texto,
+        'jornadas_count': inst.jornadas_count,
+        'jornadas_tipo': inst.jornadas_tipo,
+        'jornadas_tipo_label': inst.get_jornadas_tipo_display(),
+        'personal': inst.personal_descripcion,
+        'monto_po': str(inst.monto_po),
+        'utilidad': str(inst.utilidad),
+        'estado': inst.estado,
+        'estado_label': inst.get_estado_display(),
+        'observaciones': inst.observaciones,
+        'notas': inst.notas,
+        'proyecto_id': inst.proyecto_crm_id,
+        'oportunidad_id': inst.oportunidad_id,
+        'asignaciones': asignaciones,
+    }
+
+
+@login_required
+def api_proyecto_instalaciones(request, proyecto_id):
+    """GET/POST instalaciones ligadas a un Proyecto (Programa de Obra).
+
+    GET → lista las instalaciones del proyecto ordenadas por fecha.
+    POST → crea una nueva instalación pre-ligada al proyecto. Body JSON:
+          {po, descripcion, fecha, jornadas_count, jornadas_tipo, personal,
+           monto_po, utilidad, observaciones, notas, estado, cliente_nombre,
+           oportunidad_id (opcional)}
+    """
+    proy = get_object_or_404(Proyecto, pk=proyecto_id)
 
     if request.method == 'GET':
         qs = (
             Instalacion.objects
-            .filter(oportunidad=opp)
+            .filter(proyecto_crm=proy)
             .order_by(F('fecha_programada').asc(nulls_last=True), 'fecha_creacion')
         )
         items = []
@@ -6077,18 +6163,16 @@ def api_oportunidad_instalaciones(request, oportunidad_id):
                 'id': inst.id,
                 'po': inst.po,
                 'descripcion': inst.proyecto,
+                'cliente_nombre': inst.cliente_nombre,
                 'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
                 'fecha_tentativa_texto': inst.fecha_tentativa_texto,
                 'jornadas_count': inst.jornadas_count,
-                'jornadas_tipo': inst.jornadas_tipo,
                 'jornadas_tipo_label': inst.get_jornadas_tipo_display(),
                 'personal': inst.personal_descripcion,
                 'monto_po': str(inst.monto_po),
-                'utilidad': str(inst.utilidad),
                 'estado': inst.estado,
                 'estado_label': inst.get_estado_display(),
-                'observaciones': inst.observaciones,
-                'notas': inst.notas,
+                'asignaciones_count': inst.asignaciones.count(),
             })
         return JsonResponse({'success': True, 'instalaciones': items})
 
@@ -6097,43 +6181,21 @@ def api_oportunidad_instalaciones(request, oportunidad_id):
             data = json.loads(request.body.decode('utf-8') or '{}')
         except (ValueError, AttributeError):
             data = {}
-
-        descripcion = (data.get('descripcion') or '').strip()
-        if not descripcion:
-            return JsonResponse({'success': False, 'error': 'La descripción es obligatoria.'}, status=400)
-
-        fecha_raw = (data.get('fecha') or '').strip()
-        fecha_programada = None
-        if fecha_raw:
+        kwargs, err = _instalacion_payload_to_kwargs(data, cliente_default=None)
+        if err:
+            return JsonResponse({'success': False, 'error': err}, status=400)
+        # Opp opcional.
+        opp = None
+        if data.get('oportunidad_id'):
             try:
-                from datetime import date as _date
-                fecha_programada = _date.fromisoformat(fecha_raw)
-            except ValueError:
-                return JsonResponse({'success': False, 'error': 'Fecha inválida (usa YYYY-MM-DD).'}, status=400)
-
-        def _dec(v, default='0'):
-            try:
-                return Decimal(str(v if v not in (None, '') else default))
-            except (InvalidOperation, ValueError):
-                return Decimal(default)
-
+                opp = TodoItem.objects.get(pk=int(data['oportunidad_id']))
+            except (TodoItem.DoesNotExist, ValueError, TypeError):
+                opp = None
         inst = Instalacion.objects.create(
-            cliente_nombre=(opp.cliente.nombre_empresa if opp.cliente else (data.get('cliente_nombre') or '')),
-            cliente=opp.cliente,
+            proyecto_crm=proy,
             oportunidad=opp,
-            po=(data.get('po') or opp.po_number or '').strip()[:80],
-            proyecto=descripcion[:400],
-            fecha_programada=fecha_programada,
-            fecha_tentativa_texto=(data.get('fecha_tentativa_texto') or '').strip()[:120],
-            jornadas_count=int(data.get('jornadas_count') or 1),
-            jornadas_tipo=(data.get('jornadas_tipo') or 'normal'),
-            personal_descripcion=(data.get('personal') or '').strip()[:200],
-            monto_po=_dec(data.get('monto_po')),
-            utilidad=_dec(data.get('utilidad')),
-            observaciones=(data.get('observaciones') or '').strip(),
-            notas=(data.get('notas') or '').strip(),
-            estado=(data.get('estado') or 'programada'),
             creado_por=request.user,
+            **kwargs,
         )
         return JsonResponse({'success': True, 'instalacion_id': inst.id})
 
@@ -6141,18 +6203,135 @@ def api_oportunidad_instalaciones(request, oportunidad_id):
 
 
 @login_required
-def api_oportunidad_instalacion_detalle(request, oportunidad_id, instalacion_id):
-    """DELETE → quita la instalación. Solo se aceptan instalaciones que
-    pertenezcan a la oportunidad indicada (defensa en profundidad).
+def api_instalacion_detalle(request, instalacion_id):
+    """GET/PATCH/DELETE detalle de una instalación.
+
+    GET → datos completos para el modal (incluye asignaciones de técnicos).
+    PATCH → actualiza campos del body (sólo los presentes).
+    DELETE → elimina la instalación (las asignaciones caen por CASCADE).
     """
-    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
-    inst = get_object_or_404(Instalacion, pk=instalacion_id, oportunidad=opp)
+    inst = get_object_or_404(Instalacion, pk=instalacion_id)
+
+    if request.method == 'GET':
+        return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
 
     if request.method == 'DELETE':
         inst.delete()
         return JsonResponse({'success': True})
 
+    if request.method == 'PATCH':
+        try:
+            data = json.loads(request.body.decode('utf-8') or '{}')
+        except (ValueError, AttributeError):
+            data = {}
+        kwargs, err = _instalacion_payload_to_kwargs(data, cliente_default=None)
+        if err:
+            return JsonResponse({'success': False, 'error': err}, status=400)
+        for field, value in kwargs.items():
+            setattr(inst, field, value)
+        inst.save()
+        return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
+
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_instalacion_asignaciones(request, instalacion_id):
+    """POST asigna un técnico a una instalación en una fecha.
+
+    Body: {tecnico_id, fecha (YYYY-MM-DD), hora_inicio (opc), hora_fin (opc), notas (opc)}.
+    Idempotente por UniqueConstraint(instalacion, tecnico, fecha): si ya
+    existe, devuelve la existente con un flag 'created': False.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    inst = get_object_or_404(Instalacion, pk=instalacion_id)
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, AttributeError):
+        data = {}
+
+    try:
+        tecnico_id = int(data.get('tecnico_id'))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'tecnico_id inválido'}, status=400)
+    tecnico = get_object_or_404(Tecnico, pk=tecnico_id)
+
+    from datetime import date as _date, time as _time
+    fecha_raw = (data.get('fecha') or '').strip()
+    if not fecha_raw:
+        return JsonResponse({'success': False, 'error': 'fecha requerida'}, status=400)
+    try:
+        fecha = _date.fromisoformat(fecha_raw)
+    except ValueError:
+        return JsonResponse({'success': False, 'error': 'Fecha inválida (YYYY-MM-DD)'}, status=400)
+
+    def _parse_time(s):
+        if not s:
+            return None
+        try:
+            h, m = s.split(':')
+            return _time(int(h), int(m))
+        except (ValueError, AttributeError):
+            return None
+
+    asig, created = InstalacionAsignacion.objects.get_or_create(
+        instalacion=inst, tecnico=tecnico, fecha=fecha,
+        defaults={
+            'hora_inicio': _parse_time(data.get('hora_inicio')),
+            'hora_fin': _parse_time(data.get('hora_fin')),
+            'notas': (data.get('notas') or '').strip()[:200],
+        },
+    )
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'asignacion': {
+            'id': asig.id,
+            'tecnico_id': tecnico.id,
+            'tecnico_nombre': tecnico.nombre,
+            'tecnico_rol': tecnico.get_rol_display(),
+            'fecha': asig.fecha.isoformat(),
+            'hora_inicio': asig.hora_inicio.strftime('%H:%M') if asig.hora_inicio else '',
+            'hora_fin': asig.hora_fin.strftime('%H:%M') if asig.hora_fin else '',
+            'notas': asig.notas,
+        },
+    })
+
+
+@login_required
+def api_instalacion_asignacion_detalle(request, instalacion_id, asignacion_id):
+    """DELETE → quita la asignación de técnico de la instalación."""
+    if request.method != 'DELETE':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    asig = get_object_or_404(InstalacionAsignacion, pk=asignacion_id, instalacion_id=instalacion_id)
+    asig.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+def api_tecnicos_list(request):
+    """GET → lista técnicos (por default solo activos). Usado por el
+    picker de "Asignar técnico" del modal detalle. Param: ?incluir_inactivos=1.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    qs = Tecnico.objects.all()
+    if request.GET.get('incluir_inactivos') != '1':
+        qs = qs.filter(activo=True)
+    qs = qs.order_by('nombre')
+    return JsonResponse({
+        'success': True,
+        'tecnicos': [{
+            'id': t.id,
+            'nombre': t.nombre,
+            'rol': t.rol,
+            'rol_label': t.get_rol_display(),
+            'color': t.color or '',
+            'activo': t.activo,
+        } for t in qs],
+    })
 
 
 @login_required

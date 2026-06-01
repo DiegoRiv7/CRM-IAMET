@@ -5870,13 +5870,23 @@ class Instalacion(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='programada')
 
     # Links opcionales al CRM existente.
+    # `proyecto_crm` es el dueño lógico: las instalaciones se gestionan
+    # desde la sección "Programa de Obra" dentro del widget de Proyecto.
+    # `oportunidad` es opcional (legacy y por si se requiere ligar una
+    # instalación a una opp puntual sin proyecto).
+    # OJO: el field `proyecto` arriba es CharField (descripción del
+    # trabajo). El FK al modelo Proyecto debe tener otro nombre.
     cliente = models.ForeignKey(
         'Cliente', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='instalaciones', help_text='Si está en el CRM, link al Cliente.',
     )
+    proyecto_crm = models.ForeignKey(
+        'Proyecto', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='instalaciones', help_text='Proyecto al que pertenece (Programa de Obra).',
+    )
     oportunidad = models.ForeignKey(
         'TodoItem', null=True, blank=True, on_delete=models.SET_NULL,
-        related_name='instalaciones', help_text='Opp ligada (si aplica).',
+        related_name='instalaciones', help_text='Opp ligada (opcional).',
     )
 
     # Auditoría.

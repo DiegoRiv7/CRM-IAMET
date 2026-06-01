@@ -257,11 +257,13 @@
                         {proyecto, bitrix_proyecto}. JS de renderDetalle()
                         cambia display:none → grid según d.tipo_negociacion.
 
-                        Col 1: Proyecto ligado (M2M Proyecto.oportunidades_ligadas).
-                        Col 2: Programa de Obra — tabla de Instalacion ligadas
-                               a esta opp (FK Instalacion.oportunidad).
+                        Bloque Proyecto vinculado (M2M Proyecto.oportunidades_ligadas).
+                        El Programa de Obra (Instalaciones) ya NO vive aquí —
+                        se gestiona desde el tab "Programa de Obra" del widget
+                        de Proyecto. Las instalaciones son del proyecto, no
+                        de la opp.
                         {% endcomment %}
-                        <div class="wo-card" id="woProyectoCard" style="display:none;">
+                        <div class="wo-card" id="woProyectoCard" style="display:none;grid-column:1 / -1;">
                             <div class="wo-section-header">
                                 <h3 class="wo-section-title">Proyecto</h3>
                                 <button class="wo-btn-new" id="woBtnVincularProyecto" type="button">
@@ -274,22 +276,6 @@
                             </div>
                             <div id="woProyectoList">
                                 <div class="wo-empty">Sin proyecto vinculado aún</div>
-                            </div>
-                        </div>
-
-                        <div class="wo-card" id="woInstalacionesCard" style="display:none;">
-                            <div class="wo-section-header">
-                                <h3 class="wo-section-title">Programa de Obra <span style="font-weight:400;color:#86868B;font-size:0.78rem;">(Instalaciones)</span></h3>
-                                <button class="wo-btn-new" id="woBtnNuevaInstalacion" type="button">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19" />
-                                        <line x1="5" y1="12" x2="19" y2="12" />
-                                    </svg>
-                                    Nueva
-                                </button>
-                            </div>
-                            <div id="woInstalacionesTableWrap">
-                                <div class="wo-empty">Sin instalaciones aún</div>
                             </div>
                         </div>
                     </div>
@@ -3840,66 +3826,6 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
     </div>
 </div>
 
-<!-- Modal: Nueva instalación -->
-<div class="wop-modal-backdrop" id="wopInstalacionModal">
-    <div class="wop-modal">
-        <div class="wop-modal-head">
-            <h3>Nueva instalación (Programa de Obra)</h3>
-            <button type="button" class="widget-close" onclick="wopCerrarInstalacion()" style="font-size:1.4rem;">&times;</button>
-        </div>
-        <div class="wop-modal-body">
-            <div class="wop-field">
-                <label for="wopInstDescripcion">Descripción del trabajo</label>
-                <textarea id="wopInstDescripcion" rows="2" placeholder="Ej. Retiro de 15 nodos en IDF 3"></textarea>
-            </div>
-            <div class="wop-form-grid">
-                <div class="wop-field">
-                    <label for="wopInstPo">PO (opcional)</label>
-                    <input type="text" id="wopInstPo" maxlength="80" placeholder="Heredada de la opp si la tiene">
-                </div>
-                <div class="wop-field">
-                    <label for="wopInstFecha">Fecha programada</label>
-                    <input type="date" id="wopInstFecha">
-                </div>
-                <div class="wop-field">
-                    <label for="wopInstJornadas">Jornadas</label>
-                    <input type="number" id="wopInstJornadas" min="1" value="1">
-                </div>
-                <div class="wop-field">
-                    <label for="wopInstJornadasTipo">Tipo de jornada</label>
-                    <select id="wopInstJornadasTipo">
-                        <option value="normal">Normal</option>
-                        <option value="sabado">Sábado</option>
-                        <option value="domingo">Domingo</option>
-                        <option value="noche">Noche</option>
-                        <option value="extraordinaria">Extraordinaria</option>
-                    </select>
-                </div>
-                <div class="wop-field" style="grid-column:1 / -1;">
-                    <label for="wopInstPersonal">Personal (texto libre)</label>
-                    <input type="text" id="wopInstPersonal" maxlength="200" placeholder="Ej. 1 SUPERVISOR Y 3 TÉCNICOS">
-                </div>
-                <div class="wop-field">
-                    <label for="wopInstMonto">Monto PO</label>
-                    <input type="number" id="wopInstMonto" step="0.01" min="0" placeholder="0.00">
-                </div>
-                <div class="wop-field">
-                    <label for="wopInstUtilidad">Utilidad</label>
-                    <input type="number" id="wopInstUtilidad" step="0.01" min="0" placeholder="0.00">
-                </div>
-                <div class="wop-field" style="grid-column:1 / -1;">
-                    <label for="wopInstNotas">Notas / observaciones</label>
-                    <textarea id="wopInstNotas" rows="2"></textarea>
-                </div>
-            </div>
-        </div>
-        <div class="wop-modal-foot">
-            <button type="button" class="wop-btn-secondary" onclick="wopCerrarInstalacion()">Cancelar</button>
-            <button type="button" class="wop-btn-primary" id="wopInstGuardarBtn" onclick="wopGuardarInstalacion()">Guardar</button>
-        </div>
-    </div>
-</div>
-
 <script>
 (function () {
     function _csrf() {
@@ -3939,19 +3865,15 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
         var cardProy = document.getElementById('woProyectoCard');
-        var cardInst = document.getElementById('woInstalacionesCard');
-        if (!cardProy || !cardInst) return;
+        if (!cardProy) return;
         if (!esProyecto) {
             cardProy.style.display = 'none';
-            cardInst.style.display = 'none';
             _wopActiveOppId = null;
             return;
         }
         cardProy.style.display = '';
-        cardInst.style.display = '';
         _wopActiveOppId = d.id;
         _woCargarProyectos(d.id);
-        _woCargarInstalaciones(d.id);
     };
 
     function _woCargarProyectos(oppId) {
@@ -3991,53 +3913,12 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
             });
     }
 
-    function _woCargarInstalaciones(oppId) {
-        var wrap = document.getElementById('woInstalacionesTableWrap');
-        if (!wrap) return;
-        wrap.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;">Cargando…</div>';
-        fetch('/app/api/oportunidad/' + oppId + '/instalaciones/', { credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (!data || !data.success) {
-                    wrap.innerHTML = '<div class="wo-empty">No se pudo cargar.</div>';
-                    return;
-                }
-                var inst = data.instalaciones || [];
-                if (!inst.length) {
-                    wrap.innerHTML = '<div class="wo-empty">Sin instalaciones aún</div>';
-                    return;
-                }
-                var rows = inst.map(function (it) {
-                    return '<tr>'
-                        + '<td style="font-family:ui-monospace,monospace;color:#475569;font-weight:600;">' + (_esc(it.po) || '<span style="color:#C7C7CC;">—</span>') + '</td>'
-                        + '<td style="max-width:240px;"><div style="font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + _esc(it.descripcion) + '">' + _esc(it.descripcion) + '</div></td>'
-                        + '<td style="color:#3C3C43;white-space:nowrap;">' + _fmtFecha(it.fecha, it.fecha_tentativa_texto) + '</td>'
-                        + '<td style="color:#3C3C43;">' + it.jornadas_count + ' <span style="color:#86868B;font-size:0.7rem;">' + _esc(it.jornadas_tipo_label) + '</span></td>'
-                        + '<td style="color:#3C3C43;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(it.personal) + '">' + (_esc(it.personal) || '<span style="color:#C7C7CC;">—</span>') + '</td>'
-                        + '<td style="font-weight:600;color:#1D1D1F;white-space:nowrap;">' + _fmtMoney(it.monto_po) + '</td>'
-                        + '<td><span class="' + _estadoPillCls(it.estado) + '">' + _esc(it.estado_label) + '</span></td>'
-                        + '<td style="text-align:right;"><button type="button" class="wop-icon-btn" title="Eliminar" onclick="wopEliminarInstalacion(' + it.id + ')">'
-                        + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
-                        + '</button></td>'
-                        + '</tr>';
-                }).join('');
-                wrap.innerHTML = '<div style="overflow-x:auto;"><table class="wop-table"><thead><tr>'
-                    + '<th>PO</th><th>Descripción</th><th>Fecha</th><th>Jornadas</th><th>Personal</th><th>Monto</th><th>Estado</th><th></th>'
-                    + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
-            })
-            .catch(function () {
-                wrap.innerHTML = '<div class="wo-empty">Error de red.</div>';
-            });
-    }
-
-    // ── Botones del header de cada card ──────────────────────────────
+    // ── Botón del header del card Proyecto ───────────────────────────
     document.addEventListener('click', function (ev) {
         var t = ev.target;
         if (!t) return;
         var btn = t.closest && t.closest('#woBtnVincularProyecto');
         if (btn) { ev.preventDefault(); wopAbrirVincular(); return; }
-        var btn2 = t.closest && t.closest('#woBtnNuevaInstalacion');
-        if (btn2) { ev.preventDefault(); wopAbrirInstalacion(); return; }
     });
 
     // ── Click en proyecto vinculado → abrir widget de proyecto ───────
@@ -4135,97 +4016,11 @@ la tabla. Lo creado aparece también en el calendario de instalaciones.
         });
     };
 
-    // ── Modal: Nueva instalación ─────────────────────────────────────
-    function wopAbrirInstalacion() {
-        var modal = document.getElementById('wopInstalacionModal');
-        if (!modal) return;
-        // Reset campos.
-        ['wopInstDescripcion', 'wopInstPo', 'wopInstFecha', 'wopInstPersonal', 'wopInstMonto', 'wopInstUtilidad', 'wopInstNotas']
-            .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
-        var jornadas = document.getElementById('wopInstJornadas'); if (jornadas) jornadas.value = '1';
-        var tipo = document.getElementById('wopInstJornadasTipo'); if (tipo) tipo.value = 'normal';
-        // Pre-fill PO desde la opp si existe (el field woPoNumber).
-        var poInput = document.getElementById('woPoNumber');
-        if (poInput && poInput.value) {
-            var poFld = document.getElementById('wopInstPo');
-            if (poFld) poFld.value = poInput.value;
-        }
-        modal.classList.add('open');
-        var desc = document.getElementById('wopInstDescripcion');
-        if (desc) desc.focus();
-    }
-    window.wopCerrarInstalacion = function () {
-        var modal = document.getElementById('wopInstalacionModal');
-        if (modal) modal.classList.remove('open');
-    };
-    window.wopGuardarInstalacion = function () {
-        if (!_wopActiveOppId) return;
-        var btn = document.getElementById('wopInstGuardarBtn');
-        var descEl = document.getElementById('wopInstDescripcion');
-        var descripcion = descEl ? descEl.value.trim() : '';
-        if (!descripcion) {
-            if (descEl) descEl.focus();
-            if (typeof showToast === 'function') showToast('La descripción es obligatoria.', 'error');
-            return;
-        }
-        var payload = {
-            descripcion: descripcion,
-            po: (document.getElementById('wopInstPo') || {}).value || '',
-            fecha: (document.getElementById('wopInstFecha') || {}).value || '',
-            jornadas_count: (document.getElementById('wopInstJornadas') || {}).value || 1,
-            jornadas_tipo: (document.getElementById('wopInstJornadasTipo') || {}).value || 'normal',
-            personal: (document.getElementById('wopInstPersonal') || {}).value || '',
-            monto_po: (document.getElementById('wopInstMonto') || {}).value || '0',
-            utilidad: (document.getElementById('wopInstUtilidad') || {}).value || '0',
-            notas: (document.getElementById('wopInstNotas') || {}).value || '',
-        };
-        if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
-        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/instalaciones/', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
-            body: JSON.stringify(payload)
-        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
-          .then(function (res) {
-              if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
-              if (res.ok && res.data && res.data.success) {
-                  wopCerrarInstalacion();
-                  _woCargarInstalaciones(_wopActiveOppId);
-                  if (typeof showToast === 'function') showToast('Instalación creada', 'success');
-              } else {
-                  var err = (res.data && res.data.error) || 'No se pudo guardar.';
-                  if (typeof showToast === 'function') showToast(err, 'error');
-              }
-          })
-          .catch(function () {
-              if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
-              if (typeof showToast === 'function') showToast('Error de red', 'error');
-          });
-    };
-
-    window.wopEliminarInstalacion = function (instalacionId) {
-        if (!_wopActiveOppId) return;
-        if (!confirm('¿Eliminar esta instalación del Programa de Obra?')) return;
-        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/instalaciones/' + instalacionId + '/', {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': _csrf() }
-        }).then(function (r) { return r.json(); }).then(function (data) {
-            if (data && data.success) {
-                _woCargarInstalaciones(_wopActiveOppId);
-            } else if (typeof showToast === 'function') {
-                showToast('No se pudo eliminar.', 'error');
-            }
-        });
-    };
-
-    // Cerrar modales con Escape.
+    // Cerrar el modal de vincular con Escape.
     document.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape') {
             var v = document.getElementById('wopVincularModal');
-            var i = document.getElementById('wopInstalacionModal');
             if (v && v.classList.contains('open')) { wopCerrarVincular(); ev.stopPropagation(); return; }
-            if (i && i.classList.contains('open')) { wopCerrarInstalacion(); ev.stopPropagation(); return; }
         }
     });
 })();
