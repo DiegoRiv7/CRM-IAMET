@@ -254,6 +254,8 @@
     var _pobTecnicosCache = null;   // [{id,nombre,rol_label}] activos
     var _pobUserSelectedIds = [];   // Users elegidos en el picker (modo crear)
     var _pobUserSelectedMap = {};   // {userId: {id, text, avatar_url}} para chips
+    var _pobUserSearchResults = {}; // {userId: userObj} de la última búsqueda — fuente
+                                    // de datos para pobToggleUser sin JSON-en-onclick.
     var _pobUserSearchDebounce = null;
 
     function _fillForm(inst) {
@@ -356,6 +358,7 @@
         _pobActiveInst = { proyecto_id: pid, asignaciones: [] };
         _pobUserSelectedIds = [];
         _pobUserSelectedMap = {};
+        _pobUserSearchResults = {};
         var titleEl = document.getElementById('pobModalTitle');
         if (titleEl) titleEl.textContent = 'Nueva instalación';
         var btnDel = document.getElementById('pobBtnEliminar');
@@ -423,7 +426,12 @@
     function _pobRenderUserResults(results) {
         var wrap = document.getElementById('pobUserResults');
         if (!wrap) return;
-        if (!results.length) {
+        // Cachear resultados para que pobToggleUser pueda hidratarse sin
+        // pasar el objeto entero por el onclick (rompía con JSON-en-HTML).
+        _pobUserSearchResults = {};
+        (results || []).forEach(function (u) { _pobUserSearchResults[u.id] = u; });
+
+        if (!results || !results.length) {
             wrap.innerHTML = '<div style="color:#86868B;font-size:0.74rem;padding:6px;">Escribe para buscar usuarios.</div>';
             return;
         }
@@ -433,16 +441,25 @@
                 ? '<img src="' + _esc(u.avatar_url) + '" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
                 : '<div style="width:24px;height:24px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.66rem;font-weight:700;flex-shrink:0;">'
                   + _esc((u.text || '?').substring(0, 1).toUpperCase()) + '</div>';
-            return '<div onclick="pobToggleUser(' + u.id + ', ' + JSON.stringify(JSON.stringify(u)).slice(1, -1) + ')" '
+            return '<div data-pob-user-id="' + u.id + '" '
                 + 'style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;'
-                + (seleccionado ? 'background:#E0F2FE;' : '') + '" '
-                + 'onmouseover="if(!' + (seleccionado ? 'true' : 'false') + ')this.style.background=\'#F2F4F7\';" '
-                + 'onmouseout="this.style.background=\'' + (seleccionado ? '#E0F2FE' : 'transparent') + '\';">'
+                + (seleccionado ? 'background:#E0F2FE;' : '') + '">'
                 + avatar
                 + '<div style="flex:1;min-width:0;font-size:0.82rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(u.text) + '</div>'
                 + (seleccionado ? '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '')
                 + '</div>';
         }).join('');
+
+        // Delegate click: un solo listener para todos los results, sin
+        // strings JSON en el HTML.
+        wrap.onclick = function (ev) {
+            var t = ev.target;
+            while (t && t !== wrap && !t.hasAttribute('data-pob-user-id')) t = t.parentElement;
+            if (!t || t === wrap) return;
+            var uid = parseInt(t.getAttribute('data-pob-user-id'), 10);
+            if (!isFinite(uid)) return;
+            pobToggleUser(uid);
+        };
     }
 
     function _pobRenderUserChips() {
@@ -456,38 +473,38 @@
             var u = _pobUserSelectedMap[uid] || { text: 'Usuario ' + uid };
             return '<div style="display:inline-flex;align-items:center;gap:4px;background:#0052D4;color:#fff;padding:3px 4px 3px 10px;border-radius:999px;font-size:0.74rem;font-weight:600;">'
                 + _esc(u.text)
-                + '<button type="button" onclick="pobToggleUser(' + uid + ')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.7rem;padding:0;line-height:1;">×</button>'
+                + '<button type="button" data-pob-chip-remove="' + uid + '" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.7rem;padding:0;line-height:1;">×</button>'
                 + '</div>';
         }).join('');
+        // Listener delegado para los X de los chips.
+        wrap.onclick = function (ev) {
+            var btn = ev.target.closest && ev.target.closest('[data-pob-chip-remove]');
+            if (!btn) return;
+            var uid = parseInt(btn.getAttribute('data-pob-chip-remove'), 10);
+            if (isFinite(uid)) pobToggleUser(uid);
+        };
     }
 
-    window.pobToggleUser = function (userId, payload) {
+    window.pobToggleUser = function (userId) {
         var uid = parseInt(userId, 10);
+        if (!isFinite(uid)) return;
         if (_pobUserSelectedMap[uid]) {
             // Quitar
             _pobUserSelectedIds = _pobUserSelectedIds.filter(function (x) { return x !== uid; });
             delete _pobUserSelectedMap[uid];
         } else {
-            // Agregar
+            // Agregar. Hidratamos el objeto del cache de la última búsqueda.
             _pobUserSelectedIds.push(uid);
-            var u = { id: uid, text: 'Usuario ' + uid };
-            if (payload) {
-                try { u = JSON.parse(payload); } catch (e) {}
-            }
+            var u = _pobUserSearchResults[uid] || { id: uid, text: 'Usuario ' + uid };
             _pobUserSelectedMap[uid] = u;
         }
         _pobRenderUserChips();
-        // Refresca el highlight en la lista de resultados.
-        var wrap = document.getElementById('pobUserResults');
-        if (wrap && wrap.children.length) {
-            // Re-render con los resultados actuales: como no los guardé, simulo
-            // re-busqueda usando el input. Simple: re-buscar.
-            var input = document.getElementById('pobUserSearch');
-            if (input && input.value.trim()) {
-                fetch('/app/api/users/?q=' + encodeURIComponent(input.value.trim()), { credentials: 'same-origin' })
-                    .then(function (r) { return r.json(); })
-                    .then(function (results) { _pobRenderUserResults(results || []); });
-            }
+        // Re-render de la lista de resultados con el highlight actualizado,
+        // usando el cache local — sin re-fetch.
+        var input = document.getElementById('pobUserSearch');
+        if (input && input.value.trim()) {
+            var resultsArr = Object.keys(_pobUserSearchResults).map(function (k) { return _pobUserSearchResults[k]; });
+            _pobRenderUserResults(resultsArr);
         }
     };
 
@@ -498,6 +515,7 @@
         _pobCreatingMode = false;
         _pobUserSelectedIds = [];
         _pobUserSelectedMap = {};
+        _pobUserSearchResults = {};
         var addForm = document.getElementById('pobAddAsigForm');
         if (addForm) addForm.style.display = 'none';
     };
