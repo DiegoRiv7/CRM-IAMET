@@ -94,6 +94,39 @@
         return 'wop-pill wop-pill-prog';
     }
 
+    // Avatares apilados (stack) para la columna "Personal" de la tabla.
+    // Muestra hasta 4 técnicos; si hay más, un círculo "+N" con tooltip.
+    function _renderTecnicoAvatars(tecnicos) {
+        if (!tecnicos || !tecnicos.length) return '<span style="color:#C7C7CC;">—</span>';
+        var VISIBLES = 4;
+        var primeros = tecnicos.slice(0, VISIBLES);
+        var resto = tecnicos.slice(VISIBLES);
+        var html = '<div style="display:inline-flex;align-items:center;">';
+        primeros.forEach(function (t, i) {
+            var bg = _colorFromName(t.nombre);
+            var common = 'width:26px;height:26px;border-radius:50%;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;'
+                + 'font-size:0.66rem;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 0 1px rgba(0,0,0,0.04);'
+                + (i > 0 ? 'margin-left:-8px;' : '');
+            var inner = t.avatar_url
+                ? '<img src="' + _esc(t.avatar_url) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="' + _esc(t.nombre) + '">'
+                : _esc(t.iniciales || '?');
+            html += '<div title="' + _esc(t.nombre) + '" style="' + common + 'background:' + bg + ';">' + inner + '</div>';
+        });
+        if (resto.length) {
+            var more = resto.map(function (t) { return t.nombre; }).join(', ');
+            html += '<div title="' + _esc(more) + '" style="width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:#86868B;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:0.66rem;font-weight:700;flex-shrink:0;margin-left:-8px;">+' + resto.length + '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+    var _AV_PALETTE = ['#0052D4','#34C759','#FF9500','#5856D6','#AF52DE','#FF3B30','#00C7BE','#A2845E'];
+    function _colorFromName(name) {
+        if (!name) return '#86868B';
+        var h = 0;
+        for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+        return _AV_PALETTE[Math.abs(h) % _AV_PALETTE.length];
+    }
+
     // Proyecto activo (lo lee del global window._proyectoActualId que el
     // resto del widget mantiene). Fallback: data attr del root.
     function _proyectoIdActivo() {
@@ -139,7 +172,7 @@
                         +   '<div style="font-size:0.7rem;color:#86868B;">' + _esc(it.cliente_nombre || '') + '</div></td>'
                         + '<td style="color:#3C3C43;white-space:nowrap;">' + _fmtFecha(it.fecha, it.fecha_tentativa_texto) + '</td>'
                         + '<td style="color:#3C3C43;">' + it.jornadas_count + ' <span style="color:#86868B;font-size:0.7rem;">' + _esc(it.jornadas_tipo_label) + '</span></td>'
-                        + '<td style="color:#3C3C43;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + _esc(it.personal) + '">' + (_esc(it.personal) || '<span style="color:#C7C7CC;">—</span>') + '</td>'
+                        + '<td>' + _renderTecnicoAvatars(it.tecnicos_asignados) + '</td>'
                         + '<td style="font-weight:600;color:#1D1D1F;white-space:nowrap;">' + _fmtMoney(it.monto_po) + '</td>'
                         + '<td><span class="' + _estadoPillCls(it.estado) + '">' + _esc(it.estado_label) + '</span></td>'
                         + '<td style="text-align:right;color:#86868B;font-size:0.78rem;">' + (it.asignaciones_count || 0) + ' técn.</td>'

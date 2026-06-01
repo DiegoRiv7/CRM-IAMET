@@ -6160,9 +6160,33 @@ def api_proyecto_instalaciones(request, proyecto_id):
             Instalacion.objects
             .filter(proyecto_crm=proy)
             .order_by(F('fecha_programada').asc(nulls_last=True), 'fecha_creacion')
+            .prefetch_related('asignaciones__tecnico__usuario')
         )
         items = []
         for inst in qs:
+            # Resumen de técnicos asignados (dedupe por tecnico_id; un
+            # técnico con varias fechas aparece una sola vez en el avatar).
+            tecnicos_resumen = {}
+            for a in inst.asignaciones.all():
+                t = a.tecnico
+                if t.id in tecnicos_resumen:
+                    continue
+                avatar_url = None
+                if t.usuario_id:
+                    try:
+                        if hasattr(t.usuario, 'userprofile'):
+                            avatar_url = t.usuario.userprofile.get_avatar_url()
+                    except Exception:
+                        avatar_url = None
+                nombre = t.nombre or ''
+                partes = [p for p in nombre.split() if p]
+                iniciales = (partes[0][0] + partes[-1][0]).upper() if len(partes) >= 2 else (nombre[:2].upper() if nombre else '?')
+                tecnicos_resumen[t.id] = {
+                    'id': t.id,
+                    'nombre': nombre,
+                    'avatar_url': avatar_url,
+                    'iniciales': iniciales,
+                }
             items.append({
                 'id': inst.id,
                 'po': inst.po,
@@ -6176,7 +6200,8 @@ def api_proyecto_instalaciones(request, proyecto_id):
                 'monto_po': str(inst.monto_po),
                 'estado': inst.estado,
                 'estado_label': inst.get_estado_display(),
-                'asignaciones_count': inst.asignaciones.count(),
+                'asignaciones_count': len(tecnicos_resumen),
+                'tecnicos_asignados': list(tecnicos_resumen.values()),
             })
         return JsonResponse({'success': True, 'instalaciones': items})
 
