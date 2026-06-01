@@ -6053,9 +6053,9 @@ def api_grid_tecnicos(request):
 # bloque "Proyecto ligado" + bloque "Programa de Obra (Instalaciones)".
 # ─────────────────────────────────────────────────────────────────────
 
-@login_required
 def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
-    """Helper: convierte un body JSON del modal en kwargs para Instalacion.
+    """Helper (NO es view, NO va con @login_required): convierte un body
+    JSON del modal en kwargs para Instalacion.
 
     Devuelve (kwargs, error_text). Si error_text no es None, hubo un
     problema de validación y se debe devolver 400. Tolerante con strings
