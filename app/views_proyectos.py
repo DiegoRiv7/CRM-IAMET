@@ -6134,7 +6134,9 @@ def _instalacion_to_full_dict(inst):
         'observaciones': inst.observaciones,
         'notas': inst.notas,
         'proyecto_id': inst.proyecto_crm_id,
+        'proyecto_nombre': inst.proyecto_crm.nombre if inst.proyecto_crm_id else '',
         'oportunidad_id': inst.oportunidad_id,
+        'oportunidad_titulo': inst.oportunidad.oportunidad if inst.oportunidad_id else '',
         'asignaciones': asignaciones,
     }
 

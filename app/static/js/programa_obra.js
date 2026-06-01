@@ -249,6 +249,180 @@
         document.body.appendChild(div.firstChild);
     }
 
+    // ─── Widget de VISTA amigable (modo lectura) ─────────────────────
+    function _ensureViewer() {
+        if (document.getElementById('pobViewerBackdrop')) return;
+        var html =
+            '<div class="wop-modal-backdrop" id="pobViewerBackdrop">'
+          +   '<div class="wop-modal" style="width:min(640px, 96vw);">'
+          +     '<div class="wop-modal-head" style="background:linear-gradient(135deg,#FF9500 0%,#FFB047 100%);padding:18px;border-bottom:none;">'
+          +       '<div style="flex:1;min-width:0;color:#fff;">'
+          +         '<div style="font-size:0.66rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;margin-bottom:4px;">'
+          +           '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="vertical-align:-1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+          +           '&nbsp;Programa de Obra · Instalación'
+          +         '</div>'
+          +         '<h3 id="pobViewTitle" style="margin:0;color:#fff;font-size:1.15rem;font-weight:700;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></h3>'
+          +       '</div>'
+          +       '<button type="button" class="widget-close" onclick="pobCerrarVista()" style="font-size:1.4rem;color:#fff;background:rgba(255,255,255,0.15);">&times;</button>'
+          +     '</div>'
+          +     '<div class="wop-modal-body" id="pobViewBody" style="padding:18px 22px;">'
+          +       '<div style="text-align:center;padding:30px;color:#86868B;font-size:0.85rem;">Cargando…</div>'
+          +     '</div>'
+          +     '<div class="wop-modal-foot">'
+          +       '<button type="button" class="wop-btn-secondary" onclick="pobCerrarVista()">Cerrar</button>'
+          +       '<button type="button" class="wop-btn-primary" id="pobBtnEditarFromView">Editar</button>'
+          +     '</div>'
+          +   '</div>'
+          + '</div>';
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        document.body.appendChild(div.firstChild);
+        document.getElementById('pobBtnEditarFromView').addEventListener('click', function () {
+            if (!_pobActiveInst || !_pobActiveInst.id) return;
+            var id = _pobActiveInst.id;
+            pobCerrarVista();
+            pobAbrirEditar(id);
+        });
+    }
+
+    function _renderViewerBody(inst) {
+        var body = document.getElementById('pobViewBody');
+        if (!body) return;
+        var fechaTxt = inst.fecha
+            ? _fmtFecha(inst.fecha)
+            : (inst.fecha_tentativa_texto ? _esc(inst.fecha_tentativa_texto) : '<span style="color:#C7C7CC;">Sin fecha</span>');
+
+        var asigs = (inst.asignaciones || []).map(function (a) {
+            return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F9FAFB;border-radius:8px;margin-bottom:4px;">'
+                +   '<div style="width:28px;height:28px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.74rem;font-weight:700;flex-shrink:0;">'
+                +     _esc((a.tecnico_nombre || '?').substring(0, 1).toUpperCase())
+                +   '</div>'
+                +   '<div style="flex:1;min-width:0;">'
+                +     '<div style="font-size:0.86rem;font-weight:600;color:#1D1D1F;">' + _esc(a.tecnico_nombre) + '</div>'
+                +     '<div style="font-size:0.7rem;color:#86868B;">' + _fmtFecha(a.fecha)
+                +       (a.hora_inicio ? ' · ' + _esc(a.hora_inicio) + (a.hora_fin ? '–' + _esc(a.hora_fin) : '') : '')
+                +     '</div>'
+                +   '</div>'
+                + '</div>';
+        }).join('');
+
+        var html = '';
+
+        // ── Key data card (cliente / PO / fecha / monto) ──
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">';
+        html +=   _statBlock('CLIENTE', _esc(inst.cliente_nombre || '—'));
+        html +=   _statBlock('PO', inst.po ? '<span style="font-family:ui-monospace,monospace;">' + _esc(inst.po) + '</span>' : '<span style="color:#C7C7CC;">—</span>');
+        html +=   _statBlock('FECHA PROGRAMADA', fechaTxt);
+        html +=   _statBlock('ESTADO', '<span class="' + _estadoPillCls(inst.estado) + '">' + _esc(inst.estado_label || '') + '</span>');
+        html += '</div>';
+
+        // ── Económicos + jornadas ──
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">';
+        html +=   _statBlock('MONTO PO', '<span style="font-size:1.05rem;font-weight:700;color:#1D1D1F;">' + _fmtMoney(inst.monto_po) + '</span>');
+        html +=   _statBlock('UTILIDAD', '<span style="font-size:1.05rem;font-weight:700;color:#059669;">' + _fmtMoney(inst.utilidad) + '</span>');
+        html +=   _statBlock('JORNADAS', _esc(String(inst.jornadas_count || 1)) + ' <span style="color:#86868B;font-size:0.8rem;">' + _esc(inst.jornadas_tipo_label || '') + '</span>');
+        html +=   _statBlock('PERSONAL (TEXTO)', _esc(inst.personal || '') || '<span style="color:#C7C7CC;">—</span>');
+        html += '</div>';
+
+        // ── Proyecto ligado (click abre widget) ──
+        if (inst.proyecto_id) {
+            html += '<div style="margin-bottom:18px;">';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">Proyecto</div>';
+            html +=   '<div onclick="pobAbrirProyectoDesdeVista(' + inst.proyecto_id + ')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'#DBEAFE\'" onmouseout="this.style.background=\'#EFF6FF\'">';
+            html +=     '<div style="width:32px;height:32px;border-radius:8px;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
+            html +=       '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+            html +=     '</div>';
+            html +=     '<div style="flex:1;min-width:0;">';
+            html +=       '<div style="font-size:0.92rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(inst.proyecto_nombre || 'Proyecto #' + inst.proyecto_id) + '</div>';
+            html +=       '<div style="font-size:0.7rem;color:#0052D4;">Click para abrir →</div>';
+            html +=     '</div>';
+            html +=   '</div>';
+            html += '</div>';
+        }
+
+        // ── Oportunidad ligada ──
+        if (inst.oportunidad_id && inst.oportunidad_titulo) {
+            html += '<div style="margin-bottom:18px;">';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">Oportunidad ligada</div>';
+            html +=   '<div onclick="pobAbrirOppDesdeVista(' + inst.oportunidad_id + ')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F9FAFB;border-radius:8px;cursor:pointer;" onmouseover="this.style.background=\'#F2F4F7\'" onmouseout="this.style.background=\'#F9FAFB\'">';
+            html +=     '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2.4" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
+            html +=     '<div style="flex:1;font-size:0.84rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(inst.oportunidad_titulo) + '</div>';
+            html +=     '<svg width="14" height="14" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+            html +=   '</div>';
+            html += '</div>';
+        }
+
+        // ── Técnicos asignados ──
+        html += '<div style="margin-bottom:18px;">';
+        html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Técnicos asignados</div>';
+        if (asigs) html += asigs;
+        else html += '<div style="font-size:0.82rem;color:#86868B;padding:10px;text-align:center;background:#F9FAFB;border-radius:8px;">Sin técnicos asignados.</div>';
+        html += '</div>';
+
+        // ── Notas/Observaciones ──
+        if (inst.notas || inst.observaciones) {
+            html += '<div>';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">Notas</div>';
+            html +=   '<div style="font-size:0.86rem;color:#3C3C43;background:#FFF7EB;border-left:3px solid #FF9500;padding:10px 12px;border-radius:0 8px 8px 0;white-space:pre-wrap;">';
+            html +=     _esc(inst.notas || inst.observaciones);
+            html +=   '</div>';
+            html += '</div>';
+        }
+
+        body.innerHTML = html;
+    }
+
+    function _statBlock(label, valueHtml) {
+        return '<div style="background:#F9FAFB;border-radius:10px;padding:10px 12px;">'
+            + '<div style="font-size:0.62rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">' + label + '</div>'
+            + '<div style="font-size:0.92rem;font-weight:600;color:#1D1D1F;">' + valueHtml + '</div>'
+            + '</div>';
+    }
+
+    window.pobAbrirVista = function (instalacionId) {
+        _ensureViewer();
+        var backdrop = document.getElementById('pobViewerBackdrop');
+        var titleEl = document.getElementById('pobViewTitle');
+        var body = document.getElementById('pobViewBody');
+        if (titleEl) titleEl.textContent = 'Cargando…';
+        if (body) body.innerHTML = '<div style="text-align:center;padding:30px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
+        if (backdrop) backdrop.classList.add('open');
+        fetch('/app/api/instalacion/' + instalacionId + '/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    if (titleEl) titleEl.textContent = 'No se pudo cargar';
+                    if (body) body.innerHTML = '<div style="text-align:center;padding:24px;color:#FF3B30;">Instalación no encontrada.</div>';
+                    return;
+                }
+                _pobActiveInst = data.instalacion;
+                if (titleEl) titleEl.textContent = _pobActiveInst.descripcion || 'Instalación';
+                _renderViewerBody(_pobActiveInst);
+            })
+            .catch(function () {
+                if (body) body.innerHTML = '<div style="text-align:center;padding:24px;color:#FF3B30;">Error de red.</div>';
+            });
+    };
+
+    window.pobCerrarVista = function () {
+        var backdrop = document.getElementById('pobViewerBackdrop');
+        if (backdrop) backdrop.classList.remove('open');
+    };
+
+    window.pobAbrirProyectoDesdeVista = function (proyectoId) {
+        pobCerrarVista();
+        if (typeof window.proyectosVerDetalle === 'function') {
+            window.proyectosVerDetalle(proyectoId);
+        }
+    };
+
+    window.pobAbrirOppDesdeVista = function (oppId) {
+        pobCerrarVista();
+        if (typeof window.openDetalle === 'function') {
+            window.openDetalle(oppId);
+        }
+    };
+
     var _pobActiveInst = null;     // datos de la instalación abierta en el modal
     var _pobCreatingMode = false;   // true cuando es "Nueva instalación" sin id
     var _pobTecnicosCache = null;   // [{id,nombre,rol_label}] activos
@@ -321,7 +495,15 @@
             }).join('');
     }
 
+    // pobAbrirModal por compatibilidad: el click por default ahora muestra
+    // el WIDGET DE VISTA amigable (preview tipo lectura), no el form de
+    // edición. Para entrar al form: pobAbrirEditar(id) o click en "Editar"
+    // dentro del widget de vista.
     window.pobAbrirModal = function (instalacionId) {
+        return window.pobAbrirVista(instalacionId);
+    };
+
+    window.pobAbrirEditar = function (instalacionId) {
         _ensureModal();
         _pobCreatingMode = false;
         var titleEl = document.getElementById('pobModalTitle');
