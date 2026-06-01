@@ -6186,6 +6186,7 @@ def api_proyecto_instalaciones(request, proyecto_id):
         kwargs, err = _instalacion_payload_to_kwargs(data, cliente_default=None)
         if err:
             return JsonResponse({'success': False, 'error': err}, status=400)
+
         # Opp opcional.
         opp = None
         if data.get('oportunidad_id'):
@@ -6195,17 +6196,30 @@ def api_proyecto_instalaciones(request, proyecto_id):
                 opp = None
         # Si no se mandó opp_id explícitamente, usar la del ProyectoIAMET.
         if opp is None and getattr(proy, 'oportunidad_id', None):
-            opp = proy.oportunidad
+            try:
+                opp = proy.oportunidad
+            except Exception:
+                opp = None
 
-        inst = Instalacion.objects.create(
-            proyecto_crm=proy,
-            oportunidad=opp,
-            creado_por=request.user,
-            **kwargs,
-        )
+        try:
+            inst = Instalacion.objects.create(
+                proyecto_crm=proy,
+                oportunidad=opp,
+                creado_por=request.user,
+                **kwargs,
+            )
+        except Exception as e:
+            import traceback
+            return JsonResponse({
+                'success': False,
+                'error': 'Error al crear instalación: ' + str(e),
+                'trace': traceback.format_exc()[-1500:],
+            }, status=500)
 
         # Auto-asignar técnicos por user_id en la fecha programada.
         # Si la instalación no tiene fecha, no se crean asignaciones.
+        asignaciones_creadas = 0
+        asignaciones_error = None
         tecnico_user_ids = data.get('tecnico_user_ids') or []
         if tecnico_user_ids and inst.fecha_programada:
             for uid in tecnico_user_ids:
@@ -6213,19 +6227,26 @@ def api_proyecto_instalaciones(request, proyecto_id):
                     user = User.objects.get(pk=int(uid))
                 except (User.DoesNotExist, ValueError, TypeError):
                     continue
-                # Busca el Tecnico ligado a ese user; si no existe, crea uno
-                # con nombre=full_name (o username como fallback).
-                tecnico = Tecnico.objects.filter(usuario=user).first()
-                if not tecnico:
-                    nombre = (user.get_full_name() or user.username).strip()[:120]
-                    tecnico = Tecnico.objects.create(
-                        nombre=nombre, rol='tecnico', activo=True, usuario=user,
+                try:
+                    tecnico = Tecnico.objects.filter(usuario=user).first()
+                    if not tecnico:
+                        nombre = (user.get_full_name() or user.username).strip()[:120]
+                        tecnico = Tecnico.objects.create(
+                            nombre=nombre, rol='tecnico', activo=True, usuario=user,
+                        )
+                    _, created = InstalacionAsignacion.objects.get_or_create(
+                        instalacion=inst, tecnico=tecnico, fecha=inst.fecha_programada,
                     )
-                InstalacionAsignacion.objects.get_or_create(
-                    instalacion=inst, tecnico=tecnico, fecha=inst.fecha_programada,
-                )
+                    if created:
+                        asignaciones_creadas += 1
+                except Exception as e:
+                    asignaciones_error = str(e)
+                    continue
 
-        return JsonResponse({'success': True, 'instalacion_id': inst.id})
+        resp = {'success': True, 'instalacion_id': inst.id, 'asignaciones_creadas': asignaciones_creadas}
+        if asignaciones_error:
+            resp['asignaciones_warning'] = asignaciones_error
+        return JsonResponse(resp)
 
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 

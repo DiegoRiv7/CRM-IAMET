@@ -586,6 +586,9 @@
                   }
               } else {
                   var err = (res.data && res.data.error) || 'No se pudo guardar.';
+                  if (res.data && res.data.trace) {
+                      console.error('[pob] Backend trace:\n' + res.data.trace);
+                  }
                   if (typeof showToast === 'function') showToast(err, 'error');
               }
           })
