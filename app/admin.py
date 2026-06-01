@@ -353,7 +353,10 @@ class InstalacionAdmin(admin.ModelAdmin):
     list_filter = ('estado', 'jornadas_tipo', 'fecha_programada', 'cliente')
     search_fields = ('cliente_nombre', 'po', 'proyecto', 'observaciones', 'notas')
     date_hierarchy = 'fecha_programada'
-    autocomplete_fields = ('cliente', 'oportunidad', 'proyecto_crm')
+    # proyecto_crm (FK a ProyectoIAMET) no usa autocomplete porque
+    # ProyectoIAMET no está registrado en el admin con search_fields.
+    autocomplete_fields = ('cliente', 'oportunidad')
+    raw_id_fields = ('proyecto_crm',)
     ordering = ('-fecha_programada', '-fecha_creacion')
 
     fieldsets = (

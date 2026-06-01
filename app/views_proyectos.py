@@ -6148,8 +6148,10 @@ def api_proyecto_instalaciones(request, proyecto_id):
           {po, descripcion, fecha, jornadas_count, jornadas_tipo, personal,
            monto_po, utilidad, observaciones, notas, estado, cliente_nombre,
            oportunidad_id (opcional)}
+
+    Nota: usa el modelo ProyectoIAMET (CRM moderno), no el legacy `Proyecto`.
     """
-    proy = get_object_or_404(Proyecto, pk=proyecto_id)
+    proy = get_object_or_404(ProyectoIAMET, pk=proyecto_id)
 
     if request.method == 'GET':
         qs = (

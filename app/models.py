@@ -5881,7 +5881,7 @@ class Instalacion(models.Model):
         related_name='instalaciones', help_text='Si está en el CRM, link al Cliente.',
     )
     proyecto_crm = models.ForeignKey(
-        'Proyecto', null=True, blank=True, on_delete=models.SET_NULL,
+        'ProyectoIAMET', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='instalaciones', help_text='Proyecto al que pertenece (Programa de Obra).',
     )
     oportunidad = models.ForeignKey(
