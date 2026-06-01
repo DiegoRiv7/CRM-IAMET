@@ -1224,6 +1224,7 @@
     var _DETAIL_TAB_VALID = {
         resumen: 1, dashboard: 1,
         tareas: 1, programa: 1,
+        'programa-obra': 1,
         partidasv4: 1, partidas: 1, levantamientos: 1,
         drive: 1,
         info: 1, equipo: 1, comunicacion: 1, reportes: 1,
@@ -1231,7 +1232,15 @@
     };
 
     function _proyDetailNormalizeTab(t) {
-        if (!t) return 'resumen';
+        if (!t) {
+            // Persistencia ligera: si no hay initialTab, intenta recuperar
+            // el último tab activo guardado en localStorage.
+            try {
+                var saved = localStorage.getItem('_proy_last_tab');
+                if (saved && _DETAIL_TAB_VALID[saved]) return saved;
+            } catch (e) {}
+            return 'resumen';
+        }
         return _DETAIL_TAB_VALID[t] ? t : 'resumen';
     }
 
@@ -1402,6 +1411,10 @@
 
         // Sincroniza URL para que la sección actual sea compartible.
         if (currentProjectId) _proySyncUrl(currentProjectId, tabName);
+
+        // Persistir el último tab para que sobreviva al refresh aunque
+        // la URL no traiga ?tab=…
+        try { localStorage.setItem('_proy_last_tab', tabName); } catch (e) {}
 
         // Render data
         if (!currentProjectId) return;
