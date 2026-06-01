@@ -204,8 +204,21 @@
           +       '<div id="pobAsignCol" style="border-left:1px solid #E5E5EA;padding-left:18px;">'
           +         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
           +           '<h4 style="margin:0;font-size:0.92rem;font-weight:700;">Técnicos asignados</h4>'
-          +           '<button type="button" class="wop-btn-secondary" onclick="pobToggleAddAsig()" style="font-size:0.74rem;padding:4px 8px;">+ Agregar</button>'
+          +           '<button type="button" id="pobBtnToggleAddAsig" class="wop-btn-secondary" onclick="pobToggleAddAsig()" style="font-size:0.74rem;padding:4px 8px;">+ Agregar</button>'
           +         '</div>'
+
+          // ── Picker en modo CREAR: busca Users del sistema ──
+          +         '<div id="pobCreateUsersBox" style="display:none;background:#F9FAFB;padding:10px;border-radius:8px;margin-bottom:12px;">'
+          +           '<div style="font-size:0.7rem;color:#86868B;margin-bottom:6px;">'
+          +             'Selecciona técnicos del CRM. Se les creará la instalación en su calendario (fecha programada).'
+          +           '</div>'
+          +           '<input type="text" id="pobUserSearch" placeholder="Buscar usuario..." class="wop-search-input" autocomplete="off" style="font-size:0.84rem;">'
+          +           '<div id="pobUserResults" style="margin-top:6px;max-height:160px;overflow-y:auto;"></div>'
+          +           '<div style="font-size:0.66rem;color:#86868B;margin-top:8px;text-transform:uppercase;letter-spacing:0.04em;font-weight:700;">Seleccionados</div>'
+          +           '<div id="pobUserChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:24px;"></div>'
+          +         '</div>'
+
+          // ── Picker en modo EDITAR: agrega asignaciones puntuales ──
           +         '<div id="pobAddAsigForm" style="display:none;background:#F9FAFB;padding:10px;border-radius:8px;margin-bottom:12px;">'
           +           '<div class="wop-field" style="margin-bottom:6px;"><label style="font-size:0.66rem;">Técnico</label>'
           +             '<select id="pobAddAsigTecnico"></select></div>'
@@ -239,6 +252,9 @@
     var _pobActiveInst = null;     // datos de la instalación abierta en el modal
     var _pobCreatingMode = false;   // true cuando es "Nueva instalación" sin id
     var _pobTecnicosCache = null;   // [{id,nombre,rol_label}] activos
+    var _pobUserSelectedIds = [];   // Users elegidos en el picker (modo crear)
+    var _pobUserSelectedMap = {};   // {userId: {id, text, avatar_url}} para chips
+    var _pobUserSearchDebounce = null;
 
     function _fillForm(inst) {
         var f = function (id, val) { var el = document.getElementById(id); if (el) el.value = val == null ? '' : val; };
@@ -312,6 +328,8 @@
         if (titleEl) titleEl.textContent = 'Cargando…';
         if (btnDel) btnDel.style.display = '';
         if (modal) modal.classList.add('open');
+        // Modo EDITAR: oculta el picker de Users y muestra el flow normal.
+        _pobAplicarUiModoCrear(false);
         fetch('/app/api/instalacion/' + instalacionId + '/', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -336,6 +354,8 @@
         _ensureModal();
         _pobCreatingMode = true;
         _pobActiveInst = { proyecto_id: pid, asignaciones: [] };
+        _pobUserSelectedIds = [];
+        _pobUserSelectedMap = {};
         var titleEl = document.getElementById('pobModalTitle');
         if (titleEl) titleEl.textContent = 'Nueva instalación';
         var btnDel = document.getElementById('pobBtnEliminar');
@@ -346,12 +366,129 @@
             personal: '', monto_po: '', utilidad: '', notas: '',
         });
         _renderAsignaciones([]);
+        _pobAplicarUiModoCrear(true);
+        _pobRenderUserChips();
+        _pobRenderUserResults([]);
+
         var modal = document.getElementById('pobModalBackdrop');
         if (modal) modal.classList.add('open');
+
+        // Pre-llenar cliente / PO desde la oportunidad ligada al proyecto.
+        fetch('/app/api/proyecto/' + pid + '/instalacion-defaults/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.success || !data.defaults) return;
+                var d = data.defaults;
+                var clEl = document.getElementById('pobInstCliente');
+                if (clEl && !clEl.value && d.cliente_nombre) clEl.value = d.cliente_nombre;
+                var poEl = document.getElementById('pobInstPo');
+                if (poEl && !poEl.value && d.po) poEl.value = d.po;
+                if (_pobActiveInst) _pobActiveInst.oportunidad_id = d.oportunidad_id || null;
+            })
+            .catch(function () { /* silencioso */ });
+
         var desc = document.getElementById('pobInstDescripcion');
         if (desc) desc.focus();
-        // Asignaciones en modo "creando": deshabilitar el botón "+ Agregar"
-        // hasta que la inst tenga id.
+
+        // Hook del input de búsqueda de Users (live search).
+        var input = document.getElementById('pobUserSearch');
+        if (input) {
+            input.value = '';
+            input.oninput = function () {
+                clearTimeout(_pobUserSearchDebounce);
+                var q = input.value.trim();
+                _pobUserSearchDebounce = setTimeout(function () {
+                    if (!q) { _pobRenderUserResults([]); return; }
+                    fetch('/app/api/users/?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (results) { _pobRenderUserResults(results || []); })
+                        .catch(function () {});
+                }, 200);
+            };
+        }
+    };
+
+    function _pobAplicarUiModoCrear(esCrear) {
+        // En CREAR: muestra el picker de Users (pobCreateUsersBox) y oculta
+        // el botón "+ Agregar" + el form de asignación puntual (esos viven
+        // sólo en modo EDITAR).
+        var box = document.getElementById('pobCreateUsersBox');
+        var btnToggle = document.getElementById('pobBtnToggleAddAsig');
+        var addForm = document.getElementById('pobAddAsigForm');
+        if (box) box.style.display = esCrear ? '' : 'none';
+        if (btnToggle) btnToggle.style.display = esCrear ? 'none' : '';
+        if (addForm && esCrear) addForm.style.display = 'none';
+    }
+
+    function _pobRenderUserResults(results) {
+        var wrap = document.getElementById('pobUserResults');
+        if (!wrap) return;
+        if (!results.length) {
+            wrap.innerHTML = '<div style="color:#86868B;font-size:0.74rem;padding:6px;">Escribe para buscar usuarios.</div>';
+            return;
+        }
+        wrap.innerHTML = results.map(function (u) {
+            var seleccionado = !!_pobUserSelectedMap[u.id];
+            var avatar = u.avatar_url
+                ? '<img src="' + _esc(u.avatar_url) + '" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+                : '<div style="width:24px;height:24px;border-radius:50%;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.66rem;font-weight:700;flex-shrink:0;">'
+                  + _esc((u.text || '?').substring(0, 1).toUpperCase()) + '</div>';
+            return '<div onclick="pobToggleUser(' + u.id + ', ' + JSON.stringify(JSON.stringify(u)).slice(1, -1) + ')" '
+                + 'style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;'
+                + (seleccionado ? 'background:#E0F2FE;' : '') + '" '
+                + 'onmouseover="if(!' + (seleccionado ? 'true' : 'false') + ')this.style.background=\'#F2F4F7\';" '
+                + 'onmouseout="this.style.background=\'' + (seleccionado ? '#E0F2FE' : 'transparent') + '\';">'
+                + avatar
+                + '<div style="flex:1;min-width:0;font-size:0.82rem;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(u.text) + '</div>'
+                + (seleccionado ? '<svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2.4" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '')
+                + '</div>';
+        }).join('');
+    }
+
+    function _pobRenderUserChips() {
+        var wrap = document.getElementById('pobUserChips');
+        if (!wrap) return;
+        if (!_pobUserSelectedIds.length) {
+            wrap.innerHTML = '<div style="font-size:0.72rem;color:#86868B;">Ninguno seleccionado todavía.</div>';
+            return;
+        }
+        wrap.innerHTML = _pobUserSelectedIds.map(function (uid) {
+            var u = _pobUserSelectedMap[uid] || { text: 'Usuario ' + uid };
+            return '<div style="display:inline-flex;align-items:center;gap:4px;background:#0052D4;color:#fff;padding:3px 4px 3px 10px;border-radius:999px;font-size:0.74rem;font-weight:600;">'
+                + _esc(u.text)
+                + '<button type="button" onclick="pobToggleUser(' + uid + ')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.7rem;padding:0;line-height:1;">×</button>'
+                + '</div>';
+        }).join('');
+    }
+
+    window.pobToggleUser = function (userId, payload) {
+        var uid = parseInt(userId, 10);
+        if (_pobUserSelectedMap[uid]) {
+            // Quitar
+            _pobUserSelectedIds = _pobUserSelectedIds.filter(function (x) { return x !== uid; });
+            delete _pobUserSelectedMap[uid];
+        } else {
+            // Agregar
+            _pobUserSelectedIds.push(uid);
+            var u = { id: uid, text: 'Usuario ' + uid };
+            if (payload) {
+                try { u = JSON.parse(payload); } catch (e) {}
+            }
+            _pobUserSelectedMap[uid] = u;
+        }
+        _pobRenderUserChips();
+        // Refresca el highlight en la lista de resultados.
+        var wrap = document.getElementById('pobUserResults');
+        if (wrap && wrap.children.length) {
+            // Re-render con los resultados actuales: como no los guardé, simulo
+            // re-busqueda usando el input. Simple: re-buscar.
+            var input = document.getElementById('pobUserSearch');
+            if (input && input.value.trim()) {
+                fetch('/app/api/users/?q=' + encodeURIComponent(input.value.trim()), { credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (results) { _pobRenderUserResults(results || []); });
+            }
+        }
     };
 
     window.pobCerrarModal = function () {
@@ -359,6 +496,8 @@
         if (modal) modal.classList.remove('open');
         _pobActiveInst = null;
         _pobCreatingMode = false;
+        _pobUserSelectedIds = [];
+        _pobUserSelectedMap = {};
         var addForm = document.getElementById('pobAddAsigForm');
         if (addForm) addForm.style.display = 'none';
     };
@@ -394,6 +533,15 @@
         if (_pobCreatingMode) {
             url = '/app/api/proyecto/' + _proyectoIdActivo() + '/instalaciones/';
             method = 'POST';
+            // Solo en create: pasar la lista de Users elegidos en el picker.
+            // El backend auto-crea Tecnico si no existe y crea la asignación
+            // para la fecha programada.
+            if (_pobUserSelectedIds.length) payload.tecnico_user_ids = _pobUserSelectedIds;
+            // Heredar oportunidad de la opp del proyecto si la hay (vino en
+            // los defaults). El backend la usa solo si no hay otra.
+            if (_pobActiveInst && _pobActiveInst.oportunidad_id) {
+                payload.oportunidad_id = _pobActiveInst.oportunidad_id;
+            }
         } else if (_pobActiveInst && _pobActiveInst.id) {
             url = '/app/api/instalacion/' + _pobActiveInst.id + '/';
             method = 'PATCH';

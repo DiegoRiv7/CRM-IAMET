@@ -6193,15 +6193,73 @@ def api_proyecto_instalaciones(request, proyecto_id):
                 opp = TodoItem.objects.get(pk=int(data['oportunidad_id']))
             except (TodoItem.DoesNotExist, ValueError, TypeError):
                 opp = None
+        # Si no se mandó opp_id explícitamente, usar la del ProyectoIAMET.
+        if opp is None and getattr(proy, 'oportunidad_id', None):
+            opp = proy.oportunidad
+
         inst = Instalacion.objects.create(
             proyecto_crm=proy,
             oportunidad=opp,
             creado_por=request.user,
             **kwargs,
         )
+
+        # Auto-asignar técnicos por user_id en la fecha programada.
+        # Si la instalación no tiene fecha, no se crean asignaciones.
+        tecnico_user_ids = data.get('tecnico_user_ids') or []
+        if tecnico_user_ids and inst.fecha_programada:
+            for uid in tecnico_user_ids:
+                try:
+                    user = User.objects.get(pk=int(uid))
+                except (User.DoesNotExist, ValueError, TypeError):
+                    continue
+                # Busca el Tecnico ligado a ese user; si no existe, crea uno
+                # con nombre=full_name (o username como fallback).
+                tecnico = Tecnico.objects.filter(usuario=user).first()
+                if not tecnico:
+                    nombre = (user.get_full_name() or user.username).strip()[:120]
+                    tecnico = Tecnico.objects.create(
+                        nombre=nombre, rol='tecnico', activo=True, usuario=user,
+                    )
+                InstalacionAsignacion.objects.get_or_create(
+                    instalacion=inst, tecnico=tecnico, fecha=inst.fecha_programada,
+                )
+
         return JsonResponse({'success': True, 'instalacion_id': inst.id})
 
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_proyecto_instalacion_defaults(request, proyecto_id):
+    """GET → devuelve defaults para prellenar el modal "Nueva instalación".
+
+    Lee la oportunidad ligada al ProyectoIAMET (proy.oportunidad) y
+    extrae cliente_nombre + po. Si el proyecto no tiene opp ligada,
+    devuelve vacíos.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    proy = get_object_or_404(ProyectoIAMET, pk=proyecto_id)
+    opp = proy.oportunidad
+    cliente_nombre = ''
+    po = ''
+    if opp:
+        if opp.cliente_id:
+            cliente_nombre = opp.cliente.nombre_empresa or ''
+        po = (opp.po_number or '').strip()
+    # Fallback: cliente_nombre directo del ProyectoIAMET si lo tiene.
+    if not cliente_nombre:
+        cliente_nombre = getattr(proy, 'cliente_nombre', '') or ''
+    return JsonResponse({
+        'success': True,
+        'defaults': {
+            'cliente_nombre': cliente_nombre,
+            'po': po,
+            'oportunidad_id': opp.id if opp else None,
+            'oportunidad_titulo': opp.oportunidad if opp else '',
+        },
+    })
 
 
 @login_required
