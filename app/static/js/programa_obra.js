@@ -921,18 +921,53 @@
     };
 
     // ─── Hook al cambio de tab ───────────────────────────────────────
-    // El widget de Proyecto usa proyectosSetTab(); cuando active el tab
-    // 'programa-obra' cargamos la lista. Si la función no existe aún,
-    // dejamos un listener directo al botón.
-    function _hookTabChange() {
-        var btn = document.querySelector('.proy-tab-btn[data-tab="programa-obra"]');
-        if (btn && !btn._pobHooked) {
-            btn._pobHooked = true;
-            btn.addEventListener('click', function () {
-                // Pequeño defer para que proyectosSetTab termine de cambiar el pane.
+    // El widget de Proyecto usa proyectosSetTab(); recargamos la tabla
+    // cada vez que se active 'programa-obra' POR CUALQUIER MEDIO (click
+    // del usuario, persistencia de tab al recargar, deep-link). Antes
+    // solo hookeábamos el click → al cambiar de proyecto sin re-clickear
+    // el tab, la tabla quedaba con los datos del proyecto anterior.
+    //
+    // Estrategia: monkey-patch de window.proyectosSetTab (definido en
+    // crm_proyectos.js que carga antes que este módulo).
+
+    function _wrapProyectosSetTab() {
+        if (typeof window.proyectosSetTab !== 'function') return false;
+        if (window.proyectosSetTab._pobWrapped) return true;
+        var orig = window.proyectosSetTab;
+        var wrapped = function (tabName) {
+            var r = orig.apply(this, arguments);
+            if (tabName === 'programa-obra') {
+                // Defer mínimo para que el pane ya esté visible.
                 setTimeout(function () { pobCargarLista(); }, 30);
-            });
-        }
+            }
+            return r;
+        };
+        wrapped._pobWrapped = true;
+        window.proyectosSetTab = wrapped;
+        return true;
+    }
+
+    // También wrap a proyectosVerDetalle para limpiar el pane al cambiar
+    // de proyecto, evitando ver fugazmente la tabla del proyecto anterior.
+    function _wrapProyectosVerDetalle() {
+        if (typeof window.proyectosVerDetalle !== 'function') return false;
+        if (window.proyectosVerDetalle._pobWrapped) return true;
+        var orig = window.proyectosVerDetalle;
+        var wrapped = function (projectId, initialTab) {
+            // Si ya había una lista cargada de OTRO proyecto, límpiala
+            // para que no se vea contenido viejo mientras carga el nuevo.
+            var wrap = document.getElementById('pobContainer');
+            if (wrap) wrap.innerHTML = '<div style="padding:24px;text-align:center;color:#86868B;font-size:0.85rem;">Cargando…</div>';
+            return orig.apply(this, arguments);
+        };
+        wrapped._pobWrapped = true;
+        window.proyectosVerDetalle = wrapped;
+        return true;
+    }
+
+    function _initHooks() {
+        _wrapProyectosSetTab();
+        _wrapProyectosVerDetalle();
     }
 
     // Cerrar con Escape.
@@ -943,11 +978,11 @@
     });
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', _hookTabChange);
+        document.addEventListener('DOMContentLoaded', _initHooks);
     } else {
-        _hookTabChange();
+        _initHooks();
     }
-    // Reintentar el hook después de cargas dinámicas.
-    setTimeout(_hookTabChange, 1200);
-    setTimeout(_hookTabChange, 3000);
+    // Reintentar por si crm_proyectos.js todavía no estaba listo.
+    setTimeout(_initHooks, 500);
+    setTimeout(_initHooks, 1500);
 })();
