@@ -906,6 +906,12 @@
         searchQuery = '';
         var searchInput = el('proySearch');
         if (searchInput) searchInput.value = '';
+        // Defense in depth: asegurar que el topbar del listado y la
+        // sección estén visibles cuando entramos al módulo.
+        var listTop = el('proyListTopbar');
+        if (listTop) listTop.style.display = '';
+        var section = el('proyectosSection');
+        if (section) section.style.display = '';
         proySetMainTab('programa');
     };
     window.proyectosAbrir = window.proyectosInit;
@@ -1294,11 +1300,11 @@
         var detail = el('widgetProyectoDetalle');
         if (detail) detail.classList.add('is-open');
 
-        // Mutate dynamic island: el topbar contextual del proyecto
-        // reemplaza al del listado. (El topbar del listado vive dentro
-        // de #proyectosSection que ya quedó oculto, pero por si acaso.)
-        var listTop = el('proyListTopbar');
-        if (listTop) listTop.style.display = 'none';
+        // El topbar del listado (#proyListTopbar) vive DENTRO de
+        // #proyectosSection que ya quedó oculto — NO seteamos un
+        // display:none directo en el topbar para evitar que ese estilo
+        // inline persista y deje el topbar oculto si la sección se
+        // vuelve a mostrar por otra vía (sin pasar por proyectosVolverLista).
 
         // Estado vac\u00edo inmediato (evita header con datos del proyecto previo)
         renderProjectOverview(null);
