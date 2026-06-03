@@ -4047,22 +4047,93 @@ relativo.
 z-index 10300 — por encima del modal de tarea (10200).
 ═══════════════════════════════════════════════════════════════════════
 {% endcomment %}
-<div class="widget-overlay" id="widgetTareaHistorial" style="z-index:10300;display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)woCerrarHistorialTarea()">
-    <div style="background:#fff;border-radius:14px;box-shadow:0 25px 60px rgba(0,0,0,0.22);width:min(560px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #E5E5EA;background:#FAFAFC;">
-            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                <div style="width:30px;height:30px;border-radius:8px;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
+<style>
+    /* Drawer lateral derecho — convive con el modal de tarea sin taparlo. */
+    #widgetTareaHistorial {
+        position: fixed;
+        top: 0; right: 0; bottom: 0;
+        z-index: 12000;            /* sobre cualquier modal de tarea */
+        background: rgba(15, 23, 42, 0.18);
+        backdrop-filter: blur(2px);
+        display: none;
+        justify-content: flex-end;
+    }
+    #widgetTareaHistorial.open { display: flex; animation: hxFadeIn 0.2s ease-out; }
+    @keyframes hxFadeIn { from { background: rgba(15,23,42,0); } to { background: rgba(15,23,42,0.18); } }
+    #widgetTareaHistorialPanel {
+        background: #fff;
+        width: 640px;
+        max-width: 96vw;
+        height: 100vh;
+        box-shadow: -25px 0 60px rgba(0, 0, 0, 0.18);
+        display: flex;
+        flex-direction: column;
+        animation: hxSlideIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    @keyframes hxSlideIn { from { transform: translateX(40px); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
+    .hx-head { padding: 22px 26px 18px; border-bottom: 1px solid #ECECEE; background: linear-gradient(180deg, #FAFAFC 0%, #fff 100%); }
+    .hx-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .hx-head-title-wrap { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .hx-head-icon { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #0052D4 0%, #2E7CF6 100%); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 6px 16px rgba(0, 82, 212, 0.25); }
+    .hx-head-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #1D1D1F; letter-spacing: -0.01em; }
+    .hx-head-subtitle { font-size: 0.82rem; color: #6B7280; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .hx-head-meta { font-size: 0.72rem; color: #9CA3AF; margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+    .hx-head-close { background: #F2F2F7; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; color: #1D1D1F; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+    .hx-head-close:hover { background: #E5E5EA; }
+    .hx-body { overflow-y: auto; padding: 22px 26px 30px; flex: 1; }
+    .hx-tl-line { position: absolute; left: 9px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(180deg, #E5E5EA 0%, #F2F2F7 100%); }
+    .hx-tl-item { position: relative; padding-left: 30px; margin-bottom: 22px; }
+    .hx-tl-dot { position: absolute; left: 0; top: 4px; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px currentColor, 0 2px 6px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; color: #fff; }
+    .hx-tl-dot svg { display: block; }
+    .hx-tl-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .hx-tl-avatar { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .hx-tl-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .hx-tl-autor { font-size: 0.92rem; font-weight: 600; color: #1D1D1F; }
+    .hx-tl-action { font-size: 0.82rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; }
+    .hx-tl-time { font-size: 0.74rem; color: #9CA3AF; margin-left: auto; cursor: default; }
+    .hx-chip { display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 8px; font-size: 0.84rem; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hx-chip-old { background: #FEE2E2; color: #991B1B; text-decoration: line-through; }
+    .hx-chip-new { background: #D1FAE5; color: #065F46; }
+    .hx-chip-add { background: #D1FAE5; color: #065F46; font-weight: 600; }
+    .hx-chip-rem { background: #FEE2E2; color: #991B1B; font-weight: 600; }
+    .hx-detail-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .hx-arrow { color: #9CA3AF; display: inline-flex; align-items: center; }
+    .hx-motivo { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 10px 14px; border-radius: 0 10px 10px 0; margin-top: 10px; }
+    .hx-motivo-label { font-size: 0.66rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .hx-motivo-text { font-size: 0.88rem; color: #422006; line-height: 1.45; }
+    .hx-empty { text-align: center; padding: 60px 24px; color: #6B7280; }
+    .hx-empty svg { color: #C7C7CC; display: block; margin: 0 auto 14px; }
+    .hx-empty-title { font-size: 1rem; font-weight: 600; color: #1D1D1F; margin-bottom: 6px; }
+    .hx-empty-desc { font-size: 0.86rem; line-height: 1.5; max-width: 380px; margin: 0 auto; }
+    .hx-error { text-align: center; padding: 40px 24px; color: #DC2626; font-size: 0.9rem; }
+    @media (max-width: 720px) {
+        #widgetTareaHistorialPanel { width: 100vw; max-width: 100vw; }
+    }
+</style>
+<div id="widgetTareaHistorial" onclick="if(event.target===this)woCerrarHistorialTarea()">
+    <div id="widgetTareaHistorialPanel">
+        <div class="hx-head">
+            <div class="hx-head-row">
+                <div class="hx-head-title-wrap">
+                    <div class="hx-head-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h3 class="hx-head-title">Historial de cambios</h3>
+                        <div id="woHistorialSubtitle" class="hx-head-subtitle">—</div>
+                    </div>
                 </div>
-                <div style="min-width:0;">
-                    <h3 style="margin:0;font-size:1rem;font-weight:700;color:#1D1D1F;">Historial de cambios</h3>
-                    <div id="woHistorialSubtitle" style="font-size:0.74rem;color:#86868B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px;">—</div>
-                </div>
+                <button type="button" class="hx-head-close" onclick="woCerrarHistorialTarea()" aria-label="Cerrar (Esc)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
             </div>
-            <button type="button" onclick="woCerrarHistorialTarea()" style="background:#F2F2F7;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1.2rem;color:#1D1D1F;display:flex;align-items:center;justify-content:center;line-height:1;">&times;</button>
+            <div class="hx-head-meta">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Se actualiza automáticamente</span>
+            </div>
         </div>
-        <div id="woHistorialBody" style="overflow-y:auto;padding:14px 18px;flex:1;">
-            <div style="text-align:center;padding:30px;color:#86868B;font-size:0.85rem;">Cargando…</div>
+        <div id="woHistorialBody" class="hx-body">
+            <div style="text-align:center;padding:40px;color:#86868B;font-size:0.85rem;">Cargando…</div>
         </div>
     </div>
 </div>
@@ -4131,17 +4202,17 @@ z-index 10300 — por encima del modal de tarea (10200).
         var overlay = document.getElementById('widgetTareaHistorial');
         var body = document.getElementById('woHistorialBody');
         var subtitle = document.getElementById('woHistorialSubtitle');
-        if (overlay) overlay.style.display = 'flex';
+        if (overlay) overlay.classList.add('open');
         if (subtitle) subtitle.textContent = subtitulo || '';
-        if (body) body.innerHTML = '<div style="text-align:center;padding:30px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
+        if (body) body.innerHTML = '<div style="text-align:center;padding:40px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
         _hxLastSignature = null;
         _hxFetchAndRender(true);
-        // Polling: refresca cada 3s mientras el modal está abierto. Esto cubre
-        // el caso "actualización en tiempo real" — cuando el mismo usuario hace
-        // un cambio o cuando otro usuario lo hace, en máximo 3s aparece.
+        // Polling: refresca cada 3s mientras el drawer está abierto. Cubre el
+        // "sin recargar de inmediato" — cualquier cambio del mismo usuario u
+        // otro aparece en máximo 3 segundos.
         if (_hxPollTimer) clearInterval(_hxPollTimer);
         _hxPollTimer = setInterval(function () {
-            if (!overlay || overlay.style.display !== 'flex') {
+            if (!overlay || !overlay.classList.contains('open')) {
                 clearInterval(_hxPollTimer);
                 _hxPollTimer = null;
                 return;
@@ -4159,12 +4230,11 @@ z-index 10300 — por encima del modal de tarea (10200).
                 if (!body) return;
                 if (!data || !data.success) {
                     if (showLoading) {
-                        body.innerHTML = '<div style="text-align:center;padding:30px;color:#FF3B30;font-size:0.85rem;">No se pudo cargar el historial.</div>';
+                        body.innerHTML = '<div class="hx-error">No se pudo cargar el historial.</div>';
                     }
                     return;
                 }
                 var items = data.historial || [];
-                // Re-renderizar solo si la lista cambió (evita flicker en el polling).
                 var sig = items.length + '|' + (items[0] ? items[0].id + '@' + items[0].fecha : '');
                 if (sig !== _hxLastSignature) {
                     _hxLastSignature = sig;
@@ -4174,7 +4244,7 @@ z-index 10300 — por encima del modal de tarea (10200).
             .catch(function () {
                 if (showLoading) {
                     var body = document.getElementById('woHistorialBody');
-                    if (body) body.innerHTML = '<div style="text-align:center;padding:30px;color:#FF3B30;font-size:0.85rem;">Error de red.</div>';
+                    if (body) body.innerHTML = '<div class="hx-error">Error de red.</div>';
                 }
             });
     }
@@ -4203,73 +4273,75 @@ z-index 10300 — por encima del modal de tarea (10200).
 
     window.woCerrarHistorialTarea = function () {
         var overlay = document.getElementById('widgetTareaHistorial');
-        if (overlay) overlay.style.display = 'none';
+        if (overlay) overlay.classList.remove('open');
         if (_hxPollTimer) { clearInterval(_hxPollTimer); _hxPollTimer = null; }
         _hxCurrentUrl = null;
     };
+
+    function _hexToRgba(hex, alpha) {
+        var h = (hex || '').replace('#', '');
+        if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+        var n = parseInt(h, 16);
+        return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+    }
 
     function _renderHistorial(items) {
         var body = document.getElementById('woHistorialBody');
         if (!body) return;
         if (!items.length) {
-            body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#86868B;font-size:0.88rem;">'
-                + '<svg width="40" height="40" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>'
-                + '<div style="font-weight:600;color:#1D1D1F;margin-bottom:4px;">Sin cambios registrados</div>'
-                + '<div style="font-size:0.78rem;">Esta tarea aún no ha sido modificada desde que se activó el historial.</div>'
+            body.innerHTML = '<div class="hx-empty">'
+                + '<svg width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>'
+                + '<div class="hx-empty-title">Sin cambios registrados</div>'
+                + '<div class="hx-empty-desc">Esta tarea aún no ha sido modificada desde que se activó el historial. Cualquier cambio que se haga aparecerá aquí al instante.</div>'
                 + '</div>';
             return;
         }
-        var html = '<div style="position:relative;padding-left:14px;">';
-        // Línea vertical del timeline.
-        html += '<div style="position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:#E5E5EA;"></div>';
+        var html = '<div style="position:relative;">';
+        html += '<div class="hx-tl-line"></div>';
         items.forEach(function (it) {
-            var icon = _TIPO_ICONS[it.tipo] || '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>';
+            var icon = _TIPO_ICONS[it.tipo] || '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>';
             var color = _TIPO_COLORS[it.tipo] || '#86868B';
             var autorNombre = it.autor ? it.autor.nombre : 'Sistema';
-            var avatarHtml = '';
-            if (it.autor) {
-                if (it.autor.avatar_url) {
-                    avatarHtml = '<img src="' + _esc(it.autor.avatar_url) + '" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">';
-                } else {
-                    avatarHtml = '<div style="width:22px;height:22px;border-radius:50%;background:' + color + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:0.64rem;font-weight:700;flex-shrink:0;">' + _esc(it.autor.iniciales || '?') + '</div>';
-                }
-            }
 
-            // Cuerpo del cambio: descripción humana
+            // Avatar
+            var avatarStyle = 'background:' + color + ';';
+            var avatarInner = it.autor && it.autor.avatar_url
+                ? '<img src="' + _esc(it.autor.avatar_url) + '" alt="">'
+                : _esc(it.autor ? (it.autor.iniciales || '?') : 'S');
+
+            // Detalle según tipo
             var detalle = '';
-            if (it.tipo === 'titulo' || it.tipo === 'descripcion' || it.tipo === 'fecha_limite' || it.tipo === 'responsable' || it.tipo === 'prioridad') {
+            if (it.tipo === 'titulo' || it.tipo === 'descripcion' || it.tipo === 'fecha_limite' || it.tipo === 'responsable' || it.tipo === 'prioridad' || it.tipo === 'cliente' || it.tipo === 'oportunidad') {
                 var antes = it.valor_anterior || '— vacío —';
                 var despues = it.valor_nuevo || '— vacío —';
-                detalle = '<div style="font-size:0.78rem;color:#3C3C43;margin-top:4px;">'
-                    + '<div style="background:#FFE3E3;color:#991B1B;padding:3px 8px;border-radius:6px;display:inline-block;margin-right:6px;text-decoration:line-through;max-width:100%;overflow:hidden;text-overflow:ellipsis;">' + _esc(antes) + '</div>'
-                    + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="2.4" style="vertical-align:-1px;"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg> '
-                    + '<div style="background:#D1FAE5;color:#065F46;padding:3px 8px;border-radius:6px;display:inline-block;margin-left:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;">' + _esc(despues) + '</div>'
+                detalle = '<div class="hx-detail-row">'
+                    + '<span class="hx-chip hx-chip-old">' + _esc(antes) + '</span>'
+                    + '<span class="hx-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>'
+                    + '<span class="hx-chip hx-chip-new">' + _esc(despues) + '</span>'
                     + '</div>';
             } else if (it.tipo === 'participante_add' || it.tipo === 'observador_add') {
-                detalle = '<div style="font-size:0.78rem;color:#3C3C43;margin-top:4px;">'
-                    + '<span style="background:#D1FAE5;color:#065F46;padding:3px 8px;border-radius:6px;font-weight:600;">+ ' + _esc(it.valor_nuevo) + '</span>'
+                detalle = '<div class="hx-detail-row">'
+                    + '<span class="hx-chip hx-chip-add">+ ' + _esc(it.valor_nuevo) + '</span>'
                     + '</div>';
             } else if (it.tipo === 'participante_remove' || it.tipo === 'observador_remove') {
-                detalle = '<div style="font-size:0.78rem;color:#3C3C43;margin-top:4px;">'
-                    + '<span style="background:#FFE3E3;color:#991B1B;padding:3px 8px;border-radius:6px;font-weight:600;">– ' + _esc(it.valor_anterior) + '</span>'
+                detalle = '<div class="hx-detail-row">'
+                    + '<span class="hx-chip hx-chip-rem">– ' + _esc(it.valor_anterior) + '</span>'
                     + '</div>';
             }
-            // Motivo si aplica
             if (it.motivo) {
-                detalle += '<div style="font-size:0.78rem;color:#3C3C43;margin-top:6px;background:#FEF3C7;border-left:3px solid #F59E0B;padding:6px 10px;border-radius:0 6px 6px 0;">'
-                    + '<span style="font-size:0.66rem;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:0.04em;">Motivo</span><br>'
-                    + _esc(it.motivo) + '</div>';
+                detalle += '<div class="hx-motivo">'
+                    + '<div class="hx-motivo-label">Motivo</div>'
+                    + '<div class="hx-motivo-text">' + _esc(it.motivo) + '</div>'
+                    + '</div>';
             }
 
-            html += '<div style="position:relative;padding-left:18px;margin-bottom:14px;">';
-            // Punto del timeline
-            html += '<div style="position:absolute;left:-4px;top:5px;width:11px;height:11px;border-radius:50%;background:' + color + ';border:2px solid #fff;box-shadow:0 0 0 1px ' + color + ';"></div>';
-            // Header del item: autor + acción + tiempo
-            html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-            html += avatarHtml;
-            html += '<span style="font-size:0.84rem;font-weight:600;color:#1D1D1F;">' + _esc(autorNombre) + '</span>';
-            html += '<span style="font-size:0.78rem;color:' + color + ';display:inline-flex;align-items:center;gap:4px;">' + icon + _esc(it.tipo_label) + '</span>';
-            html += '<span style="font-size:0.72rem;color:#86868B;margin-left:auto;" title="' + _fmtAbsoluta(it.fecha) + '">' + _fmtRelative(it.fecha) + '</span>';
+            html += '<div class="hx-tl-item">';
+            html += '<div class="hx-tl-dot" style="background:' + color + ';color:' + color + ';">' + icon + '</div>';
+            html += '<div class="hx-tl-head">';
+            html += '<div class="hx-tl-avatar" style="' + avatarStyle + '">' + avatarInner + '</div>';
+            html += '<span class="hx-tl-autor">' + _esc(autorNombre) + '</span>';
+            html += '<span class="hx-tl-action" style="background:' + _hexToRgba(color, 0.10) + ';color:' + color + ';">' + icon + _esc(it.tipo_label) + '</span>';
+            html += '<span class="hx-tl-time" title="' + _fmtAbsoluta(it.fecha) + '">' + _fmtRelative(it.fecha) + '</span>';
             html += '</div>';
             html += detalle;
             html += '</div>';
@@ -4282,7 +4354,7 @@ z-index 10300 — por encima del modal de tarea (10200).
     document.addEventListener('keydown', function (ev) {
         if (ev.key !== 'Escape') return;
         var ov = document.getElementById('widgetTareaHistorial');
-        if (ov && ov.style.display === 'flex') { woCerrarHistorialTarea(); ev.stopPropagation(); }
+        if (ov && ov.classList.contains('open')) { woCerrarHistorialTarea(); ev.stopPropagation(); }
     });
 })();
 </script>
