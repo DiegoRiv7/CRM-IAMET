@@ -92,12 +92,8 @@
         --z-tooltip-top: 9500;
     }
 
-    /* Default para overlays — si un widget no especifica z-index, queda
-       en nivel 1. Cualquier widget que necesite nivel 2 o 3 sobreescribe
-       con su token correspondiente. */
-    .widget-overlay {
-        z-index: var(--z-widget);
-    }
+    /* (La definición completa de .widget-overlay está más abajo en este
+       archivo, línea ~2765. Allí ya usa var(--z-widget) como default.) */
 
     body {
         background: var(--bg-crm) !important;
@@ -2761,7 +2757,10 @@
         font-size: 0.95rem;
     }
 
-    /* ═══ WIDGET OVERLAY ═══ */
+    /* ═══ WIDGET OVERLAY ═══
+       z-index default: var(--z-widget) (1000). El stack manager
+       (widget_stack.js) lo sobreescribe dinámicamente al abrir cada
+       widget según cuántos haya abiertos. */
     .widget-overlay {
         display: none;
         position: fixed;
@@ -2769,7 +2768,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 10000;
+        z-index: var(--z-widget);
         background: rgba(0, 0, 0, 0.3);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
