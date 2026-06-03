@@ -30,7 +30,7 @@ from django.db.models import Value
 from datetime import date, datetime, timedelta, time
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import decimal
 from django.utils.html import json_script
 
@@ -1339,6 +1339,17 @@ def api_tareas(request):
                 ancladas_ids = set()
 
             tareas_data = []
+            # Conjunto de IDs de tareas con al menos una versión en el historial.
+            # Una sola query (evita N+1) para marcar las que tienen modificaciones.
+            from .models import TareaHistorial as _TH
+            try:
+                _ids_con_hist = set(
+                    _TH.objects.filter(tarea_id__in=[t.id for t in tareas])
+                    .values_list('tarea_id', flat=True).distinct()
+                )
+            except Exception:
+                _ids_con_hist = set()
+
             for tarea in tareas:
                 # Formatear tiempo trabajado
                 tiempo_total_str = "00:00:00"
@@ -1406,6 +1417,7 @@ def api_tareas(request):
                     'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
                     'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
                     'esta_anclada': tarea.id in ancladas_ids,
+                    'tiene_cambios': tarea.id in _ids_con_hist,
                     'search_blob': search_blob,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
@@ -1927,7 +1939,16 @@ def api_crear_tarea(request):
             oportunidad=oportunidad,
             tarea_padre=tarea_padre,
         )
-        
+
+        # Si es subtarea (tiene tarea_padre), loguear en el historial
+        # de la tarea padre para que se vea allí como "Agregó una subtarea".
+        if tarea_padre:
+            _log_tarea_historial(
+                tarea_padre, request.user, 'subtarea_add',
+                nuevo=tarea.titulo,
+                extra={'subtarea_id': tarea.id},
+            )
+
         # Agregar participantes y observadores
         from django.contrib.auth.models import User as AuthUser
         for pid in participantes_ids:
@@ -3290,24 +3311,33 @@ def api_tarea_detalle(request, tarea_id):
                     print(f"🔍 Observadores actuales ANTES: {[o.username for o in current_observadores]}")
                 
                 # Aplicar cambios según el tipo
+                nombre_usuario = usuario.get_full_name() or usuario.username
                 if tipo == 'participantes':
                     if action == 'add':
                         tarea.participantes.add(usuario)
                         print(f"✅ AGREGADO como participante: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como participante a la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido agregado como participante a la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'participante_add',
+                                             nuevo=nombre_usuario, extra={'user_id': usuario.id})
                     elif action == 'remove':
                         tarea.participantes.remove(usuario)
                         print(f"❌ REMOVIDO como participante: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como participante de la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido removido como participante de la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'participante_remove',
+                                             anterior=nombre_usuario, extra={'user_id': usuario.id})
                 elif tipo == 'observadores':
                     if action == 'add':
                         tarea.observadores.add(usuario)
                         print(f"✅ AGREGADO como observador: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como observador a la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido agregado como observador a la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'observador_add',
+                                             nuevo=nombre_usuario, extra={'user_id': usuario.id})
                     elif action == 'remove':
                         tarea.observadores.remove(usuario)
                         print(f"❌ REMOVIDO como observador: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como observador de la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido removido como observador de la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'observador_remove',
+                                             anterior=nombre_usuario, extra={'user_id': usuario.id})
                 else:
                     return JsonResponse({'error': 'Tipo inválido. Use "participantes" o "observadores"'}, status=400)
                 
@@ -3367,11 +3397,67 @@ def api_tarea_detalle(request, tarea_id):
             return JsonResponse({'error': 'JSON inválido'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    
+
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
-@login_required 
+@login_required
+def api_tarea_historial(request, tarea_id):
+    """GET lista de versiones de una Tarea (proyectos) ordenadas DESC por fecha.
+
+    Mismo shape que api_tarea_opp_historial para que el frontend pueda
+    usar el mismo renderer del timeline.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    from .models import Tarea
+    tarea = get_object_or_404(Tarea, pk=tarea_id)
+    qs = (
+        tarea.historial
+        .select_related('autor')
+        .order_by('-fecha')
+    )
+
+    def _avatar_url(u):
+        if not u:
+            return None
+        try:
+            if hasattr(u, 'userprofile'):
+                return u.userprofile.get_avatar_url()
+        except Exception:
+            pass
+        return None
+
+    items = []
+    for h in qs:
+        autor_nombre = ''
+        autor_iniciales = '?'
+        if h.autor:
+            autor_nombre = h.autor.get_full_name() or h.autor.username
+            partes = [p for p in autor_nombre.split() if p]
+            autor_iniciales = (partes[0][0] + partes[-1][0]).upper() if len(partes) >= 2 else autor_nombre[:2].upper()
+        items.append({
+            'id': h.id,
+            'fecha': h.fecha.isoformat(),
+            'tipo': h.tipo,
+            'tipo_label': h.get_tipo_display(),
+            'autor': {
+                'id': h.autor_id,
+                'nombre': autor_nombre,
+                'iniciales': autor_iniciales,
+                'avatar_url': _avatar_url(h.autor),
+            } if h.autor_id else None,
+            'valor_anterior': h.valor_anterior,
+            'valor_nuevo': h.valor_nuevo,
+            'motivo': h.motivo,
+            'extra': h.extra,
+        })
+
+    return JsonResponse({'success': True, 'historial': items, 'total': len(items)})
+
+
+@login_required
 def api_notificaciones(request):
     """
     API para obtener notificaciones del usuario actual
@@ -3572,6 +3658,17 @@ def api_completar_tarea(request, tarea_id):
         tarea.fecha_completada = ahora
         tarea.save()
 
+        # Historial: tarea completada.
+        _log_tarea_historial(tarea, request.user, 'cerrada',
+                             anterior='pendiente', nuevo='completada')
+        # Si es subtarea, también loguear en la padre.
+        if tarea.tarea_padre_id:
+            _log_tarea_historial(
+                tarea.tarea_padre, request.user, 'subtarea_complete',
+                nuevo=tarea.titulo,
+                extra={'subtarea_id': tarea.id},
+            )
+
         # Notificar al creador si es distinto al que completó
         if tarea.creado_por and tarea.creado_por != request.user:
             completador = request.user.get_full_name() or request.user.username
@@ -3690,6 +3787,11 @@ def api_reabrir_tarea(request, tarea_id):
         tarea.estado = 'pendiente'
         tarea.fecha_completada = None
         tarea.save(update_fields=['estado', 'fecha_completada'])
+
+        # Historial: tarea reabierta con motivo.
+        _log_tarea_historial(tarea, request.user, 'reabierta',
+                             anterior='completada', nuevo='pendiente',
+                             motivo=razon)
 
         # Notificar a todos los supervisores y superusuarios
         reabridor = request.user.get_full_name() or request.user.username
@@ -4098,7 +4200,21 @@ def api_actualizar_tarea_real(request, tarea_id):
 
         # Si se cambia fecha_limite y se envía razón, se notifica a admins (audit trail).
         # La razón ya NO es obligatoria — creador y responsable la pueden cambiar libremente.
-        
+
+        # Snapshot ANTES del save para detectar cambios y generar versiones
+        # en TareaHistorial. La razon_reprogramacion (si llega) se usa como
+        # 'motivo' del cambio de fecha_limite.
+        _snap = {
+            'titulo': tarea.titulo,
+            'descripcion': tarea.descripcion,
+            'prioridad': tarea.prioridad,
+            'fecha_limite': tarea.fecha_limite,
+            'asignado_a_id': tarea.asignado_a_id,
+            'cliente_id': tarea.cliente_id,
+            'oportunidad_id': tarea.oportunidad_id,
+        }
+        _motivo_payload = (data.get('motivo') or data.get('razon_reprogramacion') or '').strip()
+
         # Actualizar campos si están presentes en la petición
         if 'nombre' in data or 'titulo' in data:
             nuevo_titulo = data.get('nombre') or data.get('titulo')
@@ -4160,6 +4276,46 @@ def api_actualizar_tarea_real(request, tarea_id):
 
         # Guardar cambios
         tarea.save()
+
+        # ─── Historial: log de cada cambio escalar detectado ───
+        from django.contrib.auth.models import User as _UserH
+        def _resp_label_h(uid):
+            if not uid:
+                return '— sin asignar —'
+            try:
+                u = _UserH.objects.get(pk=uid)
+                return u.get_full_name() or u.username
+            except _UserH.DoesNotExist:
+                return f'User #{uid}'
+        def _fmt_dt_h(dt):
+            return dt.strftime('%Y-%m-%d %H:%M') if dt else ''
+        if ('nombre' in data or 'titulo' in data) and _snap['titulo'] != tarea.titulo:
+            _log_tarea_historial(tarea, request.user, 'titulo',
+                                 anterior=_snap['titulo'], nuevo=tarea.titulo)
+        if 'descripcion' in data and _snap['descripcion'] != tarea.descripcion:
+            _log_tarea_historial(tarea, request.user, 'descripcion',
+                                 anterior=_snap['descripcion'], nuevo=tarea.descripcion)
+        if 'prioridad' in data and _snap['prioridad'] != tarea.prioridad:
+            _log_tarea_historial(tarea, request.user, 'prioridad',
+                                 anterior=_snap['prioridad'], nuevo=tarea.prioridad)
+        if 'fecha_limite' in data and _snap['fecha_limite'] != tarea.fecha_limite:
+            _log_tarea_historial(tarea, request.user, 'fecha_limite',
+                                 anterior=_fmt_dt_h(_snap['fecha_limite']),
+                                 nuevo=_fmt_dt_h(tarea.fecha_limite),
+                                 motivo=_motivo_payload)
+        if 'asignado_a' in data and _snap['asignado_a_id'] != tarea.asignado_a_id:
+            _log_tarea_historial(tarea, request.user, 'responsable',
+                                 anterior=_resp_label_h(_snap['asignado_a_id']),
+                                 nuevo=_resp_label_h(tarea.asignado_a_id),
+                                 extra={'old_id': _snap['asignado_a_id'], 'new_id': tarea.asignado_a_id})
+        if 'cliente_id' in data and _snap['cliente_id'] != tarea.cliente_id:
+            _log_tarea_historial(tarea, request.user, 'cliente',
+                                 anterior=str(_snap['cliente_id'] or ''),
+                                 nuevo=(tarea.cliente.nombre_empresa if tarea.cliente_id else ''))
+        if 'oportunidad_id' in data and _snap['oportunidad_id'] != tarea.oportunidad_id:
+            _log_tarea_historial(tarea, request.user, 'oportunidad',
+                                 anterior=str(_snap['oportunidad_id'] or ''),
+                                 nuevo=(tarea.oportunidad.oportunidad if tarea.oportunidad_id else ''))
 
         # Notificar a admins/supervisores si el responsable reprogramó la fecha
         razon_reprogramacion = data.get('razon_reprogramacion')
@@ -4353,9 +4509,52 @@ def api_tareas_oportunidad(request, opp_id):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
+def _log_tarea_opp_historial(tarea, autor, tipo, anterior='', nuevo='', motivo='', extra=None):
+    """Helper: crea una fila en TareaOportunidadHistorial. NO es vista."""
+    from .models import TareaOportunidadHistorial
+    try:
+        TareaOportunidadHistorial.objects.create(
+            tarea=tarea, autor=autor, tipo=tipo,
+            valor_anterior=str(anterior or ''),
+            valor_nuevo=str(nuevo or ''),
+            motivo=motivo or '',
+            extra=extra,
+        )
+    except Exception as e:
+        # No bloquear el flujo si el log falla.
+        print(f'[historial] No se pudo registrar cambio: {e}')
+
+
+def _log_tarea_historial(tarea, autor, tipo, anterior='', nuevo='', motivo='', extra=None):
+    """Helper: crea una fila en TareaHistorial (modelo Tarea de proyectos)."""
+    from .models import TareaHistorial
+    try:
+        TareaHistorial.objects.create(
+            tarea=tarea, autor=autor, tipo=tipo,
+            valor_anterior=str(anterior or ''),
+            valor_nuevo=str(nuevo or ''),
+            motivo=motivo or '',
+            extra=extra,
+        )
+    except Exception as e:
+        print(f'[historial] No se pudo registrar cambio Tarea: {e}')
+
+
+def _fmt_dt_for_history(dt):
+    if not dt:
+        return ''
+    return dt.strftime('%Y-%m-%d %H:%M')
+
+
 @login_required
 def api_tarea_oportunidad_detail(request, tarea_id):
-    """PUT actualizar / DELETE eliminar — una tarea de oportunidad."""
+    """PUT actualizar / DELETE eliminar — una tarea de oportunidad.
+
+    Versionado: cada cambio relevante genera una fila en
+    TareaOportunidadHistorial. Los flujos donde el frontend puede mandar
+    un 'motivo' (reabrir, cambiar fecha) lo asocian al registro
+    correspondiente.
+    """
     tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
     user = request.user
 
@@ -4367,6 +4566,18 @@ def api_tarea_oportunidad_detail(request, tarea_id):
 
     if request.method == 'PUT':
         data = json.loads(request.body)
+        motivo = (data.get('motivo') or '').strip()
+
+        # Snapshot de campos escalares antes del save para detectar cambios.
+        snap = {
+            'titulo': tarea.titulo,
+            'descripcion': tarea.descripcion,
+            'prioridad': tarea.prioridad,
+            'estado': tarea.estado,
+            'fecha_limite': tarea.fecha_limite,
+            'responsable_id': tarea.responsable_id,
+        }
+
         if 'titulo' in data:
             tarea.titulo = data['titulo']
         if 'descripcion' in data:
@@ -4390,6 +4601,22 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             old_resp_id = tarea.responsable_id
             tarea.responsable_id = new_resp_id
             tarea.save()
+            # Historial: cambio de responsable.
+            if new_resp_id != old_resp_id:
+                def _resp_label(uid):
+                    if not uid:
+                        return '— sin responsable —'
+                    try:
+                        u = User.objects.get(pk=uid)
+                        return u.get_full_name() or u.username
+                    except User.DoesNotExist:
+                        return f'User #{uid}'
+                _log_tarea_opp_historial(
+                    tarea, user, 'responsable',
+                    anterior=_resp_label(old_resp_id),
+                    nuevo=_resp_label(new_resp_id),
+                    extra={'old_id': old_resp_id, 'new_id': new_resp_id},
+                )
             # Notificar al nuevo responsable si cambió y es distinto al editor
             if new_resp_id and new_resp_id != old_resp_id:
                 try:
@@ -4415,6 +4642,11 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['participante_add'])
                 tarea.participantes.add(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'participante_add',
+                    nuevo=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 if u != request.user:
                     crear_notificacion(
                         usuario_destinatario=u,
@@ -4432,6 +4664,11 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['participante_remove'])
                 tarea.participantes.remove(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'participante_remove',
+                    anterior=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 return JsonResponse({'success': True})
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
@@ -4439,6 +4676,11 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['observador_add'])
                 tarea.observadores.add(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'observador_add',
+                    nuevo=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 if u != request.user:
                     crear_notificacion(
                         usuario_destinatario=u,
@@ -4456,10 +4698,50 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['observador_remove'])
                 tarea.observadores.remove(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'observador_remove',
+                    anterior=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 return JsonResponse({'success': True})
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
         tarea.save()
+
+        # ─── Historial de cambios escalares (después del save) ───
+        if 'titulo' in data and snap['titulo'] != tarea.titulo:
+            _log_tarea_opp_historial(
+                tarea, user, 'titulo',
+                anterior=snap['titulo'], nuevo=tarea.titulo,
+            )
+        if 'descripcion' in data and snap['descripcion'] != tarea.descripcion:
+            _log_tarea_opp_historial(
+                tarea, user, 'descripcion',
+                anterior=snap['descripcion'], nuevo=tarea.descripcion,
+            )
+        if 'prioridad' in data and snap['prioridad'] != tarea.prioridad:
+            _log_tarea_opp_historial(
+                tarea, user, 'prioridad',
+                anterior=tarea._meta.get_field('prioridad').choices and dict(tarea._meta.get_field('prioridad').choices).get(snap['prioridad'], snap['prioridad']) or snap['prioridad'],
+                nuevo=tarea.get_prioridad_display(),
+            )
+        if 'estado' in data and snap['estado'] != tarea.estado:
+            # 'cerrada' al pasar a completada; 'reabierta' al volver a pendiente.
+            if tarea.estado == 'completada':
+                _log_tarea_opp_historial(tarea, user, 'cerrada', anterior=snap['estado'], nuevo=tarea.estado, motivo=motivo)
+            elif snap['estado'] == 'completada' and tarea.estado == 'pendiente':
+                _log_tarea_opp_historial(tarea, user, 'reabierta', anterior=snap['estado'], nuevo=tarea.estado, motivo=motivo)
+            else:
+                _log_tarea_opp_historial(tarea, user, 'cerrada' if tarea.estado == 'completada' else 'reabierta',
+                                         anterior=snap['estado'], nuevo=tarea.estado, motivo=motivo)
+        if 'fecha_limite' in data and snap['fecha_limite'] != tarea.fecha_limite:
+            _log_tarea_opp_historial(
+                tarea, user, 'fecha_limite',
+                anterior=_fmt_dt_for_history(snap['fecha_limite']),
+                nuevo=_fmt_dt_for_history(tarea.fecha_limite),
+                motivo=motivo,
+            )
+
         # Si se marcó como completada, actualizar color de la actividad a verde
         if data.get('estado') == 'completada' and tarea.actividad_calendario_id:
             Actividad.objects.filter(pk=tarea.actividad_calendario_id).update(color='#34C759')
@@ -4556,6 +4838,62 @@ def api_tarea_opp_detalle(request, tarea_id):
         'observadores': [user_data(u) for u in tarea.observadores.all()],
     }
     return JsonResponse(data)
+
+
+@login_required
+def api_tarea_opp_historial(request, tarea_id):
+    """GET lista de versiones de una TareaOportunidad ordenadas DESC por fecha.
+
+    Cada item incluye el autor (nombre + avatar_url), el tipo de cambio
+    con su label legible, valor anterior/nuevo, motivo (si aplica) y
+    extra para datos auxiliares.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
+    qs = (
+        tarea.historial
+        .select_related('autor')
+        .order_by('-fecha')
+    )
+
+    def _avatar_url(u):
+        if not u:
+            return None
+        try:
+            if hasattr(u, 'userprofile'):
+                return u.userprofile.get_avatar_url()
+        except Exception:
+            pass
+        return None
+
+    items = []
+    for h in qs:
+        autor_nombre = ''
+        autor_iniciales = '?'
+        if h.autor:
+            autor_nombre = h.autor.get_full_name() or h.autor.username
+            partes = [p for p in autor_nombre.split() if p]
+            autor_iniciales = (partes[0][0] + partes[-1][0]).upper() if len(partes) >= 2 else autor_nombre[:2].upper()
+        items.append({
+            'id': h.id,
+            'fecha': h.fecha.isoformat(),
+            'tipo': h.tipo,
+            'tipo_label': h.get_tipo_display(),
+            'autor': {
+                'id': h.autor_id,
+                'nombre': autor_nombre,
+                'iniciales': autor_iniciales,
+                'avatar_url': _avatar_url(h.autor),
+            } if h.autor_id else None,
+            'valor_anterior': h.valor_anterior,
+            'valor_nuevo': h.valor_nuevo,
+            'motivo': h.motivo,
+            'extra': h.extra,
+        })
+
+    return JsonResponse({'success': True, 'historial': items, 'total': len(items)})
 
 
 @login_required
@@ -5169,6 +5507,14 @@ def api_eliminar_tarea(request, tarea_id):
     es_creador = (tarea.creado_por_id == request.user.id)
     if not (es_creador or request.user.is_superuser):
         return JsonResponse({'error': 'Solo el creador puede eliminar esta tarea'}, status=403)
+    # Si es subtarea, loguear el remove en la padre ANTES del delete (después
+    # del delete la tarea_padre sigue válida porque es FK CASCADE inversa).
+    if tarea.tarea_padre_id:
+        _log_tarea_historial(
+            tarea.tarea_padre, request.user, 'subtarea_remove',
+            anterior=tarea.titulo,
+            extra={'subtarea_id': tarea.id},
+        )
     tarea.delete()
     return JsonResponse({'success': True})
 
@@ -5841,7 +6187,7 @@ def api_gantt_actividad_archivo_detalle(request, archivo_id):
 # INSTALACIONES (Plan de Trabajo Bajanet) — calendario alternativo
 # ═══════════════════════════════════════════════════════════════════════════
 
-from .models import Instalacion
+from .models import Instalacion, Tecnico, InstalacionAsignacion
 
 
 def _instalacion_to_dict(inst):
@@ -5936,3 +6282,577 @@ def api_instalaciones_calendario(request):
         'success': True,
         'instalaciones': [_instalacion_to_dict(i) for i in qs],
     })
+
+
+@login_required
+def api_grid_tecnicos(request):
+    """GET /app/api/calendario/instalaciones/grid/
+
+    Devuelve la matriz Técnico × Día para el rango pedido. Params:
+        ?start=YYYY-MM-DD&end=YYYY-MM-DD  (rango inclusivo)
+        ?solo_activos=1                    (default: 1, incluye solo
+                                            técnicos con activo=True)
+
+    Sin start/end → semana en curso (lunes a domingo).
+
+    Respuesta:
+      {
+        "success": true,
+        "rango": {"start": "...", "end": "..."},
+        "dias": ["2026-05-25", "2026-05-26", ...],
+        "tecnicos": [
+          {"id": 1, "nombre": "URIEL", "rol": "tecnico", "color": ""}
+        ],
+        "celdas": [
+          {
+            "tecnico_id": 1, "fecha": "2026-05-25",
+            "instalacion_id": 12, "cliente_nombre": "VOLVO",
+            "proyecto": "60 NODOS EN VOLVO", "po": "4517218663",
+            "estado": "programada", "estado_label": "Programada",
+            "hora_inicio": "08:00", "hora_fin": "17:00",
+            "notas": ""
+          }
+        ]
+      }
+
+    Una celda (tecnico_id, fecha) puede aparecer múltiples veces si el
+    técnico está asignado a más de una instalación ese día — el frontend
+    decide cómo mostrarlas (stack vertical, abreviar, etc.).
+    """
+    from datetime import date, timedelta
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    start_raw = (request.GET.get('start') or '').strip()
+    end_raw = (request.GET.get('end') or '').strip()
+
+    if start_raw and end_raw:
+        try:
+            start = date.fromisoformat(start_raw)
+            end = date.fromisoformat(end_raw)
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Fechas inválidas'}, status=400)
+    else:
+        hoy = date.today()
+        start = hoy - timedelta(days=hoy.weekday())  # lunes de esta semana
+        end = start + timedelta(days=6)              # domingo
+
+    if end < start:
+        return JsonResponse({'success': False, 'error': 'end < start'}, status=400)
+
+    dias = []
+    cursor = start
+    while cursor <= end:
+        dias.append(cursor.isoformat())
+        cursor += timedelta(days=1)
+
+    solo_activos = request.GET.get('solo_activos', '1') != '0'
+    tecnicos_qs = Tecnico.objects.all()
+    if solo_activos:
+        tecnicos_qs = tecnicos_qs.filter(activo=True)
+    tecnicos_qs = tecnicos_qs.order_by('nombre')
+
+    tecnicos_data = [{
+        'id': t.id,
+        'nombre': t.nombre,
+        'rol': t.rol,
+        'rol_label': t.get_rol_display(),
+        'color': t.color or '',
+    } for t in tecnicos_qs]
+
+    asignaciones_qs = (
+        InstalacionAsignacion.objects
+        .filter(fecha__range=(start, end), tecnico__in=tecnicos_qs)
+        .select_related('instalacion', 'tecnico')
+        .order_by('fecha', 'tecnico__nombre')
+    )
+
+    celdas = []
+    for a in asignaciones_qs:
+        inst = a.instalacion
+        celdas.append({
+            'tecnico_id': a.tecnico_id,
+            'fecha': a.fecha.isoformat(),
+            'instalacion_id': inst.id,
+            'cliente_nombre': inst.cliente_nombre,
+            'proyecto': inst.proyecto,
+            'po': inst.po,
+            'estado': inst.estado,
+            'estado_label': inst.get_estado_display(),
+            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
+            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
+            'notas': a.notas,
+        })
+
+    return JsonResponse({
+        'success': True,
+        'rango': {'start': start.isoformat(), 'end': end.isoformat()},
+        'dias': dias,
+        'tecnicos': tecnicos_data,
+        'celdas': celdas,
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Endpoints para el widget de oportunidad pipeline Proyecto:
+# bloque "Proyecto ligado" + bloque "Programa de Obra (Instalaciones)".
+# ─────────────────────────────────────────────────────────────────────
+
+def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
+    """Helper (NO es view, NO va con @login_required): convierte un body
+    JSON del modal en kwargs para Instalacion.
+
+    Devuelve (kwargs, error_text). Si error_text no es None, hubo un
+    problema de validación y se debe devolver 400. Tolerante con strings
+    vacíos para Decimal y fecha.
+    """
+    descripcion = (data.get('descripcion') or '').strip()
+    if not descripcion:
+        return None, 'La descripción es obligatoria.'
+
+    fecha_raw = (data.get('fecha') or '').strip()
+    fecha_programada = None
+    if fecha_raw:
+        try:
+            from datetime import date as _date
+            fecha_programada = _date.fromisoformat(fecha_raw)
+        except ValueError:
+            return None, 'Fecha inválida (usa YYYY-MM-DD).'
+
+    def _dec(v, default='0'):
+        try:
+            return Decimal(str(v if v not in (None, '') else default))
+        except (InvalidOperation, ValueError):
+            return Decimal(default)
+
+    kwargs = {
+        'po': (data.get('po') or po_default or '').strip()[:80],
+        'proyecto': descripcion[:400],
+        'fecha_programada': fecha_programada,
+        'fecha_tentativa_texto': (data.get('fecha_tentativa_texto') or '').strip()[:120],
+        'jornadas_count': int(data.get('jornadas_count') or 1),
+        'jornadas_tipo': (data.get('jornadas_tipo') or 'normal'),
+        'personal_descripcion': (data.get('personal') or '').strip()[:200],
+        'monto_po': _dec(data.get('monto_po')),
+        'utilidad': _dec(data.get('utilidad')),
+        'observaciones': (data.get('observaciones') or '').strip(),
+        'notas': (data.get('notas') or '').strip(),
+        'estado': (data.get('estado') or 'programada'),
+    }
+    if cliente_default is not None:
+        kwargs['cliente_nombre'] = data.get('cliente_nombre') or (cliente_default.nombre_empresa if cliente_default else '')
+        kwargs['cliente'] = cliente_default
+    else:
+        kwargs['cliente_nombre'] = (data.get('cliente_nombre') or '').strip()[:200]
+    return kwargs, None
+
+
+def _instalacion_to_full_dict(inst):
+    """Serialización completa para el modal detalle (incluye asignaciones)."""
+    asignaciones = []
+    for a in inst.asignaciones.select_related('tecnico').order_by('fecha', 'tecnico__nombre'):
+        asignaciones.append({
+            'id': a.id,
+            'tecnico_id': a.tecnico_id,
+            'tecnico_nombre': a.tecnico.nombre,
+            'tecnico_rol': a.tecnico.get_rol_display(),
+            'fecha': a.fecha.isoformat(),
+            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
+            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
+            'notas': a.notas,
+        })
+    return {
+        'id': inst.id,
+        'po': inst.po,
+        'descripcion': inst.proyecto,
+        'cliente_nombre': inst.cliente_nombre,
+        'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
+        'fecha_tentativa_texto': inst.fecha_tentativa_texto,
+        'jornadas_count': inst.jornadas_count,
+        'jornadas_tipo': inst.jornadas_tipo,
+        'jornadas_tipo_label': inst.get_jornadas_tipo_display(),
+        'personal': inst.personal_descripcion,
+        'monto_po': str(inst.monto_po),
+        'utilidad': str(inst.utilidad),
+        'estado': inst.estado,
+        'estado_label': inst.get_estado_display(),
+        'observaciones': inst.observaciones,
+        'notas': inst.notas,
+        'proyecto_id': inst.proyecto_crm_id,
+        'proyecto_nombre': inst.proyecto_crm.nombre if inst.proyecto_crm_id else '',
+        'oportunidad_id': inst.oportunidad_id,
+        'oportunidad_titulo': inst.oportunidad.oportunidad if inst.oportunidad_id else '',
+        'asignaciones': asignaciones,
+    }
+
+
+@login_required
+def api_proyecto_instalaciones(request, proyecto_id):
+    """GET/POST instalaciones ligadas a un Proyecto (Programa de Obra).
+
+    GET → lista las instalaciones del proyecto ordenadas por fecha.
+    POST → crea una nueva instalación pre-ligada al proyecto. Body JSON:
+          {po, descripcion, fecha, jornadas_count, jornadas_tipo, personal,
+           monto_po, utilidad, observaciones, notas, estado, cliente_nombre,
+           oportunidad_id (opcional)}
+
+    Nota: usa el modelo ProyectoIAMET (CRM moderno), no el legacy `Proyecto`.
+    """
+    proy = get_object_or_404(ProyectoIAMET, pk=proyecto_id)
+
+    if request.method == 'GET':
+        qs = (
+            Instalacion.objects
+            .filter(proyecto_crm=proy)
+            .order_by(F('fecha_programada').asc(nulls_last=True), 'fecha_creacion')
+            .prefetch_related('asignaciones__tecnico__usuario')
+        )
+        items = []
+        for inst in qs:
+            # Resumen de técnicos asignados (dedupe por tecnico_id; un
+            # técnico con varias fechas aparece una sola vez en el avatar).
+            tecnicos_resumen = {}
+            for a in inst.asignaciones.all():
+                t = a.tecnico
+                if t.id in tecnicos_resumen:
+                    continue
+                avatar_url = None
+                if t.usuario_id:
+                    try:
+                        if hasattr(t.usuario, 'userprofile'):
+                            avatar_url = t.usuario.userprofile.get_avatar_url()
+                    except Exception:
+                        avatar_url = None
+                nombre = t.nombre or ''
+                partes = [p for p in nombre.split() if p]
+                iniciales = (partes[0][0] + partes[-1][0]).upper() if len(partes) >= 2 else (nombre[:2].upper() if nombre else '?')
+                tecnicos_resumen[t.id] = {
+                    'id': t.id,
+                    'nombre': nombre,
+                    'avatar_url': avatar_url,
+                    'iniciales': iniciales,
+                }
+            items.append({
+                'id': inst.id,
+                'po': inst.po,
+                'descripcion': inst.proyecto,
+                'cliente_nombre': inst.cliente_nombre,
+                'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
+                'fecha_tentativa_texto': inst.fecha_tentativa_texto,
+                'jornadas_count': inst.jornadas_count,
+                'jornadas_tipo_label': inst.get_jornadas_tipo_display(),
+                'personal': inst.personal_descripcion,
+                'monto_po': str(inst.monto_po),
+                'estado': inst.estado,
+                'estado_label': inst.get_estado_display(),
+                'asignaciones_count': len(tecnicos_resumen),
+                'tecnicos_asignados': list(tecnicos_resumen.values()),
+            })
+        return JsonResponse({'success': True, 'instalaciones': items})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8') or '{}')
+        except (ValueError, AttributeError):
+            data = {}
+        kwargs, err = _instalacion_payload_to_kwargs(data, cliente_default=None)
+        if err:
+            return JsonResponse({'success': False, 'error': err}, status=400)
+
+        # Opp opcional.
+        opp = None
+        if data.get('oportunidad_id'):
+            try:
+                opp = TodoItem.objects.get(pk=int(data['oportunidad_id']))
+            except (TodoItem.DoesNotExist, ValueError, TypeError):
+                opp = None
+        # Si no se mandó opp_id explícitamente, usar la del ProyectoIAMET.
+        if opp is None and getattr(proy, 'oportunidad_id', None):
+            try:
+                opp = proy.oportunidad
+            except Exception:
+                opp = None
+
+        try:
+            inst = Instalacion.objects.create(
+                proyecto_crm=proy,
+                oportunidad=opp,
+                creado_por=request.user,
+                **kwargs,
+            )
+        except Exception as e:
+            import traceback
+            return JsonResponse({
+                'success': False,
+                'error': 'Error al crear instalación: ' + str(e),
+                'trace': traceback.format_exc()[-1500:],
+            }, status=500)
+
+        # Auto-asignar técnicos por user_id en la fecha programada.
+        # Si la instalación no tiene fecha, no se crean asignaciones.
+        asignaciones_creadas = 0
+        asignaciones_error = None
+        tecnico_user_ids = data.get('tecnico_user_ids') or []
+        if tecnico_user_ids and inst.fecha_programada:
+            for uid in tecnico_user_ids:
+                try:
+                    user = User.objects.get(pk=int(uid))
+                except (User.DoesNotExist, ValueError, TypeError):
+                    continue
+                try:
+                    tecnico = Tecnico.objects.filter(usuario=user).first()
+                    if not tecnico:
+                        nombre = (user.get_full_name() or user.username).strip()[:120]
+                        tecnico = Tecnico.objects.create(
+                            nombre=nombre, rol='tecnico', activo=True, usuario=user,
+                        )
+                    _, created = InstalacionAsignacion.objects.get_or_create(
+                        instalacion=inst, tecnico=tecnico, fecha=inst.fecha_programada,
+                    )
+                    if created:
+                        asignaciones_creadas += 1
+                except Exception as e:
+                    asignaciones_error = str(e)
+                    continue
+
+        resp = {'success': True, 'instalacion_id': inst.id, 'asignaciones_creadas': asignaciones_creadas}
+        if asignaciones_error:
+            resp['asignaciones_warning'] = asignaciones_error
+        return JsonResponse(resp)
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_proyecto_instalacion_defaults(request, proyecto_id):
+    """GET → devuelve defaults para prellenar el modal "Nueva instalación".
+
+    Lee la oportunidad ligada al ProyectoIAMET (proy.oportunidad) y
+    extrae cliente_nombre + po. Si el proyecto no tiene opp ligada,
+    devuelve vacíos.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    proy = get_object_or_404(ProyectoIAMET, pk=proyecto_id)
+    opp = proy.oportunidad
+    cliente_nombre = ''
+    po = ''
+    if opp:
+        if opp.cliente_id:
+            cliente_nombre = opp.cliente.nombre_empresa or ''
+        po = (opp.po_number or '').strip()
+    # Fallback: cliente_nombre directo del ProyectoIAMET si lo tiene.
+    if not cliente_nombre:
+        cliente_nombre = getattr(proy, 'cliente_nombre', '') or ''
+    return JsonResponse({
+        'success': True,
+        'defaults': {
+            'cliente_nombre': cliente_nombre,
+            'po': po,
+            'oportunidad_id': opp.id if opp else None,
+            'oportunidad_titulo': opp.oportunidad if opp else '',
+        },
+    })
+
+
+@login_required
+def api_instalacion_detalle(request, instalacion_id):
+    """GET/PATCH/DELETE detalle de una instalación.
+
+    GET → datos completos para el modal (incluye asignaciones de técnicos).
+    PATCH → actualiza campos del body (sólo los presentes).
+    DELETE → elimina la instalación (las asignaciones caen por CASCADE).
+    """
+    inst = get_object_or_404(Instalacion, pk=instalacion_id)
+
+    if request.method == 'GET':
+        return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
+
+    if request.method == 'DELETE':
+        inst.delete()
+        return JsonResponse({'success': True})
+
+    if request.method == 'PATCH':
+        try:
+            data = json.loads(request.body.decode('utf-8') or '{}')
+        except (ValueError, AttributeError):
+            data = {}
+        kwargs, err = _instalacion_payload_to_kwargs(data, cliente_default=None)
+        if err:
+            return JsonResponse({'success': False, 'error': err}, status=400)
+        for field, value in kwargs.items():
+            setattr(inst, field, value)
+        inst.save()
+        return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_instalacion_asignaciones(request, instalacion_id):
+    """POST asigna un técnico a una instalación en una fecha.
+
+    Body: {tecnico_id, fecha (YYYY-MM-DD), hora_inicio (opc), hora_fin (opc), notas (opc)}.
+    Idempotente por UniqueConstraint(instalacion, tecnico, fecha): si ya
+    existe, devuelve la existente con un flag 'created': False.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    inst = get_object_or_404(Instalacion, pk=instalacion_id)
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, AttributeError):
+        data = {}
+
+    try:
+        tecnico_id = int(data.get('tecnico_id'))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'tecnico_id inválido'}, status=400)
+    tecnico = get_object_or_404(Tecnico, pk=tecnico_id)
+
+    from datetime import date as _date, time as _time
+    fecha_raw = (data.get('fecha') or '').strip()
+    if not fecha_raw:
+        return JsonResponse({'success': False, 'error': 'fecha requerida'}, status=400)
+    try:
+        fecha = _date.fromisoformat(fecha_raw)
+    except ValueError:
+        return JsonResponse({'success': False, 'error': 'Fecha inválida (YYYY-MM-DD)'}, status=400)
+
+    def _parse_time(s):
+        if not s:
+            return None
+        try:
+            h, m = s.split(':')
+            return _time(int(h), int(m))
+        except (ValueError, AttributeError):
+            return None
+
+    asig, created = InstalacionAsignacion.objects.get_or_create(
+        instalacion=inst, tecnico=tecnico, fecha=fecha,
+        defaults={
+            'hora_inicio': _parse_time(data.get('hora_inicio')),
+            'hora_fin': _parse_time(data.get('hora_fin')),
+            'notas': (data.get('notas') or '').strip()[:200],
+        },
+    )
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'asignacion': {
+            'id': asig.id,
+            'tecnico_id': tecnico.id,
+            'tecnico_nombre': tecnico.nombre,
+            'tecnico_rol': tecnico.get_rol_display(),
+            'fecha': asig.fecha.isoformat(),
+            'hora_inicio': asig.hora_inicio.strftime('%H:%M') if asig.hora_inicio else '',
+            'hora_fin': asig.hora_fin.strftime('%H:%M') if asig.hora_fin else '',
+            'notas': asig.notas,
+        },
+    })
+
+
+@login_required
+def api_instalacion_asignacion_detalle(request, instalacion_id, asignacion_id):
+    """DELETE → quita la asignación de técnico de la instalación."""
+    if request.method != 'DELETE':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    asig = get_object_or_404(InstalacionAsignacion, pk=asignacion_id, instalacion_id=instalacion_id)
+    asig.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+def api_tecnicos_list(request):
+    """GET → lista técnicos (por default solo activos). Usado por el
+    picker de "Asignar técnico" del modal detalle. Param: ?incluir_inactivos=1.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    qs = Tecnico.objects.all()
+    if request.GET.get('incluir_inactivos') != '1':
+        qs = qs.filter(activo=True)
+    qs = qs.order_by('nombre')
+    return JsonResponse({
+        'success': True,
+        'tecnicos': [{
+            'id': t.id,
+            'nombre': t.nombre,
+            'rol': t.rol,
+            'rol_label': t.get_rol_display(),
+            'color': t.color or '',
+            'activo': t.activo,
+        } for t in qs],
+    })
+
+
+@login_required
+def api_oportunidad_proyectos_ligados(request, oportunidad_id):
+    """GET/POST/DELETE proyectos ligados a una oportunidad vía el M2M
+    plano Proyecto.oportunidades_ligadas.
+
+    Nota: existe otro endpoint legacy `api_oportunidad_proyectos` (línea
+    ~4640) que maneja `ProyectoOportunidadLink` (sugerencias con score
+    + confirmar/rechazar). Son DOS sistemas paralelos; este es para el
+    widget de Pipeline Proyecto donde el vendedor liga manualmente.
+
+    GET → lista los proyectos ligados.
+    POST → vincula un proyecto existente. Body: {proyecto_id}.
+    DELETE → desvincula. Body: {proyecto_id}.
+    """
+    opp = get_object_or_404(TodoItem, pk=oportunidad_id)
+
+    if request.method == 'GET':
+        proyectos = (
+            Proyecto.objects
+            .filter(oportunidades_ligadas=opp)
+            .order_by('-fecha_actualizacion')
+        )
+        items = [{
+            'id': p.id,
+            'nombre': p.nombre,
+            'tipo': p.tipo,
+            'tipo_label': p.get_tipo_display(),
+            'privacidad': p.privacidad,
+        } for p in proyectos]
+        return JsonResponse({'success': True, 'proyectos': items})
+
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, AttributeError):
+        data = {}
+    proy_id = data.get('proyecto_id')
+    if not proy_id:
+        return JsonResponse({'success': False, 'error': 'Falta proyecto_id'}, status=400)
+    proy = get_object_or_404(Proyecto, pk=proy_id)
+
+    if request.method == 'POST':
+        proy.oportunidades_ligadas.add(opp)
+        return JsonResponse({'success': True, 'proyecto_id': proy.id})
+
+    if request.method == 'DELETE':
+        proy.oportunidades_ligadas.remove(opp)
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_proyectos_buscar(request):
+    """GET ?q=… → busca proyectos por nombre (máximo 20). Usado por el
+    picker de "Vincular proyecto existente" del widget de oportunidad.
+    """
+    q = (request.GET.get('q') or '').strip()
+    qs = Proyecto.objects.all()
+    if q:
+        qs = qs.filter(nombre__icontains=q)
+    qs = qs.order_by('-fecha_actualizacion')[:20]
+    items = [{
+        'id': p.id,
+        'nombre': p.nombre,
+        'tipo': p.tipo,
+        'tipo_label': p.get_tipo_display(),
+    } for p in qs]
+    return JsonResponse({'success': True, 'proyectos': items})

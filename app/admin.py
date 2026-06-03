@@ -336,7 +336,7 @@ class HistorialIntercambioAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return False  # No permitir editar registros
 
-from .models import Instalacion
+from .models import Instalacion, Tecnico, InstalacionAsignacion
 
 
 @admin.register(Instalacion)
@@ -353,7 +353,10 @@ class InstalacionAdmin(admin.ModelAdmin):
     list_filter = ('estado', 'jornadas_tipo', 'fecha_programada', 'cliente')
     search_fields = ('cliente_nombre', 'po', 'proyecto', 'observaciones', 'notas')
     date_hierarchy = 'fecha_programada'
+    # proyecto_crm (FK a ProyectoIAMET) no usa autocomplete porque
+    # ProyectoIAMET no está registrado en el admin con search_fields.
     autocomplete_fields = ('cliente', 'oportunidad')
+    raw_id_fields = ('proyecto_crm',)
     ordering = ('-fecha_programada', '-fecha_creacion')
 
     fieldsets = (
@@ -388,3 +391,44 @@ class InstalacionAdmin(admin.ModelAdmin):
         if not change and not obj.creado_por_id:
             obj.creado_por = request.user
         super().save_model(request, obj, form, change)
+
+
+class InstalacionAsignacionInline(admin.TabularInline):
+    model = InstalacionAsignacion
+    extra = 0
+    autocomplete_fields = ('tecnico',)
+    fields = ('tecnico', 'fecha', 'hora_inicio', 'hora_fin', 'notas')
+
+
+# Re-registrar Instalacion con el inline.
+admin.site.unregister(Instalacion)
+
+
+@admin.register(Instalacion)
+class InstalacionAdminConAsignaciones(InstalacionAdmin):
+    inlines = [InstalacionAsignacionInline]
+
+
+@admin.register(Tecnico)
+class TecnicoAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'rol', 'activo', 'usuario', 'fecha_creacion')
+    list_filter = ('rol', 'activo')
+    search_fields = ('nombre', 'usuario__username', 'usuario__first_name', 'usuario__last_name')
+    list_editable = ('activo',)
+    autocomplete_fields = ('usuario',)
+    ordering = ('nombre',)
+
+
+@admin.register(InstalacionAsignacion)
+class InstalacionAsignacionAdmin(admin.ModelAdmin):
+    list_display = ('tecnico', 'instalacion', 'fecha', 'hora_inicio', 'hora_fin')
+    list_filter = ('fecha', 'tecnico')
+    search_fields = (
+        'tecnico__nombre',
+        'instalacion__cliente_nombre',
+        'instalacion__proyecto',
+        'notas',
+    )
+    autocomplete_fields = ('instalacion', 'tecnico')
+    date_hierarchy = 'fecha'
+    ordering = ('-fecha', 'tecnico__nombre')

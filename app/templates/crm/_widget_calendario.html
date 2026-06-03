@@ -311,11 +311,12 @@
                     <span>Asistente</span>
                 </button>
             </div>
-            <!-- Dynamic island central: Mes / Semana / Día -->
+            <!-- Dynamic island central: Mes / Semana / Día / (Técnicos solo en modo Instalaciones) -->
             <div class="crm-tabs crm-tabs--dashboard">
                 <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
                 <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                 <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
+                <button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
             </div>
             <style>
                 /* Toggle Fuente del Calendario: Actividades / Instalaciones.
@@ -436,6 +437,7 @@
                 <button id="calBtnMes" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
                 <button id="calBtnSemana" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
                 <button id="calBtnDia" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
+                <button id="calBtnTecnicos" class="cal-view-btn" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
             </div>
         </div>
 
@@ -455,6 +457,8 @@
                     <div id="calWeekHeader" style="display:flex;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,0.07);padding-bottom:4px;"></div>
                     <div id="calWeekTimeline" style="overflow-y:auto;flex:1;min-height:0;position:relative;"></div>
                 </div>
+                <!-- Técnicos × Día grid view (solo en modo Instalaciones) -->
+                <div id="calTecnicosGridRoot" style="flex:1;min-height:0;display:none;flex-direction:column;overflow:auto;"></div>
             </div>
 
         </div><!-- /body -->
@@ -771,7 +775,15 @@
                         }).catch(function(){info.revert();});
                     },
                     eventClick: function (info) {
-                        // Click directo → modal completo (oportunidad/curso/evento/actividad/tarea)
+                        // Si es una instalación (modo Instalaciones), abrir el
+                        // modal del Programa de Obra. Las actividades/tareas/
+                        // eventos siguen su flujo normal.
+                        var ep = info.event.extendedProps || {};
+                        var instId = ep.instalacion_id || (ep.source === 'instalacion' ? null : null);
+                        if (instId && typeof window.pobAbrirModal === 'function') {
+                            window.pobAbrirModal(instId);
+                            return;
+                        }
                         _calOpenFull(String(info.event.id));
                     },
                     eventDidMount: function (info) {
@@ -884,6 +896,11 @@
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
             calMaybeRefetchOnMonthChange();
+        } else if (_calViewMode === 'tecnicos') {
+            _calWeekStart = new Date(_calWeekStart);
+            _calWeekStart.setDate(_calWeekStart.getDate() - 7);
+            calRenderTecnicosGrid(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() - 1);
@@ -902,6 +919,11 @@
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
             calMaybeRefetchOnMonthChange();
+        } else if (_calViewMode === 'tecnicos') {
+            _calWeekStart = new Date(_calWeekStart);
+            _calWeekStart.setDate(_calWeekStart.getDate() + 7);
+            calRenderTecnicosGrid(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() + 1);
@@ -920,6 +942,10 @@
             calRenderWeekView(_calWeekStart);
             calUpdateNavTitle();
             calMaybeRefetchOnMonthChange();
+        } else if (_calViewMode === 'tecnicos') {
+            _calWeekStart = calGetWeekStart(new Date());
+            calRenderTecnicosGrid(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
@@ -934,18 +960,22 @@
         var fcRoot = document.getElementById('fullCalendarRoot');
         var dayRoot = document.getElementById('calDayViewRoot');
         var weekRoot = document.getElementById('calWeekViewRoot');
+        var gridRoot = document.getElementById('calTecnicosGridRoot');
         var btnMes = document.getElementById('calBtnMes');
         var btnDia = document.getElementById('calBtnDia');
         var btnSemana = document.getElementById('calBtnSemana');
+        var btnTec = document.getElementById('calBtnTecnicos');
         // Duplicados en page-mode (al pie del calendario)
         var btnMesP = document.getElementById('calBtnMesPage');
         var btnDiaP = document.getElementById('calBtnDiaPage');
         var btnSemanaP = document.getElementById('calBtnSemanaPage');
+        var btnTecP = document.getElementById('calBtnTecnicosPage');
         // Hide all
         fcRoot.style.display = 'none';
         dayRoot.style.display = 'none';
         weekRoot.style.display = 'none';
-        [btnMes, btnDia, btnSemana, btnMesP, btnDiaP, btnSemanaP].forEach(function(b){ if(b) b.classList.remove('active'); });
+        if (gridRoot) gridRoot.style.display = 'none';
+        [btnMes, btnDia, btnSemana, btnTec, btnMesP, btnDiaP, btnSemanaP, btnTecP].forEach(function(b){ if(b) b.classList.remove('active'); });
 
         if (mode === 'month') {
             fcRoot.style.display = '';
@@ -974,6 +1004,22 @@
             else weekSeed = new Date();
             _calWeekStart = calGetWeekStart(weekSeed);
             calRenderWeekView(_calWeekStart);
+        } else if (mode === 'tecnicos') {
+            if (gridRoot) {
+                gridRoot.style.display = 'flex';
+                gridRoot.style.flexDirection = 'column';
+            }
+            if (btnTec) btnTec.classList.add('active');
+            if (btnTecP) btnTecP.classList.add('active');
+            // Semilla de semana: si venimos de week → reusar, si venimos
+            // de day → semana que contiene ese día, si no → semana actual.
+            var gridSeed;
+            if (prevMode === 'week' && _calWeekStart) gridSeed = _calWeekStart;
+            else if (prevMode === 'day' && _calCurrentDay) gridSeed = _calCurrentDay;
+            else if (_globalCalendar) gridSeed = _globalCalendar.getDate();
+            else gridSeed = new Date();
+            _calWeekStart = calGetWeekStart(gridSeed);
+            calRenderTecnicosGrid(_calWeekStart);
         } else {
             dayRoot.style.display = 'flex';
             dayRoot.style.flexDirection = 'column';
@@ -1025,6 +1071,16 @@
             var dayName = DAYS_ES[d.getDay()];
             var capDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
             _setTitle(capDay + ', ' + d.getDate() + ' de ' + MONTHS_ES[d.getMonth()]);
+        } else if (_calViewMode === 'tecnicos' && _calWeekStart) {
+            var tws = _calWeekStart;
+            var twe = new Date(tws); twe.setDate(twe.getDate() + 6);
+            var tRange;
+            if (tws.getMonth() === twe.getMonth()) {
+                tRange = tws.getDate() + ' – ' + twe.getDate() + ' de ' + MONTHS_ES[tws.getMonth()] + ', ' + tws.getFullYear();
+            } else {
+                tRange = tws.getDate() + ' de ' + MONTHS_ES[tws.getMonth()] + ' – ' + twe.getDate() + ' de ' + MONTHS_ES[twe.getMonth()] + ', ' + twe.getFullYear();
+            }
+            _setTitle('Técnicos · ' + tRange);
         }
 
         if (headerDateEl) {
@@ -2125,6 +2181,16 @@
             btnI.classList.toggle('cal-source-btn-active', source === 'instalaciones');
             btnI.setAttribute('aria-selected', source === 'instalaciones' ? 'true' : 'false');
         }
+        // Botón "Técnicos" en el toggle de vistas: solo aparece en modo Instalaciones.
+        var btnTec = document.getElementById('calBtnTecnicos');
+        var btnTecP = document.getElementById('calBtnTecnicosPage');
+        var showTec = (source === 'instalaciones');
+        if (btnTec) btnTec.style.display = showTec ? '' : 'none';
+        if (btnTecP) btnTecP.style.display = showTec ? '' : 'none';
+        // Si salimos de Instalaciones estando en la vista 'tecnicos', volver a 'month'.
+        if (!showTec && _calViewMode === 'tecnicos') {
+            window.calSwitchView('month');
+        }
         _calLastFetchedMes = null;  // invalidar cache para forzar refetch
         if (typeof window.calGlobalRefetch === 'function') {
             window.calGlobalRefetch(document.getElementById('calUserFilter') ? document.getElementById('calUserFilter').value : 'all');
@@ -2188,7 +2254,141 @@
             });
     }
 
+    // ── Grid Técnico × Día (vista alterna en modo Instalaciones) ──
+    // Reemplaza fcRoot/dayRoot/weekRoot por una tabla:
+    //   filas = técnicos activos
+    //   columnas = 7 días de la semana visible (weekStart..+6)
+    //   celdas = cliente/proyecto donde el técnico está asignado ese día
+    // Origen: bloque derecho del Excel PLAN DE TRABAJO BAJANET.
+    function _calFmtDateISO(d) {
+        var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+    var _CAL_TEC_DAYS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    var _CAL_TEC_MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    var _CAL_TEC_PALETTE = ['#FF9500','#34C759','#5856D6','#FF2D55','#AF52DE','#FF3B30','#00C7BE','#FFCC00','#A2845E','#5AC8FA'];
+    function _calClienteColor(name) {
+        if (!name) return '#86868B';
+        var h = 0;
+        for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+        return _CAL_TEC_PALETTE[Math.abs(h) % _CAL_TEC_PALETTE.length];
+    }
+
+    window.calRenderTecnicosGrid = function (weekStart) {
+        var root = document.getElementById('calTecnicosGridRoot');
+        if (!root) return;
+        var ws = new Date(weekStart);
+        var we = new Date(ws); we.setDate(we.getDate() + 6);
+        root.innerHTML = '<div style="padding:24px;text-align:center;color:#86868B;font-size:0.85rem;">Cargando técnicos…</div>';
+        var url = '/app/api/calendario/instalaciones/grid/?start=' + _calFmtDateISO(ws) + '&end=' + _calFmtDateISO(we);
+        fetch(url, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    root.innerHTML = '<div style="padding:24px;text-align:center;color:#FF3B30;">No se pudo cargar el grid.</div>';
+                    return;
+                }
+                _calBuildTecnicosGridDOM(root, data, ws);
+            })
+            .catch(function () {
+                root.innerHTML = '<div style="padding:24px;text-align:center;color:#FF3B30;">Error de red.</div>';
+            });
+    };
+
+    function _calBuildTecnicosGridDOM(root, data, weekStart) {
+        var tecnicos = data.tecnicos || [];
+        var dias = data.dias || [];
+        var celdas = data.celdas || [];
+
+        // Indexar celdas por (tecnico_id, fecha).
+        var byKey = {};
+        celdas.forEach(function (c) {
+            var k = c.tecnico_id + '|' + c.fecha;
+            if (!byKey[k]) byKey[k] = [];
+            byKey[k].push(c);
+        });
+
+        if (!tecnicos.length) {
+            root.innerHTML = '<div style="padding:32px;text-align:center;color:#86868B;font-size:0.88rem;">'
+                + 'No hay técnicos activos.<br>'
+                + '<span style="font-size:0.78rem;">Da de alta técnicos en <code>/admin/</code> o corre <code>seed_tecnicos</code>.</span>'
+                + '</div>';
+            return;
+        }
+
+        var html = '';
+        html += '<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:0.78rem;table-layout:fixed;">';
+        // Header
+        html += '<thead><tr>';
+        html += '<th style="position:sticky;left:0;top:0;z-index:3;background:#FAFAFC;border-bottom:1px solid #E5E5EA;border-right:1px solid #E5E5EA;padding:10px 12px;text-align:left;color:#1D1D1F;font-weight:700;width:140px;">Técnico</th>';
+        dias.forEach(function (iso) {
+            var parts = iso.split('-');
+            var dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            var hoyISO = _calFmtDateISO(new Date());
+            var isHoy = iso === hoyISO;
+            var bg = isHoy ? '#FFF6E5' : '#FAFAFC';
+            html += '<th style="position:sticky;top:0;z-index:2;background:' + bg + ';border-bottom:1px solid #E5E5EA;padding:8px 6px;text-align:center;font-weight:600;color:#1D1D1F;">';
+            html += '<div style="font-size:0.7rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;">' + _CAL_TEC_DAYS_ES[dt.getDay()].slice(0, 3) + '</div>';
+            html += '<div style="font-size:0.95rem;font-weight:700;' + (isHoy ? 'color:#FF9500;' : '') + '">' + dt.getDate() + '</div>';
+            html += '<div style="font-size:0.66rem;color:#86868B;">' + _CAL_TEC_MONTHS_ES[dt.getMonth()] + '</div>';
+            html += '</th>';
+        });
+        html += '</tr></thead>';
+
+        // Rows
+        html += '<tbody>';
+        tecnicos.forEach(function (t, rowIdx) {
+            var rowBg = rowIdx % 2 === 0 ? '#FFF' : '#FAFAFC';
+            html += '<tr>';
+            html += '<td style="position:sticky;left:0;z-index:1;background:' + rowBg + ';border-bottom:1px solid #F2F2F7;border-right:1px solid #E5E5EA;padding:10px 12px;font-weight:600;color:#1D1D1F;">';
+            html += '<div>' + _calEscape(t.nombre) + '</div>';
+            if (t.rol && t.rol !== 'tecnico') {
+                html += '<div style="font-size:0.66rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;">' + _calEscape(t.rol_label || '') + '</div>';
+            }
+            html += '</td>';
+            dias.forEach(function (iso) {
+                var cellEntries = byKey[t.id + '|' + iso] || [];
+                html += '<td style="border-bottom:1px solid #F2F2F7;border-right:1px solid #F7F7FA;padding:4px;vertical-align:top;height:54px;background:' + rowBg + ';">';
+                cellEntries.forEach(function (c) {
+                    var color = _calClienteColor(c.cliente_nombre);
+                    var label = _calEscape(c.cliente_nombre || '—');
+                    var tooltip = (c.proyecto || '') + (c.po ? ' (PO ' + c.po + ')' : '');
+                    html += '<div onclick="calOpenInstalacionFromGrid(' + c.instalacion_id + ')" title="' + _calEscape(tooltip) + '" '
+                          + 'style="background:' + color + '15;border-left:3px solid ' + color + ';color:#1D1D1F;'
+                          + 'padding:4px 6px;border-radius:5px;margin-bottom:3px;font-size:0.74rem;font-weight:600;'
+                          + 'cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+                          + label + '</div>';
+                });
+                html += '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        root.innerHTML = html;
+    }
+
+    function _calEscape(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    window.calOpenInstalacionFromGrid = function (instId) {
+        // Abre el modal único del Programa de Obra (definido en
+        // programa_obra.js). Reemplaza el placeholder /admin/ anterior.
+        if (typeof window.pobAbrirModal === 'function') {
+            window.pobAbrirModal(instId);
+        } else {
+            window.open('/admin/app/instalacion/' + instId + '/change/', '_blank');
+        }
+    };
+
     window.calGlobalRefetch = function (userVal) {
+        // Si estamos en la vista grid Técnico × Día, re-renderizar el grid.
+        if (_calViewMode === 'tecnicos') {
+            if (_calWeekStart) calRenderTecnicosGrid(_calWeekStart);
+            return;
+        }
         // Si estamos en modo Instalaciones, ignora userVal y usa el endpoint
         // de instalaciones. El filtro de usuario no aplica a instalaciones
         // (todas son visibles para todos los usuarios autorizados).

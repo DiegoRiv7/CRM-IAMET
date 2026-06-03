@@ -9337,6 +9337,19 @@
     width: 3px;
     background: #EF4444;
 }
+/* Tarea con cambios registrados (historial > 0): franja amarilla. */
+.tcp-row.modificada::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #F59E0B;
+}
+/* Cuando está atrasada Y tiene cambios: franja combinada — rojo arriba,
+   amarillo abajo, mismas proporciones. */
+.tcp-row.atrasada.modificada::before {
+    background: linear-gradient(180deg, #EF4444 0%, #EF4444 50%, #F59E0B 50%, #F59E0B 100%);
+}
 
 /* Columna TAREA: ícono opcional de warning + título */
 .tcp-row-tarea {

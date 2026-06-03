@@ -128,6 +128,17 @@ def api_agregar_comentario_tarea(request, tarea_id):
             usuario=request.user,
             contenido=contenido
         )
+
+        # Historial: log "Agregó un comentario" en la tarea. Sin guardar
+        # el contenido (puede ser largo) — basta con el rastro.
+        try:
+            from .views_proyectos import _log_tarea_historial
+            _log_tarea_historial(
+                tarea, request.user, 'comentario_add',
+                extra={'comentario_id': comentario.id},
+            )
+        except Exception as _e:
+            print(f'[historial] No se pudo registrar comentario: {_e}')
         
         # Manejar archivos adjuntos si existen
         archivos_data = []

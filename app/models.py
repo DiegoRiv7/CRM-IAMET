@@ -3025,6 +3025,115 @@ class ComentarioTareaOpp(models.Model):
         return f'Comentario de {self.autor} en "{self.tarea.titulo}"'
 
 
+class TareaHistorial(models.Model):
+    """Versiones / log de cambios de una Tarea (proyectos).
+
+    Espejo de TareaOportunidadHistorial pero para el modelo Tarea, que
+    es el que usa el modal principal del CRM (#crmTaskModal). Mismos
+    tipos de cambio para que el frontend pueda reusar el renderer.
+    """
+    TIPO_CHOICES = [
+        ('titulo', 'Cambió el título'),
+        ('descripcion', 'Cambió la descripción'),
+        ('fecha_limite', 'Cambió la fecha límite'),
+        ('responsable', 'Cambió el responsable'),
+        ('prioridad', 'Cambió la prioridad'),
+        ('participante_add', 'Agregó un participante'),
+        ('participante_remove', 'Quitó un participante'),
+        ('observador_add', 'Agregó un observador'),
+        ('observador_remove', 'Quitó un observador'),
+        ('cerrada', 'Marcó la tarea como completada'),
+        ('reabierta', 'Reabrió la tarea'),
+        ('cliente', 'Cambió el cliente'),
+        ('oportunidad', 'Cambió la oportunidad'),
+        ('comentario_add', 'Agregó un comentario'),
+        ('subtarea_add', 'Agregó una subtarea'),
+        ('subtarea_complete', 'Completó una subtarea'),
+        ('subtarea_remove', 'Quitó una subtarea'),
+    ]
+
+    tarea = models.ForeignKey(
+        'Tarea', on_delete=models.CASCADE, related_name='historial',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='historial_tareas',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    valor_anterior = models.TextField(blank=True, default='')
+    valor_nuevo = models.TextField(blank=True, default='')
+    motivo = models.TextField(blank=True, default='')
+    extra = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Versión de tarea (proyecto)'
+        verbose_name_plural = 'Versiones de tareas (proyectos)'
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['tarea', '-fecha']),
+        ]
+
+    def __str__(self):
+        autor = self.autor.username if self.autor else 'sistema'
+        return f'[{self.fecha:%Y-%m-%d %H:%M}] {autor} {self.get_tipo_display()} → {self.tarea_id}'
+
+
+class TareaOportunidadHistorial(models.Model):
+    """Versiones / log de cambios de una TareaOportunidad.
+
+    Cada modificación genera una fila aquí: quién la hizo (autor),
+    cuándo (fecha), qué cambió (tipo), valores antes/después y motivo
+    cuando aplica (reapertura o cambio de fecha límite — flujos donde
+    el usuario tiene que justificar la acción).
+    """
+    TIPO_CHOICES = [
+        ('titulo', 'Cambió el título'),
+        ('descripcion', 'Cambió la descripción'),
+        ('fecha_limite', 'Cambió la fecha límite'),
+        ('responsable', 'Cambió el responsable'),
+        ('prioridad', 'Cambió la prioridad'),
+        ('participante_add', 'Agregó un participante'),
+        ('participante_remove', 'Quitó un participante'),
+        ('observador_add', 'Agregó un observador'),
+        ('observador_remove', 'Quitó un observador'),
+        ('cerrada', 'Marcó la tarea como completada'),
+        ('reabierta', 'Reabrió la tarea'),
+    ]
+
+    tarea = models.ForeignKey(
+        TareaOportunidad, on_delete=models.CASCADE, related_name='historial',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='historial_tareas_opp',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    valor_anterior = models.TextField(blank=True, default='')
+    valor_nuevo = models.TextField(blank=True, default='')
+    motivo = models.TextField(
+        blank=True, default='',
+        help_text='Solo para tipos reabierta y fecha_limite — el usuario debe justificar.',
+    )
+    extra = models.JSONField(
+        null=True, blank=True,
+        help_text='Datos auxiliares (ej. user_id del participante agregado/quitado).',
+    )
+
+    class Meta:
+        verbose_name = 'Versión de tarea'
+        verbose_name_plural = 'Versiones de tareas'
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['tarea', '-fecha']),
+        ]
+
+    def __str__(self):
+        autor = self.autor.username if self.autor else 'sistema'
+        return f'[{self.fecha:%Y-%m-%d %H:%M}] {autor} {self.get_tipo_display()} → {self.tarea_id}'
+
+
 # ============= SISTEMA DE INTERCAMBIO NAVIDEÑO =============
 
 class IntercambioNavidad(models.Model):
@@ -5870,13 +5979,23 @@ class Instalacion(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='programada')
 
     # Links opcionales al CRM existente.
+    # `proyecto_crm` es el dueño lógico: las instalaciones se gestionan
+    # desde la sección "Programa de Obra" dentro del widget de Proyecto.
+    # `oportunidad` es opcional (legacy y por si se requiere ligar una
+    # instalación a una opp puntual sin proyecto).
+    # OJO: el field `proyecto` arriba es CharField (descripción del
+    # trabajo). El FK al modelo Proyecto debe tener otro nombre.
     cliente = models.ForeignKey(
         'Cliente', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='instalaciones', help_text='Si está en el CRM, link al Cliente.',
     )
+    proyecto_crm = models.ForeignKey(
+        'ProyectoIAMET', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='instalaciones', help_text='Proyecto al que pertenece (Programa de Obra).',
+    )
     oportunidad = models.ForeignKey(
         'TodoItem', null=True, blank=True, on_delete=models.SET_NULL,
-        related_name='instalaciones', help_text='Opp ligada (si aplica).',
+        related_name='instalaciones', help_text='Opp ligada (opcional).',
     )
 
     # Auditoría.
@@ -5898,3 +6017,86 @@ class Instalacion(models.Model):
 
     def __str__(self):
         return f'{self.cliente_nombre} — {self.proyecto[:50]}'
+
+
+class Tecnico(models.Model):
+    """
+    Personal de campo asignable a instalaciones (URIEL, ARMANDO, GOYO,
+    CHUY, EDGAR, JULIO, TOÑO, JORGE...). Origen: la columna izquierda del
+    grid Técnico × Día del Excel PLAN DE TRABAJO BAJANET.
+
+    Es un catálogo plano, no requiere login (no es FK a User). Si más
+    adelante un técnico se da de alta como usuario del CRM, el campo
+    `usuario` permite ligarlo opcionalmente.
+    """
+    ROL_CHOICES = [
+        ('tecnico', 'Técnico'),
+        ('supervisor', 'Supervisor'),
+        ('ingeniero', 'Ingeniero'),
+    ]
+
+    nombre = models.CharField(max_length=120, verbose_name='Nombre')
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='tecnico')
+    activo = models.BooleanField(default=True)
+    color = models.CharField(
+        max_length=7, blank=True, default='',
+        help_text='Color hex opcional para distinguirlo en el grid (#RRGGBB).',
+    )
+    usuario = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='tecnico_perfil',
+        help_text='Si el técnico también es usuario del CRM.',
+    )
+    notas = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Técnico'
+        verbose_name_plural = 'Técnicos'
+        ordering = ['nombre']
+        indexes = [
+            models.Index(fields=['activo']),
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
+class InstalacionAsignacion(models.Model):
+    """
+    Una asignación de un técnico a una instalación en una fecha concreta.
+
+    El grid Técnico × Día del Excel funciona así: el mismo técnico puede
+    estar en VOLVO de lunes a jueves y en CARLZEISS el sábado — cada
+    celda del Excel es una fila aquí. Por eso la tabla intermedia no
+    vive sobre `Instalacion` (que tiene UNA fecha "principal") sino
+    sobre (instalacion, tecnico, fecha).
+    """
+    instalacion = models.ForeignKey(
+        Instalacion, on_delete=models.CASCADE, related_name='asignaciones',
+    )
+    tecnico = models.ForeignKey(
+        Tecnico, on_delete=models.CASCADE, related_name='asignaciones',
+    )
+    fecha = models.DateField()
+    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_fin = models.TimeField(null=True, blank=True)
+    notas = models.CharField(max_length=200, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Asignación de técnico'
+        verbose_name_plural = 'Asignaciones de técnicos'
+        ordering = ['fecha', 'tecnico__nombre']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['instalacion', 'tecnico', 'fecha'],
+                name='uniq_instalacion_tecnico_fecha',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['fecha']),
+            models.Index(fields=['tecnico', 'fecha']),
+        ]
+
+    def __str__(self):
+        return f'{self.tecnico.nombre} @ {self.instalacion.cliente_nombre} ({self.fecha})'

@@ -251,6 +251,33 @@
                                 </div>
                             </div>
                         </div>
+
+                        {% comment %}
+                        Fila inferior — SOLO visible cuando tipo_negociacion ∈
+                        {proyecto, bitrix_proyecto}. JS de renderDetalle()
+                        cambia display:none → grid según d.tipo_negociacion.
+
+                        Bloque Proyecto vinculado (M2M Proyecto.oportunidades_ligadas).
+                        El Programa de Obra (Instalaciones) ya NO vive aquí —
+                        se gestiona desde el tab "Programa de Obra" del widget
+                        de Proyecto. Las instalaciones son del proyecto, no
+                        de la opp.
+                        {% endcomment %}
+                        <div class="wo-card" id="woProyectoCard" style="display:none;grid-column:1 / -1;">
+                            <div class="wo-section-header">
+                                <h3 class="wo-section-title">Proyecto</h3>
+                                <button class="wo-btn-new" id="woBtnVincularProyecto" type="button">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                    </svg>
+                                    Vincular
+                                </button>
+                            </div>
+                            <div id="woProyectoList">
+                                <div class="wo-empty">Sin proyecto vinculado aún</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -622,6 +649,13 @@
     <div class="widget-card widget-card-md"
         style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
         <div style="height:60px;background:#0052D4;border-radius:12px 12px 0 0;position:relative;">
+            {# Botón Historial de cambios — abre overlay con timeline de versiones #}
+            <button type="button" id="woVerActHistorialBtn" onclick="woAbrirHistorialTarea()" title="Historial de cambios"
+                style="position:absolute;top:15px;right:55px;color:#fff;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;transition:background 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
+            </button>
             <button type="button" onclick="document.getElementById('widgetOppVerActividad').style.display='none'"
                 style="position:absolute;top:15px;right:15px;color:#fff;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;line-height:1;transition:background 0.2s;"
                 onmouseover="this.style.background='rgba(255,255,255,0.3)'"
@@ -3093,6 +3127,7 @@
             document.getElementById('woVerActParticipantes').textContent = '...';
 
             _woCurrentViewingTaskId = idActividad;
+            window._woCurrentViewingTaskId = idActividad;  // expone para el modal de historial
             _woCurrentViewingTaskFechaLimite = null;
             // Limpiar estado de actividad genérica para que el botón "Reprogramar"
             // sepa que ahora estamos viendo una TareaOportunidad.
@@ -3717,5 +3752,764 @@
             }
         }, 220);
     };
+})();
+</script>
+
+{% comment %}
+═══════════════════════════════════════════════════════════════════════
+Fila inferior — Proyecto + Programa de Obra (Instalaciones)
+
+Aparece solo cuando la opp es pipeline Proyecto (tipo_negociacion ∈
+{proyecto, bitrix_proyecto}). El handler woRenderProyectoSection(d) es
+invocado por renderDetalle() de crm_main.js justo después de pintar
+el resto del widget.
+
+Bloque Proyecto: lista los Proyectos.oportunidades_ligadas. Click en un
+proyecto abre window.proyectosVerDetalle(id) (widget existente). Botón
+"Vincular" abre un picker con search.
+
+Bloque Instalaciones: tabla compacta con las instalaciones FK a la opp.
+Columnas: PO, Descripción, Fecha, Jornadas, Personal, Monto, Estado +
+icono de eliminar. Botón "Nueva" abre un form inline (modal) que crea
+la instalación y la liga automáticamente a la opp; al cerrar, refresca
+la tabla. Lo creado aparece también en el calendario de instalaciones.
+═══════════════════════════════════════════════════════════════════════
+{% endcomment %}
+<style>
+    .wop-pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.02em; }
+    .wop-pill-prog   { background:#E0F2FE; color:#075985; }
+    .wop-pill-curso  { background:#FEF3C7; color:#92400E; }
+    .wop-pill-done   { background:#D1FAE5; color:#065F46; }
+    .wop-pill-cancel { background:#FEE2E2; color:#991B1B; }
+    .wop-table { width:100%; border-collapse:collapse; font-size:0.78rem; }
+    .wop-table th { text-align:left; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.04em; color:#86868B; font-weight:700; padding:6px 8px; border-bottom:1px solid #E5E5EA; }
+    .wop-table td { padding:8px; border-bottom:1px solid #F2F2F7; vertical-align:middle; }
+    .wop-table tr:last-child td { border-bottom:none; }
+    .wop-icon-btn { background:transparent; border:none; cursor:pointer; padding:4px; border-radius:6px; color:#86868B; }
+    .wop-icon-btn:hover { background:#F2F2F7; color:#FF3B30; }
+    .wop-proy-card { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:#F9FAFB; cursor:pointer; transition:background 0.15s; }
+    .wop-proy-card:hover { background:#F2F4F7; }
+    .wop-proy-card + .wop-proy-card { margin-top:6px; }
+    .wop-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:11500; display:none; align-items:center; justify-content:center; }
+    .wop-modal-backdrop.open { display:flex; }
+    .wop-modal { background:#fff; border-radius:14px; box-shadow:0 25px 60px rgba(0,0,0,0.2); width:min(560px, 92vw); max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+    .wop-modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #E5E5EA; }
+    .wop-modal-head h3 { margin:0; font-size:1rem; font-weight:700; color:#1D1D1F; }
+    .wop-modal-body { padding:14px 18px; overflow-y:auto; }
+    .wop-modal-foot { padding:12px 18px; border-top:1px solid #E5E5EA; display:flex; justify-content:flex-end; gap:8px; }
+    .wop-field { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+    .wop-field label { font-size:0.72rem; font-weight:700; color:#3C3C43; letter-spacing:0.02em; text-transform:uppercase; }
+    .wop-field input, .wop-field select, .wop-field textarea {
+        font-family:inherit; font-size:0.88rem; padding:7px 10px; border:1px solid #E5E5EA; border-radius:8px;
+        outline:none; transition:border-color 0.15s;
+    }
+    .wop-field input:focus, .wop-field select:focus, .wop-field textarea:focus { border-color:#0052D4; }
+    .wop-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .wop-btn-primary { background:#0052D4; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.84rem; }
+    .wop-btn-primary:hover { background:#0041a8; }
+    .wop-btn-secondary { background:#F2F2F7; color:#1D1D1F; border:none; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.84rem; }
+    .wop-btn-secondary:hover { background:#E5E5EA; }
+    .wop-search-input { width:100%; padding:9px 12px; border:1px solid #E5E5EA; border-radius:8px; font-size:0.88rem; outline:none; }
+    .wop-search-input:focus { border-color:#0052D4; }
+    .wop-search-result { padding:8px 12px; border-radius:8px; cursor:pointer; display:flex; flex-direction:column; gap:2px; }
+    .wop-search-result:hover { background:#F2F2F7; }
+    .wop-search-result-name { font-size:0.88rem; font-weight:600; color:#1D1D1F; }
+    .wop-search-result-meta { font-size:0.72rem; color:#86868B; }
+</style>
+
+<!-- Modal: Vincular proyecto existente -->
+<div class="wop-modal-backdrop" id="wopVincularModal">
+    <div class="wop-modal">
+        <div class="wop-modal-head">
+            <h3>Vincular proyecto existente</h3>
+            <button type="button" class="widget-close" onclick="wopCerrarVincular()" style="font-size:1.4rem;">&times;</button>
+        </div>
+        <div class="wop-modal-body">
+            <input type="text" id="wopSearchProyectos" class="wop-search-input" placeholder="Buscar proyecto por nombre..." autocomplete="off">
+            <div id="wopSearchResultados" style="margin-top:10px; min-height:120px;"></div>
+        </div>
+        <div class="wop-modal-foot">
+            <button type="button" class="wop-btn-secondary" onclick="wopCerrarVincular()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    function _csrf() {
+        var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+        return v ? v.pop() : '';
+    }
+    function _esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function _fmtMoney(v) {
+        var n = Number(v || 0);
+        if (!isFinite(n)) return '$0';
+        return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+    function _fmtFecha(iso, tentativa) {
+        if (!iso) return tentativa ? _esc(tentativa) : '<span style="color:#C7C7CC;">—</span>';
+        var parts = iso.split('-');
+        var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+        var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        return d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + d.getFullYear();
+    }
+    function _estadoPillCls(estado) {
+        if (estado === 'completada') return 'wop-pill wop-pill-done';
+        if (estado === 'en_curso')   return 'wop-pill wop-pill-curso';
+        if (estado === 'cancelada')  return 'wop-pill wop-pill-cancel';
+        return 'wop-pill wop-pill-prog';
+    }
+
+    // ID de la opp activa en la fila inferior. Útil para los botones que
+    // no reciben argumentos (los handlers globales lo leen de aquí).
+    var _wopActiveOppId = null;
+
+    // ── Render principal ─────────────────────────────────────────────
+    window.woRenderProyectoSection = function (d) {
+        var tipo = d && d.tipo_negociacion;
+        var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
+        var cardProy = document.getElementById('woProyectoCard');
+        if (!cardProy) return;
+        if (!esProyecto) {
+            cardProy.style.display = 'none';
+            _wopActiveOppId = null;
+            return;
+        }
+        cardProy.style.display = '';
+        _wopActiveOppId = d.id;
+        _woCargarProyectos(d.id);
+    };
+
+    function _woCargarProyectos(oppId) {
+        var listEl = document.getElementById('woProyectoList');
+        if (!listEl) return;
+        listEl.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;">Cargando…</div>';
+        fetch('/app/api/oportunidad/' + oppId + '/proyectos-ligados/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    listEl.innerHTML = '<div class="wo-empty">No se pudo cargar.</div>';
+                    return;
+                }
+                var proys = data.proyectos || [];
+                if (!proys.length) {
+                    listEl.innerHTML = '<div class="wo-empty">Sin proyecto vinculado aún</div>';
+                    return;
+                }
+                listEl.innerHTML = proys.map(function (p) {
+                    return '<div class="wop-proy-card" onclick="wopAbrirProyecto(' + p.id + ')" title="Abrir proyecto">'
+                        + '<div style="width:30px;height:30px;border-radius:7px;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+                        + '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
+                        + '</div>'
+                        + '<div style="flex:1; min-width:0;">'
+                        +   '<div style="font-size:0.86rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(p.nombre) + '</div>'
+                        +   '<div style="font-size:0.7rem;color:#86868B;">' + _esc(p.tipo_label) + '</div>'
+                        + '</div>'
+                        + '<button type="button" class="wop-icon-btn" title="Desvincular" onclick="event.stopPropagation();wopDesvincularProyecto(' + p.id + ')">'
+                        + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+                        + '</button>'
+                        + '<svg width="14" height="14" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
+                        + '</div>';
+                }).join('');
+            })
+            .catch(function () {
+                listEl.innerHTML = '<div class="wo-empty">Error de red.</div>';
+            });
+    }
+
+    // ── Botón del header del card Proyecto ───────────────────────────
+    document.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (!t) return;
+        var btn = t.closest && t.closest('#woBtnVincularProyecto');
+        if (btn) { ev.preventDefault(); wopAbrirVincular(); return; }
+    });
+
+    // ── Click en proyecto vinculado → abrir widget de proyecto ───────
+    window.wopAbrirProyecto = function (proyectoId) {
+        if (typeof window.proyectosVerDetalle === 'function') {
+            // Cerrar widget oportunidad para que el de proyecto tenga foco.
+            var oppOverlay = document.getElementById('widgetDetalle');
+            if (oppOverlay) oppOverlay.classList.remove('active');
+            window.proyectosVerDetalle(proyectoId);
+            return;
+        }
+        // Fallback: navegar a la pestaña de proyectos.
+        window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + proyectoId;
+    };
+
+    window.wopDesvincularProyecto = function (proyectoId) {
+        if (!_wopActiveOppId) return;
+        if (!confirm('¿Desvincular este proyecto de la oportunidad?')) return;
+        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/proyectos-ligados/', {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
+            body: JSON.stringify({ proyecto_id: proyectoId })
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data && data.success) {
+                _woCargarProyectos(_wopActiveOppId);
+            } else if (typeof showToast === 'function') {
+                showToast('No se pudo desvincular.', 'error');
+            }
+        });
+    };
+
+    // ── Modal: Vincular proyecto ─────────────────────────────────────
+    var _searchDebounce = null;
+    function wopAbrirVincular() {
+        var modal = document.getElementById('wopVincularModal');
+        if (!modal) return;
+        modal.classList.add('open');
+        var input = document.getElementById('wopSearchProyectos');
+        if (input) { input.value = ''; input.focus(); }
+        _renderSearchResultados([]);
+        _ejecutarBusquedaProyectos('');
+        if (input) {
+            input.oninput = function () {
+                clearTimeout(_searchDebounce);
+                var q = input.value;
+                _searchDebounce = setTimeout(function () { _ejecutarBusquedaProyectos(q); }, 200);
+            };
+        }
+    }
+    window.wopCerrarVincular = function () {
+        var modal = document.getElementById('wopVincularModal');
+        if (modal) modal.classList.remove('open');
+    };
+    function _ejecutarBusquedaProyectos(q) {
+        var resWrap = document.getElementById('wopSearchResultados');
+        if (resWrap) resWrap.innerHTML = '<div style="color:#86868B;font-size:0.84rem;padding:8px;">Buscando…</div>';
+        fetch('/app/api/proyectos-ligados/buscar/?q=' + encodeURIComponent(q || ''), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                _renderSearchResultados((data && data.proyectos) || []);
+            })
+            .catch(function () {
+                if (resWrap) resWrap.innerHTML = '<div style="color:#FF3B30;font-size:0.84rem;padding:8px;">Error de red</div>';
+            });
+    }
+    function _renderSearchResultados(proys) {
+        var resWrap = document.getElementById('wopSearchResultados');
+        if (!resWrap) return;
+        if (!proys.length) {
+            resWrap.innerHTML = '<div style="color:#86868B;font-size:0.84rem;padding:8px;">Sin resultados</div>';
+            return;
+        }
+        resWrap.innerHTML = proys.map(function (p) {
+            return '<div class="wop-search-result" onclick="wopConfirmarVincular(' + p.id + ')">'
+                + '<div class="wop-search-result-name">' + _esc(p.nombre) + '</div>'
+                + '<div class="wop-search-result-meta">' + _esc(p.tipo_label) + '</div>'
+                + '</div>';
+        }).join('');
+    }
+    window.wopConfirmarVincular = function (proyectoId) {
+        if (!_wopActiveOppId) return;
+        fetch('/app/api/oportunidad/' + _wopActiveOppId + '/proyectos-ligados/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrf() },
+            body: JSON.stringify({ proyecto_id: proyectoId })
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data && data.success) {
+                wopCerrarVincular();
+                _woCargarProyectos(_wopActiveOppId);
+            } else if (typeof showToast === 'function') {
+                showToast('No se pudo vincular.', 'error');
+            }
+        });
+    };
+
+    // Cerrar el modal de vincular con Escape.
+    document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') {
+            var v = document.getElementById('wopVincularModal');
+            if (v && v.classList.contains('open')) { wopCerrarVincular(); ev.stopPropagation(); return; }
+        }
+    });
+})();
+</script>
+
+{% comment %}
+═══════════════════════════════════════════════════════════════════════
+Widget: Historial de cambios de una TareaOportunidad
+
+Se abre desde el botón con icono de reloj en el header del modal
+#widgetOppVerActividad. Lee /api/tarea-opp/<id>/historial/ y renderiza
+un timeline vertical con cada versión: autor (avatar + nombre), tipo
+de cambio (legible), valores antes/después, motivo si aplica y tiempo
+relativo.
+
+z-index 10300 — por encima del modal de tarea (10200).
+═══════════════════════════════════════════════════════════════════════
+{% endcomment %}
+<style>
+    /* Drawer lateral derecho — convive con el modal de tarea sin taparlo. */
+    #widgetTareaHistorial {
+        position: fixed;
+        top: 0; right: 0; bottom: 0;
+        z-index: 12000;            /* sobre cualquier modal de tarea */
+        background: rgba(15, 23, 42, 0.18);
+        backdrop-filter: blur(2px);
+        display: none;
+        justify-content: flex-end;
+    }
+    #widgetTareaHistorial.open { display: flex; animation: hxFadeIn 0.2s ease-out; }
+    @keyframes hxFadeIn { from { background: rgba(15,23,42,0); } to { background: rgba(15,23,42,0.18); } }
+    #widgetTareaHistorialPanel {
+        background: #fff;
+        width: 640px;
+        max-width: 96vw;
+        height: 100vh;
+        box-shadow: -25px 0 60px rgba(0, 0, 0, 0.18);
+        display: flex;
+        flex-direction: column;
+        animation: hxSlideIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    @keyframes hxSlideIn { from { transform: translateX(40px); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
+    .hx-head { padding: 22px 26px 18px; border-bottom: 1px solid #ECECEE; background: linear-gradient(180deg, #FAFAFC 0%, #fff 100%); }
+    .hx-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .hx-head-title-wrap { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .hx-head-icon { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #0052D4 0%, #2E7CF6 100%); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 6px 16px rgba(0, 82, 212, 0.25); }
+    .hx-head-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #1D1D1F; letter-spacing: -0.01em; }
+    .hx-head-subtitle { font-size: 0.82rem; color: #6B7280; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .hx-head-meta { font-size: 0.72rem; color: #9CA3AF; margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+    .hx-head-close { background: #F2F2F7; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; color: #1D1D1F; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+    .hx-head-close:hover { background: #E5E5EA; }
+    .hx-body { overflow-y: auto; padding: 22px 26px 30px; flex: 1; }
+    .hx-tl-line { position: absolute; left: 9px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(180deg, #E5E5EA 0%, #F2F2F7 100%); }
+    .hx-tl-item { position: relative; padding-left: 30px; margin-bottom: 22px; }
+    .hx-tl-dot { position: absolute; left: 0; top: 4px; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px currentColor, 0 2px 6px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; color: #fff; }
+    .hx-tl-dot svg { display: block; }
+    .hx-tl-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .hx-tl-avatar { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .hx-tl-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .hx-tl-autor { font-size: 0.92rem; font-weight: 600; color: #1D1D1F; }
+    .hx-tl-action { font-size: 0.82rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; }
+    .hx-tl-time { font-size: 0.74rem; color: #9CA3AF; margin-left: auto; cursor: default; }
+    .hx-chip { display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 8px; font-size: 0.84rem; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hx-chip-old { background: #FEE2E2; color: #991B1B; text-decoration: line-through; }
+    .hx-chip-new { background: #D1FAE5; color: #065F46; }
+    .hx-chip-add { background: #D1FAE5; color: #065F46; font-weight: 600; }
+    .hx-chip-rem { background: #FEE2E2; color: #991B1B; font-weight: 600; }
+    .hx-detail-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .hx-arrow { color: #9CA3AF; display: inline-flex; align-items: center; }
+    .hx-motivo { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 10px 14px; border-radius: 0 10px 10px 0; margin-top: 10px; }
+    .hx-motivo-label { font-size: 0.66rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .hx-motivo-text { font-size: 0.88rem; color: #422006; line-height: 1.45; }
+    .hx-empty { text-align: center; padding: 60px 24px; color: #6B7280; }
+    .hx-empty svg { color: #C7C7CC; display: block; margin: 0 auto 14px; }
+    .hx-empty-title { font-size: 1rem; font-weight: 600; color: #1D1D1F; margin-bottom: 6px; }
+    .hx-empty-desc { font-size: 0.86rem; line-height: 1.5; max-width: 380px; margin: 0 auto; }
+    .hx-error { text-align: center; padding: 40px 24px; color: #DC2626; font-size: 0.9rem; }
+    .hx-action-mini { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; }
+    .hx-tl-item.hx-group .hx-tl-head:hover { background: #F9FAFB; border-radius: 8px; }
+    .hx-group-chev { flex-shrink: 0; }
+    @media (max-width: 720px) {
+        #widgetTareaHistorialPanel { width: 100vw; max-width: 100vw; }
+    }
+</style>
+<div id="widgetTareaHistorial" onclick="if(event.target===this)woCerrarHistorialTarea()">
+    <div id="widgetTareaHistorialPanel">
+        <div class="hx-head">
+            <div class="hx-head-row">
+                <div class="hx-head-title-wrap">
+                    <div class="hx-head-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h3 class="hx-head-title">Historial de cambios</h3>
+                        <div id="woHistorialSubtitle" class="hx-head-subtitle">—</div>
+                    </div>
+                </div>
+                <button type="button" class="hx-head-close" onclick="woCerrarHistorialTarea()" aria-label="Cerrar (Esc)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="hx-head-meta">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Se actualiza automáticamente</span>
+            </div>
+        </div>
+        <div id="woHistorialBody" class="hx-body">
+            <div style="text-align:center;padding:40px;color:#86868B;font-size:0.85rem;">Cargando…</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    function _esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function _fmtRelative(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        var now = new Date();
+        var diffMs = now - d;
+        var min = Math.floor(diffMs / 60000);
+        if (min < 1) return 'hace un momento';
+        if (min < 60) return 'hace ' + min + ' min';
+        var hr = Math.floor(min / 60);
+        if (hr < 24) return 'hace ' + hr + ' h';
+        var dias = Math.floor(hr / 24);
+        if (dias < 7) return 'hace ' + dias + ' d';
+        return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function _fmtAbsoluta(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' +
+               d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    }
+    var _TIPO_ICONS = {
+        titulo:              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        descripcion:         '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+        fecha_limite:        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+        responsable:         '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        prioridad:           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="12 2 15 8.5 22 9.3 17 14 18 21 12 17.7 6 21 7 14 2 9.3 9 8.5"/></svg>',
+        participante_add:    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+        participante_remove: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+        observador_add:      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+        observador_remove:   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
+        cerrada:             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>',
+        reabierta:           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>',
+        cliente:             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+        oportunidad:         '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+        comentario_add:      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+        subtarea_add:        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>',
+        subtarea_complete:   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+        subtarea_remove:     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
+    };
+    var _TIPO_COLORS = {
+        cerrada:             '#34C759',
+        reabierta:           '#FF9500',
+        fecha_limite:        '#5856D6',
+        responsable:         '#0052D4',
+        prioridad:           '#FF3B30',
+        participante_add:    '#34C759',
+        participante_remove: '#86868B',
+        observador_add:      '#34C759',
+        observador_remove:   '#86868B',
+        titulo:              '#1D1D1F',
+        descripcion:         '#1D1D1F',
+        cliente:             '#AF52DE',
+        oportunidad:         '#0052D4',
+        comentario_add:      '#0052D4',
+        subtarea_add:        '#34C759',
+        subtarea_complete:   '#059669',
+        subtarea_remove:     '#86868B',
+    };
+
+    // URL del endpoint según contexto (woAbrirHistorialTarea o crmTaskAbrirHistorial).
+    var _hxCurrentUrl = null;
+    var _hxPollTimer = null;
+    var _hxLastSignature = null;  // hash simple de items para evitar re-render innecesario.
+    var _hxStaleReads = 0;        // lecturas consecutivas sin cambios → controla back-off.
+    var _HX_BASE_INTERVAL = 8000; // polling base 8s
+    var _HX_SLOW_INTERVAL = 15000; // tras 3 lecturas sin cambios, baja a cada 15s
+    var _HX_STALE_THRESHOLD = 3;
+
+    function _hxAbrirModal(url, subtitulo) {
+        _hxCurrentUrl = url;
+        var overlay = document.getElementById('widgetTareaHistorial');
+        var body = document.getElementById('woHistorialBody');
+        var subtitle = document.getElementById('woHistorialSubtitle');
+        if (overlay) overlay.classList.add('open');
+        if (subtitle) subtitle.textContent = subtitulo || '';
+        if (body) body.innerHTML = '<div style="text-align:center;padding:40px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
+        _hxLastSignature = null;
+        _hxStaleReads = 0;
+        _hxFetchAndRender(true);
+        _hxArmarPolling();
+    }
+
+    function _hxArmarPolling() {
+        if (_hxPollTimer) { clearTimeout(_hxPollTimer); _hxPollTimer = null; }
+        var overlay = document.getElementById('widgetTareaHistorial');
+        if (!overlay || !overlay.classList.contains('open')) return;
+        // Cuando >= _HX_STALE_THRESHOLD lecturas seguidas sin cambios → intervalo lento.
+        var ms = _hxStaleReads >= _HX_STALE_THRESHOLD ? _HX_SLOW_INTERVAL : _HX_BASE_INTERVAL;
+        _hxPollTimer = setTimeout(function tick() {
+            var ov = document.getElementById('widgetTareaHistorial');
+            if (!ov || !ov.classList.contains('open')) {
+                _hxPollTimer = null;
+                return;
+            }
+            _hxFetchAndRender(false);
+            _hxArmarPolling();
+        }, ms);
+    }
+
+    function _hxFetchAndRender(showLoading) {
+        if (!_hxCurrentUrl) return;
+        fetch(_hxCurrentUrl, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var body = document.getElementById('woHistorialBody');
+                if (!body) return;
+                if (!data || !data.success) {
+                    if (showLoading) {
+                        body.innerHTML = '<div class="hx-error">No se pudo cargar el historial.</div>';
+                    }
+                    return;
+                }
+                var items = data.historial || [];
+                var sig = items.length + '|' + (items[0] ? items[0].id + '@' + items[0].fecha : '');
+                if (sig !== _hxLastSignature) {
+                    _hxLastSignature = sig;
+                    _hxStaleReads = 0;
+                    _renderHistorial(items);
+                    // Si estábamos en modo lento, volver a rápido inmediatamente.
+                    _hxArmarPolling();
+                } else {
+                    _hxStaleReads++;
+                }
+            })
+            .catch(function () {
+                if (showLoading) {
+                    var body = document.getElementById('woHistorialBody');
+                    if (body) body.innerHTML = '<div class="hx-error">Error de red.</div>';
+                }
+            });
+    }
+
+    // ── Refresh inmediato disparado por acciones del propio usuario ──
+    // Después de cada fetch a /api/tarea(-opp)?/<id>/... con método modificador
+    // (POST/PUT/PATCH/DELETE), si el drawer está abierto refrescamos al instante.
+    // Usamos un wrapper de window.fetch para cubrir TODOS los endpoints sin
+    // tener que tocar cada llamada.
+    window.hxRefreshIfOpen = function () {
+        var overlay = document.getElementById('widgetTareaHistorial');
+        if (!overlay || !overlay.classList.contains('open')) return;
+        // Pequeño defer para que el backend ya escribió la fila de historial.
+        setTimeout(function () { _hxFetchAndRender(false); }, 250);
+    };
+
+    if (!window._hxFetchWrapped) {
+        window._hxFetchWrapped = true;
+        var _origFetch = window.fetch;
+        window.fetch = function (input, init) {
+            var url = (typeof input === 'string') ? input : (input && input.url) || '';
+            var method = (init && init.method) || (typeof input !== 'string' && input && input.method) || 'GET';
+            var p = _origFetch.apply(this, arguments);
+            try {
+                if (/\/api\/tarea(?:-opp)?\/\d+/.test(url) && /^(POST|PUT|PATCH|DELETE)$/i.test(method)
+                    && !/\/historial\/?(?:$|\?)/.test(url)) {
+                    p.then(function (resp) {
+                        if (resp && resp.ok) window.hxRefreshIfOpen();
+                    }).catch(function () {});
+                }
+            } catch (e) { /* noop */ }
+            return p;
+        };
+    }
+
+    window.woAbrirHistorialTarea = function () {
+        var taskId = window._woCurrentViewingTaskId;
+        if (!taskId) {
+            if (typeof showToast === 'function') showToast('No hay tarea activa', 'error');
+            return;
+        }
+        var nombreEl = document.getElementById('woVerActNombre');
+        _hxAbrirModal('/app/api/tarea-opp/' + taskId + '/historial/',
+                      nombreEl ? nombreEl.textContent : '');
+    };
+
+    window.crmTaskAbrirHistorial = function () {
+        var taskId = window._crmCurrentTaskId;
+        if (!taskId) {
+            if (typeof showToast === 'function') showToast('No hay tarea activa', 'error');
+            return;
+        }
+        var nombreEl = document.getElementById('crm-task-titulo');
+        _hxAbrirModal('/app/api/tarea/' + taskId + '/historial/',
+                      nombreEl ? nombreEl.textContent : '');
+    };
+
+    window.woCerrarHistorialTarea = function () {
+        var overlay = document.getElementById('widgetTareaHistorial');
+        if (overlay) overlay.classList.remove('open');
+        if (_hxPollTimer) { clearInterval(_hxPollTimer); _hxPollTimer = null; }
+        _hxCurrentUrl = null;
+    };
+
+    function _hexToRgba(hex, alpha) {
+        var h = (hex || '').replace('#', '');
+        if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+        var n = parseInt(h, 16);
+        return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+    }
+
+    function _renderItemBody(it) {
+        var detalle = '';
+        if (it.tipo === 'titulo' || it.tipo === 'descripcion' || it.tipo === 'fecha_limite'
+            || it.tipo === 'responsable' || it.tipo === 'prioridad'
+            || it.tipo === 'cliente' || it.tipo === 'oportunidad') {
+            var antes = it.valor_anterior || '— vacío —';
+            var despues = it.valor_nuevo || '— vacío —';
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-old">' + _esc(antes) + '</span>'
+                + '<span class="hx-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>'
+                + '<span class="hx-chip hx-chip-new">' + _esc(despues) + '</span>'
+                + '</div>';
+        } else if (it.tipo === 'participante_add' || it.tipo === 'observador_add') {
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-add">+ ' + _esc(it.valor_nuevo) + '</span></div>';
+        } else if (it.tipo === 'participante_remove' || it.tipo === 'observador_remove') {
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-rem">– ' + _esc(it.valor_anterior) + '</span></div>';
+        } else if (it.tipo === 'subtarea_add' || it.tipo === 'subtarea_complete') {
+            // Mensaje simple con el nombre de la subtarea.
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip" style="background:#F2F2F7;color:#1D1D1F;">' + _esc(it.valor_nuevo) + '</span></div>';
+        } else if (it.tipo === 'subtarea_remove') {
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-rem">' + _esc(it.valor_anterior) + '</span></div>';
+        }
+        // comentario_add no muestra detalle adicional (la acción ya lo dice todo).
+        if (it.motivo) {
+            detalle += '<div class="hx-motivo">'
+                + '<div class="hx-motivo-label">Motivo</div>'
+                + '<div class="hx-motivo-text">' + _esc(it.motivo) + '</div>'
+                + '</div>';
+        }
+        return detalle;
+    }
+
+    function _renderSingleItem(it) {
+        var icon = _TIPO_ICONS[it.tipo] || '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>';
+        var color = _TIPO_COLORS[it.tipo] || '#86868B';
+        var autorNombre = it.autor ? it.autor.nombre : 'Sistema';
+        var avatarInner = it.autor && it.autor.avatar_url
+            ? '<img src="' + _esc(it.autor.avatar_url) + '" alt="">'
+            : _esc(it.autor ? (it.autor.iniciales || '?') : 'S');
+        var html = '<div class="hx-tl-item">';
+        html += '<div class="hx-tl-dot" style="background:' + color + ';color:' + color + ';">' + icon + '</div>';
+        html += '<div class="hx-tl-head">';
+        html += '<div class="hx-tl-avatar" style="background:' + color + ';">' + avatarInner + '</div>';
+        html += '<span class="hx-tl-autor">' + _esc(autorNombre) + '</span>';
+        html += '<span class="hx-tl-action" style="background:' + _hexToRgba(color, 0.10) + ';color:' + color + ';">' + icon + _esc(it.tipo_label) + '</span>';
+        html += '<span class="hx-tl-time" title="' + _fmtAbsoluta(it.fecha) + '">' + _fmtRelative(it.fecha) + '</span>';
+        html += '</div>';
+        html += _renderItemBody(it);
+        html += '</div>';
+        return html;
+    }
+
+    function _groupItems(items) {
+        // Agrupa items consecutivos del mismo autor.id cuando la diferencia
+        // de tiempo entre items adyacentes (más reciente vs más viejo) es
+        // <= 60 segundos. La lista viene ordenada DESC por fecha.
+        var groups = [];
+        var WINDOW_MS = 60 * 1000;
+        items.forEach(function (it) {
+            var last = groups[groups.length - 1];
+            if (last && it.autor && last.autorId === (it.autor.id || null)) {
+                var lastDate = new Date(last.items[last.items.length - 1].fecha).getTime();
+                var thisDate = new Date(it.fecha).getTime();
+                if (Math.abs(lastDate - thisDate) <= WINDOW_MS) {
+                    last.items.push(it);
+                    return;
+                }
+            }
+            groups.push({
+                autorId: it.autor ? it.autor.id : null,
+                items: [it],
+            });
+        });
+        return groups;
+    }
+
+    function _renderGroup(g, gIdx) {
+        if (g.items.length === 1) {
+            return _renderSingleItem(g.items[0]);
+        }
+        // Grupo con N items: card compacto, click expande.
+        var head = g.items[0]; // el más reciente
+        var autorNombre = head.autor ? head.autor.nombre : 'Sistema';
+        var avatarInner = head.autor && head.autor.avatar_url
+            ? '<img src="' + _esc(head.autor.avatar_url) + '" alt="">'
+            : _esc(head.autor ? (head.autor.iniciales || '?') : 'S');
+        var color = '#0052D4'; // color neutro del grupo
+        var iconGroup = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>';
+        var groupId = 'hxGroup_' + gIdx;
+        // Conteo de tipos únicos para el resumen.
+        var tipoCount = {};
+        g.items.forEach(function (it) { tipoCount[it.tipo] = (tipoCount[it.tipo] || 0) + 1; });
+        var chipsTipos = Object.keys(tipoCount).slice(0, 4).map(function (t) {
+            var c = _TIPO_COLORS[t] || '#86868B';
+            return '<span class="hx-action-mini" style="background:' + _hexToRgba(c, 0.10) + ';color:' + c + ';">' + (_TIPO_ICONS[t] || '') + '</span>';
+        }).join('');
+
+        var html = '<div class="hx-tl-item hx-group">';
+        html += '<div class="hx-tl-dot" style="background:' + color + ';color:' + color + ';">' + iconGroup + '</div>';
+        html += '<div class="hx-tl-head" onclick="hxToggleGroup(\'' + groupId + '\')" style="cursor:pointer;">';
+        html += '<div class="hx-tl-avatar" style="background:' + color + ';">' + avatarInner + '</div>';
+        html += '<span class="hx-tl-autor">' + _esc(autorNombre) + '</span>';
+        html += '<span class="hx-tl-action" style="background:' + _hexToRgba(color, 0.10) + ';color:' + color + ';">'
+              + iconGroup + 'hizo ' + g.items.length + ' cambios</span>';
+        html += chipsTipos;
+        html += '<span class="hx-tl-time" title="' + _fmtAbsoluta(head.fecha) + '">' + _fmtRelative(head.fecha) + '</span>';
+        html += '<svg class="hx-group-chev" id="' + groupId + '_chev" width="14" height="14" fill="none" stroke="#86868B" stroke-width="2.4" viewBox="0 0 24 24" style="margin-left:6px;transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>';
+        html += '</div>';
+        // Lista expandida (oculta por default).
+        html += '<div class="hx-group-children" id="' + groupId + '" style="display:none;margin-top:10px;padding-left:8px;border-left:2px solid #E5E5EA;">';
+        g.items.forEach(function (sub) {
+            var icon = _TIPO_ICONS[sub.tipo] || '';
+            var subColor = _TIPO_COLORS[sub.tipo] || '#86868B';
+            html += '<div style="margin-bottom:10px;">';
+            html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:' + subColor + ';margin-bottom:3px;">';
+            html += icon + ' ' + _esc(sub.tipo_label);
+            html += '<span style="margin-left:auto;color:#9CA3AF;" title="' + _fmtAbsoluta(sub.fecha) + '">' + _fmtRelative(sub.fecha) + '</span>';
+            html += '</div>';
+            html += _renderItemBody(sub);
+            html += '</div>';
+        });
+        html += '</div>';
+        html += '</div>';
+        return html;
+    }
+
+    window.hxToggleGroup = function (gid) {
+        var el = document.getElementById(gid);
+        var chev = document.getElementById(gid + '_chev');
+        if (!el) return;
+        var isOpen = el.style.display !== 'none';
+        el.style.display = isOpen ? 'none' : 'block';
+        if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
+    };
+
+    function _renderHistorial(items) {
+        var body = document.getElementById('woHistorialBody');
+        if (!body) return;
+        if (!items.length) {
+            body.innerHTML = '<div class="hx-empty">'
+                + '<svg width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>'
+                + '<div class="hx-empty-title">Sin cambios registrados</div>'
+                + '<div class="hx-empty-desc">Esta tarea aún no ha sido modificada desde que se activó el historial. Cualquier cambio que se haga aparecerá aquí al instante.</div>'
+                + '</div>';
+            return;
+        }
+        var groups = _groupItems(items);
+        var html = '<div style="position:relative;">';
+        html += '<div class="hx-tl-line"></div>';
+        groups.forEach(function (g, idx) { html += _renderGroup(g, idx); });
+        html += '</div>';
+        body.innerHTML = html;
+    }
+
+    // Cerrar con Escape
+    document.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Escape') return;
+        var ov = document.getElementById('widgetTareaHistorial');
+        if (ov && ov.classList.contains('open')) { woCerrarHistorialTarea(); ev.stopPropagation(); }
+    });
 })();
 </script>

@@ -906,6 +906,12 @@
         searchQuery = '';
         var searchInput = el('proySearch');
         if (searchInput) searchInput.value = '';
+        // Defense in depth: asegurar que el topbar del listado y la
+        // sección estén visibles cuando entramos al módulo.
+        var listTop = el('proyListTopbar');
+        if (listTop) listTop.style.display = '';
+        var section = el('proyectosSection');
+        if (section) section.style.display = '';
         proySetMainTab('programa');
     };
     window.proyectosAbrir = window.proyectosInit;
@@ -1224,6 +1230,7 @@
     var _DETAIL_TAB_VALID = {
         resumen: 1, dashboard: 1,
         tareas: 1, programa: 1,
+        'programa-obra': 1,
         partidasv4: 1, partidas: 1, levantamientos: 1,
         drive: 1,
         info: 1, equipo: 1, comunicacion: 1, reportes: 1,
@@ -1231,7 +1238,15 @@
     };
 
     function _proyDetailNormalizeTab(t) {
-        if (!t) return 'resumen';
+        if (!t) {
+            // Persistencia ligera: si no hay initialTab, intenta recuperar
+            // el último tab activo guardado en localStorage.
+            try {
+                var saved = localStorage.getItem('_proy_last_tab');
+                if (saved && _DETAIL_TAB_VALID[saved]) return saved;
+            } catch (e) {}
+            return 'resumen';
+        }
         return _DETAIL_TAB_VALID[t] ? t : 'resumen';
     }
 
@@ -1257,6 +1272,9 @@
     //   (?open_proyecto=N&tab=tareas). Si no se pasa, abrimos en "Resumen".
     window.proyectosVerDetalle = function(projectId, initialTab) {
         currentProjectId = projectId;
+        // Expone el id activo para que otros módulos (ej. programa_obra.js)
+        // sepan qué proyecto está abierto sin tener que pasarlo por args.
+        window._proyectoActualId = projectId;
         var tab = _proyDetailNormalizeTab(initialTab);
         currentTab = tab;
 
@@ -1282,11 +1300,11 @@
         var detail = el('widgetProyectoDetalle');
         if (detail) detail.classList.add('is-open');
 
-        // Mutate dynamic island: el topbar contextual del proyecto
-        // reemplaza al del listado. (El topbar del listado vive dentro
-        // de #proyectosSection que ya quedó oculto, pero por si acaso.)
-        var listTop = el('proyListTopbar');
-        if (listTop) listTop.style.display = 'none';
+        // El topbar del listado (#proyListTopbar) vive DENTRO de
+        // #proyectosSection que ya quedó oculto — NO seteamos un
+        // display:none directo en el topbar para evitar que ese estilo
+        // inline persista y deje el topbar oculto si la sección se
+        // vuelve a mostrar por otra vía (sin pasar por proyectosVolverLista).
 
         // Estado vac\u00edo inmediato (evita header con datos del proyecto previo)
         renderProjectOverview(null);
@@ -1317,6 +1335,7 @@
 
     window.proyectosVolverLista = function() {
         currentProjectId = null;
+        window._proyectoActualId = null;
         // Inline: cierra el detalle (quita .is-open) y restaura la lista.
         var detail = el('widgetProyectoDetalle');
         if (detail) detail.classList.remove('is-open');
@@ -1398,6 +1417,10 @@
 
         // Sincroniza URL para que la sección actual sea compartible.
         if (currentProjectId) _proySyncUrl(currentProjectId, tabName);
+
+        // Persistir el último tab para que sobreviva al refresh aunque
+        // la URL no traiga ?tab=…
+        try { localStorage.setItem('_proy_last_tab', tabName); } catch (e) {}
 
         // Render data
         if (!currentProjectId) return;

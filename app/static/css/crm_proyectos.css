@@ -991,26 +991,28 @@
    flat con active dark filled. Reemplaza visualmente al bento v2.
    ========================================================================== */
 
-/* ---------- Top bar v3 ---------- */
+/* ---------- Top bar v3 ----------
+   Layout grid de 3 columnas: [left] [tabs centradas auto] [right].
+   minmax(0, 1fr) en los lados permite que el contenido se encoja con
+   text-overflow:ellipsis sin meterse detrás de la cápsula central.
+   Antes los tabs eran position:absolute → salían del flujo y los lados
+   crecían hasta taparla; ahora reservan su propio espacio. */
 .proy-v3-topbar {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 18px;
   min-height: 44px;
   flex-shrink: 0;
 }
 
-/* Tabs centrados como dynamic island en la fila del topbar.
-   Posición absolute para que el centro sea exacto sin importar el ancho
-   de los lados. Mismo look que la dynamic externa (.proy-tabs). */
+/* Tabs centradas en la columna del medio (auto se ajusta a su contenido).
+   max-width:100% + overflow-x:auto para que en pantallas chicas pueda
+   scrollear horizontal sin desbordar. */
 .proy-v3-topbar-tabs {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  justify-self: center;
   display: flex;
   gap: 2px;
   padding: 4px;
@@ -1023,7 +1025,7 @@
     0 1px 3px rgba(15, 23, 42, 0.06),
     0 4px 12px rgba(15, 23, 42, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  max-width: calc(100% - 380px);   /* deja espacio para los lados */
+  max-width: 100%;
   overflow-x: auto;
   z-index: 5;
 }
@@ -1074,24 +1076,25 @@
 .proy-v3-topbar-tabs.proy-tab-bar { border-bottom: none; padding: 4px; }
 
 @media (max-width: 1100px) {
-  /* En pantallas medianas las pills no caben centradas: las llevamos a una
-     segunda fila debajo del topbar y las dejamos alineadas a la izquierda. */
-  .proy-v3-topbar-tabs {
-    position: static;
-    transform: none;
-    margin: 8px 0 0;
-    max-width: 100%;
+  /* En pantallas medianas las pills no caben en la fila central: el
+     grid pasa a una sola columna (apilado vertical) y la cápsula
+     queda en segunda fila ocupando todo el ancho. */
+  .proy-v3-topbar {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
   }
-  .proy-v3-topbar { flex-wrap: wrap; }
-  .proy-v3-topbar-left, .proy-v3-topbar-right { flex: 1 1 auto; }
-  .proy-v3-topbar-tabs { order: 3; flex: 1 0 100%; }
+  .proy-v3-topbar-left  { justify-self: start; }
+  .proy-v3-topbar-tabs  { justify-self: stretch; order: 2; }
+  .proy-v3-topbar-right { justify-self: end; order: 3; }
 }
 
 .proy-v3-topbar-left {
   display: flex;
   align-items: center;
   gap: 14px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .proy-v3-back {
@@ -1145,7 +1148,9 @@
   font-weight: 500;
   color: #475569;
   text-decoration: none;
-  max-width: 460px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   transition: color 0.15s ease;
 }
 .proy-v3-opp-link:hover { color: #0f172a; text-decoration: underline; text-decoration-color: rgba(15,23,42,0.25); text-underline-offset: 3px; }
@@ -1161,6 +1166,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  justify-content: flex-end;
 }
 
 .proy-v3-avatars {

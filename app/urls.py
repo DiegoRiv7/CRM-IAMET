@@ -107,6 +107,7 @@ urlpatterns = [
     path('api/tareas/', views.api_tareas, name='api_tareas'),
     path('api/crear-tarea/', views.api_crear_tarea, name='api_crear_tarea'),
     path('api/tarea/<int:tarea_id>/', views.api_tarea_detalle, name='api_tarea_detalle'),
+    path('api/tarea/<int:tarea_id>/historial/', views.api_tarea_historial, name='api_tarea_historial'),
     path('api/tarea/<int:tarea_id>/actualizar/', views.api_actualizar_tarea_real, name='api_actualizar_tarea_real'),
     path('api/tarea/<int:tarea_id>/share-link/', views.api_tarea_share_link, name='api_tarea_share_link'),
     path('api/tarea/<int:tarea_id>/eliminar/', views.api_eliminar_tarea, name='api_eliminar_tarea'),
@@ -123,6 +124,7 @@ urlpatterns = [
     path('api/tarea-oportunidad/<int:tarea_id>/', views.api_tarea_oportunidad_detail, name='api_tarea_oportunidad_detail'),
     path('api/todas-tareas-oportunidad/', views.api_todas_tareas_opp, name='api_todas_tareas_opp'),
     path('api/tarea-opp/<int:tarea_id>/detalle/', views.api_tarea_opp_detalle, name='api_tarea_opp_detalle'),
+    path('api/tarea-opp/<int:tarea_id>/historial/', views.api_tarea_opp_historial, name='api_tarea_opp_historial'),
     path('api/tarea-opp/<int:tarea_id>/comentarios/', views.api_tarea_opp_comentarios, name='api_tarea_opp_comentarios'),
     path('api/tarea-opp/<int:tarea_id>/comentarios/<int:comentario_id>/', views.api_tarea_opp_comentario_detail, name='api_tarea_opp_comentario_detail'),
     path('api/tarea/<int:tarea_id>/comentarios/', views.api_comentarios_tarea, name='api_comentarios_tarea'),
@@ -283,6 +285,18 @@ urlpatterns = [
     path('api/calendario/seleccionables-responsable/', views.api_calendario_seleccionables_responsable, name='api_calendario_seleccionables_responsable'),
     # Calendario de Instalaciones (toggle alternativo en el header del calendario).
     path('api/calendario/instalaciones/', views_proyectos.api_instalaciones_calendario, name='api_instalaciones_calendario'),
+    path('api/calendario/instalaciones/grid/', views_proyectos.api_grid_tecnicos, name='api_grid_tecnicos'),
+    # 'proyectos-ligados' (no 'proyectos') para no chocar con la ruta histórica
+    # /api/oportunidad/<id>/proyectos/ que usa ProyectoOportunidadLink (sugerencias automáticas).
+    path('api/oportunidad/<int:oportunidad_id>/proyectos-ligados/', views_proyectos.api_oportunidad_proyectos_ligados, name='api_oportunidad_proyectos_ligados'),
+    path('api/proyectos-ligados/buscar/', views_proyectos.api_proyectos_buscar, name='api_proyectos_buscar'),
+    # Programa de Obra (Instalaciones) — viven dentro de un Proyecto.
+    path('api/proyecto/<int:proyecto_id>/instalaciones/', views_proyectos.api_proyecto_instalaciones, name='api_proyecto_instalaciones'),
+    path('api/proyecto/<int:proyecto_id>/instalacion-defaults/', views_proyectos.api_proyecto_instalacion_defaults, name='api_proyecto_instalacion_defaults'),
+    path('api/instalacion/<int:instalacion_id>/', views_proyectos.api_instalacion_detalle, name='api_instalacion_detalle'),
+    path('api/instalacion/<int:instalacion_id>/asignaciones/', views_proyectos.api_instalacion_asignaciones, name='api_instalacion_asignaciones'),
+    path('api/instalacion/<int:instalacion_id>/asignaciones/<int:asignacion_id>/', views_proyectos.api_instalacion_asignacion_detalle, name='api_instalacion_asignacion_detalle'),
+    path('api/tecnicos/', views_proyectos.api_tecnicos_list, name='api_tecnicos_list'),
     path('api/users/', views.user_list_api, name='user_list_api'),
     path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
 

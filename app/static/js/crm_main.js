@@ -1130,6 +1130,12 @@
                         el.style.cursor = 'default'; el.onclick = null;
                     });
                 }
+
+                // Fila inferior pipeline Proyecto: bloques Proyecto + Instalaciones.
+                // El handler vive en _widget_oportunidad.html y es no-op si tipo=runrate.
+                if (typeof window.woRenderProyectoSection === 'function') {
+                    try { window.woRenderProyectoSection(d); } catch (e) { console.error('woRenderProyectoSection', e); }
+                }
             }
 
             // ══════════════════════════════════════════════
@@ -7349,6 +7355,7 @@
             var oppId = t.oportunidad_id || '';
             var doneCls = t.estado === 'completada' ? ' done' : '';
             var atrCls = esAtrasada ? ' atrasada' : '';
+            var modCls = t.tiene_cambios ? ' modificada' : '';
 
             // TAREA: warning icon (solo atrasadas) + título
             var warnIcon = esAtrasada
@@ -7367,7 +7374,7 @@
                 ? '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + calSvg + ' ' + fechaTxt + '</span>'
                 : '<span class="tcp-row-fecha" style="background:transparent;color:#CBD5E1;padding:0;">—</span>';
 
-            return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="tcpSelectTask(' + t.id + ')">' +
+            return '<div class="tcp-row' + doneCls + atrCls + modCls + '" data-tid="' + t.id + '" onclick="tcpSelectTask(' + t.id + ')">' +
                 '<span class="tcp-row-tarea">' +
                     warnIcon +
                     '<span class="tcp-row-title">' + _tcpEsc(t.titulo || 'Sin título') + '</span>' +
@@ -7766,7 +7773,8 @@
                     else if (diasHasta <= 14) warmCls = ' warm-1';
                 }
             }
-            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '') + tipoCls + warmCls;
+            var modCls2 = tarea.tiene_cambios ? ' modificada' : '';
+            var cardClass = 'tareas-card' + (done ? ' done' : '') + (vencida ? ' overdue' : '') + (pinned ? ' pinned' : '') + modCls2 + tipoCls + warmCls;
 
             // Fecha badge
             var fechaHtml = '';
@@ -8844,6 +8852,7 @@
 
         function crmTaskVerDetalle(tareaId) {
             _crmCurrentTaskId = tareaId;
+            window._crmCurrentTaskId = tareaId;  // expone para el modal de historial
             _crmTaskCurrentOppId = null;
             var modal = document.getElementById('crmTaskDetailModal');
             if (!modal) return;
