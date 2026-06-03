@@ -123,6 +123,7 @@ urlpatterns = [
     path('api/tarea-oportunidad/<int:tarea_id>/', views.api_tarea_oportunidad_detail, name='api_tarea_oportunidad_detail'),
     path('api/todas-tareas-oportunidad/', views.api_todas_tareas_opp, name='api_todas_tareas_opp'),
     path('api/tarea-opp/<int:tarea_id>/detalle/', views.api_tarea_opp_detalle, name='api_tarea_opp_detalle'),
+    path('api/tarea-opp/<int:tarea_id>/historial/', views.api_tarea_opp_historial, name='api_tarea_opp_historial'),
     path('api/tarea-opp/<int:tarea_id>/comentarios/', views.api_tarea_opp_comentarios, name='api_tarea_opp_comentarios'),
     path('api/tarea-opp/<int:tarea_id>/comentarios/<int:comentario_id>/', views.api_tarea_opp_comentario_detail, name='api_tarea_opp_comentario_detail'),
     path('api/tarea/<int:tarea_id>/comentarios/', views.api_comentarios_tarea, name='api_comentarios_tarea'),

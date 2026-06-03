@@ -3025,6 +3025,61 @@ class ComentarioTareaOpp(models.Model):
         return f'Comentario de {self.autor} en "{self.tarea.titulo}"'
 
 
+class TareaOportunidadHistorial(models.Model):
+    """Versiones / log de cambios de una TareaOportunidad.
+
+    Cada modificación genera una fila aquí: quién la hizo (autor),
+    cuándo (fecha), qué cambió (tipo), valores antes/después y motivo
+    cuando aplica (reapertura o cambio de fecha límite — flujos donde
+    el usuario tiene que justificar la acción).
+    """
+    TIPO_CHOICES = [
+        ('titulo', 'Cambió el título'),
+        ('descripcion', 'Cambió la descripción'),
+        ('fecha_limite', 'Cambió la fecha límite'),
+        ('responsable', 'Cambió el responsable'),
+        ('prioridad', 'Cambió la prioridad'),
+        ('participante_add', 'Agregó un participante'),
+        ('participante_remove', 'Quitó un participante'),
+        ('observador_add', 'Agregó un observador'),
+        ('observador_remove', 'Quitó un observador'),
+        ('cerrada', 'Marcó la tarea como completada'),
+        ('reabierta', 'Reabrió la tarea'),
+    ]
+
+    tarea = models.ForeignKey(
+        TareaOportunidad, on_delete=models.CASCADE, related_name='historial',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='historial_tareas_opp',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    valor_anterior = models.TextField(blank=True, default='')
+    valor_nuevo = models.TextField(blank=True, default='')
+    motivo = models.TextField(
+        blank=True, default='',
+        help_text='Solo para tipos reabierta y fecha_limite — el usuario debe justificar.',
+    )
+    extra = models.JSONField(
+        null=True, blank=True,
+        help_text='Datos auxiliares (ej. user_id del participante agregado/quitado).',
+    )
+
+    class Meta:
+        verbose_name = 'Versión de tarea'
+        verbose_name_plural = 'Versiones de tareas'
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['tarea', '-fecha']),
+        ]
+
+    def __str__(self):
+        autor = self.autor.username if self.autor else 'sistema'
+        return f'[{self.fecha:%Y-%m-%d %H:%M}] {autor} {self.get_tipo_display()} → {self.tarea_id}'
+
+
 # ============= SISTEMA DE INTERCAMBIO NAVIDEÑO =============
 
 class IntercambioNavidad(models.Model):

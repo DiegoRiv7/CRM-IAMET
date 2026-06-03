@@ -4353,9 +4353,37 @@ def api_tareas_oportunidad(request, opp_id):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
+def _log_tarea_opp_historial(tarea, autor, tipo, anterior='', nuevo='', motivo='', extra=None):
+    """Helper: crea una fila en TareaOportunidadHistorial. NO es vista."""
+    from .models import TareaOportunidadHistorial
+    try:
+        TareaOportunidadHistorial.objects.create(
+            tarea=tarea, autor=autor, tipo=tipo,
+            valor_anterior=str(anterior or ''),
+            valor_nuevo=str(nuevo or ''),
+            motivo=motivo or '',
+            extra=extra,
+        )
+    except Exception as e:
+        # No bloquear el flujo si el log falla.
+        print(f'[historial] No se pudo registrar cambio: {e}')
+
+
+def _fmt_dt_for_history(dt):
+    if not dt:
+        return ''
+    return dt.strftime('%Y-%m-%d %H:%M')
+
+
 @login_required
 def api_tarea_oportunidad_detail(request, tarea_id):
-    """PUT actualizar / DELETE eliminar — una tarea de oportunidad."""
+    """PUT actualizar / DELETE eliminar — una tarea de oportunidad.
+
+    Versionado: cada cambio relevante genera una fila en
+    TareaOportunidadHistorial. Los flujos donde el frontend puede mandar
+    un 'motivo' (reabrir, cambiar fecha) lo asocian al registro
+    correspondiente.
+    """
     tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
     user = request.user
 
@@ -4367,6 +4395,18 @@ def api_tarea_oportunidad_detail(request, tarea_id):
 
     if request.method == 'PUT':
         data = json.loads(request.body)
+        motivo = (data.get('motivo') or '').strip()
+
+        # Snapshot de campos escalares antes del save para detectar cambios.
+        snap = {
+            'titulo': tarea.titulo,
+            'descripcion': tarea.descripcion,
+            'prioridad': tarea.prioridad,
+            'estado': tarea.estado,
+            'fecha_limite': tarea.fecha_limite,
+            'responsable_id': tarea.responsable_id,
+        }
+
         if 'titulo' in data:
             tarea.titulo = data['titulo']
         if 'descripcion' in data:
@@ -4390,6 +4430,22 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             old_resp_id = tarea.responsable_id
             tarea.responsable_id = new_resp_id
             tarea.save()
+            # Historial: cambio de responsable.
+            if new_resp_id != old_resp_id:
+                def _resp_label(uid):
+                    if not uid:
+                        return '— sin responsable —'
+                    try:
+                        u = User.objects.get(pk=uid)
+                        return u.get_full_name() or u.username
+                    except User.DoesNotExist:
+                        return f'User #{uid}'
+                _log_tarea_opp_historial(
+                    tarea, user, 'responsable',
+                    anterior=_resp_label(old_resp_id),
+                    nuevo=_resp_label(new_resp_id),
+                    extra={'old_id': old_resp_id, 'new_id': new_resp_id},
+                )
             # Notificar al nuevo responsable si cambió y es distinto al editor
             if new_resp_id and new_resp_id != old_resp_id:
                 try:
@@ -4415,6 +4471,11 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['participante_add'])
                 tarea.participantes.add(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'participante_add',
+                    nuevo=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 if u != request.user:
                     crear_notificacion(
                         usuario_destinatario=u,
@@ -4432,6 +4493,11 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['participante_remove'])
                 tarea.participantes.remove(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'participante_remove',
+                    anterior=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 return JsonResponse({'success': True})
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
@@ -4439,6 +4505,11 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['observador_add'])
                 tarea.observadores.add(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'observador_add',
+                    nuevo=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 if u != request.user:
                     crear_notificacion(
                         usuario_destinatario=u,
@@ -4456,10 +4527,50 @@ def api_tarea_oportunidad_detail(request, tarea_id):
             try:
                 u = User.objects.get(pk=data['observador_remove'])
                 tarea.observadores.remove(u)
+                _log_tarea_opp_historial(
+                    tarea, user, 'observador_remove',
+                    anterior=u.get_full_name() or u.username,
+                    extra={'user_id': u.id},
+                )
                 return JsonResponse({'success': True})
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
         tarea.save()
+
+        # ─── Historial de cambios escalares (después del save) ───
+        if 'titulo' in data and snap['titulo'] != tarea.titulo:
+            _log_tarea_opp_historial(
+                tarea, user, 'titulo',
+                anterior=snap['titulo'], nuevo=tarea.titulo,
+            )
+        if 'descripcion' in data and snap['descripcion'] != tarea.descripcion:
+            _log_tarea_opp_historial(
+                tarea, user, 'descripcion',
+                anterior=snap['descripcion'], nuevo=tarea.descripcion,
+            )
+        if 'prioridad' in data and snap['prioridad'] != tarea.prioridad:
+            _log_tarea_opp_historial(
+                tarea, user, 'prioridad',
+                anterior=tarea._meta.get_field('prioridad').choices and dict(tarea._meta.get_field('prioridad').choices).get(snap['prioridad'], snap['prioridad']) or snap['prioridad'],
+                nuevo=tarea.get_prioridad_display(),
+            )
+        if 'estado' in data and snap['estado'] != tarea.estado:
+            # 'cerrada' al pasar a completada; 'reabierta' al volver a pendiente.
+            if tarea.estado == 'completada':
+                _log_tarea_opp_historial(tarea, user, 'cerrada', anterior=snap['estado'], nuevo=tarea.estado, motivo=motivo)
+            elif snap['estado'] == 'completada' and tarea.estado == 'pendiente':
+                _log_tarea_opp_historial(tarea, user, 'reabierta', anterior=snap['estado'], nuevo=tarea.estado, motivo=motivo)
+            else:
+                _log_tarea_opp_historial(tarea, user, 'cerrada' if tarea.estado == 'completada' else 'reabierta',
+                                         anterior=snap['estado'], nuevo=tarea.estado, motivo=motivo)
+        if 'fecha_limite' in data and snap['fecha_limite'] != tarea.fecha_limite:
+            _log_tarea_opp_historial(
+                tarea, user, 'fecha_limite',
+                anterior=_fmt_dt_for_history(snap['fecha_limite']),
+                nuevo=_fmt_dt_for_history(tarea.fecha_limite),
+                motivo=motivo,
+            )
+
         # Si se marcó como completada, actualizar color de la actividad a verde
         if data.get('estado') == 'completada' and tarea.actividad_calendario_id:
             Actividad.objects.filter(pk=tarea.actividad_calendario_id).update(color='#34C759')
@@ -4556,6 +4667,62 @@ def api_tarea_opp_detalle(request, tarea_id):
         'observadores': [user_data(u) for u in tarea.observadores.all()],
     }
     return JsonResponse(data)
+
+
+@login_required
+def api_tarea_opp_historial(request, tarea_id):
+    """GET lista de versiones de una TareaOportunidad ordenadas DESC por fecha.
+
+    Cada item incluye el autor (nombre + avatar_url), el tipo de cambio
+    con su label legible, valor anterior/nuevo, motivo (si aplica) y
+    extra para datos auxiliares.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    tarea = get_object_or_404(TareaOportunidad, pk=tarea_id)
+    qs = (
+        tarea.historial
+        .select_related('autor')
+        .order_by('-fecha')
+    )
+
+    def _avatar_url(u):
+        if not u:
+            return None
+        try:
+            if hasattr(u, 'userprofile'):
+                return u.userprofile.get_avatar_url()
+        except Exception:
+            pass
+        return None
+
+    items = []
+    for h in qs:
+        autor_nombre = ''
+        autor_iniciales = '?'
+        if h.autor:
+            autor_nombre = h.autor.get_full_name() or h.autor.username
+            partes = [p for p in autor_nombre.split() if p]
+            autor_iniciales = (partes[0][0] + partes[-1][0]).upper() if len(partes) >= 2 else autor_nombre[:2].upper()
+        items.append({
+            'id': h.id,
+            'fecha': h.fecha.isoformat(),
+            'tipo': h.tipo,
+            'tipo_label': h.get_tipo_display(),
+            'autor': {
+                'id': h.autor_id,
+                'nombre': autor_nombre,
+                'iniciales': autor_iniciales,
+                'avatar_url': _avatar_url(h.autor),
+            } if h.autor_id else None,
+            'valor_anterior': h.valor_anterior,
+            'valor_nuevo': h.valor_nuevo,
+            'motivo': h.motivo,
+            'extra': h.extra,
+        })
+
+    return JsonResponse({'success': True, 'historial': items, 'total': len(items)})
 
 
 @login_required
