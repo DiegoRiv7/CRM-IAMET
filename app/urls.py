@@ -107,6 +107,7 @@ urlpatterns = [
     path('api/tareas/', views.api_tareas, name='api_tareas'),
     path('api/crear-tarea/', views.api_crear_tarea, name='api_crear_tarea'),
     path('api/tarea/<int:tarea_id>/', views.api_tarea_detalle, name='api_tarea_detalle'),
+    path('api/tarea/<int:tarea_id>/historial/', views.api_tarea_historial, name='api_tarea_historial'),
     path('api/tarea/<int:tarea_id>/actualizar/', views.api_actualizar_tarea_real, name='api_actualizar_tarea_real'),
     path('api/tarea/<int:tarea_id>/share-link/', views.api_tarea_share_link, name='api_tarea_share_link'),
     path('api/tarea/<int:tarea_id>/eliminar/', views.api_eliminar_tarea, name='api_eliminar_tarea'),

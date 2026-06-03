@@ -3025,6 +3025,56 @@ class ComentarioTareaOpp(models.Model):
         return f'Comentario de {self.autor} en "{self.tarea.titulo}"'
 
 
+class TareaHistorial(models.Model):
+    """Versiones / log de cambios de una Tarea (proyectos).
+
+    Espejo de TareaOportunidadHistorial pero para el modelo Tarea, que
+    es el que usa el modal principal del CRM (#crmTaskModal). Mismos
+    tipos de cambio para que el frontend pueda reusar el renderer.
+    """
+    TIPO_CHOICES = [
+        ('titulo', 'Cambió el título'),
+        ('descripcion', 'Cambió la descripción'),
+        ('fecha_limite', 'Cambió la fecha límite'),
+        ('responsable', 'Cambió el responsable'),
+        ('prioridad', 'Cambió la prioridad'),
+        ('participante_add', 'Agregó un participante'),
+        ('participante_remove', 'Quitó un participante'),
+        ('observador_add', 'Agregó un observador'),
+        ('observador_remove', 'Quitó un observador'),
+        ('cerrada', 'Marcó la tarea como completada'),
+        ('reabierta', 'Reabrió la tarea'),
+        ('cliente', 'Cambió el cliente'),
+        ('oportunidad', 'Cambió la oportunidad'),
+    ]
+
+    tarea = models.ForeignKey(
+        'Tarea', on_delete=models.CASCADE, related_name='historial',
+    )
+    autor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='historial_tareas',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    valor_anterior = models.TextField(blank=True, default='')
+    valor_nuevo = models.TextField(blank=True, default='')
+    motivo = models.TextField(blank=True, default='')
+    extra = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Versión de tarea (proyecto)'
+        verbose_name_plural = 'Versiones de tareas (proyectos)'
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['tarea', '-fecha']),
+        ]
+
+    def __str__(self):
+        autor = self.autor.username if self.autor else 'sistema'
+        return f'[{self.fecha:%Y-%m-%d %H:%M}] {autor} {self.get_tipo_display()} → {self.tarea_id}'
+
+
 class TareaOportunidadHistorial(models.Model):
     """Versiones / log de cambios de una TareaOportunidad.
 

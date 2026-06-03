@@ -2525,6 +2525,10 @@
                         <span>Enlace copiado</span>
                     </div>
                 </div>
+                {# Botón Historial de cambios — abre overlay con timeline de versiones de la Tarea #}
+                <button type="button" class="crm-tw-icon-btn" id="crmTaskHistorialBtn" title="Historial de cambios" onclick="crmTaskAbrirHistorial()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/><polyline points="12 7 12 12 16 14"/></svg>
+                </button>
                 <div class="crm-tw-menu-wrap">
                     <button type="button" class="crm-tw-icon-btn" id="crmTaskMenuBtn" title="Más acciones" onclick="crmTaskToggleMenu(event)" aria-haspopup="true" aria-expanded="false">
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>

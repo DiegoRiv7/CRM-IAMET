@@ -8850,6 +8850,7 @@
 
         function crmTaskVerDetalle(tareaId) {
             _crmCurrentTaskId = tareaId;
+            window._crmCurrentTaskId = tareaId;  // expone para el modal de historial
             _crmTaskCurrentOppId = null;
             var modal = document.getElementById('crmTaskDetailModal');
             if (!modal) return;

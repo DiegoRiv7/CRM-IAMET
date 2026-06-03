@@ -4121,38 +4121,91 @@ z-index 10300 — por encima del modal de tarea (10200).
         descripcion:         '#1D1D1F',
     };
 
+    // URL del endpoint según contexto (woAbrirHistorialTarea o crmTaskAbrirHistorial).
+    var _hxCurrentUrl = null;
+    var _hxPollTimer = null;
+    var _hxLastSignature = null;  // hash simple de los items para detectar cambios y solo re-renderizar si cambió.
+
+    function _hxAbrirModal(url, subtitulo) {
+        _hxCurrentUrl = url;
+        var overlay = document.getElementById('widgetTareaHistorial');
+        var body = document.getElementById('woHistorialBody');
+        var subtitle = document.getElementById('woHistorialSubtitle');
+        if (overlay) overlay.style.display = 'flex';
+        if (subtitle) subtitle.textContent = subtitulo || '';
+        if (body) body.innerHTML = '<div style="text-align:center;padding:30px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
+        _hxLastSignature = null;
+        _hxFetchAndRender(true);
+        // Polling: refresca cada 3s mientras el modal está abierto. Esto cubre
+        // el caso "actualización en tiempo real" — cuando el mismo usuario hace
+        // un cambio o cuando otro usuario lo hace, en máximo 3s aparece.
+        if (_hxPollTimer) clearInterval(_hxPollTimer);
+        _hxPollTimer = setInterval(function () {
+            if (!overlay || overlay.style.display !== 'flex') {
+                clearInterval(_hxPollTimer);
+                _hxPollTimer = null;
+                return;
+            }
+            _hxFetchAndRender(false);
+        }, 3000);
+    }
+
+    function _hxFetchAndRender(showLoading) {
+        if (!_hxCurrentUrl) return;
+        fetch(_hxCurrentUrl, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var body = document.getElementById('woHistorialBody');
+                if (!body) return;
+                if (!data || !data.success) {
+                    if (showLoading) {
+                        body.innerHTML = '<div style="text-align:center;padding:30px;color:#FF3B30;font-size:0.85rem;">No se pudo cargar el historial.</div>';
+                    }
+                    return;
+                }
+                var items = data.historial || [];
+                // Re-renderizar solo si la lista cambió (evita flicker en el polling).
+                var sig = items.length + '|' + (items[0] ? items[0].id + '@' + items[0].fecha : '');
+                if (sig !== _hxLastSignature) {
+                    _hxLastSignature = sig;
+                    _renderHistorial(items);
+                }
+            })
+            .catch(function () {
+                if (showLoading) {
+                    var body = document.getElementById('woHistorialBody');
+                    if (body) body.innerHTML = '<div style="text-align:center;padding:30px;color:#FF3B30;font-size:0.85rem;">Error de red.</div>';
+                }
+            });
+    }
+
     window.woAbrirHistorialTarea = function () {
         var taskId = window._woCurrentViewingTaskId;
         if (!taskId) {
             if (typeof showToast === 'function') showToast('No hay tarea activa', 'error');
             return;
         }
-        var overlay = document.getElementById('widgetTareaHistorial');
-        var body = document.getElementById('woHistorialBody');
-        var subtitle = document.getElementById('woHistorialSubtitle');
-        if (overlay) overlay.style.display = 'flex';
-        if (subtitle) {
-            var nombreEl = document.getElementById('woVerActNombre');
-            subtitle.textContent = nombreEl ? nombreEl.textContent : '';
+        var nombreEl = document.getElementById('woVerActNombre');
+        _hxAbrirModal('/app/api/tarea-opp/' + taskId + '/historial/',
+                      nombreEl ? nombreEl.textContent : '');
+    };
+
+    window.crmTaskAbrirHistorial = function () {
+        var taskId = window._crmCurrentTaskId;
+        if (!taskId) {
+            if (typeof showToast === 'function') showToast('No hay tarea activa', 'error');
+            return;
         }
-        if (body) body.innerHTML = '<div style="text-align:center;padding:30px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
-        fetch('/app/api/tarea-opp/' + taskId + '/historial/', { credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (!data || !data.success) {
-                    body.innerHTML = '<div style="text-align:center;padding:30px;color:#FF3B30;font-size:0.85rem;">No se pudo cargar el historial.</div>';
-                    return;
-                }
-                _renderHistorial(data.historial || []);
-            })
-            .catch(function () {
-                body.innerHTML = '<div style="text-align:center;padding:30px;color:#FF3B30;font-size:0.85rem;">Error de red.</div>';
-            });
+        var nombreEl = document.getElementById('crm-task-titulo');
+        _hxAbrirModal('/app/api/tarea/' + taskId + '/historial/',
+                      nombreEl ? nombreEl.textContent : '');
     };
 
     window.woCerrarHistorialTarea = function () {
         var overlay = document.getElementById('widgetTareaHistorial');
         if (overlay) overlay.style.display = 'none';
+        if (_hxPollTimer) { clearInterval(_hxPollTimer); _hxPollTimer = null; }
+        _hxCurrentUrl = null;
     };
 
     function _renderHistorial(items) {

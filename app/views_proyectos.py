@@ -3290,24 +3290,33 @@ def api_tarea_detalle(request, tarea_id):
                     print(f"🔍 Observadores actuales ANTES: {[o.username for o in current_observadores]}")
                 
                 # Aplicar cambios según el tipo
+                nombre_usuario = usuario.get_full_name() or usuario.username
                 if tipo == 'participantes':
                     if action == 'add':
                         tarea.participantes.add(usuario)
                         print(f"✅ AGREGADO como participante: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como participante a la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido agregado como participante a la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'participante_add',
+                                             nuevo=nombre_usuario, extra={'user_id': usuario.id})
                     elif action == 'remove':
                         tarea.participantes.remove(usuario)
                         print(f"❌ REMOVIDO como participante: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como participante de la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido removido como participante de la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'participante_remove',
+                                             anterior=nombre_usuario, extra={'user_id': usuario.id})
                 elif tipo == 'observadores':
                     if action == 'add':
                         tarea.observadores.add(usuario)
                         print(f"✅ AGREGADO como observador: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como observador a la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido agregado como observador a la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'observador_add',
+                                             nuevo=nombre_usuario, extra={'user_id': usuario.id})
                     elif action == 'remove':
                         tarea.observadores.remove(usuario)
                         print(f"❌ REMOVIDO como observador: {usuario.username}")
-                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como observador de la tarea '{tarea.titulo}'"
+                        mensaje = f"{nombre_usuario} ha sido removido como observador de la tarea '{tarea.titulo}'"
+                        _log_tarea_historial(tarea, request.user, 'observador_remove',
+                                             anterior=nombre_usuario, extra={'user_id': usuario.id})
                 else:
                     return JsonResponse({'error': 'Tipo inválido. Use "participantes" o "observadores"'}, status=400)
                 
@@ -3367,11 +3376,67 @@ def api_tarea_detalle(request, tarea_id):
             return JsonResponse({'error': 'JSON inválido'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    
+
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
-@login_required 
+@login_required
+def api_tarea_historial(request, tarea_id):
+    """GET lista de versiones de una Tarea (proyectos) ordenadas DESC por fecha.
+
+    Mismo shape que api_tarea_opp_historial para que el frontend pueda
+    usar el mismo renderer del timeline.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    from .models import Tarea
+    tarea = get_object_or_404(Tarea, pk=tarea_id)
+    qs = (
+        tarea.historial
+        .select_related('autor')
+        .order_by('-fecha')
+    )
+
+    def _avatar_url(u):
+        if not u:
+            return None
+        try:
+            if hasattr(u, 'userprofile'):
+                return u.userprofile.get_avatar_url()
+        except Exception:
+            pass
+        return None
+
+    items = []
+    for h in qs:
+        autor_nombre = ''
+        autor_iniciales = '?'
+        if h.autor:
+            autor_nombre = h.autor.get_full_name() or h.autor.username
+            partes = [p for p in autor_nombre.split() if p]
+            autor_iniciales = (partes[0][0] + partes[-1][0]).upper() if len(partes) >= 2 else autor_nombre[:2].upper()
+        items.append({
+            'id': h.id,
+            'fecha': h.fecha.isoformat(),
+            'tipo': h.tipo,
+            'tipo_label': h.get_tipo_display(),
+            'autor': {
+                'id': h.autor_id,
+                'nombre': autor_nombre,
+                'iniciales': autor_iniciales,
+                'avatar_url': _avatar_url(h.autor),
+            } if h.autor_id else None,
+            'valor_anterior': h.valor_anterior,
+            'valor_nuevo': h.valor_nuevo,
+            'motivo': h.motivo,
+            'extra': h.extra,
+        })
+
+    return JsonResponse({'success': True, 'historial': items, 'total': len(items)})
+
+
+@login_required
 def api_notificaciones(request):
     """
     API para obtener notificaciones del usuario actual
@@ -3572,6 +3637,10 @@ def api_completar_tarea(request, tarea_id):
         tarea.fecha_completada = ahora
         tarea.save()
 
+        # Historial: tarea completada.
+        _log_tarea_historial(tarea, request.user, 'cerrada',
+                             anterior='pendiente', nuevo='completada')
+
         # Notificar al creador si es distinto al que completó
         if tarea.creado_por and tarea.creado_por != request.user:
             completador = request.user.get_full_name() or request.user.username
@@ -3690,6 +3759,11 @@ def api_reabrir_tarea(request, tarea_id):
         tarea.estado = 'pendiente'
         tarea.fecha_completada = None
         tarea.save(update_fields=['estado', 'fecha_completada'])
+
+        # Historial: tarea reabierta con motivo.
+        _log_tarea_historial(tarea, request.user, 'reabierta',
+                             anterior='completada', nuevo='pendiente',
+                             motivo=razon)
 
         # Notificar a todos los supervisores y superusuarios
         reabridor = request.user.get_full_name() or request.user.username
@@ -4098,7 +4172,21 @@ def api_actualizar_tarea_real(request, tarea_id):
 
         # Si se cambia fecha_limite y se envía razón, se notifica a admins (audit trail).
         # La razón ya NO es obligatoria — creador y responsable la pueden cambiar libremente.
-        
+
+        # Snapshot ANTES del save para detectar cambios y generar versiones
+        # en TareaHistorial. La razon_reprogramacion (si llega) se usa como
+        # 'motivo' del cambio de fecha_limite.
+        _snap = {
+            'titulo': tarea.titulo,
+            'descripcion': tarea.descripcion,
+            'prioridad': tarea.prioridad,
+            'fecha_limite': tarea.fecha_limite,
+            'asignado_a_id': tarea.asignado_a_id,
+            'cliente_id': tarea.cliente_id,
+            'oportunidad_id': tarea.oportunidad_id,
+        }
+        _motivo_payload = (data.get('motivo') or data.get('razon_reprogramacion') or '').strip()
+
         # Actualizar campos si están presentes en la petición
         if 'nombre' in data or 'titulo' in data:
             nuevo_titulo = data.get('nombre') or data.get('titulo')
@@ -4160,6 +4248,46 @@ def api_actualizar_tarea_real(request, tarea_id):
 
         # Guardar cambios
         tarea.save()
+
+        # ─── Historial: log de cada cambio escalar detectado ───
+        from django.contrib.auth.models import User as _UserH
+        def _resp_label_h(uid):
+            if not uid:
+                return '— sin asignar —'
+            try:
+                u = _UserH.objects.get(pk=uid)
+                return u.get_full_name() or u.username
+            except _UserH.DoesNotExist:
+                return f'User #{uid}'
+        def _fmt_dt_h(dt):
+            return dt.strftime('%Y-%m-%d %H:%M') if dt else ''
+        if ('nombre' in data or 'titulo' in data) and _snap['titulo'] != tarea.titulo:
+            _log_tarea_historial(tarea, request.user, 'titulo',
+                                 anterior=_snap['titulo'], nuevo=tarea.titulo)
+        if 'descripcion' in data and _snap['descripcion'] != tarea.descripcion:
+            _log_tarea_historial(tarea, request.user, 'descripcion',
+                                 anterior=_snap['descripcion'], nuevo=tarea.descripcion)
+        if 'prioridad' in data and _snap['prioridad'] != tarea.prioridad:
+            _log_tarea_historial(tarea, request.user, 'prioridad',
+                                 anterior=_snap['prioridad'], nuevo=tarea.prioridad)
+        if 'fecha_limite' in data and _snap['fecha_limite'] != tarea.fecha_limite:
+            _log_tarea_historial(tarea, request.user, 'fecha_limite',
+                                 anterior=_fmt_dt_h(_snap['fecha_limite']),
+                                 nuevo=_fmt_dt_h(tarea.fecha_limite),
+                                 motivo=_motivo_payload)
+        if 'asignado_a' in data and _snap['asignado_a_id'] != tarea.asignado_a_id:
+            _log_tarea_historial(tarea, request.user, 'responsable',
+                                 anterior=_resp_label_h(_snap['asignado_a_id']),
+                                 nuevo=_resp_label_h(tarea.asignado_a_id),
+                                 extra={'old_id': _snap['asignado_a_id'], 'new_id': tarea.asignado_a_id})
+        if 'cliente_id' in data and _snap['cliente_id'] != tarea.cliente_id:
+            _log_tarea_historial(tarea, request.user, 'cliente',
+                                 anterior=str(_snap['cliente_id'] or ''),
+                                 nuevo=(tarea.cliente.nombre_empresa if tarea.cliente_id else ''))
+        if 'oportunidad_id' in data and _snap['oportunidad_id'] != tarea.oportunidad_id:
+            _log_tarea_historial(tarea, request.user, 'oportunidad',
+                                 anterior=str(_snap['oportunidad_id'] or ''),
+                                 nuevo=(tarea.oportunidad.oportunidad if tarea.oportunidad_id else ''))
 
         # Notificar a admins/supervisores si el responsable reprogramó la fecha
         razon_reprogramacion = data.get('razon_reprogramacion')
@@ -4367,6 +4495,21 @@ def _log_tarea_opp_historial(tarea, autor, tipo, anterior='', nuevo='', motivo='
     except Exception as e:
         # No bloquear el flujo si el log falla.
         print(f'[historial] No se pudo registrar cambio: {e}')
+
+
+def _log_tarea_historial(tarea, autor, tipo, anterior='', nuevo='', motivo='', extra=None):
+    """Helper: crea una fila en TareaHistorial (modelo Tarea de proyectos)."""
+    from .models import TareaHistorial
+    try:
+        TareaHistorial.objects.create(
+            tarea=tarea, autor=autor, tipo=tipo,
+            valor_anterior=str(anterior or ''),
+            valor_nuevo=str(nuevo or ''),
+            motivo=motivo or '',
+            extra=extra,
+        )
+    except Exception as e:
+        print(f'[historial] No se pudo registrar cambio Tarea: {e}')
 
 
 def _fmt_dt_for_history(dt):
