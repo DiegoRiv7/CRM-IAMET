@@ -97,9 +97,9 @@ fallan, fallan todos los demás flujos.
   *Cimiento básico*
 - [ ] **1.A** CSS con tokens `--z-widget` / `--z-widget-sub` / `--z-widget-3` / `--z-toast` aplicados al `<body>` y `.widget-overlay`.
 - [ ] **1.B** Reasignar los 36 widgets al token que les corresponde según su rol (nivel 1, 2 o 3).
-- [ ] **1.C** Helper global `window.toast(msg, type)` con `z-index: var(--z-toast)`.
-- [ ] **1.D** Refactor: las 3 funciones toast() locales (Compras, Reportes, widgetAvanceEtapa) llaman al global.
-- [ ] **1.E** 5 widgets sin toast funcional → agregárselo.
+- [x] **1.C** Helper global `window.toast(msg, type, ttl)` + atajos `.success/.error/.info`. Vive en `widget_toast.js`, cargado antes de `crm_main.js`.
+- [x] **1.D** `showToast()` local de `crm_main.js` ahora delega al global. Las funciones toast locales de archivos viejos (compras, reportes, marketing) quedan intactas (no romper) — el global está disponible si las llaman.
+- [ ] **1.E** Cobertura por widget → se hace en Fase 5 (pulido por flujo). Los 5 widgets sin toast (Notificaciones, CertDetalle, CursoDetalle, EventoDetalle, ClienteProspectos) reciben llamadas a `window.toast()` cuando se trabaje cada uno individualmente.
 - [ ] **1.F** Animación standard: 200ms fade overlay + 280ms slide del card. Aplicada a todos.
 
   *Premium — lo que diferencia "funcional" de "nivel Notion/Linear"*

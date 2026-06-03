@@ -488,6 +488,12 @@
                 }, 200);
             }
             function showToast(msg, type) {
+                // Delega al helper global window.toast() (widget_toast.js).
+                // Fallback al comportamiento local si el global no cargó.
+                if (typeof window.toast === 'function') {
+                    window.toast(msg, type);
+                    return;
+                }
                 if (!toast) return;
                 toast.textContent = msg;
                 toast.className = 'widget-toast ' + type;
