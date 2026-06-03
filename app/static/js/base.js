@@ -193,12 +193,19 @@ window.addEventListener('resize', () => {
         if (!c) return;
         currentResults = results;
         if (!results.length) {
+            var scopeHint = '';
+            if (currentScope && currentScope !== 'all') {
+                scopeHint = '<div class="sp-empty-hint">Estás filtrando por <b>' + escapeHtml(LABELS[currentScope] || currentScope) + '</b>. <a href="#" onclick="spotlightResetScope(event)">Buscar en todo</a></div>';
+            } else {
+                scopeHint = '<div class="sp-empty-hint">Revisa la ortografía o prueba palabras más cortas.</div>';
+            }
             c.innerHTML =
                 '<div class="sp-empty">' +
                     '<div class="sp-empty-icon">' +
                         '<svg width="38" height="38" fill="none" stroke="#CBD5E1" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
                     '</div>' +
-                    '<div class="sp-empty-title">Sin resultados</div>' +
+                    '<div class="sp-empty-title">Sin resultados para “' + escapeHtml(q || '') + '”</div>' +
+                    scopeHint +
                 '</div>';
             return;
         }
@@ -215,11 +222,44 @@ window.addEventListener('resize', () => {
             groups[type].forEach(function (r) { html += renderResultItem(r, r._idx, q); });
         });
         c.innerHTML = html;
+        // Auto-seleccionar el primer resultado: el usuario puede dar Enter
+        // inmediatamente sin tener que presionar ↓ primero.
+        selectedIndex = 0;
+        var firstItem = c.querySelector('.sp-item');
+        if (firstItem) firstItem.classList.add('selected');
     }
+
+    // expuesto por displayResults() cuando no hay resultados y hay scope
+    window.spotlightResetScope = function (e) {
+        if (e) e.preventDefault();
+        currentScope = 'all';
+        var box = $sp('sp-scopes');
+        if (box) {
+            box.querySelectorAll('.sp-chip').forEach(function (x) { x.classList.remove('active'); });
+            var all = box.querySelector('[data-scope="all"]');
+            if (all) all.classList.add('active');
+        }
+        var inp = $sp('spotlight-input');
+        triggerSearch(inp ? inp.value : '');
+        if (inp) inp.focus();
+    };
 
     function showLoading() {
         var c = $sp('spotlight-results');
-        if (c) c.innerHTML = '<div class="sp-loading"><div class="sp-spinner"></div><div>Buscando…</div></div>';
+        if (!c) return;
+        // Skeleton screen — el usuario ve "algo" inmediatamente, no espera
+        // en blanco. Reduce la percepción de lentitud aunque la búsqueda
+        // tome lo mismo.
+        var skeleton = '';
+        for (var i = 0; i < 5; i++) {
+            skeleton += '<div class="sp-skeleton-row">'
+                + '<div class="sp-skeleton-icon"></div>'
+                + '<div class="sp-skeleton-text">'
+                + '<div class="sp-skeleton-line sp-skel-w70"></div>'
+                + '<div class="sp-skeleton-line sp-skel-w40"></div>'
+                + '</div></div>';
+        }
+        c.innerHTML = '<div class="sp-loading-wrap" aria-busy="true">' + skeleton + '</div>';
     }
 
     // ── Estado vacío: Acciones rápidas + Recientes + Hint ──
@@ -247,7 +287,6 @@ window.addEventListener('resize', () => {
         if (!c) return;
         currentResults = [];
         var recents = getRecents();
-        // Ingenieros / Administradores: ocultar recents que no sean tareas/proyectos.
         if (isRolLimitado()) {
             recents = recents.filter(function (r) { return ING_ALLOWED_TYPES[r.type]; });
         }
@@ -258,8 +297,20 @@ window.addEventListener('resize', () => {
                 html += renderResultItem(r, currentResults.length - 1, '');
             });
             c.innerHTML = html;
+            selectedIndex = 0;
+            var firstItem = c.querySelector('.sp-item');
+            if (firstItem) firstItem.classList.add('selected');
         } else {
-            c.innerHTML = '';
+            // Sin recents: hint discreto en vez de modal vacío.
+            c.innerHTML =
+                '<div class="sp-hint">' +
+                    '<div class="sp-hint-title">Empieza a escribir para buscar</div>' +
+                    '<div class="sp-hint-lines">' +
+                        '<div><b>&gt; </b> acciones rápidas (ej. <b>&gt; cotización</b>)</div>' +
+                        '<div><b>@usuario</b> filtra por responsable</div>' +
+                        '<div><b>Tab</b> alterna entre Oportunidades / Tareas / Proyectos</div>' +
+                    '</div>' +
+                '</div>';
         }
     }
 
@@ -318,22 +369,36 @@ window.addEventListener('resize', () => {
 
         var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
         var token = csrf ? csrf.value : '';
+
+        // AbortController: cancela el request anterior si todavía está
+        // en vuelo cuando el usuario tipea de nuevo. Evita que respuestas
+        // viejas pisen las nuevas y reduce carga al servidor en typeo rápido.
+        if (window._spotlightAbortCtrl) {
+            try { window._spotlightAbortCtrl.abort(); } catch (e) { /* noop */ }
+        }
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        window._spotlightAbortCtrl = ctrl;
+
         fetch('/app/api/spotlight-search/?' + params.toString(), {
             method: 'GET',
-            headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest' }
+            headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest' },
+            signal: ctrl ? ctrl.signal : undefined,
         })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 var rs = data.results || [];
-                // Ingenieros / Administradores: filtrar cualquier resultado fuera de tarea/proyecto
-                // (defensa extra por si el backend devolviera otros tipos).
                 if (isRolLimitado()) {
                     rs = rs.filter(function (r) { return ING_ALLOWED_TYPES[r.type]; });
                 }
                 displayResults(rs, parsed.q);
-                selectedIndex = -1;
+                // selectedIndex lo maneja displayResults() (auto-select first).
             })
-            .catch(function () { displayResults([], parsed.q); });
+            .catch(function (err) {
+                // AbortError es esperado cuando el usuario sigue tipeando.
+                // No mostramos "Sin resultados" si solo fue aborto.
+                if (err && err.name === 'AbortError') return;
+                displayResults([], parsed.q);
+            });
     }
 
     function showActionResults(actionQuery) {
@@ -350,14 +415,17 @@ window.addEventListener('resize', () => {
         currentResults = filtered.map(function (a) {
             return { type: 'accion', _action_id: a.id, title: a.title, subtitle: a.subtitle, _action: true };
         });
-        selectedIndex = -1;
         if (!currentResults.length) {
+            selectedIndex = -1;
             c.innerHTML = '<div class="sp-empty"><div class="sp-empty-title">Sin acciones</div><div class="sp-empty-hint">Prueba &quot;&gt; nueva cotización&quot; o &quot;&gt; calendario&quot;</div></div>';
             return;
         }
         var html = renderSectionHeader('accion', currentResults.length);
         currentResults.forEach(function (r, i) { html += renderResultItem(r, i, actionQuery); });
         c.innerHTML = html;
+        selectedIndex = 0;
+        var firstItem = c.querySelector('.sp-item');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     // ── Selección / navegación ───────────────────────────
@@ -372,6 +440,30 @@ window.addEventListener('resize', () => {
             items[selectedIndex].classList.add('selected');
             items[selectedIndex].scrollIntoView({ block: 'nearest' });
         }
+    }
+    function jumpSpotlight(where) {
+        if (!currentResults.length) return;
+        var items = document.querySelectorAll('#spotlight-results .sp-item');
+        items.forEach(function (i) { i.classList.remove('selected'); });
+        selectedIndex = (where === 'last') ? currentResults.length - 1 : 0;
+        if (items[selectedIndex]) {
+            items[selectedIndex].classList.add('selected');
+            items[selectedIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+    function cycleScope(dir) {
+        var box = $sp('sp-scopes');
+        if (!box) return;
+        var chips = Array.prototype.slice.call(box.querySelectorAll('.sp-chip'));
+        if (!chips.length) return;
+        var activeIdx = chips.findIndex(function (c) { return c.classList.contains('active'); });
+        if (activeIdx < 0) activeIdx = 0;
+        var next = (activeIdx + dir + chips.length) % chips.length;
+        chips.forEach(function (c) { c.classList.remove('active'); });
+        chips[next].classList.add('active');
+        currentScope = chips[next].getAttribute('data-scope') || 'all';
+        var inp = $sp('spotlight-input');
+        triggerSearch(inp ? inp.value : '');
     }
 
     window.selectResult = function (index, opts) {
@@ -623,6 +715,9 @@ window.addEventListener('resize', () => {
         if (sm && sm.classList.contains('active')) {
             if (e.key === 'ArrowDown') { e.preventDefault(); navigateSpotlight(1); }
             else if (e.key === 'ArrowUp') { e.preventDefault(); navigateSpotlight(-1); }
+            else if (e.key === 'Home') { e.preventDefault(); jumpSpotlight('first'); }
+            else if (e.key === 'End') { e.preventDefault(); jumpSpotlight('last'); }
+            else if (e.key === 'Tab') { e.preventDefault(); cycleScope(e.shiftKey ? -1 : 1); }
             else if (e.key === 'Enter' && selectedIndex >= 0 && selectedIndex < currentResults.length) {
                 e.preventDefault();
                 selectResult(selectedIndex, { newTab: e.metaKey || e.ctrlKey });

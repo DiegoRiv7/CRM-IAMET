@@ -215,7 +215,7 @@ class Cliente(models.Model):
         ('C', 'Categoría C - 25% utilidad'),
     ]
     
-    nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa")
+    nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa", db_index=True)
     rfc = models.CharField(max_length=20, blank=True, default='', verbose_name="RFC", db_index=True)
     contacto_principal = models.CharField(max_length=200, blank=True, null=True, verbose_name="Contacto Principal")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
@@ -350,7 +350,7 @@ class TodoItem(models.Model):
 
     # 'usuario' es el campo que vincula la oportunidad con el usuario que la creó/posee
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='oportunidades')
-    oportunidad = models.CharField(max_length=200, verbose_name="Oportunidad de Venta")
+    oportunidad = models.CharField(max_length=200, verbose_name="Oportunidad de Venta", db_index=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='oportunidades', verbose_name="Cliente")
     contacto = models.ForeignKey(
         'Contacto', 
@@ -374,7 +374,7 @@ class TodoItem(models.Model):
     bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
     bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
-    po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO")
+    po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO", db_index=True)
     factura_numero = models.CharField(max_length=100, blank=True, default='', verbose_name="Factura")
     # FK directo al prospecto del que se generó esta oportunidad. A
     # diferencia de Prospecto.oportunidad_creada (FK al revés que solo
@@ -525,7 +525,7 @@ class Cotizacion(models.Model):
         ('Iamet', 'Iamet'),
     ]
     
-    titulo = models.CharField(max_length=255, default="Cotización", verbose_name="Título de la Cotización")
+    titulo = models.CharField(max_length=255, default="Cotización", verbose_name="Título de la Cotización", db_index=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='cotizaciones', verbose_name="Cliente")
     usuario_final = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Usuario Final")
     oportunidad = models.ForeignKey(TodoItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones', verbose_name="Oportunidad de Venta") # NUEVO CAMPO
@@ -535,7 +535,7 @@ class Cotizacion(models.Model):
     # Nuevo campo para la descripción general de la cotización
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción General de la Cotización")
     # Nuevo campo para un nombre específico para el PDF (opcional, si quieres que sea diferente al título)
-    nombre_cotizacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre para el PDF de la Cotización")
+    nombre_cotizacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre para el PDF de la Cotización", db_index=True)
 
     # Campos para los totales de la cotización
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Subtotal")
@@ -2336,6 +2336,7 @@ class Tarea(models.Model):
     
     titulo = models.CharField(
         max_length=200,
+        db_index=True,
         verbose_name="Título de la Tarea"
     )
     descripcion = models.TextField(
@@ -3013,7 +3014,7 @@ class TareaOportunidad(models.Model):
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.CASCADE, related_name='tareas_oportunidad'
     )
-    titulo = models.CharField(max_length=255)
+    titulo = models.CharField(max_length=255, db_index=True)
     descripcion = models.TextField(blank=True)
     prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='normal')
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
@@ -4335,9 +4336,9 @@ class ProyectoIAMET(models.Model):
         help_text='Usuarios adicionales con acceso al proyecto (ingenieros, técnicos, etc).'
     )
     oportunidad = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='proyectos_iamet_vinculados')
-    nombre = models.CharField(max_length=255)
+    nombre = models.CharField(max_length=255, db_index=True)
     descripcion = models.TextField(blank=True, default='')
-    cliente_nombre = models.CharField(max_length=255, blank=True, default='')
+    cliente_nombre = models.CharField(max_length=255, blank=True, default='', db_index=True)
     STATUS_CHOICES = [
         ('planning', 'Planificacion'),
         ('active', 'Activo'),
