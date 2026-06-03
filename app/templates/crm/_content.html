@@ -1727,6 +1727,26 @@
             border-color: #BFDBFE;
         }
         .tareas-card.overdue { border-left: 3px solid #EF4444; }
+        /* Tarea con cambios registrados (historial > 0): franja amarilla.
+           Usa border-left simple cuando NO está atrasada. */
+        .tareas-card.modificada:not(.overdue) { border-left: 3px solid #F59E0B; }
+        /* Atrasada + modificada: gradiente vertical rojo arriba, amarillo abajo.
+           Quitamos el border-left rojo y usamos un pseudo-elemento ::before
+           con el gradiente para no afectar el padding interno. */
+        .tareas-card.overdue.modificada {
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+        .tareas-card.overdue.modificada::before {
+            content: '';
+            position: absolute;
+            left: -3px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #EF4444 0%, #EF4444 50%, #F59E0B 50%, #F59E0B 100%);
+            border-radius: 14px 0 0 14px;
+        }
         .tareas-card.done {
             opacity: 0.55;
             background: #FAFAFB;

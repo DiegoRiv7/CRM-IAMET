@@ -1339,6 +1339,17 @@ def api_tareas(request):
                 ancladas_ids = set()
 
             tareas_data = []
+            # Conjunto de IDs de tareas con al menos una versión en el historial.
+            # Una sola query (evita N+1) para marcar las que tienen modificaciones.
+            from .models import TareaHistorial as _TH
+            try:
+                _ids_con_hist = set(
+                    _TH.objects.filter(tarea_id__in=[t.id for t in tareas])
+                    .values_list('tarea_id', flat=True).distinct()
+                )
+            except Exception:
+                _ids_con_hist = set()
+
             for tarea in tareas:
                 # Formatear tiempo trabajado
                 tiempo_total_str = "00:00:00"
@@ -1406,6 +1417,7 @@ def api_tareas(request):
                     'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
                     'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
                     'esta_anclada': tarea.id in ancladas_ids,
+                    'tiene_cambios': tarea.id in _ids_con_hist,
                     'search_blob': search_blob,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
