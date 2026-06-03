@@ -118,20 +118,58 @@ fallan, fallan todos los demás flujos.
 **Por qué después:** el problema no es UX, es contrato roto. Hay que
 reconstruir confianza antes de pulir.
 
-**Problemas conocidos:**
-- [ ] No llegan todas las notificaciones esperadas.
-- [ ] Las que llegan son engañosas / no se entienden.
-- [ ] Click en la notificación a veces no abre nada.
-- [ ] Quedan ahí "perdidas" sin contexto.
-- [ ] Nadie las usa por desconfianza.
+**Auditoría real (2026-06-03):** 3 capas rotas:
 
-**Entregables:**
-- [ ] **Auditoría de eventos**: lista de TODOS los disparadores de
-  notificación. ¿Cuáles funcionan? ¿Cuáles fallan en silencio?
-- [ ] **Fix de los disparadores rotos.**
-- [ ] **Mejora del texto/contenido** — claro, accionable, con contexto.
-- [ ] **Garantizar que el click lleva a algo útil siempre.**
-- [ ] **Agrupación + filtrado** si el volumen es alto.
+1. **Creación silenciosa de fallos:**
+   - `views_utils.py:672` — helper `crear_notificacion()` con
+     try/except + `print()`, sin logger.
+   - `views_api.py:437-438` — try/except genérico en disparadores
+     de vencimientos.
+   - `views_proyectos.py:655`, `views_grupos.py:392` — try/except
+     `pass` sin log.
+
+2. **Routing roto — 22 de 25 tipos sin mapeo explícito** en el JS del
+   widget (`_widget_notificaciones.html:1192-1241`). Tipos huérfanos:
+   `tarea_asignada`, `rendimiento_bajo`, `solicitud_cambio_perfil`,
+   `prospecto_asignado`, `certificacion_por_vencer`,
+   `certificacion_vencida`, `sistema`, y otros que caen al fallback
+   `openDetalle(oppId)` que falla cuando no hay `oppId`.
+   - `models.py:1750` — `Notificacion.get_url()` solo cubre 3 tipos.
+
+3. **Polling agresivo + race conditions:**
+   - Cada 3s (`_pollForToasts` línea 1361 del widget).
+   - 50 notificaciones cargadas cada vez (`views_api.py:445`).
+   - **Vencimientos re-calculados en CADA poll** (`views_api.py:397-435`)
+     con `.exists()` + `.create()` sin transacción → genera duplicados.
+
+**Entregables Fase 2:**
+
+  *Routing (lo más visible)*
+- [ ] **2.A** Mapeo completo Tipo → Acción en JS. Tabla declarativa
+  con handler explícito por cada uno de los 25 tipos. Fallback genérico
+  que avise al usuario en vez de fallar silencioso.
+- [ ] **2.B** `Notificacion.get_url()` en el modelo: cubrir los 25 tipos
+  con su URL fallback (para deep-links que no usan JS).
+
+  *Creación confiable*
+- [ ] **2.C** Logger estructurado en `crear_notificacion()`. Reemplazar
+  `print()` por `logger.exception()`. Sin try/except `pass` en ningún
+  disparador.
+- [ ] **2.D** Auditar todos los disparadores y agregar log estructurado:
+  `logger.info('[notif] %s → user=%s tipo=%s', razon, user, tipo)`.
+
+  *Polling sano*
+- [ ] **2.E** Bajar polling a 8s con back-off (como historial de tareas).
+  Refresh inmediato cuando el data bus emite eventos relevantes.
+- [ ] **2.F** Mover re-cálculo de vencimientos a un comando de gestión
+  (`python manage.py procesar_vencimientos`) corrido por cron cada 5min.
+  El endpoint de polling solo LEE notificaciones existentes.
+
+  *UX*
+- [ ] **2.G** Textos accionables con contexto ("X reabrió la tarea Y
+  porque Z" en vez de "Tarea reabierta").
+- [ ] **2.H** Si una notificación click no encuentra destino, mostrar
+  toast "Sin destino disponible" en vez de no hacer nada.
 
 ---
 
@@ -217,6 +255,39 @@ críticas urgentes antes de meses de trabajo de las otras fases.
 
 ---
 
+### FASE 8 — Multi-window / Workspace mode (post-hardening)
+**Estado:** parqueada. NO se trabaja hasta cerrar Fases 1-7.
+
+**Idea original (sugerencia del usuario, 2026-06-03):**
+Sistema tipo Windows donde el usuario pueda tener varios widgets
+abiertos en paralelo (2-4 opps lado a lado), redimensionables y
+movibles. Comparar entidades, workflows de power-user.
+
+**Por qué se parqueó:**
+- Va contra la regla #1 del plan ("pausa de features nuevas").
+- Reescribe el stack manager, breadcrumb, Esc, URL sync — todo el
+  trabajo de Fase 1 que acabamos de cerrar.
+- Costo estimado: 2-3 semanas. Esas semanas se gastan en Notificaciones,
+  Búsqueda y Servidor (más impacto inmediato según el usuario).
+- Imposible en mobile.
+- Uso real probablemente no lo justifica todavía (no hay pedido formal
+  de usuarios — es intuición de power-user).
+
+**Cuando se retome, considerar:**
+- Empezar con un MVP de "modo comparación" — 2 widgets lado a lado
+  hardcoded, sin drag ni resize. ~2 días de trabajo.
+- Si después el feedback muestra que el equipo lo usa de verdad,
+  evolucionar a multi-window real con drag/resize/snap-to-edges.
+- Re-evaluar el data bus para refresh granular por id, no por entidad
+  (si tienes 2 instancias de la opp A abiertas, refresh debe actualizar
+  ambas).
+
+---
+
 ## Histórico
 
 - **2026-06-03**: documento creado. Punto de partida.
+  Fase 1 (Sistema de Widgets) completa: tokens z-index, stack manager
+  dinámico, toast global, event bus + auto-refresh, breadcrumb anidado,
+  Esc consistente, URL syncing.
+  Idea de multi-window parqueada para Fase 8.

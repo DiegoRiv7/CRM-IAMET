@@ -652,8 +652,11 @@ def api_programacion_actividades(request):
                     usuario_remitente=request.user,
                     proyecto_nombre=proyecto_titulo,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                import logging as _lg
+                _lg.getLogger(__name__).exception(
+                    '[notif] error en programacion_proyecto user=%s: %s',
+                    getattr(u, 'username', '?'), str(e))
 
         return JsonResponse({'success': True, 'id': act.id})
 

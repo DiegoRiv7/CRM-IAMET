@@ -21,6 +21,7 @@ Endpoints (miembros + supervisores):
   GET    /api/grupos/<id>/no-leidos/        → conteo de no leídos
 """
 import json
+import logging
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -29,6 +30,8 @@ from django.db.models import Q
 
 from app.models import GrupoTrabajo, MensajeGrupo, LecturaGrupo
 from app.views_utils import is_supervisor
+
+logger = logging.getLogger(__name__)
 
 
 def _usuario_a_dict(u):
@@ -389,8 +392,9 @@ def registrar_accion_grupo(actor, propietario, accion, contenido, objeto_tipo=''
                         titulo=f'{actor_nombre} en {g.nombre}',
                         mensaje=contenido[:120],
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.exception('[notif] error en mensaje_grupo grupo=%s uid=%s: %s',
+                                     g.id, uid, str(e))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

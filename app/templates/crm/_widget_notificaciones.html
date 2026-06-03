@@ -1200,42 +1200,168 @@
         // NO cerrar notificaciones — el widget que se abre se muestra ENCIMA
         // El usuario cierra notificaciones manualmente con la X
 
-        // Navigate to the right place
-        const tiposConv = ['mencion', 'comentario_oportunidad', 'oportunidad_mensaje', 'tarea_opp_asignada', 'tarea_opp_comentario'];
-        const tiposActividad = ['actividad_por_vencer', 'actividad_vencida'];
-        const tiposTareaOpp = ['tarea_opp_asignada', 'tarea_opp_comentario'];
+        // ═══ Tabla declarativa Tipo → Handler ═══
+        // Cada uno de los 25 tipos definidos en el modelo tiene su acción.
+        // Si una notificación llega con un tipo SIN handler, el fallback
+        // muestra toast "Sin destino disponible" en vez de fallar silencioso.
+        // Esto resuelve el problema "click no abre nada" del usuario.
+        const handlers = {
+            // ── Tareas (modelo Tarea, sidebar Tareas) ──
+            'tarea_vencida':       (n) => _openTarea(n.tarea_id),
+            'tarea_por_vencer':    (n) => _openTarea(n.tarea_id),
+            'tarea_asignada':      (n) => _openTarea(n.tarea_id),
+            'tarea_reprogramada':  (n) => _openTarea(n.tarea_id),
+            'tarea_participante':  (n) => _openTarea(n.tarea_id),
+            'tarea_observador':    (n) => _openTarea(n.tarea_id),
+            'tarea_mencion':       (n) => _openTarea(n.tarea_id),
+            'tarea_comentario':    (n) => _openTarea(n.tarea_id),
 
-        // Elevar widgets para que se abran ENCIMA de notificaciones (CAPA 3)
+            // ── Tareas de oportunidad (modelo TareaOportunidad) ──
+            'tarea_opp_asignada':  (n) => _openTareaOpp(n.tarea_opp_id, n.oportunidad_id),
+            'tarea_opp_comentario':(n) => _openTareaOpp(n.tarea_opp_id, n.oportunidad_id),
+
+            // ── Actividades del calendario ──
+            'actividad_vencida':   (n) => _openCalendario(),
+            'actividad_por_vencer':(n) => _openCalendario(),
+
+            // ── Oportunidades ──
+            'mencion':             (n) => _openOpp(n.oportunidad_id),
+            'comentario_oportunidad': (n) => _openOppConversacion(n.oportunidad_id),
+            'oportunidad_mensaje': (n) => _openOppConversacion(n.oportunidad_id),
+
+            // ── Equipo / Comunicación ──
+            'muro_post':           (n) => _openMuro(),
+            'muro_mencion':        (n) => _openMuro(),
+            'respuesta':           (n) => _openMuro(),
+            'mensaje_grupo':       (n) => _openGrupo(),
+
+            // ── Proyectos ──
+            'proyecto_agregado':   (n) => _openProyecto(n.proyecto_id),
+            'programacion_proyecto':(n) => _openProyecto(n.proyecto_id),
+
+            // ── Prospectos ──
+            'prospecto_asignado':  (n) => _openProspecto(n.prospecto_id || n.oportunidad_id),
+
+            // ── Certificaciones ──
+            'certificacion_por_vencer': (n) => _openCertificacion(n.certificacion_id),
+            'certificacion_vencida':    (n) => _openCertificacion(n.certificacion_id),
+
+            // ── Administrativas (expandibles, ya manejadas arriba) ──
+            // 'solicitud_cambio_perfil' → return temprano antes de aquí
+            // 'rendimiento_bajo'        → return temprano antes de aquí
+
+            // ── Sistema (info pura, no navega) ──
+            'sistema':             (n) => { /* solo marca como leída */ },
+        };
+
+        // Helpers de apertura (centralizados, con elevación de z-index y validación)
         function _elevarWidget(id) {
             var el = document.getElementById(id);
             if (el) el.classList.add('z-elevated');
         }
-
-        if (tiposActividad.includes(tipo) && typeof window.calendarioAbrir === 'function') {
-            _elevarWidget('widgetCalendarioMaster');
-            window.calendarioAbrir();
-        } else if (tiposTareaOpp.includes(tipo) && actId && typeof window.crmTaskVerDetalle === 'function') {
-            window.crmTaskVerDetalle(actId);
-        } else if (esMensajeChat && oppId && typeof window.openDetalle === 'function') {
+        function _openTarea(tareaId) {
+            if (!tareaId) { _avisarSinDestino('Tarea no encontrada'); return; }
+            if (typeof window.crmTaskVerDetalle === 'function') {
+                window.crmTaskVerDetalle(tareaId);
+            } else {
+                _avisarSinDestino('No se puede abrir la tarea desde aquí');
+            }
+        }
+        function _openTareaOpp(tareaOppId, oppId) {
+            if (tareaOppId && typeof window.crmTaskVerDetalle === 'function') {
+                window.crmTaskVerDetalle(tareaOppId);
+                return;
+            }
+            if (oppId && typeof window.openDetalle === 'function') {
+                _elevarWidget('widgetDetalle');
+                window.openDetalle(oppId);
+                return;
+            }
+            _avisarSinDestino('Tarea de oportunidad sin destino');
+        }
+        function _openOpp(oppId) {
+            if (!oppId) { _avisarSinDestino('Oportunidad no especificada'); return; }
+            if (typeof window.openDetalle !== 'function') { _avisarSinDestino('No se puede abrir oportunidades aquí'); return; }
+            _elevarWidget('widgetDetalle');
+            window.openDetalle(oppId);
+        }
+        function _openOppConversacion(oppId) {
+            if (!oppId) { _avisarSinDestino('Oportunidad no especificada'); return; }
+            if (typeof window.openDetalle !== 'function') { _avisarSinDestino('No se puede abrir oportunidades aquí'); return; }
             _elevarWidget('widgetDetalle');
             _elevarWidget('widgetOppConversacion');
             window.openDetalle(oppId);
-            setTimeout(() => { if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion(); }, 600);
-        } else if (tiposConv.includes(tipo) && oppId && typeof window.openDetalle === 'function') {
-            _elevarWidget('widgetDetalle');
-            window.openDetalle(oppId);
-        } else if (tipo === 'tarea_reprogramada' && tareaId && typeof window.crmTaskVerDetalle === 'function') {
-            window.crmTaskVerDetalle(tareaId);
-        } else if (CAT_TAREAS.includes(tipo) && tareaId && typeof window.crmTaskVerDetalle === 'function') {
-            window.crmTaskVerDetalle(tareaId);
-        } else if (tipo === 'mensaje_grupo' && typeof window.grupoAbrir === 'function') {
-            window.grupoAbrir();
-        } else if (CAT_EQUIPO.includes(tipo) && typeof window.muroAbrir === 'function') {
+            setTimeout(function () {
+                if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion();
+            }, 600);
+        }
+        function _openCalendario() {
+            _elevarWidget('widgetCalendarioMaster');
+            if (typeof window.calendarioAbrir === 'function') {
+                window.calendarioAbrir();
+            } else {
+                _avisarSinDestino('No se puede abrir el calendario');
+            }
+        }
+        function _openMuro() {
             _elevarWidget('widgetMuro');
-            window.muroAbrir();
-        } else if (oppId && typeof window.openDetalle === 'function') {
-            _elevarWidget('widgetDetalle');
-            window.openDetalle(oppId);
+            if (typeof window.muroAbrir === 'function') {
+                window.muroAbrir();
+            } else {
+                _avisarSinDestino('No se puede abrir el muro');
+            }
+        }
+        function _openGrupo() {
+            if (typeof window.grupoAbrir === 'function') {
+                window.grupoAbrir();
+            } else {
+                _avisarSinDestino('No se puede abrir grupos');
+            }
+        }
+        function _openProyecto(proyectoId) {
+            if (!proyectoId) { _avisarSinDestino('Proyecto no especificado'); return; }
+            if (typeof window.proyectosVerDetalle === 'function') {
+                window.proyectosVerDetalle(proyectoId);
+            } else {
+                // Fallback: navegar al módulo de proyectos
+                window.location.href = '/app/home/?tab=proyectos&open_proyecto=' + proyectoId;
+            }
+        }
+        function _openProspecto(prospectoId) {
+            if (!prospectoId) { _avisarSinDestino('Prospecto no especificado'); return; }
+            if (typeof window.wpAbrirDetalle === 'function') {
+                window.wpAbrirDetalle(prospectoId);
+            } else {
+                window.location.href = '/app/home/?tab=prospectos&open_prospecto=' + prospectoId;
+            }
+        }
+        function _openCertificacion(certId) {
+            if (!certId) { _avisarSinDestino('Certificación no especificada'); return; }
+            if (typeof window.certificacionDetalleAbrir === 'function') {
+                window.certificacionDetalleAbrir(certId);
+            } else {
+                window.location.href = '/app/home/?tab=certificaciones&open_cert=' + certId;
+            }
+        }
+        function _avisarSinDestino(motivo) {
+            console.warn('[notif] sin destino:', motivo, '| tipo:', tipo, '| nRel:', nRel);
+            if (typeof window.toast === 'function') {
+                window.toast(motivo || 'Esta notificación no tiene destino disponible', 'info');
+            }
+        }
+
+        // Ejecutar el handler del tipo. Si no hay, avisar (no fallar silencioso).
+        const handler = handlers[tipo];
+        if (typeof handler === 'function') {
+            try {
+                handler(nRel || { tipo: tipo, tarea_id: tareaId, oportunidad_id: oppId, tarea_opp_id: actId });
+            } catch (err) {
+                console.error('[notif] error al abrir:', err);
+                _avisarSinDestino('Error al abrir el destino');
+            }
+        } else {
+            // Tipo desconocido / sin mapeo → toast informativo
+            _avisarSinDestino('Tipo de notificación no reconocido (' + tipo + ')');
         }
     };
 
@@ -1354,11 +1480,57 @@
     /* ═══ Expose for external use ═══ */
     window.notifLoad = _load;
 
-    /* ═══ Init ═══ */
+    /* ═══ Init — Hardening Fase 2.E ═══
+       Antes: polling cada 3 segundos.
+       Ahora:
+         - Polling base 8s (~73% menos requests).
+         - Back-off a 20s tras 3 lecturas sin novedad.
+         - Refresh inmediato cuando crmDataBus emite cambios en entidad
+           relacionada (nuevo comentario en opp, tarea reasignada, etc.).
+         - Reset a polling rápido al detectar novedad.
+    */
+    var POLL_BASE_MS = 8000;
+    var POLL_SLOW_MS = 20000;
+    var POLL_STALE_THRESHOLD = 3;
+    var _pollStaleReads = 0;
+    var _pollTimer = null;
+    var _lastUnreadCount = -1;
+
+    function _armPoll() {
+        clearTimeout(_pollTimer);
+        var ms = _pollStaleReads >= POLL_STALE_THRESHOLD ? POLL_SLOW_MS : POLL_BASE_MS;
+        _pollTimer = setTimeout(function tick() {
+            _pollForToasts();
+            // Si el unread count no cambió, marcar stale; si cambió, reset.
+            var current = (_nData || []).filter(function (n) { return !n.leida; }).length;
+            if (current === _lastUnreadCount) {
+                _pollStaleReads++;
+            } else {
+                _pollStaleReads = 0;
+                _lastUnreadCount = current;
+            }
+            _armPoll();
+        }, ms);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(_load, 1800);
-        setInterval(_load, 30000); // reduced from 15s since pollForToasts updates _nData anyway when seeing new things
-        setInterval(_pollForToasts, 3000); // 3 seconds fast polling
+        setInterval(_load, 60000);  // recarga completa cada 60s (antes 30s)
+        _armPoll();
+
+        // Refresh inmediato cuando el bus emite eventos relevantes.
+        if (window.crmDataBus) {
+            var refreshSoon = function () {
+                _pollStaleReads = 0;  // volver a polling rápido
+                clearTimeout(_pollTimer);
+                setTimeout(function () { _pollForToasts(); _armPoll(); }, 300);
+            };
+            window.crmDataBus.on('notificacion', refreshSoon);
+            // También en cambios que producen notificaciones — tareas, opps, etc.
+            window.crmDataBus.on('tarea', refreshSoon);
+            window.crmDataBus.on('tarea-opp', refreshSoon);
+            window.crmDataBus.on('oportunidad', refreshSoon);
+        }
     });
 
 })();

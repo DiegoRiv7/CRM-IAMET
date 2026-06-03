@@ -1748,14 +1748,56 @@ class Notificacion(models.Model):
             self.save()
     
     def get_url(self):
-        """Obtiene la URL a la que debe dirigirse la notificación"""
-        if self.tipo == 'proyecto_agregado' and self.proyecto_id:
-            # Por ahora redirigir a la sección de tareas y proyectos
-            # En el futuro se podría dirigir al detalle del proyecto específico
-            return "/app/tareas-proyectos/"
-        elif self.oportunidad:
-            return f"/app/cotizaciones/oportunidad/{self.oportunidad.id}/"
-        return "/app/todos/"
+        """URL a la que debe dirigirse la notificación cuando el click
+        ocurre fuera del widget JS (ej. notificaciones push del navegador
+        o emails). El JS del widget tiene su propia tabla NOTIF_HANDLERS
+        más rica — esta función es el fallback para los casos sin JS.
+        """
+        t = self.tipo or ''
+        oid = self.oportunidad_id
+        # Tareas (modelo Tarea — sidebar Tareas)
+        if t in ('tarea_vencida', 'tarea_por_vencer', 'tarea_asignada',
+                 'tarea_reprogramada', 'tarea_participante',
+                 'tarea_observador', 'tarea_mencion', 'tarea_comentario'):
+            return '/app/home/?tab=tareas' + (f'&open_tarea={self.tarea_id}' if self.tarea_id else '')
+        # Tareas de oportunidad
+        if t in ('tarea_opp_asignada', 'tarea_opp_comentario'):
+            if oid:
+                return f'/app/home/?open_opp={oid}'
+            return '/app/home/?tab=tareas'
+        # Actividades del calendario
+        if t in ('actividad_vencida', 'actividad_por_vencer'):
+            return '/app/home/?open_calendario=1'
+        # Oportunidades
+        if t in ('mencion', 'comentario_oportunidad', 'oportunidad_mensaje') and oid:
+            return f'/app/home/?open_opp={oid}'
+        # Equipo
+        if t in ('muro_post', 'muro_mencion', 'respuesta'):
+            return '/app/home/?open_muro=1'
+        if t == 'mensaje_grupo':
+            return '/app/home/?open_grupo=1'
+        # Proyectos
+        if t in ('proyecto_agregado', 'programacion_proyecto') and self.proyecto_id:
+            return f'/app/home/?tab=proyectos&open_proyecto={self.proyecto_id}'
+        # Prospectos
+        if t == 'prospecto_asignado':
+            return '/app/home/?tab=prospectos'
+        # Certificaciones
+        if t in ('certificacion_por_vencer', 'certificacion_vencida'):
+            cert_id = self.certificacion_id if hasattr(self, 'certificacion_id') else None
+            if cert_id:
+                return f'/app/home/?tab=certificaciones&open_cert={cert_id}'
+            return '/app/home/?tab=certificaciones'
+        # Administrativas (no navegan — se expanden en el widget)
+        if t in ('rendimiento_bajo', 'solicitud_cambio_perfil'):
+            return '/app/home/?open_notificaciones=1'
+        # Sistema (info pura)
+        if t == 'sistema':
+            return '/app/home/'
+        # Fallback ultra-genérico
+        if oid:
+            return f'/app/home/?open_opp={oid}'
+        return '/app/home/'
 
 
 class Proyecto(models.Model):

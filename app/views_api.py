@@ -4,6 +4,8 @@
 
 import json
 import logging
+
+logger = logging.getLogger(__name__)
 import requests
 import mimetypes
 import os
@@ -435,7 +437,8 @@ def obtener_notificaciones_api(request):
                         crear_notificacion(user, 'actividad_por_vencer', 'Actividad por Vencer', f'La actividad "{t.titulo}" vence en menos de 10 minutos.', tarea_opp=t, oportunidad=t.oportunidad)
                         
         except Exception as ex_exp:
-            print(f"Error verificando vencimientos: {ex_exp}")
+            logger.exception('[notif] error verificando vencimientos para user=%s: %s',
+                             user.username, str(ex_exp))
         
         # Obtener notificaciones del usuario (últimas 50)
         notificaciones = Notificacion.objects.filter(
@@ -484,6 +487,11 @@ def obtener_notificaciones_api(request):
                 'proyecto_id': notif.proyecto_id,
                 'tarea_opp_id': notif.tarea_opp_id,
                 'oportunidad_id': notif.oportunidad_id,
+                # Campos agregados en Fase 2 hardening para que el JS pueda
+                # rutear los tipos prospecto_asignado y certificacion_*
+                # sin tener que adivinar.
+                'certificacion_id': notif.certificacion_id if hasattr(notif, 'certificacion_id') else None,
+                'prospecto_id': getattr(notif, 'prospecto_id', None),
                 'solicitud_perfil_data': {
                     'id': notif.solicitud_perfil.id,
                     'first_name': notif.solicitud_perfil.first_name,
