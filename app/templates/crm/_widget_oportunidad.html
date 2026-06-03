@@ -4106,6 +4106,9 @@ z-index 10300 — por encima del modal de tarea (10200).
     .hx-empty-title { font-size: 1rem; font-weight: 600; color: #1D1D1F; margin-bottom: 6px; }
     .hx-empty-desc { font-size: 0.86rem; line-height: 1.5; max-width: 380px; margin: 0 auto; }
     .hx-error { text-align: center; padding: 40px 24px; color: #DC2626; font-size: 0.9rem; }
+    .hx-action-mini { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; }
+    .hx-tl-item.hx-group .hx-tl-head:hover { background: #F9FAFB; border-radius: 8px; }
+    .hx-group-chev { flex-shrink: 0; }
     @media (max-width: 720px) {
         #widgetTareaHistorialPanel { width: 100vw; max-width: 100vw; }
     }
@@ -4177,6 +4180,12 @@ z-index 10300 — por encima del modal de tarea (10200).
         observador_remove:   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
         cerrada:             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>',
         reabierta:           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>',
+        cliente:             '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>',
+        oportunidad:         '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+        comentario_add:      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+        subtarea_add:        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>',
+        subtarea_complete:   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+        subtarea_remove:     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
     };
     var _TIPO_COLORS = {
         cerrada:             '#34C759',
@@ -4190,12 +4199,22 @@ z-index 10300 — por encima del modal de tarea (10200).
         observador_remove:   '#86868B',
         titulo:              '#1D1D1F',
         descripcion:         '#1D1D1F',
+        cliente:             '#AF52DE',
+        oportunidad:         '#0052D4',
+        comentario_add:      '#0052D4',
+        subtarea_add:        '#34C759',
+        subtarea_complete:   '#059669',
+        subtarea_remove:     '#86868B',
     };
 
     // URL del endpoint según contexto (woAbrirHistorialTarea o crmTaskAbrirHistorial).
     var _hxCurrentUrl = null;
     var _hxPollTimer = null;
-    var _hxLastSignature = null;  // hash simple de los items para detectar cambios y solo re-renderizar si cambió.
+    var _hxLastSignature = null;  // hash simple de items para evitar re-render innecesario.
+    var _hxStaleReads = 0;        // lecturas consecutivas sin cambios → controla back-off.
+    var _HX_BASE_INTERVAL = 8000; // polling base 8s
+    var _HX_SLOW_INTERVAL = 15000; // tras 3 lecturas sin cambios, baja a cada 15s
+    var _HX_STALE_THRESHOLD = 3;
 
     function _hxAbrirModal(url, subtitulo) {
         _hxCurrentUrl = url;
@@ -4206,19 +4225,26 @@ z-index 10300 — por encima del modal de tarea (10200).
         if (subtitle) subtitle.textContent = subtitulo || '';
         if (body) body.innerHTML = '<div style="text-align:center;padding:40px;color:#86868B;font-size:0.85rem;">Cargando…</div>';
         _hxLastSignature = null;
+        _hxStaleReads = 0;
         _hxFetchAndRender(true);
-        // Polling: refresca cada 3s mientras el drawer está abierto. Cubre el
-        // "sin recargar de inmediato" — cualquier cambio del mismo usuario u
-        // otro aparece en máximo 3 segundos.
-        if (_hxPollTimer) clearInterval(_hxPollTimer);
-        _hxPollTimer = setInterval(function () {
-            if (!overlay || !overlay.classList.contains('open')) {
-                clearInterval(_hxPollTimer);
+        _hxArmarPolling();
+    }
+
+    function _hxArmarPolling() {
+        if (_hxPollTimer) { clearTimeout(_hxPollTimer); _hxPollTimer = null; }
+        var overlay = document.getElementById('widgetTareaHistorial');
+        if (!overlay || !overlay.classList.contains('open')) return;
+        // Cuando >= _HX_STALE_THRESHOLD lecturas seguidas sin cambios → intervalo lento.
+        var ms = _hxStaleReads >= _HX_STALE_THRESHOLD ? _HX_SLOW_INTERVAL : _HX_BASE_INTERVAL;
+        _hxPollTimer = setTimeout(function tick() {
+            var ov = document.getElementById('widgetTareaHistorial');
+            if (!ov || !ov.classList.contains('open')) {
                 _hxPollTimer = null;
                 return;
             }
             _hxFetchAndRender(false);
-        }, 3000);
+            _hxArmarPolling();
+        }, ms);
     }
 
     function _hxFetchAndRender(showLoading) {
@@ -4238,7 +4264,12 @@ z-index 10300 — por encima del modal de tarea (10200).
                 var sig = items.length + '|' + (items[0] ? items[0].id + '@' + items[0].fecha : '');
                 if (sig !== _hxLastSignature) {
                     _hxLastSignature = sig;
+                    _hxStaleReads = 0;
                     _renderHistorial(items);
+                    // Si estábamos en modo lento, volver a rápido inmediatamente.
+                    _hxArmarPolling();
+                } else {
+                    _hxStaleReads++;
                 }
             })
             .catch(function () {
@@ -4247,6 +4278,37 @@ z-index 10300 — por encima del modal de tarea (10200).
                     if (body) body.innerHTML = '<div class="hx-error">Error de red.</div>';
                 }
             });
+    }
+
+    // ── Refresh inmediato disparado por acciones del propio usuario ──
+    // Después de cada fetch a /api/tarea(-opp)?/<id>/... con método modificador
+    // (POST/PUT/PATCH/DELETE), si el drawer está abierto refrescamos al instante.
+    // Usamos un wrapper de window.fetch para cubrir TODOS los endpoints sin
+    // tener que tocar cada llamada.
+    window.hxRefreshIfOpen = function () {
+        var overlay = document.getElementById('widgetTareaHistorial');
+        if (!overlay || !overlay.classList.contains('open')) return;
+        // Pequeño defer para que el backend ya escribió la fila de historial.
+        setTimeout(function () { _hxFetchAndRender(false); }, 250);
+    };
+
+    if (!window._hxFetchWrapped) {
+        window._hxFetchWrapped = true;
+        var _origFetch = window.fetch;
+        window.fetch = function (input, init) {
+            var url = (typeof input === 'string') ? input : (input && input.url) || '';
+            var method = (init && init.method) || (typeof input !== 'string' && input && input.method) || 'GET';
+            var p = _origFetch.apply(this, arguments);
+            try {
+                if (/\/api\/tarea(?:-opp)?\/\d+/.test(url) && /^(POST|PUT|PATCH|DELETE)$/i.test(method)
+                    && !/\/historial\/?(?:$|\?)/.test(url)) {
+                    p.then(function (resp) {
+                        if (resp && resp.ok) window.hxRefreshIfOpen();
+                    }).catch(function () {});
+                }
+            } catch (e) { /* noop */ }
+            return p;
+        };
     }
 
     window.woAbrirHistorialTarea = function () {
@@ -4285,6 +4347,145 @@ z-index 10300 — por encima del modal de tarea (10200).
         return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
     }
 
+    function _renderItemBody(it) {
+        var detalle = '';
+        if (it.tipo === 'titulo' || it.tipo === 'descripcion' || it.tipo === 'fecha_limite'
+            || it.tipo === 'responsable' || it.tipo === 'prioridad'
+            || it.tipo === 'cliente' || it.tipo === 'oportunidad') {
+            var antes = it.valor_anterior || '— vacío —';
+            var despues = it.valor_nuevo || '— vacío —';
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-old">' + _esc(antes) + '</span>'
+                + '<span class="hx-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>'
+                + '<span class="hx-chip hx-chip-new">' + _esc(despues) + '</span>'
+                + '</div>';
+        } else if (it.tipo === 'participante_add' || it.tipo === 'observador_add') {
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-add">+ ' + _esc(it.valor_nuevo) + '</span></div>';
+        } else if (it.tipo === 'participante_remove' || it.tipo === 'observador_remove') {
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-rem">– ' + _esc(it.valor_anterior) + '</span></div>';
+        } else if (it.tipo === 'subtarea_add' || it.tipo === 'subtarea_complete') {
+            // Mensaje simple con el nombre de la subtarea.
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip" style="background:#F2F2F7;color:#1D1D1F;">' + _esc(it.valor_nuevo) + '</span></div>';
+        } else if (it.tipo === 'subtarea_remove') {
+            detalle = '<div class="hx-detail-row">'
+                + '<span class="hx-chip hx-chip-rem">' + _esc(it.valor_anterior) + '</span></div>';
+        }
+        // comentario_add no muestra detalle adicional (la acción ya lo dice todo).
+        if (it.motivo) {
+            detalle += '<div class="hx-motivo">'
+                + '<div class="hx-motivo-label">Motivo</div>'
+                + '<div class="hx-motivo-text">' + _esc(it.motivo) + '</div>'
+                + '</div>';
+        }
+        return detalle;
+    }
+
+    function _renderSingleItem(it) {
+        var icon = _TIPO_ICONS[it.tipo] || '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>';
+        var color = _TIPO_COLORS[it.tipo] || '#86868B';
+        var autorNombre = it.autor ? it.autor.nombre : 'Sistema';
+        var avatarInner = it.autor && it.autor.avatar_url
+            ? '<img src="' + _esc(it.autor.avatar_url) + '" alt="">'
+            : _esc(it.autor ? (it.autor.iniciales || '?') : 'S');
+        var html = '<div class="hx-tl-item">';
+        html += '<div class="hx-tl-dot" style="background:' + color + ';color:' + color + ';">' + icon + '</div>';
+        html += '<div class="hx-tl-head">';
+        html += '<div class="hx-tl-avatar" style="background:' + color + ';">' + avatarInner + '</div>';
+        html += '<span class="hx-tl-autor">' + _esc(autorNombre) + '</span>';
+        html += '<span class="hx-tl-action" style="background:' + _hexToRgba(color, 0.10) + ';color:' + color + ';">' + icon + _esc(it.tipo_label) + '</span>';
+        html += '<span class="hx-tl-time" title="' + _fmtAbsoluta(it.fecha) + '">' + _fmtRelative(it.fecha) + '</span>';
+        html += '</div>';
+        html += _renderItemBody(it);
+        html += '</div>';
+        return html;
+    }
+
+    function _groupItems(items) {
+        // Agrupa items consecutivos del mismo autor.id cuando la diferencia
+        // de tiempo entre items adyacentes (más reciente vs más viejo) es
+        // <= 60 segundos. La lista viene ordenada DESC por fecha.
+        var groups = [];
+        var WINDOW_MS = 60 * 1000;
+        items.forEach(function (it) {
+            var last = groups[groups.length - 1];
+            if (last && it.autor && last.autorId === (it.autor.id || null)) {
+                var lastDate = new Date(last.items[last.items.length - 1].fecha).getTime();
+                var thisDate = new Date(it.fecha).getTime();
+                if (Math.abs(lastDate - thisDate) <= WINDOW_MS) {
+                    last.items.push(it);
+                    return;
+                }
+            }
+            groups.push({
+                autorId: it.autor ? it.autor.id : null,
+                items: [it],
+            });
+        });
+        return groups;
+    }
+
+    function _renderGroup(g, gIdx) {
+        if (g.items.length === 1) {
+            return _renderSingleItem(g.items[0]);
+        }
+        // Grupo con N items: card compacto, click expande.
+        var head = g.items[0]; // el más reciente
+        var autorNombre = head.autor ? head.autor.nombre : 'Sistema';
+        var avatarInner = head.autor && head.autor.avatar_url
+            ? '<img src="' + _esc(head.autor.avatar_url) + '" alt="">'
+            : _esc(head.autor ? (head.autor.iniciales || '?') : 'S');
+        var color = '#0052D4'; // color neutro del grupo
+        var iconGroup = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>';
+        var groupId = 'hxGroup_' + gIdx;
+        // Conteo de tipos únicos para el resumen.
+        var tipoCount = {};
+        g.items.forEach(function (it) { tipoCount[it.tipo] = (tipoCount[it.tipo] || 0) + 1; });
+        var chipsTipos = Object.keys(tipoCount).slice(0, 4).map(function (t) {
+            var c = _TIPO_COLORS[t] || '#86868B';
+            return '<span class="hx-action-mini" style="background:' + _hexToRgba(c, 0.10) + ';color:' + c + ';">' + (_TIPO_ICONS[t] || '') + '</span>';
+        }).join('');
+
+        var html = '<div class="hx-tl-item hx-group">';
+        html += '<div class="hx-tl-dot" style="background:' + color + ';color:' + color + ';">' + iconGroup + '</div>';
+        html += '<div class="hx-tl-head" onclick="hxToggleGroup(\'' + groupId + '\')" style="cursor:pointer;">';
+        html += '<div class="hx-tl-avatar" style="background:' + color + ';">' + avatarInner + '</div>';
+        html += '<span class="hx-tl-autor">' + _esc(autorNombre) + '</span>';
+        html += '<span class="hx-tl-action" style="background:' + _hexToRgba(color, 0.10) + ';color:' + color + ';">'
+              + iconGroup + 'hizo ' + g.items.length + ' cambios</span>';
+        html += chipsTipos;
+        html += '<span class="hx-tl-time" title="' + _fmtAbsoluta(head.fecha) + '">' + _fmtRelative(head.fecha) + '</span>';
+        html += '<svg class="hx-group-chev" id="' + groupId + '_chev" width="14" height="14" fill="none" stroke="#86868B" stroke-width="2.4" viewBox="0 0 24 24" style="margin-left:6px;transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>';
+        html += '</div>';
+        // Lista expandida (oculta por default).
+        html += '<div class="hx-group-children" id="' + groupId + '" style="display:none;margin-top:10px;padding-left:8px;border-left:2px solid #E5E5EA;">';
+        g.items.forEach(function (sub) {
+            var icon = _TIPO_ICONS[sub.tipo] || '';
+            var subColor = _TIPO_COLORS[sub.tipo] || '#86868B';
+            html += '<div style="margin-bottom:10px;">';
+            html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:' + subColor + ';margin-bottom:3px;">';
+            html += icon + ' ' + _esc(sub.tipo_label);
+            html += '<span style="margin-left:auto;color:#9CA3AF;" title="' + _fmtAbsoluta(sub.fecha) + '">' + _fmtRelative(sub.fecha) + '</span>';
+            html += '</div>';
+            html += _renderItemBody(sub);
+            html += '</div>';
+        });
+        html += '</div>';
+        html += '</div>';
+        return html;
+    }
+
+    window.hxToggleGroup = function (gid) {
+        var el = document.getElementById(gid);
+        var chev = document.getElementById(gid + '_chev');
+        if (!el) return;
+        var isOpen = el.style.display !== 'none';
+        el.style.display = isOpen ? 'none' : 'block';
+        if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
+    };
+
     function _renderHistorial(items) {
         var body = document.getElementById('woHistorialBody');
         if (!body) return;
@@ -4296,56 +4497,10 @@ z-index 10300 — por encima del modal de tarea (10200).
                 + '</div>';
             return;
         }
+        var groups = _groupItems(items);
         var html = '<div style="position:relative;">';
         html += '<div class="hx-tl-line"></div>';
-        items.forEach(function (it) {
-            var icon = _TIPO_ICONS[it.tipo] || '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>';
-            var color = _TIPO_COLORS[it.tipo] || '#86868B';
-            var autorNombre = it.autor ? it.autor.nombre : 'Sistema';
-
-            // Avatar
-            var avatarStyle = 'background:' + color + ';';
-            var avatarInner = it.autor && it.autor.avatar_url
-                ? '<img src="' + _esc(it.autor.avatar_url) + '" alt="">'
-                : _esc(it.autor ? (it.autor.iniciales || '?') : 'S');
-
-            // Detalle según tipo
-            var detalle = '';
-            if (it.tipo === 'titulo' || it.tipo === 'descripcion' || it.tipo === 'fecha_limite' || it.tipo === 'responsable' || it.tipo === 'prioridad' || it.tipo === 'cliente' || it.tipo === 'oportunidad') {
-                var antes = it.valor_anterior || '— vacío —';
-                var despues = it.valor_nuevo || '— vacío —';
-                detalle = '<div class="hx-detail-row">'
-                    + '<span class="hx-chip hx-chip-old">' + _esc(antes) + '</span>'
-                    + '<span class="hx-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>'
-                    + '<span class="hx-chip hx-chip-new">' + _esc(despues) + '</span>'
-                    + '</div>';
-            } else if (it.tipo === 'participante_add' || it.tipo === 'observador_add') {
-                detalle = '<div class="hx-detail-row">'
-                    + '<span class="hx-chip hx-chip-add">+ ' + _esc(it.valor_nuevo) + '</span>'
-                    + '</div>';
-            } else if (it.tipo === 'participante_remove' || it.tipo === 'observador_remove') {
-                detalle = '<div class="hx-detail-row">'
-                    + '<span class="hx-chip hx-chip-rem">– ' + _esc(it.valor_anterior) + '</span>'
-                    + '</div>';
-            }
-            if (it.motivo) {
-                detalle += '<div class="hx-motivo">'
-                    + '<div class="hx-motivo-label">Motivo</div>'
-                    + '<div class="hx-motivo-text">' + _esc(it.motivo) + '</div>'
-                    + '</div>';
-            }
-
-            html += '<div class="hx-tl-item">';
-            html += '<div class="hx-tl-dot" style="background:' + color + ';color:' + color + ';">' + icon + '</div>';
-            html += '<div class="hx-tl-head">';
-            html += '<div class="hx-tl-avatar" style="' + avatarStyle + '">' + avatarInner + '</div>';
-            html += '<span class="hx-tl-autor">' + _esc(autorNombre) + '</span>';
-            html += '<span class="hx-tl-action" style="background:' + _hexToRgba(color, 0.10) + ';color:' + color + ';">' + icon + _esc(it.tipo_label) + '</span>';
-            html += '<span class="hx-tl-time" title="' + _fmtAbsoluta(it.fecha) + '">' + _fmtRelative(it.fecha) + '</span>';
-            html += '</div>';
-            html += detalle;
-            html += '</div>';
-        });
+        groups.forEach(function (g, idx) { html += _renderGroup(g, idx); });
         html += '</div>';
         body.innerHTML = html;
     }

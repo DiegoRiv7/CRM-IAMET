@@ -3046,6 +3046,10 @@ class TareaHistorial(models.Model):
         ('reabierta', 'Reabrió la tarea'),
         ('cliente', 'Cambió el cliente'),
         ('oportunidad', 'Cambió la oportunidad'),
+        ('comentario_add', 'Agregó un comentario'),
+        ('subtarea_add', 'Agregó una subtarea'),
+        ('subtarea_complete', 'Completó una subtarea'),
+        ('subtarea_remove', 'Quitó una subtarea'),
     ]
 
     tarea = models.ForeignKey(

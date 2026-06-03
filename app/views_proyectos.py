@@ -1927,7 +1927,16 @@ def api_crear_tarea(request):
             oportunidad=oportunidad,
             tarea_padre=tarea_padre,
         )
-        
+
+        # Si es subtarea (tiene tarea_padre), loguear en el historial
+        # de la tarea padre para que se vea allí como "Agregó una subtarea".
+        if tarea_padre:
+            _log_tarea_historial(
+                tarea_padre, request.user, 'subtarea_add',
+                nuevo=tarea.titulo,
+                extra={'subtarea_id': tarea.id},
+            )
+
         # Agregar participantes y observadores
         from django.contrib.auth.models import User as AuthUser
         for pid in participantes_ids:
@@ -3640,6 +3649,13 @@ def api_completar_tarea(request, tarea_id):
         # Historial: tarea completada.
         _log_tarea_historial(tarea, request.user, 'cerrada',
                              anterior='pendiente', nuevo='completada')
+        # Si es subtarea, también loguear en la padre.
+        if tarea.tarea_padre_id:
+            _log_tarea_historial(
+                tarea.tarea_padre, request.user, 'subtarea_complete',
+                nuevo=tarea.titulo,
+                extra={'subtarea_id': tarea.id},
+            )
 
         # Notificar al creador si es distinto al que completó
         if tarea.creado_por and tarea.creado_por != request.user:
@@ -5479,6 +5495,14 @@ def api_eliminar_tarea(request, tarea_id):
     es_creador = (tarea.creado_por_id == request.user.id)
     if not (es_creador or request.user.is_superuser):
         return JsonResponse({'error': 'Solo el creador puede eliminar esta tarea'}, status=403)
+    # Si es subtarea, loguear el remove en la padre ANTES del delete (después
+    # del delete la tarea_padre sigue válida porque es FK CASCADE inversa).
+    if tarea.tarea_padre_id:
+        _log_tarea_historial(
+            tarea.tarea_padre, request.user, 'subtarea_remove',
+            anterior=tarea.titulo,
+            extra={'subtarea_id': tarea.id},
+        )
     tarea.delete()
     return JsonResponse({'success': True})
 
