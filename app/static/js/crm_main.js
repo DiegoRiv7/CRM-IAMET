@@ -745,6 +745,8 @@
                 if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(oppId);
                 detalleOverlay.classList.add('active');
                 detalleOverlay.classList.remove('closing');
+                // URL sync: ?open_opp=<id>. Permite share-links y reopen al recargar.
+                if (window.crmWidgetUrl) window.crmWidgetUrl.set('opp', oppId);
                 // Elevar z-index si hay otro widget abierto debajo
                 var _needsElevation = false;
                 ['widgetCalendarioMaster','widgetClienteOportunidades','widgetProyectoDetalle'].forEach(function(wid){
@@ -1558,6 +1560,8 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
+                // URL sync: quitar el ?open_opp= al cerrar.
+                if (window.crmWidgetUrl) window.crmWidgetUrl.clear('opp');
                 // Restaurar z-index del overlay
                 detalleOverlay.classList.remove('z-elevated', 'z-elevated-top');
                 _crmTableDirty = false;

@@ -103,14 +103,14 @@ fallan, fallan todos los demás flujos.
 - [ ] **1.F** Animación standard: 200ms fade overlay + 280ms slide del card. Aplicada a todos.
 
   *Premium — lo que diferencia "funcional" de "nivel Notion/Linear"*
-- [ ] **1.G** Patrón `crm:data-changed` event system. Bus de eventos global. Listas críticas se suscriben y refrescan sin reload.
-- [ ] **1.H** Breadcrumb visual en widgets de nivel 2 y 3 ("Oportunidad X › Tarea Y"). Click en breadcrumb cierra el sub-widget.
-- [ ] **1.I** Escape handler consistente: cierra el widget de nivel más alto abierto, no toda la pila. Acumulando Esc se sale capa por capa.
-- [ ] **1.J** URL syncing: `?open_opp=123`, `?open_tarea=456`. Pegar el link reabre el mismo widget.
+- [x] **1.G** Patrón `crm:data-changed` event system (`widget_data_bus.js`). Bus de eventos global con wrapper de fetch que auto-emite. Consumidores conectados con debounce: kanban opps, lista de tareas, calendario, Programa de Obra.
+- [x] **1.H** Breadcrumb visual en widgets de nivel 2 y 3. Chip flotante "Padre › Hijo" arriba del centro. Click en padre cierra todos los hijos.
+- [x] **1.I** Escape consistente: cierra solo el widget de top del stack. Respeta foco en inputs (deja el Esc nativo del input primero). Capture:true para correr antes que listeners locales.
+- [x] **1.J** URL syncing: helper `crmWidgetUrl.set/clear/read`. Bootstrap automático con `?open_opp=N` (widgetDetalle) y `?open_proyecto=N` (existente). Más widgets reciben URL sync en Fase 5.
 
   *Validación*
-- [ ] **1.K** Smoke test manual del flujo más usado (kanban → opp → tarea → cotizar → cerrar todo).
-- [ ] **1.L** Smoke test del peor caso anidado (opp → tarea → confirmar eliminar → toast verde encima).
+- [ ] **1.K** Smoke test manual del flujo más usado (kanban → opp → tarea → cotizar → cerrar todo). TÚ.
+- [ ] **1.L** Smoke test del peor caso anidado (opp → tarea → confirmar eliminar → toast verde encima). TÚ.
 
 ---
 
