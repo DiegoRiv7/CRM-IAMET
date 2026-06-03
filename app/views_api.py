@@ -395,51 +395,15 @@ def obtener_notificaciones_api(request):
     try:
         from .models import Notificacion
         user = request.user
-        
-        # --- Lógica para verificar tareas a punto de vencer y vencidas ---
-        try:
-            from django.utils import timezone
-            from django.db.models import Q
-            from datetime import timedelta
-            from .models import Tarea, TareaOportunidad
-            now = timezone.now()
-            umbral_por_vencer = now + timedelta(minutes=10)
-            
-            # Buscar tareas generales del usuario
-            mis_tareas = Tarea.objects.filter(
-                Q(asignado_a=user) | Q(participantes=user),
-                estado__in=['pendiente', 'iniciada', 'en_progreso'],
-                fecha_limite__isnull=False
-            ).distinct()
-            
-            for t in mis_tareas:
-                if t.fecha_limite < now:
-                    # Vencida
-                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='tarea_vencida', tarea_id=t.id).exists():
-                        crear_notificacion(user, 'tarea_vencida', 'Tarea Vencida', f'La tarea "{t.titulo}" ha vencido.', tarea_id=t.id)
-                elif t.fecha_limite <= umbral_por_vencer:
-                    # Por vencer
-                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='tarea_por_vencer', tarea_id=t.id).exists():
-                        crear_notificacion(user, 'tarea_por_vencer', 'Tarea por Vencer', f'La tarea "{t.titulo}" vence en menos de 10 minutos.', tarea_id=t.id)
 
-            # Idem para tareas de oportunidad
-            mis_tareas_opp = TareaOportunidad.objects.filter(
-                responsable=user,
-                estado__in=['pendiente', 'en_progreso'],
-                fecha_limite__isnull=False
-            )
-            for t in mis_tareas_opp:
-                if t.fecha_limite < now:
-                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='actividad_vencida', tarea_opp=t).exists():
-                        crear_notificacion(user, 'actividad_vencida', 'Actividad Vencida', f'La actividad "{t.titulo}" ha vencido.', tarea_opp=t, oportunidad=t.oportunidad)
-                elif t.fecha_limite <= umbral_por_vencer:
-                    if not Notificacion.objects.filter(usuario_destinatario=user, tipo='actividad_por_vencer', tarea_opp=t).exists():
-                        crear_notificacion(user, 'actividad_por_vencer', 'Actividad por Vencer', f'La actividad "{t.titulo}" vence en menos de 10 minutos.', tarea_opp=t, oportunidad=t.oportunidad)
-                        
-        except Exception as ex_exp:
-            logger.exception('[notif] error verificando vencimientos para user=%s: %s',
-                             user.username, str(ex_exp))
-        
+        # Hardening Fase 2.F (2026-06-03): el cálculo de vencimientos
+        # ANTES vivía aquí y se re-ejecutaba en CADA poll del endpoint
+        # (cada 3s × N usuarios = miles de queries innecesarias por día,
+        # más race conditions con .exists()+.create() que generaban
+        # duplicados). Ahora corre como comando aparte vía cron:
+        #     python manage.py procesar_vencimientos
+        # El endpoint solo LEE notificaciones existentes.
+
         # Obtener notificaciones del usuario (últimas 50)
         notificaciones = Notificacion.objects.filter(
             usuario_destinatario=user

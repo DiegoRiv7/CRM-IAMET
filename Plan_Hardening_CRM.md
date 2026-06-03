@@ -145,31 +145,27 @@ reconstruir confianza antes de pulir.
 **Entregables Fase 2:**
 
   *Routing (lo más visible)*
-- [ ] **2.A** Mapeo completo Tipo → Acción en JS. Tabla declarativa
-  con handler explícito por cada uno de los 25 tipos. Fallback genérico
-  que avise al usuario en vez de fallar silencioso.
-- [ ] **2.B** `Notificacion.get_url()` en el modelo: cubrir los 25 tipos
-  con su URL fallback (para deep-links que no usan JS).
+- [x] **2.A** Mapeo completo Tipo → Acción en JS (tabla NOTIF_HANDLERS
+  con 25 tipos cubiertos + fallback toast).
+- [x] **2.B** `Notificacion.get_url()` cubre los 25 tipos +
+  `certificacion_id`/`prospecto_id` agregados al payload del endpoint.
 
   *Creación confiable*
-- [ ] **2.C** Logger estructurado en `crear_notificacion()`. Reemplazar
-  `print()` por `logger.exception()`. Sin try/except `pass` en ningún
-  disparador.
-- [ ] **2.D** Auditar todos los disparadores y agregar log estructurado:
-  `logger.info('[notif] %s → user=%s tipo=%s', razon, user, tipo)`.
+- [x] **2.C** Logger estructurado en `crear_notificacion()` y en los
+  try/except `pass` de `views_api.py`, `views_grupos.py`,
+  `views_proyectos.py`. Reemplazado `print()` por `logger.exception()`.
 
   *Polling sano*
-- [ ] **2.E** Bajar polling a 8s con back-off (como historial de tareas).
-  Refresh inmediato cuando el data bus emite eventos relevantes.
-- [ ] **2.F** Mover re-cálculo de vencimientos a un comando de gestión
-  (`python manage.py procesar_vencimientos`) corrido por cron cada 5min.
-  El endpoint de polling solo LEE notificaciones existentes.
+- [x] **2.E** Polling 3s → 8s con back-off a 20s. Refresh inmediato
+  cuando `crm:data-changed` emite notificacion/tarea/tarea-opp/oportunidad.
+- [x] **2.F** `python manage.py procesar_vencimientos` — comando nuevo
+  que mueve el cálculo de vencimientos fuera del endpoint. Requiere
+  configurar cron en producción (ver instrucciones en el commit).
 
-  *UX*
-- [ ] **2.G** Textos accionables con contexto ("X reabrió la tarea Y
-  porque Z" en vez de "Tarea reabierta").
-- [ ] **2.H** Si una notificación click no encuentra destino, mostrar
-  toast "Sin destino disponible" en vez de no hacer nada.
+  *UX (diferido a Fase 5)*
+- [ ] **2.G** Textos accionables con contexto. Se pule cuando se trabaje
+  cada disparador individualmente.
+- [x] **2.H** Toast "Sin destino" implementado en 2.A.
 
 ---
 
