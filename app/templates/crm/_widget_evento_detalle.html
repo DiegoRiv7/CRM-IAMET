@@ -1,5 +1,5 @@
 {# ═══ WIDGET: EVENTO — Detalle (simple) ═══ #}
-<div class="widget-overlay" id="widgetEventoDetalle" style="z-index:10450;">
+<div class="widget-overlay" id="widgetEventoDetalle" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde lista de eventos -->
     <div class="widget-card widget-card-lg">
         <div id="evtDetLoading" style="text-align:center;padding:4rem;color:#86868B;">
             <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2">
@@ -116,7 +116,7 @@
 </div>
 
 {# ─── Mini-widget de confirmación de eliminación ─── #}
-<div class="widget-overlay" id="widgetEventoConfirmDelete" style="z-index:10550;">
+<div class="widget-overlay" id="widgetEventoConfirmDelete" style="z-index:var(--z-widget-3);"><!-- Nivel 3: confirmación eliminar evento -->
     <div class="evt-del-confirm-card">
         <div class="evt-del-confirm-icon">
             <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>

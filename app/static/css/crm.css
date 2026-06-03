@@ -67,6 +67,36 @@
         --accent-crm: #007AFF;
         --island-bg: rgba(255, 255, 255, 0.45);
         --island-border: rgba(255, 255, 255, 0.65);
+
+        /* ── Sistema oficial de z-index (Fase 1 — hardening 2026-06-03) ──
+           Cualquier widget DEBE usar uno de estos tokens. No inventar
+           números mágicos. Reglas:
+             --z-widget       Widget de nivel 1 — abierto desde el contenido
+                              principal (kanban, listas, etc.). Solo uno
+                              abierto a la vez.
+             --z-widget-sub   Widget de nivel 2 — abierto DESDE otro widget
+                              (ej. desde Detalle Opp se abre Ver Tarea).
+             --z-widget-3     Widget de nivel 3 — confirmaciones / diálogos
+                              cortos encima de los anteriores.
+             --z-toast        Mensajes de feedback (✓ guardado, ✗ error).
+                              SIEMPRE arriba de cualquier widget.
+             --z-tooltip-top  Tooltips críticos sobre toasts (raro). */
+        --z-base: 0;
+        --z-sidebar: 100;
+        --z-header: 200;
+        --z-tooltip: 500;
+        --z-widget: 1000;
+        --z-widget-sub: 2000;
+        --z-widget-3: 3000;
+        --z-toast: 9000;
+        --z-tooltip-top: 9500;
+    }
+
+    /* Default para overlays — si un widget no especifica z-index, queda
+       en nivel 1. Cualquier widget que necesite nivel 2 o 3 sobreescribe
+       con su token correspondiente. */
+    .widget-overlay {
+        z-index: var(--z-widget);
     }
 
     body {
@@ -4582,14 +4612,15 @@
     .wn-btn--submit:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,122,255,0.3); }
     .wn-btn--submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
-    /* Success toast */
+    /* Success toast — SIEMPRE arriba de cualquier widget (z-index --z-toast).
+       Antes estaba en 10001 que quedaba detrás de la mayoría de widgets. */
     .widget-toast {
         display: none;
         position: fixed;
         bottom: 30px;
         left: 50%;
         transform: translateX(-50%) translateY(20px);
-        z-index: 10001;
+        z-index: var(--z-toast);
         padding: 12px 24px;
         border-radius: 14px;
         font-size: 0.88rem;

@@ -848,7 +848,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      SUB-DIALOG: CREAR PROYECTO
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoCrear" style="z-index:10200;display:none;">
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoCrear" style="z-index:var(--z-widget-sub);display:none;">
   <div class="proy-dialog-card">
     <div class="proy-dialog-header">
       <h3>Nuevo Proyecto</h3>
@@ -898,7 +898,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      SUB-DIALOG: CREAR PARTIDA
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoPartida" style="z-index:10200;display:none;">
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoPartida" style="z-index:var(--z-widget-sub);display:none;">
   <div class="proy-dialog-card">
     <div class="proy-dialog-header">
       <h3>Nueva Partida</h3>
@@ -979,7 +979,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      SUB-DIALOG: CREAR OC
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoOC" style="z-index:10200;display:none;">
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoOC" style="z-index:var(--z-widget-sub);display:none;">
   <div class="proy-dialog-card">
     <div class="proy-dialog-header">
       <h3>Nueva Orden de Compra</h3>
@@ -1025,7 +1025,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      SUB-DIALOG: CREAR TAREA
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoTarea" style="z-index:10200;display:none;">
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoTarea" style="z-index:var(--z-widget-sub);display:none;">
   <div class="proy-dialog-card">
     <div class="proy-dialog-header">
       <h3>Nueva Tarea</h3>
@@ -1072,7 +1072,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      SUB-DIALOG: IMPORTAR EXCEL
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoExcel" style="z-index:10200;display:none;"
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoExcel" style="z-index:var(--z-widget-sub);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card">
     <div class="proy-dialog-header">
@@ -1101,7 +1101,7 @@
 </div>
 
 <!-- ═══ SUB-DIALOG: ELIMINAR PROYECTO ═══ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoEliminar" style="z-index:10300;display:none;"
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoEliminar" style="z-index:var(--z-widget-3);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card" style="max-width:480px;">
     <div class="proy-dialog-header">
@@ -1137,7 +1137,7 @@
      Conectado al modelo GanttActividad. Reemplaza el modal anterior
      que apuntaba al calendario semanal (ProgramacionActividad).
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoActividad" style="z-index:10200;display:none;"
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoActividad" style="z-index:var(--z-widget-sub);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card" style="max-width:640px;">
     <div class="proy-dialog-header">
@@ -1271,7 +1271,7 @@
 
 
 <!-- Modal de advertencia de conflicto de recurso -->
-<div class="widget-overlay" id="proyDialogoConflictoRecurso" style="z-index:10300;display:none;"
+<div class="widget-overlay" id="proyDialogoConflictoRecurso" style="z-index:var(--z-widget-3);display:none;"
      onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card" style="max-width:520px;">
     <div class="proy-dialog-header">
@@ -1308,7 +1308,7 @@
      SUB-DIALOG: CREAR / EDITAR FASE (PROGRAMA DE OBRA — GANTT)
      Conectado al modelo GanttFase.
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoFase" style="z-index:10200;display:none;"
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoFase" style="z-index:var(--z-widget-sub);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card" style="max-width:520px;">
     <div class="proy-dialog-header">
@@ -1359,7 +1359,7 @@
      WIDGET: DETALLE DE ACTIVIDAD (PROGRAMA DE OBRA)
      Estilo igual al widget de actividades de oportunidades
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay" id="proyDialogoActDetalle" style="z-index:10250;display:none;"
+<div class="widget-overlay" id="proyDialogoActDetalle" style="z-index:var(--z-widget-sub);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="widget-card widget-card-md"
       style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
@@ -1447,7 +1447,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      SUB-DIALOG: COMPLETAR CON EVIDENCIA
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoEvidencia" style="z-index:10300;display:none;"
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoEvidencia" style="z-index:var(--z-widget-3);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card" style="max-width:560px;">
     <div class="proy-dialog-header">
@@ -1491,7 +1491,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      DIALOG: AGREGAR / EDITAR GASTO OPERATIVO
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay proy-dialog-overlay" id="proyDialogoGasto" style="z-index:10300;display:none;"
+<div class="widget-overlay proy-dialog-overlay" id="proyDialogoGasto" style="z-index:var(--z-widget-3);display:none;"
     onclick="if(event.target===this)this.style.display='none';">
   <div class="proy-dialog-card" style="max-width:520px;">
     <div class="proy-dialog-header">
@@ -1548,7 +1548,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      DIALOG: CONFIRMACION (reemplaza confirm() del navegador)
      ══════════════════════════════════════════════════════════════════ -->
-<div class="widget-overlay" id="proyConfirmDialog" style="z-index:10400;display:none;align-items:center;justify-content:center;"
+<div class="widget-overlay" id="proyConfirmDialog" style="z-index:var(--z-widget-3);display:none;align-items:center;justify-content:center;"
     onclick="if(event.target===this)proyConfirmCancelar();">
   <div style="background:#fff;border-radius:14px;max-width:380px;width:90%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
     <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">

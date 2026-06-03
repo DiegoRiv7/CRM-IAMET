@@ -1,5 +1,5 @@
 <!-- ═══ CALENDARIO: widget overlay (default) o sección de página (cuando tab=calendario) ═══ -->
-<div class="widget-overlay{% if tab_activo == 'calendario' %} is-page-mode{% endif %}" id="widgetCalendarioMaster" style="z-index:10100;{% if tab_activo == 'calendario' %}display:flex;position:static;background:transparent;align-items:stretch;justify-content:stretch;{% else %}display:none;{% endif %}">
+<div class="widget-overlay{% if tab_activo == 'calendario' %} is-page-mode{% endif %}" id="widgetCalendarioMaster" style="z-index:var(--z-widget);{% if tab_activo == 'calendario' %}display:flex;position:static;background:transparent;align-items:stretch;justify-content:stretch;{% else %}display:none;{% endif %}"><!-- Nivel 1: calendario standalone (o page-mode) -->
     <div class="cal-card{% if tab_activo == 'calendario' %} cal-card--page{% endif %}" style="{% if tab_activo == 'calendario' %}width:100%;height:auto;min-height:100vh;max-width:none;background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;{% else %}width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(15,23,42,0.06);{% endif %}display:flex;flex-direction:column;overflow:hidden;">
         <style>
             /* ─── FullCalendar base ─── */
@@ -466,7 +466,7 @@
 </div>
 
 <!-- ═══ WIDGET: CREAR ACTIVIDAD GLOBAL (composer canvas) ═══ -->
-<div class="widget-overlay" id="widgetGlobalCrearActividad" style="z-index:10200; display:none;" data-wact-prefix="cal">
+<div class="widget-overlay" id="widgetGlobalCrearActividad" style="z-index:var(--z-widget-sub); display:none;" data-wact-prefix="cal"><!-- Nivel 2: abierto desde widgetCalendarioMaster -->
     <div class="wact-shell">
         <header class="wact-header">
             <div class="wact-breadcrumb">
@@ -593,7 +593,7 @@
 </div>
 
 <!-- ═══ WIDGET: CONFIRMAR ELIMINACIÓN ═══ -->
-<div class="widget-overlay" id="widgetConfirmarEliminar" style="z-index:10500; display:none;"><!-- CAPA 5 -->
+<div class="widget-overlay" id="widgetConfirmarEliminar" style="z-index:var(--z-widget-3); display:none;"><!-- Nivel 3: confirmación eliminar actividad calendario -->
     <div style="background:#fff; border-radius:16px; padding:2rem; width:380px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:1.25rem;">
         <div style="display:flex; align-items:center; gap:0.75rem;">
             <div style="width:40px;height:40px;border-radius:50%;background:#FFF0F0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">

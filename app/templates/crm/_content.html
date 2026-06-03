@@ -2140,7 +2140,7 @@
 {% include "crm/_widget_levantamiento_consulta.html" %}
 
 <!-- ═══ OVERLAY: DESGLOSE FACTURACION ═══ -->
-<div class="widget-overlay" id="widgetDesgloseFacturacion" style="z-index:10200;display:none;" onclick="if(event.target===this)this.style.display='none';">
+<div class="widget-overlay" id="widgetDesgloseFacturacion" style="z-index:var(--z-widget-sub);display:none;" onclick="if(event.target===this)this.style.display='none';"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="wco-card" style="width:min(680px,94vw);max-height:85vh;">
         <div class="wco-header">
             <div style="display:flex;align-items:center;gap:10px;">
