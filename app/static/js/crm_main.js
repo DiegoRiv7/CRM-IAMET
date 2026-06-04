@@ -90,11 +90,19 @@
                 e.stopPropagation();
                 vfDrop.classList.toggle('show');
             });
-            document.addEventListener('click', function (e) {
-                if (!vfDrop.contains(e.target) && e.target !== vfBtn) {
-                    vfDrop.classList.remove('show');
-                }
-            });
+            // Guard: el listener al document NO debe duplicarse en cada
+            // turbo:load. Una sola instalación por sesión basta.
+            if (!window._crmVfDropdownWired) {
+                window._crmVfDropdownWired = true;
+                document.addEventListener('click', function (e) {
+                    var drop = document.getElementById('vendorFilterDropdown');
+                    var btn = document.getElementById('vendorFilterBtn');
+                    if (!drop) return;
+                    if (!drop.contains(e.target) && e.target !== btn) {
+                        drop.classList.remove('show');
+                    }
+                });
+            }
         }
 
         function updateVendorFilterLabel() {
@@ -124,6 +132,13 @@
 
         // Toggle pin oportunidad — delegación en document (capture phase)
         // Funciona en cards, list rows, y cards clonadas dentro del kanban.
+        // Guard: el listener al document SE INSTALARÍA OTRA VEZ en cada
+        // turbo:load. Como document persiste entre navegaciones, basta
+        // con una sola instalación por sesión.
+        if (window._crmPinHandlerWired) {
+            // Skip — ya registrado en sesión actual
+        } else {
+            window._crmPinHandlerWired = true;
         document.addEventListener('click', function(e) {
             var pin = e.target.closest && e.target.closest('.crm-pin');
             if (!pin) return;
@@ -270,6 +285,8 @@
 
         // Delegated capture-phase handler: botón de cotizar en la vista lista
         // Capture phase + stopImmediatePropagation para ganar contra el onclick del row.
+        // Guard: dentro del mismo bloque _crmPinHandlerWired (este listener
+        // tampoco debe duplicarse en cada turbo:load).
         document.addEventListener('click', function(e){
             var qbtn = e.target.closest && e.target.closest('.crm-list-quote');
             if (qbtn) {
@@ -281,6 +298,7 @@
                 return false;
             }
         }, true);
+        }  // fin guard _crmPinHandlerWired
 
         // Helpers orden: ancladas → vencidas (más días arriba) → resto
         function isOverdueNode(n) { return n && n.dataset && n.dataset.vencida === '1'; }
@@ -6604,6 +6622,15 @@
         // se acerca a vencer — el usuario ve el color moverse sin recargar.
         // Pausa cuando el tab no es visible (evita polling fantasma que satura
         // browser y servidor cuando el usuario deja la pestaña abierta horas).
+        //
+        // GUARD GLOBAL: este callback se re-dispara en cada turbo:load (al
+        // navegar entre tabs). Sin el guard, cada navegación crearía OTRO
+        // setInterval encima de los anteriores → N timers en paralelo
+        // golpeando el server cada minuto. El guard se chequea para los
+        // DOS intervals (gradient + tareas poll).
+        if (!window._crmGlobalIntervalsWired) {
+            window._crmGlobalIntervalsWired = true;
+
         setInterval(function() {
             if (document.hidden) return;
             if (window._crmTareasMode) return; // solo en vista CRM
@@ -6643,14 +6670,23 @@
                 }).catch(function(){});
         }, 15000);
 
+        }  // fin guard _crmGlobalIntervalsWired
+
         // Al volver a la pestaña, refresca de inmediato (sin esperar el próximo
         // tick del interval) para que el usuario no vea datos viejos.
+        // Este listener al document NO está dentro del guard porque podría
+        // ser útil re-engancharlo si el body fue reemplazado; pero document
+        // es el mismo elemento entre navs — listener se duplicaría. Lo
+        // movemos al mismo guard para que solo se instale una vez.
+        if (!window._crmVisibilityWired) {
+            window._crmVisibilityWired = true;
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) return;
             if (window._crmTareasMode && typeof renderTareasCRM === 'function') {
                 _tareasPollHash = null; // forzar repintado al siguiente poll
             }
         });
+        }  // fin guard _crmVisibilityWired
 
         function _actualizarDropdownResponsables(tareas) {
             var list = document.getElementById('tareasFilterResponsableList');

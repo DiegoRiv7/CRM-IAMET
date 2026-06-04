@@ -71,36 +71,69 @@
         }
     });
 
-    // ── turbo:before-render: limpiar stack del widget manager ──
+    // ── turbo:before-render: limpiar stack + ocultar contenido para
+    // evitar flash visible cuando cached → fresh ──
     // Antes de que Turbo reemplace el body, sacamos del stack las
     // referencias a widgets que están a punto de ser destruidos. Sin
-    // esto, el breadcrumb del widget manager muestra widgets fantasma
-    // como "Calendario Master" o "Detalle" aunque no haya nada abierto.
+    // esto, el breadcrumb del widget manager muestra widgets fantasma.
+    //
+    // También ponemos el main content en opacity:0 durante el reemplazo
+    // — se restaura en turbo:load. Esto OCULTA el flash perceptible del
+    // cached → fresh render. El sidebar/topbar siguen visibles (no son
+    // .main-content) para que el cambio se sienta como una sola
+    // transición suave y no como un parpadeo brusco.
     document.addEventListener('turbo:before-render', function () {
         try {
             if (window.crmWidgetStack && typeof window.crmWidgetStack.cleanup === 'function') {
                 window.crmWidgetStack.cleanup();
+            }
+            var mc = document.querySelector('.main-content, .container.main-content');
+            if (mc) {
+                mc.style.transition = 'opacity 100ms ease';
+                mc.style.opacity = '0';
             }
         } catch (e) {
             console.error('[turbo_bootstrap] error en before-render:', e);
         }
     });
 
-    // ── turbo:load: cleanup del stack TAMBIÉN tras render ──
-    // Por si el observer detectó nuevos widgets visibles antes de tiempo.
+    // ── turbo:load: cleanup del stack + restaurar opacity ──
     document.addEventListener('turbo:load', function () {
         try {
             if (window.crmWidgetStack && typeof window.crmWidgetStack.cleanup === 'function') {
                 window.crmWidgetStack.cleanup();
             }
+            // requestAnimationFrame para que el browser pinte el nuevo body
+            // antes de iniciar la transición de opacidad (evita FOUC).
+            requestAnimationFrame(function () {
+                var mc = document.querySelector('.main-content, .container.main-content');
+                if (mc) {
+                    mc.style.opacity = '1';
+                }
+            });
         } catch (e) { /* noop */ }
     });
 
     // ── turbo:fetch-request-error: logging de errores ──
     // Si Turbo no puede hacer fetch (servidor caído, timeout, etc.),
     // logueamos para diagnóstico en vez de fallar en silencio.
+    //
+    // AbortError es ESPERADO cuando el usuario navega antes de que el
+    // prefetch on hover termine. Lo silenciamos para no ensuciar consola.
     document.addEventListener('turbo:fetch-request-error', function (event) {
+        var err = event && event.detail && event.detail.error;
+        if (err && err.name === 'AbortError') return;
         console.error('[turbo_bootstrap] fetch error:', event.detail);
+    });
+
+    // Silenciar también el unhandled promise rejection de AbortError de
+    // fetches sin AbortController (no son críticos — el browser canceló
+    // el request porque el usuario navegó).
+    window.addEventListener('unhandledrejection', function (event) {
+        var err = event && event.reason;
+        if (err && err.name === 'AbortError') {
+            event.preventDefault();
+        }
     });
 
     // ── turbo:load: ya lo maneja crm_ready.js ──
