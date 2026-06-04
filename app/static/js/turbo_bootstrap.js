@@ -71,6 +71,31 @@
         }
     });
 
+    // ── turbo:before-render: limpiar stack del widget manager ──
+    // Antes de que Turbo reemplace el body, sacamos del stack las
+    // referencias a widgets que están a punto de ser destruidos. Sin
+    // esto, el breadcrumb del widget manager muestra widgets fantasma
+    // como "Calendario Master" o "Detalle" aunque no haya nada abierto.
+    document.addEventListener('turbo:before-render', function () {
+        try {
+            if (window.crmWidgetStack && typeof window.crmWidgetStack.cleanup === 'function') {
+                window.crmWidgetStack.cleanup();
+            }
+        } catch (e) {
+            console.error('[turbo_bootstrap] error en before-render:', e);
+        }
+    });
+
+    // ── turbo:load: cleanup del stack TAMBIÉN tras render ──
+    // Por si el observer detectó nuevos widgets visibles antes de tiempo.
+    document.addEventListener('turbo:load', function () {
+        try {
+            if (window.crmWidgetStack && typeof window.crmWidgetStack.cleanup === 'function') {
+                window.crmWidgetStack.cleanup();
+            }
+        } catch (e) { /* noop */ }
+    });
+
     // ── turbo:fetch-request-error: logging de errores ──
     // Si Turbo no puede hacer fetch (servidor caído, timeout, etc.),
     // logueamos para diagnóstico en vez de fallar en silencio.

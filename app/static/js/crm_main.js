@@ -3371,9 +3371,24 @@
         var _ckChartInstances = {};
 
         function ckDestroyChart(id) {
+            // 1) Destruir referencia local si existe
             if (_ckChartInstances[id]) {
-                _ckChartInstances[id].destroy();
+                try { _ckChartInstances[id].destroy(); } catch (e) { /* noop */ }
                 delete _ckChartInstances[id];
+            }
+            // 2) Bajo Turbo Drive el body se reemplaza al navegar y el
+            //    canvas <canvas id="ckChart..."> es un elemento NUEVO. Chart.js
+            //    puede tener registrado un chart "huérfano" asociado al canvas
+            //    viejo o al nuevo. Chart.getChart() detecta cualquier chart
+            //    asociado al canvas con ese id y lo destruye antes de crear
+            //    uno nuevo. Sin esto: "Canvas is already in use. Chart with
+            //    ID '0' must be destroyed before the canvas can be reused".
+            var canvas = document.getElementById(id);
+            if (canvas && typeof Chart !== 'undefined' && Chart.getChart) {
+                var existing = Chart.getChart(canvas);
+                if (existing) {
+                    try { existing.destroy(); } catch (e) { /* noop */ }
+                }
             }
         }
 

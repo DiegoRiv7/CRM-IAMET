@@ -124,6 +124,15 @@
         // (ej. widget agregado al DOM después de page load).
         push: pushIfNeeded,
         remove: removeFromStack,
+        // Limpia el stack de referencias a widgets que ya no están en el
+        // DOM (ej. body reemplazado por Turbo Drive). El observer rootObs
+        // detecta inserciones pero NO sabe limpiar el stack — esta API se
+        // llama desde turbo:before-cache para evitar que widgets viejos
+        // queden "fantasma" en el stack y aparezcan en el breadcrumb.
+        cleanup: function () {
+            stack = stack.filter(function (el) { return document.body.contains(el); });
+            applyZIndexes();
+        },
     };
 
     // ── Bootstrap ──
