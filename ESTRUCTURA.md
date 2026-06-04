@@ -60,8 +60,7 @@ Gesti-n-de-ventas/
 │       │   ├── _scripts_mail.html    # <script src crm_mail.js>
 │       │   ├── _scripts_muro.html    # Config vars + <script src crm_muro.js>
 │       │   ├── _scripts_ingeniero.html  # Config vars + <script src crm_ingeniero.js>
-│       │   ├── _topbar_ingeniero.html
-│       │   └── _actividades_board.html
+│       │   └── _topbar_ingeniero.html
 │       ├── crear_cotizacion.html
 │       ├── cotizacion_pdf_template.html
 │       ├── iamet_cotizacion_pdf_template.html
@@ -73,12 +72,15 @@ Gesti-n-de-ventas/
 ├── scripts/
 │   └── backup.sh               # Script backup BD (diario) + media (domingos)
 ├── staticfiles/                # Generado por collectstatic — NO commitear
+├── docs/                       # Specs técnicas y prompts (no operacional)
+├── reports/                    # Histórico de reportes de avances (Reporte_Avances_*.html)
 ├── Dockerfile
 ├── docker-entrypoint.sh
 ├── docker-compose.yml          # Producción
 ├── docker-compose.pruebas.yml  # Pruebas
-├── WORKFLOW.md
-├── SESION_STATUS.md
+├── WORKFLOW.md                 # Flujo de deploy (vigente, no modificar)
+├── Plan_Hardening_CRM.md       # Plan de hardening (Fases 1-3 cerradas)
+├── Plan_Fase6_Refactor.md      # Plan de refactor + handoff actual
 └── ESTRUCTURA.md               # Este archivo
 ```
 
@@ -235,3 +237,99 @@ STORAGES = {"staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestSta
 - Al agregar CSS/JS nuevo: siempre en `app/static/`, luego `collectstatic` en servidor
 - Los archivos media de Bitrix están en volumen Docker `crm-iamet_media_files` en producción
 - Backup media: domingos vía `~/backup_crm.sh` (script corregido para usar volumen Docker)
+
+---
+
+## Estado del proyecto y plan de handoff (2026-06)
+
+**Contexto crítico:** Diego (desarrollador único) sale de IAMET en ~julio 2026.
+El plan de handoff está documentado en `Plan_Fase6_Refactor.md` con orden,
+estimados y razones. Lee ese archivo para el contexto completo.
+
+### ✅ Hardening (Fases 1-3) — COMPLETADAS (Plan_Hardening_CRM.md)
+
+Trabajo realizado entre mayo-junio 2026, ya en producción en `pruebas`:
+
+- **Fase 1 — Widgets**: stack manager dinámico de z-index, helper toast() global,
+  event bus `crm:data-changed`, breadcrumb en widgets anidados, Escape consistente,
+  URL syncing con `crmWidgetUrl.set/clear/read`.
+  Archivos clave: `widget_stack.js`, `widget_toast.js`, `widget_data_bus.js`,
+  `widget_url_sync.js`.
+- **Fase 2 — Notificaciones**: 25 tipos con routing completo, `Notificacion.get_url()`
+  cubre todo, logger estructurado, polling con back-off 8s→20s, comando cron
+  `python manage.py procesar_vencimientos` reemplaza el cálculo inline.
+- **Fase 3 — Búsqueda**: índices DB en 9 campos del Spotlight, AbortController,
+  skeleton loading, modal con teclado completo (auto-select first, Tab cambia
+  scope, Home/End, footer con atajos).
+
+### 🔄 Fase 6 — Refactor + Handoff (EN CURSO)
+
+Plan completo en `Plan_Fase6_Refactor.md`. Resumen de sub-fases:
+
+| Sub-fase | Estado | Trabajo |
+|---|---|---|
+| 1.A — Quitar peso muerto | ✅ Hecho (commit `283a6065`) | Borrar legacy, mover reports, imágenes, docs |
+| 1.B — Reorganizar carpetas | ✅ Hecho | `reports/`, `docs/`, `app/static/images/`, `.gitignore` |
+| 2.A-D — Boy Scout terreno | ⏳ Próximo | Crear `*_v2.js`, `views_v2/` vacíos + headers LEGACY |
+| 3.A-D — Optimizar usuarios | Pendiente | Cleanups críticos + `crm_main.js` Turbo-tolerant + Turbo activo |
+| 4.A-E — Documentar handoff | Pendiente | SERVIDOR.md, README, DEPLOYMENT, ARQUITECTURA, DECISIONES |
+
+### 🏕️ Boy Scout Rule (a partir de 2026-06-04)
+
+**Política nueva**: los archivos legacy gigantes NO se modifican. Todo código
+nuevo va a archivos `*_v2.js` (frontend) o `views_v2/*.py` (backend) con
+header documentado.
+
+Archivos marcados como LEGACY (a partir de Fase 2):
+- `app/static/js/crm_main.js` (~11,500 líneas)
+- `app/static/js/crm_proyectos.js` (~7,400 líneas)
+- `app/static/js/crm_levantamiento.js` (~4,500 líneas)
+- `app/views_proyectos.py` (~6,861 líneas)
+- `app/views_iamet.py` (~6,568 líneas)
+- `app/views_crm.py` (~6,488 líneas)
+
+**Solo se modifican** para bugs críticos de producción o cambios menores que
+no ameritan crear módulo nuevo. Cualquier feature nueva → archivo nuevo.
+
+### 🧹 Limpieza realizada en Fase 1 (qué se borró del repo)
+
+Eliminados (verificado con grep contra todo el código antes):
+- `SESION_STATUS.md` — notas de sesión del 20 marzo, info desactualizada
+- `nginx.conf` raíz — template legacy, configs reales viven en `/etc/nginx/sites-enabled/`
+- `app/templates/crm/_actividades_board.html` — tablero legacy en `{% comment %}`
+- `app/static/js/test_script.js` — nunca cargado en HTML
+- 4 management commands one-shot: `crear_admin_compras`, `crear_proyecto_prueba`,
+  `poblar_etapas_pipeline`, `seed_compras_demo`
+
+**Conservados a propósito**: `seed_compras.py` y `seed_tecnicos.py` (referenciados
+desde JS como sugerencia de comando al admin cuando catálogos están vacíos).
+
+Movidos:
+- 41 archivos `Reporte_Avances_*.html` → `reports/`
+- 3 imágenes raíz → `app/static/images/`
+- `prompt-claude-design-levantamiento.md` → `docs/`
+
+### 📊 Modelos paralelos (decisión pendiente — Fase 4.E)
+
+Hay dos pares de modelos paralelos sin decisión oficial:
+
+- **`Proyecto` (legacy) vs `ProyectoIAMET` (moderno)** — el moderno tiene
+  estructura financiera (partidas, OCs, facturas). `views_iamet.py` aliasa
+  `ProyectoIAMET` como `Proyecto` (línea 16: `from .models import ProyectoIAMET as Proyecto`).
+  Decisión documentada en `Plan_Fase6_Refactor.md` Fase 4.E: marcar legacy
+  como `DEPRECATED` en código (sin eliminar — riesgoso).
+
+- **`Tarea` (proyectos ingeniería) vs `TareaOportunidad` (CRM-centric)** —
+  ambas vigentes con propósitos distintos. Mantener ambas, documentar
+  diferencia en `DECISIONES.md`.
+
+### 📚 Documentos clave del proyecto (orden recomendado de lectura)
+
+1. **`ESTRUCTURA.md`** (este archivo) — mapa general
+2. **`WORKFLOW.md`** — flujo de deploy, comandos, ramas, backups (NO modificar)
+3. **`Plan_Fase6_Refactor.md`** — plan activo de handoff
+4. **`Plan_Hardening_CRM.md`** — historia de Fases 1-3 (hechas)
+5. **`ACTUALIZACIONES.md`** — changelog histórico (parcialmente desactualizado)
+6. **`MEJORAS_DEUDA_TECNICA.md`** — áreas de mejora identificadas
+7. **`Optimizacion_Performance_Pendiente.md`** — pendientes de performance
+8. **`Especificacion_Tecnica_Programa_de_Obra.md`** — spec del módulo Gantt
