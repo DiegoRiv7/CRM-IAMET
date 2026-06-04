@@ -4373,8 +4373,10 @@ class ProyectoPartida(models.Model):
     ]
     categoria = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='equipamiento')
     descripcion = models.TextField()
-    marca = models.CharField(max_length=255, blank=True, default='')
-    numero_parte = models.CharField(max_length=255, blank=True, default='')
+    marca = models.CharField(max_length=255, blank=True, default='', db_index=True)
+    # db_index para búsquedas por número de parte en el catálogo de
+    # partidas (es uno de los campos más buscados en views_iamet.py).
+    numero_parte = models.CharField(max_length=255, blank=True, default='', db_index=True)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     cantidad_pendiente = models.DecimalField(max_digits=10, decimal_places=2)
     precio_lista = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))

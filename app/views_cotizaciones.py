@@ -29,6 +29,8 @@ from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
+
+logger = logging.getLogger(__name__)
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date, timedelta
@@ -191,7 +193,6 @@ def get_user_clients_api(request):
         if is_supervisor(request.user):
             # Si el usuario es supervisor, obtener todos los clientes
             clients_queryset = Cliente.objects.all()
-            print("DEBUG: Usuario es supervisor. Obteniendo todos los clientes.")
         else:
             # Si no es supervisor, obtener solo los clientes asignados a este usuario
             # Usamos 'asignado_a' que es el campo correcto en tu modelo Cliente
@@ -335,22 +336,18 @@ def view_cotizacion_pdf(request, cotizacion_id):
     }
 
     try:
-        print(f"DEBUG: Attempting to render template: {template_name}")
         html_string = render_to_string(template_name, context)
-        print("DEBUG: Template rendered to HTML string.")
     except Exception as e:
-        print(f"ERROR: Error rendering template '{template_name}': {e}")
+        logger.exception("Error rendering template '%s' for PDF generation", template_name)
         return HttpResponse(f"Internal server error rendering PDF: {e}", status=500)
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="{pdf_name}.pdf"'
 
     try:
-        print("DEBUG: Attempting to generate PDF with WeasyPrint.")
         HTML(string=html_string).write_pdf(response)
-        print("DEBUG: PDF generated successfully.")
     except Exception as e:
-        print(f"ERROR: Error generating PDF with WeasyPrint: {e}")
+        logger.exception("Error generating PDF with WeasyPrint")
         return HttpResponse(f"Internal server error generating PDF: {e}", status=500)
         
     return response
@@ -466,11 +463,6 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             print(f"DEBUG: crear_cotizacion_view - Cliente con ID Django {cliente_id} no encontrado")
             messages.error(request, f"El cliente con ID {cliente_id} no fue encontrado.")
             return redirect('crear_cotizacion')
-
-    if cliente_seleccionado:
-        print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado: {cliente_seleccionado.nombre_empresa}")
-    else:
-        print("DEBUG: crear_cotizacion_view - No hay cliente seleccionado.")
 
     if request.method == 'POST':
         try:

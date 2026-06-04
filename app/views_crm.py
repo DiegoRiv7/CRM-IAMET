@@ -3616,7 +3616,6 @@ def oportunidades_por_cliente(request, cliente_id):
     if is_supervisor(request.user):
         cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id) # No filtrar por usuario
         oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado) # Todas las oportunidades del cliente
-        print("DEBUG: Supervisor viendo oportunidades de cliente.")
     else:
         _visible_ids = get_usuarios_visibles_ids(request.user)
         _visible_q = get_clientes_visibles_q(request.user)
@@ -4053,23 +4052,6 @@ def exportar_oportunidades_csv(request):
         'PÓLIZA': 13, 'CISCO': 14
     }
         
-    # Debug: Print item count and sample data
-    items_count = items.count()
-    print(f"DEBUG: Total items found: {items_count}")
-    
-    if items_count > 0:
-        # Show first item fields for debugging
-        first_item = items.first()
-        print(f"DEBUG: First item fields:")
-        print(f"  - oportunidad: '{first_item.oportunidad}'")
-        print(f"  - mes_cierre: '{first_item.mes_cierre}' (type: {type(first_item.mes_cierre)})")
-        print(f"  - probabilidad_cierre: {first_item.probabilidad_cierre} (type: {type(first_item.probabilidad_cierre)})")
-        print(f"  - monto: {first_item.monto}")
-        print(f"  - area: '{first_item.area}'")
-        print(f"  - producto: '{first_item.producto}'")
-    else:
-        print("DEBUG: No items found - check your filters!")
-    
     # Write data rows (start at row 6 for Excel since we now have metadata headers)
     row = 6
     for item in items:
