@@ -212,10 +212,7 @@
         </div>
     </div>
 
-    {# base.js es idempotente (IIFE con guard) y registra globals que viven #}
-    {# entre navegaciones. data-turbo-eval="false" evita re-evaluación bajo #}
-    {# Turbo — sus listeners ya están instalados desde la primera carga. #}
-    <script src="{% static 'js/base.js' %}?v=20260604-turbo-idempotent" data-turbo-eval="false"></script>
+    <script src="{% static 'js/base.js' %}?v=20260522-eng-proy-fix"></script>
 
     {% block extra_js %}{% endblock %}
 </body>
