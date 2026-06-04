@@ -86,6 +86,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestión Ventas">
 
+    {# crm_ready.js DEBE cargarse antes que CUALQUIER otro script (incluso
+       inline scripts dentro de includes). Está en el <head> para garantizar
+       el orden: define window.crmReady() que todos los demás scripts usan.
+       Es un archivo chico (~3 KB), no impacta el first paint. #}
+    <script src="{% static 'js/crm_ready.js' %}?v=20260604-fase6b-head"></script>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -204,10 +210,8 @@
         </div>
     </div>
 
-    {# crm_ready.js DEBE cargarse antes que cualquier otro script que use
-       window.crmReady(). Es no-op si Turbo no está activo (solo dispara
-       en DOMContentLoaded como un addEventListener normal). #}
-    <script src="{% static 'js/crm_ready.js' %}?v=20260604-fase6b"></script>
+    {# crm_ready.js se carga en el <head> (ver arriba) para garantizar
+       que window.crmReady() está disponible para TODO el resto del JS. #}
     <script src="{% static 'js/base.js' %}?v=20260522-eng-proy-fix"></script>
 
     {% block extra_js %}{% endblock %}
