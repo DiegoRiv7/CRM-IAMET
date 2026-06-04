@@ -227,7 +227,13 @@
     crm_ready.js se carga en el <head> (ver arriba) para garantizar
     que window.crmReady() está disponible para TODO el resto del JS.
     {% endcomment %}
-    <script src="{% static 'js/base.js' %}?v=20260522-eng-proy-fix"></script>
+    {% comment %}
+    base.js es idempotente (PART 1 en IIFE con guard) y registra globals
+    (window.ResponsiveUtils, window.openSpotlight, etc.) que viven entre
+    navegaciones. data-turbo-eval="false" evita re-evaluación bajo Turbo —
+    sus listeners ya están instalados desde la primera carga.
+    {% endcomment %}
+    <script src="{% static 'js/base.js' %}?v=20260604-iife" data-turbo-eval="false"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

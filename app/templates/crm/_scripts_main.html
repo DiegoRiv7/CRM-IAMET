@@ -15,11 +15,24 @@ var _CRM_CONFIG = {
     etapasPipeline:   {{ etapas_pipeline_json|safe }}
 };
 </script>
-<script src="{% static 'js/widget_stack.js' %}?v=20260603-widget-stack-v1"></script>
-<script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
-<script src="{% static 'js/widget_data_bus.js' %}?v=20260603-data-bus-v1"></script>
-<script src="{% static 'js/widget_url_sync.js' %}?v=20260603-url-sync-v1"></script>
-<script src="{% static 'js/crm_main.js' %}?v=20260603-franja-modificada"></script>
+{% comment %}
+data-turbo-eval="false" en scripts que registran globals + listeners.
+Sin esto, Turbo re-evaluaría estos scripts en cada navegación SPA
+(reemplazo de body) → SyntaxError de redeclaración (let/const) y
+listeners duplicados a window/document. Sus globals (window.toast,
+window.crmDataBus, etc.) persisten entre navegaciones desde la
+primera carga. Los inits de wireup se re-disparan vía window.crmReady()
+en cada turbo:load.
+
+data-turbo-track="reload" en crm_main.js: si Turbo navega a una página
+donde NO está crm_main.js (no debería pasar hoy, pero por seguridad),
+forzar full reload al volver al CRM evita estados parciales raros.
+{% endcomment %}
+<script src="{% static 'js/widget_stack.js' %}?v=20260603-widget-stack-v1" data-turbo-eval="false"></script>
+<script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global" data-turbo-eval="false"></script>
+<script src="{% static 'js/widget_data_bus.js' %}?v=20260603-data-bus-v1" data-turbo-eval="false"></script>
+<script src="{% static 'js/widget_url_sync.js' %}?v=20260603-url-sync-v1" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_main.js' %}?v=20260603-franja-modificada" data-turbo-track="reload" data-turbo-eval="false"></script>
 <script>
 /* Contador workspace: # real de filas (excluye Ganado/Perdido/Pagado) */
 (function(){

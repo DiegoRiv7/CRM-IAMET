@@ -116,15 +116,21 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% include "crm/_scripts_main.html" %}
-<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260528-kill-verif"></script>
+{% comment %}
+data-turbo-eval="false" en TODOS los scripts JS del CRM: registran
+globals + listeners que viven entre navegaciones SPA. Sin esto, Turbo
+los re-evaluaría en cada turbo:load → listeners duplicados, fetchs
+dobles, posibles SyntaxErrors.
+{% endcomment %}
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260528-kill-verif" data-turbo-eval="false"></script>
 {% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
-<script src="{% static 'js/crm_proyectos.js' %}?v=20260602-fix-topbar-persist"></script>
-<script src="{% static 'js/programa_obra.js' %}?v=20260602-fix-tab-refetch"></script>
-<script src="{% static 'js/gantt_programa_obra.js' %}?v=20260508-revert-gantt"></script>
-<script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss"></script>
-<script src="{% static 'js/crm_levantamiento.js' %}?v=20260507-vendor-compact"></script>
+<script src="{% static 'js/crm_proyectos.js' %}?v=20260602-fix-topbar-persist" data-turbo-eval="false"></script>
+<script src="{% static 'js/programa_obra.js' %}?v=20260602-fix-tab-refetch" data-turbo-eval="false"></script>
+<script src="{% static 'js/gantt_programa_obra.js' %}?v=20260508-revert-gantt" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_levantamiento.js' %}?v=20260507-vendor-compact" data-turbo-eval="false"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
@@ -132,11 +138,11 @@
 <script>
     var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
 </script>
-<script src="{% static 'js/crm_asistente.js' %}?v=20260521-cal-chat"></script>
-<script src="{% static 'js/crm_asistente_oportunidades.js' %}?v=20260520-prosp-resp"></script>
-<script src="{% static 'js/crm_asistente_calendario.js' %}?v=20260521-cal-chat"></script>
-<script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp"></script>
-<script src="{% static 'js/crm_prospectos_kanban.js' %}"></script>
-<script src="{% static 'js/crm_campanas.js' %}"></script>
+<script src="{% static 'js/crm_asistente.js' %}?v=20260521-cal-chat" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_asistente_oportunidades.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_asistente_calendario.js' %}?v=20260521-cal-chat" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_prospectos_kanban.js' %}" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_campanas.js' %}" data-turbo-eval="false"></script>
 
 {% endblock %}

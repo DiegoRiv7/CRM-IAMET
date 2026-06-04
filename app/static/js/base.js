@@ -1,30 +1,38 @@
 // ═══════════════════════════════════════════════
 // PART 1: RESPONSIVE UTILITIES
 // ═══════════════════════════════════════════════
-window.ResponsiveUtils = {
-    isMobile: () => window.innerWidth <= 768,
-    isTablet: () => window.innerWidth > 768 && window.innerWidth <= 1024,
-    isDesktop: () => window.innerWidth > 1024,
+// IIFE + guard idempotente. base.js vive en el <body> (después del HTML)
+// y Turbo Drive (cuando está activo en navegaciones SPA) re-evalúa los
+// scripts del body en cada turbo:load — con esto, `let resizeTimer` en
+// el top-level lanzaría SyntaxError de redeclaración Y el listener de
+// resize se duplicaría. El IIFE encapsula la variable; el guard
+// _crmResizeWired evita registrar el listener dos veces.
+(function () {
+    window.ResponsiveUtils = {
+        isMobile: function () { return window.innerWidth <= 768; },
+        isTablet: function () { return window.innerWidth > 768 && window.innerWidth <= 1024; },
+        isDesktop: function () { return window.innerWidth > 1024; },
+        updateBodyClasses: function () {
+            var body = document.body;
+            body.classList.remove('is-mobile', 'is-tablet', 'is-desktop');
+            if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
+            else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
+            else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
+        }
+    };
+    window.ResponsiveUtils.updateBodyClasses();
 
-    updateBodyClasses: () => {
-        const body = document.body;
-        body.classList.remove('is-mobile', 'is-tablet', 'is-desktop');
-
-        if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
-        else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
-        else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
+    if (!window._crmResizeWired) {
+        window._crmResizeWired = true;
+        var resizeTimer;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                window.ResponsiveUtils.updateBodyClasses();
+            }, 150);
+        });
     }
-};
-
-window.ResponsiveUtils.updateBodyClasses();
-
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        window.ResponsiveUtils.updateBodyClasses();
-    }, 150);
-});
+})();
 
 // ═══════════════════════════════════════════════
 // PART 2: SPOTLIGHT SEARCH + AI CHAT + KEYBOARD SHORTCUTS
