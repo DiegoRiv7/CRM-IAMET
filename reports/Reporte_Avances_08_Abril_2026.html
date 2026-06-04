@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 8 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 8 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy, enfocadas en el rediseno de la vista de oportunidades del CRM, la integracion completa de actividades en prospeccion con el calendario, la sincronizacion en tiempo real de actividades entre calendario y widgets, y automatizaciones de negocio.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">40</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Features Nuevas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">8</div>
+            <div class="stat-label">Archivos Modificados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Secciones Impactadas</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Presentacion Exitosa de Avances del CRM
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se realizo una <strong>reunion de presentacion</strong> donde se mostraron los avances de las ultimas 2 semanas de desarrollo en las secciones de <strong>Prospeccion, Clientes y Proyectos</strong>. Se demostro la nueva vista de oportunidades estilo tablero con tarjetas post-it, el sistema completo de actividades de prospeccion integrado con el calendario (color morado), la logica de no cerrar prospectos ni oportunidades sin actividad agendada, los KPIs inteligentes de proyectos y la reestructura del modulo de proyectos con programa de obra semanal. La presentacion fue exitosa y los cambios fueron aprobados para su implementacion en produccion.</p>
+    </div>
+
+    <h2>1. Rediseno Vista de Oportunidades del CRM</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Nueva Vista de Tarjetas Estilo Post-it</span>
+        <div class="update-desc">Se rediseno completamente la vista de oportunidades del CRM. La tabla de 14 columnas con marcas desglosadas se conserva como vista secundaria, y se creo una nueva vista principal de <strong>tarjetas estilo post-it</strong> en un tablero. Cada tarjeta muestra: titulo en azul, empresa (clickeable para ver oportunidades del cliente), bloques de valor total y marca, circulo de probabilidad de cierre, etapa, badge de pipeline (Runrate azul / Proyecto morado), y barra de actividad programada. Las tarjetas tienen <strong>rotaciones sutiles</strong> y al pasar el cursor se elevan con animacion, sombra profunda y se enderezan. Las oportunidades vencidas aparecen primero con franja roja; las de proyecto con franja morada y runrate con franja azul. Ganado/Perdido/Pagado se ocultan de esta vista. Un boton permite alternar entre la vista de tarjetas y la tabla clasica.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Filtros y Busqueda en Tiempo Real para Ambas Vistas</span>
+        <div class="update-desc">Los filtros del panel (cliente, area, etapa, tipo, producto, contacto) y el buscador ahora funcionan en <strong>ambas vistas</strong> (tarjetas y tabla) en tiempo real. Al escribir en el buscador, las tarjetas se filtran instantaneamente. El icono de filtros se cambio a sliders/deslizadores (universalmente reconocido como filtros). La preferencia de vista se guarda en localStorage.</div>
+    </div>
+
+    <h2>2. Actividades de Prospeccion Integradas al Calendario</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Formulario de Actividad Estilo Oportunidades</span>
+        <div class="update-desc">El formulario para agendar actividades en prospectos se rediseno para ser <strong>identico al de oportunidades</strong>: nombre de la actividad, fecha, hora inicio/fin, descripcion y busqueda de participantes con chips removibles. Las actividades creadas se registran automaticamente en el <strong>calendario con color morado</strong> (#8B5CF6). La fecha y hora se auto-rellenan con la fecha actual y la hora actual +1 hora.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">No Cerrar Prospecto ni Oportunidad sin Actividad</span>
+        <div class="update-desc">Se implemento la logica de que <strong>ni prospectos ni oportunidades pueden cerrarse</strong> sin tener al menos una actividad pendiente agendada. El boton X, click en overlay y tecla Escape verifican si tiene actividades pendientes (no completadas). Si no tiene, muestra warning "Falta agendar actividad". Al crear un prospecto nuevo, se abre automaticamente su widget para forzar la primera actividad. Si recarga la pagina, el widget se reabre hasta que agende. Esto garantiza seguimiento continuo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Widget de Actividad Morado en Calendario</span>
+        <div class="update-desc">Al hacer clic en "Ver Detalle" de una actividad morada en el calendario, se abre un <strong>widget identico al de oportunidades pero en morado</strong>: header con gradiente morado, titulo, fecha/hora, descripcion limpia (sin metadata interna), creador, estado, badge "Prospecto: nombre" clickeable que abre el widget del prospecto, y boton completar. El boton de completar funciona de inmediato.</div>
+    </div>
+
+    <h2>3. Sincronizacion en Tiempo Real</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Completar Actividad se Refleja Inmediatamente</span>
+        <div class="update-desc">Al completar una actividad desde <strong>cualquier punto</strong> (calendario, widget de oportunidad o widget de prospecto), todos los demas se actualizan de inmediato sin recargar la pagina: el calendario se refresca con <code>calGlobalRefetch()</code>, la seccion "ACTIVIDAD PROGRAMADA" del widget se recarga, la tarjeta card del CRM actualiza su barra de actividad a "Sin actividad programada", y la <code>TareaOportunidad</code> vinculada se marca como completada en el backend. Al completar desde el calendario, se abre el widget correspondiente (oportunidad o prospecto) para forzar una nueva actividad.</div>
+    </div>
+
+    <h2>4. Automatizaciones de Negocio</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vendido s/PO o c/PO: Probabilidad 100% y Cierre +2 Meses</span>
+        <div class="update-desc">Cuando una oportunidad pasa a etapa "Vendido s/PO" o "Vendido c/PO", automaticamente se establece la <strong>probabilidad de cierre en 100%</strong> y el <strong>mes de cierre 2 meses despues</strong> de la fecha actual. Aplica tanto al cambiar etapa manualmente como al avanzar por cadena reactiva de tareas automaticas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Creador de Tareas Automaticas = Vendedor</span>
+        <div class="update-desc">Las tareas creadas por automatizacion ahora tienen como <code>creado_por</code> al <strong>vendedor/responsable de la oportunidad</strong>, no al usuario que disparo la automatizacion (que antes era el primer usuario en orden alfabetico). Tambien se corrigio un error donde los campos <code>incluir_dueno_participante/observador</code> se habian perdido del modelo.</div>
+    </div>
+
+    <h2>5. Correcciones Criticas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Completar Tarea de Oportunidad (Error 500)</span>
+        <div class="update-desc">Se corrigio un error 500 al intentar completar tareas de oportunidad. El codigo de validacion de subtareas del modelo <code>Tarea</code> se habia aplicado erroneamente al modelo <code>TareaOportunidad</code> (que no tiene subtareas), causando un AttributeError en cada intento de completar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Pantalla "Proximamente" Eliminada</span>
+        <div class="update-desc">Se elimino el bloque fallback "Proximamente" que aparecia cuando los usuarios cambiaban el filtro de mes o seleccionaban un vendedor. El selector de tab activo en el JS buscaba una clase CSS incorrecta, causando que el parametro tab se perdiera al recargar.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

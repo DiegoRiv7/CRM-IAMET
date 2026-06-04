@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 13 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 13 de Mayo, 2026</p>
+            <p>Periodo: 13 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se lanzo la <strong>nueva seccion de Clientes</strong> &mdash; una vista completa para ver, en un solo lugar, a quien le vendemos, que marcas le hemos colocado y como vienen las prospecciones. Tambien se construyeron desde cero los modulos de <strong>Certificaciones</strong> y <strong>Cursos</strong> dentro del area de Marketing.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Modulos nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Vista 360° del cliente</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Marketing digitalizado</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Archivos en papel</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Nueva Seccion de Clientes
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Desde el Dashboard ahora hay una pestaña <strong>&ldquo;Clientes&rdquo;</strong> con una tabla limpia donde se ve <strong>quien es cliente de IAMET, que marcas tiene contratadas y los indicadores clave</strong> (cuanto se le ha vendido, cuantos proyectos, etc). Al dar click en un cliente, se abre una ficha con todas sus <strong>prospecciones</strong> &mdash; permite filtrar por periodo (mes, trimestre, año) y entrar directo a la prospeccion con un click. Tambien hay un modo <strong>&ldquo;Solo Prospectos&rdquo;</strong> para revisar los clientes potenciales que aun no cierran. Estetica tipo iPadOS, vidrio esmerilado y tarjetas suaves.</p>
+    </div>
+
+    <h2>1. Seccion Clientes &mdash; Vista 360°</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabla Cliente x Marca con Indicadores</span>
+        <div class="update-desc">Una sola tabla muestra a <strong>todos los clientes y las marcas que tienen contratadas</strong>, con sus numeros clave de un vistazo. Ideal para revisar el portafolio completo sin tener que entrar uno por uno.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Ficha del Cliente con sus Prospecciones</span>
+        <div class="update-desc">Al hacer click en un cliente se abre su ficha con <strong>el historial de prospecciones</strong>. Cada prospeccion se puede abrir con un click para ver el detalle completo. Es como tener el expediente del cliente siempre a la mano.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtro por Periodo</span>
+        <div class="update-desc">Dentro de la ficha del cliente hay un <strong>selector de periodo</strong> (mes, trimestre, año, etc) para revisar solo lo de un rango especifico. El periodo elegido se muestra arriba en una pildora, igual que en el Dashboard.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modo &ldquo;Solo Prospectos&rdquo;</span>
+        <div class="update-desc">Un boton cambia la vista para mostrar <strong>unicamente clientes potenciales</strong> (que aun no compran). Misma tabla, misma forma de operar &mdash; pero enfocado en el embudo de venta.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Diseño Profesional Estilo iPadOS</span>
+        <div class="update-desc">Toda la seccion usa <strong>cards suaves, vidrio esmerilado y bordes redondeados</strong>. Se siente como una app moderna de Apple, no como un sistema interno.</div>
+    </div>
+
+    <h2>2. Certificaciones &mdash; Nuevo Modulo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Catalogo Digital de Certificaciones</span>
+        <div class="update-desc">Marketing ahora tiene su propio modulo de <strong>Certificaciones digitales</strong>: se suben los archivos (PDF o imagen) y quedan organizados en una <strong>vista tipo galeria de pared</strong> &mdash; como ver los diplomas colgados, pero en pantalla. Reemplaza tener todo en folders dispersos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Detalle como Diploma Digital</span>
+        <div class="update-desc">Al abrir una certificacion se ve <strong>la imagen del diploma a tamaño completo</strong>, una ficha al lado con los datos (emisor, fecha, vencimiento) y comentarios del equipo. Mucho mas profesional que verlos en bruto.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Avisos Automaticos de Vencimiento</span>
+        <div class="update-desc">El sistema <strong>avisa solo cuando una certificacion esta por vencer</strong>. Ya no depende de que alguien lleve un Excel aparte. Mas confiable, menos riesgo de operar con certificaciones caducas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Subir Archivos Arrastrando</span>
+        <div class="update-desc">Para registrar una nueva certificacion basta con <strong>arrastrar el archivo a la pantalla</strong>. Sin formularios largos.</div>
+    </div>
+
+    <h2>3. Cursos &mdash; Nuevo Modulo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modulo de Cursos Conectado a Certificaciones</span>
+        <div class="update-desc">Marketing tambien tiene ahora un modulo de <strong>Cursos</strong> donde se registran las capacitaciones del personal. <strong>Cada curso puede ligarse a la certificacion que otorga</strong>, asi queda claro que curso lleva a que certificacion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Agendar Sesiones al Calendario</span>
+        <div class="update-desc">Desde el curso se puede <strong>agendar una sesion al calendario directamente</strong>. La sesion aparece tanto en el curso como en el calendario general &mdash; estan ligados en ambos sentidos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Comentarios y Edicion Rapida</span>
+        <div class="update-desc">El equipo puede <strong>comentar dentro de cada curso</strong> y editar los datos sin abrir formularios extra. Hace que el modulo se sienta vivo, no solo un catalogo.</div>
+    </div>
+
+    <h2>4. ¿Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Vision Completa del Cliente en un Solo Lugar</span>
+        <div class="update-desc">Con la nueva seccion de Clientes, cualquier persona del equipo puede entrar y entender <strong>quien es ese cliente, que marcas tiene, cuanto se le ha vendido y como vienen sus prospecciones</strong>, sin tener que pedirle a alguien mas que se lo explique. Mejora atencion al cliente y decisiones comerciales.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Embudo de Prospectos mas Claro</span>
+        <div class="update-desc">El modo &ldquo;Solo Prospectos&rdquo; permite <strong>concentrarse en lo que aun no se ha cerrado</strong>. Ayuda a que ningun prospecto se quede olvidado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Certificaciones Sin Riesgo de Vencer</span>
+        <div class="update-desc">Las certificaciones son criticas para operar en el sector. Con los <strong>avisos automaticos de vencimiento</strong>, IAMET ya no depende de que alguien lleve la cuenta a mano &mdash; el sistema lo recuerda solo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Capacitacion del Personal Documentada</span>
+        <div class="update-desc">Con Cursos conectado a Certificaciones y al Calendario, <strong>queda registro vivo de a quien se capacito, en que y cuando</strong>. Util para auditorias, para clientes que lo soliciten y para planear los siguientes cursos.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 13 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

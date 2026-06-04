@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 03 de Junio</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .badge-perf { background: #cffafe; color: #155e75; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .phase-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 14px 0;
+        }
+        .phase-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+            text-align: center;
+            background: #fafbfc;
+        }
+        .phase-card.done {
+            background: #ecfdf5;
+            border-color: #6ee7b7;
+        }
+        .phase-card.todo {
+            background: #f9fafb;
+            border-color: #e5e7eb;
+            opacity: 0.65;
+        }
+        .phase-card .phase-num {
+            font-weight: 800;
+            font-size: 11px;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .phase-card .phase-name {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--dark);
+            margin: 4px 0 2px;
+        }
+        .phase-card .phase-status {
+            font-size: 11px;
+            color: var(--secondary);
+        }
+        .phase-card.done .phase-status { color: var(--success); font-weight: 700; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 03 de Junio, 2026</p>
+            <p>Periodo: 03 Junio (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy <strong>no se entregaron features nuevas</strong> — y eso fue intencional. Después de dos semanas seguidas agregando funcionalidad (calendario de instalaciones, programa de obra, historial de tareas, prospección, etc.), tomamos la decisión de <strong>parar la línea de features</strong> y dedicar el día completo a un trabajo que nadie ve pero que sostiene todo lo demás: <strong>pulir, robustecer y estructurar el sistema</strong>. Es lo que llamamos el <em>Plan de Hardening del CRM</em> — un plan de 8 fases para arreglar de raíz lo que estaba "casi bien" en arquitectura, rendimiento y errores silenciosos. En una sola jornada de trabajo intenso se cerraron <strong>tres fases completas</strong> con <strong>9 commits</strong>: el sistema de widgets fue reconstruido, las notificaciones se volvieron útiles, la búsqueda quedó robusta, y se limpió código sucio acumulado.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Fases cerradas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">36</div>
+            <div class="stat-label">Widgets reasignados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Fases pendientes</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Reconstrucción del Sistema de Widgets (Fase 1)
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El CRM está construido alrededor de un sistema de <strong>"widgets" — ventanas flotantes</strong> que aparecen sobre la página principal: el detalle de una oportunidad, el formulario de una tarea, el viewer de un cliente, el calendario, el muro, las notificaciones, el chat de ayuda, etc. Son la espina dorsal de la experiencia del CRM. <strong>Eran también el origen de la mayor cantidad de quejas</strong>: se encimaban mal cuando uno abría dentro de otro, no había manera consistente de cerrarlos, los mensajes de éxito/error aparecían en lugares aleatorios, y copiar el link de algo abierto no servía de nada (al pegarlo en otra pestaña no reabría lo mismo). Hoy se rearmó <strong>de raíz</strong>: 36 widgets reasignados a su capa correcta, un sistema dinámico que ordena automáticamente qué va encima de qué, mensajes "toast" globales, breadcrumbs visuales, Escape consistente, animaciones estándar y URL sincronizada. El resultado: <strong>el CRM se siente como una app real</strong>, no como una colección de modales sueltos.</p>
+    </div>
+
+    <h2>1. El Plan de Hardening — Por Qué Esta Pausa</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Un CRM con muchas features pero que <em>de a poco se va sintiendo lento, con botones raros, con widgets que se encimaban y errores silenciosos</em> se vuelve frustrante de usar. Para evitar llegar a ese punto, antes de seguir construyendo, decidimos invertir varios días en limpiar la base. Es un trabajo <strong>poco visible pero que da retorno por años</strong>: cada feature futura se asienta sobre un sistema más sólido.</p>
+
+    <div class="callout">
+        <strong>El plan completo son 8 fases.</strong> Cada una ataca una zona específica del sistema con una mezcla de mejora visible (lo que el usuario nota) y mejora invisible (lo que solo verá el desarrollador o el servidor). Cerrar una fase significa que esa zona quedó <em>medible, estable y predecible</em>.
+    </div>
+
+    <div class="phase-grid">
+        <div class="phase-card done">
+            <div class="phase-num">Fase 1</div>
+            <div class="phase-name">Widgets</div>
+            <div class="phase-status">✓ Cerrada hoy</div>
+        </div>
+        <div class="phase-card done">
+            <div class="phase-num">Fase 2</div>
+            <div class="phase-name">Notificaciones</div>
+            <div class="phase-status">✓ Cerrada hoy</div>
+        </div>
+        <div class="phase-card done">
+            <div class="phase-num">Fase 3</div>
+            <div class="phase-name">Búsqueda</div>
+            <div class="phase-status">✓ Cerrada hoy</div>
+        </div>
+        <div class="phase-card todo">
+            <div class="phase-num">Fase 4</div>
+            <div class="phase-name">Diseño</div>
+            <div class="phase-status">Pendiente</div>
+        </div>
+        <div class="phase-card todo">
+            <div class="phase-num">Fase 5</div>
+            <div class="phase-name">Pulido por widget</div>
+            <div class="phase-status">Pendiente</div>
+        </div>
+        <div class="phase-card todo">
+            <div class="phase-num">Fase 6</div>
+            <div class="phase-name">Refactor de código</div>
+            <div class="phase-status">Pendiente</div>
+        </div>
+        <div class="phase-card todo">
+            <div class="phase-num">Fase 7</div>
+            <div class="phase-name">Servidor</div>
+            <div class="phase-status">Pendiente</div>
+        </div>
+        <div class="phase-card todo">
+            <div class="phase-num">Fase 8</div>
+            <div class="phase-name">Multi-window</div>
+            <div class="phase-status">Pendiente</div>
+        </div>
+    </div>
+
+    <h2>2. Fase 1 — El Sistema de Widgets Reconstruido (Hito del Día)</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">La pieza más grande del día. Esta fase tocó <strong>casi todos los rincones</strong> del CRM porque los widgets son ubicuos: en cualquier momento puede haber 1, 2 o 3 abiertos uno encima de otro. La reconstrucción se hizo por capas, cada una resolviendo un problema concreto que se había venido acumulando:</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Sistema Oficial de Capas (Z-Index) con Tokens Globales</span>
+        <div class="update-desc">Antes cada widget tenía su propio número de "altura" manualmente codificado: uno decía 1000, otro 1500, otro 999 — y cuando uno abría sobre otro, a veces el de atrás quedaba encima. Se reemplazó todo eso por <strong>4 niveles definidos centralmente</strong>: widget normal, widget anidado (uno encima de otro), widget triple (3 capas), y toast (siempre arriba de todo). <strong>36 widgets fueron reasignados</strong> a su nivel correcto. El sistema ya no permite "inventar" un nuevo nivel — todo respeta los 4 tokens oficiales.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Gestor Dinámico — Auto-Ordena los Widgets Abiertos</span>
+        <div class="update-desc">El sistema anterior dependía de que cada widget supiera "yo voy en el nivel 2". Pero hay widgets que se abren desde diferentes lugares — a veces son el primer modal, a veces el segundo. Se implementó un <strong>"stack manager"</strong>: el sistema observa qué widget se abre y le asigna la capa correcta automáticamente. El primero queda al fondo, el segundo encima, el tercero encima del segundo. Al cerrar uno, los demás vuelven a su sitio. <strong>El usuario no nota nada, pero todo funciona como debería.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Notificaciones "Toast" Globales y Unificadas</span>
+        <div class="update-desc">El CRM tenía <strong>9 funciones distintas</strong> para mostrar mensajitos de "se guardó" o "hubo un error" — cada widget se había inventado la suya. Eso producía toasts que aparecían en lugares aleatorios, con estilos distintos, y que a veces se ocultaban detrás de otros widgets. Se reemplazó todo por <strong>una sola función global <code>toast()</code></strong> con la misma posición (arriba a la derecha), el mismo estilo (verde éxito, rojo error, gris info), y el z-index más alto del sistema — siempre visible, nunca tapada por nada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Animaciones Estándar de Entrada y Salida</span>
+        <div class="update-desc">Cada widget aparecía/desaparecía con su propio efecto: algunos con fade, otros con slide, otros sin nada. Se unificó en una <strong>animación estándar de 200 ms</strong> al abrir y al cerrar. Sutil pero hace que el CRM se sienta cohesivo en vez de "cada parte es de otro lugar".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Event Bus — Cuando Algo Cambia, el Resto se Entera</span>
+        <div class="update-desc">Si en el widget de detalle de oportunidad cambiabas el estado, el kanban detrás <strong>no se enteraba</strong> hasta que recargabas la página. Lo mismo con tareas, instalaciones, programa de obra, etc. Se creó un <strong>"bus de eventos"</strong> que conecta todo: cuando un widget guarda un cambio, dispara un mensaje y los otros componentes que muestran esa información se actualizan automáticamente. El usuario hace su cambio y ve el efecto reflejado en toda la pantalla, sin reload.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Breadcrumb — "Estoy Aquí, Vine de Allá"</span>
+        <div class="update-desc">Cuando hay 2 o 3 widgets abiertos uno sobre otro, antes era fácil perderse: "¿cuál estoy viendo? ¿de dónde vine?". Ahora cada widget anidado muestra <strong>un breadcrumb en su esquina superior</strong>: "Cliente Acme → Oportunidad #1234 → Tarea Visita técnica". Te dice exactamente dónde estás parado y desde dónde llegaste.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tecla Escape Consistente (Cierra Capa por Capa)</span>
+        <div class="update-desc">Antes presionar <strong>Esc</strong> hacía cosas distintas según el widget: algunos cerraban todos a la vez, otros no hacían nada, otros solo cerraban el de más arriba si tenían la suerte de tener el listener bien wireado. Ahora es regla fija: <strong>Esc cierra solo la capa de arriba</strong>. Si tienes 3 abiertos, vas presionando Esc y se cierran de uno en uno hasta volver al CRM. Mismo comportamiento que cualquier app moderna.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">URLs Sincronizadas — Compartir Links Reales</span>
+        <div class="update-desc">Antes la URL de la barra del navegador siempre decía lo mismo aunque tuvieras un widget abierto: <code>/app/todos/</code> sin más. Si querías mandarle a alguien "mira esta oportunidad", tenías que pasarle el número aparte. Ahora <strong>la URL cambia en cuanto abres algo</strong>: abrir la oportunidad 1234 pone <code>?open_opp=1234</code> en la barra. Copiarla y pegarla en otra pestaña <strong>reabre exactamente lo mismo</strong>. Convierte al CRM en una app que se puede compartir por link, como Notion o Linear.</div>
+    </div>
+
+    <h2>3. Fase 2 — Notificaciones que Realmente Funcionan</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">El segundo bloque del día atacó un problema que el equipo arrastraba: las notificaciones aparecían pero <em>casi ninguna llevaba a ningún lado al hacer click</em>. Eran ruido, no herramienta. Se reescribió el módulo completo:</p>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">25 Tipos de Notificación con Click que Funciona</span>
+        <div class="update-desc">El módulo tenía <strong>25 tipos de notificación</strong> definidos (tarea vencida, mención en oportunidad, post en muro, mensaje en grupo, proyecto agregado, certificación por vencer, etc.) pero <strong>solo 3</strong> hacían algo cuando el usuario les daba click. Los otros 22 se quedaban en silencio. Se mapeó cada tipo a su destino correcto: ahora cada notificación lleva exactamente al lugar donde está el evento que la generó.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-perf">Rendimiento</span>
+        <span class="update-title">Cálculo de Vencimientos Movido a Proceso Programado</span>
+        <div class="update-desc">Las notificaciones de "tarea vencida" y "actividad por vencer" se recalculaban <strong>cada 3 segundos por cada usuario conectado</strong> al CRM. Con 8 personas activas eran ~9,600 consultas por hora a la base de datos solo para esto, y por encima generaba <em>notificaciones duplicadas</em> en momentos de concurrencia. Se movió ese cálculo a <strong>un proceso que corre cada 5 minutos en el servidor</strong> — independiente de quién esté conectado. Ahorro masivo de carga y eliminación del bug de duplicados.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Polling Inteligente con Frenada Automática</span>
+        <div class="update-desc">La verificación de "¿hay notificaciones nuevas?" se hacía cada 3 segundos fijos. Si llevabas 30 minutos sin actividad, igual seguía consultando. Ahora <strong>arranca cada 8 segundos</strong> (~73% menos peticiones), y <strong>si lleva 3 verificaciones sin novedad baja a 20 segundos</strong>. En cuanto detecta algo nuevo, vuelve a la frecuencia normal. Adicionalmente, si alguien hace una acción en el CRM (crea una tarea, manda un comentario), las notificaciones se refrescan al instante por el event bus de la Fase 1 — sin esperar al siguiente intervalo.</div>
+    </div>
+
+    <h2>4. Fase 3 — Búsqueda Robusta, Rápida y Útil</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">El tercer bloque del día — la barra de búsqueda (⌘K o doble espacio) usada decenas de veces al día por los vendedores. Atacada en sus tres frentes:</p>
+
+    <div class="update-item">
+        <span class="badge badge-perf">Rendimiento</span>
+        <span class="update-title">Índices en Base de Datos para 9 Campos Buscables</span>
+        <div class="update-desc">La búsqueda recorría cinco tablas (clientes, oportunidades, cotizaciones, tareas, proyectos) con consultas de texto sobre columnas que <strong>no tenían índice</strong>. Funciona bien con pocos registros, se va degradando conforme la base crece. Se agregaron índices en los 9 campos que la búsqueda toca con más frecuencia. Resultado: las búsquedas se mantienen ágiles aunque sigamos sumando datos por años.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cancelación Inteligente y Skeleton de Carga</span>
+        <div class="update-desc">Cuando alguien tipea rápido "cotizac…", el sistema disparaba una consulta por cada letra y a veces la respuesta de "cotiz" llegaba después de la de "cotiza", produciendo parpadeos raros. Ahora <strong>cada nueva búsqueda aborta la anterior</strong> automáticamente. En paralelo, mientras llega el resultado, se muestran <strong>5 filas grises animadas</strong> (skeleton) en lugar de un spinner genérico — la búsqueda se siente más rápida aunque tome el mismo tiempo real.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modal de Búsqueda Diseñado para Teclado</span>
+        <div class="update-desc">El modal ahora es <strong>completamente operable sin tocar el mouse</strong>: el primer resultado se auto-selecciona (Enter abre directo sin tener que presionar ↓ primero), <strong>Tab</strong> alterna entre los chips de scope (Todo · Oportunidades · Cotizaciones · Tareas · Clientes · Proyectos), <strong>Home/End</strong> saltan al primer/último resultado, y abajo del modal hay un <strong>footer permanente con todos los atajos visibles</strong>. Si buscas en un scope y no hay resultados, te ofrece "Buscar en todo" como rescate de un click.</div>
+    </div>
+
+    <h2>5. Limpieza de Código Sucio (Cierre del Día)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Limpieza</span>
+        <span class="update-title">9 Mensajes de Debug Olvidados en la Consola</span>
+        <div class="update-desc">Durante semanas de desarrollo se fueron dejando impresiones de diagnóstico — cosas como <code>console.log('[PIN] Toggle pin para opp:', oppId)</code> que servían para depurar y se quedaron en el código. En producción ensucian la consola del navegador y revelan información interna. Se eliminaron 9 que ya no eran necesarios; los registros legítimos de error en bloques de try/catch se conservaron.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">3 Llamadas al Servidor que Fallaban en Silencio</span>
+        <div class="update-desc">Tres puntos del CRM hacían peticiones al servidor sin manejar el caso "fallar": autocompletar de cliente, autocompletar de contacto (ambos en el form de Nueva Oportunidad) y el buscador de la tabla CRM. Si la conexión fallaba, el usuario no veía nada distinto: el dropdown se quedaba abierto vacío. Ahora <strong>cada uno tiene su manejador de error</strong> y la tabla muestra un mensaje claro: "Error al buscar. Revisa tu conexión e inténtalo de nuevo."</div>
+    </div>
+
+    <h2>6. Próximos Pasos del Plan</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Validación</span>
+        <span class="update-title">Smoke Tests en Pruebas Antes de Mergear a Producción</span>
+        <div class="update-desc">Antes del deploy a producción, se valida en ambiente de pruebas un checklist concreto: abrir y cerrar widgets anidados (3 capas), Escape capa por capa, copiar/pegar URLs con widget abierto, click en cada tipo de notificación, ⌘K + navegación con teclado (Tab/Home/End/↑↓/Enter), filtro por scope, búsqueda con desconexión simulada. Si todo pasa, se mergea.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Deploy</span>
+        <span class="update-title">Merge a Producción de Fases 1 + 2 + 3</span>
+        <div class="update-desc">Una vez validado, se mergea a producción el bloque completo del día: <strong>nuevo sistema de widgets, notificaciones funcionales, búsqueda hardened y limpieza de código</strong>. Es un cambio grande pero de bajo riesgo — todo refuerza lo que ya funciona, no introduce features nuevas. <strong>Dependencia operativa</strong>: hay que agregar un cron job en el servidor para que las notificaciones de vencimiento sigan generándose (la línea exacta está documentada en el commit de Fase 2.F).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Fase 4 — Pendiente</span>
+        <span class="update-title">Sistema de Diseño Consistente</span>
+        <div class="update-desc">Unificar paleta de colores, tipografías, espaciados y componentes visuales reutilizables. Hoy cada widget tiene su propio "dialecto" visual; se va a estandarizar para que todo el CRM se sienta como una sola pieza.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Fase 5 — Pendiente</span>
+        <span class="update-title">Pulido por Widget (Botones que no Hacen Nada, Lógicas Raras)</span>
+        <div class="update-desc">Revisión exhaustiva widget por widget para encontrar y arreglar lo que el equipo ha venido reportando informalmente: botones que no responden, formularios que se cierran sin guardar, mensajes confusos, flujos que requieren clicks de más.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Fase 6 — Pendiente</span>
+        <span class="update-title">Refactor del Código (Archivos Enormes en Pedazos Manejables)</span>
+        <div class="update-desc">Hay archivos de JavaScript del CRM que pasaron los 10 mil renglones. Cualquier cambio se vuelve lento y arriesgado (los bugs son difíciles de aislar). Se van a partir en módulos por responsabilidad — sin cambiar comportamiento, solo organización.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Fase 7 — Pendiente</span>
+        <span class="update-title">Optimización del Servidor</span>
+        <div class="update-desc">Revisión del servidor donde corre el CRM en producción: monitorear consultas lentas, ajustar tamaños de procesos, configurar logs centralizados, mejorar caché. Trabajo de SSH puro — invisible para el usuario, pero baja la factura del servidor y mejora la respuesta general.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Fase 8 — Pendiente</span>
+        <span class="update-title">Modo Multi-Ventana (Estilo Windows)</span>
+        <div class="update-desc">Idea propuesta esta semana: como ya tenemos un buen sistema de widgets, dar el siguiente salto y permitir que se puedan <em>arrastrar fuera del CRM como ventanas independientes</em> (similar a tener varias apps abiertas en Windows). Útil para vendedores que quieran tener una oportunidad de un lado y otra al lado mientras hablan por teléfono. Feature grande, deliberadamente parqueada hasta cerrar el resto del hardening.</div>
+    </div>
+
+    <h2>7. ¿Por Qué Esta Inversión Vale la Pena?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El CRM Pasa de "Colección de Modales" a "App Coherente"</span>
+        <div class="update-desc">El cambio del sistema de widgets es <strong>el más sustancial del día</strong> aunque sea el menos visible — porque la mayoría de las mejoras son "ya no se rompe lo que se rompía". Antes el equipo aprendía a convivir con quirks ("ah, este modal hay que cerrarlo dos veces", "no copies esa URL porque no sirve"). Ahora todo funciona como debe. Esa <strong>baja en fricción</strong> se siente todos los días, en cada click.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cada Feature Futura es Más Barata</span>
+        <div class="update-desc">Una de las razones por las que los CRMs comerciales (Salesforce, Hubspot) son caros es porque <strong>arrastran años de deuda técnica</strong> y agregar cualquier cosa nueva implica navegar código viejo. En el CRM IAMET estamos haciendo lo contrario: <strong>pagamos la deuda ahora</strong> para que cada feature de los próximos meses se construya sobre una base sólida — más rápido, más estable, más fácil de mantener.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">La Búsqueda es el Punto Más Tocado del CRM</span>
+        <div class="update-desc">Por la naturaleza del trabajo de ventas, abrir oportunidades y buscar clientes son las dos acciones más frecuentes — <strong>se hacen decenas de veces al día por persona</strong>. Una búsqueda 200 ms más rápida × 30 búsquedas × 8 vendedores × 250 días al año son <em>horas de productividad</em> al año, sin sumar la mejora en sensación de "el sistema responde".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Notificaciones Ya Sirven para Algo</span>
+        <div class="update-desc">Tener 25 tipos de notificación pero que 22 no llevaban a ningún lado al hacer click significaba que la gente <em>aprendió a ignorarlas</em>. Eso es peor que no tenerlas. Ahora cada notificación lleva al lugar correcto y, además, no bombardean el servidor. El módulo <strong>vuelve a ser útil</strong> en vez de ser ruido.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Avanzamos por Etapas Medibles, No por Estimaciones</span>
+        <div class="update-desc">El Plan de Hardening tiene 8 fases con criterio de "cierre" claro para cada una. Eso permite <strong>reportar progreso real</strong> en lugar de "estamos limpiando código" sin saber cuánto falta. Hoy quedan 5 fases por hacer; cada una se va cerrando como entrega independiente, sin bloquear features urgentes que puedan surgir en el camino.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 03 de Junio, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

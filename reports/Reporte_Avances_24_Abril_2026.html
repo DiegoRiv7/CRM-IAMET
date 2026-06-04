@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 24 de Abril</title>
+    <style>
+        :root { --primary: #0052D4; --secondary: #6B7280; --success: #059669; --dark: #1D1D1F; --light: #F9FAFB; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: var(--dark); background: #f0f2f5; margin: 0; padding: 20px; }
+        .report { max-width: 880px; margin: 0 auto; background: #fff; padding: 40px 55px; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 14px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header h1 { margin: 0; font-size: 22px; color: var(--primary); }
+        .header-meta { text-align: right; font-size: 12px; color: var(--secondary); }
+        .btn-pdf { position: absolute; top: 14px; right: 14px; background: var(--primary); color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px rgba(0,82,212,0.2); }
+        .intro { font-size: 14px; color: #4b5563; margin-bottom: 18px; }
+        .stats { display: flex; gap: 10px; margin: 16px 0 22px; }
+        .stat { flex: 1; background: var(--light); border-radius: 10px; padding: 14px; text-align: center; }
+        .stat-n { font-size: 26px; font-weight: 800; color: var(--primary); line-height: 1.1; }
+        .stat-l { font-size: 10px; color: var(--secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; margin-top: 2px; }
+        .hero { background: linear-gradient(135deg, rgba(0,82,212,0.06), rgba(16,185,129,0.05)); border: 1px solid rgba(0,82,212,0.12); border-radius: 12px; padding: 18px 22px; margin: 0 0 24px; }
+        .hero-title { font-size: 17px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .hero p { font-size: 13px; color: #4b5563; margin: 0; }
+        h2 { font-size: 16px; margin: 24px 0 12px; color: var(--dark); display: flex; align-items: center; gap: 8px; }
+        h2 .h2-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .items { display: flex; flex-direction: column; gap: 6px; }
+        .item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; border-radius: 8px; background: #FAFBFC; border: 1px solid #F1F5F9; }
+        .item-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+        .item-dot.new { background: #10B981; }
+        .item-dot.fix { background: #3B82F6; }
+        .item-dot.infra { background: #F59E0B; }
+        .item-body { flex: 1; }
+        .item-title { font-size: 13px; font-weight: 600; color: var(--dark); }
+        .item-desc { font-size: 12px; color: #64748B; margin-top: 1px; }
+        .visual-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 18px; }
+        .visual-card { background: var(--light); border-radius: 10px; padding: 16px; border: 1px solid #E5E7EB; }
+        .visual-card h4 { margin: 0 0 8px; font-size: 12px; color: var(--secondary); text-transform: uppercase; font-weight: 700; }
+        .visual-card .flow { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 11px; }
+        .flow-step { background: #EFF6FF; color: #1E40AF; padding: 3px 8px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+        .flow-arrow { color: #CBD5E1; font-size: 10px; }
+        .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #eee; text-align: center; font-size: 11px; color: var(--secondary); }
+        @media print { body { background: #fff; padding: 0; } .report { box-shadow: none; padding: 15px 30px; } .btn-pdf { display: none; } }
+    </style>
+</head>
+<body>
+<div class="report">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin:3px 0 0;color:var(--secondary);font-weight:600;font-size:14px;">Diego Jafet Rivera Cordova</p>
+        </div>
+        <div class="header-meta">
+            <p style="margin:0;">24 de Abril, 2026</p>
+            <p style="margin:0;">Periodo: 23 &ndash; 24 Abril</p>
+        </div>
+    </div>
+
+    <p class="intro">Dos dias enfocados en <strong>3 bloques grandes</strong>: reestructuracion completa de la navegacion del CRM, el modulo de Programa de Obra (Gantt interactivo nivel profesional), y la puesta en produccion de la app de Levantamientos para ingenieros.</p>
+
+    <div class="stats">
+        <div class="stat"><div class="stat-n">3</div><div class="stat-l">Modulos Nuevos</div></div>
+        <div class="stat"><div class="stat-n">15+</div><div class="stat-l">Funciones Agregadas</div></div>
+        <div class="stat"><div class="stat-n">✓</div><div class="stat-l">En Produccion</div></div>
+        <div class="stat"><div class="stat-n">✓</div><div class="stat-l">App Levantamientos</div></div>
+    </div>
+
+    <!-- HITO 1: Reestructuración CRM -->
+    <div class="hero">
+        <div class="hero-title">
+            <svg width="18" height="18" fill="var(--primary)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
+            Reestructuracion del CRM
+        </div>
+        <p>Se reorganizo la navegacion completa: nuevo boton <strong>Dashboard</strong> en la barra lateral con los reportes y KPIs que antes estaban mezclados con el pipeline. El CRM ahora tiene 3 secciones claras: <strong>Oportunidades</strong> (pipeline de ventas), <strong>Prospectos</strong> (kanban nuevo para empresas potenciales) y <strong>Campanas</strong> (tabla de seguimiento por producto).</p>
+    </div>
+
+    <div class="visual-row">
+        <div class="visual-card">
+            <h4>Navegacion Anterior</h4>
+            <div class="flow">
+                <span class="flow-step">CRM</span> <span class="flow-arrow">&rarr;</span>
+                <span class="flow-step">Oportunidades</span>
+                <span class="flow-step">Prospeccion</span>
+                <span class="flow-step">Clientes</span>
+            </div>
+            <p style="font-size:11px;color:#94A3B8;margin:6px 0 0;">Todo mezclado en una sola seccion</p>
+        </div>
+        <div class="visual-card">
+            <h4>Navegacion Nueva</h4>
+            <div class="flow">
+                <span class="flow-step" style="background:#DCFCE7;color:#166534;">Dashboard</span>
+                <span style="font-size:10px;color:#94A3B8;">KPIs y reportes</span>
+            </div>
+            <div class="flow" style="margin-top:4px;">
+                <span class="flow-step">CRM</span> <span class="flow-arrow">&rarr;</span>
+                <span class="flow-step">Oportunidades</span>
+                <span class="flow-step" style="background:#FEF3C7;color:#92400E;">Prospectos</span>
+                <span class="flow-step">Campanas</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="items">
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Kanban de Prospectos</div><div class="item-desc">Vista tipo tablero con columnas por etapa (Identificado &rarr; Calificado &rarr; Reunion &rarr; En Progreso &rarr; Procesado). Cards con info del prospecto, filtros y colores.</div></div></div>
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Dashboard separado</div><div class="item-desc">Los KPIs de Facturado, Cobrado, Oportunidades y Cotizado ahora viven en su propia seccion con graficas y reportes.</div></div></div>
+        <div class="item"><span class="item-dot fix"></span><div class="item-body"><div class="item-title">Campanas (antes "Prospeccion")</div><div class="item-desc">La tabla de clientes con conteo por producto se renombro a Campanas y se reubico.</div></div></div>
+    </div>
+
+    <!-- HITO 2: Gantt -->
+    <h2>
+        <div class="h2-icon" style="background:#EFF6FF;">
+            <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        Programa de Obra &mdash; Gantt Interactivo
+    </h2>
+
+    <p style="font-size:13px;color:#4b5563;margin:0 0 12px;">Modulo completo de Gantt dentro de la seccion de Levantamientos de cada proyecto. Se accede con el toggle <strong>Simple / Avanzado</strong>.</p>
+
+    <div class="visual-row">
+        <div class="visual-card">
+            <h4>Funcionalidades del Gantt</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <span class="flow-step">Drag & Drop</span>
+                <span class="flow-step">Resize</span>
+                <span class="flow-step">Dependencias</span>
+                <span class="flow-step">Fases</span>
+                <span class="flow-step">Zoom D/S/M</span>
+                <span class="flow-step">$ Financiero</span>
+                <span class="flow-step">EVM</span>
+                <span class="flow-step">Recursos</span>
+                <span class="flow-step">Templates</span>
+            </div>
+        </div>
+        <div class="visual-card">
+            <h4>Interacciones Premium</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <span class="flow-step" style="background:#DCFCE7;color:#166534;">Drag progreso en barra</span>
+                <span class="flow-step" style="background:#DCFCE7;color:#166534;">Connector dots</span>
+                <span class="flow-step" style="background:#DCFCE7;color:#166534;">Inline edit todo</span>
+                <span class="flow-step" style="background:#DCFCE7;color:#166534;">4 plantillas</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="items">
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Vista Financiera</div><div class="item-desc">Boton "$ Financiero" muestra costos (rojo) e ingresos (verde) por actividad. Dashboard EVM con SPI, CPI y avance global.</div></div></div>
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Templates de proyecto</div><div class="item-desc">Al crear un programa vacio, elige entre 4 plantillas: CCTV, Cableado, Mantenimiento o Personalizado. Crea fases y actividades automaticamente.</div></div></div>
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Arrastrar progreso</div><div class="item-desc">Arrastra la parte inferior de una barra para cambiar el % de avance en tiempo real.</div></div></div>
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Crear dependencias con drag</div><div class="item-desc">Hover en una barra muestra un punto azul. Arrastra de ahi a otra barra para conectarlas.</div></div></div>
+        <div class="item"><span class="item-dot new"></span><div class="item-body"><div class="item-title">Sync con calendario</div><div class="item-desc">Cada actividad del Gantt aparece automaticamente en el calendario global del CRM.</div></div></div>
+    </div>
+
+    <!-- HITO 3: Produccion -->
+    <h2>
+        <div class="h2-icon" style="background:#FEF3C7;">
+            <svg width="16" height="16" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        Produccion e Infraestructura
+    </h2>
+
+    <div class="items">
+        <div class="item"><span class="item-dot infra"></span><div class="item-body"><div class="item-title">App Levantamientos en produccion</div><div class="item-desc">Desplegada en crm.iamet.mx/app/levantamientos/ — los ingenieros ya pueden instalarla y usarla. Fix del ciclo logout/login.</div></div></div>
+        <div class="item"><span class="item-dot infra"></span><div class="item-body"><div class="item-title">Proyectos visibles para todos</div><div class="item-desc">Vendedores e ingenieros ahora ven y acceden a todos los proyectos, no solo los suyos.</div></div></div>
+        <div class="item"><span class="item-dot infra"></span><div class="item-body"><div class="item-title">Proyecto automatico al pasar a Levantamiento</div><div class="item-desc">Antes se creaba en "Vendido". Ahora se crea al entrar a la etapa Levantamiento.</div></div></div>
+        <div class="item"><span class="item-dot infra"></span><div class="item-body"><div class="item-title">Tab Drive en proyectos</div><div class="item-desc">Los ingenieros ven los archivos de la oportunidad vinculada (cotizaciones, POs, planos) desde el proyecto.</div></div></div>
+        <div class="item"><span class="item-dot fix"></span><div class="item-body"><div class="item-title">Dashboard ingeniero con tareas reales</div><div class="item-desc">"Tareas recientes" muestra las tareas del CRM (vencidas primero), no actividades del calendario.</div></div></div>
+        <div class="item"><span class="item-dot fix"></span><div class="item-body"><div class="item-title">Sin flash al recargar</div><div class="item-desc">Si el ingeniero esta en Tareas y recarga, la pagina abre directo en Tareas sin parpadeo.</div></div></div>
+    </div>
+
+    <div class="footer">
+        Desarrollado por Diego Jafet Rivera Cordova &middot; 24 de Abril, 2026
+    </div>
+</div>
+</body>
+</html>

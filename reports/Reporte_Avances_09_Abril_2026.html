@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 09 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 9 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy, enfocadas en el sistema de anclar oportunidades con pin en el tablero, filtros por rango de fechas, sincronizacion de actividades entre oportunidades y calendario, formulario de programa de obra en proyectos y cambio del trigger de creacion automatica de proyectos.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">15</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Features Nuevas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Archivos Modificados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Secciones Impactadas</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Formulario Completo de Programa de Obra en Proyectos
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se implemento el formulario completo para crear actividades en el <strong>Programa de Obra</strong> dentro del widget de detalle de cada proyecto. Al hacer clic en "+ Añadir" en cualquier dia de la vista semanal, se abre un formulario con: nombre de la actividad, descripcion, hora inicio/fin, <strong>seleccion de personal con verificacion de disponibilidad en tiempo real</strong> (los usuarios ocupados aparecen deshabilitados con el detalle del conflicto) y campo para vehiculos. El sistema consulta la API de disponibilidad al abrir el formulario y <strong>recarga automaticamente al cambiar las horas</strong>, mostrando indicadores verdes (disponible) o rojos (conflicto con actividad, proyecto y horario). Al crear la actividad se refresca la vista semanal y muestra un toast de confirmacion. Esta funcionalidad cierra el ciclo completo de programacion de proyectos, permitiendo a los ingenieros organizar su trabajo semanal con control de recursos humanos y deteccion de conflictos.</p>
+    </div>
+
+    <h2>1. Sistema de Anclar Oportunidades (Pin)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Anclar Oportunidades con Pin en el Tablero</span>
+        <div class="update-desc">Nueva funcionalidad para <strong>anclar oportunidades</strong> en el tablero de tarjetas post-it. Cada tarjeta tiene un icono de chincheta en la esquina superior derecha que aparece al pasar el cursor. Al hacer clic, la oportunidad se ancla (pin rojo rotado -30 grados con agujero visual en la tarjeta) y se mueve al inicio del grid inmediatamente. Las oportunidades ancladas se ordenan antes que las vencidas. Cada usuario tiene sus propias oportunidades ancladas (campo <code>oportunidades_ancladas</code> JSONField en UserProfile). El pin se desancla con un segundo clic. Incluye migracion de BD.</div>
+    </div>
+
+    <h2>2. Filtro por Rango de Fechas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtrar Oportunidades por Rango de Fechas (Desde/Hasta)</span>
+        <div class="update-desc">Se agregaron campos <strong>"Desde" y "Hasta"</strong> al panel de filtros del CRM. Permiten filtrar oportunidades por un rango de fechas de creacion. El filtro se aplica automaticamente al seleccionar la fecha "Hasta", sin necesidad de boton confirmar. Funciona en <strong>ambas vistas</strong> (tarjetas post-it y tabla clasica). Las cards usan <code>data-creacion</code> con formato YYYY-MM-DD para comparacion directa de strings, consistente con el filtro de mes/anio de la barra superior. Se limpia con el boton "Limpiar" junto con los demas filtros.</div>
+    </div>
+
+    <h2>3. Sincronizacion de Actividades</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Completar Actividad Sincroniza Oportunidad y Calendario</span>
+        <div class="update-desc">Al completar una <code>TareaOportunidad</code> desde el widget de la oportunidad, el sistema ahora tambien marca como completada la <strong>Actividad del calendario</strong> vinculada (via FK <code>actividad_calendario</code>). El calendario se refresca automaticamente con un delay de 300ms para asegurar que la BD procese el cambio. Esto funciona en ambas direcciones: completar desde el calendario tambien completa la tarea de la oportunidad. La actividad aparece transparente (opacity 0.38) y con texto tachado en el calendario inmediatamente.</div>
+    </div>
+
+    <h2>4. Programa de Obra en Proyectos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Formulario de Creacion de Actividades</span>
+        <div class="update-desc">Al dar clic en <strong>"+ Añadir"</strong> en cualquier dia de la vista semanal del Programa de Obra, se abre un formulario completo con: nombre de la actividad (obligatorio), descripcion (textarea), hora inicio (default 07:00), hora fin (default 16:00), seleccion de personal con indicador de disponibilidad, y campo de vehiculos. El sistema consulta <code>/api/programacion/disponibilidad/</code> con el dia y horario seleccionado, mostrando usuarios disponibles en verde y ocupados en rojo con el detalle del conflicto (nombre de la actividad, proyecto y horario). Al cambiar las horas se recarga la disponibilidad automaticamente. Al crear la actividad se refresca la semana y muestra toast de confirmacion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cambio de Trigger: Proyecto se Crea en Vendido</span>
+        <div class="update-desc">Se cambio el trigger de creacion automatica de proyectos. Antes se creaba un <code>ProyectoIAMET</code> cuando la oportunidad tipo proyecto pasaba a etapa <strong>"Levantamiento"</strong>. Ahora se crea cuando pasa a <strong>"Vendido s/PO"</strong> o <strong>"Vendido c/PO"</strong>, lo cual tiene mas sentido porque el proyecto se ejecuta despues de la venta, no durante el levantamiento. La logica de creacion (configuracion, sincronizacion de tareas) permanece igual.</div>
+    </div>
+
+    <h2>5. Mejoras Visuales del Tablero</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Animacion de Hover Fluida en Tarjetas</span>
+        <div class="update-desc">Se mejoro la animacion de hover de las tarjetas post-it: ahora usa <strong>0.2s ease</strong> (en vez de 0.35s con bounce) para una transicion mas rapida y estable. Solo anima <code>transform</code>, <code>box-shadow</code> y <code>border-color</code> — evita animar propiedades innecesarias. La elevacion es de 6px (sutil y estable) sin scale para evitar temblor visual. La ida y vuelta son igual de rapidas.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 06 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 06 de Mayo, 2026</p>
+            <p>Periodo: 06 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">El dia se enfoco en <strong>cerrar la renovacion completa de la Volumetria</strong>: nuevo diseño profesional, importacion directa desde Excel y exportacion a PDF / Excel ya operando con el formato nuevo. Tambien se mejoraron el Drive del proyecto y el Calendario, y se afinaron varios detalles que afectaban como se veian los documentos finales para el cliente.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">16</div>
+            <div class="stat-label">Cambios Liberados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Modulos Mejorados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Correcciones Aplicadas</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Volumetria Profesional con Importacion desde Excel
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">La <strong>Volumetria</strong> &mdash; la fase donde el ingeniero pasa mas horas de trabajo &mdash; quedo renovada de extremo a extremo. Tiene <strong>diseño profesional limpio</strong>, soporta <strong>importar el Excel del ingeniero</strong> con un click (el sistema lee equipamiento, mano de obra y costos adicionales y arma las tablas), y la <strong>exportacion a PDF y Excel</strong> ya descarga este nuevo formato listo para enviar al cliente, con resumen financiero de dos columnas y la ganancia convertida a pesos al tipo de cambio del dia.</p>
+    </div>
+
+    <h2>1. Volumetria: Diseño Renovado</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Diseño Profesional para Trabajar y Presentar</span>
+        <div class="update-desc">El modulo se reescribio con un <strong>estilo limpio y moderno</strong>: tablas mucho mas legibles, filas alternadas, iconos compactos para que cada renglon ocupe lo justo, y un Resumen Financiero al pie del documento como tabla de dos columnas (<em>Analisis de Ganancia</em> + <em>Total Cotizacion</em>) en lugar del cuadrito reducido que tenia antes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tipo de Cambio e IVA Centrados y Visibles</span>
+        <div class="update-desc">Los campos de <strong>tipo de cambio (USD &rarr; MXN)</strong> y <strong>IVA</strong> se reorganizaron al centro del bloque financiero, alineados con las dos tablas del resumen. Estan a la mano del ingeniero y se ven con la misma jerarquia visual que el subtotal y el total.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Empezar de Cero, sin Tablas ni Filas Pre-llenadas</span>
+        <div class="update-desc">Cuando el ingeniero crea una volumetria nueva, el sistema <strong>la abre en limpio</strong>, sin tablas ni filas plantilla. El usuario decide que tablas crear desde el boton <em>"Agregar tabla"</em>. Antes aparecian filas vacias por default que confundian.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">"Costo MO Interno" Renombrado a "Costos Adicionales"</span>
+        <div class="update-desc">El nombre antiguo no reflejaba lo que el ingeniero realmente captura ahi (viaticos, hospedaje, herramientas, etc.). Quedo como <strong>"Costos Adicionales"</strong>. Las volumetrias antiguas con el nombre viejo se renombran solas al abrirse.</div>
+    </div>
+
+    <h2>2. Volumetria: Importacion desde Excel</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Boton "Subir Volumetria" desde el Wizard</span>
+        <div class="update-desc">El ingeniero ya no transcribe a mano las volumetrias que arma en Excel. <strong>Click en "Subir volumetria", elige el archivo, y el sistema lo lee:</strong> identifica equipamiento (con marca, parte, precio, descuentos), mano de obra (con notas), y costos adicionales (con dias). Quedan cargadas en sus tablas correspondientes, listas para revisar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Secciones Colapsadas al Importar</span>
+        <div class="update-desc">Despues de subir el archivo, las tres tablas (<em>Equipamiento, Mano de Obra, Costos Adicionales</em>) quedan <strong>colapsadas</strong> con su subtotal a la vista. El ingeniero ve de inmediato cuanto totalizan, y abre solo la que necesita revisar a detalle.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Items de Pura Ganancia (Costo Cero) Ya Calculan Bien</span>
+        <div class="update-desc">Items como "MISCELANEOS" donde el ingeniero cobra al cliente pero el costo real es cero (no nos cuesta nada) <strong>antes inflaban el costo total artificialmente</strong> con el monto de venta. Se corrigio para que el costo cero explicito se preserve y la ganancia bruta refleje la realidad.</div>
+    </div>
+
+    <h2>3. Volumetria: Exportacion al Nuevo Formato</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">PDF y Excel con el Layout Nuevo</span>
+        <div class="update-desc">Al darle <em>Exportar</em>, los archivos descargados ya traen <strong>el formato nuevo</strong>: cabecera con cliente y proyecto, tres bloques bien diferenciados (Equipamiento, Mano de Obra, Costos Adicionales), subtotales por seccion, y al final el <strong>resumen financiero a dos columnas</strong> con la <em>Ganancia en pesos</em> calculada al tipo de cambio del dia.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Ganancia en Pesos en el Resumen</span>
+        <div class="update-desc">Bajo la fila del IVA, el resumen muestra una linea adicional: <strong>"Ganancia en pesos"</strong> &mdash; la ganancia total del proyecto convertida a MXN multiplicando por el tipo de cambio que el ingeniero capturo. Es la cifra que mas se necesita ver al cierre.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">PDF Ya No Sale con Hojas en Blanco al Inicio</span>
+        <div class="update-desc">El PDF generado tenia las primeras dos hojas vacias y el contenido empezaba en la pagina 3. Era un problema de saltos de pagina: el sistema intentaba mantener cada bloque entero en una sola hoja, no cabia, y lo empujaba. <strong>Ya parte limpiamente</strong> y la cabecera de la tabla se repite en cada pagina.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Numeracion de Partidas Correcta</span>
+        <div class="update-desc">El numero de partida (<em>"#"</em>) en el PDF estaba contando como filas tambien los <strong>rotulos de seccion</strong> (ej. <em>"ESCALERILLA DE 100 MM PARA IDF3"</em>). Como resultado el primer item arrancaba en 4 en lugar de 1. Se corrigio para que la numeracion incluya solo items reales.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Exportacion Leia un Origen de Datos Incorrecto</span>
+        <div class="update-desc">El boton de exportar <strong>generaba documentos vacios</strong> (con leyenda "esta volumetria aun no tiene tablas") aunque el wizard mostraba todas las tablas con datos. La causa era que el sistema buscaba la informacion en una ubicacion antigua. Ahora apunta directo al borrador / volumetria activa y exporta los datos correctos.</div>
+    </div>
+
+    <h2>4. Listado de Volumetrias: Acciones por Fila</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Columna "Acciones" en el Listado</span>
+        <div class="update-desc">En la tabla de volumetrias del levantamiento se agrego una <strong>columna nueva</strong> al final con dos acciones por fila: <em>Exportar</em> (mini menu con PDF ver, PDF descargar, PDF sin costos, y Excel) y <em>Eliminar</em> (solo borradores). Ya no hay que entrar a la volumetria para sacar su PDF.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Boton "Exportar" Superior se Inhabilita Cuando es Ambiguo</span>
+        <div class="update-desc">Si en el listado hay <strong>varias volumetrias</strong>, el boton "Exportar" de arriba se pone en gris (con un mensaje al pasar el mouse: <em>"hay varias, usa la columna Acciones"</em>) para evitar que el sistema elija la equivocada. Si solo hay una, queda habilitado y exporta esa por default.</div>
+    </div>
+
+    <h2>5. Drive del Proyecto y Calendario</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Drive: Buscador, Filtros y Vista en Cuadricula o Lista</span>
+        <div class="update-desc">El widget de Drive (archivos del proyecto) tiene ahora <strong>buscador en vivo, filtros por tipo de archivo (PDF, Excel, imagenes, etc.) y un toggle entre vista cuadricula y lista</strong>. Localizar un archivo entre carpetas se redujo de un par de minutos a unos segundos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Calendario: Busqueda Libre Incluye Usuarios Sin Actividades</span>
+        <div class="update-desc">Al buscar un usuario en el calendario para revisar su agenda, antes solo aparecian los que ya tenian al menos una actividad. <strong>Ahora aparecen todos los usuarios activos</strong>, con o sin eventos, para poder asignarles tareas desde su vista vacia.</div>
+    </div>
+
+    <h2>6. ¿Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Horas de Trabajo Recuperadas en Cada Cotizacion</span>
+        <div class="update-desc">El ingeniero <strong>ya no transcribe a mano</strong> la volumetria que arma en Excel: la sube y queda lista. Con un Excel grande de 30 - 50 partidas, esto ahorra tipicamente <strong>30 - 60 minutos por cotizacion</strong>, ademas de eliminar errores de captura.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Documentos Listos para Enviar al Cliente</span>
+        <div class="update-desc">Antes el PDF que el sistema generaba <strong>no se podia mandar tal cual</strong> y muchas veces se editaba en Word o se rehacia en Excel. Ahora el PDF y el Excel ya tienen formato profesional <strong>aprobado para entregar al cliente</strong> sin pasos intermedios.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cifra de Ganancia Visible al Cierre</span>
+        <div class="update-desc">La <strong>ganancia en pesos</strong> ya aparece en el resumen y en el documento exportado. La direccion ve de inmediato cuanto deja el proyecto en MXN sin tener que sacar la calculadora con el tipo de cambio del dia.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 06 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

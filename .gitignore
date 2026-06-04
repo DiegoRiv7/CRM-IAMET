@@ -1,27 +1,51 @@
-# Archivos de entorno
+# ═══ Entorno y secretos ═══
 .env
+.env.local
+.env.*.local
 
-# Base de datos
-# Archivos de base de datos
-*.sqlite3
-
-# Archivos de entorno
-.env
-
-# Archivos de caché de Python
+# ═══ Python ═══
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Archivos del sistema operativo
-.DS_Store
+# ═══ Virtualenv ═══
+venv/
+.venv/
+env/
+
+# ═══ Base de datos local ═══
+*.sqlite3
 db.sqlite3
 
-# Directorios de Python
-/venv
-__pycache__/
-
-# Archivos de sistema operativo
-.DS_Store
-# Archivos estáticos y multimedia
+# ═══ Archivos estáticos generados y media ═══
 /media/
 /staticfiles/
+
+# ═══ Logs ═══
+*.log
+logs/
+
+# ═══ Sistema operativo ═══
+.DS_Store
+Thumbs.db
+
+# ═══ Editores ═══
+*.swp
+*.swo
+*~
+.vscode/
+!.vscode/settings.json
+.idea/
+
+# ═══ Reportes generados localmente ═══
+# Los reportes históricos viven en reports/ y SÍ se trackean.
+# Si en el futuro se generan reportes locales temporales, ponerlos en
+# reports/.tmp/ y agregar esa carpeta aquí.
+
+# ═══ Worktrees de agentes Claude (ignore por defecto) ═══
+.claude/worktrees/

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 20 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 20 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla el trabajo del dia centrado en el <strong>rediseno completo del modulo de Proyectos</strong>: se creo desde cero el concepto de <strong>Levantamiento</strong> como un wizard de 5 fases a pantalla completa, con backend propio (modelos + API + PDFs server-side), lista de proyectos con la estetica del CRM existente, y <strong>dos exportaciones PDF con branding IAMET</strong> replicando los formatos corporativos de Bajanet. Ademas se incluyen mejoras significativas en el Spotlight, rediseno del widget de perfil, vista Cockpit de Tareas, fixes criticos de produccion y flujos de avatar.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">25</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Modelos Nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">11</div>
+            <div class="stat-label">Endpoints API</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">PDFs Corporativos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito Mayor</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Modulo Completo de Proyectos (Levantamientos + Wizard + PDFs)
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se construyo de raiz el flujo de <strong>Levantamientos</strong> que reemplaza el concepto antiguo de "Partidas" en el detalle de proyecto. Incluye: modelos Django nuevos (<code>ProyectoLevantamiento</code>, <code>LevantamientoEvidencia</code>) con migracion <code>0125</code>, 11 endpoints API (CRUD + subir evidencias + catalogo de productos + 2 PDFs), lista de proyectos rediseniada como <strong>tabla estilo <code>.crm-list-row</code></strong> (sin ID, con columna Oportunidad), seccion "Partidas" renombrada a <strong>"Levantamientos"</strong> con filas clickables, y un <strong>wizard a pantalla completa de 5 fases</strong> (Levantamiento, Propuesta Tecnica, Volumetria, Programa de Obra, Reportes) que no se cierra con Esc ni click fuera (solo con la X, protegiendo trabajo de campo). La Fase 1 adopta patrones Linear/Notion (<em>Canvas Experience</em>: titulo gigante sin borde, ghost pills para metadatos, sidebar sticky con resumen vivo, autocomplete real de cliente/contacto, componentes filtrados por servicio, drag &amp; drop para reordenar partidas, timestamp "Guardado hace X · por Y"). La Fase 2 captura los campos del <strong>formato corporativo "Propuesta Tecnica Instalaciones"</strong> y genera el PDF server-side con <strong>WeasyPrint</strong>, con branding IAMET extraido del docx original. Se agrego tambien un segundo PDF para la Fase 1 replicando el <strong>"Formato de Levantamiento en Sitio"</strong>.</p>
+    </div>
+
+    <h2>1. Backend: Modelos, Migracion y API del Levantamiento</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modelo <code>ProyectoLevantamiento</code> + <code>LevantamientoEvidencia</code></span>
+        <div class="update-desc">FK al proyecto IAMET, nombre, status (borrador/revision/aprobado/rechazado/ejecutando/completado), fase_actual 1-5, campos <code>fase1_data</code>-<code>fase5_data</code> como <strong>JSONField</strong> (shape flexible sin necesitar migraciones al evolucionar la UI), creado_por, timestamps. <code>LevantamientoEvidencia</code> guarda fotos como archivos reales en <code>media/levantamientos/%Y/%m/</code> (no base64), con comentario, producto_idx, subido_por. Migracion <code>0125_proyectolevantamiento_levantamientoevidencia</code>. No se toco <code>ProyectoPartida</code> (sigue alimentando la pestana Financiero que quedo intacta por pedido explicito).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">11 Endpoints API bajo <code>/app/api/iamet/</code></span>
+        <div class="update-desc">
+            CRUD completo: <code>levantamientos/</code> (lista por proyecto), <code>crear/</code> (con pre-llenado de Fase 1 desde oportunidad/proyecto), <code>&lt;id&gt;/</code> (detalle con evidencias), <code>actualizar/</code>, <code>fase/</code> (patch por fase), <code>eliminar/</code>, <code>evidencia/</code> (multipart upload), <code>evidencias/&lt;id&gt;/eliminar/</code>. Plus <code>catalogo-productos/?q=</code> que consulta <code>CatalogoCableado</code> para el buscador. Plus 2 endpoints PDF: <code>propuesta-pdf/</code> y <code>levantamiento-pdf/</code>. Permisos via <code>_check_access</code> del proyecto.
+        </div>
+    </div>
+
+    <h2>2. Lista de Proyectos con Estilo CRM</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cards Reemplazadas por Tabla <code>.crm-list-row</code></span>
+        <div class="update-desc">La vista de proyectos (antes grid de cards con logica de colores warm/heat) ahora usa la <strong>misma estructura visual</strong> del CRM de oportunidades: filas blancas rounded, hover con lift y shadow, franja lateral neutral <code>#CBD5E1</code> (sin warm-* ni heat-*, porque los proyectos no vencen). Columnas: Proyecto / Cliente, Monto, Servicio (chip coloreado inferido), Fases (donut con progreso + etapa), <strong>Oportunidad</strong> (pill clickable que abre el widget de la opp sin salir), Fecha. Sin columna ID (pedido explicito).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Seccion "Partidas" Renombrada a "Levantamientos"</span>
+        <div class="update-desc">En el widget de detalle del proyecto el tab que antes decia "Partidas" ahora se llama <strong>"Levantamientos"</strong> (icono de pin de mapa). Se quitaron los botones <strong>Historial</strong> y <strong>Importar Excel</strong> (pedido explicito) y el boton "Agregar Partida" se reemplazo por <strong>"Iniciar levantamiento"</strong>. La tabla de partidas se reemplazo por una <strong>lista simple de levantamientos</strong> (nombre, estado, fase, creador, fecha, eliminar) con filas clickables que abren el wizard cargando esos datos. Empty state con dashed border si no hay levantamientos.</div>
+    </div>
+
+    <h2>3. Wizard a Pantalla Completa de 5 Fases</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Overlay Fullscreen Estricto</span>
+        <div class="update-desc">Al hacer clic en "Iniciar levantamiento" se abre un <strong>modal de 100vw x 100vh</strong> (sin padding, sin marcos) que <strong>no se cierra con Esc ni click fuera</strong>: solo la X del header cierra. Esto protege al ingeniero de campo de perder trabajo accidentalmente. Header con breadcrumb (<code>Levantamiento</code> · titulo), status pill con dropdown de 6 estados, timestamp "Guardado hace X · por Y" y botones Guardar + PDF + cerrar. <strong>Tabs superiores de 5 fases</strong> con numeral/check, barra de progreso verde al lado (N/5 completado). Footer con Anterior / Fase N de 5 / Siguiente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">5 Fases: Levantamiento, Propuesta, Volumetria, Programa, Reportes</span>
+        <div class="update-desc">Las 5 fases estan construidas en vanilla JS + CSS con <strong>auto-save debounced (600ms)</strong> y persistencia por fase via <code>/levantamientos/&lt;id&gt;/fase/</code>. Atajos ⌘K (abrir catalogo en Fase 1) y ⌘S (guardar). Cambio de status persiste inmediato. Cambio de nombre del levantamiento syncea con el header y el endpoint <code>actualizar/</code>. Se implementaron las 5 fases pero la Fase 1 y la Fase 2 recibieron el rediseno canvas completo hoy; Fases 3-5 quedan con el diseno base para iteraciones futuras.</div>
+    </div>
+
+    <h2>4. Fase 1 — Canvas Experience (Linear / Notion / Raycast)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Hero con Titulo Gigante sin Borde + Ghost Inputs</span>
+        <div class="update-desc">Se erradico el "Sindrome del Formulario de Impuestos". La fase 1 es un <strong>documento en blanco</strong>: titulo gigante editable (34px/800, <code>letter-spacing -0.025em</code>) sin borde con autofocus al crear. Debajo: linea "Para [cliente]" en <strong>lenguaje natural</strong> con pill inline, y textarea doc-style de 15px/1.7 con auto-grow. Todos los inputs son <strong>fantasma</strong> (transparente por defecto, subtle bg al hover, ring azul elegante solo al focus).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Meta Sidebar Sticky con Ghost Pills</span>
+        <div class="update-desc">Layout de <strong>2 columnas</strong>: contenido principal (fluido) + sidebar sticky de 340px a la derecha. El sidebar contiene 5 pills de contacto (Contacto, Area, Fecha, Email, Telefono) con iconos Lucide 14px + input dentro. Estados: dashed-gray (vacio), bg sutil (hover), ring azul solido (focus), bg plano sin borde (filled). En pantallas &lt;1100px colapsa a una fila horizontal. El padding usa <code>clamp(32px, 5vw, 80px)</code> para aprovechar todo el ancho en monitores grandes (~94% vs ~48% previo).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Autocomplete Real de Cliente y Contacto</span>
+        <div class="update-desc">El input de Cliente consulta <code>/api/buscar-clientes/</code> en vivo con dropdown de resultados (avatar con iniciales + nombre + contacto/email/telefono). Al seleccionar: guarda <code>cliente_id</code>, auto-rellena email/telefono si estan vacios, sugiere <code>contacto_principal</code>, y <strong>pre-carga los contactos del cliente</strong> para el dropdown de Contacto. El pill muestra estado "locked" (bg azul suave + boton X) cuando hay cliente real. Contacto solo autocompleta si hay cliente seleccionado; si no, texto libre.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Panel de Resumen Vivo en el Sidebar</span>
+        <div class="update-desc">Debajo de las pills de contacto: contador de servicios, componentes, productos (cada uno con icono de color), <strong>monto estimado total</strong> (suma qty x precio de productos) en verde monospace, y <strong>barra de progreso Fase N · NN%</strong>. Se actualiza en tiempo real al togglear chips, editar cantidades o agregar/eliminar productos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Componentes Filtrados por Servicio</span>
+        <div class="update-desc">La lista de <strong>componentes se expandio de 8 a 28 items</strong> para coincidir con el formato Bajanet (DVR, Video Balum, Tuberia, Canalizacion, Escalerilla, Cable Cat5e/Cat6/Cat6A, Fibra Optica, Serpentines, Controladora, PBX, Telefonos, Work Station, Servidor, Antenas, Enlaces, Bocinas, Fuentes de Poder, Amplificadores, etc). Al marcar un servicio (ej. CCTV) solo se muestran los componentes relevantes (Camara IP, NVR, Cable Cat6, Gabinete, Switches, UPS, Fuentes de Poder). <strong>Los ya seleccionados nunca se ocultan</strong> aunque cambie el servicio (evita perder trabajo).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Catalogo de Productos Conectado a <code>CatalogoCableado</code></span>
+        <div class="update-desc">El buscador de productos ("Agregar producto · ⌘K") consulta el endpoint real <code>/api/iamet/catalogo-productos/?q=</code> que lee de <code>CatalogoCableado</code> (cable, jack, patchcord, faceplate) con fallback a demo de 5 items (Hikvision, TP-Link, Linkedpro, Belden) si no hay resultados. Dropdown con avatar circular, descripcion, marca · modelo, precio monospace. Al seleccionar se agrega a la tabla de partidas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Drag &amp; Drop para Reordenar Partidas</span>
+        <div class="update-desc">Cada fila de la tabla de productos tiene un <strong>drag handle</strong> (⋮⋮) y <code>draggable=true</code>. Al arrastrar se marca la fila como origen (opacity 0.4), la drop zone se destaca con <code>box-shadow: inset 0 2px 0 #2563EB</code>, y al soltar se reordena el array, se renumeran las partidas y se auto-guarda.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Seccion "Programa e Implementacion"</span>
+        <div class="update-desc">Al final de Fase 1 se agrego una seccion opcional con los campos que alimentan el PDF de Levantamiento en Sitio: Fecha inicio, Fecha fin, Duracion, <strong>Turno</strong> (chips Diurno/Nocturno/Mixto single-select), Apoyo del cliente, Personal requerido y <strong>Equipo de elevacion</strong> (Alto / Ancho / Modelo). Todos con el mismo patron de ghost pills.</div>
+    </div>
+
+    <h2>5. Fase 2 — Propuesta Tecnica + Campos de Formato</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Campos del Formato Bajanet Integrados</span>
+        <div class="update-desc">Se agregaron 8 ghost pills en sidebar para capturar exactamente los datos del formato "Propuesta Tecnica Instalaciones": <strong>Elaboro</strong> (auto con nombre del creador), Fecha del documento, Solicitante, Departamento, Planta, Areas consideradas, <strong>Tipo de Solucion</strong> (auto-prefill con los servicios de Fase 1) y Fecha de Instalacion (default "Acordar con usuario"). Todo con el mismo patron canvas de Fase 1.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Especificaciones + Comentarios en 2 Columnas</span>
+        <div class="update-desc">Seccion dedicada con <strong>dos columnas paralelas</strong> de listas editables tipo bullet (bullets azules custom, no los del navegador). <strong>Enter</strong> agrega nueva fila, <strong>Backspace</strong> en fila vacia elimina. Cada bullet tiene delete button que aparece al hover. Background <code>#F8FAFC</code> con border y radius modernos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Evidencia Fotografica con Drag &amp; Drop + Paste</span>
+        <div class="update-desc">Se conservo la zona de drop + paste desde clipboard de la Fase 2 original, pero ahora dentro del layout canvas. Las fotos se <strong>suben al volumen real</strong> (no base64) via multipart al endpoint <code>/evidencia/</code>, con comentario opcional. Lightbox al click. Fix de HEIC: rechazo explicito con alerta amigable si el archivo no es JPG/PNG/GIF/WEBP.</div>
+    </div>
+
+    <h2>6. Exportacion PDF con Branding IAMET (WeasyPrint)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">PDF "Propuesta Tecnica" (Fase 2)</span>
+        <div class="update-desc">Nueva vista <code>api_levantamiento_propuesta_pdf</code> + template <code>levantamiento_propuesta_pdf.html</code>. Genera PDF server-side con <strong>WeasyPrint</strong> v65.1 (ya en requirements). Estructura: Hero con logo IAMET + titulo azul, <strong>stripes decorativas</strong> (ambar/gris/azul gradient) referencia al docx original, banda azul con Cliente + Fecha + Elaboro + Proyecto (radius 10, gradient 180deg), tablas compactas de Datos del Solicitante e Informacion basica, descripcion explicita, dos columnas Especificaciones/Comentarios con bullets azules, grid 2x2 de Evidencia Fotografica, footer con logos de marcas (Avigilon, Cisco, Genetec, Belden, HP, Dell, Panduit, APC) + bar ambar con Tel/Web/Direccion. <code>@page</code> footer con la leyenda "Todos nuestros proyectos se entregan con memoria tecnica...".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">PDF "Levantamiento en Sitio" (Fase 1)</span>
+        <div class="update-desc">Segundo PDF replicando el formato <strong>"Formato de Levantamiento en Sitio Instalaciones"</strong>: Hero + banner "Departamento de Instalaciones · Levantamiento en Sitio", info Cliente/Contacto/Fecha/Area/Email, Descripcion de la Necesidad, <strong>grid 4-cols de checkboxes</strong> para Tipo de Servicio (7 items) y Componentes (28 items) marcados segun lo seleccionado, Programa de Implementacion (fechas, turno con chip, apoyo, personal, quien realizo), Equipo de Elevacion, y tabla de <strong>Cuantificacion Primaria</strong> con productos. Checkboxes nativos en CSS puro (sin imagenes). Footer con la leyenda "Este formato es una representacion significativa..." del docx.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Boton PDF Adaptativo en el Header del Wizard</span>
+        <div class="update-desc">Boton color ambar al lado de Guardar visible solo en Fase 1 y Fase 2 (oculto en 3/4/5). Dropdown con 2 opciones cuyas labels <strong>cambian dinamicamente</strong> segun la fase: "Ver Levantamiento en pestana" / "Descargar Levantamiento PDF" (Fase 1) o "Ver Propuesta..." (Fase 2). Fuerza un save de la fase actual antes de abrir el PDF para que la data sea fresca.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Imagenes en PDF — Rutas <code>file://</code> en Lugar de HTTP</span>
+        <div class="update-desc">Primer bug reportado: las fotos de evidencia <strong>no aparecian</strong> en el PDF (venian en negro). Causa: WeasyPrint hacia requests HTTP internos que fallaban por SSL/auth/red del contenedor Docker. <strong>Fix</strong>: las vistas generan rutas <code>file://</code> absolutas al filesystem (<code>ImageField.path</code>) → WeasyPrint carga del disco, sin HTTP. Aplica tambien a los assets estaticos (logo IAMET, footer logos, watermark) usando un helper que busca primero en <code>STATIC_ROOT</code> (prod) con fallback a <code>BASE_DIR/app/static/</code> (dev).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Branding Extraido del DOCX Original</span>
+        <div class="update-desc">Se extrajeron 2 imagenes de los archivos <code>FORMATO PROPUESTA TECNICA INSTALACIONES.docx</code> y <code>FORMATO DE LEVANTAMIENTO EN SITIO INSTALACIONES.docx</code>: el watermark circular (<code>watermark.jpg</code>, disponible para uso futuro) y el <strong>strip horizontal de logos de marcas</strong> (<code>footer_logos.png</code>) que aparece al pie de los dos PDFs. Se guardaron en <code>app/static/images/propuesta/</code> y se reusa el logo <code>iamet-logo.png</code> existente como hero.</div>
+    </div>
+
+    <h2>7. Spotlight v2 (Command Palette Tipo Raycast)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Prefijos de Comando + Scopes + Recientes</span>
+        <div class="update-desc">Rediseno total del Spotlight (⌘K / doble espacio). Nuevos comandos con prefijo: <code>/t</code> tareas, <code>/o</code> oportunidades, <code>/q</code> cotizaciones, <code>/c</code> clientes, <code>/p</code> proyectos. <strong><code>@usuario</code></strong> filtra por responsable (con chip reactivo que se puede quitar). <strong><code>#123</code></strong> hace match exacto por ID. <strong><code>&gt;accion</code></strong> abre una paleta de 6 acciones rapidas (crear oportunidad/cotizacion/tarea, ir a CRM/calendario/tareas). <strong>Chips de scope</strong> horizontales (Todo / Oportunidades / Cotizaciones / Tareas / Clientes / Proyectos) arriba.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Resultados Ricos con Avatares, Pills y Monto</span>
+        <div class="update-desc">Cada resultado ahora muestra: <strong>avatar del responsable</strong> con iniciales o foto real, <strong>pill de estado</strong> con dot (Ganada, En proceso, Vencida, etc.), <strong>monto formateado</strong> monospace verde ($125k, $1.2M), <strong>fecha relativa</strong> ("hace 3d", "vence manana"), badges PO / Fac, y <strong>highlight amarillo</strong> del query dentro del titulo. Section headers con contador por tipo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Busqueda Numerica Flexible + Recientes en Estado Inicial</span>
+        <div class="update-desc">Al teclear numeros ("119") se matchea cotizacion por ID con <code>id__icontains</code> (encuentra #1198, #1199, etc.) tanto en cotizaciones como oportunidades. Al abrir el Spotlight sin texto: solo aparece la lista de <strong>Recientes</strong> (persistida en localStorage, max 8) — ni sugerencias ni footer de atajos, mantiene look minimalista. Clientes y Proyectos son entidades buscables por primera vez (antes solo cotizaciones/opp/tareas).</div>
+    </div>
+
+    <h2>8. Tareas: Vista Cockpit (Lista + Detalle Lateral)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cockpit como Default, Reemplaza Vista Lista</span>
+        <div class="update-desc">Nueva vista que combina lista de tareas a la izquierda + <strong>panel de detalle fijo a la derecha</strong> (evita tener que abrir un modal por cada tarea). Grid layout con columnas fijas. Tres secciones: <strong>ATRASADAS / HOY / MAS TARDE</strong> (HOY siempre visible aunque este en 0). Column headers sticky, shell full-height con <code>calc(100vh - 100px)</code>. Se quitaron la columna de ID y el punto de check; el responsable se muestra solo con nombre (sin avatar coloreado). La columna "Cliente" se renombro a <strong>"Oportunidad"</strong> y al clickear abre el widget de la opp.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Dashboard Resumen Mas Util y Menos Agresivo</span>
+        <div class="update-desc">El panel derecho (cuando no hay tarea seleccionada) muestra un resumen horizontal compacto: trio de stats (Atrasadas / Hoy / Completadas del dia) + lista "PROXIMAS tareas" con las proximas 5-8. Se elimino el look agresivo de cards grandes rojas/ambar/verdes a favor de metricas sobrias.</div>
+    </div>
+
+    <h2>9. Widget de Perfil y Avatar</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Avatar Crop Modal: Race Condition + HEIC Handling</span>
+        <div class="update-desc">Al subir una foto el preview aparecia en negro y "Guardar" crasheaba con <code>InvalidStateError</code>. Tres causas corregidas: (1) <code>img.src</code> se asignaba ANTES de registrar <code>onload</code>, creando race para data URLs; ahora se registra <code>onload/onerror</code> antes. (2) Si la imagen quedaba "broken", <code>saveCroppedAvatar</code> ahora valida <code>img.complete + naturalWidth</code> antes de <code>drawImage</code>. (3) Validacion de tipo MIME antes de leer el archivo (acepta solo JPEG/PNG/GIF/WEBP; HEIC muestra alerta explicando como cambiar el formato del iPhone).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Avatar Nuevo se Refleja Sin Recargar</span>
+        <div class="update-desc">El saveCroppedAvatar usaba selectores <code>.topbar-avatar / .crm-user-avatar</code> que no existian en el HTML real (son <code>.crm-sb-avatar</code> y <code>.crm-avatar.crm-avatar-lg</code>). Solo actualizaba el widget. Ahora la funcion <code>updateAllAvatarDisplays()</code> refresca: widget, topbar Dynamic Island, sidebar izquierdo, y cualquier otro <code>&lt;img&gt;</code> con la URL anterior (muro, comentarios). Soporta el caso donde el usuario no tenia foto (iniciales en <code>&lt;span&gt;</code>).</div>
+    </div>
+
+    <h2>10. Fixes Criticos de Produccion</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">404 de Avatares en Produccion (nginx /media/)</span>
+        <div class="update-desc">En crm.iamet.mx los avatares fallaban con 404 aunque existieran en el volumen de Docker. Causa: nginx tenia <code>location /media/ { alias /home/iamet2026/crm-iamet/media/; }</code> apuntando a un path del host que ya no existia (los archivos estan en el volumen Docker <code>crm-iamet_media_files</code> montado en <code>/app/media/</code>, inaccesible para nginx). Fix: se elimino el bloque <code>location /media/</code> para que caiga al <code>proxy_pass</code> a Django (que si los sirve via <code>django.views.static.serve</code>). En pruebas funcionaba porque su nginx nunca tuvo ese bloque. Lesson guardada en <code>project_nginx_media_prod.md</code> (memoria).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Task Widget Flash al Abrir Tareas</span>
+        <div class="update-desc">Al clickear una tarea en el cockpit, el modal de detalle se abria instantaneo pero mostraba los datos de la tarea <strong>anterior</strong> hasta que resolvia el fetch (~5s en red lenta). Fix: <code>_crmTaskClearForLoading()</code> resetea todos los campos (titulo, descripcion, pills, responsable, subtareas, feed) antes de mostrar el modal. Ademas un <strong>race guard</strong> (<code>_crmCurrentTaskId !== tareaId</code>) evita render si el usuario clickea otra tarea mientras la primera no resolvia.</div>
+    </div>
+
+    <h2>11. Deploy a Produccion</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Merge a <code>principal</code> (61 commits anteriores)</span>
+        <div class="update-desc">Se hizo el merge de 61 commits de <code>pruebas</code> a <code>principal</code> acumulados de dias previos. El deploy en el servidor requirio: <code>git pull</code> (con <code>checkout</code> para descartar una edicion local stale de <code>docker-compose.yml</code>), <code>migrate</code> (aplico <code>0124_mensajegrupoarchivo</code>), <code>collectstatic</code>, y <code>restart web</code> con el flag obligatorio <code>-p gesti-n-de-ventas</code>. El volumen externo <code>crm-iamet_media_files</code> quedo intacto. Todos los commits de hoy descritos arriba quedaron en <code>pruebas</code> esperando verificacion — <strong>pendiente merge a produccion</strong>.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

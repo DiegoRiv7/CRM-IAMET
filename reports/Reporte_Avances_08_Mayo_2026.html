@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 08 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .flow-box { background: linear-gradient(135deg, #EEF2FF 0%, #F5F7FF 100%); border: 1px solid #C7D2FE; border-radius: 12px; padding: 18px 22px; margin: 15px 0; }
+        .flow-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+        .flow-step:last-child { margin-bottom: 0; }
+        .flow-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: white; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .flow-text { font-size: 13.5px; color: #1d1d1f; padding-top: 2px; }
+        .flow-text strong { color: var(--primary); }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 08 de Mayo, 2026</p>
+            <p>Periodo: 08 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se trabajó en dos frentes: el módulo de <strong>Proyectos</strong> recibió el cronograma profesional al nivel de MS Project y Smartsheet, con vista expandible y detalle por actividad. Y el hito principal: el <strong>flujo de asignación de prospectos</strong>, que permite a un supervisor poner a trabajar a un vendedor desde el primer día — lo asigna, le pone qué hacer y cuándo, y el sistema lo guía sin que el supervisor tenga que repetirlo.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">20</div>
+            <div class="stat-label">Cambios Liberados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Modulos Mejorados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Correcciones Aplicadas</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Flujo de Asignación de Prospectos
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El supervisor ahora puede <strong>asignar prospectos a un vendedor desde el botón "+ Nuevo Prospecto"</strong>, dejarle indicada la primera actividad (visita, llamada, correo, etc.) y la fecha. El vendedor lo ve <strong>al instante</strong>: notificación al entrar al CRM, prospecto en su pipeline y la actividad agendada en su calendario. <strong>Ideal para vendedores nuevos</strong> — entran y ya tienen su primer día de trabajo definido sin necesidad de explicaciones.</p>
+    </div>
+
+    <h2>1. Flujo de Asignación de Prospectos (Hito)</h2>
+
+    <div class="flow-box">
+        <div class="flow-step">
+            <div class="flow-num">1</div>
+            <div class="flow-text"><strong>El supervisor</strong> abre la sección de Prospectos y le da a <strong>"+ Nuevo Prospecto"</strong>.</div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">2</div>
+            <div class="flow-text">Llena el título de la prospección y elige al vendedor en el botón <strong>"Asignar a"</strong>.</div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">3</div>
+            <div class="flow-text">Aparece un bloque <strong>"Actividad inicial"</strong>: tipo (visita / llamada / correo / campaña / reunión virtual / otro) y fecha + hora.</div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">4</div>
+            <div class="flow-text">Al guardar, el vendedor recibe una <strong>notificación</strong> 🔔 al entrar al CRM, el prospecto aparece en su pipeline y la actividad en su calendario.</div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-num">5</div>
+            <div class="flow-text">Al hacer clic en la actividad del calendario se abre el prospecto con el aviso <strong>"Asignado por: [Supervisor]"</strong>, listo para trabajarlo.</div>
+        </div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Botón "Asignar a" en el Composer de Prospecto</span>
+        <div class="update-desc">El supervisor o administrador ve un botón extra en el formulario de "+ Nuevo Prospecto" donde puede <strong>buscar y elegir al vendedor</strong> al que le quiere pasar el prospecto. Vendedores comunes no ven este botón — solo asignan a sí mismos como antes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Actividad Inicial Guiada</span>
+        <div class="update-desc">Cuando el supervisor asigna a otro vendedor, aparece un bloque azul que <strong>obliga</strong> a poner el tipo de actividad y la fecha. Sin eso, no se puede crear el prospecto. Así el vendedor nuevo siempre sabe qué hacer primero, sin tener que adivinar ni preguntar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Notificación al Vendedor</span>
+        <div class="update-desc">El vendedor entra al CRM y ve en la <strong>campana de notificaciones</strong> un aviso del estilo <em>"[Supervisor] te asignó un prospecto. Primera actividad: Llamada el 19/05/2026 a las 09:00."</em>. No se le pasa ni un solo prospecto nuevo aunque ya tenga muchos en su pipeline.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Calendario Sincronizado</span>
+        <div class="update-desc">La actividad aparece en el calendario del vendedor en <strong>color café</strong>. Al hacer clic se abre el detalle del prospecto, donde aparece quién lo asignó y todos los datos. <strong>Un solo clic separa al vendedor de saber qué cliente atender.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">"Crear Prospecto Rápido" Va al Lugar Correcto</span>
+        <div class="update-desc">Cuando se le da a "Crear prospecto nuevo" en el formulario, el sistema lo guarda como <strong>prospecto en el panel de administración</strong>, no como cliente. Antes ensuciaba la tabla de Clientes con empresas que en realidad eran prospectos potenciales sin confirmar.</div>
+    </div>
+
+    <h2>2. Cronograma Profesional para Proyectos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cronograma al Nivel de MS Project / Smartsheet</span>
+        <div class="update-desc">El tab de Cronograma del proyecto se rediseñó completo: línea de tiempo profesional con <strong>fases agrupadoras</strong>, dependencias entre actividades, recursos asignados, indicadores de avance vs. plan (SPI / CPI), filtro por trimestre / mes / semana / día y vista financiera. <strong>Lo que antes era un Excel de seguimiento ahora es una herramienta de control de proyectos completa.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Pantalla Completa</span>
+        <div class="update-desc">Botón <strong>"Pantalla completa"</strong> en la esquina superior. El cronograma ocupa toda la ventana — útil para reuniones de seguimiento donde hay muchas actividades y se quiere ver la línea de tiempo entera de un vistazo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Click en una Actividad Abre Su Detalle</span>
+        <div class="update-desc">Al hacer clic en una barra del cronograma se abre un panel lateral con el resumen: fechas, duración, días restantes, avance, descripción, responsables, recursos y dependencias. Y un botón para abrir <strong>vista de pantalla completa de la actividad</strong> con sub-pestañas: <em>Detalles, Comentarios, Archivos e Historial</em>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Comentarios y Archivos por Actividad</span>
+        <div class="update-desc">En la vista de pantalla completa de cada actividad se pueden agregar <strong>comentarios y subir archivos</strong> (planos, fotos, especificaciones). Todo el equipo del proyecto trabaja sobre el mismo cronograma, sin tener que mandar adjuntos por correo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Sincronización con el Calendario Global</span>
+        <div class="update-desc">Cuando una actividad del cronograma tiene responsables asignados, aparece <strong>automáticamente en el calendario</strong> de cada uno. Si se mueve la fecha en el cronograma, se mueve en los calendarios. Una sola fuente de verdad.</div>
+    </div>
+
+    <h2>3. Look & Feel del Módulo Proyectos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Diseño "Warm Modern"</span>
+        <div class="update-desc">El módulo de Proyectos se rediseñó con una paleta cálida (gris claro / beige) y acento azul corporativo. Tipografía <strong>Plus Jakarta Sans</strong>. Aspecto profesional y consistente con el estilo del CRM.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Navegación Contextual del Proyecto</span>
+        <div class="update-desc">Al abrir un proyecto, en la parte superior aparece una barra con <strong>todas sus secciones</strong>: Resumen, Tareas, Cronograma, Partidas, Levantamientos, Drive, Finanzas. Saltar entre ellas es un solo clic. El detalle del proyecto vive dentro de la misma vista — ya no se abre como ventana flotante.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Finanzas Reorganizadas</span>
+        <div class="update-desc">La sección de Finanzas del proyecto se dividió en sub-pestañas para ver los costos, ingresos y márgenes sin tanto scroll. La información sigue siendo la misma, mejor organizada.</div>
+    </div>
+
+    <h2>4. Detalles de Calidad y Correcciones</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Detalle del Proyecto Aparecía en Otros Módulos</span>
+        <div class="update-desc">Si abrías un proyecto y luego cambiabas a Tareas o Calendario, el detalle del proyecto se quedaba pegado a la pantalla. Corregido: cada cambio de módulo cierra el detalle correctamente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Lista de Vendedores Invisible al Asignar</span>
+        <div class="update-desc">Al abrir el botón "Asignar a" la lista de vendedores se cargaba pero no se mostraba en pantalla. Corregido — un detalle de estilos heredados que ocultaba la lista.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Color de las Actividades en el Calendario</span>
+        <div class="update-desc">Las actividades de prospecto recién asignadas estaban saliendo en color morado y abrían un detalle genérico. Ahora salen en café (consistente con las demás actividades de prospecto) y abren el detalle correcto con la sección "Relacionado a → Prospecto".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Códigos Internos Visibles en la Descripción</span>
+        <div class="update-desc">Aparecían textos del estilo <em>"[asignado_por_id:24]"</em> y <em>"---prospecto_id:21|prueba|maquiladore"</em> en la descripción de la actividad. Eran datos internos que el sistema usa para enlazar registros, pero no deberían verse. Corregido — ahora la descripción se ve limpia.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Composer Más Limpio</span>
+        <div class="update-desc">Antes el formulario llegaba con valores pre-seleccionados (Software, Sistemas) que no siempre aplicaban. Ahora <strong>arranca vacío</strong> en producto y área — son opcionales, el creador los pone solo si vienen al caso. El placeholder del título también se ajustó a <em>"Título de la prospección…"</em>.</div>
+    </div>
+
+    <h2>5. ¿Qué Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Onboarding de Vendedores Nuevos en Minutos</span>
+        <div class="update-desc">Un vendedor nuevo entra a la empresa, le asignamos prospectos, y al primer login encuentra el CRM <strong>ya con su trabajo definido</strong>: pipeline lleno, calendario con visitas y llamadas programadas, notificaciones que le dicen quién le pasó cada cosa. <strong>El supervisor no tiene que sentarse con él a explicarle qué hacer.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Trazabilidad de Quién Asigna Qué</span>
+        <div class="update-desc">Cada prospecto guarda quién lo asignó. Si después hay dudas (<em>"¿quién le dijo a este vendedor que llamara a este cliente?"</em>), el sistema lo muestra. Útil para evaluar el desempeño de supervisores y vendedores.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Control de Proyectos al Nivel de los Líderes del Mercado</span>
+        <div class="update-desc">El cronograma profesional permite gestionar proyectos complejos sin necesidad de comprar licencias de Microsoft Project ni Smartsheet. <strong>Funciones que cuestan miles de pesos al año por usuario, ahora dentro del CRM IAMET.</strong></div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 08 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

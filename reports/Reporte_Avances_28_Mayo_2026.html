@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 28 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+            --accent: #FF9500;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(255, 149, 0, 0.06); border: 1px solid rgba(255, 149, 0, 0.2); padding: 18px 22px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--accent); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .badge-hito { background: #ffedd5; color: #9a3412; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .callout-accent {
+            border-left-color: var(--accent);
+            background: #fff7ed;
+        }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .feature-list--accent div::before { background: var(--accent); }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 28 de Mayo, 2026</p>
+            <p>Periodo: 28 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Día de muchísimo movimiento. Tres frentes grandes cerraron al mismo tiempo: <strong>un nuevo módulo de Calendario de Instalaciones</strong> (el hito mayor — pasa el Plan de Trabajo Bajanet que estaba en Excel a estar dentro del CRM, con vista calendario), <strong>la integración del módulo de Reportes dentro del Dashboard</strong> como SPA (sin recargar la página) — y un barrido grande para que los <strong>tres reportes restantes</strong> (Cerradas, Por Cliente y Personalizado) compartan el mismo lenguaje visual y la misma experiencia que Oportunidades Abiertas. Además se atendieron varios fixes urgentes reportados por usuarios y se extendió la visibilidad por <strong>Grupos de Trabajo</strong> a más rincones del CRM.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">25</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Modulo nuevo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Reportes integrados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Fixes / mejoras</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1h4a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h4V3a1 1 0 011-1zM5 8v9h10V8H5zm3 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z"/></svg>
+            Hito Mayor: Calendario de Instalaciones — Plan de Trabajo Bajanet
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El equipo administrativo llevaba el Plan de Trabajo en un Excel que circulaba por correo (clientes, PO, proyectos, jornadas, técnicos, fechas tentativas, montos, utilidad y observaciones). <strong>Hoy ese Plan vive dentro del CRM como un modo del calendario.</strong> Mismo calendario que usan los vendedores para sus actividades, pero con un toggle simple <em>"Actividades / Instalaciones"</em> en la esquina superior derecha que cambia la fuente de datos. Cuando se activa "Instalaciones", el calendario muestra las jornadas programadas con un color distinto (naranja Apple), permite ver el detalle de cada una con un click, crear nuevas desde el mismo calendario sin salir, y verlas en grilla semanal estilo Excel (técnico × día). El Plan dejó de vivir en un archivo y pasó a ser parte del CRM con todo lo que eso implica (visibilidad por grupo, link a clientes y oportunidades reales, historial de cambios).</p>
+    </div>
+
+    <h2>1. Calendario de Instalaciones — Detalle del Hito Mayor</h2>
+
+    <div class="callout callout-accent">
+        <strong>Por qué importa:</strong> el Excel del Plan de Trabajo lo modificaban 3 personas, se mandaban versiones, perdían cambios, y nadie tenía la versión "actual" en su escritorio. Ahora <strong>todos miran el mismo calendario</strong>, con permisos del CRM (visibilidad por grupo), historial de cambios y vínculos directos a los clientes y oportunidades reales. Lo que era un archivo se convirtió en parte del sistema.
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Nuevo</span>
+        <span class="update-title">Modelo Instalacion con Todos los Campos del Excel</span>
+        <div class="update-desc">El nuevo modelo de base de datos cubre exactamente lo que tenía el Excel: <strong>cliente, PO, proyecto, cantidad de jornadas, tipo de jornada</strong> (normal / sábado / domingo / noche / extraordinaria), <strong>descripción del personal asignado</strong> (texto libre tipo "1 supervisor y 3 técnicos"), <strong>fecha programada</strong> (o fecha tentativa en texto cuando aún no hay día exacto), <strong>monto PO, utilidad, observaciones y notas internas</strong>. Cada instalación tiene un <strong>estado</strong> (programada / en curso / completada / cancelada) y opcionalmente se liga a un <strong>cliente del CRM</strong> y a una <strong>oportunidad existente</strong>. Quedan indexadas por fecha y por estado para que el calendario consulte rápido aunque el plan crezca.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Nuevo</span>
+        <span class="update-title">Toggle "Actividades / Instalaciones" en el Header del Calendario</span>
+        <div class="update-desc">Un segmented control sencillo en la esquina superior derecha del calendario (justo antes de la navegación de fecha) con dos pills: <strong>👥 Actividades</strong> y <strong>✅ Instalaciones</strong>. La pill activa se ve elevada con sombra Apple-like, la inactiva queda gris. Al hacer click se cambia la fuente de eventos del calendario <strong>sin recargar la página</strong>: el calendario se queda exactamente donde estaba (mes / semana / día visible) y solo cambian los eventos que muestra. El toggle se puso a la derecha intencionalmente — la dynamic island central <em>Mes / Semana / Día</em> mantiene su protagonismo visual porque es la navegación principal del calendario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Nuevo</span>
+        <span class="update-title">Endpoint del Calendario de Instalaciones</span>
+        <div class="update-desc">Un endpoint dedicado <code>/app/api/calendario/instalaciones/</code> que devuelve las instalaciones del rango pedido (mes y año, o rango exacto desde / hasta). Acepta filtros opcionales: estado (programada / en curso / etc.) y búsqueda libre que pega contra cliente / proyecto / PO. La respuesta viene con el mismo "shape" que el calendario ya entiende (título, fecha, color, metadata), así que el render reusa toda la lógica existente sin reinventar nada. Por debajo aplica las reglas de <strong>visibilidad por grupo de trabajo</strong> — las instalaciones siguen las mismas reglas que el resto del CRM.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Nuevo</span>
+        <span class="update-title">Form de Creación Inline desde el Calendario</span>
+        <div class="update-desc">Al click en cualquier día del calendario (estando en modo Instalaciones) se abre un formulario inline para crear una nueva instalación, sin salir del calendario. Cliente con autocomplete contra los del CRM, PO, proyecto, jornadas (cantidad + dropdown de tipo), personal con sugerencias rápidas, fecha programada (preseleccionada al día que diste click) o texto tentativo cuando no hay día seguro, monto PO, utilidad y observaciones. <strong>Al guardar, la nueva instalación aparece de inmediato</strong> en el calendario con el color de su estado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Nuevo</span>
+        <span class="update-title">Modal Detalle al Click en una Instalación</span>
+        <div class="update-desc">Al click en cualquier instalación pintada en el calendario se abre un modal con <strong>toda la información en un solo vistazo</strong>: cliente, PO, proyecto, jornadas con tipo, personal asignado, fecha, monto y utilidad, observaciones y notas. Desde el mismo modal se puede editar cualquier campo, cambiar el estado (programada → en curso → completada), agregar notas, y si la instalación está ligada a un cliente o a una oportunidad, hay links directos para saltar a su vista respectiva en el CRM (la oportunidad se abre inline como con cualquier otra opp del sistema).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Nuevo</span>
+        <span class="update-title">Vista Grilla Semanal Estilo Excel (Técnico × Día)</span>
+        <div class="update-desc">Esta es la parte que más recuerda al Excel original. En la vista <strong>Semana</strong>, cuando el modo es Instalaciones, además del calendario tradicional se renderiza una <strong>grilla complementaria abajo</strong>: una fila por técnico (URIEL, ARMANDO, GOYO, EDGAR, JULIO, CHUY, TOÑO, JORGE…), una columna por día de la semana (Sábado → Domingo), y en cada celda el cliente o proyecto asignado a ese técnico ese día. Para el supervisor es la vista "operativa" que le dice de un vistazo <em>¿quién está dónde esta semana?</em>. Es exactamente lo que estaba pintado a mano en el Excel.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Color Naranja Apple — Diferenciación Visual Inmediata</span>
+        <div class="update-desc">Las actividades del calendario tradicional son <strong>azules</strong> (color brand del CRM). Las instalaciones son <strong>naranja Apple (#FF9500)</strong>. Esa diferencia de color es lo primero que el ojo percibe — incluso si te equivocas y dejas el modo cambiado, sabes inmediatamente qué tipo de datos estás viendo. Los estados (programada / en curso / completada / cancelada) modulan ligeramente el naranja para que también haya pistas visuales del avance.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Decisión</span>
+        <span class="update-title">Mismo Calendario, Modo Diferente — No un Calendario Aparte</span>
+        <div class="update-desc">Una opción habría sido crear un calendario separado solo para instalaciones (otro botón en el sidebar, otra página). <strong>Elegimos lo opuesto:</strong> reusar el calendario que la gente ya conoce y agregar un toggle de fuente. La razón es de mantenimiento y de adopción — un solo calendario que aprender, una sola UI que mantener, y la transición entre datos personales (actividades) y datos operativos (instalaciones) es de un click. La regla en este CRM es <em>"no duplicar UIs si la diferencia es solo la fuente de datos"</em>.</div>
+    </div>
+
+    <h2>2. Reportes Mudados al Dashboard como SPA (Sin Recargar)</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Ayer el módulo de Reportes vivía como una sección independiente con su propio ícono en el sidebar. Hoy <strong>se mudó al Dashboard</strong> como un quinto tab en su dynamic island, y se convirtió en una SPA real — sin recarga de página al entrar / salir / cambiar entre los 4 reportes.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab "Reportes" en la Dynamic del Dashboard</span>
+        <div class="update-desc">El Dashboard del CRM tenía 4 tabs: <em>Oportunidades / Prospectos / Proyectos / Clientes</em>. Ahora tiene un quinto: <strong>📄 Reportes</strong>. Click sobre él dispara una animación de "barrido hacia la izquierda" en la dynamic island — la dynamic del Dashboard sale, y entra desde la derecha una <strong>nueva dynamic con los 4 tabs de reportes</strong> (Abiertas / Cerradas / Por Cliente / ✨ Personalizado) y una <strong>flecha de regreso</strong> que reproduce la animación inversa.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">SPA Verdadera — Sin Recargas Entre Páginas</span>
+        <div class="update-desc">Al entrar a Reportes desde el Dashboard, la página principal del CRM <strong>no se recarga</strong>. Al cambiar entre los 4 reportes, tampoco. Al regresar al Dashboard, tampoco. Los widgets de cliente y oportunidad se siguen abriendo a tamaño completo (no encajonados) porque el iframe del reporte le pide al Dashboard padre que los abra en su contexto. Es la diferencia entre <em>"el CRM se siente como una app moderna"</em> y <em>"el CRM hace flashes al navegar"</em>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Controles del Reporte en el Header del Dashboard</span>
+        <div class="update-desc">Para no duplicar barras de herramientas, los controles del reporte (botón Ordenar con su menú dinámico de opciones, búsqueda con su placeholder según el reporte, botón Filtros con su dot de "filtros activos", y botón Exportar CSV) <strong>viven directamente en el header del Dashboard</strong>. Ordenar y los demás quedan a la izquierda junto a los tabs del reporte; búsqueda y filtros quedan a la derecha junto a las pills de periodo y vendedor. El header interno del reporte desaparece, ganando vertical para los KPIs y la tabla.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Pills de Periodo y Vendedor se Propagan al Reporte</span>
+        <div class="update-desc">Si en el Dashboard tienes filtrado por <em>"Mayo · 2026 · Roberto López"</em> y le das click a Reportes, el reporte <strong>arranca automáticamente filtrado con esos mismos valores</strong>: solo verás las oportunidades de Roberto López con cierre en mayo de 2026. Y si cambias la pill mientras estás en Reportes (por ejemplo, cambias el mes a Junio), el reporte <strong>se refresca al instante</strong> sin recargar la página. El Dashboard y los reportes hablan entre sí.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Ícono "Reportes" Removido del Sidebar</span>
+        <div class="update-desc">Con el módulo viviendo dentro del Dashboard, el ícono "Reportes" del sidebar lateral ya no tiene sentido — se quitó. El sidebar queda más limpio (Buscar / Notificaciones / CRM / Dashboard / Tareas / Proyectos / Calendario / Correo / Muro / Grupos / Admin / Perfil), y ya no hay dos puntos de entrada al mismo módulo.</div>
+    </div>
+
+    <h2>3. Reportes Cerradas + Por Cliente + Personalizado — Alineamiento al Patrón</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Ayer entregamos los 3 reportes funcionalmente. Hoy se aplicó a los <strong>tres restantes</strong> el patrón "limpio" que usamos en Oportunidades Abiertas: botón <em>Ordenar</em> dropdown en lugar del bloque de plantillas, plantillas movidas al drawer de Filtros, paginación, y export CSV con bloque de metadatos (quién exportó, cuándo, filtros aplicados, totales).</p>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Oportunidades Cerradas: Ordenar con 8 Opciones</span>
+        <div class="update-desc">Default <strong>Mayor monto</strong>. Las otras: Menor monto, Cierre más reciente / antiguo, Ganadas primero, Perdidas primero, Cliente A-Z, Vendedor A-Z. El drawer de Filtros tiene como primer grupo la <em>Vista rápida</em> (Todas / Solo Ganadas / Solo Perdidas) que antes vivía como chips en el header. Paginación de 50 al pie. El export CSV ahora trae al inicio un bloque <code>#</code> con el desglose de ganadas vs perdidas y los montos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Por Cliente: Tabla Más Concentrada</span>
+        <div class="update-desc">Se removieron 2 columnas que aportaban poco (<em>Categoría</em> y <em>Próxima actividad</em>). La columna <em>Ganado total</em> cambió a <strong>Cobrado total</strong> — y se trae directo del módulo de Cobrado del Dashboard (los CSVs que sube administración), no de las oportunidades ganadas. Es la métrica honesta de <em>"¿con qué clientes hemos cobrado de verdad?"</em>. El sort dropdown tiene 9 opciones (Más opps abiertas, Mayor cobrado, Sin actividad reciente primero, Cliente A-Z, etc.).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Por Cliente: Click Abre el Widget Inline</span>
+        <div class="update-desc">Antes el click en una fila del reporte de Por Cliente te sacaba al CRM filtrado por ese cliente. Ahora <strong>abre el widget del cliente directamente</strong> (con sus tabs Oportunidades, Prospecciones, Facturación, Cotizaciones, Información). Mismo widget que usa el resto del CRM — no se duplicó código.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Personalizado: Header Alineado al Patrón</span>
+        <div class="update-desc">El reporte Personalizado tenía su dynamic island pegada a la derecha (rompía el patrón visual de los otros 3). Se reorganizó con el mismo grid de 3 columnas centradas: <em>← Volver</em> a la izquierda, dynamic island con los 4 tabs al centro, acciones (Resetear / Exportar / Guardar) a la derecha. Ahora los 4 reportes se ven uniformes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Paginación de Abiertas Visible Por Fin (Tercer Intento)</span>
+        <div class="update-desc">La paginación del reporte de Abiertas se renderizaba pero <strong>quedaba debajo del viewport sin scroll</strong>. La causa real fue un layout que combinaba <code>height: 100vh</code> en el contenedor padre con flex children que no podían comprimirse correctamente. La solución definitiva fue <strong>dejar que el body scrollee naturalmente</strong> en las páginas de reportes (clase <code>crm-page-natural-scroll</code>) — el sidebar se queda visible con position: sticky y el contenido fluye normal. Aplicado a los 4 reportes.</div>
+    </div>
+
+    <h2>4. Visibilidad por Grupos de Trabajo — Cobertura Completa</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">El sistema tiene desde hace tiempo el concepto de <strong>Grupos de Trabajo</strong>: miembros que pueden ver lo que el resto del grupo hace. Pero había puntos del CRM donde el chequeo de permiso se hacía a mano sin considerar el grupo, dejando huecos. Se cerraron todos.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Helper Centralizado <code>puede_actuar_sobre()</code></span>
+        <div class="update-desc">Antes el código tenía repetido por 8 lugares distintos el patrón <em>"si no eres supervisor y no eres el dueño del objeto → no puedes"</em>. Ese chequeo no consideraba a los compañeros de grupo. Ahora hay una sola función <code>puede_actuar_sobre(actor, owner)</code> que devuelve True si el actor es supervisor, es el dueño, o <strong>comparte al menos un grupo activo con el dueño</strong>. Se aplicó a los 8 puntos donde antes había código duplicado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Qué Pueden Hacer Ahora los Miembros de un Mismo Grupo</span>
+        <div class="feature-list">
+            <div><strong>Ver y mover etapa</strong> de la opp de un compañero.</div>
+            <div><strong>Comentar y subir archivos</strong> a sus oportunidades.</div>
+            <div><strong>Ver el timeline completo</strong> de su opp.</div>
+            <div><strong>Descargar archivos</strong> de su oportunidad.</div>
+            <div><strong>Cotizar</strong> con clientes asignados a un compañero.</div>
+            <div><strong>Ver opps del cliente</strong> del grupo en el dropdown de cotización.</div>
+            <div><strong>Descargar PDFs</strong> de cotizaciones de un compañero.</div>
+            <div><strong>Clonar cotizaciones</strong> apuntando a clientes del grupo.</div>
+        </div>
+    </div>
+
+    <h2>5. Fixes Urgentes Reportados por Usuarios</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">"Requiere Verificación al Avanzar" — Eliminado por Completo</span>
+        <div class="update-desc">Había una opción en las reglas de Tareas Automáticas que, cuando estaba activa, mostraba un <strong>widget bloqueante al usuario antes de avanzar de etapa</strong>. En la práctica entorpecía el flujo y a nadie le servía. Se eliminó: la opción ya no aparece en el configurador de reglas, el backend ignora la flag (incluso si alguien la manda desde un JS viejo cacheado), y los <strong>usuarios que ya tenían el widget atrapados</strong> quedaron liberados mediante una migración de datos que marcó como descartados todos los avances pendientes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Sidebar Mostraba Dos Iconos Activos al Mismo Tiempo</span>
+        <div class="update-desc">Cuando un usuario estaba en <em>/app/reportes/</em>, el sidebar marcaba como activo tanto el ícono de <strong>Reportes</strong> como el de <strong>Tareas</strong>. La causa era un script del CRM que restauraba la última vista guardada en <code>localStorage</code> sin distinguir si estaba dentro del CRM home o en otra página. Se agregó un guard que solo aplica la restauración cuando estás en <em>/app/home/</em> o <em>/app/todos/</em>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Link Compartido de Tareas: Iba a Vista Previa, Ahora Va Directo</span>
+        <div class="update-desc">Cuando un usuario copiaba el link de una tarea y lo abría, en vez de ir directo al CRM con la tarea abierta, mostraba una "vista previa solo lectura" con un botón <em>Ir a la tarea</em> — y ese botón daba <strong>Server Error 500</strong>. Dos bugs en uno. Ahora el backend hace redirect server-side directo a la tarea para usuarios autenticados (los crawlers de WhatsApp / Slack siguen recibiendo el HTML con OG tags para el preview enriquecido), y el botón de respaldo apunta a la URL correcta.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Sidebar No Navegaba Correctamente Desde Fuera del CRM Home</span>
+        <div class="update-desc">Estando en una página externa al CRM (como Reportes), darle click a "Calendario" o "Dashboard" en el sidebar lateral no hacía nada útil — los links eran relativos y solo añadían querystring sin navegar. Se cambiaron a URLs absolutas (<code>/app/home/?tab=calendario</code>, etc.) y los botones que dependen de JS local del CRM se hookean ahora a un guard que navega a <code>/app/home/</code> antes de intentar abrir el overlay.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Reporte de Abiertas Inflaba el Pipeline con Etapas Cerradas</span>
+        <div class="update-desc">El KPI <em>"Pipeline Total"</em> mostraba un monto inflado porque incluía oportunidades en etapas <strong>terminales como "Pagado" y "Perdido"</strong>. La causa: la lista de etapas terminales solo tenía las formas femeninas ("ganada", "pagada", "perdida"), pero el seed de etapas las crea en masculino ("Ganado", "Pagado", "Perdido"). Se agregaron ambas formas — el reporte ahora muestra solo las realmente abiertas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">RFC en Cotizaciones PDF</span>
+        <div class="update-desc">Las cotizaciones en PDF tenían el teléfono y el dominio en la esquina superior pero <strong>les faltaba el RFC</strong>. Se agregó (BAJ100903KC6) en el bloque de contacto, donde los demás datos fiscales.</div>
+    </div>
+
+    <h2>6. Próximos Pasos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Validar Todo en Pruebas → Merge a Producción</span>
+        <div class="update-desc">Casi todo lo de hoy quedó en la rama de pruebas. Las acciones más sensibles (eliminar la feature de verificación, ampliar visibilidad por grupo, fix del link de tareas) ya pasaron a producción durante el día. El Calendario de Instalaciones y la integración del Dashboard ↔ Reportes están en pruebas esperando validación visual contigo antes del merge.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Importar el Excel Original al Calendario de Instalaciones</span>
+        <div class="update-desc">El plan tiene como siguiente paso una pequeña utilidad de importación que <strong>lee el Excel del Plan de Trabajo</strong> y crea las instalaciones correspondientes en la base, así no hay que repicarlas a mano. Los registros traídos del Excel se marcarán como importados para poder distinguirlos de los creados desde el CRM si hace falta auditar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Asignación de Técnicos como Entidad Aparte</span>
+        <div class="update-desc">La grilla semanal técnico × día actualmente usa el texto libre de "personal asignado" como pista. El siguiente paso es <strong>modelar al técnico como entidad</strong> (User del CRM con rol técnico) y la asignación como una mini-tabla (técnico × instalación × día) — eso permite calcular horas trabajadas por persona y mostrarle a cada técnico su propio calendario filtrado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Export a Excel Server-Side de los Reportes</span>
+        <div class="update-desc">El export actual de los 4 reportes es CSV cliente-side con metadatos. La última pieza del módulo es agregar un export a <strong>Excel real (.xlsx)</strong> generado en el servidor con <code>openpyxl</code>: encabezados con color corporativo, formato de moneda y porcentaje, anchos optimizados. Un solo botón "Exportar Excel" que comparten los 4 reportes.</div>
+    </div>
+
+    <h2>7. ¿Qué Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Plan de Trabajo Dejó de Ser un Archivo Suelto</span>
+        <div class="update-desc">El Excel del Plan vivía en correo y se ramificaba en versiones que no concordaban. <strong>Ahora hay una sola fuente de la verdad</strong>, dentro del CRM, con permisos de grupo y con vínculos a los clientes y oportunidades reales. Si una instalación se reprograma, todos lo ven al instante. Si un técnico necesita saber dónde está la semana próxima, abre el calendario en modo Instalaciones y ya. La pérdida de tiempo coordinando versiones del Excel se acaba.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Reportes Dentro del Flujo Natural del Dashboard</span>
+        <div class="update-desc">Pasar del Dashboard a los Reportes ahora es un click y una animación de medio segundo, sin recarga ni cambio de contexto. <strong>Eso baja la fricción de consultar reportes</strong> — un jefe que está mirando el Dashboard y se pregunta <em>"¿cómo cerró Diego este mes?"</em> ya no necesita salir a otra sección: queda dentro del mismo flujo y los filtros que tenía aplicados se llevan al reporte. Es la diferencia entre "usar reportes cuando hace falta" y "tener los reportes siempre cerca".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Grupos de Trabajo, Sin Huecos</span>
+        <div class="update-desc">Antes un compañero de grupo podía ver las opps del otro pero <strong>no podía cotizar con sus clientes ni descargar sus PDFs</strong>. Eso obligaba a "pedir favores" entre vendedores del mismo grupo. Ahora la regla es consistente: <strong>si estás en el mismo grupo activo, puedes actuar sobre todo lo del compañero</strong>. Cubre 8 lugares del CRM con una sola función helper, así que el día de mañana extenderla cuesta una sola línea.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El CRM Se Siente Como una App Moderna</span>
+        <div class="update-desc">La SPA del Dashboard ↔ Reportes, las animaciones de barrido entre dynamic islands, los widgets que se abren inline sin sacarte de donde estás… todos son detalles pequeños individualmente, pero juntos cambian <strong>cómo se siente</strong> el sistema. Ya no hay flashes ni "esperas a que cargue la página completa" — la navegación se siente continua. El usuario percibe la diferencia incluso si no la puede articular.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 28 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

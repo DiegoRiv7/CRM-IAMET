@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 15 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 15 de Mayo, 2026</p>
+            <p>Periodo: 15 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Lanzamiento del <strong>nuevo modulo Marketing</strong>: hub completo con 8 marcas, busqueda inteligente, plantillas reales (brochures, landings, presentaciones, casos) y sistema de subida con permisos. Ademas se agrego la tab <strong>Facturacion</strong> al cliente y se mejoro a fondo el modulo de <strong>Correo</strong>.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Modulo nuevo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">8</div>
+            <div class="stat-label">Marcas integradas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">19</div>
+            <div class="stat-label">Plantillas listas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">30</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Nuevo Modulo Marketing
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El CRM ahora tiene una <strong>seccion Marketing propia</strong> donde el vendedor entra, escoge una marca y arma su material para enviar al cliente. Cada marca (<strong>Zebra, Panduit, Avigilion, Genetec, Axis, APC, Cisco e IAMET</strong>) tiene sus brochures, landing pages, presentaciones y casos de exito como archivos reales. La busqueda es inteligente: escribe &ldquo;camaras&rdquo; y sugiere Avigilion/Axis; &ldquo;cableado&rdquo; sugiere Panduit. Cualquier recurso se comparte por correo con un solo click. Los usuarios autorizados desde el panel admin pueden subir contenido nuevo arrastrando el archivo.</p>
+    </div>
+
+    <h2>1. Modulo Marketing &mdash; Hub Centralizado</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab Marketing en el CRM con 8 Brand Cards</span>
+        <div class="update-desc">Nueva seccion al lado de Oportunidades y Prospeccion. La pantalla inicial muestra las 8 marcas en cuadricula 4&times;2 con su logo en su tipografia y color real. <strong>Estilo Apple-minimalist</strong>: cards blancas con sombra sutil, sin animaciones de videojuego.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Busqueda Inteligente con Sugerencias</span>
+        <div class="update-desc">Atajo <strong>&#8984;K</strong> para abrirla. Mientras escribes sugiere por marca y por palabra clave: &ldquo;camaras&rdquo; lleva a Avigilion/Axis, &ldquo;cableado&rdquo; a Panduit, &ldquo;etiquetas&rdquo; a Zebra. Tambien autocompleta titulos de recursos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">19 Plantillas Reales Listas para Demo</span>
+        <div class="update-desc"><strong>6 brochures, 6 landing pages, 4 presentaciones y 3 casos de exito</strong> &mdash; archivos HTML standalone que se abren en el navegador y se ven como producto real (no mockups). Datos verificos de cada marca: ZD421, ACC7, Security Center 5.11, Cat6A, etc.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista de Resultados con Thumbnails Visuales</span>
+        <div class="update-desc">Al elegir una marca, el wordmark gigante aparece en la barra superior y abajo se muestra el grid de recursos. Cada card tiene un <strong>mini-mockup visual</strong> segun el tipo: simulacion de PDF para brochures, browser mockup para landings, play button oscuro para videos, sello de medalla para certificaciones.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Compartir por Correo con un Click</span>
+        <div class="update-desc">Boton <strong>Compartir</strong> en cada recurso abre el modulo de correo del CRM con asunto y cuerpo prellenados con la info del recurso. Listo para enviar al cliente.</div>
+    </div>
+
+    <h2>2. Subida de Material y Permisos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Permiso &ldquo;Gestion Marketing&rdquo; en Panel Admin</span>
+        <div class="update-desc">Toggle nuevo en el panel admin (Permisos) <strong>independiente del rol</strong>. Solo los usuarios marcados pueden subir, editar o borrar material. Util para dar acceso a marketing/direccion sin convertirlos en supervisores.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modal de Subida con Drag &amp; Drop</span>
+        <div class="update-desc">Boton <strong>+ Subir material</strong> en el hub (visible solo con permiso) abre un modal con drop zone prominente. Soporta <strong>PDF, PNG, JPG, MP4, PPT/PPTX y HTML</strong>. Tambien permite pegar una URL externa (landing en Drive, video de YouTube, etc.).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Catalogo Inicial Pre-poblado (33 recursos)</span>
+        <div class="update-desc">Al deployar, el modulo arranca con <strong>33 recursos seed</strong> (las 19 plantillas reales + mocks visuales) para que la seccion no se vea vacia. Los nuevos uploads del equipo se suman a estos.</div>
+    </div>
+
+    <h2>3. Tab Facturacion en el Cliente</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Listado de Facturas de Todas las Oportunidades del Cliente</span>
+        <div class="update-desc">El widget de cliente tiene una nueva tab <strong>Facturacion</strong> que junta automaticamente todos los archivos cuyo nombre contiene &ldquo;factura&rdquo; subidos a cualquier oportunidad de ese cliente. Tabla con nombre, oportunidad relacionada (link clickeable), fecha y tamano.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Subida Manual de Facturas con Drop Zone</span>
+        <div class="update-desc">Boton <strong>+ Subir factura</strong> en el header del tab. Selecciona la oportunidad del cliente, arrastra el archivo y se sube. Si el nombre no contiene &ldquo;factura&rdquo;, se etiqueta automaticamente para que aparezca en el listado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tabs del Cliente Reordenadas</span>
+        <div class="update-desc">Nuevo orden mas logico: <strong>Oportunidades &middot; Prospecciones &middot; Facturacion &middot; Cotizaciones &middot; Informacion</strong>. Lo operativo arriba, la ficha al final.</div>
+    </div>
+
+    <h2>4. Modulo de Correo &mdash; Mejoras de Fondo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Imagenes y Documentos Llegan Bien</span>
+        <div class="update-desc">Antes los PDFs e imagenes llegaban como <em>octet-stream</em> sin preview. Ahora se detecta el tipo real (PDF, JPG, PNG, MP4, etc.) y los nombres con acentos no se rompen. Validacion explicita de tamano (25 MB por archivo / 50 MB total) con mensaje claro al usuario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Autocomplete del &ldquo;Para&rdquo; con Chips</span>
+        <div class="update-desc">El campo Para ya no es texto plano. Al escribir busca en los <strong>contactos del CRM</strong> y en el historial reciente; al elegir uno se convierte en un chip &ldquo;Nombre &lt;email&gt;&rdquo;. Soporta varios destinatarios. Mismo comportamiento en CC.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Pegar Imagenes y Arrastrar Archivos</span>
+        <div class="update-desc">Pegar una imagen del portapapeles (<strong>&#8984;V</strong>) la convierte automaticamente en adjunto. Al arrastrar archivos sobre el editor aparece un overlay azul indicando la zona de soltado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Errores Visibles al Enviar</span>
+        <div class="update-desc">Antes un error del servidor se tragaba en silencio y el correo no se enviaba sin que el usuario lo notara. Ahora <strong>aparece un toast rojo</strong> con el mensaje exacto del problema.</div>
+    </div>
+
+    <h2>5. Pulido y Bugs Atendidos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Reprogramar Actividades del Calendario</span>
+        <div class="update-desc">El boton Reprogramar fallaba en silencio para actividades genericas (las que se crean directo desde el calendario sin oportunidad). Ahora <strong>detecta el tipo de actividad y golpea el endpoint correcto</strong>; si falla, se ve el error.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Dashboard de Clientes: Columnas Cisco y Servicio</span>
+        <div class="update-desc">La tabla del dashboard de clientes solo tenia 7 marcas. Se agregaron las 2 que faltaban (<strong>Cisco y Servicio</strong>) para que los conteos cuadren con el catalogo real de productos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Vista Semana del Calendario: 06:00 a 23:00</span>
+        <div class="update-desc">Igual que la vista Dia. Se eliminan ~6 horas de madrugada vacias que solo agregaban scroll. Tambien se habilito el <strong>hover preview</strong> de eventos que ya tenia la vista de dia.</div>
+    </div>
+
+    <h2>6. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Material de Venta Centralizado y Profesional</span>
+        <div class="update-desc">El equipo deja de buscar brochures sueltos en Drive o WhatsApp. Todo el material de las 8 marcas vive en un solo lugar, listo para compartir. <strong>Vendedores nuevos arrancan con catalogo completo desde el dia 1</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Marketing Sube Contenido sin Pedir a TI</span>
+        <div class="update-desc">El permiso granular permite que la persona de marketing/direccion suba material directamente sin necesidad de un programador. <strong>Iteracion mas rapida</strong> en campanias.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cobranza con la Foto Completa del Cliente</span>
+        <div class="update-desc">La tab Facturacion del cliente reune todas las facturas dispersas en oportunidades distintas. <strong>Cobranza puede ver el historial completo</strong> sin tener que entrar oportunidad por oportunidad.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Correos Profesionales que Llegan Bien</span>
+        <div class="update-desc">Adjuntos que se ven con preview en el receptor, autocomplete de contactos y errores visibles. Menos correos perdidos, menos tiempo escribiendo emails completos a mano.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 15 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

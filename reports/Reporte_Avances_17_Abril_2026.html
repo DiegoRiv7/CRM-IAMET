@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 17 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 17 de Abril, 2026</p>
+            <p>Periodo: 17 Abril (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe cubre un dia intensivo de trabajo enfocado en un <strong>rediseno integral de la interfaz</strong> del CRM bajo un nuevo sistema de diseno &ldquo;composer-canvas&rdquo; estilo ClickUp/Linear. Se rediseno el <strong>widget de detalle de tarea</strong>, el <strong>modal de crear tarea</strong>, el <strong>formulario de crear oportunidad</strong>, los <strong>tres widgets de agendar actividad</strong> y el <strong>inbox de notificaciones</strong>. Adicionalmente, se construyo un sistema de <strong>gradiente de urgencia en tiempo real</strong> (minutos, no dias) que avanza visualmente a medida que las actividades se acercan a su fecha limite, sin necesidad de recargar la pagina.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">28</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Widgets Redisenados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">+6,203</div>
+            <div class="stat-label">Lineas +</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">14</div>
+            <div class="stat-label">Archivos Modificados</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Sistema de Diseno Composer-Canvas + Gradiente de Urgencia en Tiempo Real
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se aplico un <strong>nuevo sistema de diseno unificado</strong> a los 5 formularios/widgets mas utilizados del CRM, pasando de cajas rigidas con labels y bordes a un lienzo tipo Notion/Linear donde el usuario escribe como si enviara un mensaje: titulo grande sin borde, pills para metadatos con popovers, toolbar inferior con campos secundarios y validacion reactiva (boton gris hasta llenar requeridos, rojo inline al intentar submit vacio). Paralelamente se construyo un sistema que hace que el <strong>color rojo de las cards avance visiblemente minuto a minuto</strong> a medida que las actividades se acercan a su fecha limite &mdash; con 5 niveles de &ldquo;calor&rdquo; por granularidad de minutos (de <em>14 dias</em> hasta <em>&lt; 1 hora</em>) y refresh automatico cada 60 segundos, sin que el usuario recargue la pagina.</p>
+    </div>
+
+    <h2>1. Widget Detalle de Tarea (Rediseno ClickUp/Linear)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Widget 1440px estilo ClickUp/Linear con Descripcion Protagonista</span>
+        <div class="update-desc">Se rediseno de cero el modal de detalle de tarea: ancho <strong>1440px</strong> (landscape), header breadcrumb <code>[Proyecto &rsaquo; Cliente]</code>, titulo H1 de 36px sin borde, <strong>descripcion de 16.5px con line-height 1.78</strong> que fluye como texto directo (sin card), chips de relaciones (Tarea padre / Oportunidad / Drive), seccion de subtareas con barra de progreso + badge, chat-tray sticky al fondo con focus-ring azul y hint &ldquo;&#x2318; Enter&rdquo;, y sidebar con propiedades como botones (Estado con dot de color, Responsable con avatar, Fecha Limite, Prioridad). Todos los IDs originales preservados para no romper los handlers existentes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">CTA &ldquo;Completar tarea&rdquo; Explicito + Menu 3-Puntos</span>
+        <div class="update-desc">Se reemplazo el checkbox 28x28 del titulo por un <strong>boton verde explicito</strong> &ldquo;Completar tarea&rdquo; con gradient emerald, sombra y hover lift estilo Stripe/Linear. Al completarse, swap a pill &ldquo;&#x2713; Completada&rdquo; + boton &ldquo;Reabrir tarea&rdquo;. El icono de copiar enlace del header se reemplazo por un menu 3-puntos con dos acciones: <strong>Copiar enlace de vista previa</strong> (genera link firmado Django signing, sin migracion) y <strong>Eliminar tarea</strong> (solo creador / superuser). Se anadio una vista publica <code>/app/shared/tarea/&lt;token&gt;/</code> que renderiza la tarea en modo read-only sin requerir login.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Fecha Inteligente + Empty States World-Class</span>
+        <div class="update-desc">La fecha limite en el sidebar ahora muestra una <strong>segunda linea meta</strong> tipo &ldquo;Vence en 2 dias&rdquo; / &ldquo;Vencida hace 3h&rdquo; con color automatico (rose si vencida, amber si &lt;24-3d, neutral si +). El <strong>empty state de subtareas</strong> paso de texto gris plano a una card dashed horizontal con icono + &ldquo;Anadir subtarea &middot; Divide la tarea en pasos&rdquo;. La <strong>lista de participantes y observadores</strong> se cambio de avatares circulares apilados a filas verticales <code>avatar + nombre</code> con boton de remover on-hover.</div>
+    </div>
+
+    <h2>2. Crear Tarea (Composer Estilo Mensaje)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modal 1240px Tipo Mensaje con Pills + Popovers</span>
+        <div class="update-desc">El formulario denso anterior (titulo compacto + 10 campos en grid con labels tipo <code>NOMBRE / FECHA / INICIO / FIN / DESCRIPCION / PARTICIPANTES / OBSERVADORES / PRIORIDAD</code>) se reemplazo por un <strong>lienzo composer</strong>: header con pill de oportunidad dinamica (fetch desde API al abrir), titulo 34px, descripcion 16px / min-height 360px que fluye sin borde, y <strong>toolbar inferior con pills</strong> (Estado / Responsable / Participantes / Observadores / Prioridad / Fecha) que abren popovers con los buscadores existentes. Labels dinamicas: &ldquo;Participantes &middot; 3&rdquo;, &ldquo;17 abr &middot; 13:38&rdquo;, &ldquo;Alta&rdquo;. Atajos &#x2318;/Ctrl+Enter para enviar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Adjuntos Habilitados + Oportunidad en Header</span>
+        <div class="update-desc">El icono paperclip se activo: al clicar abre file-picker multi-archivo y los archivos seleccionados se muestran como chips pill bajo la descripcion (nombre truncado, tamano KB/MB, boton de quitar). Al crear la tarea, los adjuntos se suben como comentario inicial reutilizando el endpoint existente &mdash; sin necesidad de migracion. El header ahora muestra el <strong>nombre de la oportunidad vinculada</strong> (o &ldquo;Sin oportunidad&rdquo;) en lugar del proyecto, haciendo fetch a <code>/api/oportunidad/&lt;id&gt;/detalle/</code> al abrir el composer.</div>
+    </div>
+
+    <h2>3. Crear Oportunidad (Composer + Validacion Reactiva)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Canvas con &ldquo;Para [Cliente]&rdquo; en Lenguaje Natural</span>
+        <div class="update-desc">Se rediseno el formulario denso anterior (10 campos en grid con monto manual) a un <strong>lienzo</strong> con titulo 34px, fila &ldquo;Para [Selecciona un cliente (requerido)]&rdquo; con pill dashed que abre popover con autocomplete + crear-nuevo inline, pills <strong>Tipo (requerido)</strong> y <strong>Cierre (requerido)</strong> con popovers de select, textarea de notas, y toolbar con ghost buttons (Contacto / Producto / Area / Probabilidad). El <strong>monto</strong> se removio del formulario: ahora lo calcula el sistema automaticamente desde las cotizaciones.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Validacion Reactiva Gris &rarr; Azul + Rojo Inline</span>
+        <div class="update-desc">El boton &ldquo;Crear oportunidad&rdquo; inicia <strong>gris</strong> (slate-200 / text-slate-400) y solo se vuelve <strong>azul</strong> (gradient + sombra) cuando titulo + cliente + tipo + cierre estan todos llenos. Si el usuario clica en gris, se previene el submit y las pills faltantes se marcan en rojo (<code>soft-error</code> con border dashed rose + bg) con animacion shake 320ms. Se agrego <code>novalidate</code> al form y se removieron los atributos <code>required</code> para eliminar los tooltips nativos naranjas del browser. Defaults limpios: pipeline solo Runrate/Proyecto (sin prospeccion), probabilidad 20% default, el resto vacio.</div>
+    </div>
+
+    <h2>4. Agendar Actividad (Composer en 3 Widgets)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Mismo Diseno en 3 Contextos (Oportunidad / Calendario / Prospecto)</span>
+        <div class="update-desc">Los 3 widgets de agendar actividad (<code>widgetOppCrearActividad</code>, <code>widgetGlobalCrearActividad</code>, <code>widgetProspectoActividades</code>) compartian diseno denso. Se unificaron al mismo composer-canvas con <strong>CSS compartido</strong> <code>.wact-*</code>: header breadcrumb, titulo 28px, fila natural <code>[&#x1F4C5; Fecha] de [&#x1F550; Inicio] a [&#x1F550; Fin]</code> con pills que abren popovers de <code>&lt;input type=&quot;date&quot;/&quot;time&quot;&gt;</code>, textarea de detalles, y toolbar con pill Participantes. Se crearon helpers globales <code>wactOpenPop / wactValidate / wactTrySubmit</code> y MutationObservers por widget. Todos los IDs originales preservados.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Autofocus + Hora Actual con Minutos al Abrir</span>
+        <div class="update-desc">Al abrir cualquiera de los 3 widgets: <strong>autofocus</strong> automatico en el input de titulo (el cursor queda listo para escribir) y las horas se precargan con <strong>la hora actual completa, incluyendo minutos</strong> (16:44, no 16:00). Fin = Inicio + 1 hora con rollover correcto a medianoche. Gate de &ldquo;modo edicion&rdquo; en el calendario para no sobrescribir valores existentes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Sync Inline Postit/Kanban/List al Crear Actividad</span>
+        <div class="update-desc">Al crear una actividad, las cards SSR del <strong>postit + kanban + list-row</strong> mostraban &ldquo;Sin pendientes&rdquo; hasta recargar la pagina. La causa raiz: Django con <code>USE_THOUSAND_SEPARATOR</code> renderiza IDs &ge; 1000 como <code>data-opp-id=&quot;1,198&quot;</code>, pero mi selector buscaba <code>&quot;1198&quot;</code> sin match (mismo bug que el toggle-pin resolvio normalizando IDs). Se anadio <code>_woNormId(s)</code> que strippea espacios/nbsp/comas y se itera comparando el dataset normalizado. Ahora las cards cambian instantaneamente al crear la actividad.</div>
+    </div>
+
+    <h2>5. Notificaciones (Inbox Estilo Linear + Agrupacion Inteligente)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Rediseno Inbox Flat-List (Sidebar slate-50 + Feed)</span>
+        <div class="update-desc">Se redisenaron las notificaciones manteniendo el mismo tamano (94vw x 92vh): el header global con icono se eliminio, &ldquo;Notificaciones&rdquo; vive en el titulo del sidebar slate-50 (240px) con filtros planos (Todas, No leidas, Criticas rojo, Tareas, Oportunidades, Equipo, Admin) con badges circulares. El main area tiene &ldquo;Bandeja de entrada&rdquo; en header 52px + boton &ldquo;Marcar todo como leido&rdquo; + X. Las filas son planas (no cards) separadas por border-bottom con avatar 28x28 (iniciales color-deterministas por remitente o icono Sistema), unread-dot azul absoluto a la izquierda, y hover muestra botones de accion ocultando la hora.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Agrupacion Inteligente por Objetivo + Simplificacion de Texto</span>
+        <div class="update-desc">Runs de <strong>3+ notificaciones que refieren al MISMO objeto</strong> (misma tarea_id / misma oportunidad_id) se colapsan en un cluster expandible con badge contador &mdash; util para &ldquo;5 comentarios en la misma tarea&rdquo;. Notificaciones de diferentes objetos con titulo generico igual (ej: 5 &ldquo;Tarea asignada automaticamente&rdquo; para 5 opps distintas) se mantienen como filas individuales. Paralelamente, un simplificador de texto extrae &ldquo;en la oportunidad X&rdquo; y &ldquo;al pasar a etapa Y&rdquo; como chips de contexto, quita el prefijo &ldquo;Sistema&rdquo; redundante, y compacta verbos: &ldquo;Se creo la tarea X&rdquo; &rarr; &ldquo;Se creo: X&rdquo;. Menos ruido, mas velocidad de lectura.</div>
+    </div>
+
+    <h2>6. Gradiente de Urgencia en Tiempo Real</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">5 Niveles Warm por Granularidad de Minutos</span>
+        <div class="update-desc">Antes el gradiente rojo de &ldquo;vence pronto&rdquo; tenia solo 3 niveles por dias (warm-1/2/3) &mdash; una tarea que vencia en 2 minutos se pintaba igual que una que vencia en 23 horas. Se extendio a <strong>5 niveles por minutos</strong>: warm-1 (7-14 dias) &rarr; warm-2 (2-7d) &rarr; warm-3 (12-48h) &rarr; <strong>warm-4 (1-12h)</strong> donde el rojo ya cubre &gt;2/3 del strip &rarr; <strong>warm-5 (&le;1h)</strong> casi totalmente rojo. El backend calcula <code>minutos_hasta_proxima</code> con agregaciones Min() (sin N+1) y el frontend recomputa la clase via <code>_pickWarm(minutos)</code>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Refresh Automatico cada 60 Segundos (Sin Recargar Pagina)</span>
+        <div class="update-desc">Se agrego un <code>setInterval</code> de 60s que llama a <code>refreshCrmTable()</code> automaticamente cuando el usuario esta en la vista CRM. El sync reactivo borra las clases heat/warm existentes y re-aplica la correcta segun los minutos actuales devueltos por el API &mdash; asi el <strong>rojo avanza visiblemente minuto a minuto</strong> a medida que las actividades se acercan a vencer, sin que el usuario recargue. Se fixeo tambien un bug previo donde el sync borraba las clases <code>warm-*</code> incorrectamente al interpretar erroneamente que &ldquo;no vencida = no hay urgencia&rdquo;.</div>
+    </div>
+
+    <h2>7. Sidebar + Ajustes Menores</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Label Sidebar: &ldquo;Alertas&rdquo; &rarr; &ldquo;Notificaciones&rdquo;</span>
+        <div class="update-desc">Se renombro el boton del sidebar izquierdo de &ldquo;Alertas&rdquo; a &ldquo;Notificaciones&rdquo; para consistencia con el titulo del widget y el vocabulario que usa el equipo. Afecta tanto el label visible como el <code>data-tooltip</code> que aparece en hover.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Overlay Custom para Confirmar Eliminacion de Tarea</span>
+        <div class="update-desc">El <code>window.confirm()</code> nativo del browser al eliminar una tarea se reemplazo por un overlay custom dentro del modal: backdrop slate/45 + blur 2px, card 380px con icono rose circular, titulo con el nombre de la tarea entre comillas, y botones Cancelar / Eliminar tarea (gradient rose con estado loading &ldquo;Eliminando&hellip;&rdquo;). Se cierra con ESC o click fuera. Experiencia mucho mas pulida que el confirm nativo del SO.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Auto-Refresh Tabla CRM al Crear Actividad desde Oportunidad</span>
+        <div class="update-desc">Al crear una actividad desde el widget de oportunidad, solo se refrescaba la lista interna del widget. La tabla/kanban principal del CRM quedaba con &ldquo;Sin pendientes&rdquo; hasta recargar. Ahora tras el success de <code>woCrearActividad</code> tambien se llaman <code>window.refreshCrmTable()</code> y <code>window.recargarTareasCRM()</code> + <code>_woSyncCardsWithActividad()</code> que parchea el DOM de las cards SSR inmediatamente. Cambios instantaneos sin reload.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

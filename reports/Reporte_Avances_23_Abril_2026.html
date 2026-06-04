@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 23 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: linear-gradient(135deg, rgba(0, 82, 212, 0.06) 0%, rgba(34, 197, 94, 0.05) 100%); border: 1px solid rgba(0, 82, 212, 0.15); padding: 18px 22px; border-radius: 12px; margin: 18px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 18px; margin-bottom: 10px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; flex-shrink: 0; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-hito { background: linear-gradient(135deg, #0052D4, #00C6FF); color: white; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .phase-list { margin: 10px 0 0; padding-left: 0; list-style: none; }
+        .phase-list li { padding: 6px 0; display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; }
+        .phase-check { color: var(--success); font-weight: 700; flex-shrink: 0; width: 20px; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 23 de Abril, 2026</p>
+            <p>Periodo: 23 Abril (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">El logro principal del dia fue crear una <strong>app separada llamada &ldquo;Levantamientos IAMET&rdquo; que funciona SIN internet</strong>. Los ingenieros ahora pueden instalarla en su telefono, ir a plantas donde no hay senal ni WiFi, capturar el levantamiento completo con fotos, y cuando regresen a zona con red todo se sube al servidor automaticamente, sin que tengan que hacer nada. Ademas se optimizo toda la experiencia movil y se refino el panel de control del ingeniero.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">25</div>
+            <div class="stat-label">Mejoras del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">✓</div>
+            <div class="stat-label">Funciona sin Internet</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">App Nueva Instalable</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">iOS + Android</div>
+            <div class="stat-label">Compatible con Ambos</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"/></svg>
+            Hito del Dia: App de Levantamientos que Funciona SIN Internet
+        </div>
+        <p style="font-size: 13.5px; margin: 0 0 8px;">Se creo una <strong>aplicacion separada del CRM principal</strong>, disenada exclusivamente para que los ingenieros capturen levantamientos en planta. Se instala en el telefono como cualquier otra app (icono propio de &ldquo;Levantamientos IAMET&rdquo;) y tiene una caracteristica clave: <strong>sigue funcionando aunque el telefono no tenga internet ni senal de datos</strong>.</p>
+        <p style="font-size: 13.5px; margin: 8px 0 0;">El ingeniero puede ir a una planta sin WiFi, capturar el levantamiento completo con todas sus fotos, y cuando regrese a un area con red <strong>todo se sincroniza al servidor automaticamente</strong>, sin que el tenga que hacer nada. Si la sincronizacion falla el sistema lo reintenta solo a los 1, 5 y 15 minutos.</p>
+    </div>
+
+    <h2>1. Levantamientos IAMET &mdash; App Instalable</h2>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Hito</span>
+        <span class="update-title">Nueva App con Icono Propio en el Telefono</span>
+        <div class="update-desc">Al entrar al CRM desde el telefono y seguir los pasos de instalacion, se crea un <strong>icono de &ldquo;Levantamientos IAMET&rdquo;</strong> en la pantalla de inicio del celular, separado del CRM normal. Al abrirla se ve como app nativa (sin barra del navegador). Es la unica vista que vera el ingeniero &mdash; no tiene acceso al resto del CRM desde ahi, lo cual <strong>evita distracciones y simplifica el uso</strong>. En iPhone aparece un recuadro explicando como instalarla (&ldquo;Compartir &rarr; Anadir a pantalla de inicio&rdquo;), y en Android sale un boton grande de &ldquo;Instalar&rdquo; directamente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Hito</span>
+        <span class="update-title">Captura Completa Sin Internet</span>
+        <div class="update-desc">Cuando el ingeniero esta en una planta sin senal, la app <strong>guarda todo en el telefono temporalmente</strong>: datos de contacto, ubicacion, servicios, materiales y todas las fotos. Arriba le sale un indicador rojo de &ldquo;Sin conexion&rdquo; que le recuerda que no hay red, pero puede seguir capturando sin problema. Las fotos se toman directo con la camara del telefono y se comprimen automaticamente para que no llenen la memoria.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-hito">Hito</span>
+        <span class="update-title">Sincronizacion Automatica al Regresar a Red</span>
+        <div class="update-desc">En cuanto el ingeniero vuelva a tener internet (WiFi u datos), la app <strong>sube todo al servidor de forma automatica en segundo plano</strong>. Le aparece un mensaje verde confirmando &ldquo;3 levantamientos subidos correctamente&rdquo; para que sepa que quedo seguro. Si algo falla, el sistema lo reintenta solo a los 1, 5 y 15 minutos. El ingeniero nunca tiene que preocuparse por subir manualmente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Indicador de &ldquo;Pendientes por Subir&rdquo;</span>
+        <div class="update-desc">Arriba del todo hay una <strong>pastilla que muestra cuantos levantamientos estan pendientes de subir</strong> al servidor. Al tocarla se abre un panel con la lista detallada: que levantamiento, cuando se creo, de que proyecto. Tiene un boton &ldquo;Intentar sincronizar ahora&rdquo; por si el ingeniero quiere forzar la subida. Transparencia total del estado de sus datos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Sesion del Usuario Dura 2 Meses en la App</span>
+        <div class="update-desc">Como los ingenieros pueden pasar semanas en planta sin abrir la app con internet, se extendio la sesion de 2 semanas (default) a <strong>60 dias dentro de la app de levantamientos</strong>. Asi no pierde el acceso ni quedan sus datos varados esperando re-login. Si aun asi expira (pasan mas de 2 meses), el sistema le avisa con un mensaje claro de &ldquo;Vuelve a iniciar sesion&rdquo; pero NO pierde ninguno de sus levantamientos capturados.</div>
+    </div>
+
+    <h2>2. Optimizacion para Telefono &mdash; Vista del Ingeniero</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Barra Inferior Estilo iOS en Lugar de la Lateral</span>
+        <div class="update-desc">En el celular, la barra de menu lateral izquierda (que gastaba mucho espacio en pantallas pequenas) se convierte en una <strong>barra flotante abajo con 5 botones</strong>, como en Instagram, Gmail o las apps nativas de iOS. Queda asi: Dashboard &middot; Proyectos &middot; <strong>Buscar</strong> (boton central azul elevado, tipo &ldquo;lupa estilo Apple&rdquo;) &middot; Foto del usuario &middot; Tareas. Se gano toda la columna izquierda de espacio para el contenido principal.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Calendario Optimizado para Celular</span>
+        <div class="update-desc">El calendario antes se veia muy apretado en el telefono (tenia 3 vistas: Mes, Semana, Dia, panel lateral con estadisticas, etc). Ahora en el celular <strong>solo se ve la vista Mes a pantalla completa</strong>, estilo iOS Calendar. Sin panel lateral, sin botones extra. Es la vista que el ingeniero realmente usa &mdash; ver sus actividades del mes de un vistazo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Ingeniero Entra Directo a Proyectos en el Telefono</span>
+        <div class="update-desc">En computadora, al entrar, el ingeniero ve su Dashboard (panel con resumenes). Pero en el telefono, <strong>la app entra directamente a la lista de proyectos</strong>, saltando el dashboard. Razon: en pantalla chica el dashboard estorba, y lo que el ingeniero va a hacer en el telefono es ir a un proyecto e iniciar el levantamiento, no revisar metricas. Ahorra un paso cada vez que entran.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Vista Simplificada en Proyectos y Tareas (Solo Busqueda)</span>
+        <div class="update-desc">En el celular, las secciones de Proyectos y Tareas se limpian al maximo: se <strong>ocultaron los filtros avanzados, el boton de &ldquo;Nuevo&rdquo; y las pestanas secundarias</strong>. Solo queda una barra de busqueda grande y la lista. Crear cosas nuevas se hace desde computadora. El ingeniero en campo solo busca lo que existe y lo abre.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Al Abrir un Proyecto: Solo el Boton &ldquo;Iniciar Levantamiento&rdquo;</span>
+        <div class="update-desc">Cuando el ingeniero abre un proyecto en el celular, se ocultan los KPIs financieros y las pestanas secundarias. <strong>Lo unico que se ve es el historial de levantamientos del proyecto y un boton grande azul de &ldquo;Iniciar Levantamiento&rdquo;</strong>. Una sola accion clara.</div>
+    </div>
+
+    <h2>3. Dashboard del Ingeniero &mdash; Refinamiento</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Se Actualiza Solo &mdash; Sin Boton de &ldquo;Actualizar&rdquo;</span>
+        <div class="update-desc">Antes el dashboard tenia un boton de &ldquo;Actualizar&rdquo; en la esquina que el usuario tenia que presionar para refrescar los datos. Ahora <strong>el dashboard se actualiza automaticamente cada 30 segundos</strong>, y al regresar a la pestana si habia estado en otra app. Si el ingeniero le ponen una tarea nueva, aparece sola en su pantalla sin que haga nada &mdash; las vencidas primero, las recientes despues.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Subtitulo Claro y Preciso</span>
+        <div class="update-desc">El subtitulo del panel ahora dice exactamente <strong>&ldquo;X vencidas &middot; Y pendientes&rdquo;</strong>, sin numeros confusos. Antes decia &ldquo;29 actividades pendientes &middot; 29 vencidas&rdquo; (las mismas contadas dos veces), ahora distingue entre las atrasadas y las que todavia estan a tiempo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Ya No Hay Parpadeo Visual al Cargar</span>
+        <div class="update-desc">Al refrescar la pagina como ingeniero, se alcanzaba a ver por una fraccion de segundo el CRM del vendedor (con pestanas de Oportunidades, Prospeccion, Clientes) antes de que aparezca el dashboard. <strong>Ahora la pantalla queda limpia desde el primer instante</strong>, sin fogonazo.</div>
+    </div>
+
+    <h2>4. Otros Ajustes del Sistema</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Supervisores Ven el Boton &ldquo;Admin&rdquo; Aunque Entren Como Ingeniero</span>
+        <div class="update-desc">Un supervisor que tambien trabaja como ingeniero antes perdia el acceso al Panel de Administracion (asignar permisos, gestionar usuarios). Ahora <strong>se le muestra el boton Admin en su barra lateral</strong> sin importar en que modo este. Facilita cambiar de rol sin necesidad de re-loguearse.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Formulario de Prospeccion con Etiquetas Correctas</span>
+        <div class="update-desc">Al crear una prospeccion desde la pestana de Prospeccion, el formulario antes decia &ldquo;Nombre del prospecto&rdquo; y &ldquo;Cliente&rdquo;, terminos confusos en ese contexto. Ahora dice <strong>&ldquo;Titulo de la prospeccion&rdquo;</strong> y <strong>&ldquo;Prospecto&rdquo;</strong>, que es lo que realmente se esta capturando. Al abrir el mismo formulario desde dentro de un cliente, conserva los titulos originales.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Boton &ldquo;+ Nuevo Prospecto&rdquo; Visible en la Pestana</span>
+        <div class="update-desc">Se agrego un <strong>boton azul prominente de &ldquo;+ Nuevo Prospecto&rdquo;</strong> en la barra superior de la pestana Prospeccion. Antes el usuario tenia que entrar a un cliente existente para crear una prospeccion nueva. Ahora es un click desde la pestana principal.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Widget de &ldquo;Iniciar dia&rdquo; Ya No Aparece al Cambiar Seccion</span>
+        <div class="update-desc">El recuadro de <strong>&ldquo;No olvides marcar tu entrada&rdquo;</strong> (que sale al inicio del dia recordandole al empleado que marque su jornada) reaparecia cada vez que el usuario cambiaba de seccion en la pagina. Era molesto. Ahora solo aparece una vez al dia, como debia ser desde el principio.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Se Arreglaron Errores del Panel de Notificaciones</span>
+        <div class="update-desc">El sistema de notificaciones del ingeniero devolvia error al intentar cargarlo. <strong>Se corrigieron las fallas</strong> y ahora funciona correctamente. Las notificaciones se muestran normales en el dashboard y en el panel lateral.</div>
+    </div>
+
+    <h2>5. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Los Ingenieros Pueden Trabajar en Plantas Sin Internet</span>
+        <div class="update-desc">Este es el cambio mas importante. <strong>Muchas plantas industriales son sotanos, naves grandes o zonas sin cobertura celular</strong>. Antes el ingeniero tenia que regresar a una zona con senal para capturar algo, o apuntar en papel y transcribir despues (con errores). Ahora <strong>captura todo en el sitio, mientras observa las instalaciones, con fotos al instante</strong>, y el sistema se encarga de subirlo solo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Menos Perdida de Datos y Menos Errores</span>
+        <div class="update-desc">Al capturar en sitio, el ingeniero <strong>no depende de su memoria o apuntes</strong> para transcribir despues. Las fotos se asocian al levantamiento en el momento exacto. Todo queda en el servidor con marca de tiempo. Reduce errores por re-transcripcion y desincroniza a la empresa de la necesidad de conexion en todos lados.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Imagen Profesional &mdash; App con Icono Propio</span>
+        <div class="update-desc">Tener una app dedicada con nombre (&ldquo;Levantamientos IAMET&rdquo;), icono propio en el telefono del ingeniero y pantalla de carga limpia, comunica seriedad y profesionalismo a los clientes cuando ven al ingeniero capturando informacion. <strong>Ya no es &ldquo;el muchacho escribiendo en una pagina web&rdquo;, es una herramienta empresarial</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Productividad en el Telefono</span>
+        <div class="update-desc">Con toda la optimizacion movil (barra inferior, vista directa a proyectos, calendario a mes unico, etc.), los ingenieros pueden hacer <strong>gran parte de su gestion diaria desde el celular</strong>: ver sus proyectos, revisar su calendario del mes, capturar levantamientos, ver notificaciones. Sin necesidad de cargar laptop a todos lados.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 23 de Abril, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 22 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 22 de Abril, 2026</p>
+            <p>Periodo: 22 Abril (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy el foco fue <strong>llevar el Levantamiento al celular</strong> para que los ingenieros puedan hacer todo el proceso desde su teléfono en campo — tomar foto, escribir notas, seleccionar materiales — sin necesidad de laptop. Tambien se rediseño la pantalla principal de los ingenieros con un panel de control estilo iCloud que les muestra sus pendientes de un vistazo al entrar.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">26</div>
+            <div class="stat-label">Mejoras del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Compatible con Celular</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Nuevas Vistas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Datos Pre-llenados</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Levantamientos Desde el Celular
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Ahora un ingeniero puede <strong>hacer un levantamiento completo desde su teléfono</strong>. Al abrir la pantalla en el celular, ve solo un cuadro a la vez (con los datos que debe llenar), un botón grande de <strong>Continuar</strong> abajo, y avanza al siguiente cuadro — como un asistente paso a paso. Al llegar al cuadro de fotos, el sistema le <strong>abre la cámara del teléfono directamente</strong> para que tome la evidencia sin salir de la página. Al terminar, el botón cambia a <strong>&ldquo;Finalizar&rdquo;</strong> y pasa directo a la Propuesta Técnica. <strong>Es el mismo sistema de papel pero mejor, en el teléfono.</strong></p>
+    </div>
+
+    <h2>1. Levantamiento &mdash; Rediseño por &ldquo;Islas&rdquo;</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">4 Cuadros Numerados en Lugar de una Pantalla Densa</span>
+        <div class="update-desc">La etapa 1 del levantamiento se dividio en <strong>4 &ldquo;islas&rdquo; numeradas</strong> que guian visualmente al ingeniero: (1) Contacto &amp; Ubicacion, (2) Identificacion del proyecto, (3) Alcance Tecnico, (4) Evidencia &amp; Notas. Cada una con un numero grande de color distinto y un titulo claro. En vez de ver 30 campos mezclados, ve 4 cuadros que debe llenar en orden.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Barra de Progreso &ldquo;Completado X%&rdquo;</span>
+        <div class="update-desc">Arriba de los cuadros aparece una <strong>barra que se llena conforme el ingeniero captura datos</strong>. Dice &ldquo;Faltan 3 datos&rdquo;, luego &ldquo;Puedes avanzar &middot; 75%&rdquo;, y finalmente &ldquo;Listo para Fase 2&rdquo; en verde. Asi el ingeniero sabe exactamente cuanto le falta para poder avanzar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Sistema No Deja Avanzar si Falta Informacion Critica</span>
+        <div class="update-desc">Para pasar de Fase 1 a Fase 2 se requiere tener al menos <strong>70% de los datos obligatorios capturados</strong> (titulo, cliente, contacto, descripcion, al menos un servicio, al menos una foto o nota). Si el ingeniero intenta saltar sin completar, aparece un aviso naranja explicando que le falta. Evita propuestas tecnicas con datos incompletos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Ya No Se Pre-llenan Datos Automaticamente</span>
+        <div class="update-desc">Antes, al crear un levantamiento, el sistema copiaba automaticamente el nombre del cliente, contacto, email, telefono, etc. desde la oportunidad. Esto hacia que los ingenieros confiaran ciegamente en datos que podian estar desactualizados. <strong>Ahora cada campo empieza vacio</strong> y el ingeniero debe capturarlo manualmente &mdash; asegura que la informacion es verificada, no asumida.</div>
+    </div>
+
+    <h2>2. Version para Celular &mdash; El Logro Principal</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Un Solo Cuadro a la Vez en el Telefono</span>
+        <div class="update-desc">Cuando el ingeniero abre el levantamiento desde su celular, la pantalla se reorganiza automaticamente: <strong>solo ve un cuadro a la vez</strong>, ocupando toda la pantalla. Abajo tiene un boton grande azul de &ldquo;Continuar&rdquo; (o gris de &ldquo;Atras&rdquo;), y un indicador pequeno que dice &ldquo;1 de 4&rdquo;. Al llenar ese cuadro y dar Continuar, pasa al siguiente. En el cuarto cuadro el boton cambia a verde de <strong>&ldquo;Finalizar&rdquo;</strong> y al darle pasa directo a la Propuesta Tecnica.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">La Camara del Telefono se Abre Directamente</span>
+        <div class="update-desc">En la isla de Evidencia, al tocar el cuadro de &ldquo;Subir foto&rdquo; en el celular, <strong>el sistema abre la camara del telefono</strong> en vez del selector de galeria. El ingeniero toma la foto y se guarda directo en el levantamiento. En laptop se abre el selector de archivos normal. Elimina el paso de &ldquo;tomar foto &rarr; guardar &rarr; buscar en galeria &rarr; subir&rdquo;.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Pantalla Limpia Sin Distracciones en el Celular</span>
+        <div class="update-desc">En el telefono se ocultaron automaticamente todos los elementos que no aportan al trabajo de campo: el toggle &ldquo;Modo completo&rdquo;, el estado &ldquo;BORRADOR&rdquo;, el indicador &ldquo;Guardado&rdquo;, y las pestañas de las otras fases. Solo queda: <strong>&ldquo;1 Levantamiento&rdquo; arriba + boton PDF + X para cerrar</strong>. La isla ocupa toda la pantalla.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Zoom Involuntario al Tocar un Campo</span>
+        <div class="update-desc">En iPhone habia un problema donde al tocar un campo de texto, el telefono hacia zoom automatico y desordenaba la pantalla (tambien empujaba el boton &ldquo;Continuar&rdquo; fuera de la vista). Se corrigio ajustando el tamano del texto. Ahora al tocar un campo <strong>el teclado se abre limpio</strong> sin afectar el layout.</div>
+    </div>
+
+    <h2>3. Pantalla Principal de Ingenieros &mdash; Panel Tipo iCloud</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tablero de Control Estilo iCloud al Entrar</span>
+        <div class="update-desc">Los ingenieros ahora tienen una <strong>pantalla de inicio con 4 cuadros de resumen</strong>, inspirada en el dashboard de iCloud de Apple: <strong>Tareas recientes</strong> (las de hoy o vencidas), <strong>Proyectos</strong> (los mas recientes con su estado), <strong>Proximas actividades</strong> (lo que viene en el calendario), y <strong>Notificaciones</strong> (sin leer). Cada cuadro tiene un boton &ldquo;Ver todo &rarr;&rdquo; que lleva a la seccion completa.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Menu Lateral Izquierdo &mdash; Uniforme con el CRM</span>
+        <div class="update-desc">Se elimino la barra flotante que tenian los ingenieros arriba (TABLERO / TAREAS / PROYECTOS / etc) y se reemplazo por el <strong>mismo menu lateral izquierdo</strong> que usan los vendedores. Los ingenieros ahora ven: Buscar &middot; Notificaciones &middot; Dashboard &middot; Tareas &middot; Proyectos &middot; Muro &middot; Calendario &middot; Correo &middot; Novedades. Visualmente mas limpio y consistente en toda la pagina.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Buscador Limitado a lo Que el Ingeniero Necesita</span>
+        <div class="update-desc">El buscador (lupa) para los ingenieros ahora <strong>solo busca en Tareas y Proyectos</strong>. Antes mostraba tambien Oportunidades, Clientes, Cotizaciones &mdash; cosas del rol de ventas que no aplican al ingeniero. Busqueda mas enfocada, sin ruido.</div>
+    </div>
+
+    <h2>4. Propuesta Tecnica (Fase 2) &mdash; Tambien con Islas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Se Simplifico a 3 Cuadros en Lugar de 5</span>
+        <div class="update-desc">La Propuesta Tecnica se redujo a 3 cuadros que el ingeniero llena en oficina: <strong>(1) Especificaciones, Comentarios y Materiales</strong>, (2) Evidencia fotografica con notas del sitio, (3) Programa de implementacion (fechas, personal, equipo). Los datos del cliente, planta, area, etc. se heredan automaticamente del levantamiento &mdash; ya no hay que re-capturarlos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Buscador de Materiales con &ldquo;Agregar Manualmente&rdquo;</span>
+        <div class="update-desc">Dentro del cuadro de Especificaciones hay un <strong>buscador de materiales</strong>. El ingeniero escribe lo que necesita y si el sistema lo encuentra en el catalogo, lo agrega con todos sus datos (marca, modelo, precio) de un click. Si no lo encuentra, aparece un boton que dice <strong>&ldquo;Agregar X manualmente&rdquo;</strong> y el ingeniero edita los detalles inline. Cubre los casos en que el catalogo no tiene el producto especifico.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Notas Libres del Sitio</span>
+        <div class="update-desc">Debajo de las fotos, un campo de texto libre para escribir <strong>observaciones del sitio que no entran en la descripcion general</strong>: altura del techo, voltaje disponible, accesos, condiciones especiales, permisos requeridos, etc. Esto tambien sale en el PDF de la propuesta.</div>
+    </div>
+
+    <h2>5. Modulo de Proyectos &mdash; Vista Refinada</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tabs Estilo &ldquo;Dynamic Island&rdquo; (Apple)</span>
+        <div class="update-desc">Las tres pestanas de Proyectos (Proyectos / Dashboard / Financiero) se rediseñaron con el mismo estilo &ldquo;dynamic island&rdquo; del resto del sistema: un pill blanco flotante con fondo translucido, la pestana activa en azul solido con sombra. Estetica mas pulida, consistente con el CRM.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Filtros Tipo Facet en Vez de Botones Fijos</span>
+        <div class="update-desc">En vez de tener 4 botones fijos arriba (Todos / Activos / Completados / Planificacion), ahora hay <strong>un solo boton &ldquo;Filtro &rarr;&rdquo;</strong> que abre un menu desplegable para elegir el estado. Tambien se agrego un boton <strong>&ldquo;Ordenar &rarr;&rdquo;</strong> para reordenar por fecha o monto. Menos ruido visual, mas control.</div>
+    </div>
+
+    <h2>6. Fixes y Detalles</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Al Abrir un Proyecto Ahora se Abre el Widget Correcto</span>
+        <div class="update-desc">Habia dos widgets de &ldquo;detalle de proyecto&rdquo; con el mismo identificador en el codigo &mdash; uno antiguo con 3 tabs basicos, y el nuevo con Levantamientos, Volumetria, Programa de Obra, etc. Al dar click, a veces abria el viejo en vez del nuevo. Se corrigio ocultando el viejo por completo, ahora <strong>siempre abre el widget moderno</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Dashboard y Lista de Proyectos Ya No Se Ven al Mismo Tiempo</span>
+        <div class="update-desc">Al entrar al Dashboard, la lista de proyectos seguia apareciendo abajo (visible si se hacia scroll). Se corrigio: ahora el Dashboard oculta completamente las otras secciones al activarse.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">PDF del Levantamiento Ya No Muestra Secciones Vacias</span>
+        <div class="update-desc">El PDF del Levantamiento en Sitio mostraba secciones con &ldquo;&mdash;&rdquo; en casi todos los campos porque los datos del Programa de Implementacion se movieron a la Fase 2. Ahora el PDF <strong>solo muestra las secciones con datos reales</strong> y agrega las nuevas: <strong>Notas de campo</strong> y <strong>Evidencia fotografica</strong> (las fotos salen completas en hoja aparte, sin cortes).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Header Mas Limpio en el Levantamiento</span>
+        <div class="update-desc">Se quitaron el toggle de &ldquo;Modo simple / completo&rdquo; y la pastilla de estado &ldquo;BORRADOR&rdquo; del header del levantamiento. Con el nuevo sistema de islas, <strong>todo es siempre visible</strong> (no hay modo simple) y el estado se maneja desde la lista de levantamientos. Header minimalista con solo lo esencial.</div>
+    </div>
+
+    <h2>7. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Los Ingenieros Ya No Necesitan Laptop en Campo</span>
+        <div class="update-desc">Con el levantamiento totalmente funcional desde celular (incluyendo camara integrada), el ingeniero puede ir a un sitio, hacer el levantamiento completo desde su telefono, y al llegar a oficina tiene todo listo para la propuesta. <strong>Reduce el tiempo entre visita al sitio y propuesta entregada</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Menos Errores por Datos Copiados a la Ligera</span>
+        <div class="update-desc">Al quitar los pre-llenados automaticos, el ingeniero esta <strong>obligado a verificar cada dato en sitio</strong> (contacto actual, email vigente, etc). Reduce propuestas con informacion desactualizada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Ingenieros Ven lo Importante al Entrar al Sistema</span>
+        <div class="update-desc">El nuevo panel tipo iCloud les muestra de un vistazo: que tareas tienen pendientes hoy, que proyectos estan activos, que viene en el calendario, que notificaciones tienen. <strong>Al entrar saben que hacer, sin perder tiempo navegando</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Consistencia Visual en Toda la Pagina</span>
+        <div class="update-desc">Ahora los ingenieros y vendedores tienen el <strong>mismo menu lateral izquierdo</strong>, con el mismo logo, los mismos botones, el mismo aspecto. Hace mas sencillo capacitar personal nuevo y mantener la imagen profesional del sistema.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 22 de Abril, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

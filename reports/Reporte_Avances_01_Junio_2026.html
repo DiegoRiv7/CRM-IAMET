@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 01 de Junio</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 01 de Junio, 2026</p>
+            <p>Periodo: 01 Junio (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se cerró el ciclo que llevábamos arrastrando del calendario de instalaciones: las instalaciones ya no son responsabilidad del vendedor desde la oportunidad — ahora viven dentro del <strong>Proyecto</strong>, en una nueva sección llamada "Programa de Obra". El flujo natural quedó: el vendedor cierra la opp con PO → administración/operación entra al proyecto → desde una sola pantalla agrega instalaciones, asigna técnicos (con foto de perfil), y todo se ve automáticamente en el calendario del equipo. Además del hito mayor, hubo refinamientos de UX importantes: un widget de vista amigable para supervisores, avatares apilados en la tabla, y persistencia de la pestaña activa al recargar.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">13</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">UI nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Endpoints nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Hotfixes</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Integración Proyectos ↔ Calendario de Instalaciones
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Antes el calendario de instalaciones tenía datos sueltos; el vendedor capturaba algo desde su oportunidad, pero administración/operación no tenía un lugar natural para gestionar el "Programa de Obra" completo. <strong>Hoy se construyó esa unión:</strong> dentro de cada proyecto del CRM aparece un tab nuevo "Programa de Obra" con la tabla de instalaciones, un modal único para crear/editar/asignar, y todo eso se ve reflejado <em>en tiempo real</em> en el calendario de instalaciones (vista Mes/Semana/Día y la matriz Técnico × Día). Una instalación capturada en el proyecto aparece en el calendario del técnico asignado sin que nadie tenga que hacer doble captura.</p>
+    </div>
+
+    <h2>1. Cambio de Dueño: del Vendedor al Proyecto</h2>
+
+    <div class="callout">
+        <strong>Decisión clave del día:</strong> el Programa de Obra ya no lo llena el vendedor desde la oportunidad. Las instalaciones son del <em>proyecto</em>, no de la opp. La opp sirve para que el equipo comercial cierre el negocio; el proyecto es donde operación ejecuta. Ahora cada cosa vive donde le toca.
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Refactor</span>
+        <span class="update-title">FK del Modelo Cambió de Lugar</span>
+        <div class="update-desc">El modelo de Instalación ahora apunta al Proyecto en vez de a la Oportunidad. <strong>Migraciones 0171 y 0172</strong> aplicadas. La FK a la opp se queda como opcional (legacy y para casos puntuales donde una instalación se quiera ligar a una opp sin proyecto), pero el dueño principal es el proyecto. Sin pérdida de datos: las pruebas anteriores no contenían instalaciones reales.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Cambio UX</span>
+        <span class="update-title">Bloque "Programa de Obra" Removido del Widget de Oportunidad</span>
+        <div class="update-desc">El bloque inferior derecho del widget de opp pipeline Proyecto que tenía la tabla de Instalaciones <strong>se eliminó</strong>. En su lugar, el widget de opp ahora solo muestra "Proyecto vinculado" (a ancho completo). Si la opp tiene un proyecto ligado y el usuario quiere ver/editar el Programa de Obra, hace click en el chip del proyecto → se abre el widget de proyecto → ahí está el tab "Programa de Obra".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab "Programa de Obra" en el Widget de Proyecto</span>
+        <div class="update-desc">Cuarta pestaña en la dynamic island superior del detalle de proyecto, entre Cronograma y Partidas. Al darle click se abre la tabla compacta con todas las instalaciones del proyecto: <strong>PO, Descripción del trabajo, Fecha, Jornadas (con tipo), Personal asignado (avatares), Monto, Estado, # técnicos</strong>. Botón "+ Nueva instalación" arriba a la derecha. Cada fila es clickeable → abre el detalle.</div>
+    </div>
+
+    <h2>2. Modal Único: Detalle + Edición + Asignación de Técnicos</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Una sola pieza de UI sirve para todos los flujos: crear, ver, editar, asignar técnicos. El mismo modal se abre desde la tabla del proyecto y desde el calendario.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Layout en 2 Columnas</span>
+        <div class="feature-list" style="padding-left: 5px;">
+            <div><strong>Columna izquierda:</strong> formulario con todos los datos del Excel original (descripción, PO, cliente, fecha, estado, jornadas, monto, utilidad, notas).</div>
+            <div><strong>Columna derecha:</strong> panel "Técnicos asignados" con la lista actual.</div>
+            <div><strong>Modo Crear:</strong> picker de Users del CRM para asignar al guardar.</div>
+            <div><strong>Modo Editar:</strong> botón "+ Agregar" para asignaciones puntuales (técnico + fecha + horas).</div>
+        </div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Endpoints de API Centrados en el Proyecto</span>
+        <div class="update-desc">7 endpoints nuevos para todo el ciclo de vida: <strong>GET/POST instalaciones del proyecto, GET/PATCH/DELETE detalle de instalación, POST/DELETE asignaciones técnico-fecha, y lista de técnicos para el picker</strong>. Cada uno con validación de input tolerante (decimales tolerantes, fecha YYYY-MM-DD, valores opcionales). La idempotencia de asignaciones está protegida por una restricción de unicidad en la base de datos (técnico, instalación, fecha).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Conexión</span>
+        <span class="update-title">Sincronización Automática con el Calendario</span>
+        <div class="update-desc">Cuando guardas/eliminas una instalación desde el modal, <strong>el calendario refresca solo</strong>. Si tienes abierto el calendario en modo Instalaciones (vista Mes/Semana/Día o Técnicos × Día), los cambios aparecen sin recargar la página. Click sobre un evento naranja del calendario abre el mismo modal — la información se mantiene 1:1 entre ambos lugares.</div>
+    </div>
+
+    <h2>3. Auto-Prefill desde la Oportunidad + Picker de Usuarios</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Lo que mejora la velocidad de captura del día a día.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Prefill Automático al Crear Instalación</span>
+        <div class="update-desc">Al darle "+ Nueva instalación", el modal <strong>se prellena solo con los datos de la oportunidad ligada al proyecto</strong>: Cliente y PO se leen automáticamente. Si la opp ya tenía PO capturada por el vendedor, el campo aparece llenado; si no, el usuario lo escribe. La oportunidad se guarda en la instalación para que el rastro quede.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Picker de Usuarios del CRM con Búsqueda Live</span>
+        <div class="update-desc">En el modal de creación, panel derecho: input de búsqueda con autocompletado contra todos los usuarios del sistema. Al elegir uno aparece <strong>un chip azul</strong> de "Seleccionados" abajo. Si el usuario seleccionado todavía no era Técnico del catálogo, <strong>se le crea el perfil automáticamente</strong> al guardar — usa su nombre completo como identificador. Al confirmar, se crean las asignaciones de cada técnico para la fecha programada de la instalación. Eso significa que la instalación les aparece en el calendario del técnico al instante.</div>
+    </div>
+
+    <h2>4. Widget de Vista Amigable (no más formulario crudo al click)</h2>
+
+    <div class="callout">
+        <strong>El cambio:</strong> hasta hoy, al hacer click sobre una instalación (en el calendario o en la tabla) se abría el formulario de edición directamente. Eso funciona para quien la captura, pero es ruidoso para un supervisor que solo quiere <em>ver</em> la info. Ahora el click muestra un widget de vista bonito y la edición requiere un click adicional en "Editar".
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Widget de Vista con Header Naranja</span>
+        <div class="update-desc">Encabezado en degradado naranja (color de Instalaciones en el calendario) con el nombre del trabajo. <strong>4 tarjetas con la información clave</strong>: Cliente, PO, Fecha programada y Estado (con pill de color). Otras 4 con económicos y jornadas: Monto PO, Utilidad (en verde), Jornadas (con tipo), Personal libre.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Chip Clickeable al Proyecto y a la Oportunidad</span>
+        <div class="update-desc">Dentro del widget aparece una sección <strong>"Proyecto"</strong> con el nombre del proyecto al que pertenece la instalación. Click → cierra el widget y abre el widget del proyecto. Si la instalación también tiene una opp ligada, hay un segundo chip <strong>"Oportunidad ligada"</strong> que abre el widget de la opp. Es el patrón natural de navegación entre cosas relacionadas — un supervisor puede saltar de la instalación al contexto comercial sin escribir nada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Lista de Técnicos Asignados en Vista</span>
+        <div class="update-desc">Sección dedicada con los técnicos que están en la instalación, cada uno con su avatar (inicial sobre fondo azul) y fecha de asignación. Si hay horas registradas (08:00–17:00) se muestran. Si no hay técnicos asignados, un mensaje claro lo indica.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Botón "Editar" para Pasar al Formulario</span>
+        <div class="update-desc">En el footer del widget de vista: <strong>Cerrar</strong> + <strong>Editar</strong>. "Editar" cierra el widget de vista y abre el formulario de edición (el mismo que ya existía). Quien solo quiere consultar la información se queda en vista; quien necesita cambiar algo da un click más. Mismo patrón que el resto del CRM (actividades del calendario, oportunidades, etc.).</div>
+    </div>
+
+    <h2>5. Avatares Apilados en la Columna "Personal"</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">De Texto Libre a Avatares Visuales</span>
+        <div class="update-desc">Antes la columna "Personal" mostraba el texto libre ("1 SUPERVISOR Y 3 TÉCNICOS") que casi siempre estaba vacío y no decía <em>quién</em> está asignado. <strong>Ahora muestra avatares apilados de los técnicos reales</strong> que están en la instalación. Hasta 4 visibles, con borde blanco para separación. Si hay más, un círculo gris "+N" con tooltip de los nombres restantes. Si el técnico tiene foto de perfil del CRM se usa esa; si no, círculo de color con sus iniciales (color asignado por hash del nombre, así <em>el mismo técnico siempre tiene el mismo color</em>).</div>
+    </div>
+
+    <h2>6. Persistencia de Pestañas + Cronograma Oculto</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Ya no Vuelves a "Resumen" al Recargar</span>
+        <div class="update-desc">Antes, si estabas en cualquier tab del proyecto y recargabas la página, te aventaba siempre a "Resumen". Ahora <strong>el tab activo se persiste en dos niveles</strong>: (1) en la URL como query parameter, así que un share-link incluye el tab; (2) en localStorage como respaldo cuando abres el proyecto sin URL específica. Si estabas en Programa de Obra y haces F5, sigues en Programa de Obra.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tab "Cronograma" Oculto Temporalmente</span>
+        <div class="update-desc">El tab Cronograma confundía con "Programa de Obra" — ambos suenan parecido pero hacen cosas distintas. Lo escondimos del topbar para evitar la confusión visual mientras el equipo se acostumbra al nuevo flujo. <strong>No se eliminó nada</strong>: el contenido del Cronograma sigue ahí en el código, solo se ocultó el botón. Si después se necesita reactivar, son 30 segundos.</div>
+    </div>
+
+    <h2>7. Hotfixes del Día — el Costo de Iterar Rápido</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Cinco bugs aparecieron en la integración. Todos diagnosticados y corregidos el mismo día. Los anoto para transparencia y porque cada uno enseña algo sobre el código.</p>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">500 al Cargar el Tab — Confusión Entre Dos Modelos de Proyecto</span>
+        <div class="update-desc">El CRM tiene <strong>dos modelos paralelos de Proyecto</strong>: uno legacy (de Bitrix) y uno moderno ("ProyectoIAMET"). Por costumbre, en algunos archivos el moderno se importa con alias <code>as Proyecto</code>, lo cual confunde. La nueva FK apuntaba al legacy, así que al buscar el proyecto 30 (que vive en el moderno) daba 404. Fix: migración 0172 que cambia la FK al modelo correcto. Anotado en memoria del proyecto para no caer dos veces.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">502 al Deploy — Admin de Django no Arrancaba</span>
+        <div class="update-desc">El admin de Django levanta <strong>SystemCheckError</strong> en boot si <code>autocomplete_fields</code> apunta a un campo que no es FK/M2M. Yo apunté al campo CharField "proyecto" (que es la descripción del trabajo) en vez del FK al modelo Proyecto. Django se negaba a arrancar y nginx devolvía 502. Fix: usar el nombre correcto del FK y, después, mover a <code>raw_id_fields</code> porque el modelo apuntado no tiene <code>search_fields</code>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">500 al Guardar Instalación — Decorador en el Lugar Equivocado</span>
+        <div class="update-desc">Un decorador <code>@login_required</code> quedó copiado por error sobre un <em>helper</em> (no una vista). El decorador asume que el primer argumento es <code>request</code>; al recibir un dict desde el helper, Python tronaba con <em>"'dict' object has no attribute 'user'"</em>. Lección anotada: helpers (prefijo <code>_</code>) nunca llevan <code>@login_required</code> ni otros decoradores de vista.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Click en Picker no Agregaba — JSON en Atributo HTML</span>
+        <div class="update-desc">El handler <code>onclick="..."</code> serializaba el objeto del usuario como JSON dentro del HTML. Caracteres especiales (comillas, acentos, apóstrofes en el nombre) <strong>rompían el parser de HTML</strong> y disparaban <code>Uncaught SyntaxError</code>. Refactor: <code>data-pob-user-id="..."</code> + un listener delegado en el contenedor + caché local de resultados para hidratar el chip. Mucho más limpio.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">500 en GET /proyectos — Colisión de Rutas</span>
+        <div class="update-desc">Mi URL nueva <code>/api/oportunidad/&lt;id&gt;/proyectos/</code> chocaba con una ruta legacy del mismo patrón (un sistema viejo de sugerencias automáticas que dependía de la librería <code>rapidfuzz</code>). Django toma la primera ruta que matchea, así que llamaba al endpoint equivocado. Fix: renombrar la mía a <code>/proyectos-ligados/</code> para que convivan los dos sistemas sin pisarse.</div>
+    </div>
+
+    <h2>8. Próximos Pasos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Validar el Flujo Completo con un Caso Real</span>
+        <div class="update-desc">Lo de hoy está en pruebas. Falta meter una instalación de verdad de principio a fin: <strong>oportunidad con PO → cierre → entrar al proyecto → crear instalación con técnicos asignados → confirmar que aparece en el calendario del técnico</strong>. Si esto funciona limpio, listo para merge a producción.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Drag & Drop en el Grid Técnico × Día</span>
+        <div class="update-desc">Hoy las asignaciones se hacen desde el modal (picker de usuarios + fecha). Una mejora natural: arrastrar el nombre del técnico a la celda del día correspondiente y que se cree la asignación. Más visual, más rápido para planeación semanal de varias instalaciones a la vez.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Asignación Masiva para Instalaciones de Varios Días</span>
+        <div class="update-desc">Si una instalación dura 5 jornadas consecutivas, hoy hay que agregar 5 asignaciones por técnico. <strong>Una mejora: el modal podría tomar el campo "Jornadas" y crear las asignaciones para los N días consecutivos automáticamente</strong>. Reduce captura cuando el plan es "lunes a viernes con Goyo y Uriel".</div>
+    </div>
+
+    <h2>9. ¿Qué Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Una Sola Pantalla para Operación</span>
+        <div class="update-desc">Antes administración necesitaba dos vistas: el Excel paralelo del Plan de Trabajo y la información del CRM. <strong>Ahora todo está en un solo lugar</strong>: dentro de cada proyecto, el tab "Programa de Obra" es donde se planea. Las instalaciones aparecen en el calendario automáticamente, sin doble captura, sin desfase entre archivos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Trazabilidad Completa Opp → Proyecto → Instalación → Técnico</span>
+        <div class="update-desc">Cada instalación queda ligada al proyecto, y el proyecto a la oportunidad de venta. <strong>Si mañana hay un problema en una obra</strong> ("¿quién la cotizó? ¿quién la planeó? ¿qué técnicos fueron y qué día?"), la respuesta está a tres clicks. El historial completo del trabajo vive en el CRM, no en cabezas o en correos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Supervisión Más Cómoda</span>
+        <div class="update-desc">El widget de vista (no formulario) es importante para quienes <em>solo necesitan ver</em>. Un supervisor entra al proyecto, mira el Programa de Obra como tabla, hace click en una instalación y ve la información de forma legible: cliente, PO, monto, técnicos, notas. <strong>No le aparecen campos editables ni botones de "Guardar"</strong> hasta que él decida que quiere cambiar algo. La diferencia entre una herramienta seria y una donde uno tiene miedo de tocar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Técnico Ve Sus Instalaciones en Su Calendario</span>
+        <div class="update-desc">Al asignar un usuario del CRM como técnico de una instalación, la fecha programada aparece como evento naranja en el calendario de instalaciones (y en la matriz Técnico × Día). <strong>El técnico abre su CRM y ve qué tiene asignado</strong> sin que alguien le mande el Excel por correo. Es la diferencia entre depender de la comunicación informal y tener un sistema que avisa por sí solo.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 01 de Junio, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

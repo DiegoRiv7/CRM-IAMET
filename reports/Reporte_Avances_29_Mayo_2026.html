@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 29 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 29 de Mayo, 2026</p>
+            <p>Periodo: 29 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se dio el primer gran paso para sustituir el Excel "PLAN DE TRABAJO BAJANET" que administración llevaba a mano por una herramienta integrada al CRM: el <strong>Calendario de Instalaciones con vista grid Técnico × Día</strong>. Quien antes abría el Excel para preguntar "¿en qué cliente está Uriel esta semana?" ahora lo va a ver dentro del mismo calendario donde ya viven las actividades comerciales. Además se cerró un hotfix de producción que estaba causando error 500 al editar cotizaciones de otros usuarios, y quedó cimentada toda la infraestructura (modelo de técnicos, asignaciones por día, endpoint, comando de carga inicial) para los próximos pasos de la feature.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">2 de 4</div>
+            <div class="stat-label">Pasos del calendario</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hotfix produccion</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Modelos nuevos</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Vista Grid Técnico × Día en el Calendario
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Ayer el calendario ya podía mostrar las instalaciones del Plan de Trabajo Bajanet en el modo "Instalaciones". <strong>Hoy se agregó un cuarto botón "Técnicos"</strong> que reemplaza la vista del calendario por la matriz que administración tenía en el Excel: filas = técnicos activos (URIEL, ARMANDO, GOYO, CHUY, EDGAR, JULIO, TOÑO, JORGE), columnas = los 7 días de la semana visible, celdas = el cliente/proyecto donde está asignado ese técnico ese día. Ya no hay que abrir un Excel paralelo para responder "¿quién está libre el viernes?" o "¿dónde está Uriel toda esta semana?".</p>
+    </div>
+
+    <h2>1. Hotfix de Producción: Cotizaciones Editables por Cualquiera</h2>
+
+    <div class="callout">
+        <strong>El problema:</strong> cuando un usuario intentaba editar una cotización que no había creado él mismo (por ejemplo, una cotización que dejó hecha un compañero de otro grupo), el sistema rompía con un error 500 al guardar. Si la persona que la hizo no estaba disponible, la cotización quedaba bloqueada y había que crear una nueva desde cero.
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Diagnóstico: Filtro Inconsistente entre Crear y Editar</span>
+        <div class="update-desc">El flujo de <em>crear</em> cotización ya mostraba todos los clientes a cualquier usuario (los desarrolladores mismos habían dejado un comentario "Todos los usuarios pueden ver todos los clientes para la creación de cotizaciones"). <strong>Pero el flujo de editar seguía filtrando por la regla vieja de visibilidad por grupo:</strong> si el cliente de la cotización pertenecía a un grupo del que tú no eras miembro, el formulario invalidaba el campo "cliente" al guardar y caía en una rama de error que devolvía 500. Era una inconsistencia entre dos caminos que deberían comportarse igual.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Solución: Cualquier Usuario Autenticado Puede Editar</span>
+        <div class="update-desc">Se quitó el filtro por usuario tanto en la vista de editar como en el formulario base de cotizaciones. <strong>Ahora cualquier usuario logueado puede entrar a cualquier cotización, ver todos los clientes y oportunidades en los dropdowns, y guardarla sin que el sistema lo bloquee.</strong> Los check de propiedad para <em>ver el PDF</em> y <em>descargar el PDF</em> se dejaron tal como estaban — esto se puede aflojar después si quieres.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Deploy</span>
+        <span class="update-title">Express a Producción</span>
+        <div class="update-desc">El fix se aplicó, se mergeo a la rama principal y se subió a producción en la misma sesión (cambio express, sin pasar por la fase larga de validación en pruebas porque el riesgo era bajo y el bloqueo era real). Quedó listo para correr <code>git pull</code> + <code>collectstatic</code> + <code>migrate</code> + <code>restart</code> en el servidor.</div>
+    </div>
+
+    <h2>2. Cimiento: Modelo de Técnicos y Asignaciones</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">El Excel "PLAN DE TRABAJO BAJANET" en realidad tiene <strong>dos bloques</strong> en una sola hoja: del lado izquierdo la tabla maestra de instalaciones por PO (cliente, jornadas, monto, etc.) y del lado derecho una matriz <strong>Técnico × Día</strong> que dice qué cliente/proyecto tiene cada técnico cada día. El bloque izquierdo ya estaba modelado desde ayer. Hoy se construyó el cimiento para el bloque derecho.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modelo Técnico (Catálogo Plano)</span>
+        <div class="update-desc">Un nuevo modelo <strong>Técnico</strong> con nombre, rol (Técnico / Supervisor / Ingeniero), bandera de activo, color opcional para distinguirlo en el grid y un link opcional a un usuario del sistema (por si el técnico también tiene login). <strong>No requiere login del técnico</strong> — es un catálogo plano que administración puede gestionar libremente. Si después se decide que un técnico también tenga acceso al CRM, se conecta sin migración nueva.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabla de Asignaciones (Una Fila por Celda del Excel)</span>
+        <div class="update-desc">La tabla intermedia <strong>InstalacionAsignacion</strong> tiene 3 campos clave: instalación, técnico y <em>fecha</em>. Esto refleja exactamente cómo funciona el Excel: el mismo técnico puede estar en VOLVO de lunes a jueves y en CARLZEISS el sábado — cada celda del Excel es una fila aquí. Tiene también hora de inicio/fin opcionales y un campo de notas. Una <strong>restricción de unicidad</strong> impide asignar dos veces al mismo técnico a la misma instalación el mismo día, y un índice compuesto (técnico + fecha) hace que armar el grid sea rápido aunque crezca el histórico.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Admin de Django con Inline de Asignaciones</span>
+        <div class="update-desc">Mientras desarrollamos el form bonito en el calendario, el equipo administrativo ya puede gestionar técnicos y asignaciones desde <code>/admin/</code>. Al entrar al detalle de una instalación, hay una <strong>sección inline</strong> donde se agregan técnicos + fecha sin salir. El catálogo de técnicos tiene un toggle de activo/inactivo para dar de baja sin perder el histórico, y hay una vista standalone de asignaciones con jerarquía de fechas y filtros por técnico.</div>
+    </div>
+
+    <h2>3. Hito: Vista Grid Técnico × Día en el Calendario</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Aquí es donde el equipo va a vivir todos los días. Replica exactamente la matriz del lado derecho del Excel, pero dentro del mismo calendario que ya conocen.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cuarto Botón "Técnicos" — Solo en Modo Instalaciones</span>
+        <div class="update-desc">El calendario ya tenía 3 vistas: <strong>Mes</strong>, <strong>Semana</strong> y <strong>Día</strong>. Hoy se agregó <strong>"Técnicos"</strong> al lado, pero con un detalle clave: <em>solo aparece cuando la fuente del calendario está en "Instalaciones"</em>. Si el usuario está viendo el calendario en modo "Actividades" (el flujo comercial), el botón no se muestra para no agregar ruido. Si cambia a "Actividades" estando en la vista Técnicos, regresa automáticamente a Mes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Matriz Replicando el Excel</span>
+        <div class="feature-list" style="padding-left: 5px;">
+            <div><strong>Filas:</strong> técnicos activos (orden alfabético).</div>
+            <div><strong>Columnas:</strong> 7 días de la semana visible.</div>
+            <div><strong>Celdas:</strong> cliente / proyecto asignado ese día.</div>
+            <div><strong>Día de hoy:</strong> resaltado con fondo crema y número naranja.</div>
+            <div><strong>Header sticky:</strong> al hacer scroll el encabezado de días siempre visible.</div>
+            <div><strong>Columna técnico sticky:</strong> al hacer scroll horizontal el nombre del técnico no se pierde.</div>
+        </div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Color Determinístico por Cliente</span>
+        <div class="update-desc">Cada cliente recibe un color de una paleta de 10 colores que se asigna por <strong>hash del nombre</strong>. Esto significa que <em>el mismo cliente siempre tiene el mismo color</em> sin necesidad de configurar nada. Si VOLVO sale naranja una vez, sale naranja siempre. El borde izquierdo de cada chip lleva el color "fuerte" y el fondo es translúcido (15% de opacidad), igual al estilo del calendario actual de actividades.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Navegación por Semana Completa</span>
+        <div class="update-desc">Las flechas ← y → en el header navegan <strong>semana por semana</strong> cuando estás en la vista Técnicos (no día por día como en la vista Día, ni mes por mes como en la vista Mes). El botón "Hoy" salta directo a la semana actual. El título de la barra superior muestra el rango completo ("Técnicos · 25 – 31 de mayo, 2026") para que de un vistazo sepas qué estás viendo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Decisión</span>
+        <span class="update-title">Endpoint Optimizado para el Grid</span>
+        <div class="update-desc">Se creó un endpoint dedicado <code>/api/calendario/instalaciones/grid/</code> que <strong>en una sola query trae todas las asignaciones del rango</strong> (con sus instalaciones y técnicos relacionados pre-cargados) y devuelve la matriz lista para pintar. El frontend solo arma la tabla — no hace varias peticiones encadenadas. Esto mantiene la vista ágil aunque crezca el histórico de asignaciones.</div>
+    </div>
+
+    <h2>4. Sembrado del Catálogo Inicial</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Comando <code>seed_tecnicos</code></span>
+        <div class="update-desc">Se creó un comando de management que siembra automáticamente los <strong>8 técnicos del Excel</strong> (URIEL, ARMANDO, GOYO, CHUY, EDGAR, JULIO, TOÑO, JORGE) como técnicos activos. Es <strong>idempotente</strong>: si un técnico ya existe por nombre (sin importar mayúsculas/minúsculas), no lo duplica ni lo modifica. Se puede correr cuantas veces se quiera. Después solo es cuestión de revisar en <code>/admin/</code> si quieres cambiar algún rol a Supervisor o Ingeniero.</div>
+    </div>
+
+    <h2>5. Próximos Pasos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Validar Todo en Pruebas + Cargar Asignaciones de Prueba</span>
+        <div class="update-desc">El grid ya está en <code>crm.pruebas.nethive.mx</code>. Hay que correr <code>migrate</code> + <code>seed_tecnicos</code> en el servidor de pruebas, entrar al calendario en modo Instalaciones y darle al botón "Técnicos" para ver la grilla vacía. Después, desde <code>/admin/</code>, agregar 3-4 asignaciones reales (técnico + fecha + cliente) para poblar el grid y validar visualmente que se ve como el Excel.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Paso 3: Botón "Crear Instalación" desde la Oportunidad</span>
+        <div class="update-desc">Las oportunidades del CRM tienen un campo de tipo de negociación (Runrate / Proyecto). Las de tipo <strong>Proyecto</strong> son las que típicamente generan instalaciones. El siguiente paso es agregar un botón <strong>"Crear instalación"</strong> en el detalle de la oportunidad cuando es de tipo Proyecto, que abra el formulario con cliente, PO, proyecto y monto <em>prellenados</em> desde la opp. Así se conecta el flujo comercial con el flujo de operación sin doble captura.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Paso 4: Modal Detalle + Form Crear/Editar desde el Calendario</span>
+        <div class="update-desc">Por ahora, hacer click sobre una celda del grid abre el admin de Django de esa instalación en una pestaña nueva (placeholder funcional). El siguiente paso es reemplazarlo por un <strong>modal de detalle bonito</strong> (cliente, PO, proyecto, jornadas, personal, monto, utilidad, notas) y un <strong>formulario de crear/editar instalación desde el botón "+ Nueva instalación"</strong> del calendario, sin tener que salir al admin.</div>
+    </div>
+
+    <h2>6. ¿Qué Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Adiós al Excel Paralelo de Administración</span>
+        <div class="update-desc">El "PLAN DE TRABAJO BAJANET" se llevaba en un Excel que solo administración editaba y al que el equipo accedía pidiéndolo. Con esta vista, <strong>cualquier persona autorizada lo consulta desde el mismo calendario donde ya vive el flujo comercial</strong>, sin compartir archivos, sin versiones desfasadas, sin "¿quién tiene el último?". La fuente de verdad pasa a ser una sola.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Respuesta Inmediata a "¿Quién Está Disponible?"</span>
+        <div class="update-desc">La pregunta más cara que se hacía en juntas de planeación era <em>"¿quién tiene espacio el viernes?"</em> o <em>"¿podemos meter este servicio el martes?"</em>, y la respuesta requería abrir el Excel y leer columna por columna. <strong>Ahora se ve en una sola pantalla:</strong> celdas vacías = disponibilidad, celdas pintadas = compromiso. La decisión de a quién mandar a qué cliente toma segundos en vez de minutos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cotizaciones No Quedan "Bloqueadas"</span>
+        <div class="update-desc">Antes, si quien hizo una cotización no estaba o pertenecía a otro grupo, editar esa cotización tronaba con error 500. <strong>Ahora cualquier compañero puede tomarla y avanzar</strong> — eso es importante cuando hay urgencia con un cliente y el creador original está en cita, de vacaciones o ya no trabaja en la empresa.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cimiento Sólido para los Siguientes Pasos</span>
+        <div class="update-desc">El modelo de Técnicos y Asignaciones que se construyó hoy <strong>no es solo para el grid</strong>: es el cimiento para reportes futuros tipo "horas trabajadas por técnico al mes", "utilización del personal", "técnicos más asignados a cada cliente", etc. La inversión de hoy paga en cada feature que toque "quién hizo qué cuándo" de aquí en adelante.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 29 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

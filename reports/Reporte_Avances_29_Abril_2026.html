@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 29 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 29 de Abril, 2026</p>
+            <p>Periodo: 29 Abril (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">El dia se enfoco en hacer que <strong>la propuesta tecnica y la volumetria del ingeniero sean mas rapidas, mas precisas y mas faciles de presentar al cliente</strong>. Se integro el catalogo de productos del cliente al sistema, la volumetria ahora soporta varios escenarios al mismo tiempo, y el vendedor recibe los documentos listos para mandar al cliente sin necesidad de pedirlos.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Modulos Mejorados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">~5,000</div>
+            <div class="stat-label">Productos Integrados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">10+</div>
+            <div class="stat-label">Mejoras Visibles</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Catalogo de Productos del Cliente + Volumetrias Multiples
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Las casi <strong>5,000 piezas que el cliente tenia en su Excel maestro</strong> ya viven dentro del sistema. El ingeniero puede buscarlas al armar la propuesta tecnica, el administrador las gestiona desde Compras, y todo se mantiene en un solo lugar. Ademas, la <strong>volumetria</strong> &mdash; donde el ingeniero puede pasarse horas o dias diseñando &mdash; ahora soporta <strong>varios escenarios en paralelo</strong> con su propio estado borrador / completada.</p>
+    </div>
+
+    <h2>1. Catalogo de Productos Integrado al Sistema</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Casi 5,000 Productos del Cliente Disponibles</span>
+        <div class="update-desc">Se cargo el <strong>Excel maestro de productos</strong> que el cliente mantenia por separado. Quedaron disponibles en el sistema con su numero de parte, descripcion, costo y datos fiscales. Ya no hay catalogos paralelos &mdash; un solo origen de verdad para toda la operacion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Buscador de Productos en la Propuesta Tecnica</span>
+        <div class="update-desc">Cuando el ingeniero arma la lista de materiales en la propuesta, ahora <strong>tipea parte del codigo o del nombre y aparecen sugerencias del catalogo</strong>. Click y se agrega. Antes era un campo vacio donde habia que teclear todo a mano.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">El Catalogo se Puede Actualizar sin Perder Datos</span>
+        <div class="update-desc">Si el cliente nos manda un Excel actualizado con precios o productos nuevos, lo subimos y el sistema <strong>agrega los nuevos y actualiza los existentes</strong>, pero <strong>no borra los productos que no esten en el archivo</strong> ni pisa precios que ya hayamos ajustado a mano. Re-importar el mismo archivo no causa duplicados.</div>
+    </div>
+
+    <h2>2. Propuesta Tecnica: Mas Comoda para Trabajar</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Pantalla Completa por Seccion</span>
+        <div class="update-desc">Cada bloque de la propuesta (especificaciones, evidencia, programa de implementacion) tiene un <strong>boton de expandir</strong>. Cuando el ingeniero esta capturando mucha informacion en una seccion, la abre en grande para trabajar comodo. Algunos prefieren ver todo de un vistazo, otros prefieren enfocarse en una sola cosa a la vez &mdash; ahora pueden elegir.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Las Fechas del Proyecto se Configuran Solas</span>
+        <div class="update-desc">El ingeniero ahora <strong>captura las fechas una sola vez</strong> en el programa de implementacion de la propuesta. El sistema las copia automaticamente al proyecto y al programa de obra. Esto evita que se queden desincronizadas y que alguien tenga que ir a actualizar las fechas en tres lugares distintos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Aviso si el Proyecto Tenia Otras Fechas Configuradas</span>
+        <div class="update-desc">Si alguien ya habia configurado el proyecto con otras fechas, el sistema <strong>no las pisa automaticamente</strong>. En su lugar, dentro de la propuesta aparece un aviso que dice cuales son las del proyecto y cuales las nuevas, con un boton para sobrescribir solo si es lo que se quiere.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Notas del Ingeniero Visibles en el PDF al Cliente</span>
+        <div class="update-desc">Cuando el ingeniero pone una nota junto a un producto (por ejemplo: <em>&ldquo;requiere bajante de 4 metros&rdquo;</em>), esa nota <strong>antes no aparecia en el PDF</strong> que se le manda al cliente. Ahora <strong>se imprime debajo de la descripcion del producto</strong>, en pequeño, asi el cliente entiende los detalles tecnicos de cada partida.</div>
+    </div>
+
+    <h2>3. Volumetria: Comparar Escenarios sin Duplicar Trabajo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Varias Volumetrias en el Mismo Levantamiento</span>
+        <div class="update-desc">Antes, para presentarle al cliente <strong>una opcion economica y una premium</strong>, el ingeniero tenia que duplicar todo el levantamiento. Ahora puede tener varias volumetrias <strong>bajo el mismo levantamiento</strong>, con su propio nombre, y compararlas. Es la fase donde el ingeniero pasa mas tiempo &mdash; ahorrarle el trabajo de duplicar es un cambio grande para el flujo diario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Borrador o Completada: el Ingeniero Decide Cuando se Presenta</span>
+        <div class="update-desc">Cada volumetria tiene un boton para <strong>marcarla como &ldquo;completada&rdquo;</strong>. Mientras esta en borrador, solo el ingeniero la ve. Cuando esta lista, la marca como completada y <strong>el vendedor la recibe en su vista</strong> &mdash; sin necesidad de avisarle por WhatsApp ni mandarle archivos. Si decide bajarla otra vez a borrador, deja de verse para el vendedor.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Volumetrias Antiguas se Conservan Intactas</span>
+        <div class="update-desc">Los levantamientos que ya tenian volumetria capturada antes de este cambio <strong>no se perdieron</strong>: el sistema migro cada uno automaticamente. Cuando el ingeniero entra hoy a un levantamiento viejo, encuentra todo su trabajo y puede empezar a crear escenarios nuevos al lado.</div>
+    </div>
+
+    <h2>4. Vendedor: Recibe los Documentos Listos para Mandar</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Solo Ve Volumetrias Aprobadas por el Ingeniero</span>
+        <div class="update-desc">El vendedor abre un levantamiento y en la seccion de volumetria <strong>solo ve las que el ingeniero ya marco como completadas</strong>. Las que estan en borrador no se le muestran &mdash; nunca recibe una version a medias.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Boton de Exportar por Cada Volumetria</span>
+        <div class="update-desc">Cada volumetria completada tiene su propio <strong>boton &ldquo;Exportar&rdquo;</strong> con tres opciones: <strong>ver en pantalla, descargar PDF, descargar Excel</strong>. Todos sin costos &mdash; solo cantidades y descripciones &mdash; para que el vendedor pueda compartir el documento con el cliente sin exponer margenes ni precios de proveedor.</div>
+    </div>
+
+    <h2>5. Detalles de Calidad</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Avisos y Confirmaciones Integrados al Sistema</span>
+        <div class="update-desc">Las preguntas tipo <em>&ldquo;Marcar como completada?&rdquo;</em> o <em>&ldquo;Eliminar?&rdquo;</em> usaban los <strong>cuadritos grises feos del navegador</strong>. Se reemplazaron por <strong>avisos integrados al CRM</strong>, con icono, mensaje claro y dos botones bien diseñados. Lo mismo cuando se le pone nombre a una volumetria nueva: ya no es el cuadrito del navegador, es un panel del propio sistema.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Datos de la Propuesta Tecnica que no se Veian para el Vendedor</span>
+        <div class="update-desc">En la vista del vendedor, la propuesta tecnica decia <em>&ldquo;sin datos capturados&rdquo;</em> aunque el ingeniero ya hubiera llenado todo. Se corrigio: ahora se ve <strong>cliente, planta, areas, descripcion del proyecto, productos seleccionados y notas del sitio</strong> tal como los capturo el ingeniero.</div>
+    </div>
+
+    <h2>6. ¿Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Una Sola Fuente para los Productos del Cliente</span>
+        <div class="update-desc">Antes los productos vivian en un Excel suelto y cada quien lo copiaba a mano cuando lo necesitaba. Ahora estan dentro del sistema: el administrador los gestiona, el ingeniero los selecciona en la propuesta, y todo queda alineado. <strong>Cero discrepancias</strong> entre lo que se cotiza, se vende y se compra.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Ingeniero Trabaja Menos para Presentar Mas</span>
+        <div class="update-desc">Comparar dos versiones de un proyecto solia requerir duplicar todo. Ahora el ingeniero <strong>arma escenarios paralelos sobre el mismo levantamiento</strong>, los compara, y decide cuales presenta. <strong>Mas opciones para el cliente, menos horas perdidas.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Vendedor e Ingeniero Trabajan Sin Tener que Coordinarse</span>
+        <div class="update-desc">Cuando el ingeniero termina una version, el vendedor la ve en su pantalla automaticamente, con el boton de descarga al lado. <strong>Ya no hace falta &ldquo;mandame el PDF&rdquo; por WhatsApp</strong> ni archivos sueltos por correo. La conversacion se reduce a <em>&ldquo;esta lista&rdquo;</em>, <em>&ldquo;perfecto, la mando&rdquo;</em>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Una Captura, Tres Lugares Sincronizados</span>
+        <div class="update-desc">Las fechas que el ingeniero captura en la propuesta <strong>se reflejan automaticamente en el proyecto y en el programa de obra</strong>. Ya no hay riesgo de que esten desincronizadas en distintos lugares ni de que alguien tenga que ir a actualizar a mano.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 29 de Abril, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

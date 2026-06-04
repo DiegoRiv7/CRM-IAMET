@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 1 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+        .header-meta {
+            text-align: right;
+            font-size: 13px;
+            color: var(--secondary);
+        }
+        h2 {
+            font-size: 19px;
+            margin-top: 25px;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        .achievement-box {
+            background: rgba(0, 82, 212, 0.04);
+            border: 1px solid rgba(0, 82, 212, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .achievement-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 17px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .achievement-title svg {
+            margin-right: 10px;
+        }
+        .badge {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-deploy { background: #ede9fe; color: #5b21b6; }
+        .update-item {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f8f8f8;
+        }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .btn-pdf {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,82,212,0.2);
+        }
+        .btn-pdf:hover { background: #0041a8; }
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
+        }
+        .stat-card {
+            flex: 1;
+            background: var(--light);
+            border-radius: 8px;
+            padding: 12px 15px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .stat-label {
+            font-size: 11px;
+            color: var(--secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 1 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy: deploy masivo a produccion con mas de 130 commits acumulados, nuevo modulo de cobrado con carga de CSV, correccion critica del KPI de facturacion, formato de moneda mexicana y sistema de alias inteligente para clientes.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">130+</div>
+            <div class="stat-label">Commits a Produccion</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">11</div>
+            <div class="stat-label">Migraciones de BD</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">14,000+</div>
+            <div class="stat-label">Lineas de Codigo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">27</div>
+            <div class="stat-label">Archivos Nuevos</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Deploy Masivo a Produccion
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se realizo el merge de la rama de pruebas a produccion con <strong>mas de 130 commits acumulados</strong>, incluyendo modulos completamente nuevos (Prospeccion, Campanas, Proyectos IAMET), sistema de cobrado, KPIs corregidos, pipelines dinamicos, correo con adjuntos, y decenas de mejoras. El deploy incluyo <strong>11 migraciones de base de datos</strong>, regeneracion de estaticos, poblacion de etapas de pipeline y actualizacion masiva de montos de oportunidades. El sistema quedo operativo sin errores en produccion, lo cual representa el avance mas significativo del trimestre en terminos de funcionalidad entregada a los usuarios finales.</p>
+    </div>
+
+    <h2>1. Modulo de Cobrado (CSV de Ingresos)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Carga de CSV de Ingresos</span>
+        <div class="update-desc">Nuevo boton <strong>"CSV"</strong> en el KPI de Cobrado (solo supervisores) que permite subir el archivo CSV de ingresos exportado del sistema contable. El sistema parsea automaticamente las columnas <strong>Fecha, Cliente, Total y Facturas</strong>, agrupa los cobros por mes y cliente, y almacena el desglose completo incluyendo el detalle de cada factura cobrada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabla de Desglose de Cobrado</span>
+        <div class="update-desc">Al hacer clic en el KPI de Cobrado se despliega una tabla completa con 6 columnas: <strong>#, Cliente, Empleado, Cobrado, Meta y Faltante</strong>. La columna de Empleado se determina mediante match inteligente con los clientes del CRM. La Meta suma automaticamente las metas de cobrado de todas las variantes del cliente (ej: Eaton Otay + EATON PACIFICO + Eaton Valle Bonito). El Faltante se muestra en verde si se cumplio la meta y en rojo si aun falta.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Facturas Expandibles por Cliente</span>
+        <div class="update-desc">Cada fila de cliente es clickeable: al hacer clic se expande una sub-tabla con el <strong>detalle de cada factura cobrada</strong>, mostrando numero de factura, fecha del cobro y monto individual. Esto permite verificar exactamente que facturas componen el total cobrado de cada cliente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Match Inteligente de Clientes con Variantes</span>
+        <div class="update-desc">El sistema de match busca <strong>todas las variantes</strong> de un cliente en la BD usando la palabra clave principal. Por ejemplo, "EATON INDUSTRIES" del CSV matchea con Eaton Otay, EATON PACIFICO y Eaton Valle Bonito, asignando el vendedor del primer match y sumando las metas de las tres variantes ($305,000 + $5,500 + $51,000 = $361,500).</div>
+    </div>
+
+    <h2>2. Sistema de Alias de Clientes</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Seccion "Alias Clientes" en Panel Admin</span>
+        <div class="update-desc">Nueva seccion en el panel de administracion que permite definir <strong>reglas de match manual</strong> para casos donde los nombres del CSV no coinciden con la BD. Se configura una <strong>palabra clave</strong> (lo que aparece en el CSV) y un <strong>nombre destino</strong> (como buscarlo en el CRM). Por ejemplo: <em>SCHLAGE &rarr; ALLEGION</em> indica que cuando el CSV diga "SCHLAGE DE MEXICO", el sistema busque clientes que contengan "ALLEGION".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Prioridad de Alias sobre Match Automatico</span>
+        <div class="update-desc">Los alias definidos manualmente tienen prioridad sobre el match automatico. Esto permite corregir casos particulares sin afectar la logica general. Los alias se aplican tanto al desglose de cobrado como al de facturacion, y se pueden agregar o eliminar en cualquier momento sin necesidad de volver a subir los archivos.</div>
+    </div>
+
+    <h2>3. Correccion del KPI de Facturado</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">KPI Muestra el Mismo Total que la Tabla de Desglose</span>
+        <div class="update-desc">Se corrigio un bug critico donde el KPI de Facturado mostraba <strong>$1,664,437</strong> mientras la tabla de desglose mostraba <strong>$1,735,466</strong>. La diferencia de ~$71,000 se debia a que el KPI solo sumaba clientes que matcheaban con la BD, excluyendo los que no tenian match. Ahora el KPI usa el <code>total_facturado</code> directamente del API del desglose, garantizando que ambos numeros siempre coincidan.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Selector de Mes No Se Sobreescribe en Dia 1</span>
+        <div class="update-desc">Se corrigio un bug donde al cambiar el mes a marzo, la pagina recargaba brevemente en marzo pero luego volvia automaticamente a abril. El problema era un script de "auto-cambio de mes" que el dia 1 de cada mes forzaba el redirect al mes actual. Ahora el auto-cambio solo aplica cuando el usuario no ha seleccionado un mes manualmente.</div>
+    </div>
+
+    <h2>4. Formato de Moneda Mexicana (MXN)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">KPIs con Denominacion MXN</span>
+        <div class="update-desc">Los KPIs de Facturado, Cobrado y Oportunidades en el tab de Clientes ahora muestran el sufijo <strong>MXN</strong> para especificar que las cantidades estan en pesos mexicanos (ej: <em>$1,735,466 MXN</em>). Tambien aplica a las metas y al porcentaje de progreso.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Metas en Panel Admin con Formato MXN</span>
+        <div class="update-desc">Los campos de meta (Facturado, Cobrado, Oportunidades) en la edicion de clientes y en la seccion de Metas por Vendedor ahora muestran formato de moneda mexicana (<em>$305,000 MXN</em>). Al hacer clic para editar se muestra el numero limpio, y al salir se reformatea automaticamente. La meta de cotizaciones se mantiene como numero entero ya que no es moneda.</div>
+    </div>
+
+    <h2>5. Control de Acceso y Deploy</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Seccion Proyectos Oculta para Empleados</span>
+        <div class="update-desc">La seccion de Proyectos se oculto para empleados regulares ya que aun esta en fase de revision. Solo los <strong>supervisores</strong> pueden ver el boton y acceder a la funcionalidad. Si un empleado intenta acceder por URL directa, recibe un mensaje indicando que la seccion esta en desarrollo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Deploy</span>
+        <span class="update-title">Merge Masivo y Deploy a Produccion</span>
+        <div class="update-desc">Se realizo el merge de la rama <code>pruebas</code> a <code>principal</code> con 130+ commits. El deploy en produccion incluyo: pull del codigo, creacion de migraciones para modelos nuevos (ArchivoCobrado, AliasCliente), ejecucion de 11 migraciones de BD, regeneracion de estaticos con <code>--clear</code>, poblacion de etapas de pipeline, actualizacion de montos de oportunidades desde cotizaciones, restart de gunicorn y reload de nginx. Todo el proceso se completo sin errores ni downtime significativo.</div>
+    </div>
+
+</div>
+
+</body>
+</html>
