@@ -86,6 +86,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestión Ventas">
 
+    {# ─── Turbo Drive (experimento — modo opt-in, ver turbo_bootstrap.js) ─── #}
+    <script src="{% static 'vendor/turbo/turbo.es2017-umd.js' %}?v=8.0.13"></script>
+    <script src="{% static 'js/turbo_bootstrap.js' %}?v=20260604-exp"></script>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -114,8 +118,12 @@
         {% endblock %}
     </div>
 
+    {# Spotlight y AyudaModal viven en base.html y deben sobrevivir #}
+    {# las navegaciones de Turbo Drive — los marcamos como permanent #}
+    {# para que NO se reemplacen al cambiar de página (preservan estado #}
+    {# como el input del usuario, listeners, etc). #}
     <!-- ═══ SPOTLIGHT SEARCH v2 (doble espacio / ⌘K) ═══ -->
-    <div id="spotlight-modal" class="spotlight-modal spotlight-v2">
+    <div id="spotlight-modal" class="spotlight-modal spotlight-v2" data-turbo-permanent>
         <div class="spotlight-backdrop" onclick="closeSpotlight()"></div>
         <div class="spotlight-container">
             <div class="spotlight-search-box">
@@ -153,7 +161,7 @@
     </div>
 
     <!-- ═══ ASISTENTE IA DE AYUDA (botón AYUDA en Dynamic Island) ═══ -->
-    <div id="ayuda-modal" class="spotlight-modal">
+    <div id="ayuda-modal" class="spotlight-modal" data-turbo-permanent>
         <div class="spotlight-backdrop" onclick="closeAyudaChat()"></div>
         <div class="spotlight-container" style="max-width:520px;display:flex;flex-direction:column;max-height:75vh;">
             <div
