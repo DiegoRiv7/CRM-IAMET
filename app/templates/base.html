@@ -204,6 +204,10 @@
         </div>
     </div>
 
+    {# crm_ready.js DEBE cargarse antes que cualquier otro script que use
+       window.crmReady(). Es no-op si Turbo no está activo (solo dispara
+       en DOMContentLoaded como un addEventListener normal). #}
+    <script src="{% static 'js/crm_ready.js' %}?v=20260604-fase6b"></script>
     <script src="{% static 'js/base.js' %}?v=20260522-eng-proy-fix"></script>
 
     {% block extra_js %}{% endblock %}

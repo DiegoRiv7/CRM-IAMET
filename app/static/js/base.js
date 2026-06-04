@@ -591,7 +591,8 @@ window.addEventListener('resize', () => {
         if (spotlightTimeout) { clearTimeout(spotlightTimeout); spotlightTimeout = null; }
     };
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // Migrado a crmReady (Turbo-friendly).
+    window.crmReady(function () {
         var inp = $sp('spotlight-input');
         if (inp) {
             inp.addEventListener('input', function (e) {

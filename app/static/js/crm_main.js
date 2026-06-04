@@ -41,8 +41,12 @@
         }
     })();
 
-    /* ── Filtros mes/año/vendedor (script independiente) ── */
-    document.addEventListener('DOMContentLoaded', function () {
+    /* ── Filtros mes/año/vendedor (script independiente) ──
+       Usa window.crmReady (definido en crm_ready.js) para que en el
+       futuro con Turbo Drive activo, este wireup también se re-dispare
+       en cada turbo:load. Sin Turbo se comporta igual que un
+       DOMContentLoaded normal. */
+    window.crmReady(function () {
         var mesFilter = document.getElementById('mesFilter');
         var anioFilter = document.getElementById('anioFilter');
 
@@ -398,7 +402,9 @@
 
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
+    /* Dynamic Island + botones del topbar.
+       Migrado a window.crmReady para compatibilidad futura con Turbo. */
+    window.crmReady(function () {
         const island = document.getElementById('mainIsland');
         const expandedContent = document.getElementById('islandExpandedContent');
         const btnUploadTrigger = document.getElementById('btnUploadXlsTrigger');
@@ -8046,11 +8052,9 @@
                     requestAnimationFrame(function(){ sb.style.transition = ''; });
                 }
             }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', bind);
-            } else {
-                bind();
-            }
+            // Migrado a crmReady: corre en DOMContentLoaded y en cada
+            // turbo:load (cuando Turbo se active en Fase 3.C).
+            window.crmReady(bind);
         })();
 
         // ══════════════════════════════════════════════════════════════
@@ -8384,8 +8388,8 @@
 
                 setTimeout(renderChips, 300);
             }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-            else init();
+            // Migrado a crmReady (Turbo-friendly).
+            window.crmReady(init);
         })();
 
         // ── Dropdown para asignar oportunidad a tarea ──
@@ -10857,9 +10861,8 @@
     });
 
 
-    document.addEventListener('DOMContentLoaded', function () {
-        initDynamicIslandFilters();
-    });
+    // Migrado a crmReady (Turbo-friendly).
+    window.crmReady(initDynamicIslandFilters);
 
     function initDynamicIslandFilters() {
         // Identify active table body

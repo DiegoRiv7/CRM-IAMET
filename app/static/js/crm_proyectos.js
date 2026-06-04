@@ -7436,14 +7436,10 @@
         }).catch(function () { alert('Error de red al restaurar.'); });
     };
 
-    // Auto-abrir el detalle si la URL trae ?open_proyecto=N. Esto permite
-    // compartir un link directo al proyecto (botón Compartir).
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(window.proyectosOpenFromUrl, 500);
-        });
-    } else {
+    // Auto-abrir el detalle si la URL trae ?open_proyecto=N. Migrado a
+    // crmReady (Turbo-friendly).
+    window.crmReady(function () {
         setTimeout(window.proyectosOpenFromUrl, 500);
-    }
+    });
 
 })();

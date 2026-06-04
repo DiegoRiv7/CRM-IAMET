@@ -126,9 +126,6 @@
         }, 600);
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootstrap);
-    } else {
-        bootstrap();
-    }
+    // Migrado a crmReady (Turbo-friendly).
+    window.crmReady(bootstrap);
 })();

@@ -977,11 +977,8 @@
         if (m && m.classList.contains('open')) { pobCerrarModal(); ev.stopPropagation(); }
     });
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', _initHooks);
-    } else {
-        _initHooks();
-    }
+    // Migrado a crmReady (Turbo-friendly).
+    window.crmReady(_initHooks);
     // Reintentar por si crm_proyectos.js todavía no estaba listo.
     setTimeout(_initHooks, 500);
     setTimeout(_initHooks, 1500);

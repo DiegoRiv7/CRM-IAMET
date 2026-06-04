@@ -151,11 +151,10 @@
         }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    // Migrado a crmReady (Turbo-friendly).
+    // El observer del stack se reconfigura en cada turbo:load para que
+    // detecte widgets nuevos insertados al navegar.
+    window.crmReady(init);
 
     // ── Escape consistente: cierra el widget de top del stack ──
     // Antes era errático — algunos widgets cerraban con Esc, otros no.

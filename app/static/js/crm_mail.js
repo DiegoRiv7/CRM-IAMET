@@ -1767,7 +1767,8 @@
             _setupRecipAutocomplete();
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
+        // Migrado a crmReady (Turbo-friendly).
+        window.crmReady(function () {
             _mailWidgetInitOnce();
             _mailPollUnreadCount();
         });

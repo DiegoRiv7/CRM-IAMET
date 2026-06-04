@@ -13,7 +13,8 @@
     window.muroAbrir = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('active'); ov.classList.remove('closing'); muroCargar(); };
     window.muroCerrar = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('closing'); setTimeout(function () { ov.classList.remove('active', 'closing', 'z-elevated'); }, 220); var btn = $m('btnMuro'); if (btn) btn.classList.remove('active'); };
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // Migrado a crmReady (Turbo-friendly).
+    window.crmReady(function () {
         var ov = $m('widgetMuro');
         if (ov) { ov.addEventListener('click', function (e) { if (e.target === ov) muroCerrar(); }); }
     });
