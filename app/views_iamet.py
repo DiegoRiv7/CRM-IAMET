@@ -1,3 +1,20 @@
+# ══════════════════════════════════════════════════════════════════════
+# views_iamet.py — ARCHIVO LEGACY (congelado desde 2026-06-04)
+#
+# ~6,568 líneas con las APIs del módulo de Proyectos IAMET (proyectos,
+# partidas, OCs, facturas, volumetrías). Marcado como LEGACY por Boy
+# Scout Rule.
+#
+# NO agregar endpoints nuevos aquí. Para vistas nuevas:
+#   → app/views_v2/proyectos_v2.py
+#
+# Este archivo usa `ProyectoIAMET as Proyecto` (alias). Cuando migremos
+# todo el código nuevo a `views_v2/proyectos_v2.py`, importar
+# directamente `ProyectoIAMET` sin alias (más claro).
+#
+# Modificar SOLO para bugs críticos. Ver app/views_v2/README.md.
+# ══════════════════════════════════════════════════════════════════════
+
 # ═══════════════════════════════════════════════════════════════
 #  views_iamet.py — APIs del modulo de Proyectos IAMET
 #  Gestion de proyectos de telecomunicaciones

@@ -1,3 +1,24 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * crm_main.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+ *
+ * Este archivo tiene ~11,500 líneas y mezcla múltiples responsabilidades
+ * (kanban opp, dashboard clientes, tareas, admin, etc.). Está marcado
+ * como LEGACY por la política Boy Scout Rule.
+ *
+ * NO agregar más código aquí. Para nuevas features, ir al *_v2.js que
+ * corresponda según dominio:
+ *   - Kanban / filtros / pin  → app/static/js/crm_kanban_v2.js
+ *   - Tareas / comentarios    → app/static/js/crm_tareas_v2.js
+ *   - Dashboard clientes (ck*) → app/static/js/crm_clientes_v2.js
+ *   - Features sueltos        → app/static/js/crm_features_misc.js
+ *
+ * Modificar SOLO para:
+ *   - Bug crítico en producción que afecta usuarios
+ *   - Cambio mínimo (1-3 líneas) que NO amerita módulo nuevo
+ *
+ * Ver: app/static/js/README.md y ESTRUCTURA.md
+ * ═══════════════════════════════════════════════════════════════════════ */
+
 /* ── Utilidad CSRF global (disponible para todos los scripts) ── */
     if (typeof window.getCsrf === 'undefined') {
         window.getCsrf = function () {

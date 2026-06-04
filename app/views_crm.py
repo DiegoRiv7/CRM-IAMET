@@ -1,3 +1,16 @@
+# ══════════════════════════════════════════════════════════════════════
+# views_crm.py — ARCHIVO LEGACY (congelado desde 2026-06-04)
+#
+# ~6,488 líneas mezclando oportunidades, cotizaciones, clientes,
+# dashboard, reportes, admin. Marcado como LEGACY por Boy Scout Rule.
+#
+# NO agregar endpoints nuevos aquí. Para vistas nuevas del CRM:
+#   → app/views_v2/crm_v2.py
+#
+# Modificar SOLO para bugs críticos. Ver app/views_v2/README.md y
+# ESTRUCTURA.md (sección "Boy Scout Rule").
+# ══════════════════════════════════════════════════════════════════════
+
 # ----------------------------------------------------------------------
 # views_crm.py — CRM home and oportunidades management.
 # ----------------------------------------------------------------------

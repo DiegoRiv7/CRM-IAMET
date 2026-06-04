@@ -1,3 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * crm_proyectos.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+ *
+ * ~7,400 líneas mezclando lista de proyectos, detalle, levantamientos
+ * y drive. Marcado como LEGACY por Boy Scout Rule.
+ *
+ * NO agregar código aquí. Para nuevas features de proyectos:
+ *   → app/static/js/proyectos_v2.js
+ *
+ * Modificar SOLO para bugs críticos o cambios mínimos. Ver
+ * app/static/js/README.md y ESTRUCTURA.md.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
 /* ============================================================
    crm_proyectos.js  --  Modulo Proyectos (inline section + detail overlay)
    ============================================================ */

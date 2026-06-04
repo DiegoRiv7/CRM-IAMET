@@ -1,3 +1,15 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * crm_levantamiento.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+ *
+ * ~4,500 líneas del wizard de levantamiento (5 fases con auto-save).
+ * Marcado como LEGACY por Boy Scout Rule.
+ *
+ * NO agregar código aquí. Para nuevas features:
+ *   → app/static/js/proyectos_v2.js (sección levantamientos)
+ *
+ * Modificar SOLO para bugs críticos. Ver app/static/js/README.md.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
 // ═══════════════════════════════════════════════════════════════
 //  WIZARD DE LEVANTAMIENTO — 5 fases con auto-save
 //  Expone: window.levantamientoWizardOpen(levData)
