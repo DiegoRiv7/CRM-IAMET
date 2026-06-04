@@ -117,7 +117,6 @@
                 // de Django puede renderizar "1,198" para IDs >= 1000).
                 oppId = oppId.replace(/,/g, '');
                 if (!oppId) return;
-                console.log('[PIN] Toggle pin para opp:', oppId);
                 var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
                 fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
                     method: 'POST',
@@ -125,28 +124,18 @@
                 }).then(function(r) { return r.json(); }).then(function(data) {
                     if (!data.success) { console.warn('[PIN] API sin success:', data); return; }
                     var anclada = !!data.anclada;
-                    console.log('[PIN] API →', anclada ? 'ANCLADA' : 'DESANCLADA', 'para opp', oppId);
 
                     var newFill   = anclada ? '#EF4444' : '#B0B8C4';
-
-                    // DIAG: dump de qué hay realmente en el DOM para el oppId buscado
-                    var _allPins = document.querySelectorAll('.crm-pin[data-pin-id]');
-                    var _sample = [];
-                    for (var _i = 0; _i < Math.min(4, _allPins.length); _i++) {
-                        var _a = _allPins[_i].getAttribute('data-pin-id');
-                        _sample.push(_a + '(len=' + _a.length + ')');
-                    }
-                    console.log('[PIN] total pins DOM:', _allPins.length, 'muestras:', _sample, 'buscando:', JSON.stringify(oppId), 'len=', oppId.length);
 
                     // Comparación robusta: usamos dataset.pinId en lugar de querySelectorAll con
                     // attribute equality — evita problemas si el attr tiene whitespace u otros
                     // caracteres raros que el selector CSS no tolera.
+                    var _allPins = document.querySelectorAll('.crm-pin[data-pin-id]');
                     var pinsFound = [];
                     _allPins.forEach(function(p){
                         var raw = (p.dataset.pinId || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
                         if (raw === oppId) pinsFound.push(p);
                     });
-                    console.log('[PIN] pins encontrados (match robusto):', pinsFound.length);
                     if (pinsFound.length === 0) {
                         // Fallback: solo el pin clickeado
                         clickedPin.classList.toggle('pinned', anclada);
@@ -170,7 +159,6 @@
                         var raw = (n.dataset.oppId || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
                         if (raw === oppId) allNodes.push(n);
                     });
-                    console.log('[PIN] cards/rows encontradas (match robusto):', allNodes.length);
                     allNodes.forEach(function(node){
                         node.dataset.anclada = anclada ? '1' : '0';
                         node.classList.toggle('pinned-row', anclada);
@@ -244,7 +232,6 @@
                         if (typeof window._crmRenderKanban !== 'function') return;
                         var kv = document.getElementById('crmViewKanban');
                         if (kv && kv.style.display !== 'none') {
-                            console.log('[PIN] re-render kanban');
                             window._crmRenderKanban();
                         }
                     }
@@ -397,8 +384,6 @@
         const realUploadBtn = document.getElementById('btnUploadXls');
         let isIslandExpanded = false;
 
-        console.log('[CRM] Island:', island, 'ExpandedContent:', expandedContent);
-
         // Island Expansion Logic - DISABLED per user request (no hover expansion)
         /*
         if (island && expandedContent) {
@@ -454,8 +439,6 @@
             var form = document.getElementById('formNegociacion');
             var toast = document.getElementById('widgetToast');
 
-            console.log('[CRM] btnNegociacion:', btnOpen, 'overlay:', overlay, 'btnClose:', btnClose, 'btnCancel:', btnCancel);
-
             function openWidget() {
                 if (!overlay) { console.error('[CRM] widgetNegociacion overlay not found!'); return; }
                 overlay.classList.add('active');
@@ -502,7 +485,6 @@
 
             if (btnOpen) {
                 btnOpen.addEventListener('click', function () {
-                    console.log('[CRM] Negociacion clicked! _crmTareasMode:', window._crmTareasMode);
                     if (window._crmTareasMode) {
                         crmTaskAbrirCrear();
                     } else {
@@ -562,6 +544,10 @@
                                 } else {
                                     clienteAC.classList.remove('open');
                                 }
+                            })
+                            .catch(function (err) {
+                                console.error('[AC] seleccionables fetch:', err);
+                                if (clienteAC) clienteAC.classList.remove('open');
                             });
                     }, 250);
                 });
@@ -607,6 +593,10 @@
                                 } else {
                                     contactoAC.classList.remove('open');
                                 }
+                            })
+                            .catch(function (err) {
+                                console.error('[AC] buscar-contactos fetch:', err);
+                                if (contactoAC) contactoAC.classList.remove('open');
                             });
                     }, 250);
                 });
@@ -821,7 +811,6 @@
                         // disparamos recargarTareasCRM() para que el listado
                         // se pinte (si no, queda vacío hasta que el usuario
                         // navega manualmente).
-                        console.log('[deep-link] tarea id =', _openTaskClean, 'desde URL:', _openTaskId);
                         setTimeout(function () {
                             if (typeof switchCrmView === 'function') switchCrmView('tareas');
                             if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
@@ -926,7 +915,6 @@
                     badge.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("[DEBUG] Badge clicked by addEventListener!");
                         var newTipo = tipo === 'proyecto' ? 'runrate' : 'proyecto';
                         var targetName = newTipo === 'proyecto' ? 'Ventas de Proyectos' : 'Ventas Runrate';
 
@@ -935,7 +923,6 @@
 
                         var overlay = document.getElementById('widgetConfirmTipo');
                         if (!overlay) {
-                            console.error("[DEBUG] No se encontró widgetConfirmTipo!");
                             showToast("Error: widgetConfirmTipo no encontrado", "error");
                             return;
                         }
@@ -4450,6 +4437,10 @@
                             if (fl) fl.textContent = data.footer.left;
                             if (fr) fr.textContent = data.footer.right;
                         }
+                    }).catch(function (err) {
+                        console.error('[CRM] búsqueda tabla:', err);
+                        var tbody = document.getElementById('crmTbody');
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:2rem;color:#DC2626;">Error al buscar. Revisa tu conexión e inténtalo de nuevo.</td></tr>';
                     });
                 }, 350);
             });
@@ -10223,9 +10214,8 @@
         }
 
         // ── Editable fields (placeholder) ──
-        function crmTaskMakeEditable(field) {
+        function crmTaskMakeEditable(_field) {
             // Placeholder for inline editing - can be expanded
-            console.log('Edit field:', field, 'Task:', _crmCurrentTaskId);
         }
 
         // ══════════════════════════════════
