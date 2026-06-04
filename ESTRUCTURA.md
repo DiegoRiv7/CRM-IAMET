@@ -269,27 +269,66 @@ Plan completo en `Plan_Fase6_Refactor.md`. Resumen de sub-fases:
 | Sub-fase | Estado | Trabajo |
 |---|---|---|
 | 1.A — Quitar peso muerto | ✅ Hecho (commit `283a6065`) | Borrar legacy, mover reports, imágenes, docs |
-| 1.B — Reorganizar carpetas | ✅ Hecho | `reports/`, `docs/`, `app/static/images/`, `.gitignore` |
-| 2.A-D — Boy Scout terreno | ⏳ Próximo | Crear `*_v2.js`, `views_v2/` vacíos + headers LEGACY |
-| 3.A-D — Optimizar usuarios | Pendiente | Cleanups críticos + `crm_main.js` Turbo-tolerant + Turbo activo |
+| 1.B — Reorganizar carpetas | ✅ Hecho (commit `283a6065`) | `reports/`, `docs/`, `app/static/images/`, `.gitignore` |
+| 2.A-D — Boy Scout terreno | ✅ Hecho (commit `035d73d9`) | `*_v2.js`, `views_v2/`, READMEs, headers LEGACY en 7 archivos |
+| 3.A-D — Optimizar usuarios | ⏳ En curso | Cleanups críticos + `crm_main.js` Turbo-tolerant + Turbo activo |
 | 4.A-E — Documentar handoff | Pendiente | SERVIDOR.md, README, DEPLOYMENT, ARQUITECTURA, DECISIONES |
 
-### 🏕️ Boy Scout Rule (a partir de 2026-06-04)
+### 🏕️ Boy Scout Rule (desde 2026-06-04)
 
-**Política nueva**: los archivos legacy gigantes NO se modifican. Todo código
-nuevo va a archivos `*_v2.js` (frontend) o `views_v2/*.py` (backend) con
-header documentado.
+**Política**: los archivos legacy gigantes NO se modifican. Todo código
+nuevo va a los archivos `*_v2` (con header explicando qué hace). Aplica
+de forma estricta — solo se hace excepción para bugs críticos de
+producción o cambios mínimos (1-3 líneas) que no ameriten módulo nuevo.
 
-Archivos marcados como LEGACY (a partir de Fase 2):
-- `app/static/js/crm_main.js` (~11,500 líneas)
-- `app/static/js/crm_proyectos.js` (~7,400 líneas)
-- `app/static/js/crm_levantamiento.js` (~4,500 líneas)
-- `app/views_proyectos.py` (~6,861 líneas)
-- `app/views_iamet.py` (~6,568 líneas)
-- `app/views_crm.py` (~6,488 líneas)
+Cada archivo legacy ya tiene un **header al inicio** explicando esto
+y a cuál `*_v2` redirigir según dominio. Al abrir cualquier archivo
+grande lo ves de inmediato.
 
-**Solo se modifican** para bugs críticos de producción o cambios menores que
-no ameritan crear módulo nuevo. Cualquier feature nueva → archivo nuevo.
+#### 📋 Mapeo concreto legacy → v2
+
+**Frontend (`app/static/js/`):**
+
+| Archivo LEGACY (no tocar) | Líneas | Tipo de cambio | → Archivo V2 (aquí va lo nuevo) |
+|---|---|---|---|
+| `crm_main.js` | ~11,500 | Kanban opp, filtros, pin | `crm_kanban_v2.js` |
+| `crm_main.js` | ~11,500 | Tareas, comentarios, timer, subtareas | `crm_tareas_v2.js` |
+| `crm_main.js` | ~11,500 | Dashboard clientes (ck*, drill-down, gráficas) | `crm_clientes_v2.js` |
+| `crm_main.js` | ~11,500 | Features sueltos (no encajan en otro lado) | `crm_features_misc.js` |
+| `crm_proyectos.js` | ~7,400 | Lista, detalle, drive, miembros | `proyectos_v2.js` |
+| `crm_levantamiento.js` | ~4,500 | Wizard de levantamiento (5 fases) | `proyectos_v2.js` |
+| `gantt_programa_obra.js` | ~3,700 | Gantt + templates de programa obra | `proyectos_v2.js` |
+
+Los archivos V2 están **vacíos al crearse** (cero overhead). Cuando
+reciben su primer código real, hay que agregarlos como `<script src>`
+en `app/templates/crm/_scripts_main.html` (CRM) o `crm_home.html`
+(globales). Ver `app/static/js/README.md` con la guía completa.
+
+**Backend (`app/views_v2/`):**
+
+| Archivo LEGACY (no tocar) | Líneas | Tipo de cambio | → Archivo V2 |
+|---|---|---|---|
+| `views_crm.py` | ~6,488 | Oportunidades, cotizaciones, clientes, dashboard | `views_v2/crm_v2.py` |
+| `views_proyectos.py` | ~6,861 | Proyectos, tareas, calendario, instalaciones | `views_v2/proyectos_v2.py` |
+| `views_iamet.py` | ~6,568 | Partidas, OCs, facturas, volumetrías | `views_v2/proyectos_v2.py` |
+| `views_api.py` | (varios) | Muro, integraciones, APIs transversales | `views_v2/api_v2.py` |
+
+Registrar URLs en `app/urls.py` importando desde `views_v2.<modulo>`.
+Ver `app/views_v2/README.md` con ejemplo paso a paso.
+
+#### 🧠 Lo que ve un futuro contexto al abrir un archivo legacy
+
+Por ejemplo `crm_main.js` empieza con:
+```
+crm_main.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+NO agregar más código aquí. Para nuevas features:
+  - Kanban / filtros / pin  → crm_kanban_v2.js
+  - Tareas / comentarios    → crm_tareas_v2.js
+  - Dashboard clientes (ck*) → crm_clientes_v2.js
+```
+
+Esto significa que cualquier instancia futura de IA o cualquier dev
+que abra el archivo sabe exactamente dónde redirigir su trabajo.
 
 ### 🧹 Limpieza realizada en Fase 1 (qué se borró del repo)
 
