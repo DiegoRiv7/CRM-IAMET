@@ -3454,7 +3454,11 @@
         if (sc&&e.target!==sc) { var dd=document.getElementById('calActParticipantesDropdown'); if(dd) dd.style.display='none'; }
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // Init del calendario: usa crmReady() (Turbo-friendly) cuando esté
+    // disponible. Se dispara en el primer DOMContentLoaded y también en
+    // cada turbo:load. Los wireups de inputs llevan guard `_wired` para
+    // no duplicar listeners si el callback corre más de una vez.
+    function _calInitOnReady() {
         try { if (sessionStorage.getItem('_crm_cal_open')==='1') setTimeout(function(){calendarioAbrir();},500); } catch(e){}
         // Modo página: si el contenedor ya tiene is-page-mode (renderizado por
         // Django cuando tab=calendario), inicializamos el calendario automáticamente.
@@ -3464,7 +3468,8 @@
         }
         var inicioEl=document.getElementById('calFormActInicio');
         var finEl=document.getElementById('calFormActFin');
-        if (inicioEl&&finEl) {
+        if (inicioEl && finEl && !inicioEl._calWired) {
+            inicioEl._calWired = true;
             inicioEl.addEventListener('change', function(){
                 var p=this.value.split(':'); var h=parseInt(p[0],10)+1; if(h>=24)h=23;
                 finEl.value=String(h).padStart(2,'0')+':'+p[1];
@@ -3472,13 +3477,19 @@
         }
         // Recalcular el preview de recurrencia cuando cambia la fecha de inicio.
         var fechaEl=document.getElementById('calFormActFecha');
-        if (fechaEl) {
+        if (fechaEl && !fechaEl._calWired) {
+            fechaEl._calWired = true;
             fechaEl.addEventListener('change', function(){
                 if (typeof calRecurUpdatePreview === 'function') calRecurUpdatePreview();
             });
         }
-        calUpdateNavTitle();
-    });
+        if (typeof calUpdateNavTitle === 'function') calUpdateNavTitle();
+    }
+    if (typeof window.crmReady === 'function') {
+        window.crmReady(_calInitOnReady);
+    } else {
+        document.addEventListener('DOMContentLoaded', _calInitOnReady);
+    }
 
     // Widget de detalle de actividad de prospecto (morado, desde calendario)
     window._calMostrarInfoProspecto = function(evt) {

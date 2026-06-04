@@ -1,30 +1,42 @@
 // ═══════════════════════════════════════════════
 // PART 1: RESPONSIVE UTILITIES
 // ═══════════════════════════════════════════════
-window.ResponsiveUtils = {
-    isMobile: () => window.innerWidth <= 768,
-    isTablet: () => window.innerWidth > 768 && window.innerWidth <= 1024,
-    isDesktop: () => window.innerWidth > 1024,
+// El IIFE + guard idempotente es necesario porque base.js vive en el
+// <body> y Turbo Drive re-evalúa scripts del body en cada navegación.
+// Sin esto, `let resizeTimer` lanzaría SyntaxError de redeclaración y
+// el listener de resize se duplicaría en cada vuelta.
+(function () {
+    window.ResponsiveUtils = {
+        isMobile: function () { return window.innerWidth <= 768; },
+        isTablet: function () { return window.innerWidth > 768 && window.innerWidth <= 1024; },
+        isDesktop: function () { return window.innerWidth > 1024; },
 
-    updateBodyClasses: () => {
-        const body = document.body;
-        body.classList.remove('is-mobile', 'is-tablet', 'is-desktop');
+        updateBodyClasses: function () {
+            var body = document.body;
+            body.classList.remove('is-mobile', 'is-tablet', 'is-desktop');
+            if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
+            else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
+            else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
+        }
+    };
 
-        if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
-        else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
-        else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
+    window.ResponsiveUtils.updateBodyClasses();
+
+    // Guard idempotente: el listener de resize se registra UNA sola vez,
+    // aunque base.js se re-evalúe en navegaciones Turbo. La variable
+    // resizeTimer queda local al IIFE — no contamina el scope global
+    // y no genera SyntaxError al redeclararse.
+    if (!window._crmResizeWired) {
+        window._crmResizeWired = true;
+        var resizeTimer;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                window.ResponsiveUtils.updateBodyClasses();
+            }, 150);
+        });
     }
-};
-
-window.ResponsiveUtils.updateBodyClasses();
-
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        window.ResponsiveUtils.updateBodyClasses();
-    }, 150);
-});
+})();
 
 // ═══════════════════════════════════════════════
 // PART 2: SPOTLIGHT SEARCH + AI CHAT + KEYBOARD SHORTCUTS
