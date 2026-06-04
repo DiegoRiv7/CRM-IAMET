@@ -108,19 +108,35 @@
     // callbacks de crmReady() en cada turbo:load.
 
     // ── Prefetch on hover ──
-    // Cuando el cursor pasa sobre un link Turbo, fetcheamos su HTML en
-    // background. Cuando el usuario hace click, la página ya está cargada
-    // = navegación SIENTE instantánea (no hay que esperar al server).
-    // Aplica solo a links con data-turbo="true" (los del sidebar).
-    // Costo: 1 fetch extra por hover (mitigado por el cache del navegador).
+    // Turbo 8+ hace prefetch automáticamente al hacer hover sobre un link
+    // <a data-turbo="true"> visible en viewport — el HTML llega antes del
+    // click. Cuando el usuario hace click, navegación SIENTE instantánea.
+    // No requiere configuración explícita; está activo por default.
+
+    // ── Ocultar Turbo Progress Bar ──
+    // Por defecto Turbo muestra una barra azul en la parte superior si
+    // el fetch tarda más de 500ms. En este sistema, eso genera "flash"
+    // visual después de que el contenido ya se mostró (cached + fresh
+    // render). Mejor sin ella — el usuario ya tiene el contenido, no
+    // necesita ver progreso de un fetch que termina detrás de escenas.
     try {
-        window.Turbo.session.preloadOnHover = true;
-    } catch (e) {
-        // Algunas versiones de Turbo no exponen esta opción; intentar la
-        // forma alternativa via setAttribute en el documento.
-        try { document.documentElement.setAttribute('data-turbo-preload', 'true'); }
-        catch (e2) { /* noop */ }
-    }
+        window.Turbo.session.progressBarDelay = 999999;  // efectivamente nunca
+    } catch (e) { /* noop si la API cambió */ }
+
+    // Backup CSS por si la API JS no funciona en alguna versión:
+    var _styleProgress = document.createElement('style');
+    _styleProgress.textContent = '.turbo-progress-bar { display: none !important; visibility: hidden !important; }';
+    document.head.appendChild(_styleProgress);
+
+    // ── Reducir flicker del cached → fresh render ──
+    // Cuando Turbo muestra una versión cacheada y después llega el fresh
+    // del server, hace un re-render que puede sentirse como parpadeo.
+    // turbo:before-cache marca el body con `data-turbo-preview` y al
+    // recibir el fresh lo quita; podemos ocultar transiciones durante
+    // ese momento para que el cambio sea menos visible.
+    var _styleNoFlash = document.createElement('style');
+    _styleNoFlash.textContent = 'html[data-turbo-preview] * { transition: none !important; animation: none !important; }';
+    document.head.appendChild(_styleNoFlash);
 
     // ── Helper window.crmNav(url) ──
     // Navegación programática desde JS. Usa Turbo.visit() si Turbo está
