@@ -591,18 +591,29 @@ window.addEventListener('resize', () => {
         if (spotlightTimeout) { clearTimeout(spotlightTimeout); spotlightTimeout = null; }
     };
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // Wireup del spotlight. Idempotente — usa crmReady() si está
+    // disponible (compatibilidad con Turbo Drive), cae a DOMContentLoaded
+    // si no. El flag _spotlightWired evita que se duplique el listener
+    // del input si la función se llamara más de una vez.
+    var _spotlightWired = false;
+    function _wireSpotlightOnce() {
+        if (_spotlightWired) return;
         var inp = $sp('spotlight-input');
-        if (inp) {
-            inp.addEventListener('input', function (e) {
-                var q = e.target.value;
-                if (spotlightTimeout) clearTimeout(spotlightTimeout);
-                spotlightTimeout = setTimeout(function () { triggerSearch(q); }, 220);
-            });
-            // Nota: las flechas/Enter/Esc se manejan en el handler global de keydown (abajo).
-        }
+        if (!inp) return;
+        _spotlightWired = true;
+        inp.addEventListener('input', function (e) {
+            var q = e.target.value;
+            if (spotlightTimeout) clearTimeout(spotlightTimeout);
+            spotlightTimeout = setTimeout(function () { triggerSearch(q); }, 220);
+        });
+        // Nota: las flechas/Enter/Esc se manejan en el handler global de keydown (abajo).
         wireScopes();
-    });
+    }
+    if (typeof window.crmReady === 'function') {
+        window.crmReady(_wireSpotlightOnce);
+    } else {
+        document.addEventListener('DOMContentLoaded', _wireSpotlightOnce);
+    }
 
     // ═══════════════════════════════════════════════
     // AI HELP CHAT (botón AYUDA)
