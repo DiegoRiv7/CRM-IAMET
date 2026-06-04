@@ -151,11 +151,7 @@
         }
     }
 
-    // Inicialización compatible con Turbo: se re-ejecuta en cada turbo:load
-    // para que el observer del stack se reconfigure al navegar entre páginas.
-    if (typeof window.crmReady === 'function') {
-        window.crmReady(init);
-    } else if (document.readyState === 'loading') {
+    if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();

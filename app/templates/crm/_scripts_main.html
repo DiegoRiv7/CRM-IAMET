@@ -15,16 +15,11 @@ var _CRM_CONFIG = {
     etapasPipeline:   {{ etapas_pipeline_json|safe }}
 };
 </script>
-{# ─── Scripts del CRM ─────────────────────────────────────────────────── #}
-{# Los core widget_* son ligeros y Turbo-friendly (usan crmReady()), no #}
-{# necesitan track="reload". Los grandes que asumen carga única (crm_main, #}
-{# crm_proyectos vía _content.html) llevan data-turbo-track="reload" para #}
-{# que Turbo recargue full si el set de scripts cambia al navegar. #}
 <script src="{% static 'js/widget_stack.js' %}?v=20260603-widget-stack-v1"></script>
 <script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
 <script src="{% static 'js/widget_data_bus.js' %}?v=20260603-data-bus-v1"></script>
 <script src="{% static 'js/widget_url_sync.js' %}?v=20260603-url-sync-v1"></script>
-<script src="{% static 'js/crm_main.js' %}?v=20260603-franja-modificada" data-turbo-track="reload"></script>
+<script src="{% static 'js/crm_main.js' %}?v=20260603-franja-modificada"></script>
 <script>
 /* Contador workspace: # real de filas (excluye Ganado/Perdido/Pagado) */
 (function(){

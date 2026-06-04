@@ -76,7 +76,7 @@
         <div class="crm-sb-divider"></div>
 
         <!-- Calendario -->
-        <a href="/app/home/?tab=calendario" data-turbo="true" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+        <a href="/app/home/?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
@@ -192,7 +192,7 @@
         {% endif %}
 
         <!-- Calendario -->
-        <a href="/app/home/?tab=calendario" data-turbo="true" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
+        <a href="/app/home/?tab=calendario" class="crm-sb-btn{% if tab_activo == 'calendario' %} active{% endif %}" id="btnCalendario" data-tooltip="{% if request.user.userprofile.language == 'en' %}Calendar{% else %}Calendario{% endif %}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>

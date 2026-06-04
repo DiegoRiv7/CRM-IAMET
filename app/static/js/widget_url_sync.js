@@ -126,11 +126,7 @@
         }, 600);
     }
 
-    // Bootstrap compatible con Turbo: el helper crmReady() se ejecuta tanto
-    // en el primer DOMContentLoaded como en cada turbo:load posterior.
-    if (typeof window.crmReady === 'function') {
-        window.crmReady(bootstrap);
-    } else if (document.readyState === 'loading') {
+    if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', bootstrap);
     } else {
         bootstrap();
