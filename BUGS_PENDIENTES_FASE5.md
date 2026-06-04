@@ -122,6 +122,31 @@ del sandbox (`<iframe sandbox>`) y proteje al usuario de XSS.
 
 ---
 
+---
+
+## 🏷️ Breadcrumb del widget stack muestra "Calendario Master" como capa
+**Detectado:** 2026-06-04 (durante validación Fase 3.C)
+**Severidad:** Baja (visual molesto, no rompe funcionalidad)
+
+**Síntoma:** Al abrir un widget (ej. Notificaciones) desde el tab
+Calendario, el breadcrumb superior dice:
+  `Calendario Master › Notificaciones`
+
+"Calendario Master" no es un nombre amigable y aparece aunque el
+calendario sea la página de fondo, no un widget modal real.
+
+**Causa:** `widget_stack.js` detecta `#widgetCalendarioMaster` (que
+en modo page-mode tiene `display:flex`) como widget visible y lo
+incluye en el stack. El breadcrumb lee el id del elemento.
+
+**Propuesta de fix:**
+- Agregar `data-stack-ignore="true"` a `#widgetCalendarioMaster` cuando
+  esté en modo page-mode (para que el stack manager lo ignore), o
+- Agregar `data-stack-label="Calendario"` para que el breadcrumb use
+  un nombre amigable cuando sí aparezca.
+
+---
+
 ## 📌 Convención de esta lista
 
 - Agregar nuevos bugs **al final** con fecha de detección.
