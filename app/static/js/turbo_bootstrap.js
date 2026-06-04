@@ -82,6 +82,21 @@
     // No agregar otro listener aquí — crm_ready.js re-dispara los
     // callbacks de crmReady() en cada turbo:load.
 
+    // ── Prefetch on hover ──
+    // Cuando el cursor pasa sobre un link Turbo, fetcheamos su HTML en
+    // background. Cuando el usuario hace click, la página ya está cargada
+    // = navegación SIENTE instantánea (no hay que esperar al server).
+    // Aplica solo a links con data-turbo="true" (los del sidebar).
+    // Costo: 1 fetch extra por hover (mitigado por el cache del navegador).
+    try {
+        window.Turbo.session.preloadOnHover = true;
+    } catch (e) {
+        // Algunas versiones de Turbo no exponen esta opción; intentar la
+        // forma alternativa via setAttribute en el documento.
+        try { document.documentElement.setAttribute('data-turbo-preload', 'true'); }
+        catch (e2) { /* noop */ }
+    }
+
     // ── Helper window.crmNav(url) ──
     // Navegación programática desde JS. Usa Turbo.visit() si Turbo está
     // cargado (navegación SPA, sin reload), si no cae a window.location.href.

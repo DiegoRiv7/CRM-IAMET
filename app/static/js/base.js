@@ -600,16 +600,20 @@
     };
 
     // Migrado a crmReady (Turbo-friendly).
+    // El spotlight modal está marcado data-turbo-permanent → es el MISMO
+    // elemento entre navegaciones. Sin guard, el listener 'input' se
+    // duplicaría en cada turbo:load (3 navs = 3 listeners disparándose
+    // juntos en cada keystroke). Guard global lo previene.
     window.crmReady(function () {
+        if (window._spotlightWired) return;
         var inp = $sp('spotlight-input');
-        if (inp) {
-            inp.addEventListener('input', function (e) {
-                var q = e.target.value;
-                if (spotlightTimeout) clearTimeout(spotlightTimeout);
-                spotlightTimeout = setTimeout(function () { triggerSearch(q); }, 220);
-            });
-            // Nota: las flechas/Enter/Esc se manejan en el handler global de keydown (abajo).
-        }
+        if (!inp) return;
+        window._spotlightWired = true;
+        inp.addEventListener('input', function (e) {
+            var q = e.target.value;
+            if (spotlightTimeout) clearTimeout(spotlightTimeout);
+            spotlightTimeout = setTimeout(function () { triggerSearch(q); }, 220);
+        });
         wireScopes();
     });
 

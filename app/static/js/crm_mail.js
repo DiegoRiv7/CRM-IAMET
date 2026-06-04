@@ -1768,9 +1768,17 @@
         }
 
         // Migrado a crmReady (Turbo-friendly).
+        // Guard idempotente: _mailWidgetInitOnce ya tiene su propio guard,
+        // pero _mailPollUnreadCount HACE FETCH. Sin el guard externo, cada
+        // turbo:load dispararía un fetch innecesario al endpoint /auto-sync.
+        // _mailStartPolling adentro maneja su propio interval (guard interno
+        // también). Aquí solo necesitamos invocar UNA VEZ por sesión.
         window.crmReady(function () {
+            if (window._mailInitDone) return;
+            window._mailInitDone = true;
             _mailWidgetInitOnce();
             _mailPollUnreadCount();
+            _mailStartPolling();
         });
 
     })();

@@ -152,9 +152,19 @@
     }
 
     // Migrado a crmReady (Turbo-friendly).
-    // El observer del stack se reconfigura en cada turbo:load para que
-    // detecte widgets nuevos insertados al navegar.
-    window.crmReady(init);
+    // Guard idempotente: el MutationObserver `rootObs` observa document.body
+    // (que es el mismo nodo entre navegaciones Turbo). Sin guard, cada
+    // turbo:load agregaría OTRO observer encima del existente → memory leak
+    // progresivo + handlers de mutación disparándose N veces. Una sola vez
+    // basta porque body persiste.
+    if (!window._widgetStackInited) {
+        window._widgetStackInited = true;
+        window.crmReady(init);
+    } else {
+        // En turbo:load posteriores solo re-escanear nuevos overlays del body
+        // reemplazado (rootObs YA los detecta vía mutación pero por si acaso).
+        window.crmReady(scanAll);
+    }
 
     // ── Escape consistente: cierra el widget de top del stack ──
     // Antes era errático — algunos widgets cerraban con Esc, otros no.
