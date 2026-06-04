@@ -91,8 +91,14 @@
     inline scripts dentro de includes). Está en el <head> para garantizar
     el orden: define window.crmReady() que todos los demás scripts usan.
     Es un archivo chico (~3 KB), no impacta el first paint.
+
+    Turbo Drive + bootstrap se cargan inmediatamente después. Turbo
+    está en modo opt-in (Turbo.session.drive = false), solo intercepta
+    los <a data-turbo="true"> del sidebar/topbar. Ver turbo_bootstrap.js.
     {% endcomment %}
-    <script src="{% static 'js/crm_ready.js' %}?v=20260604-fase6b-head"></script>
+    <script src="{% static 'js/crm_ready.js' %}?v=20260604-fase6c"></script>
+    <script src="{% static 'vendor/turbo/turbo.es2017-umd.js' %}?v=8.0.13"></script>
+    <script src="{% static 'js/turbo_bootstrap.js' %}?v=20260604-fase6c"></script>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -123,7 +129,12 @@
     </div>
 
     <!-- ═══ SPOTLIGHT SEARCH v2 (doble espacio / ⌘K) ═══ -->
-    <div id="spotlight-modal" class="spotlight-modal spotlight-v2">
+    {% comment %}
+    Spotlight y Ayuda modales viven en base.html (todas las páginas).
+    data-turbo-permanent: Turbo NO los reemplaza al navegar — preservan
+    estado (input del usuario, listeners) entre navegaciones SPA.
+    {% endcomment %}
+    <div id="spotlight-modal" class="spotlight-modal spotlight-v2" data-turbo-permanent>
         <div class="spotlight-backdrop" onclick="closeSpotlight()"></div>
         <div class="spotlight-container">
             <div class="spotlight-search-box">
@@ -161,7 +172,7 @@
     </div>
 
     <!-- ═══ ASISTENTE IA DE AYUDA (botón AYUDA en Dynamic Island) ═══ -->
-    <div id="ayuda-modal" class="spotlight-modal">
+    <div id="ayuda-modal" class="spotlight-modal" data-turbo-permanent>
         <div class="spotlight-backdrop" onclick="closeAyudaChat()"></div>
         <div class="spotlight-container" style="max-width:520px;display:flex;flex-direction:column;max-height:75vh;">
             <div
