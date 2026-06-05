@@ -46,6 +46,20 @@
 
     window.crmTurboEnabled = true;
 
+    // ── DESACTIVAR cache de Turbo ──
+    // Por default Turbo cachea las páginas visitadas. Al volver a una URL
+    // conocida, muestra el cache primero y LUEGO el fresh render. Eso
+    // causa el "flash" visible: ves la página anterior antes de la nueva.
+    // Para este sistema el flash es más molesto que la ganancia del cache.
+    // Sin cache, Turbo siempre va al server y reemplaza el body con la
+    // respuesta — un poco menos rápido pero predecible y sin flash.
+    try {
+        var metaCache = document.createElement('meta');
+        metaCache.name = 'turbo-cache-control';
+        metaCache.content = 'no-cache';
+        document.head.appendChild(metaCache);
+    } catch (e) { /* noop */ }
+
     // ── turbo:before-cache: limpiar antes de cachear ──
     // Cuando Turbo va a cachear la página actual (para back-button),
     // cerramos widgets/modales/toasts. Si no, al regresar con back

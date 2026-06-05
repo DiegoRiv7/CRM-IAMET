@@ -275,6 +275,7 @@
     font-size: 13px; font-weight: 500;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
+@keyframes notif-spin { to { transform: rotate(360deg); } }
 
 /* Encabezados de grupo por fecha — sticky */
 .notif-v2-date-group {
@@ -739,6 +740,16 @@
         filtered = _sortNotifs(filtered);
 
         if (filtered.length === 0) {
+            // Si todavía no terminó la primera carga, NO mostrar "No tienes"
+            // — se ve raro como flash mientras el fetch viaja. Mejor mostrar
+            // un loader sutil hasta que tengamos respuesta real del server.
+            if (!_firstLoadDone) {
+                container.innerHTML = `<div class="notif-v2-empty">
+                    <svg width="40" height="40" fill="none" stroke="#CBD5E1" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:12px;animation:notif-spin 1s linear infinite;"><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg><br>
+                    <span style="color:#94A3B8;">Cargando notificaciones…</span>
+                </div>`;
+                return;
+            }
             const msgs = {
                 'all': 'No tienes notificaciones.',
                 'unread': 'No tienes notificaciones sin leer.',
