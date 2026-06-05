@@ -71,46 +71,26 @@
         }
     });
 
-    // ── turbo:before-render: limpiar stack + ocultar contenido para
-    // evitar flash visible cuando cached → fresh ──
+    // ── turbo:before-render: limpiar stack del widget manager ──
     // Antes de que Turbo reemplace el body, sacamos del stack las
     // referencias a widgets que están a punto de ser destruidos. Sin
     // esto, el breadcrumb del widget manager muestra widgets fantasma.
-    //
-    // También ponemos el main content en opacity:0 durante el reemplazo
-    // — se restaura en turbo:load. Esto OCULTA el flash perceptible del
-    // cached → fresh render. El sidebar/topbar siguen visibles (no son
-    // .main-content) para que el cambio se sienta como una sola
-    // transición suave y no como un parpadeo brusco.
     document.addEventListener('turbo:before-render', function () {
         try {
             if (window.crmWidgetStack && typeof window.crmWidgetStack.cleanup === 'function') {
                 window.crmWidgetStack.cleanup();
-            }
-            var mc = document.querySelector('.main-content, .container.main-content');
-            if (mc) {
-                mc.style.transition = 'opacity 100ms ease';
-                mc.style.opacity = '0';
             }
         } catch (e) {
             console.error('[turbo_bootstrap] error en before-render:', e);
         }
     });
 
-    // ── turbo:load: cleanup del stack + restaurar opacity ──
+    // ── turbo:load: cleanup del stack ──
     document.addEventListener('turbo:load', function () {
         try {
             if (window.crmWidgetStack && typeof window.crmWidgetStack.cleanup === 'function') {
                 window.crmWidgetStack.cleanup();
             }
-            // requestAnimationFrame para que el browser pinte el nuevo body
-            // antes de iniciar la transición de opacidad (evita FOUC).
-            requestAnimationFrame(function () {
-                var mc = document.querySelector('.main-content, .container.main-content');
-                if (mc) {
-                    mc.style.opacity = '1';
-                }
-            });
         } catch (e) { /* noop */ }
     });
 
