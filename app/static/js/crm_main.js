@@ -3527,7 +3527,16 @@
                 fetch('/app/api/tendencia-mensual/?vendedores=' + encodeURIComponent(vendParam))
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
-                        var ctx2_2d = ctx2.getContext('2d');
+                        // Re-destruir RIGHT antes de crear: el fetch es async,
+                        // entre el ckDestroyChart inicial y este .then() el
+                        // usuario pudo haber navegado y vuelto, dejando un
+                        // chart huérfano en el canvas nuevo.
+                        ckDestroyChart('ckChartTendencia');
+                        // Verificar que el canvas SIGA en el DOM (si navegó y
+                        // todavía no volvió, no rendear).
+                        var liveCtx = document.getElementById('ckChartTendencia');
+                        if (!liveCtx) return;
+                        var ctx2_2d = liveCtx.getContext('2d');
 
                         var makeDataset = function(label, values, color) {
                             return {
