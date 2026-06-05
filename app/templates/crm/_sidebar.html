@@ -149,9 +149,11 @@
             <span class="crm-sb-label">CRM</span>
         </button>
         <!-- Dashboard (vendedor/supervisor) — ícono de bar chart para diferenciarlo del grid del CRM -->
-        {# SIN data-turbo: el dashboard tiene 7+ fetchs en cascada + 3 Chart.js
-           que sufren con navegación SPA (canvas reuse bugs, fetchs duplicados).
-           Mejor full reload normal — estado limpio cada vez, sin bugs raros. #}
+        {% comment %}
+        SIN data-turbo: el dashboard tiene 7+ fetchs en cascada + 3 Chart.js
+        que sufren con navegación SPA (canvas reuse bugs, fetchs duplicados).
+        Mejor full reload normal — estado limpio cada vez, sin bugs raros.
+        {% endcomment %}
         <a href="/app/home/?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Dashboard"
             onclick="try{localStorage.setItem('crmView','crm');}catch(e){}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
