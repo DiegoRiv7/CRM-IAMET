@@ -371,6 +371,42 @@
     bottom: -18px;
 }
 
+/* ─────────────── States: loading / empty / error ─────────────── */
+.crm-ctrl-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 50px 20px;
+    color: #6B7280;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.crm-ctrl-state--empty   { color: #9CA3AF; font-style: italic; }
+.crm-ctrl-state--error   { color: #B91C1C; }
+
+.crm-ctrl-spinner {
+    width: 18px; height: 18px;
+    border: 2.5px solid #E5E5EA;
+    border-top-color: #1D1D1F;
+    border-radius: 50%;
+    animation: crmCtrlSpin 0.8s linear infinite;
+}
+@keyframes crmCtrlSpin { to { transform: rotate(360deg); } }
+
+/* Celda placeholder (—) para columnas no conectadas todavía */
+.crm-ctrl-cell--placeholder {
+    color: #C7C7CC;
+    font-weight: 600;
+}
+
+/* Texto vacío para PO/Jornadas sin valor */
+.crm-ctrl-empty-val {
+    color: #C7C7CC;
+    font-weight: 600;
+    font-style: italic;
+}
+
 /* ─────────────── Leyenda ─────────────── */
 .crm-control-legend {
     display: flex;

@@ -19,7 +19,13 @@
        Doble retry (50ms y 800ms) para sobrevivir a fetches async del legacy
        que podrían tratar de pintar Oportunidades por encima.
 
-  Borrador — datos del HTML son fijos, sin fetch ni guardado todavía.
+  Fetch:
+    GET /app/api/control/proyectos/?mes=06&anio=2026&vendedores=...
+    El backend respeta lógica supervisor (ve todo) vs no-supervisor (solo su
+    equipo). Mes/anio/vendedores se leen de _CRM_CONFIG (filtros del topbar).
+
+  Lado izquierdo de la tabla = datos REALES (cliente, PO, oportunidad, jornadas).
+  Lado derecho (timeline, monto, utilidad, etc.) = placeholders por ahora.
 */
 (function () {
     'use strict';
@@ -37,82 +43,244 @@
         'crmModeOpp', 'crmModeProsp', 'crmModeProyectos', 'crmModeClientes'
     ];
 
+    var MESES_LABEL = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo',     '04': 'Abril',
+        '05': 'Mayo',  '06': 'Junio',   '07': 'Julio',     '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+    };
+
     function hide(id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
     }
 
+    function escHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // FETCH + RENDER
+    // ─────────────────────────────────────────────────────────────────────
+
+    function getFiltrosActuales() {
+        var cfg = window._CRM_CONFIG || {};
+        return {
+            mes: cfg.mesFiltro || '',
+            anio: cfg.anioFiltro || '',
+            vendedores: cfg.vendedoresFilter || ''
+        };
+    }
+
+    function setLoading() {
+        var tbody = document.getElementById('crmControlTbody');
+        if (!tbody) return;
+        tbody.innerHTML =
+            '<div class="crm-ctrl-state crm-ctrl-state--loading">' +
+                '<div class="crm-ctrl-spinner" aria-hidden="true"></div>' +
+                '<span>Cargando proyectos…</span>' +
+            '</div>';
+    }
+
+    function setError(msg) {
+        var tbody = document.getElementById('crmControlTbody');
+        if (!tbody) return;
+        tbody.innerHTML =
+            '<div class="crm-ctrl-state crm-ctrl-state--error">' +
+                '<span>No se pudieron cargar los proyectos. ' + escHtml(msg || '') + '</span>' +
+            '</div>';
+    }
+
+    function setEmpty() {
+        var tbody = document.getElementById('crmControlTbody');
+        if (!tbody) return;
+        tbody.innerHTML =
+            '<div class="crm-ctrl-state crm-ctrl-state--empty">' +
+                '<span>No hay proyectos para el periodo / vendedor seleccionado.</span>' +
+            '</div>';
+    }
+
+    function renderRow(p) {
+        var cliente = escHtml(p.cliente || 'Sin cliente');
+        var po = (p.po || '').trim();
+        var oppName = escHtml(p.oportunidad_nombre || '—');
+        var jornadas = (p.jornadas || '').trim();
+
+        var poHtml = po
+            ? escHtml(po)
+            : '<span class="crm-ctrl-empty-val">sin PO</span>';
+        var jornadasHtml = jornadas
+            ? '<span class="crm-ctrl-pill crm-ctrl-pill--normal">' + escHtml(jornadas) + '</span>'
+            : '<span class="crm-ctrl-empty-val">sin levantamiento</span>';
+
+        return '' +
+            '<div class="crm-ctrl-row" role="row" data-proyecto-id="' + p.proyecto_id + '">' +
+                '<div class="crm-ctrl-col crm-ctrl-col--cliente">' +
+                    '<span class="crm-ctrl-tag crm-ctrl-tag--accent">' + cliente + '</span>' +
+                '</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--id">' + poHtml + '</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--desc">' + oppName + '</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--jornadas">' + jornadasHtml + '</div>' +
+                // Columnas placeholder — se conectan después
+                '<div class="crm-ctrl-col crm-ctrl-col--timeline">' +
+                    '<div class="crm-ctrl-track"></div>' +
+                '</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--po crm-ctrl-cell--placeholder">—</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--placeholder">—</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--dias crm-ctrl-cell--placeholder">—</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--tec crm-ctrl-cell--placeholder">—</div>' +
+                '<div class="crm-ctrl-col crm-ctrl-col--coment crm-ctrl-cell--placeholder">—</div>' +
+            '</div>';
+    }
+
+    function renderRows(proyectos) {
+        var tbody = document.getElementById('crmControlTbody');
+        if (!tbody) return;
+        if (!proyectos || !proyectos.length) {
+            setEmpty();
+            actualizarStats([], getFiltrosActuales());
+            return;
+        }
+        tbody.innerHTML = proyectos.map(renderRow).join('');
+        actualizarStats(proyectos, getFiltrosActuales());
+    }
+
+    function actualizarStats(proyectos, filtros) {
+        var total = proyectos.length;
+        var conPo = 0, conJornadas = 0, sinLev = 0;
+        for (var i = 0; i < proyectos.length; i++) {
+            var p = proyectos[i];
+            if ((p.po || '').trim()) conPo++;
+            if ((p.jornadas || '').trim()) conJornadas++;
+            if (!p.levantamiento_id) sinLev++;
+        }
+        var setText = function (id, v) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = v;
+        };
+        setText('ctrlStatProyectos', total);
+        setText('ctrlStatConPo', conPo);
+        setText('ctrlStatConJornadas', conJornadas);
+        setText('ctrlStatSinLev', sinLev);
+
+        var periodoTxt = '—';
+        if (filtros.mes && filtros.mes !== 'todos') {
+            periodoTxt = (MESES_LABEL[filtros.mes] || filtros.mes) + ' ' + (filtros.anio || '');
+        } else if (filtros.anio && filtros.anio !== 'todos') {
+            periodoTxt = filtros.anio;
+        } else {
+            periodoTxt = 'Todos';
+        }
+        setText('ctrlStatPeriodo', periodoTxt);
+
+        // Footer
+        var footerLeft = document.getElementById('footerLeft');
+        var footerRight = document.getElementById('footerRight');
+        if (footerLeft) footerLeft.textContent = total + ' proyectos en logística';
+        if (footerRight) {
+            footerRight.textContent = conPo + ' con PO · ' + conJornadas + ' con jornadas';
+        }
+    }
+
+    var _inflightAbort = null;
+    function fetchProyectos() {
+        var f = getFiltrosActuales();
+        var qs = '?mes=' + encodeURIComponent(f.mes) +
+                 '&anio=' + encodeURIComponent(f.anio);
+        if (f.vendedores) qs += '&vendedores=' + encodeURIComponent(f.vendedores);
+
+        // Cancelar fetch previo si seguía abierto
+        if (_inflightAbort && typeof _inflightAbort.abort === 'function') {
+            try { _inflightAbort.abort(); } catch (e) {}
+        }
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        _inflightAbort = ctrl;
+
+        setLoading();
+
+        return fetch('/app/api/control/proyectos/' + qs, {
+            credentials: 'same-origin',
+            signal: ctrl ? ctrl.signal : undefined
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (resp) {
+                if (resp && resp.ok) {
+                    renderRows(resp.data || []);
+                } else {
+                    setError(resp && resp.error ? resp.error : 'Error desconocido.');
+                }
+            })
+            .catch(function (err) {
+                if (err && err.name === 'AbortError') return;
+                setError(err && err.message ? err.message : '');
+            });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // ACTIVAR / DESACTIVAR CONTROL
+    // ─────────────────────────────────────────────────────────────────────
+
     function activarControl() {
         _controlActivo = true;
 
-        // 1. Llamar al legacy con un mode desconocido para que apague los 4 botones
-        //    conocidos y oculte cliSection. El guard nos deja pasar el '__control__'.
         try {
             if (typeof window._crmSetMode === 'function') {
                 window._crmSetMode('__control__');
             }
         } catch (e) { /* no-op */ }
 
-        // 2. Ocultar manualmente las secciones que el legacy no toca con mode desconocido.
         IDS_OTROS_KPI.forEach(hide);
 
-        // 3. Activar el botón Control y mostrar la sección.
         var btn = document.getElementById('crmModeControl');
         if (btn) btn.classList.add('active');
 
         var section = document.getElementById('ckControlSection');
         if (section) section.style.display = 'block';
 
-        // 4. Footer (las otras tabs lo escriben; le ponemos algo coherente).
-        var footerLeft = document.getElementById('footerLeft');
-        var footerRight = document.getElementById('footerRight');
-        if (footerLeft) footerLeft.textContent = '6 proyectos en logística';
-        if (footerRight) footerRight.textContent = 'PO total: $8.46M · Utilidad: $2.55M';
-
-        // 5. Persistir preferencia.
         try { localStorage.setItem('crm_clientes_mode', 'control'); } catch (e) {}
+
+        // Fetch en cada activación — los filtros del topbar pueden haber cambiado.
+        fetchProyectos();
     }
 
     function desactivarControl() {
-        // IMPORTANTE: apagar la flag ANTES de que el legacy ejecute su onclick,
-        // si no, el guard bloquea el cambio a Oportunidades/Prospectos/etc.
         _controlActivo = false;
-
         var btn = document.getElementById('crmModeControl');
         if (btn) btn.classList.remove('active');
         var section = document.getElementById('ckControlSection');
         if (section) section.style.display = 'none';
     }
 
-    /* MONKEY-PATCH:
-       Reemplazamos window._crmSetMode. Cuando estamos en Control, ignoramos
-       cualquier llamada automática a otros modos (refreshes periódicos del
-       legacy). Las llamadas que vienen de clicks reales del usuario ya
-       limpiaron _controlActivo en capture-phase, así que pasan. */
+    // ─────────────────────────────────────────────────────────────────────
+    // MONKEY-PATCH al _crmSetMode legacy
+    // ─────────────────────────────────────────────────────────────────────
+
     function instalarGuard() {
         var orig = window._crmSetMode;
         if (typeof orig !== 'function') return false;
         if (orig._controlPatched) return true;
         var patched = function (mode) {
             if (_controlActivo && mode !== '__control__' && mode !== 'control') {
-                // Refresh automático mientras estamos en Control: ignorar.
                 return;
             }
             return orig.apply(this, arguments);
         };
         patched._controlPatched = true;
-        // Conservamos referencia al original por si algún día se necesita.
         patched._original = orig;
         window._crmSetMode = patched;
         return true;
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────────────────
+
     function init() {
         var btn = document.getElementById('crmModeControl');
         if (!btn) return;
 
-        // Intentar instalar el guard ya. Si _crmSetMode aún no existe (orden
-        // de carga raro), reintentamos en un tick.
         if (!instalarGuard()) {
             setTimeout(instalarGuard, 0);
         }
@@ -130,8 +298,16 @@
         var btnRep = document.getElementById('crmModeReportes');
         if (btnRep) btnRep.addEventListener('click', desactivarControl, true);
 
+        // Botón Refrescar
+        var btnRefresh = document.getElementById('crmControlRefresh');
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (_controlActivo) fetchProyectos();
+            });
+        }
+
         // Persistencia: si el storage decía 'control', re-activar.
-        // Doble retry por si una fetch async del legacy llega después y pinta encima.
         if (_initialMode === 'control') {
             setTimeout(activarControl, 50);
             setTimeout(function () { if (!_controlActivo) activarControl(); }, 800);
@@ -145,10 +321,10 @@
         init();
     }
 
-    // Exponemos para debug y para que otras partes puedan controlar Control.
     window._crmControl = {
         open: activarControl,
         close: desactivarControl,
+        refresh: fetchProyectos,
         get activo() { return _controlActivo; }
     };
 })();

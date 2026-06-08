@@ -22,6 +22,7 @@ from . import views_asistente_ideas
 from . import views_asistente_prospeccion
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
+from .views_v2 import proyectos_v2 as views_v2_proyectos
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -478,6 +479,10 @@ urlpatterns = [
     path('api/iamet/proyectos/', views_iamet.api_proyectos_lista, name='api_iamet_proyectos_lista'),
     path('api/iamet/proyectos/crear/', views_iamet.api_proyecto_crear, name='api_iamet_proyecto_crear'),
     path('api/iamet/proyectos/dashboard/', views_iamet.api_proyectos_dashboard, name='api_proyectos_dashboard'),
+
+    # ── Dashboard Control (V2 — logística de compra de materiales) ───────────
+    path('api/control/proyectos/', views_v2_proyectos.api_control_proyectos, name='api_control_proyectos'),
+
     path('api/iamet/proyectos/financiero/', views_iamet.api_proyectos_financiero, name='api_proyectos_financiero'),
     path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),
     path('api/iamet/proyectos/<int:proyecto_id>/actualizar/', views_iamet.api_proyecto_actualizar, name='api_iamet_proyecto_actualizar'),
