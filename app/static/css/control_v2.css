@@ -1,221 +1,262 @@
 /*
   control_v2.css — Sección "Control" del Dashboard CRM.
-  Borrador. Estilos aislados con prefijo .crm-control- / .crm-ctrl- para no
-  colisionar con crm.css.
+  Diseño "iPadOS cards": sin wrapper grande blanco. Cada bloque flota
+  como tarjeta independiente sobre un fondo gris cálido.
+
+  Lenguaje visual:
+    - Fondo de sección: gris off-white con sutil warmth (#F5F5F7 / #FAFAFA).
+    - Cards: bg blanco puro, radius 18px, shadow muy suave en dos capas.
+    - Hover de card de proyecto: lift sutil (-2px) + shadow más marcada.
+    - Tipografía: Plus Jakarta Sans, weights 600-800 para títulos.
+    - Spacing generoso entre cards: gap 12-14px.
+    - Sin bordes duros, solo light hairlines para grids internos.
 */
 
 .crm-control-section {
-    padding: 18px 22px 60px;
-    background: #FAFAFB;
+    padding: 22px 26px 80px;
+    background: #F5F5F7;
     min-height: 600px;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #1D1D1F;
 }
 
-/* ─────────────── Header ─────────────── */
+/* ─────────────── Header (sin caja) ─────────────── */
 .crm-control-header {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 22px;
+    padding: 4px 4px 0;
 }
-.crm-control-header-left { display: flex; flex-direction: column; gap: 2px; }
+.crm-control-header-left { display: flex; flex-direction: column; gap: 4px; }
 .crm-control-title {
-    font-size: 1.05rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: #1D1D1F;
     margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
 }
 .crm-control-subtitle {
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     color: #86868B;
     font-weight: 500;
+    letter-spacing: -0.005em;
 }
 .crm-control-header-right { display: flex; gap: 8px; }
 
 .crm-control-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: 10px;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 12px;
     border: 1px solid transparent;
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.16s;
+    transition: all 0.18s cubic-bezier(.16,1,.3,1);
     white-space: nowrap;
+    letter-spacing: -0.005em;
 }
-.crm-control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.crm-control-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .crm-control-btn--secondary {
-    background: #fff;
-    border-color: #E5E5EA;
+    background: #FFFFFF;
+    border-color: rgba(0,0,0,0.06);
     color: #1D1D1F;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 12px rgba(0,0,0,0.04);
 }
 .crm-control-btn--secondary:not(:disabled):hover {
-    background: #F2F2F7;
-    border-color: #D1D1D6;
+    background: #FFFFFF;
+    border-color: rgba(0,0,0,0.09);
+    transform: translateY(-1px);
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.05),
+        0 8px 20px rgba(0,0,0,0.06);
 }
 .crm-control-btn--primary {
     background: #1D1D1F;
     color: #fff;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.12),
+        0 8px 18px rgba(0,0,0,0.18);
 }
-.crm-control-btn--primary:not(:disabled):hover { background: #000; }
+.crm-control-btn--primary:not(:disabled):hover {
+    background: #000;
+    transform: translateY(-1px);
+}
 
-/* ─────────────── Stats chips ─────────────── */
+/* ─────────────── Stats: 5 tarjetas flotantes ─────────────── */
 .crm-control-stats {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 22px;
 }
 .crm-control-stat {
-    background: #fff;
-    border: 1px solid #EFEFF1;
-    border-radius: 12px;
-    padding: 12px 14px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 16px rgba(0,0,0,0.04);
+    transition: transform 0.2s cubic-bezier(.16,1,.3,1),
+                box-shadow 0.2s cubic-bezier(.16,1,.3,1);
+}
+.crm-control-stat:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.05),
+        0 12px 28px rgba(0,0,0,0.07);
 }
 .crm-control-stat-label {
-    font-size: 0.68rem;
-    font-weight: 600;
+    font-size: 0.66rem;
+    font-weight: 700;
     color: #86868B;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 4px;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
 }
 .crm-control-stat-value {
-    font-size: 1.18rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: #1D1D1F;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
 }
-.crm-control-stat-value--green { color: #16A34A; }
-.crm-control-stat-value--amber { color: #D97706; }
-.crm-control-stat-value--blue  { color: #2563EB; }
+.crm-control-stat-value--small  { font-size: 1.05rem; letter-spacing: -0.015em; }
+.crm-control-stat-value--green  { color: #16A34A; }
+.crm-control-stat-value--amber  { color: #D97706; }
+.crm-control-stat-value--blue   { color: #2563EB; }
 
-/* ─────────────── Tabla ─────────────── */
-.crm-control-table-wrap {
-    background: #fff;
-    border: 1px solid #EFEFF1;
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-}
-.crm-control-table {
-    display: block;
-    font-size: 0.78rem;
-}
-
-/* Grid común para thead y rows.
-   Columnas: cliente | id | desc | jornadas | timeline | po | util | dias | tec | coment */
+/* ─────────────── Grid común (header de columnas + cada card row) ─────────────── */
 .crm-ctrl-thead,
 .crm-ctrl-row {
     display: grid;
     grid-template-columns:
         130px      /* cliente   */
-        100px      /* id        */
-        minmax(180px, 1.4fr)  /* desc      */
+        90px       /* PO        */
+        minmax(180px, 1.4fr)  /* opp       */
         160px      /* jornadas  */
-        minmax(360px, 2.4fr)  /* timeline  */
+        minmax(340px, 2.2fr)  /* timeline  */
         110px      /* monto PO  */
         100px      /* utilidad  */
-        70px       /* días      */
+        72px       /* días      */
         58px       /* tec       */
-        minmax(160px, 1fr);   /* coment    */
+        minmax(150px, 1fr);   /* coment    */
     gap: 0;
     align-items: stretch;
 }
 
-/* Header */
+/* ─────────────── Header de columnas (su propia tarjeta sutil) ─────────────── */
 .crm-ctrl-thead {
-    background: #F8F8FA;
-    border-bottom: 1px solid #EFEFF1;
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    background: #FFFFFF;
+    border-radius: 14px;
+    padding: 0 6px;
+    margin-bottom: 12px;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.03),
+        0 2px 8px rgba(0,0,0,0.025);
 }
 .crm-ctrl-thead .crm-ctrl-col {
-    padding: 12px 10px;
-    font-size: 0.65rem;
+    padding: 14px 12px;
+    font-size: 0.64rem;
     font-weight: 800;
     color: #6B7280;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.07em;
     line-height: 1.2;
     display: flex;
     align-items: center;
-    border-right: 1px solid #EFEFF1;
+    gap: 5px;
 }
-.crm-ctrl-thead .crm-ctrl-col:last-child { border-right: none; }
+.crm-ctrl-col-main { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.07em; }
 .crm-ctrl-col-sub {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 600;
     color: #A1A1AA;
-    text-transform: none;
+    text-transform: lowercase;
     letter-spacing: 0;
 }
 
 /* Header del timeline: dos chips con linea conectora */
-.crm-ctrl-col--timeline { padding: 8px 16px !important; }
+.crm-ctrl-thead .crm-ctrl-col--timeline { padding: 10px 16px; }
 .crm-ctrl-months {
     display: flex;
     align-items: center;
     width: 100%;
-    gap: 8px;
+    gap: 10px;
 }
 .crm-ctrl-month-chip {
     flex: 0 0 auto;
-    padding: 4px 12px;
-    background: #fff;
-    border: 1px solid #E5E5EA;
-    border-radius: 12px;
-    font-size: 0.66rem;
+    padding: 5px 14px;
+    background: #F2F2F7;
+    border-radius: 14px;
+    font-size: 0.65rem;
     font-weight: 800;
     color: #1D1D1F;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
 }
 .crm-ctrl-month-line {
     flex: 1 1 auto;
     height: 2px;
-    background: linear-gradient(90deg, #E5E5EA 0%, #D1D1D6 50%, #E5E5EA 100%);
+    background: linear-gradient(90deg, #E5E5EA 0%, #C7C7CC 50%, #E5E5EA 100%);
     border-radius: 2px;
 }
 
-/* Body rows */
-.crm-ctrl-tbody { display: block; }
-.crm-ctrl-row {
-    border-bottom: 1px solid #F2F2F4;
-    transition: background 0.14s;
+/* ─────────────── Cards de proyecto: cada fila flota ─────────────── */
+.crm-ctrl-tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
-.crm-ctrl-row:last-child { border-bottom: none; }
-.crm-ctrl-row:hover { background: #FAFAFB; }
-
+.crm-ctrl-row {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 4px 6px;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.035),
+        0 3px 12px rgba(0,0,0,0.04);
+    transition: transform 0.18s cubic-bezier(.16,1,.3,1),
+                box-shadow 0.18s cubic-bezier(.16,1,.3,1);
+    cursor: pointer;
+}
+.crm-ctrl-row:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.05),
+        0 12px 28px rgba(0,0,0,0.07);
+}
 .crm-ctrl-row .crm-ctrl-col {
-    padding: 14px 10px;
+    padding: 16px 12px;
     color: #1D1D1F;
     display: flex;
     align-items: center;
-    border-right: 1px solid #F4F4F6;
     line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
+    border-right: 1px solid transparent;
 }
-.crm-ctrl-row .crm-ctrl-col:last-child { border-right: none; }
+/* Hairline divider vertical entre celdas (sutil, no border duro) */
+.crm-ctrl-row .crm-ctrl-col + .crm-ctrl-col {
+    box-shadow: inset 1px 0 0 rgba(0,0,0,0.04);
+}
 
 /* Tipos de celda */
-.crm-ctrl-col--cliente { padding-left: 14px !important; }
+.crm-ctrl-col--cliente { padding-left: 16px !important; }
 .crm-ctrl-col--id {
     font-family: ui-monospace, SFMono-Regular, 'SF Mono', monospace;
-    font-size: 0.72rem;
-    color: #6B7280;
+    font-size: 0.74rem;
+    color: #4B5563;
     font-weight: 600;
 }
 .crm-ctrl-col--desc {
     font-weight: 600;
     color: #1D1D1F;
-    font-size: 0.76rem;
+    font-size: 0.78rem;
 }
 .crm-ctrl-col--po,
 .crm-ctrl-col--util {
@@ -241,38 +282,38 @@
 .crm-ctrl-tag {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
-    border-radius: 8px;
+    padding: 5px 11px;
+    border-radius: 9px;
     font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.crm-ctrl-tag--accent {
-    background: #FEF3C7;
-    color: #92400E;
-}
-.crm-ctrl-tag--warning {
-    background: #FEF9C3;
-    color: #854D0E;
-}
+.crm-ctrl-tag--accent  { background: #FEF3C7; color: #92400E; }
+.crm-ctrl-tag--warning { background: #FEF9C3; color: #854D0E; }
 
 .crm-ctrl-pill {
     display: inline-flex;
     align-items: center;
-    padding: 3px 9px;
+    padding: 4px 10px;
     border-radius: 999px;
-    font-size: 0.66rem;
+    font-size: 0.68rem;
     font-weight: 700;
     line-height: 1.4;
     white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.crm-ctrl-pill--sat        { background: #DBEAFE; color: #1E40AF; }
-.crm-ctrl-pill--night      { background: #E0E7FF; color: #3730A3; }
-.crm-ctrl-pill--normal     { background: #F1F5F9; color: #334155; }
-.crm-ctrl-pill--extra      { background: #FCE7F3; color: #9D174D; }
-.crm-ctrl-pill--extra-night{ background: #FFEDD5; color: #9A3412; }
+.crm-ctrl-pill--sat         { background: #DBEAFE; color: #1E40AF; }
+.crm-ctrl-pill--night       { background: #E0E7FF; color: #3730A3; }
+.crm-ctrl-pill--normal      { background: #F1F5F9; color: #334155; }
+.crm-ctrl-pill--extra       { background: #FCE7F3; color: #9D174D; }
+.crm-ctrl-pill--extra-night { background: #FFEDD5; color: #9A3412; }
 
 /* ─────────────── Timeline gantt ─────────────── */
 .crm-ctrl-col--timeline {
@@ -282,11 +323,10 @@
 .crm-ctrl-track {
     position: relative;
     width: 100%;
-    height: 42px;
+    height: 44px;
     display: flex;
     align-items: center;
 }
-/* Línea base del track */
 .crm-ctrl-track::before {
     content: '';
     position: absolute;
@@ -300,7 +340,6 @@
     );
     transform: translateY(-0.5px);
 }
-/* Marca de mitad (separador junio/julio) */
 .crm-ctrl-track::after {
     content: '';
     position: absolute;
@@ -316,59 +355,57 @@
     position: absolute;
     top: 50%;
     height: 14px;
-    border-radius: 7px;
+    border-radius: 8px;
     transform: translateY(-50%);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.10);
     min-width: 28px;
     cursor: pointer;
-    transition: transform 0.14s, box-shadow 0.14s;
+    transition: transform 0.16s, box-shadow 0.16s;
 }
 .crm-ctrl-bar:hover {
-    transform: translateY(-50%) scale(1.03);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.16);
+    transform: translateY(-50%) scale(1.04);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.18);
 }
 
-/* Markers de inicio y fin */
 .crm-ctrl-bar-marker {
     position: absolute;
     top: 50%;
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
     background: #fff;
     border: 2.5px solid currentColor;
     transform: translateY(-50%);
     color: inherit;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
-.crm-ctrl-bar-marker--start { left: -5px; }
-.crm-ctrl-bar-marker--end   { right: -5px; }
+.crm-ctrl-bar-marker--start { left: -5.5px; }
+.crm-ctrl-bar-marker--end   { right: -5.5px; }
 
-/* Heredamos el color del bar para los markers via currentColor */
 .crm-ctrl-bar[style*="background:#22C55E"] { color: #16A34A; }
 .crm-ctrl-bar[style*="background:#15803D"] { color: #14532D; }
 .crm-ctrl-bar[style*="background:#7DD3FC"] { color: #0284C7; }
 .crm-ctrl-bar[style*="background:#F9A8D4"] { color: #BE185D; }
 .crm-ctrl-bar[style*="background:#FB923C"] { color: #C2410C; }
 
-/* Fecha que vive arriba del marker */
 .crm-ctrl-bar-date {
     position: absolute;
-    top: -18px;
+    top: -20px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 0.62rem;
     font-weight: 700;
     color: #4B5563;
     background: #fff;
-    padding: 1px 5px;
-    border-radius: 4px;
+    padding: 2px 6px;
+    border-radius: 5px;
     white-space: nowrap;
     pointer-events: none;
-    border: 1px solid #EFEFF1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .crm-ctrl-bar-marker--end .crm-ctrl-bar-date {
     top: auto;
-    bottom: -18px;
+    bottom: -20px;
 }
 
 /* ─────────────── States: loading / empty / error ─────────────── */
@@ -376,17 +413,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 50px 20px;
+    gap: 12px;
+    padding: 60px 24px;
+    background: #FFFFFF;
+    border-radius: 16px;
     color: #6B7280;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 600;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.035),
+        0 3px 12px rgba(0,0,0,0.04);
 }
-.crm-ctrl-state--empty   { color: #9CA3AF; font-style: italic; }
-.crm-ctrl-state--error   { color: #B91C1C; }
+.crm-ctrl-state--empty { color: #9CA3AF; font-style: italic; }
+.crm-ctrl-state--error { color: #B91C1C; }
 
 .crm-ctrl-spinner {
-    width: 18px; height: 18px;
+    width: 20px; height: 20px;
     border: 2.5px solid #E5E5EA;
     border-top-color: #1D1D1F;
     border-radius: 50%;
@@ -396,7 +438,7 @@
 
 /* Celda placeholder (—) para columnas no conectadas todavía */
 .crm-ctrl-cell--placeholder {
-    color: #C7C7CC;
+    color: #D1D1D6;
     font-weight: 600;
 }
 
@@ -405,25 +447,28 @@
     color: #C7C7CC;
     font-weight: 600;
     font-style: italic;
+    font-size: 0.72rem;
 }
 
-/* ─────────────── Leyenda ─────────────── */
+/* ─────────────── Leyenda (tarjeta flotante propia) ─────────────── */
 .crm-control-legend {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-top: 14px;
-    padding: 10px 14px;
-    background: #fff;
-    border: 1px solid #EFEFF1;
-    border-radius: 10px;
+    gap: 22px;
+    margin-top: 18px;
+    padding: 14px 20px;
+    background: #FFFFFF;
+    border-radius: 14px;
     flex-wrap: wrap;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.03),
+        0 2px 8px rgba(0,0,0,0.025);
 }
 .crm-control-legend-item {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
+    gap: 7px;
+    font-size: 0.74rem;
     color: #4B5563;
     font-weight: 600;
 }
@@ -432,6 +477,7 @@
     height: 10px;
     border-radius: 50%;
     display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 .crm-control-legend-info {
     margin-left: auto;
@@ -445,18 +491,20 @@
     .crm-ctrl-thead,
     .crm-ctrl-row {
         grid-template-columns:
-            120px 90px minmax(160px, 1.2fr) 140px
-            minmax(320px, 2fr)
-            100px 90px 60px 50px minmax(140px, 1fr);
+            120px 84px minmax(160px, 1.2fr) 140px
+            minmax(300px, 1.8fr)
+            100px 90px 64px 52px minmax(140px, 1fr);
     }
 }
 @media (max-width: 1280px) {
     .crm-control-stats { grid-template-columns: repeat(3, 1fr); }
-    .crm-control-table-wrap { overflow-x: auto; }
-    .crm-ctrl-thead, .crm-ctrl-row { min-width: 1180px; }
+    .crm-ctrl-thead, .crm-ctrl-row { min-width: 1160px; }
+    .crm-ctrl-tbody { overflow-x: auto; padding-bottom: 6px; }
+    .crm-ctrl-thead { overflow-x: auto; }
 }
 @media (max-width: 760px) {
-    .crm-control-section { padding: 14px; }
+    .crm-control-section { padding: 16px; }
     .crm-control-stats { grid-template-columns: repeat(2, 1fr); }
-    .crm-control-header { flex-direction: column; align-items: flex-start; }
+    .crm-control-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .crm-control-title { font-size: 1.25rem; }
 }

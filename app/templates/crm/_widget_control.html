@@ -1,19 +1,21 @@
 {% comment %}
 _widget_control.html — Sección de logística de compra de materiales.
 
-Lado IZQUIERDO conectado: cliente, PO (de TodoItem.po_number), nombre de
-oportunidad, jornadas (de ProyectoLevantamiento.fase2_data.programa.duracion).
-Lado DERECHO (timeline + monto + utilidad + días + téc + comentarios)
-todavía es placeholder — se conecta en una fase siguiente.
+Diseño "iPadOS cards": sin wrapper grande blanco. Cada bloque (header,
+stats, header de columnas, cada proyecto, leyenda) flota como tarjeta
+independiente sobre el fondo gris suave de la sección.
 
-Toda la lógica está en crm_control_v2.js. Las filas las renderiza JS desde
-el endpoint /app/api/control/proyectos/ respetando filtros de mes/vendedor
-y la lógica supervisor/equipo del backend.
+Lado IZQUIERDO conectado: cliente, PO (TodoItem.po_number), oportunidad,
+jornadas (ProyectoLevantamiento.fase2_data.programa.duracion).
+Lado DERECHO (timeline + monto + utilidad + días + téc + comentarios)
+todavía es placeholder.
+
+Toda la lógica está en crm_control_v2.js.
 {% endcomment %}
 
 <div id="ckControlSection" class="crm-control-section" style="display:none;">
 
-    <!-- Header de la sección -->
+    <!-- Header (sin caja) -->
     <div class="crm-control-header">
         <div class="crm-control-header-left">
             <h2 class="crm-control-title">Logística de Compra de Material</h2>
@@ -21,17 +23,17 @@ y la lógica supervisor/equipo del backend.
         </div>
         <div class="crm-control-header-right">
             <button type="button" id="crmControlRefresh" class="crm-control-btn crm-control-btn--secondary" title="Volver a cargar">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
                 Refrescar
             </button>
             <button type="button" class="crm-control-btn crm-control-btn--primary" disabled title="Próximamente">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Agregar proyecto
             </button>
         </div>
     </div>
 
-    <!-- Stats chips superiores -->
+    <!-- Stats: 5 tarjetas flotantes -->
     <div class="crm-control-stats">
         <div class="crm-control-stat">
             <div class="crm-control-stat-label">Proyectos visibles</div>
@@ -51,48 +53,45 @@ y la lógica supervisor/equipo del backend.
         </div>
         <div class="crm-control-stat">
             <div class="crm-control-stat-label">Periodo</div>
-            <div class="crm-control-stat-value" id="ctrlStatPeriodo" style="font-size:0.95rem;">—</div>
+            <div class="crm-control-stat-value crm-control-stat-value--small" id="ctrlStatPeriodo">—</div>
         </div>
     </div>
 
-    <!-- Tabla principal -->
-    <div class="crm-control-table-wrap">
-        <div class="crm-control-table" role="table" aria-label="Logística de compra de materiales">
-
-            <!-- HEADER -->
-            <div class="crm-ctrl-thead" role="row">
-                <div class="crm-ctrl-col crm-ctrl-col--cliente" role="columnheader">Cliente</div>
-                <div class="crm-ctrl-col crm-ctrl-col--id" role="columnheader">PO</div>
-                <div class="crm-ctrl-col crm-ctrl-col--desc" role="columnheader">Oportunidad</div>
-                <div class="crm-ctrl-col crm-ctrl-col--jornadas" role="columnheader">Jornadas</div>
-
-                <div class="crm-ctrl-col crm-ctrl-col--timeline" role="columnheader">
-                    <div class="crm-ctrl-months">
-                        <span class="crm-ctrl-month-chip">JUNIO</span>
-                        <span class="crm-ctrl-month-line" aria-hidden="true"></span>
-                        <span class="crm-ctrl-month-chip">JULIO</span>
-                    </div>
-                </div>
-
-                <div class="crm-ctrl-col crm-ctrl-col--po" role="columnheader">Monto PO<br><span class="crm-ctrl-col-sub">Proyecto sin IVA</span></div>
-                <div class="crm-ctrl-col crm-ctrl-col--util" role="columnheader">Utilidad</div>
-                <div class="crm-ctrl-col crm-ctrl-col--dias" role="columnheader">Días<br><span class="crm-ctrl-col-sub">Ejecución</span></div>
-                <div class="crm-ctrl-col crm-ctrl-col--tec" role="columnheader">Téc.</div>
-                <div class="crm-ctrl-col crm-ctrl-col--coment" role="columnheader">Comentarios</div>
+    <!-- Header de columnas (tarjeta sutil propia) -->
+    <div class="crm-ctrl-thead crm-ctrl-card-header" role="row">
+        <div class="crm-ctrl-col crm-ctrl-col--cliente" role="columnheader">Cliente</div>
+        <div class="crm-ctrl-col crm-ctrl-col--id" role="columnheader">PO</div>
+        <div class="crm-ctrl-col crm-ctrl-col--desc" role="columnheader">Oportunidad</div>
+        <div class="crm-ctrl-col crm-ctrl-col--jornadas" role="columnheader">Jornadas</div>
+        <div class="crm-ctrl-col crm-ctrl-col--timeline" role="columnheader">
+            <div class="crm-ctrl-months">
+                <span class="crm-ctrl-month-chip">JUNIO</span>
+                <span class="crm-ctrl-month-line" aria-hidden="true"></span>
+                <span class="crm-ctrl-month-chip">JULIO</span>
             </div>
+        </div>
+        <div class="crm-ctrl-col crm-ctrl-col--po" role="columnheader">
+            <span class="crm-ctrl-col-main">Monto PO</span>
+            <span class="crm-ctrl-col-sub">sin IVA</span>
+        </div>
+        <div class="crm-ctrl-col crm-ctrl-col--util" role="columnheader">Utilidad</div>
+        <div class="crm-ctrl-col crm-ctrl-col--dias" role="columnheader">
+            <span class="crm-ctrl-col-main">Días</span>
+            <span class="crm-ctrl-col-sub">ejec.</span>
+        </div>
+        <div class="crm-ctrl-col crm-ctrl-col--tec" role="columnheader">Téc.</div>
+        <div class="crm-ctrl-col crm-ctrl-col--coment" role="columnheader">Comentarios</div>
+    </div>
 
-            <!-- BODY (rendered by JS) -->
-            <div class="crm-ctrl-tbody" id="crmControlTbody">
-                <div class="crm-ctrl-state crm-ctrl-state--loading">
-                    <div class="crm-ctrl-spinner" aria-hidden="true"></div>
-                    <span>Cargando proyectos…</span>
-                </div>
-            </div>
+    <!-- BODY (rendered by JS) -->
+    <div class="crm-ctrl-tbody" id="crmControlTbody">
+        <div class="crm-ctrl-state crm-ctrl-state--loading">
+            <div class="crm-ctrl-spinner" aria-hidden="true"></div>
+            <span>Cargando proyectos…</span>
+        </div>
+    </div>
 
-        </div><!-- /.crm-control-table -->
-    </div><!-- /.crm-control-table-wrap -->
-
-    <!-- Footer leyenda -->
+    <!-- Leyenda (tarjeta flotante propia) -->
     <div class="crm-control-legend">
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#22C55E;"></span>Material listo</span>
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#7DD3FC;"></span>En tránsito</span>
