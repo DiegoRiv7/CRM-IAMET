@@ -482,6 +482,12 @@ urlpatterns = [
 
     # ── Dashboard Control (V2 — logística de compra de materiales) ───────────
     path('api/control/proyectos/', views_v2_proyectos.api_control_proyectos, name='api_control_proyectos'),
+    path('api/control/materiales/', views_v2_proyectos.api_material_lista, name='api_control_material_lista'),
+    path('api/control/materiales/crear/', views_v2_proyectos.api_material_crear, name='api_control_material_crear'),
+    path('api/control/materiales/<int:material_id>/', views_v2_proyectos.api_material_detalle, name='api_control_material_detalle'),
+    path('api/control/materiales/<int:material_id>/actualizar/', views_v2_proyectos.api_material_actualizar, name='api_control_material_actualizar'),
+    path('api/control/materiales/<int:material_id>/eliminar/', views_v2_proyectos.api_material_eliminar, name='api_control_material_eliminar'),
+    path('api/control/materiales/<int:material_id>/confirmar-recepcion/', views_v2_proyectos.api_material_confirmar_recepcion, name='api_control_material_confirmar'),
 
     path('api/iamet/proyectos/financiero/', views_iamet.api_proyectos_financiero, name='api_proyectos_financiero'),
     path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),

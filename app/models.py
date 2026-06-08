@@ -6145,3 +6145,76 @@ class InstalacionAsignacion(models.Model):
 
     def __str__(self):
         return f'{self.tecnico.nombre} @ {self.instalacion.cliente_nombre} ({self.fecha})'
+
+
+# ════════════════════════════════════════════════════════════════════════
+# MaterialEsperado — Junio 2026
+#
+# Producto que se está esperando para un ProyectoIAMET (logística de
+# compra de materiales). Se renderiza como una barra en el timeline de la
+# sección "Control" del dashboard. Cada barra tiene fechas de inicio/fin
+# (ventana esperada de llegada) + estado en el flujo de compra.
+#
+# Comentarios libres en TextField (separador `\n---\n`) para mantenerlo
+# simple — no se crea modelo aparte de comentarios todavía.
+# ════════════════════════════════════════════════════════════════════════
+class MaterialEsperado(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente_compra', 'Pendiente de compra'),
+        ('en_transito', 'En tránsito'),
+        ('material_listo', 'Material listo'),
+        ('en_espera_cliente', 'En espera del cliente'),
+        ('recibido', 'Recibido'),
+    ]
+
+    proyecto = models.ForeignKey(
+        'ProyectoIAMET',
+        on_delete=models.CASCADE,
+        related_name='materiales_esperados',
+    )
+    titulo = models.CharField(max_length=200)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    estado = models.CharField(
+        max_length=30,
+        choices=ESTADO_CHOICES,
+        default='pendiente_compra',
+    )
+    confirmado_recepcion = models.BooleanField(default=False)
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True)
+    confirmado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='materiales_confirmados',
+    )
+    comentarios = models.TextField(blank=True, default='')
+    creado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='materiales_creados',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Material esperado'
+        verbose_name_plural = 'Materiales esperados'
+        ordering = ['fecha_inicio']
+        indexes = [
+            models.Index(fields=['proyecto', 'fecha_inicio']),
+            models.Index(fields=['estado']),
+        ]
+
+    def __str__(self):
+        return f'{self.titulo} ({self.proyecto_id})'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.fecha_inicio and self.fecha_fin and self.fecha_fin < self.fecha_inicio:
+            raise ValidationError({
+                'fecha_fin': 'La fecha fin no puede ser anterior a la fecha de inicio.',
+            })

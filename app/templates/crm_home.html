@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}?v=20260602-topbar-grid">
 <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260506-vol-actions">
 <link rel="stylesheet" href="{% static 'css/crm_volumetria.css' %}?v=20260507-mxn-highlight">
-<link rel="stylesheet" href="{% static 'css/control_v2.css' %}?v=20260608-control-clean">
+<link rel="stylesheet" href="{% static 'css/control_v2.css' %}?v=20260608-control-material-1">
+<link rel="stylesheet" href="{% static 'css/control_material.css' %}?v=20260608-control-material-1">
 {% if es_ingeniero %}
 <style>
     /* Anti-FOUC: mientras body tiene .eng-initial-hide, oculta todas las
@@ -96,6 +97,10 @@
     {% include "crm/_widget_novedades.html" %}
     {% include "crm/_widget_empleado_mes.html" %}
 
+    {# Widgets de la sección Control (logística de materiales) #}
+    {% include "crm/_widget_control_material_form.html" %}
+    {% include "crm/_widget_control_material_detalle.html" %}
+
     {% if es_administrador %}{% include "crm/_widget_compras.html" %}{% endif %}
 
     {% if es_ingeniero %}
@@ -145,6 +150,7 @@ dobles, posibles SyntaxErrors.
 <script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_prospectos_kanban.js' %}" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_campanas.js' %}" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_control_v2.js' %}?v=20260608-control-clean" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_control_v2.js' %}?v=20260608-control-material-1" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_control_material_v2.js' %}?v=20260608-control-material-1" data-turbo-eval="false"></script>
 
 {% endblock %}

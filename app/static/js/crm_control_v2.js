@@ -131,13 +131,89 @@
     }
 
     function renderTimelineRow(p) {
-        // Row vacía. Las barras se agregan manualmente desde el botón
-        // "Agregar material". El hint sutil aparece solo cuando el
-        // proyecto está seleccionado, para invitar a usar el botón.
+        // La row puede traer 0..N materiales esperados. Cada material es
+        // una barra posicionada en una ventana de 2 meses: el mes filtrado
+        // y el siguiente (igual que el header de "JUN — JUL" que ya
+        // dibujamos arriba). Si no hay filtro de mes, usamos el mes
+        // actual como ancla.
+        var materiales = p.materiales || [];
+        var win = ventanaFechas(getFiltrosActuales());
+        var bars = '';
+        for (var i = 0; i < materiales.length; i++) {
+            bars += renderBarraMaterial(materiales[i], win);
+        }
+        var emptyCls = materiales.length ? '' : ' crm-ctrl-timeline-row--empty';
+        var hasMaterialesCls = materiales.length ? ' has-materiales' : '';
         return '' +
-            '<div class="crm-ctrl-timeline-row crm-ctrl-timeline-row--empty" ' +
+            '<div class="crm-ctrl-timeline-row' + emptyCls + hasMaterialesCls + '" ' +
                  'data-proyecto-id="' + p.proyecto_id + '" role="button">' +
+                bars +
             '</div>';
+    }
+
+    function ventanaFechas(filtros) {
+        // Devuelve { start: Date, end: Date } cubriendo el mes filtrado +
+        // el siguiente (ventana de 2 meses, inclusiva). Si no hay mes
+        // específico, ventana = mes actual + siguiente.
+        var hoy = new Date();
+        var anio = parseInt(filtros.anio, 10);
+        if (!anio || isNaN(anio) || String(filtros.anio).toLowerCase() === 'todos') {
+            anio = hoy.getFullYear();
+        }
+        var mes = parseInt(filtros.mes, 10);
+        if (!mes || isNaN(mes) || String(filtros.mes).toLowerCase() === 'todos') {
+            mes = hoy.getMonth() + 1;
+        }
+        var start = new Date(anio, mes - 1, 1);
+        // Fin = último día del mes siguiente
+        var end = new Date(anio, mes + 1, 0, 23, 59, 59);
+        return { start: start, end: end };
+    }
+
+    function renderBarraMaterial(m, win) {
+        if (!m || !m.fecha_inicio || !m.fecha_fin) return '';
+        var ini = parseISODate(m.fecha_inicio);
+        var fin = parseISODate(m.fecha_fin);
+        if (!ini || !fin) return '';
+        // Recortar al rango visible
+        var visIni = ini < win.start ? win.start : ini;
+        var visFin = fin > win.end ? win.end : fin;
+        if (visFin < win.start || visIni > win.end) {
+            // Fuera de ventana → no renderizar
+            return '';
+        }
+        var total = win.end.getTime() - win.start.getTime();
+        if (total <= 0) return '';
+        var leftPct = ((visIni.getTime() - win.start.getTime()) / total) * 100;
+        var widthPct = ((visFin.getTime() - visIni.getTime()) / total) * 100;
+        // Respeta el padding 24px del row (left/right) — usamos el rango
+        // 24px .. (100% - 24px). Calculamos en CSS calc().
+        var leftCalc = 'calc(24px + (100% - 48px) * ' + (leftPct / 100).toFixed(4) + ')';
+        var widthCalc = 'calc((100% - 48px) * ' + (widthPct / 100).toFixed(4) + ')';
+
+        var overflowCls = '';
+        if (ini < win.start) overflowCls += ' crm-cm-bar--overflow-left';
+        if (fin > win.end) overflowCls += ' crm-cm-bar--overflow-right';
+        var confirmadoCls = m.confirmado_recepcion ? ' crm-cm-bar--confirmado' : '';
+
+        var color = m.color || '#9CA3AF';
+        var titleAttr = (m.titulo || '') + ' · ' + (m.fecha_inicio || '') + ' → ' + (m.fecha_fin || '');
+        return '<div class="crm-cm-bar' + overflowCls + confirmadoCls + '" ' +
+                   'style="left:' + leftCalc + ';width:' + widthCalc + ';background:' + color + ';" ' +
+                   'data-material-id="' + m.id + '" ' +
+                   'title="' + escHtml(titleAttr) + '">' +
+                   '<span class="crm-cm-bar-label">' + escHtml(m.titulo || '') + '</span>' +
+               '</div>';
+    }
+
+    function parseISODate(iso) {
+        if (!iso) return null;
+        try {
+            // 'YYYY-MM-DD' → Date en hora local (sin TZ shift)
+            var parts = String(iso).split('-');
+            if (parts.length < 3) return null;
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        } catch (e) { return null; }
     }
 
     function renderRows(proyectos) {
@@ -167,22 +243,52 @@
     }
 
     function wireSelection() {
-        function bindAll(sel) {
-            var els = document.querySelectorAll(sel);
-            for (var i = 0; i < els.length; i++) {
-                els[i].addEventListener('click', function () {
-                    var id = this.getAttribute('data-proyecto-id');
-                    // Click en mismo proyecto = deselect.
-                    if (String(_selectedId) === String(id)) {
-                        deselectProyecto();
-                    } else {
-                        selectProyecto(id, true);
-                    }
-                });
-            }
+        // Items de la lista: click selecciona/deselecciona (igual que antes).
+        var items = document.querySelectorAll('.crm-ctrl-item[data-proyecto-id]');
+        for (var i = 0; i < items.length; i++) {
+            items[i].addEventListener('click', function () {
+                var id = this.getAttribute('data-proyecto-id');
+                if (String(_selectedId) === String(id)) {
+                    deselectProyecto();
+                } else {
+                    selectProyecto(id, true);
+                }
+            });
         }
-        bindAll('.crm-ctrl-item[data-proyecto-id]');
-        bindAll('.crm-ctrl-timeline-row[data-proyecto-id]');
+        // Rows del timeline: click en una BARRA abre el detalle del material.
+        // Click en zona vacía → si el proyecto YA está seleccionado, abre
+        // el form de creación con ese proyecto preseleccionado. Si no está
+        // seleccionado, lo selecciona primero (UX consistente con la lista).
+        var rows = document.querySelectorAll('.crm-ctrl-timeline-row[data-proyecto-id]');
+        for (var j = 0; j < rows.length; j++) {
+            rows[j].addEventListener('click', onTimelineRowClick);
+        }
+    }
+
+    function onTimelineRowClick(ev) {
+        // ¿Click en una barra de material?
+        var bar = ev.target.closest('.crm-cm-bar[data-material-id]');
+        if (bar) {
+            ev.stopPropagation();
+            var mid = bar.getAttribute('data-material-id');
+            if (window.crmMaterialDetalle && typeof window.crmMaterialDetalle.open === 'function') {
+                window.crmMaterialDetalle.open(parseInt(mid, 10));
+            }
+            return;
+        }
+        // Click en zona vacía del row
+        var row = ev.currentTarget;
+        var pid = row.getAttribute('data-proyecto-id');
+        if (!pid) return;
+        if (String(_selectedId) === String(pid)) {
+            // Ya seleccionado → abrir form de creación con proyecto preseleccionado
+            if (window.crmMaterialForm && typeof window.crmMaterialForm.open === 'function') {
+                window.crmMaterialForm.open(parseInt(pid, 10));
+            }
+        } else {
+            // Primer click sobre el row → seleccionar primero
+            selectProyecto(pid, true);
+        }
     }
 
     function selectProyecto(id, scrollIntoView) {
@@ -334,14 +440,17 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // AGREGAR MATERIAL (placeholder por ahora)
+    // AGREGAR MATERIAL
     // ─────────────────────────────────────────────────────────────────────
-
+    // Botón del header del split. Si hay un proyecto seleccionado lo
+    // preseleccionamos; si no, el usuario lo busca en el form.
     function abrirAgregarMaterial() {
-        // Placeholder — el formulario real (producto, ETA, cantidad, etc.)
-        // se construye en la próxima iteración. Por ahora solo avisa.
-        if (typeof window.toast === 'function') {
-            window.toast('Próximamente: formulario para agregar material esperado a un proyecto.', 'info');
+        if (window.crmMaterialForm && typeof window.crmMaterialForm.open === 'function') {
+            var pid = _selectedId ? parseInt(_selectedId, 10) : null;
+            window.crmMaterialForm.open(pid);
+        } else if (typeof window.toast === 'function') {
+            // Fallback si el JS de materiales aún no cargó (Turbo race)
+            window.toast('Cargando…', 'info');
         }
     }
 
@@ -429,6 +538,17 @@
             setTimeout(function () { if (!_controlActivo) activarControl(); }, 800);
             setTimeout(function () { if (!_controlActivo) activarControl(); }, 2000);
         }
+
+        // Refresh automático cuando se crea/edita/elimina un material.
+        // Solo refetch si estamos en la tab Control (evita network noise
+        // mientras el usuario está en otra vista del CRM).
+        try {
+            if (window.crmDataBus && typeof window.crmDataBus.on === 'function') {
+                window.crmDataBus.on('material', function () {
+                    if (_controlActivo) fetchProyectos();
+                });
+            }
+        } catch (e) {}
     }
 
     if (document.readyState === 'loading') {
