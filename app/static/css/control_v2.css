@@ -7,6 +7,10 @@
   sincronizados. Lista y timeline usan el mismo height por item.
 */
 
+/* Cuando Control está activo, el JS pone .crm-control-active en <body>.
+   Esto oculta el footer global del CRM para dar más espacio a la sección. */
+body.crm-control-active .crm-footer { display: none !important; }
+
 .crm-control-section {
     padding: 22px 26px 80px;
     background: #F5F5F7;
@@ -84,7 +88,68 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 22px;
+    position: relative;
 }
+/* Modo "proyecto seleccionado": tint sutil para indicar que los KPIs
+   muestran datos de un proyecto, no globales. */
+.crm-control-stats.is-context .crm-control-stat {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0F7FF 100%);
+    box-shadow:
+        0 1px 2px rgba(37,99,235,0.06),
+        0 6px 18px rgba(37,99,235,0.08);
+}
+
+/* Chip de contexto: aparece encima de los stats cuando hay proyecto seleccionado */
+.crm-ctrl-context-chip {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 14px;
+    background: #1D1D1F;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.12),
+        0 10px 24px rgba(0,0,0,0.18);
+    z-index: 5;
+    max-width: 540px;
+}
+.crm-ctrl-context-label {
+    font-weight: 600;
+    color: #A1A1AA;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.6rem;
+}
+.crm-ctrl-context-name {
+    font-weight: 700;
+    color: #fff;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.crm-ctrl-context-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.14s;
+    flex-shrink: 0;
+}
+.crm-ctrl-context-close:hover { background: rgba(255,255,255,0.22); }
 .crm-control-stat {
     background: #FFFFFF;
     border-radius: 18px;

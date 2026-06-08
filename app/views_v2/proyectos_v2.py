@@ -119,11 +119,15 @@ def api_control_proyectos(request):
                 pass
 
         # --- Prefetch para no hacer N+1 -------------------------------------
-        # Cada proyecto: oportunidad (FK) + último levantamiento (related).
+        # Cada proyecto: oportunidad (FK) + último levantamiento (related) +
+        # miembros (M2M, para contar técnicos).
         ultimos_lev = ProyectoLevantamiento.objects.order_by('-fecha_creacion')
         qs = (
             qs.select_related('oportunidad', 'usuario')
-              .prefetch_related(Prefetch('levantamientos', queryset=ultimos_lev))
+              .prefetch_related(
+                  Prefetch('levantamientos', queryset=ultimos_lev),
+                  'miembros',
+              )
         )
 
         # --- Serializar -----------------------------------------------------
@@ -137,6 +141,16 @@ def api_control_proyectos(request):
                 break
             jornadas = _extraer_duracion(ult_lev)
 
+            # Días ejecución: si hay fecha_inicio y fecha_fin, los días
+            # calendario entre ambas (inclusivo). Si no, 0.
+            dias = 0
+            if p.fecha_inicio and p.fecha_fin and p.fecha_fin >= p.fecha_inicio:
+                dias = (p.fecha_fin - p.fecha_inicio).days + 1
+
+            # Técnicos: cantidad de miembros del proyecto (no incluye al usuario
+            # propietario, que ya tiene acceso por defecto via `usuario` FK).
+            tecnicos = len(list(p.miembros.all()))
+
             data.append({
                 'proyecto_id': p.id,
                 'nombre': p.nombre,
@@ -148,6 +162,13 @@ def api_control_proyectos(request):
                 'jornadas': jornadas,
                 'levantamiento_id': ult_lev.id if ult_lev else None,
                 'usuario_id': p.usuario_id,
+                # Datos que arman los KPIs al seleccionar un proyecto.
+                # `monto_po` por ahora es el monto de la oportunidad — cuando
+                # conectemos OCs reales se reemplaza por suma de OCs.
+                'monto_po': float(opp.monto) if opp and opp.monto is not None else 0.0,
+                'utilidad': float(p.utilidad_presupuestada or 0),
+                'dias_ejecucion': dias,
+                'tecnicos': tecnicos,
             })
 
         return JsonResponse({'ok': True, 'data': data})

@@ -5,12 +5,17 @@
   Cada proyecto se renderiza DOS veces (un item en cada panel) con el mismo
   data-proyecto-id. Click en cualquier lado highlightea ambos.
 
-  V2 (Boy Scout): NO modifica crm_main.js legacy.
-    - Monkey-patch a window._crmSetMode bloquea refreshes a otros modos
-      mientras estamos en Control.
-    - Capture-phase listeners en las otras tabs apagan la flag antes de
-      que el onclick legacy ejecute.
-    - localStorage 'crm_clientes_mode' = 'control' persiste la selección.
+  KPIs DINÁMICOS arriba:
+    - Vista general (sin selección): Proyectos / Con PO / Con levantamiento / Periodo
+    - Proyecto seleccionado: Monto PO / Utilidad / Días ejecución / Técnicos
+    - Click en mismo proyecto = deseleccionar (vuelve a vista general)
+    - Chip flotante "Mostrando: <proyecto>" arriba de los stats con X para cerrar
+
+  Mientras Control está activo: <body> tiene .crm-control-active que oculta el
+  .crm-footer global del CRM (para liberar espacio vertical).
+
+  V2 (Boy Scout): NO modifica crm_main.js legacy. Monkey-patch a _crmSetMode
+  bloquea refreshes mientras estamos en Control.
 
   Fetch: GET /app/api/control/proyectos/?mes=06&anio=2026&vendedores=...
 */
@@ -20,6 +25,7 @@
     var _controlActivo = false;
     var _initialMode = null;
     var _selectedId = null;
+    var _proyectosCache = [];
     try { _initialMode = localStorage.getItem('crm_clientes_mode'); } catch (e) {}
 
     var IDS_OTROS_KPI = [
@@ -32,14 +38,13 @@
     ];
 
     var MESES_LABEL = {
-        '01': 'Enero', '02': 'Febrero', '03': 'Marzo',     '04': 'Abril',
-        '05': 'Mayo',  '06': 'Junio',   '07': 'Julio',     '08': 'Agosto',
-        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+        '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo',
+        '06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre',
+        '10':'Octubre','11':'Noviembre','12':'Diciembre'
     };
     var MESES_SHORT = {
-        '01': 'ENE', '02': 'FEB', '03': 'MAR', '04': 'ABR',
-        '05': 'MAY', '06': 'JUN', '07': 'JUL', '08': 'AGO',
-        '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DIC'
+        '01':'ENE','02':'FEB','03':'MAR','04':'ABR','05':'MAY','06':'JUN',
+        '07':'JUL','08':'AGO','09':'SEP','10':'OCT','11':'NOV','12':'DIC'
     };
 
     function hide(id) {
@@ -51,6 +56,13 @@
         return String(s)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function fmtMoney(n) {
+        var v = Number(n || 0);
+        if (!v) return '$0';
+        if (v >= 1e6) return '$' + (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+        if (v >= 1e3) return '$' + (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+        return '$' + Math.round(v).toLocaleString('en-US');
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -69,22 +81,20 @@
     function setLoadingPanels() {
         var list = document.getElementById('crmControlList');
         var tl = document.getElementById('crmControlTimeline');
-        var html =
+        if (list) list.innerHTML =
             '<div class="crm-ctrl-state crm-ctrl-state--loading">' +
                 '<div class="crm-ctrl-spinner" aria-hidden="true"></div>' +
                 '<span>Cargando proyectos…</span>' +
             '</div>';
-        if (list) list.innerHTML = html;
-        if (tl)   tl.innerHTML = '<div class="crm-ctrl-state crm-ctrl-state--placeholder"><span>Esperando datos…</span></div>';
+        if (tl) tl.innerHTML =
+            '<div class="crm-ctrl-state crm-ctrl-state--placeholder"><span>Esperando datos…</span></div>';
     }
-
     function setEmpty() {
         var list = document.getElementById('crmControlList');
         var tl = document.getElementById('crmControlTimeline');
         if (list) list.innerHTML = '<div class="crm-ctrl-state crm-ctrl-state--empty"><span>No hay proyectos para el periodo / vendedor.</span></div>';
         if (tl)   tl.innerHTML = '<div class="crm-ctrl-state crm-ctrl-state--placeholder"><span>—</span></div>';
     }
-
     function setError(msg) {
         var list = document.getElementById('crmControlList');
         var tl = document.getElementById('crmControlTimeline');
@@ -93,7 +103,7 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // RENDER
+    // RENDER LISTA + TIMELINE
     // ─────────────────────────────────────────────────────────────────────
 
     function renderItemLista(p) {
@@ -101,15 +111,12 @@
         var po = (p.po || '').trim();
         var oppName = escHtml(p.oportunidad_nombre || '—');
         var jornadas = (p.jornadas || '').trim();
-
         var poHtml = po
             ? '<span class="crm-ctrl-item-po">PO ' + escHtml(po) + '</span>'
             : '<span class="crm-ctrl-item-po crm-ctrl-item-po--empty">sin PO</span>';
-
         var jornadasHtml = jornadas
             ? '<span class="crm-ctrl-item-jornadas">' + escHtml(jornadas) + '</span>'
             : '<span class="crm-ctrl-item-jornadas crm-ctrl-item-jornadas--empty">sin levantamiento</span>';
-
         return '' +
             '<div class="crm-ctrl-item" data-proyecto-id="' + p.proyecto_id + '" role="button">' +
                 '<div class="crm-ctrl-item-top">' +
@@ -124,12 +131,9 @@
     }
 
     function renderTimelineRow(p, idx) {
-        // Por ahora todas las barras son "ghost" — no tenemos fechas reales.
-        // Cuando conectemos OCs/fecha_inicio/fecha_fin, calculamos left/width
-        // y cambiamos crm-ctrl-bar--ghost por crm-ctrl-bar con color.
-        var ghostLeft = 12 + (idx % 5) * 8;  // distribuye visualmente
+        // Barras "ghost" mientras no haya fechas reales (fase posterior).
+        var ghostLeft = 12 + (idx % 5) * 8;
         var ghostWidth = 30 + (idx % 3) * 10;
-
         return '' +
             '<div class="crm-ctrl-timeline-row" data-proyecto-id="' + p.proyecto_id + '" role="button">' +
                 '<div class="crm-ctrl-bar crm-ctrl-bar--ghost" ' +
@@ -142,22 +146,24 @@
     }
 
     function renderRows(proyectos) {
+        _proyectosCache = proyectos || [];
         var list = document.getElementById('crmControlList');
         var tl = document.getElementById('crmControlTimeline');
-        if (!proyectos || !proyectos.length) {
+        if (!_proyectosCache.length) {
             setEmpty();
-            actualizarStats([], getFiltrosActuales());
+            renderKpisGlobales(_proyectosCache, getFiltrosActuales());
+            limpiarChipContexto();
             return;
         }
-        if (list) list.innerHTML = proyectos.map(renderItemLista).join('');
-        if (tl)   tl.innerHTML = proyectos.map(renderTimelineRow).join('');
+        if (list) list.innerHTML = _proyectosCache.map(renderItemLista).join('');
+        if (tl)   tl.innerHTML = _proyectosCache.map(renderTimelineRow).join('');
 
         wireSelection();
-        actualizarStats(proyectos, getFiltrosActuales());
+        renderKpisGlobales(_proyectosCache, getFiltrosActuales());
 
         // Restaurar selección anterior si seguía vigente.
         if (_selectedId) {
-            var stillPresent = proyectos.some(function (p) {
+            var stillPresent = _proyectosCache.some(function (p) {
                 return String(p.proyecto_id) === String(_selectedId);
             });
             if (stillPresent) selectProyecto(_selectedId, false);
@@ -171,7 +177,12 @@
             for (var i = 0; i < els.length; i++) {
                 els[i].addEventListener('click', function () {
                     var id = this.getAttribute('data-proyecto-id');
-                    selectProyecto(id, true);
+                    // Click en mismo proyecto = deselect.
+                    if (String(_selectedId) === String(id)) {
+                        deselectProyecto();
+                    } else {
+                        selectProyecto(id, true);
+                    }
                 });
             }
         }
@@ -181,46 +192,68 @@
 
     function selectProyecto(id, scrollIntoView) {
         _selectedId = id;
-        var allItems = document.querySelectorAll('[data-proyecto-id]');
-        for (var i = 0; i < allItems.length; i++) {
-            allItems[i].classList.toggle(
+        var all = document.querySelectorAll('[data-proyecto-id]');
+        for (var i = 0; i < all.length; i++) {
+            all[i].classList.toggle(
                 'is-selected',
-                allItems[i].getAttribute('data-proyecto-id') === String(id)
+                all[i].getAttribute('data-proyecto-id') === String(id)
             );
         }
-        if (!scrollIntoView) return;
-        // Scrollea solo el panel opuesto (el otro panel ya está visible donde
-        // se hizo el click). Sincronizamos visualmente ambos.
-        var rowTimeline = document.querySelector(
-            '.crm-ctrl-timeline-row[data-proyecto-id="' + id + '"]'
-        );
-        if (rowTimeline && typeof rowTimeline.scrollIntoView === 'function') {
-            rowTimeline.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        var p = null;
+        for (var j = 0; j < _proyectosCache.length; j++) {
+            if (String(_proyectosCache[j].proyecto_id) === String(id)) {
+                p = _proyectosCache[j];
+                break;
+            }
         }
-        var itemLista = document.querySelector(
-            '.crm-ctrl-item[data-proyecto-id="' + id + '"]'
-        );
-        if (itemLista && typeof itemLista.scrollIntoView === 'function') {
-            itemLista.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if (p) renderKpisProyecto(p);
+
+        if (!scrollIntoView) return;
+        var rowTl = document.querySelector('.crm-ctrl-timeline-row[data-proyecto-id="' + id + '"]');
+        if (rowTl && typeof rowTl.scrollIntoView === 'function') {
+            rowTl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        var item = document.querySelector('.crm-ctrl-item[data-proyecto-id="' + id + '"]');
+        if (item && typeof item.scrollIntoView === 'function') {
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
     }
 
-    function actualizarStats(proyectos, filtros) {
-        var total = proyectos.length;
-        var conPo = 0, conJornadas = 0;
-        for (var i = 0; i < proyectos.length; i++) {
-            var p = proyectos[i];
-            if ((p.po || '').trim()) conPo++;
-            if ((p.jornadas || '').trim()) conJornadas++;
+    function deselectProyecto() {
+        _selectedId = null;
+        var all = document.querySelectorAll('[data-proyecto-id].is-selected');
+        for (var i = 0; i < all.length; i++) all[i].classList.remove('is-selected');
+        renderKpisGlobales(_proyectosCache, getFiltrosActuales());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // KPIs — vista global vs proyecto seleccionado
+    // ─────────────────────────────────────────────────────────────────────
+
+    function setSlot(n, label, value, valueClass) {
+        var stat = document.querySelector('.crm-control-stat[data-slot="' + n + '"]');
+        if (!stat) return;
+        var lbl = stat.querySelector('[data-slot-label]');
+        var val = stat.querySelector('[data-slot-value]');
+        if (lbl) lbl.textContent = label;
+        if (val) {
+            val.textContent = value;
+            // Reset clases de color y tamaño antes de aplicar la nueva.
+            val.className = 'crm-control-stat-value';
+            if (valueClass) val.className += ' ' + valueClass;
         }
-        var setText = function (id, v) {
-            var el = document.getElementById(id);
-            if (el) el.textContent = v;
-        };
-        setText('ctrlStatProyectos', total);
-        setText('ctrlStatConPo', conPo);
-        setText('ctrlStatConJornadas', conJornadas);
-        setText('ctrlListCount', total);
+    }
+
+    function renderKpisGlobales(proyectos, filtros) {
+        var total = proyectos.length;
+        var conPo = 0, conLev = 0;
+        for (var i = 0; i < proyectos.length; i++) {
+            if ((proyectos[i].po || '').trim()) conPo++;
+            if (proyectos[i].levantamiento_id) conLev++;
+        }
+        setSlot(1, 'Proyectos', total);
+        setSlot(2, 'Con PO', conPo, 'crm-control-stat-value--blue');
+        setSlot(3, 'Con levantamiento', conLev, 'crm-control-stat-value--green');
 
         var periodoTxt = 'Todos';
         if (filtros.mes && filtros.mes !== 'todos') {
@@ -228,15 +261,42 @@
         } else if (filtros.anio && filtros.anio !== 'todos') {
             periodoTxt = filtros.anio;
         }
-        setText('ctrlStatPeriodo', periodoTxt);
+        setSlot(4, 'Periodo', periodoTxt, 'crm-control-stat-value--small');
 
-        // Header del timeline: refleja el mes filtrado + el siguiente.
+        // Marca contexto general (sin tint).
+        var row = document.getElementById('ctrlStatsRow');
+        if (row) row.classList.remove('is-context');
+        limpiarChipContexto();
+
+        // Sidebar count + header del timeline.
+        var lc = document.getElementById('ctrlListCount');
+        if (lc) lc.textContent = total;
         actualizarTimelineHeader(filtros);
+    }
 
-        var footerLeft = document.getElementById('footerLeft');
-        var footerRight = document.getElementById('footerRight');
-        if (footerLeft) footerLeft.textContent = total + ' proyectos en logística';
-        if (footerRight) footerRight.textContent = conPo + ' con PO · ' + conJornadas + ' con levantamiento';
+    function renderKpisProyecto(p) {
+        setSlot(1, 'Monto PO', fmtMoney(p.monto_po));
+        setSlot(2, 'Utilidad', fmtMoney(p.utilidad), 'crm-control-stat-value--green');
+        var dias = p.dias_ejecucion || 0;
+        setSlot(3, 'Días ejecución', dias ? (dias + (dias === 1 ? ' día' : ' días')) : '—', 'crm-control-stat-value--blue');
+        var tec = p.tecnicos || 0;
+        setSlot(4, 'Técnicos', tec);
+
+        var row = document.getElementById('ctrlStatsRow');
+        if (row) row.classList.add('is-context');
+        mostrarChipContexto(p);
+    }
+
+    function mostrarChipContexto(p) {
+        var chip = document.getElementById('ctrlStatsContextChip');
+        var name = document.getElementById('ctrlStatsContextName');
+        if (!chip || !name) return;
+        name.textContent = p.oportunidad_nombre || p.nombre || ('Proyecto #' + p.proyecto_id);
+        chip.hidden = false;
+    }
+    function limpiarChipContexto() {
+        var chip = document.getElementById('ctrlStatsContextChip');
+        if (chip) chip.hidden = true;
     }
 
     function actualizarTimelineHeader(filtros) {
@@ -244,29 +304,29 @@
         if (!cont) return;
         var mes = filtros.mes;
         if (!mes || mes === 'todos') {
-            // Sin mes específico: mostramos un periodo genérico (el año).
-            var anio = filtros.anio || '';
             cont.innerHTML =
-                '<span class="crm-ctrl-month-chip">' + escHtml(anio || 'PERIODO') + '</span>' +
+                '<span class="crm-ctrl-month-chip">' + escHtml(filtros.anio || 'PERIODO') + '</span>' +
                 '<span class="crm-ctrl-month-line" aria-hidden="true"></span>' +
                 '<span class="crm-ctrl-month-chip">FIN</span>';
             return;
         }
-        var m1 = mes;
-        var m1Num = parseInt(m1, 10);
+        var m1Num = parseInt(mes, 10);
         var m2Num = m1Num === 12 ? 1 : m1Num + 1;
         var m2 = (m2Num < 10 ? '0' : '') + m2Num;
         cont.innerHTML =
-            '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[m1] || m1) + '</span>' +
+            '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[mes] || mes) + '</span>' +
             '<span class="crm-ctrl-month-line" aria-hidden="true"></span>' +
             '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[m2] || m2) + '</span>';
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // FETCH
+    // ─────────────────────────────────────────────────────────────────────
+
     var _inflightAbort = null;
     function fetchProyectos() {
         var f = getFiltrosActuales();
-        var qs = '?mes=' + encodeURIComponent(f.mes) +
-                 '&anio=' + encodeURIComponent(f.anio);
+        var qs = '?mes=' + encodeURIComponent(f.mes) + '&anio=' + encodeURIComponent(f.anio);
         if (f.vendedores) qs += '&vendedores=' + encodeURIComponent(f.vendedores);
 
         if (_inflightAbort && typeof _inflightAbort.abort === 'function') {
@@ -283,16 +343,43 @@
         })
             .then(function (r) { return r.json(); })
             .then(function (resp) {
-                if (resp && resp.ok) {
-                    renderRows(resp.data || []);
-                } else {
-                    setError(resp && resp.error ? resp.error : 'Error desconocido.');
-                }
+                if (resp && resp.ok) renderRows(resp.data || []);
+                else setError(resp && resp.error ? resp.error : 'Error desconocido.');
             })
             .catch(function (err) {
                 if (err && err.name === 'AbortError') return;
                 setError(err && err.message ? err.message : '');
             });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // AGREGAR MATERIAL (placeholder por ahora)
+    // ─────────────────────────────────────────────────────────────────────
+
+    function abrirAgregarMaterial() {
+        // Placeholder mientras conectamos la UI real de materiales esperados.
+        // Si hay proyecto seleccionado, lo pasamos como contexto; si no,
+        // pedimos al usuario seleccionar uno primero.
+        if (!_selectedId) {
+            if (typeof window.toast === 'function') {
+                window.toast('Selecciona primero un proyecto a la izquierda para agregarle material esperado.', 'info');
+            } else {
+                alert('Selecciona primero un proyecto.');
+            }
+            return;
+        }
+        var p = null;
+        for (var i = 0; i < _proyectosCache.length; i++) {
+            if (String(_proyectosCache[i].proyecto_id) === String(_selectedId)) {
+                p = _proyectosCache[i]; break;
+            }
+        }
+        var nombre = p ? (p.oportunidad_nombre || p.nombre) : 'Proyecto';
+        if (typeof window.toast === 'function') {
+            window.toast('Próximamente: agregar material para "' + nombre + '". El modal está en desarrollo.', 'info');
+        } else {
+            alert('Próximamente: agregar material para "' + nombre + '".');
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -309,6 +396,9 @@
         var section = document.getElementById('ckControlSection');
         if (section) section.style.display = 'block';
 
+        // Liberar espacio ocultando el footer global del CRM.
+        if (document.body) document.body.classList.add('crm-control-active');
+
         try { localStorage.setItem('crm_clientes_mode', 'control'); } catch (e) {}
         fetchProyectos();
     }
@@ -319,6 +409,9 @@
         if (btn) btn.classList.remove('active');
         var section = document.getElementById('ckControlSection');
         if (section) section.style.display = 'none';
+
+        // Restaurar footer al salir.
+        if (document.body) document.body.classList.remove('crm-control-active');
     }
 
     function instalarGuard() {
@@ -360,6 +453,22 @@
                 if (_controlActivo) fetchProyectos();
             });
         }
+        var btnAdd = document.getElementById('crmControlAddMaterial');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', function (e) {
+                e.preventDefault();
+                abrirAgregarMaterial();
+            });
+        }
+
+        // Cerrar chip de contexto = deseleccionar proyecto.
+        var btnCloseCtx = document.getElementById('ctrlStatsContextClose');
+        if (btnCloseCtx) {
+            btnCloseCtx.addEventListener('click', function (e) {
+                e.preventDefault();
+                deselectProyecto();
+            });
+        }
 
         if (_initialMode === 'control') {
             setTimeout(activarControl, 50);
@@ -379,6 +488,7 @@
         close: desactivarControl,
         refresh: fetchProyectos,
         select: selectProyecto,
+        deselect: deselectProyecto,
         get activo() { return _controlActivo; }
     };
 })();
