@@ -288,7 +288,9 @@
                 <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
                 <button type="button" id="crmModeClientes" onclick="window._crmSetMode('clientes_tabla')" class="crm-tab">Clientes</button>
                 <button type="button" id="crmModeControl" class="crm-tab" title="Logística de compra de materiales por proyecto">Control</button>
-                <button type="button" id="crmModeReportes" class="crm-tab crm-tab-reportes" title="Ir a Reportes">
+                <button type="button" id="crmModeProveedores" class="crm-tab" title="Proveedores">Proveedores</button>
+                <button type="button" id="crmModeMarcas" class="crm-tab" title="Marcas — catálogo, pipeline y avance a meta">Marcas</button>
+                <button type="button" id="crmModeReportes" class="crm-tab crm-tab-reportes" title="Ir a Reportes" hidden style="display:none;">
                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>Reportes
                 </button>
             </div>
@@ -1486,6 +1488,10 @@
         estilos en control_v2.css. Datos de momento HARDCODED (borrador).
         {% endcomment %}
         {% include "crm/_widget_control.html" %}
+
+        {# Modos "Proveedores" y "Marcas" — secciones V2 separadas. #}
+        {% include "crm/_widget_proveedores.html" %}
+        {% include "crm/_widget_marcas.html" %}
 
         <!-- Hidden tbody for data merge (used by renderClientesCombinedTable) -->
         <div id="clientesCombinedTbody" style="display:none;"></div>

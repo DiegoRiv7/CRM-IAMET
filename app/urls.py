@@ -23,6 +23,7 @@ from . import views_asistente_prospeccion
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
 from .views_v2 import proyectos_v2 as views_v2_proyectos
+from .views_v2 import marcas_v2 as views_v2_marcas
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -488,6 +489,10 @@ urlpatterns = [
     path('api/control/materiales/<int:material_id>/actualizar/', views_v2_proyectos.api_material_actualizar, name='api_control_material_actualizar'),
     path('api/control/materiales/<int:material_id>/eliminar/', views_v2_proyectos.api_material_eliminar, name='api_control_material_eliminar'),
     path('api/control/materiales/<int:material_id>/confirmar-recepcion/', views_v2_proyectos.api_material_confirmar_recepcion, name='api_control_material_confirmar'),
+
+    # ── Dashboard Marcas (V2) ────────────────────────────────────────────────
+    path('api/marcas/resumen/', views_v2_marcas.api_marcas_resumen, name='api_marcas_resumen'),
+    path('api/marcas/<str:marca_key>/', views_v2_marcas.api_marca_detalle, name='api_marca_detalle'),
 
     path('api/iamet/proyectos/financiero/', views_iamet.api_proyectos_financiero, name='api_proyectos_financiero'),
     path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),

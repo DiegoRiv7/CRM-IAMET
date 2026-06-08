@@ -1,0 +1,39 @@
+{% comment %}
+_widget_proveedores.html — Sección "Proveedores" del dashboard CRM.
+
+Placeholder por ahora — pendiente de que el usuario especifique el contenido
+(qué KPIs, qué datos por proveedor, cómo se carga el catálogo).
+
+La activación de la tab está en crm_proveedores_v2.js (mismo patrón que Control
+y Marcas: monkey-patch a _crmSetMode, persistencia en localStorage,
+deactivate vía capture-phase en otras tabs).
+{% endcomment %}
+
+<div id="ckProveedoresSection" class="proveedores-section" style="display:none;">
+
+    <div class="proveedores-topbar">
+        <div class="proveedores-titles">
+            <h1 class="proveedores-title">Proveedores</h1>
+            <p class="proveedores-sub">Catálogo de proveedores, órdenes de compra y entregas</p>
+        </div>
+    </div>
+
+    <div class="proveedores-placeholder">
+        <svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="3" width="11" height="18" rx="1.2"/>
+            <path d="M15 9h4a1 1 0 011 1v10a1 1 0 01-1 1H4M8 7h3M8 11h3M8 15h3"/>
+        </svg>
+        <h3>En construcción</h3>
+        <p>Esta sección está pendiente de definición. Cuando confirmes los KPIs y el catálogo de proveedores que quieres ver aquí, la conectamos con los mismos endpoints que ya alimentan Control y Marcas.</p>
+        <div class="proveedores-hints">
+            <span>Algunas ideas:</span>
+            <ul>
+                <li>Listado de proveedores con # de OCs activas y monto comprometido</li>
+                <li>Tiempos promedio de entrega por proveedor</li>
+                <li>Top proveedores por gasto del año</li>
+                <li>Alertas de OCs vencidas</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
