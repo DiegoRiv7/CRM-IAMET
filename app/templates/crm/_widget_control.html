@@ -1,21 +1,22 @@
 {% comment %}
 _widget_control.html — Sección de logística de compra de materiales.
 
-Diseño "iPadOS cards": sin wrapper grande blanco. Cada bloque (header,
-stats, header de columnas, cada proyecto, leyenda) flota como tarjeta
-independiente sobre el fondo gris suave de la sección.
+Layout SPLIT (Junio 2026):
+    LEFT  panel (lista compacta de proyectos: cliente, opp, PO, jornadas)
+    RIGHT panel (timeline maestro multi-proyecto, una barra por proyecto)
+Filas alineadas row-by-row entre ambos paneles. Click en un proyecto de la
+izquierda → highlight de su barra a la derecha.
 
-Lado IZQUIERDO conectado: cliente, PO (TodoItem.po_number), oportunidad,
-jornadas (ProyectoLevantamiento.fase2_data.programa.duracion).
-Lado DERECHO (timeline + monto + utilidad + días + téc + comentarios)
-todavía es placeholder.
+Lado IZQUIERDO conectado a datos reales (cliente, PO, opp, jornadas).
+Lado DERECHO (timeline) muestra barras "ghost" mientras no haya fechas de
+OCs/instalación — se rellenan cuando conectemos esa data.
 
 Toda la lógica está en crm_control_v2.js.
 {% endcomment %}
 
 <div id="ckControlSection" class="crm-control-section" style="display:none;">
 
-    <!-- Header (sin caja) -->
+    <!-- Header -->
     <div class="crm-control-header">
         <div class="crm-control-header-left">
             <h2 class="crm-control-title">Logística de Compra de Material</h2>
@@ -33,23 +34,19 @@ Toda la lógica está en crm_control_v2.js.
         </div>
     </div>
 
-    <!-- Stats: 5 tarjetas flotantes -->
+    <!-- Stats: 4 chips reducidos -->
     <div class="crm-control-stats">
         <div class="crm-control-stat">
-            <div class="crm-control-stat-label">Proyectos visibles</div>
+            <div class="crm-control-stat-label">Proyectos</div>
             <div class="crm-control-stat-value" id="ctrlStatProyectos">—</div>
         </div>
         <div class="crm-control-stat">
             <div class="crm-control-stat-label">Con PO</div>
-            <div class="crm-control-stat-value" id="ctrlStatConPo">—</div>
+            <div class="crm-control-stat-value crm-control-stat-value--blue" id="ctrlStatConPo">—</div>
         </div>
         <div class="crm-control-stat">
-            <div class="crm-control-stat-label">Con jornadas definidas</div>
-            <div class="crm-control-stat-value crm-control-stat-value--blue" id="ctrlStatConJornadas">—</div>
-        </div>
-        <div class="crm-control-stat">
-            <div class="crm-control-stat-label">Sin levantamiento</div>
-            <div class="crm-control-stat-value crm-control-stat-value--amber" id="ctrlStatSinLev">—</div>
+            <div class="crm-control-stat-label">Con levantamiento</div>
+            <div class="crm-control-stat-value crm-control-stat-value--green" id="ctrlStatConJornadas">—</div>
         </div>
         <div class="crm-control-stat">
             <div class="crm-control-stat-label">Periodo</div>
@@ -57,47 +54,49 @@ Toda la lógica está en crm_control_v2.js.
         </div>
     </div>
 
-    <!-- Header de columnas (tarjeta sutil propia) -->
-    <div class="crm-ctrl-thead crm-ctrl-card-header" role="row">
-        <div class="crm-ctrl-col crm-ctrl-col--cliente" role="columnheader">Cliente</div>
-        <div class="crm-ctrl-col crm-ctrl-col--id" role="columnheader">PO</div>
-        <div class="crm-ctrl-col crm-ctrl-col--desc" role="columnheader">Oportunidad</div>
-        <div class="crm-ctrl-col crm-ctrl-col--jornadas" role="columnheader">Jornadas</div>
-        <div class="crm-ctrl-col crm-ctrl-col--timeline" role="columnheader">
-            <div class="crm-ctrl-months">
-                <span class="crm-ctrl-month-chip">JUNIO</span>
-                <span class="crm-ctrl-month-line" aria-hidden="true"></span>
-                <span class="crm-ctrl-month-chip">JULIO</span>
+    <!-- Split: lista izq + timeline der -->
+    <div class="crm-control-split">
+
+        <!-- LEFT: lista compacta de proyectos -->
+        <div class="crm-control-left">
+            <div class="crm-ctrl-list-header">
+                <span class="crm-ctrl-list-title">Proyectos</span>
+                <span class="crm-ctrl-list-count" id="ctrlListCount">—</span>
+            </div>
+            <div class="crm-ctrl-list" id="crmControlList">
+                <div class="crm-ctrl-state crm-ctrl-state--loading">
+                    <div class="crm-ctrl-spinner" aria-hidden="true"></div>
+                    <span>Cargando proyectos…</span>
+                </div>
             </div>
         </div>
-        <div class="crm-ctrl-col crm-ctrl-col--po" role="columnheader">
-            <span class="crm-ctrl-col-main">Monto PO</span>
-            <span class="crm-ctrl-col-sub">sin IVA</span>
-        </div>
-        <div class="crm-ctrl-col crm-ctrl-col--util" role="columnheader">Utilidad</div>
-        <div class="crm-ctrl-col crm-ctrl-col--dias" role="columnheader">
-            <span class="crm-ctrl-col-main">Días</span>
-            <span class="crm-ctrl-col-sub">ejec.</span>
-        </div>
-        <div class="crm-ctrl-col crm-ctrl-col--tec" role="columnheader">Téc.</div>
-        <div class="crm-ctrl-col crm-ctrl-col--coment" role="columnheader">Comentarios</div>
-    </div>
 
-    <!-- BODY (rendered by JS) -->
-    <div class="crm-ctrl-tbody" id="crmControlTbody">
-        <div class="crm-ctrl-state crm-ctrl-state--loading">
-            <div class="crm-ctrl-spinner" aria-hidden="true"></div>
-            <span>Cargando proyectos…</span>
+        <!-- RIGHT: timeline maestro -->
+        <div class="crm-control-right">
+            <div class="crm-ctrl-timeline-header">
+                <div class="crm-ctrl-timeline-months" id="ctrlTimelineMonths">
+                    <span class="crm-ctrl-month-chip">JUNIO</span>
+                    <span class="crm-ctrl-month-line" aria-hidden="true"></span>
+                    <span class="crm-ctrl-month-chip">JULIO</span>
+                </div>
+                <span class="crm-ctrl-timeline-hint">click en un proyecto para resaltar</span>
+            </div>
+            <div class="crm-ctrl-timeline-body" id="crmControlTimeline">
+                <div class="crm-ctrl-state crm-ctrl-state--placeholder">
+                    <span>Esperando datos…</span>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Leyenda (tarjeta flotante propia) -->
+    </div><!-- /.crm-control-split -->
+
+    <!-- Leyenda -->
     <div class="crm-control-legend">
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#22C55E;"></span>Material listo</span>
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#7DD3FC;"></span>En tránsito</span>
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#FB923C;"></span>Pendiente compra</span>
-        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#F9A8D4;"></span>En espera cliente</span>
-        <span class="crm-control-legend-info">Timeline y montos aún no conectados — se enlazan a OCs/facturas en fase siguiente.</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot crm-control-legend-dot--ghost"></span>Sin fechas todavía</span>
+        <span class="crm-control-legend-info">Las barras aparecerán con fechas reales cuando se conecten OCs / programa de obra.</span>
     </div>
 
 </div>
