@@ -198,12 +198,35 @@
 
         var color = m.color || '#9CA3AF';
         var titleAttr = (m.titulo || '') + ' · ' + (m.fecha_inicio || '') + ' → ' + (m.fecha_fin || '');
+
+        // Markers de inicio/fin: solo se muestran si la fecha original NO se
+        // recortó por la ventana (evita "ENE 02" en una barra que sigue desde
+        // el año pasado). Si overflowea, ese extremo va sin marker ni label.
+        var startMarker = (ini >= win.start)
+            ? '<span class="crm-cm-bar-marker crm-cm-bar-marker--start" style="color:' + color + ';">' +
+                '<span class="crm-cm-bar-date crm-cm-bar-date--start">' + fmtDateShort(ini) + '</span>' +
+              '</span>'
+            : '';
+        var endMarker = (fin <= win.end)
+            ? '<span class="crm-cm-bar-marker crm-cm-bar-marker--end" style="color:' + color + ';">' +
+                '<span class="crm-cm-bar-date crm-cm-bar-date--end">' + fmtDateShort(fin) + '</span>' +
+              '</span>'
+            : '';
+
         return '<div class="crm-cm-bar' + overflowCls + confirmadoCls + '" ' +
                    'style="left:' + leftCalc + ';width:' + widthCalc + ';background:' + color + ';" ' +
                    'data-material-id="' + m.id + '" ' +
                    'title="' + escHtml(titleAttr) + '">' +
+                   startMarker +
                    '<span class="crm-cm-bar-label">' + escHtml(m.titulo || '') + '</span>' +
+                   endMarker +
                '</div>';
+    }
+
+    var _MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function fmtDateShort(d) {
+        if (!d || !(d instanceof Date)) return '';
+        return String(d.getDate()).padStart(2, '0') + ' ' + _MESES_CORTOS[d.getMonth()];
     }
 
     function parseISODate(iso) {
@@ -308,6 +331,7 @@
             }
         }
         if (p) renderKpisProyecto(p);
+        actualizarBotonIrAlProyecto(p);
 
         if (!scrollIntoView) return;
         var rowTl = document.querySelector('.crm-ctrl-timeline-row[data-proyecto-id="' + id + '"]');
@@ -325,6 +349,48 @@
         var all = document.querySelectorAll('[data-proyecto-id].is-selected');
         for (var i = 0; i < all.length; i++) all[i].classList.remove('is-selected');
         renderKpisGlobales(_proyectosCache, getFiltrosActuales());
+        actualizarBotonIrAlProyecto(null);
+    }
+
+    function actualizarBotonIrAlProyecto(proyecto) {
+        var btn = document.getElementById('crmControlGoToProject');
+        if (!btn) return;
+        if (proyecto && proyecto.proyecto_id) {
+            btn.hidden = false;
+            btn.setAttribute('data-proyecto-id', proyecto.proyecto_id);
+        } else {
+            btn.hidden = true;
+            btn.removeAttribute('data-proyecto-id');
+        }
+    }
+
+    function irAlProyectoSeleccionado() {
+        if (!_selectedId) return;
+        // Setear vista a "proyectos" para que el sidebar / SPA del CRM la
+        // restaure y, al cargar, abrir el detalle del proyecto vía deeplink.
+        try { localStorage.setItem('crmView', 'proyectos'); } catch (e) {}
+        // Si la función proyectosVerDetalle ya está cargada en esta página
+        // (lo cual debería ser el caso porque crm_proyectos.js está en el
+        // mismo template), llamamos directo sin recargar.
+        if (typeof window.proyectosVerDetalle === 'function') {
+            // Hay que asegurarse de mostrar la sección Proyectos primero.
+            // Activamos el botón del sidebar para que el switch sea limpio.
+            var sidebarBtn = document.getElementById('btnProyectos');
+            if (sidebarBtn && typeof sidebarBtn.click === 'function') {
+                sidebarBtn.click();
+                // Una vez la sección Proyectos esté visible, abrimos el detalle.
+                setTimeout(function () {
+                    try { window.proyectosVerDetalle(parseInt(_selectedId, 10)); } catch (e) {}
+                }, 60);
+            } else {
+                try { window.proyectosVerDetalle(parseInt(_selectedId, 10)); } catch (e) {}
+            }
+            desactivarControl();
+            return;
+        }
+        // Fallback: deeplink con full reload.
+        var url = '/app/home/?tab=crm&open_proyecto=' + encodeURIComponent(_selectedId);
+        window.location.href = url;
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -518,13 +584,15 @@
         var btnRep = document.getElementById('crmModeReportes');
         if (btnRep) btnRep.addEventListener('click', desactivarControl, true);
 
-        var btnRefresh = document.getElementById('crmControlRefresh');
-        if (btnRefresh) {
-            btnRefresh.addEventListener('click', function (e) {
+        // Botón "Ir al proyecto" (visible solo cuando hay proyecto seleccionado)
+        var btnGoto = document.getElementById('crmControlGoToProject');
+        if (btnGoto) {
+            btnGoto.addEventListener('click', function (e) {
                 e.preventDefault();
-                if (_controlActivo) fetchProyectos();
+                irAlProyectoSeleccionado();
             });
         }
+
         var btnAdd = document.getElementById('crmControlAddMaterial');
         if (btnAdd) {
             btnAdd.addEventListener('click', function (e) {

@@ -23,9 +23,10 @@ Toda la lógica está en crm_control_v2.js.
             <span class="crm-control-subtitle">Control y trazabilidad de compra → entrega → instalación</span>
         </div>
         <div class="crm-control-header-right">
-            <button type="button" id="crmControlRefresh" class="crm-control-btn crm-control-btn--secondary" title="Volver a cargar">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
-                Refrescar
+            {# Aparece solo cuando hay proyecto seleccionado #}
+            <button type="button" id="crmControlGoToProject" class="crm-control-btn crm-control-btn--secondary" hidden title="Abrir este proyecto en la sección Proyectos">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                Ir al proyecto
             </button>
             <button type="button" id="crmControlAddMaterial" class="crm-control-btn crm-control-btn--primary" title="Agregar material que esperamos para un proyecto">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

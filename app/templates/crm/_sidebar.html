@@ -148,21 +148,25 @@
             </svg>
             <span class="crm-sb-label">CRM</span>
         </button>
-        <!-- Dashboard (vendedor/supervisor) — ícono de bar chart para diferenciarlo del grid del CRM -->
         {% comment %}
+        Renombrado de "Dashboard" → "Reportes" (2026-06-08): el ícono cambia
+        del bar chart al de documento (el mismo que usaba la tab Reportes que
+        ahora vive oculta dentro de la island). El destino sigue siendo
+        ?tab=clientes — la nav fina pasó a vivir como pestañas dentro del
+        dashboard, así que este botón sigue siendo la entrada principal.
+
         SIN data-turbo: el dashboard tiene 7+ fetchs en cascada + 3 Chart.js
         que sufren con navegación SPA (canvas reuse bugs, fetchs duplicados).
-        Mejor full reload normal — estado limpio cada vez, sin bugs raros.
         {% endcomment %}
-        <a href="/app/home/?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Dashboard"
+        <a href="/app/home/?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Reportes"
             onclick="try{localStorage.setItem('crmView','crm');}catch(e){}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="20" x2="21" y2="20"/>
-                <line x1="6" y1="20" x2="6" y2="13"/>
-                <line x1="12" y1="20" x2="12" y2="5"/>
-                <line x1="18" y1="20" x2="18" y2="10"/>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="8" y1="13" x2="14" y2="13"/>
+                <line x1="8" y1="17" x2="14" y2="17"/>
             </svg>
-            <span class="crm-sb-label">Dashboard</span>
+            <span class="crm-sb-label">Reportes</span>
         </a>
         {% comment %}
         Reportes removido del sidebar (2026-05-28): el módulo vive ahora

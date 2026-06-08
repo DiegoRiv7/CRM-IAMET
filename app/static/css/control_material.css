@@ -627,6 +627,48 @@
     border-bottom-right-radius: 0;
 }
 
+/* Markers de inicio/fin: círculos blancos sobresalientes con el color del
+   estado del material como borde, y label de fecha encima (start) o debajo
+   (end). Permiten ver de un vistazo cuándo arranca/termina sin tener que
+   abrir el detalle. */
+.crm-cm-bar-marker {
+    position: absolute;
+    top: 50%;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 2.5px solid currentColor;
+    transform: translateY(-50%);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.16);
+    z-index: 4;
+    pointer-events: none;
+}
+.crm-cm-bar-marker--start { left: -5.5px; }
+.crm-cm-bar-marker--end   { right: -5.5px; }
+/* Si overflowea, el marker no aplica (no se renderiza desde JS) — pero
+   por si acaso ocultamos cualquier marker en barras cortadas. */
+.crm-cm-bar--overflow-left  .crm-cm-bar-marker--start,
+.crm-cm-bar--overflow-right .crm-cm-bar-marker--end { display: none; }
+
+.crm-cm-bar-date {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #4B5563;
+    background: #FFFFFF;
+    padding: 2px 6px;
+    border-radius: 5px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+    letter-spacing: 0;
+    text-shadow: none;
+}
+.crm-cm-bar-date--start { top: -20px; }
+.crm-cm-bar-date--end   { bottom: -20px; }
+
 /* La row con materiales NO debe seguir mostrando el hint "+ Agregar
    material" de control_v2.css. Tampoco debe colapsar al hover. */
 .crm-ctrl-timeline-row--empty.has-materiales::before { content: none !important; }
