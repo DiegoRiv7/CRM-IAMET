@@ -265,7 +265,8 @@ def api_marca_detalle(request, marca_key):
             prob = int(o.probabilidad_cierre or 0)
             ops.append({
                 'id': o.id,
-                'cliente': (o.cliente.nombre if o.cliente_id else ''),
+                # Cliente.nombre_empresa, no .nombre
+                'cliente': (o.cliente.nombre_empresa if o.cliente_id else ''),
                 'oportunidad': o.oportunidad or '',
                 'monto': monto,
                 'mes': mes,

@@ -306,7 +306,7 @@ def api_control_proyectos(request):
             data.append({
                 'proyecto_id': p.id,
                 'nombre': p.nombre,
-                'cliente': p.cliente_nombre or (opp.cliente.nombre if opp and opp.cliente_id else ''),
+                'cliente': p.cliente_nombre or (opp.cliente.nombre_empresa if opp and opp.cliente_id else ''),
                 'status': p.status,
                 'po': (opp.po_number or '').strip() if opp else '',
                 'oportunidad_id': opp.id if opp else None,

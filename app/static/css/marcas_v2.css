@@ -29,9 +29,15 @@
     --mk-rowH: 60px;
     --mk-rowpad: 14px;
 
-    padding: 0 26px 60px;
+    /* Altura fija = viewport - topbar global del CRM (~64px). La tabla
+       interna tiene su propio scroll para no exceder el bottom de la
+       sidebar. */
+    padding: 0 26px 14px;
     background: var(--mk-bg);
-    min-height: 600px;
+    height: calc(100vh - 64px);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', system-ui, sans-serif;
     color: var(--mk-text);
 }
@@ -42,23 +48,18 @@
 /* ─────────────── Topbar ─────────────── */
 .marcas-topbar {
     position: sticky; top: 0; z-index: 5;
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
-    padding: 26px 0 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    padding: 18px 0 14px;
     margin-bottom: 4px;
     background: color-mix(in srgb, var(--mk-bg) 86%, transparent);
     backdrop-filter: saturate(180%) blur(16px);
     -webkit-backdrop-filter: saturate(180%) blur(16px);
 }
-.marcas-title {
-    font-size: 32px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05;
-    margin: 0; color: var(--mk-text);
-}
-.marcas-sub {
-    font-size: 13.5px; color: var(--mk-text-2); margin: 5px 0 0; font-weight: 500;
-}
 .marcas-actions {
     display: flex; align-items: center; gap: 10px; flex-shrink: 0;
 }
+.marcas-actions--left  { flex: 0 0 auto; }
+.marcas-actions--right { flex: 0 0 auto; margin-left: auto; }
 
 .marcas-searchbox {
     display: flex; align-items: center; gap: 7px;
@@ -222,8 +223,16 @@
     border-radius: var(--mk-radius);
     box-shadow: var(--mk-shadow-card);
     border: 1px solid var(--mk-hairline-2);
-    overflow: hidden;
+    /* Crece para llenar el espacio entre KPIs y bottom de la sección,
+       con scroll interno cuando hay muchas marcas. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
 }
+.marcas-card::-webkit-scrollbar { width: 8px; height: 8px; }
+.marcas-card::-webkit-scrollbar-thumb { background: #D1D1D6; border-radius: 4px; }
+.marcas-card::-webkit-scrollbar-thumb:hover { background: #B0B0B5; }
 .marcas-dtable { width: 100%; border-collapse: collapse; }
 .marcas-dtable thead th {
     font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;

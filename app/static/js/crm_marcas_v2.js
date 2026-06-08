@@ -630,12 +630,15 @@
             });
         }
 
-        var btnRefresh = document.getElementById('mkBtnRefresh');
-        if (btnRefresh) {
-            btnRefresh.addEventListener('click', function () {
-                // Invalidar cache de ops para forzar refresh completo.
-                for (var i = 0; i < _marcasCache.length; i++) delete _marcasCache[i]._ops;
-                fetchMarcas();
+        // "+ Nueva marca" — placeholder hasta que se defina el flujo de
+        // alta (probablemente modal con nombre + categoría + meta inicial).
+        var btnAdd = document.getElementById('mkBtnAddMarca');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (typeof window.toast === 'function') {
+                    window.toast('Próximamente: alta de marca nueva.', 'info');
+                }
             });
         }
 

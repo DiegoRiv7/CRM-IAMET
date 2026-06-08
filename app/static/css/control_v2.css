@@ -12,11 +12,12 @@
 body.crm-control-active .crm-footer { display: none !important; }
 
 .crm-control-section {
-    /* La sección no debe exceder el alto disponible del viewport para que
-       la leyenda quede alineada con el final de la sidebar (no debajo). */
+    /* Mínimo = viewport - topbar para que llene la pantalla en estado
+       vacío. PERO sin techo: si hay muchos proyectos la sección puede
+       crecer y el scroll de página entra naturalmente. */
     padding: 22px 26px 14px;
     background: #F5F5F7;
-    height: calc(100vh - 64px); /* topbar global del CRM ≈ 64px */
+    min-height: calc(100vh - 64px); /* topbar global del CRM ≈ 64px */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -24,7 +25,6 @@ body.crm-control-active .crm-footer { display: none !important; }
     color: #1D1D1F;
     --row-h: 60px;
     --left-w: 380px;
-    --split-vchrome: 280px;
 }
 
 /* ─────────────── Header (sin caja) ─────────────── */
@@ -148,12 +148,11 @@ body.crm-control-active .crm-footer { display: none !important; }
     grid-template-columns: var(--left-w) 1fr;
     gap: 14px;
     align-items: stretch;
-    /* Crece para llenar el espacio entre stats y leyenda. Sin altura fija:
-       la sección entera tiene height fijo (100vh - topbar), así que flex
-       basis 0 funciona — el split se queda con todo lo sobrante. */
-    flex: 1 1 0;
-    min-height: 0;
-    overflow: hidden;
+    /* min-height generoso para que se vea "amplio" en estado vacío. El
+       flex:1 hace que crezca dentro del viewport disponible cuando la
+       sección tiene min-height: 100vh-64px. */
+    flex: 1 1 auto;
+    min-height: 560px;
 }
 
 /* ─────────────── LEFT: lista de proyectos ─────────────── */
@@ -514,10 +513,11 @@ body.crm-control-active .crm-footer { display: none !important; }
     display: flex;
     align-items: center;
     gap: 22px;
-    /* La sección entera tiene altura fija = viewport - topbar. Después de
-       header + stats + split (flex:1), la leyenda queda justo al fondo
-       sin necesidad de margin-top:auto. */
-    margin-top: 14px;
+    /* margin-top:auto empuja la leyenda al fondo del flex column. Con
+       min-height de la sección = 100vh-64px, queda alineada con el final
+       de la sidebar en estado vacío. Si hay scroll de página por más
+       contenido, viaja con el flujo. */
+    margin-top: auto;
     margin-bottom: 0;
     padding: 12px 18px;
     background: #FFFFFF;
