@@ -130,18 +130,13 @@
             '</div>';
     }
 
-    function renderTimelineRow(p, idx) {
-        // Barras "ghost" mientras no haya fechas reales (fase posterior).
-        var ghostLeft = 12 + (idx % 5) * 8;
-        var ghostWidth = 30 + (idx % 3) * 10;
+    function renderTimelineRow(p) {
+        // Row vacía. Las barras se agregan manualmente desde el botón
+        // "Agregar material". El hint sutil aparece solo cuando el
+        // proyecto está seleccionado, para invitar a usar el botón.
         return '' +
-            '<div class="crm-ctrl-timeline-row" data-proyecto-id="' + p.proyecto_id + '" role="button">' +
-                '<div class="crm-ctrl-bar crm-ctrl-bar--ghost" ' +
-                     'style="left:' + ghostLeft + '%;width:' + ghostWidth + '%;">' +
-                    '<span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start"></span>' +
-                    '<span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end"></span>' +
-                    '<span class="crm-ctrl-bar-ghost-label">pendiente fechas</span>' +
-                '</div>' +
+            '<div class="crm-ctrl-timeline-row crm-ctrl-timeline-row--empty" ' +
+                 'data-proyecto-id="' + p.proyecto_id + '" role="button">' +
             '</div>';
     }
 
@@ -266,7 +261,6 @@
         // Marca contexto general (sin tint).
         var row = document.getElementById('ctrlStatsRow');
         if (row) row.classList.remove('is-context');
-        limpiarChipContexto();
 
         // Sidebar count + header del timeline.
         var lc = document.getElementById('ctrlListCount');
@@ -284,19 +278,6 @@
 
         var row = document.getElementById('ctrlStatsRow');
         if (row) row.classList.add('is-context');
-        mostrarChipContexto(p);
-    }
-
-    function mostrarChipContexto(p) {
-        var chip = document.getElementById('ctrlStatsContextChip');
-        var name = document.getElementById('ctrlStatsContextName');
-        if (!chip || !name) return;
-        name.textContent = p.oportunidad_nombre || p.nombre || ('Proyecto #' + p.proyecto_id);
-        chip.hidden = false;
-    }
-    function limpiarChipContexto() {
-        var chip = document.getElementById('ctrlStatsContextChip');
-        if (chip) chip.hidden = true;
     }
 
     function actualizarTimelineHeader(filtros) {
@@ -357,28 +338,10 @@
     // ─────────────────────────────────────────────────────────────────────
 
     function abrirAgregarMaterial() {
-        // Placeholder mientras conectamos la UI real de materiales esperados.
-        // Si hay proyecto seleccionado, lo pasamos como contexto; si no,
-        // pedimos al usuario seleccionar uno primero.
-        if (!_selectedId) {
-            if (typeof window.toast === 'function') {
-                window.toast('Selecciona primero un proyecto a la izquierda para agregarle material esperado.', 'info');
-            } else {
-                alert('Selecciona primero un proyecto.');
-            }
-            return;
-        }
-        var p = null;
-        for (var i = 0; i < _proyectosCache.length; i++) {
-            if (String(_proyectosCache[i].proyecto_id) === String(_selectedId)) {
-                p = _proyectosCache[i]; break;
-            }
-        }
-        var nombre = p ? (p.oportunidad_nombre || p.nombre) : 'Proyecto';
+        // Placeholder — el formulario real (producto, ETA, cantidad, etc.)
+        // se construye en la próxima iteración. Por ahora solo avisa.
         if (typeof window.toast === 'function') {
-            window.toast('Próximamente: agregar material para "' + nombre + '". El modal está en desarrollo.', 'info');
-        } else {
-            alert('Próximamente: agregar material para "' + nombre + '".');
+            window.toast('Próximamente: formulario para agregar material esperado a un proyecto.', 'info');
         }
     }
 
@@ -458,15 +421,6 @@
             btnAdd.addEventListener('click', function (e) {
                 e.preventDefault();
                 abrirAgregarMaterial();
-            });
-        }
-
-        // Cerrar chip de contexto = deseleccionar proyecto.
-        var btnCloseCtx = document.getElementById('ctrlStatsContextClose');
-        if (btnCloseCtx) {
-            btnCloseCtx.addEventListener('click', function (e) {
-                e.preventDefault();
-                deselectProyecto();
             });
         }
 

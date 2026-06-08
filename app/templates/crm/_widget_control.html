@@ -58,15 +58,6 @@ Toda la lógica está en crm_control_v2.js.
             <div class="crm-control-stat-label" data-slot-label>Periodo</div>
             <div class="crm-control-stat-value crm-control-stat-value--small" data-slot-value>—</div>
         </div>
-
-        <!-- Chip flotante con el nombre del proyecto seleccionado + botón cerrar -->
-        <div class="crm-ctrl-context-chip" id="ctrlStatsContextChip" hidden>
-            <span class="crm-ctrl-context-label">Mostrando:</span>
-            <span class="crm-ctrl-context-name" id="ctrlStatsContextName">—</span>
-            <button type="button" class="crm-ctrl-context-close" id="ctrlStatsContextClose" title="Volver a vista general">
-                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-        </div>
     </div>
 
     <!-- Split: lista izq + timeline der -->
@@ -110,8 +101,8 @@ Toda la lógica está en crm_control_v2.js.
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#22C55E;"></span>Material listo</span>
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#7DD3FC;"></span>En tránsito</span>
         <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#FB923C;"></span>Pendiente compra</span>
-        <span class="crm-control-legend-item"><span class="crm-control-legend-dot crm-control-legend-dot--ghost"></span>Sin fechas todavía</span>
-        <span class="crm-control-legend-info">Las barras aparecerán con fechas reales cuando se conecten OCs / programa de obra.</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#F9A8D4;"></span>En espera cliente</span>
+        <span class="crm-control-legend-info">Usa "Agregar material" para colocar barras en la línea de tiempo de cada proyecto.</span>
     </div>
 
 </div>

@@ -99,57 +99,6 @@ body.crm-control-active .crm-footer { display: none !important; }
         0 6px 18px rgba(37,99,235,0.08);
 }
 
-/* Chip de contexto: aparece encima de los stats cuando hay proyecto seleccionado */
-.crm-ctrl-context-chip {
-    position: absolute;
-    top: -14px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 6px 6px 14px;
-    background: #1D1D1F;
-    color: #fff;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    box-shadow:
-        0 2px 4px rgba(0,0,0,0.12),
-        0 10px 24px rgba(0,0,0,0.18);
-    z-index: 5;
-    max-width: 540px;
-}
-.crm-ctrl-context-label {
-    font-weight: 600;
-    color: #A1A1AA;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.6rem;
-}
-.crm-ctrl-context-name {
-    font-weight: 700;
-    color: #fff;
-    max-width: 360px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.crm-ctrl-context-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255,255,255,0.12);
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.14s;
-    flex-shrink: 0;
-}
-.crm-ctrl-context-close:hover { background: rgba(255,255,255,0.22); }
 .crm-control-stat {
     background: #FFFFFF;
     border-radius: 18px;
@@ -435,16 +384,6 @@ body.crm-control-active .crm-footer { display: none !important; }
     transform: translateY(-50%) scale(1.03);
     box-shadow: 0 3px 10px rgba(0,0,0,0.18);
 }
-.crm-ctrl-bar--ghost {
-    background: repeating-linear-gradient(
-        45deg,
-        #E5E7EB, #E5E7EB 6px,
-        #F2F2F7 6px, #F2F2F7 12px
-    );
-    box-shadow: none;
-    opacity: 0.7;
-    border: 1px dashed #C7C7CC;
-}
 .crm-ctrl-timeline-row.is-selected .crm-ctrl-bar {
     transform: translateY(-50%) scale(1.04);
     box-shadow:
@@ -466,11 +405,6 @@ body.crm-control-active .crm-footer { display: none !important; }
 }
 .crm-ctrl-bar-marker--start { left: -5.5px; }
 .crm-ctrl-bar-marker--end   { right: -5.5px; }
-.crm-ctrl-bar--ghost .crm-ctrl-bar-marker {
-    background: #F2F2F7;
-    border-color: #C7C7CC;
-    box-shadow: none;
-}
 
 .crm-ctrl-bar-date {
     position: absolute;
@@ -489,19 +423,33 @@ body.crm-control-active .crm-footer { display: none !important; }
 }
 .crm-ctrl-bar-marker--end .crm-ctrl-bar-date { top: auto; bottom: -20px; }
 
-/* Etiqueta dentro de la barra ghost para invitar a conectar */
-.crm-ctrl-bar-ghost-label {
+/* Hint solo en la row seleccionada vacía: invita a usar "Agregar material". */
+.crm-ctrl-timeline-row--empty.is-selected::before {
+    background: none;
+}
+.crm-ctrl-timeline-row--empty.is-selected::after {
+    /* Ocultamos el separador vertical de meses para que el hint respire */
+    opacity: 0.3;
+}
+.crm-ctrl-timeline-row--empty.is-selected .crm-ctrl-bar { display: none; }
+.crm-ctrl-timeline-row--empty.is-selected {
+    position: relative;
+}
+.crm-ctrl-timeline-row--empty.is-selected::before {
+    content: '+ Agregar material para colocar barra en el timeline';
     position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6rem;
+    left: 0; right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+    font-size: 0.7rem;
+    color: #2563EB;
     font-weight: 700;
-    color: #6B7280;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-style: normal;
+    background: none;
+    height: auto;
     pointer-events: none;
+    letter-spacing: -0.005em;
 }
 
 /* ─────────────── States ─────────────── */
@@ -556,15 +504,6 @@ body.crm-control-active .crm-footer { display: none !important; }
     border-radius: 50%;
     display: inline-block;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-.crm-control-legend-dot--ghost {
-    background: repeating-linear-gradient(
-        45deg,
-        #E5E7EB, #E5E7EB 3px,
-        #F2F2F7 3px, #F2F2F7 6px
-    );
-    border: 1px dashed #C7C7CC;
-    box-shadow: none;
 }
 .crm-control-legend-info {
     margin-left: auto;
