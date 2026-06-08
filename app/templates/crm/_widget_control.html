@@ -1,0 +1,285 @@
+{% comment %}
+_widget_control.html — Sección de logística de compra de materiales.
+
+BORRADOR — sin lógica de backend. Los datos están hardcoded (6 proyectos
+de muestra del Excel de referencia). Los meses del timeline también están
+fijos (junio-julio 2026). La fase 2 conectará a ProyectoIAMET / OCs.
+
+Estructura:
+  .crm-control-section
+    .crm-control-header (título + acciones)
+    .crm-control-table-wrap
+      .crm-control-table
+        .crm-ctrl-thead
+        .crm-ctrl-tbody (rows con timeline cell + datos)
+
+Anatomía de una fila timeline:
+  [Cliente | ID | Descripción | Jornadas] [Timeline gantt] [PO | Util | Días | Téc | Coment]
+
+Anatomía del timeline:
+  - Header de meses: 2 chips grandes (JUNIO / JULIO) con line connector
+  - Cada fila: barra de color con marker ● en inicio (fecha llegada material)
+    y marker ● en fin (fecha de cierre).
+{% endcomment %}
+
+<div id="ckControlSection" class="crm-control-section" style="display:none;">
+
+    <!-- Header de la sección -->
+    <div class="crm-control-header">
+        <div class="crm-control-header-left">
+            <h2 class="crm-control-title">Logística de Compra de Material</h2>
+            <span class="crm-control-subtitle">Control y trazabilidad de compra → entrega → instalación</span>
+        </div>
+        <div class="crm-control-header-right">
+            <button type="button" class="crm-control-btn crm-control-btn--secondary" disabled title="Próximamente">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+                Refrescar
+            </button>
+            <button type="button" class="crm-control-btn crm-control-btn--primary" disabled title="Próximamente">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar proyecto
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats chips superiores -->
+    <div class="crm-control-stats">
+        <div class="crm-control-stat">
+            <div class="crm-control-stat-label">Proyectos activos</div>
+            <div class="crm-control-stat-value">6</div>
+        </div>
+        <div class="crm-control-stat">
+            <div class="crm-control-stat-label">PO total</div>
+            <div class="crm-control-stat-value">$8.46M</div>
+        </div>
+        <div class="crm-control-stat">
+            <div class="crm-control-stat-label">Utilidad</div>
+            <div class="crm-control-stat-value crm-control-stat-value--green">$2.55M</div>
+        </div>
+        <div class="crm-control-stat">
+            <div class="crm-control-stat-label">Material en tránsito</div>
+            <div class="crm-control-stat-value crm-control-stat-value--amber">3</div>
+        </div>
+        <div class="crm-control-stat">
+            <div class="crm-control-stat-label">Listos para instalar</div>
+            <div class="crm-control-stat-value crm-control-stat-value--blue">2</div>
+        </div>
+    </div>
+
+    <!-- Tabla principal -->
+    <div class="crm-control-table-wrap">
+        <div class="crm-control-table" role="table" aria-label="Logística de compra de materiales">
+
+            <!-- HEADER -->
+            <div class="crm-ctrl-thead" role="row">
+                <div class="crm-ctrl-col crm-ctrl-col--cliente" role="columnheader">Cliente</div>
+                <div class="crm-ctrl-col crm-ctrl-col--id" role="columnheader">ID Opp</div>
+                <div class="crm-ctrl-col crm-ctrl-col--desc" role="columnheader">Descripción</div>
+                <div class="crm-ctrl-col crm-ctrl-col--jornadas" role="columnheader">Jornadas</div>
+
+                <div class="crm-ctrl-col crm-ctrl-col--timeline" role="columnheader">
+                    <div class="crm-ctrl-months">
+                        <span class="crm-ctrl-month-chip">JUNIO</span>
+                        <span class="crm-ctrl-month-line" aria-hidden="true"></span>
+                        <span class="crm-ctrl-month-chip">JULIO</span>
+                    </div>
+                </div>
+
+                <div class="crm-ctrl-col crm-ctrl-col--po" role="columnheader">Monto PO<br><span class="crm-ctrl-col-sub">Proyecto sin IVA</span></div>
+                <div class="crm-ctrl-col crm-ctrl-col--util" role="columnheader">Utilidad</div>
+                <div class="crm-ctrl-col crm-ctrl-col--dias" role="columnheader">Días<br><span class="crm-ctrl-col-sub">Ejecución</span></div>
+                <div class="crm-ctrl-col crm-ctrl-col--tec" role="columnheader">Téc.</div>
+                <div class="crm-ctrl-col crm-ctrl-col--coment" role="columnheader">Comentarios</div>
+            </div>
+
+            <!-- BODY (6 rows hardcoded) -->
+            <div class="crm-ctrl-tbody" id="crmControlTbody">
+
+                <!-- Row 1: EATON OTAY · 4516895712 · RETIRO 15 NODOS · verde · 06-08 -->
+                <div class="crm-ctrl-row" role="row">
+                    <div class="crm-ctrl-col crm-ctrl-col--cliente">
+                        <span class="crm-ctrl-tag crm-ctrl-tag--accent">EATON OTAY</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--id">4516895712</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--desc">RETIRO DE 15 NODOS EN IDF 3</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--jornadas">
+                        <span class="crm-ctrl-pill crm-ctrl-pill--sat">1 jornada sábado</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--timeline">
+                        <div class="crm-ctrl-track" data-start="0.05" data-end="0.18" data-color="green">
+                            <div class="crm-ctrl-bar" style="left:5%;width:13%;background:#22C55E;">
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start" title="Inicio">
+                                    <span class="crm-ctrl-bar-date">10-jun</span>
+                                </span>
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end" title="Fin">
+                                    <span class="crm-ctrl-bar-date">12-jun</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--po">$10,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--money">$3,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--dias">5</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--tec">2</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--coment">—</div>
+                </div>
+
+                <!-- Row 2: EATON OTAY · 4516860386 · INSTALACION 20 AP -->
+                <div class="crm-ctrl-row" role="row">
+                    <div class="crm-ctrl-col crm-ctrl-col--cliente">
+                        <span class="crm-ctrl-tag crm-ctrl-tag--accent">EATON OTAY</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--id">4516860386</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--desc">INSTALACIÓN 20 AP Y 1 SWITCH EN PRODUCCIÓN</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--jornadas">
+                        <span class="crm-ctrl-pill crm-ctrl-pill--night">9 jornadas (noche)</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--timeline">
+                        <div class="crm-ctrl-track">
+                            <div class="crm-ctrl-bar" style="left:18%;width:18%;background:#15803D;">
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start">
+                                    <span class="crm-ctrl-bar-date">14-jun</span>
+                                </span>
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end">
+                                    <span class="crm-ctrl-bar-date">23-jun</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--po">$30,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--money">$9,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--dias">2</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--tec">3</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--coment">—</div>
+                </div>
+
+                <!-- Row 3: EATON OTAY · 4517218663 · 60 NODOS EN VOLVO -->
+                <div class="crm-ctrl-row" role="row">
+                    <div class="crm-ctrl-col crm-ctrl-col--cliente">
+                        <span class="crm-ctrl-tag crm-ctrl-tag--accent">EATON OTAY</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--id">4517218663</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--desc">60 NODOS EN VOLVO</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--jornadas">
+                        <span class="crm-ctrl-pill crm-ctrl-pill--normal">7 jornadas normales</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--timeline">
+                        <div class="crm-ctrl-track">
+                            <div class="crm-ctrl-bar" style="left:33%;width:22%;background:#7DD3FC;">
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start">
+                                    <span class="crm-ctrl-bar-date">23-jun</span>
+                                </span>
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end">
+                                    <span class="crm-ctrl-bar-date">02-jul</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--po">$7,600,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--money">$2,280,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--dias">10</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--tec">4</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--coment">Esperando confirmación de Volvo</div>
+                </div>
+
+                <!-- Row 4: ALLEGION TECATE · 8174123 · 1 NODO RED MAQUINA TAPPING -->
+                <div class="crm-ctrl-row" role="row">
+                    <div class="crm-ctrl-col crm-ctrl-col--cliente">
+                        <span class="crm-ctrl-tag crm-ctrl-tag--warning">ALLEGION TECATE</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--id">8174123</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--desc">1 NODO DE RED EN MÁQUINA TAPPING</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--jornadas">
+                        <span class="crm-ctrl-pill crm-ctrl-pill--extra">1 jornada extraordinaria</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--timeline">
+                        <div class="crm-ctrl-track">
+                            <div class="crm-ctrl-bar" style="left:52%;width:6%;background:#F9A8D4;">
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start">
+                                    <span class="crm-ctrl-bar-date">29-jun</span>
+                                </span>
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end">
+                                    <span class="crm-ctrl-bar-date">30-jun</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--po">$56,900</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--money">$17,070</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--dias">15</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--tec">2</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--coment">—</div>
+                </div>
+
+                <!-- Row 5: EATON PACIFICO · 311628 · 10 NODOS CNC -->
+                <div class="crm-ctrl-row" role="row">
+                    <div class="crm-ctrl-col crm-ctrl-col--cliente">
+                        <span class="crm-ctrl-tag crm-ctrl-tag--accent">EATON PACIFICO</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--id">311628</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--desc">10 NODOS EN MÁQUINAS CNC PRODUCCIÓN</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--jornadas">
+                        <span class="crm-ctrl-pill crm-ctrl-pill--extra-night">5 jornadas extraord. (noche)</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--timeline">
+                        <div class="crm-ctrl-track">
+                            <div class="crm-ctrl-bar" style="left:60%;width:12%;background:#FB923C;">
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start">
+                                    <span class="crm-ctrl-bar-date">04-jul</span>
+                                </span>
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end">
+                                    <span class="crm-ctrl-bar-date">09-jul</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--po">$450,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--money">$135,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--dias">3</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--tec">3</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--coment">Coordinar con jefe de turno</div>
+                </div>
+
+                <!-- Row 6: ALLEGION TECATE · 8174342 · OPORTUNIDAD 1 NODO LOBBY -->
+                <div class="crm-ctrl-row" role="row">
+                    <div class="crm-ctrl-col crm-ctrl-col--cliente">
+                        <span class="crm-ctrl-tag crm-ctrl-tag--warning">ALLEGION TECATE</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--id">8174342</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--desc">OPORTUNIDAD 1 NODO EN LOBBY</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--jornadas">
+                        <span class="crm-ctrl-pill crm-ctrl-pill--extra">1 jornada extraordinaria</span>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--timeline">
+                        <div class="crm-ctrl-track">
+                            <div class="crm-ctrl-bar" style="left:72%;width:5%;background:#22C55E;">
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--start">
+                                    <span class="crm-ctrl-bar-date">11-jul</span>
+                                </span>
+                                <span class="crm-ctrl-bar-marker crm-ctrl-bar-marker--end">
+                                    <span class="crm-ctrl-bar-date">12-jul</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-ctrl-col crm-ctrl-col--po">$320,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--util crm-ctrl-cell--money">$96,000</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--dias">4</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--tec">2</div>
+                    <div class="crm-ctrl-col crm-ctrl-col--coment">—</div>
+                </div>
+
+            </div><!-- /.crm-ctrl-tbody -->
+        </div><!-- /.crm-control-table -->
+    </div><!-- /.crm-control-table-wrap -->
+
+    <!-- Footer leyenda -->
+    <div class="crm-control-legend">
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#22C55E;"></span>Material listo</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#7DD3FC;"></span>En tránsito</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#FB923C;"></span>Pendiente compra</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#F9A8D4;"></span>En espera cliente</span>
+        <span class="crm-control-legend-info">Borrador — datos de muestra. La lógica de backend se conectará en una fase posterior.</span>
+    </div>
+
+</div>
