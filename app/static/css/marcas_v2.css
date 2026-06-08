@@ -8,6 +8,11 @@
   Tokens locales (no globales — viven dentro de la sección).
 */
 
+/* Footer global del CRM oculto cuando estamos en Marcas — el JS pone
+   .crm-marcas-active en <body> al activar la tab (mismo patrón que
+   Materiales con .crm-control-active). */
+body.crm-marcas-active .crm-footer { display: none !important; }
+
 .marcas-section {
     --mk-accent: #5e5ce6;
     --mk-bg: #f2f2f7;
@@ -296,7 +301,10 @@
 }
 
 /* ─────────────── Timeline ─────────────── */
-.marcas-tlwrap { padding: 0; overflow-x: auto; }
+/* La vista timeline hereda overflow-y:auto de .marcas-card, pero forzamos
+   overflow-x:auto local para que solo el timeline scrollee horizontalmente
+   (no la sección completa). */
+.marcas-tlwrap { padding: 0; overflow-x: auto; overflow-y: auto; }
 .marcas-tl { min-width: 920px; }
 .marcas-tl-left {
     width: 300px; flex-shrink: 0;

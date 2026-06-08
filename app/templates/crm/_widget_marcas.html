@@ -147,6 +147,16 @@ Datos: GET /app/api/marcas/resumen/?anio=YYYY&vendedores=CSV
                 <option value="10">OCT</option><option value="11">NOV</option><option value="12">DIC</option>
             </select>
         </div>
+        {# Filtro por MARCA — solo aplica a vista Timeline (en Tabla cada fila
+           ya es una marca, no tendría sentido). El JS oculta este grupo
+           cuando estamos en vista Tabla. Las opciones las puebla el JS al
+           cargar el listado de marcas. #}
+        <div class="marcas-filter-grp" id="mkFilterMarcaGrp">
+            <span class="marcas-filter-lab">Marca</span>
+            <select class="marcas-filter-select" id="mkFilterMarca">
+                <option value="all">Todas</option>
+            </select>
+        </div>
         <div class="marcas-filterbar-spacer"></div>
         <span class="marcas-filter-count" id="mkFilterCount">— resultados</span>
         <button class="marcas-textbtn" id="mkBtnClearFilters">Limpiar</button>

@@ -22,7 +22,7 @@
     var _query = '';
     var _filtersOpen = false;
     var _sortDesc = true;
-    var _filters = { quarter: 'all', prob: 'all', mes: 'all' };
+    var _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
 
     try { _initialMode = localStorage.getItem('crm_clientes_mode'); } catch (e) {}
 
@@ -152,10 +152,38 @@
     }
 
     function renderAll() {
+        poblarFiltroMarca();
+        actualizarVisibilidadFiltroMarca();
         renderKpis();
         renderTabla();
         renderTimeline();
         actualizarFilterCount();
+    }
+
+    function poblarFiltroMarca() {
+        var sel = document.getElementById('mkFilterMarca');
+        if (!sel) return;
+        // Si ya tiene opciones (excepto "Todas"), no rebuildemos para no
+        // perder la selección actual del usuario al refrescar.
+        if (sel.options.length > 1) return;
+        var current = _filters.marca;
+        sel.innerHTML = '<option value="all">Todas</option>';
+        for (var i = 0; i < _marcasCache.length; i++) {
+            var m = _marcasCache[i];
+            var opt = document.createElement('option');
+            opt.value = m.key;
+            opt.textContent = m.label;
+            sel.appendChild(opt);
+        }
+        if (current && current !== 'all') sel.value = current;
+    }
+
+    function actualizarVisibilidadFiltroMarca() {
+        // El filtro de Marca solo tiene sentido en vista Timeline (en
+        // Tabla cada fila YA es una marca).
+        var grp = document.getElementById('mkFilterMarcaGrp');
+        if (!grp) return;
+        grp.style.display = (_view === 'timeline') ? '' : 'none';
     }
 
     function renderKpis() {
@@ -285,6 +313,8 @@
             var flat = [];
             for (var i = 0; i < marcasConOps.length; i++) {
                 var mm = marcasConOps[i];
+                // Filtro por marca aplicado primero (skip antes del loop interno).
+                if (_filters.marca !== 'all' && String(mm.key) !== String(_filters.marca)) continue;
                 for (var k = 0; k < (mm._ops || []).length; k++) {
                     var op = mm._ops[k];
                     if (!opPasaFiltros(op)) continue;
@@ -659,6 +689,7 @@
                     if (vt) vt.hidden = v !== 'tabla';
                     if (vl) vl.hidden = v !== 'timeline';
                     if (v === 'timeline') renderTimeline();
+                    actualizarVisibilidadFiltroMarca();
                     actualizarFilterCount();
                 });
             }
@@ -723,16 +754,25 @@
                 actualizarFilterCount();
             });
         }
+        var marcaSel = document.getElementById('mkFilterMarca');
+        if (marcaSel) {
+            marcaSel.addEventListener('change', function () {
+                _filters.marca = this.value;
+                if (_view === 'timeline') renderTimeline();
+                actualizarFilterCount();
+            });
+        }
 
         var btnClear = document.getElementById('mkBtnClearFilters');
         if (btnClear) {
             btnClear.addEventListener('click', function () {
-                _filters = { quarter: 'all', prob: 'all', mes: 'all' };
+                _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
                 var allChips = document.querySelectorAll('#mkFilterbar .marcas-chip');
                 for (var i = 0; i < allChips.length; i++) {
                     allChips[i].classList.toggle('is-on', allChips[i].getAttribute('data-val') === 'all');
                 }
                 if (mesSel) mesSel.value = 'all';
+                if (marcaSel) marcaSel.value = 'all';
                 if (_view === 'timeline') renderTimeline();
                 actualizarFilterCount();
             });
