@@ -1,24 +1,32 @@
 /*
   crm_control_v2.js — Handler de la tab "Control" del dashboard.
 
-  V2 (Boy Scout). NO modifica crm_main.js legacy. La estrategia:
+  V2 (Boy Scout). NO modifica crm_main.js legacy. Estrategia:
 
-    1. Al click en #crmModeControl:
-         - Llamamos a window._crmSetMode('__control__'). Como ese mode no
-           coincide con ninguna rama existente, _crmSetMode solo apaga
-           el .active de los 4 botones conocidos y oculta ckClientesTablaSection.
-         - Luego ocultamos a mano kpi/charts/detalle (que el legacy deja
-           con su display anterior porque no entra a ninguna rama).
-         - Marcamos #crmModeControl como .active y mostramos #ckControlSection.
+    1. MONKEY-PATCH a window._crmSetMode (instalado al cargar este script).
+       Mientras _controlActivo sea true, las llamadas con cualquier mode que
+       NO sea '__control__' o 'control' se ignoran. Esto bloquea los refreshes
+       periódicos del legacy (línea ~2291 de crm_main.js) que re-aplican el
+       último modo cada vez que se carga el panel de clientes.
 
-    2. Al click en cualquier OTRO botón del dashDynamicIsland:
-         - Quitamos .active de #crmModeControl y ocultamos #ckControlSection.
-         - Su propio onclick="_crmSetMode(...)" se encarga del resto.
+    2. CAPTURE-PHASE listeners en los botones de las otras tabs. El onclick
+       inline del legacy ("_crmSetMode('oportunidades')") corre en bubbling.
+       Si usamos capture, nuestro desactivarControl() corre PRIMERO → apaga
+       _controlActivo → el guard ya no bloquea → el onclick legacy ejecuta
+       normalmente.
 
-  Borrador — no hay fetch ni guardado todavía. Los datos del HTML son fijos.
+    3. PERSISTENCIA: al cargar, si localStorage tiene 'control' → re-activar.
+       Doble retry (50ms y 800ms) para sobrevivir a fetches async del legacy
+       que podrían tratar de pintar Oportunidades por encima.
+
+  Borrador — datos del HTML son fijos, sin fetch ni guardado todavía.
 */
 (function () {
     'use strict';
+
+    var _controlActivo = false;
+    var _initialMode = null;
+    try { _initialMode = localStorage.getItem('crm_clientes_mode'); } catch (e) {}
 
     var IDS_OTROS_KPI = [
         'ckKpiRow', 'ckKpiRowProsp', 'ckKpiRowProy',
@@ -35,8 +43,10 @@
     }
 
     function activarControl() {
-        // 1. Llamar al legacy con un mode desconocido: apaga botones y limpia
-        //    la sección de clientes. No toca kpi/charts/detalle.
+        _controlActivo = true;
+
+        // 1. Llamar al legacy con un mode desconocido para que apague los 4 botones
+        //    conocidos y oculte cliSection. El guard nos deja pasar el '__control__'.
         try {
             if (typeof window._crmSetMode === 'function') {
                 window._crmSetMode('__control__');
@@ -53,49 +63,80 @@
         var section = document.getElementById('ckControlSection');
         if (section) section.style.display = 'block';
 
-        // 4. Update footer (las otras tabs escriben ahí; lo limpiamos).
+        // 4. Footer (las otras tabs lo escriben; le ponemos algo coherente).
         var footerLeft = document.getElementById('footerLeft');
         var footerRight = document.getElementById('footerRight');
         if (footerLeft) footerLeft.textContent = '6 proyectos en logística';
         if (footerRight) footerRight.textContent = 'PO total: $8.46M · Utilidad: $2.55M';
 
-        // 5. Persistir preferencia (igual que el legacy hace con _crmClientesMode).
+        // 5. Persistir preferencia.
         try { localStorage.setItem('crm_clientes_mode', 'control'); } catch (e) {}
     }
 
     function desactivarControl() {
+        // IMPORTANTE: apagar la flag ANTES de que el legacy ejecute su onclick,
+        // si no, el guard bloquea el cambio a Oportunidades/Prospectos/etc.
+        _controlActivo = false;
+
         var btn = document.getElementById('crmModeControl');
         if (btn) btn.classList.remove('active');
         var section = document.getElementById('ckControlSection');
         if (section) section.style.display = 'none';
     }
 
+    /* MONKEY-PATCH:
+       Reemplazamos window._crmSetMode. Cuando estamos en Control, ignoramos
+       cualquier llamada automática a otros modos (refreshes periódicos del
+       legacy). Las llamadas que vienen de clicks reales del usuario ya
+       limpiaron _controlActivo en capture-phase, así que pasan. */
+    function instalarGuard() {
+        var orig = window._crmSetMode;
+        if (typeof orig !== 'function') return false;
+        if (orig._controlPatched) return true;
+        var patched = function (mode) {
+            if (_controlActivo && mode !== '__control__' && mode !== 'control') {
+                // Refresh automático mientras estamos en Control: ignorar.
+                return;
+            }
+            return orig.apply(this, arguments);
+        };
+        patched._controlPatched = true;
+        // Conservamos referencia al original por si algún día se necesita.
+        patched._original = orig;
+        window._crmSetMode = patched;
+        return true;
+    }
+
     function init() {
         var btn = document.getElementById('crmModeControl');
         if (!btn) return;
+
+        // Intentar instalar el guard ya. Si _crmSetMode aún no existe (orden
+        // de carga raro), reintentamos en un tick.
+        if (!instalarGuard()) {
+            setTimeout(instalarGuard, 0);
+        }
 
         btn.addEventListener('click', function (e) {
             e.preventDefault();
             activarControl();
         });
 
-        // Si el usuario clickea otro tab, ocultamos Control.
+        // Capture-phase: corremos ANTES del onclick inline del legacy.
         IDS_OTROS_BTNS.forEach(function (id) {
             var b = document.getElementById(id);
-            if (b) b.addEventListener('click', desactivarControl);
+            if (b) b.addEventListener('click', desactivarControl, true);
         });
-
-        // Reportes también nos saca de Control.
         var btnRep = document.getElementById('crmModeReportes');
-        if (btnRep) btnRep.addEventListener('click', desactivarControl);
+        if (btnRep) btnRep.addEventListener('click', desactivarControl, true);
 
-        // Si la preferencia guardada era 'control', re-activar en load.
-        try {
-            if (localStorage.getItem('crm_clientes_mode') === 'control') {
-                // Esperamos un tick para que el legacy termine su init.
-                setTimeout(activarControl, 0);
-            }
-        } catch (e) {}
+        // Persistencia: si el storage decía 'control', re-activar.
+        // Doble retry por si una fetch async del legacy llega después y pinta encima.
+        if (_initialMode === 'control') {
+            setTimeout(activarControl, 50);
+            setTimeout(function () { if (!_controlActivo) activarControl(); }, 800);
+            setTimeout(function () { if (!_controlActivo) activarControl(); }, 2000);
+        }
     }
 
     if (document.readyState === 'loading') {
@@ -104,9 +145,10 @@
         init();
     }
 
-    // Exponemos para debug y para que otras partes puedan abrir Control programáticamente.
+    // Exponemos para debug y para que otras partes puedan controlar Control.
     window._crmControl = {
         open: activarControl,
-        close: desactivarControl
+        close: desactivarControl,
+        get activo() { return _controlActivo; }
     };
 })();
