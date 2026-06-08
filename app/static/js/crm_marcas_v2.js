@@ -444,12 +444,12 @@
 
         var opsHtml = '';
         if (!ops.length) {
-            opsHtml = '<div style="padding:20px 0;text-align:center;color:#86868B;font-size:13px;font-style:italic;">Sin oportunidades para este año.</div>';
+            opsHtml = '<div style="grid-column:1/-1;padding:20px 0;text-align:center;color:#86868B;font-size:13px;font-style:italic;">Sin oportunidades para este año.</div>';
         } else {
             for (var i = 0; i < ops.length; i++) {
                 var o = ops[i];
                 opsHtml +=
-                    '<div class="marca-widget-op">' +
+                    '<div class="marca-widget-op" data-opp-id="' + o.id + '" role="button" title="Abrir oportunidad">' +
                         '<div>' +
                             '<div class="marca-widget-op-cli">' + escHtml(o.cliente || '—') + '</div>' +
                             '<div class="marca-widget-op-desc">' + escHtml(o.oportunidad || '') + '</div>' +
@@ -496,18 +496,34 @@
             '</div>' +
             '<div class="marca-widget-ops">' + opsHtml + '</div>' +
             '<div class="marca-widget-actions">' +
-                '<button class="marca-widget-btn marca-widget-btn--primary" type="button" data-mk-action="cotizar">' +
-                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h7l5 5V20a1 1 0 01-1 1H6a1 1 0 01-1-1V4.5a1 1 0 011-1z"/><path d="M13 3.5V9h5M8.5 13h7M8.5 16.5h7"/></svg>' +
-                    'Nueva cotización' +
-                '</button>' +
-                '<button class="marca-widget-btn marca-widget-btn--ghost" type="button" data-mk-action="campana">' +
-                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 001 1h2l6 4V5L7 9H5a1 1 0 00-1 1z"/><path d="M17 8.5a5 5 0 010 7"/></svg>' +
-                    'Campaña' +
+                '<button class="marca-widget-btn marca-widget-btn--primary" type="button" data-mk-action="nueva-opp">' +
+                    '<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                    'Nueva oportunidad' +
                 '</button>' +
             '</div>';
 
         wireWidgetClose();
         wireWidgetActions(m);
+        wireOppClicks();
+    }
+
+    function wireOppClicks() {
+        var ops = document.querySelectorAll('#marcaWidgetInner .marca-widget-op[data-opp-id]');
+        for (var i = 0; i < ops.length; i++) {
+            ops[i].addEventListener('click', function () {
+                var oppId = parseInt(this.getAttribute('data-opp-id'), 10);
+                if (!oppId) return;
+                // Cerramos el widget de marca antes de abrir el de oportunidad
+                // — si no, el detalle queda detrás del overlay con z-index
+                // mayor y no se ve.
+                toggleMarcaWidget(false);
+                if (typeof window.openDetalle === 'function') {
+                    setTimeout(function () { window.openDetalle(oppId); }, 60);
+                } else if (typeof window.toast === 'function') {
+                    window.toast('No se pudo abrir la oportunidad.', 'error');
+                }
+            });
+        }
     }
 
     function wireWidgetClose() {
@@ -521,11 +537,48 @@
         for (var i = 0; i < btns.length; i++) {
             btns[i].addEventListener('click', function () {
                 var action = this.getAttribute('data-mk-action');
+                if (action === 'nueva-opp') {
+                    abrirCrearOportunidad(marca);
+                    return;
+                }
                 if (typeof window.toast === 'function') {
                     window.toast('Próximamente: ' + action + ' para ' + (marca.label || 'la marca') + '.', 'info');
                 }
             });
         }
+    }
+
+    function abrirCrearOportunidad(marca) {
+        // Cerramos el widget de marca para evitar layering raro con el
+        // overlay de negociación.
+        toggleMarcaWidget(false);
+        setTimeout(function () {
+            var overlay = document.getElementById('widgetNegociacion');
+            if (!overlay) {
+                if (typeof window.toast === 'function') {
+                    window.toast('Widget de oportunidad no disponible.', 'error');
+                }
+                return;
+            }
+            overlay.classList.remove('closing');
+            overlay.classList.add('active');
+            // Pre-seleccionar la marca en el select de producto si existe.
+            // El select se llama wfProducto en _widget_negociacion.html.
+            var selProducto = document.getElementById('wfProducto');
+            if (selProducto && marca && marca.key) {
+                // marca.key viene como 'ZEBRA' / 'POLIZA' / etc. Probamos
+                // tal cual primero, y como fallback con casing original
+                // de PRODUCTO_CHOICES (PÓLIZA con tilde).
+                var key = marca.key;
+                var match = Array.prototype.find.call(selProducto.options, function (opt) {
+                    return opt.value === key || opt.value.toUpperCase() === key;
+                });
+                if (match) selProducto.value = match.value;
+            }
+            // Focus en el primer campo libre.
+            var firstFocus = document.getElementById('wfOportunidad');
+            if (firstFocus && typeof firstFocus.focus === 'function') firstFocus.focus();
+        }, 60);
     }
 
     // ─────────────────────────────────────────────────────────────────────

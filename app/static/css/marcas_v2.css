@@ -387,7 +387,9 @@
 .marca-widget {
     background: var(--mk-surface, #fff);
     color: var(--mk-text, #1c1c1e);
-    width: 460px; max-width: 92vw; max-height: 88vh;
+    /* Ancho similar al widget de oportunidad (850px) — un poco más para
+       acomodar los stats en grid 4-col cuando hay espacio. */
+    width: 880px; max-width: 95vw; max-height: 88vh;
     border-radius: 20px;
     box-shadow: 0 24px 80px rgba(16,18,40,0.28), 0 4px 12px rgba(16,18,40,0.10);
     display: flex; flex-direction: column; overflow: hidden;
@@ -442,8 +444,11 @@
 .marca-widget-gap.neutral { color: var(--mk-text-3); font-style: italic; }
 
 .marca-widget-stats {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-    margin-bottom: 22px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 24px;
+}
+@media (max-width: 720px) {
+    .marca-widget-stats { grid-template-columns: repeat(2, 1fr); }
 }
 .marca-widget-stat { background: var(--mk-fill-2); border-radius: 12px; padding: 13px 14px; }
 .marca-widget-stat-v { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
@@ -458,16 +463,30 @@
     font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px;
 }
 .marca-widget-ops {
-    display: flex; flex-direction: column; gap: 1px; margin-bottom: 22px;
-    max-height: 320px; overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    margin-bottom: 22px;
+    max-height: 360px; overflow-y: auto;
+    padding-right: 4px;
 }
 .marca-widget-ops::-webkit-scrollbar { width: 6px; }
 .marca-widget-ops::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 
+@media (max-width: 720px) {
+    .marca-widget-ops { grid-template-columns: 1fr; }
+}
+
 .marca-widget-op {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 11px 4px;
+    padding: 12px 8px;
     border-bottom: 1px solid rgba(60,60,67,0.07);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.14s;
+}
+.marca-widget-op:hover {
+    background: rgba(120,120,128,0.07);
 }
 .marca-widget-op:last-child { border-bottom: none; }
 .marca-widget-op-cli { font-size: 14px; font-weight: 700; }
