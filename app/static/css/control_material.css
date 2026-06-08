@@ -627,47 +627,49 @@
     border-bottom-right-radius: 0;
 }
 
-/* Markers de inicio/fin: círculos blancos sobresalientes con el color del
-   estado del material como borde, y label de fecha encima (start) o debajo
-   (end). Permiten ver de un vistazo cuándo arranca/termina sin tener que
-   abrir el detalle. */
+/* Markers de inicio/fin: puntos pequeños y sutiles en los extremos de la
+   barra, mismo color del estado. NO bloquean la barra ni la rompen
+   visualmente. Las fechas viven como chips dentro de la barra (siempre
+   visibles cuando hay espacio) y se ocultan automáticamente en barras
+   muy chicas vía contenedor flex. */
 .crm-cm-bar-marker {
     position: absolute;
     top: 50%;
-    width: 11px;
-    height: 11px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: #FFFFFF;
-    border: 2.5px solid currentColor;
+    background: rgba(255,255,255,0.95);
     transform: translateY(-50%);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.16);
-    z-index: 4;
+    z-index: 3;
     pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.7);
 }
-.crm-cm-bar-marker--start { left: -5.5px; }
-.crm-cm-bar-marker--end   { right: -5.5px; }
-/* Si overflowea, el marker no aplica (no se renderiza desde JS) — pero
-   por si acaso ocultamos cualquier marker en barras cortadas. */
+.crm-cm-bar-marker--start { left: 4px; }
+.crm-cm-bar-marker--end   { right: 4px; }
 .crm-cm-bar--overflow-left  .crm-cm-bar-marker--start,
 .crm-cm-bar--overflow-right .crm-cm-bar-marker--end { display: none; }
 
+/* Las fechas viven DENTRO de la barra como pequeños chips a los extremos.
+   No sobresalen. Solo aparecen si la barra es lo suficientemente ancha
+   (oculto vía contenedor flex con overflow + ::has o tamaño mínimo). */
 .crm-cm-bar-date {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 700;
-    color: #4B5563;
-    background: #FFFFFF;
-    padding: 2px 6px;
-    border-radius: 5px;
+    color: rgba(255,255,255,0.95);
+    background: rgba(0,0,0,0.18);
+    padding: 1px 6px;
+    border-radius: 4px;
+    line-height: 1.5;
     white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.10);
     letter-spacing: 0;
     text-shadow: none;
+    flex-shrink: 0;
 }
-.crm-cm-bar-date--start { top: -20px; }
-.crm-cm-bar-date--end   { bottom: -20px; }
+.crm-cm-bar-date--start { margin-right: 4px; margin-left: 10px; }
+.crm-cm-bar-date--end   { margin-left: 4px;  margin-right: 10px; }
+
+/* La barra ya tiene overflow:hidden, así que cuando no caben todos los
+   elementos (start-date · label · end-date) se recortan visualmente. */
 
 /* La row con materiales NO debe seguir mostrando el hint "+ Agregar
    material" de control_v2.css. Tampoco debe colapsar al hover. */

@@ -31,10 +31,12 @@
     var IDS_OTROS_KPI = [
         'ckKpiRow', 'ckKpiRowProsp', 'ckKpiRowProy',
         'ckChartsSection', 'ckChartsSectionProsp', 'ckChartsSectionProy',
-        'ckDetalleSection', 'ckClientesTablaSection'
+        'ckDetalleSection', 'ckClientesTablaSection',
+        'ckMarcasSection', 'ckProveedoresSection'
     ];
     var IDS_OTROS_BTNS = [
-        'crmModeOpp', 'crmModeProsp', 'crmModeProyectos', 'crmModeClientes'
+        'crmModeOpp', 'crmModeProsp', 'crmModeProyectos', 'crmModeClientes',
+        'crmModeMarcas', 'crmModeProveedores'
     ];
 
     var MESES_LABEL = {
@@ -68,6 +70,12 @@
     // ─────────────────────────────────────────────────────────────────────
     // FILTROS Y FETCH
     // ─────────────────────────────────────────────────────────────────────
+
+    // Offset de meses que el usuario aplicó con las flechas ◀ ▶ del
+    // timeline. Se suma al mes filtrado del topbar para mover la ventana
+    // visible (ej. de "JUN-JUL" a "JUL-AGO"). El fetch del backend SIGUE
+    // usando el mes original — solo la ventana visual cambia.
+    var _monthOffset = 0;
 
     function getFiltrosActuales() {
         var cfg = window._CRM_CONFIG || {};
@@ -164,6 +172,11 @@
         if (!mes || isNaN(mes) || String(filtros.mes).toLowerCase() === 'todos') {
             mes = hoy.getMonth() + 1;
         }
+        // Aplicar offset de flechas: cada paso = 1 mes.
+        mes += _monthOffset;
+        // Normalizar mes >= 1 / <= 12 ajustando año.
+        while (mes < 1)  { mes += 12; anio -= 1; }
+        while (mes > 12) { mes -= 12; anio += 1; }
         var start = new Date(anio, mes - 1, 1);
         // Fin = último día del mes siguiente
         var end = new Date(anio, mes + 1, 0, 23, 59, 59);
@@ -199,27 +212,27 @@
         var color = m.color || '#9CA3AF';
         var titleAttr = (m.titulo || '') + ' · ' + (m.fecha_inicio || '') + ' → ' + (m.fecha_fin || '');
 
-        // Markers de inicio/fin: solo se muestran si la fecha original NO se
-        // recortó por la ventana (evita "ENE 02" en una barra que sigue desde
-        // el año pasado). Si overflowea, ese extremo va sin marker ni label.
-        var startMarker = (ini >= win.start)
-            ? '<span class="crm-cm-bar-marker crm-cm-bar-marker--start" style="color:' + color + ';">' +
-                '<span class="crm-cm-bar-date crm-cm-bar-date--start">' + fmtDateShort(ini) + '</span>' +
-              '</span>'
+        // Markers + fechas viven DENTRO de la barra (no sobresalen). Las
+        // fechas son chips sutiles a los extremos; los markers son puntitos
+        // de 8px sin borde. Si la fecha original se recortó por la ventana,
+        // ese extremo va sin marker ni chip (no quiero pintar "01 ene" en
+        // una barra cortada del año pasado).
+        var startStuff = (ini >= win.start)
+            ? '<span class="crm-cm-bar-marker crm-cm-bar-marker--start"></span>' +
+              '<span class="crm-cm-bar-date crm-cm-bar-date--start">' + fmtDateShort(ini) + '</span>'
             : '';
-        var endMarker = (fin <= win.end)
-            ? '<span class="crm-cm-bar-marker crm-cm-bar-marker--end" style="color:' + color + ';">' +
-                '<span class="crm-cm-bar-date crm-cm-bar-date--end">' + fmtDateShort(fin) + '</span>' +
-              '</span>'
+        var endStuff = (fin <= win.end)
+            ? '<span class="crm-cm-bar-date crm-cm-bar-date--end">' + fmtDateShort(fin) + '</span>' +
+              '<span class="crm-cm-bar-marker crm-cm-bar-marker--end"></span>'
             : '';
 
         return '<div class="crm-cm-bar' + overflowCls + confirmadoCls + '" ' +
                    'style="left:' + leftCalc + ';width:' + widthCalc + ';background:' + color + ';" ' +
                    'data-material-id="' + m.id + '" ' +
                    'title="' + escHtml(titleAttr) + '">' +
-                   startMarker +
+                   startStuff +
                    '<span class="crm-cm-bar-label">' + escHtml(m.titulo || '') + '</span>' +
-                   endMarker +
+                   endStuff +
                '</div>';
     }
 
@@ -452,24 +465,42 @@
         if (row) row.classList.add('is-context');
     }
 
+    function rePintarTimeline() {
+        // Re-renderiza el timeline (rows + header) sin re-fetch, usando
+        // _proyectosCache y el _monthOffset actual.
+        var tl = document.getElementById('crmControlTimeline');
+        if (tl && _proyectosCache.length) {
+            tl.innerHTML = _proyectosCache.map(renderTimelineRow).join('');
+        }
+        actualizarTimelineHeader(getFiltrosActuales());
+        // Re-wire selección de rows del timeline.
+        var rows = document.querySelectorAll('.crm-ctrl-timeline-row[data-proyecto-id]');
+        for (var j = 0; j < rows.length; j++) {
+            rows[j].addEventListener('click', onTimelineRowClick);
+        }
+        // Mantener highlight de selección si la había.
+        if (_selectedId) {
+            var sel = document.querySelectorAll('[data-proyecto-id="' + _selectedId + '"]');
+            for (var k = 0; k < sel.length; k++) sel[k].classList.add('is-selected');
+        }
+    }
+
     function actualizarTimelineHeader(filtros) {
         var cont = document.getElementById('ctrlTimelineMonths');
         if (!cont) return;
-        var mes = filtros.mes;
-        if (!mes || mes === 'todos') {
-            cont.innerHTML =
-                '<span class="crm-ctrl-month-chip">' + escHtml(filtros.anio || 'PERIODO') + '</span>' +
-                '<span class="crm-ctrl-month-line" aria-hidden="true"></span>' +
-                '<span class="crm-ctrl-month-chip">FIN</span>';
-            return;
-        }
-        var m1Num = parseInt(mes, 10);
-        var m2Num = m1Num === 12 ? 1 : m1Num + 1;
-        var m2 = (m2Num < 10 ? '0' : '') + m2Num;
+        // El header refleja la MISMA ventana que pinta las barras (incluye el
+        // offset que el usuario aplicó con las flechas).
+        var win = ventanaFechas(filtros);
+        var m1Num = win.start.getMonth() + 1;
+        var m1Key = (m1Num < 10 ? '0' : '') + m1Num;
+        var m2Date = new Date(win.start);
+        m2Date.setMonth(m2Date.getMonth() + 1);
+        var m2Num = m2Date.getMonth() + 1;
+        var m2Key = (m2Num < 10 ? '0' : '') + m2Num;
         cont.innerHTML =
-            '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[mes] || mes) + '</span>' +
+            '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[m1Key] || m1Key) + '</span>' +
             '<span class="crm-ctrl-month-line" aria-hidden="true"></span>' +
-            '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[m2] || m2) + '</span>';
+            '<span class="crm-ctrl-month-chip">' + (MESES_SHORT[m2Key] || m2Key) + '</span>';
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -583,6 +614,26 @@
         });
         var btnRep = document.getElementById('crmModeReportes');
         if (btnRep) btnRep.addEventListener('click', desactivarControl, true);
+
+        // Flechas para navegar mes en el timeline (solo mueve la ventana
+        // visual, no re-fetchea — los proyectos visibles siguen siendo los
+        // del mes filtrado del topbar).
+        var btnPrev = document.getElementById('ctrlMonthPrev');
+        var btnNext = document.getElementById('ctrlMonthNext');
+        if (btnPrev) {
+            btnPrev.addEventListener('click', function (e) {
+                e.preventDefault();
+                _monthOffset -= 1;
+                rePintarTimeline();
+            });
+        }
+        if (btnNext) {
+            btnNext.addEventListener('click', function (e) {
+                e.preventDefault();
+                _monthOffset += 1;
+                rePintarTimeline();
+            });
+        }
 
         // Botón "Ir al proyecto" (visible solo cuando hay proyecto seleccionado)
         var btnGoto = document.getElementById('crmControlGoToProject');

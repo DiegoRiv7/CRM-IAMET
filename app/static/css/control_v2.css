@@ -12,19 +12,18 @@
 body.crm-control-active .crm-footer { display: none !important; }
 
 .crm-control-section {
-    padding: 22px 26px 0;
+    /* La sección no debe exceder el alto disponible del viewport para que
+       la leyenda quede alineada con el final de la sidebar (no debajo). */
+    padding: 22px 26px 14px;
     background: #F5F5F7;
-    min-height: 100vh;
-    /* Flex column para que la leyenda se empuje al fondo del viewport con
-       margin-top: auto (alineada con el final de la sidebar). */
+    height: calc(100vh - 64px); /* topbar global del CRM ≈ 64px */
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: #1D1D1F;
     --row-h: 60px;
     --left-w: 380px;
-    /* Reserva vertical aproximada del topbar global del CRM + nuestro header +
-       stats. El split crece hasta consumir el resto del viewport. */
     --split-vchrome: 280px;
 }
 
@@ -149,9 +148,12 @@ body.crm-control-active .crm-footer { display: none !important; }
     grid-template-columns: var(--left-w) 1fr;
     gap: 14px;
     align-items: stretch;
-    /* Crece para llenar el viewport hasta donde empieza la leyenda. */
-    flex: 1 1 auto;
-    min-height: calc(100vh - var(--split-vchrome));
+    /* Crece para llenar el espacio entre stats y leyenda. Sin altura fija:
+       la sección entera tiene height fijo (100vh - topbar), así que flex
+       basis 0 funciona — el split se queda con todo lo sobrante. */
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* ─────────────── LEFT: lista de proyectos ─────────────── */
@@ -323,11 +325,33 @@ body.crm-control-active .crm-footer { display: none !important; }
     border-radius: 2px;
 }
 .crm-ctrl-timeline-hint {
-    font-size: 0.68rem;
-    color: #9CA3AF;
-    font-style: italic;
-    flex-shrink: 0;
+    /* Removido — reemplazado por flechas de navegación de mes */
+    display: none;
 }
+
+/* Flechas para cambiar el par de meses visibles del timeline. */
+.crm-ctrl-month-nav {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.06);
+    background: #FFFFFF;
+    color: #4B5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s, transform 0.14s, box-shadow 0.14s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.crm-ctrl-month-nav:hover {
+    background: #F8F8FA;
+    color: #1D1D1F;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.crm-ctrl-month-nav:active { transform: translateY(0); }
 
 .crm-ctrl-timeline-body {
     flex: 1;
@@ -490,12 +514,12 @@ body.crm-control-active .crm-footer { display: none !important; }
     display: flex;
     align-items: center;
     gap: 22px;
-    /* margin-top: auto empuja la leyenda al fondo del flex column de la
-       sección — queda alineada con el final de la sidebar (que también
-       termina al bottom del viewport). */
-    margin-top: auto;
-    margin-bottom: 22px;
-    padding: 14px 20px;
+    /* La sección entera tiene altura fija = viewport - topbar. Después de
+       header + stats + split (flex:1), la leyenda queda justo al fondo
+       sin necesidad de margin-top:auto. */
+    margin-top: 14px;
+    margin-bottom: 0;
+    padding: 12px 18px;
     background: #FFFFFF;
     border-radius: 14px;
     flex-wrap: wrap;

@@ -81,12 +81,17 @@ Toda la lógica está en crm_control_v2.js.
         <!-- RIGHT: timeline maestro -->
         <div class="crm-control-right">
             <div class="crm-ctrl-timeline-header">
+                <button type="button" class="crm-ctrl-month-nav" id="ctrlMonthPrev" title="Mes anterior" aria-label="Mes anterior">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
+                </button>
                 <div class="crm-ctrl-timeline-months" id="ctrlTimelineMonths">
                     <span class="crm-ctrl-month-chip">JUNIO</span>
                     <span class="crm-ctrl-month-line" aria-hidden="true"></span>
                     <span class="crm-ctrl-month-chip">JULIO</span>
                 </div>
-                <span class="crm-ctrl-timeline-hint">click en un proyecto para resaltar</span>
+                <button type="button" class="crm-ctrl-month-nav" id="ctrlMonthNext" title="Mes siguiente" aria-label="Mes siguiente">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                </button>
             </div>
             <div class="crm-ctrl-timeline-body" id="crmControlTimeline">
                 <div class="crm-ctrl-state crm-ctrl-state--placeholder">
