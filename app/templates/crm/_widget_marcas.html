@@ -35,12 +35,24 @@ Datos: GET /app/api/marcas/resumen/?anio=YYYY&vendedores=CSV
                     Timeline
                 </button>
             </div>
-            <button class="marcas-iconbtn" id="mkBtnFilter" title="Filtros">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+            {% comment %}
+            Botones Filtro y Ordenar reutilizan las clases del CRM
+            (.crm-facet-btn + .crm-popover) para mantener congruencia
+            visual con la sección Oportunidades. La lógica vive en
+            crm_marcas_v2.js — popovers propios con las opciones que
+            aplican a Marcas (no se reutiliza el IIFE del CRM porque es
+            privado y específico de oportunidades).
+            {% endcomment %}
+            <button type="button" class="crm-facet-btn crm-facet-add" id="mkBtnFilter" title="Agregar filtro">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Filtro</span>
             </button>
-            <button class="marcas-iconbtn" id="mkBtnSort" title="Ordenar">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M12 19l5-5M12 19l-5-5"/></svg>
+            <button type="button" class="crm-facet-btn crm-facet-sort" id="mkBtnSort" title="Ordenar">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                <span id="mkSortLabel">Ordenar</span>
             </button>
+            {# Chips de filtros activos (aparecen al lado de los botones cuando hay filtros aplicados) #}
+            <div class="mk-facet-chips" id="mkFacetChips"></div>
         </div>
         <div class="marcas-actions marcas-actions--right">
             <div class="marcas-searchbox">
@@ -101,11 +113,11 @@ Datos: GET /app/api/marcas/resumen/?anio=YYYY&vendedores=CSV
                     <div class="marcas-kpi-value" id="mkKpiMeta">—</div>
                 </div>
             </div>
-            <svg class="marcas-ring" id="mkKpiRing" width="68" height="68" viewBox="0 0 68 68">
-                <circle cx="34" cy="34" r="26" class="marcas-ring-bg" stroke-width="7" fill="none"/>
-                <circle cx="34" cy="34" r="26" class="marcas-ring-fg" stroke-width="7" fill="none"
-                        stroke-dasharray="163.36" stroke-dashoffset="163.36"
-                        stroke-linecap="round" transform="rotate(-90 34 34)"/>
+            <svg class="marcas-ring" id="mkKpiRing" width="50" height="50" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="19" class="marcas-ring-bg" stroke-width="5" fill="none"/>
+                <circle cx="25" cy="25" r="19" class="marcas-ring-fg" stroke-width="5" fill="none"
+                        stroke-dasharray="119.38" stroke-dashoffset="119.38"
+                        stroke-linecap="round" transform="rotate(-90 25 25)"/>
             </svg>
             <div class="marcas-kpi-meta-foot">
                 <span class="marcas-kpi-meta-pct" id="mkKpiAvancePct">—</span>
@@ -114,8 +126,12 @@ Datos: GET /app/api/marcas/resumen/?anio=YYYY&vendedores=CSV
         </div>
     </div>
 
-    <!-- Barra de filtros (oculta hasta que clicken el iconbtn) -->
-    <div class="marcas-filterbar" id="mkFilterbar" hidden>
+    {% comment %}
+    Filterbar inline ANTIGUO — deprecado a favor de popovers con clases
+    .crm-popover. Se mantiene oculto por compatibilidad con cualquier JS
+    que aún consulte los selects/chips, pero ya no se muestra al usuario.
+    {% endcomment %}
+    <div class="marcas-filterbar" id="mkFilterbar" hidden style="display:none !important;">
         <div class="marcas-filter-grp">
             <span class="marcas-filter-lab">Trimestre</span>
             <div class="marcas-chips" data-filter="quarter">
@@ -230,3 +246,9 @@ Datos: GET /app/api/marcas/resumen/?anio=YYYY&vendedores=CSV
     </div>
 
 </div>
+
+{# Popovers de filtro y ordenar — viven a nivel sección para flotar libres
+   (position:fixed los posiciona vía JS al lado del botón clickeado). #}
+<div class="crm-popover" id="mkPopFilter" role="menu"></div>
+<div class="crm-popover" id="mkPopFilterValue" role="menu"></div>
+<div class="crm-popover" id="mkPopSort" role="menu"></div>

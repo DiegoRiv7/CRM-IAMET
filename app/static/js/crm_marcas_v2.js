@@ -20,9 +20,37 @@
     var _totalsCache = null;
     var _view = 'tabla';
     var _query = '';
-    var _filtersOpen = false;
-    var _sortDesc = true;
     var _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
+    // Sort key: 'default' | 'monto-desc' | 'monto-asc' | 'prob-desc' | 'prob-asc' | 'nombre-asc' | 'fact-desc' | 'fact-asc'
+    var _sortKey = 'default';
+
+    // Definición de filtros disponibles. Cada uno tiene un picker propio
+    // (el value popover decide cómo renderiza sus opciones según `type`).
+    var MK_FILTER_FIELDS = [
+        { key: 'marca',   label: 'Marca',        type: 'marca' },
+        { key: 'quarter', label: 'Trimestre',    type: 'enum',
+            options: [{v:'1',l:'Q1'},{v:'2',l:'Q2'},{v:'3',l:'Q3'},{v:'4',l:'Q4'}] },
+        { key: 'prob',    label: 'Probabilidad', type: 'enum',
+            options: [{v:'high',l:'Alta (≥60%)'},{v:'mid',l:'Media (40-59%)'},{v:'low',l:'Baja (<40%)'}] },
+        { key: 'mes',     label: 'Mes',          type: 'enum',
+            options: [
+                {v:'1',l:'Enero'},{v:'2',l:'Febrero'},{v:'3',l:'Marzo'},{v:'4',l:'Abril'},
+                {v:'5',l:'Mayo'},{v:'6',l:'Junio'},{v:'7',l:'Julio'},{v:'8',l:'Agosto'},
+                {v:'9',l:'Septiembre'},{v:'10',l:'Octubre'},{v:'11',l:'Noviembre'},{v:'12',l:'Diciembre'}
+            ] }
+    ];
+
+    // Opciones del popover Ordenar.
+    var MK_SORT_OPTIONS = [
+        { k: 'default',    lbl: 'Por defecto' },
+        { k: 'fact-desc',  lbl: 'Facturado: mayor a menor' },
+        { k: 'fact-asc',   lbl: 'Facturado: menor a mayor' },
+        { k: 'monto-desc', lbl: 'Monto opp: mayor a menor' },
+        { k: 'monto-asc',  lbl: 'Monto opp: menor a mayor' },
+        { k: 'prob-desc',  lbl: 'Probabilidad: mayor a menor' },
+        { k: 'prob-asc',   lbl: 'Probabilidad: menor a mayor' },
+        { k: 'nombre-asc', lbl: 'Nombre A-Z' }
+    ];
 
     try { _initialMode = localStorage.getItem('crm_clientes_mode'); } catch (e) {}
 
@@ -69,6 +97,39 @@
         var clean = String(name || '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/);
         if (!clean[0]) return '?';
         return (clean[0][0] + (clean[1] ? clean[1][0] : '')).toUpperCase();
+    }
+
+    /* Comparator unificado para los dos sorts (marca-level y opp-level).
+       `kind` es 'marca' (recibe a, b = objetos marca con .facturado, .label)
+       o 'op' (recibe a, b = {op, marca} con op.monto/op.prob, marca.label).
+       Las claves que no aplican a `kind` caen a 0 para no cambiar el orden. */
+    function sortComparator(kind, a, b) {
+        switch (_sortKey) {
+            case 'fact-desc':
+                return (kind === 'marca') ? (b.facturado - a.facturado) : 0;
+            case 'fact-asc':
+                return (kind === 'marca') ? (a.facturado - b.facturado) : 0;
+            case 'monto-desc':
+                return (kind === 'marca')
+                    ? ((b.pipeline || 0) - (a.pipeline || 0))
+                    : (b.op.monto - a.op.monto);
+            case 'monto-asc':
+                return (kind === 'marca')
+                    ? ((a.pipeline || 0) - (b.pipeline || 0))
+                    : (a.op.monto - b.op.monto);
+            case 'prob-desc':
+                return (kind === 'op') ? (b.op.prob - a.op.prob) : 0;
+            case 'prob-asc':
+                return (kind === 'op') ? (a.op.prob - b.op.prob) : 0;
+            case 'nombre-asc':
+                if (kind === 'marca') return (a.label || '').localeCompare(b.label || '');
+                return (a.marca.label || '').localeCompare(b.marca.label || '');
+            case 'default':
+            default:
+                return (kind === 'marca')
+                    ? (b.facturado - a.facturado)
+                    : (b.op.monto - a.op.monto);
+        }
     }
 
     function getFiltrosFetch() {
@@ -152,38 +213,187 @@
     }
 
     function renderAll() {
-        poblarFiltroMarca();
-        actualizarVisibilidadFiltroMarca();
         renderKpis();
         renderTabla();
         renderTimeline();
+        renderFacetChips();
         actualizarFilterCount();
     }
 
-    function poblarFiltroMarca() {
-        var sel = document.getElementById('mkFilterMarca');
-        if (!sel) return;
-        // Si ya tiene opciones (excepto "Todas"), no rebuildemos para no
-        // perder la selección actual del usuario al refrescar.
-        if (sel.options.length > 1) return;
-        var current = _filters.marca;
-        sel.innerHTML = '<option value="all">Todas</option>';
-        for (var i = 0; i < _marcasCache.length; i++) {
-            var m = _marcasCache[i];
-            var opt = document.createElement('option');
-            opt.value = m.key;
-            opt.textContent = m.label;
-            sel.appendChild(opt);
-        }
-        if (current && current !== 'all') sel.value = current;
+    /* ─────────── POPOVERS estilo CRM (filtros + ordenar) ─────────── */
+
+    function closeAllMkPopovers(except) {
+        ['mkPopFilter', 'mkPopFilterValue', 'mkPopSort'].forEach(function (id) {
+            if (id === except) return;
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        });
     }
 
-    function actualizarVisibilidadFiltroMarca() {
-        // El filtro de Marca solo tiene sentido en vista Timeline (en
-        // Tabla cada fila YA es una marca).
-        var grp = document.getElementById('mkFilterMarcaGrp');
-        if (!grp) return;
-        grp.style.display = (_view === 'timeline') ? '' : 'none';
+    function positionPopover(pop, anchor) {
+        var r = anchor.getBoundingClientRect();
+        pop.style.top  = (r.bottom + 6) + 'px';
+        pop.style.left = r.left + 'px';
+        pop.style.right = 'auto';
+        // Ajustar si sale por la derecha
+        setTimeout(function () {
+            var pr = pop.getBoundingClientRect();
+            if (pr.right > window.innerWidth - 8) {
+                pop.style.left = 'auto';
+                pop.style.right = (window.innerWidth - r.right) + 'px';
+            }
+        }, 0);
+    }
+
+    function togglePopover(popId, anchor, renderer) {
+        var pop = document.getElementById(popId);
+        if (!pop) return;
+        if (pop.classList.contains('open')) {
+            pop.classList.remove('open');
+            return;
+        }
+        closeAllMkPopovers(popId);
+        if (typeof renderer === 'function') renderer(pop);
+        pop.classList.add('open');
+        positionPopover(pop, anchor);
+    }
+
+    function renderFilterFieldsPopover(pop) {
+        var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
+        MK_FILTER_FIELDS.forEach(function (fld) {
+            var active = (_filters[fld.key] && _filters[fld.key] !== 'all');
+            html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-mk-field="' + fld.key + '">' +
+                        '<span>' + escHtml(fld.label) + '</span>' +
+                    '</button>';
+        });
+        html += '</div>';
+        pop.innerHTML = html;
+        // Wire items
+        pop.querySelectorAll('[data-mk-field]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var key = btn.getAttribute('data-mk-field');
+                var fld = MK_FILTER_FIELDS.find(function (f) { return f.key === key; });
+                if (!fld) return;
+                togglePopover('mkPopFilterValue', btn, function (vpop) {
+                    renderFilterValuePopover(vpop, fld);
+                });
+            });
+        });
+    }
+
+    function renderFilterValuePopover(pop, field) {
+        var current = _filters[field.key] || 'all';
+        var options = [];
+        if (field.type === 'marca') {
+            options.push({ v: 'all', l: 'Todas' });
+            _marcasCache.forEach(function (m) {
+                options.push({ v: m.key, l: m.label });
+            });
+        } else if (field.type === 'enum') {
+            options.push({ v: 'all', l: 'Todas' });
+            (field.options || []).forEach(function (o) { options.push(o); });
+        }
+        var html = '<div class="crm-pop-section">' + escHtml(field.label) + '</div><div class="crm-pop-list">';
+        options.forEach(function (o) {
+            var act = String(o.v) === String(current) ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-mk-val="' + escHtml(o.v) + '">' +
+                        '<span>' + escHtml(o.l) + '</span>' +
+                    '</button>';
+        });
+        html += '</div>';
+        pop.innerHTML = html;
+        pop.querySelectorAll('[data-mk-val]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                _filters[field.key] = btn.getAttribute('data-mk-val');
+                closeAllMkPopovers();
+                renderAll();
+            });
+        });
+    }
+
+    function renderSortPopover(pop) {
+        var html = '<div class="crm-pop-section">Ordenar por</div><div class="crm-pop-list">';
+        MK_SORT_OPTIONS.forEach(function (s) {
+            var act = s.k === _sortKey ? 'active' : '';
+            html += '<button type="button" class="crm-pop-item ' + act + '" data-mk-sort="' + escHtml(s.k) + '">' +
+                        '<span>' + escHtml(s.lbl) + '</span>' +
+                    '</button>';
+        });
+        html += '</div>';
+        pop.innerHTML = html;
+        pop.querySelectorAll('[data-mk-sort]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                _sortKey = btn.getAttribute('data-mk-sort');
+                closeAllMkPopovers();
+                actualizarSortLabel();
+                renderAll();
+            });
+        });
+    }
+
+    function actualizarSortLabel() {
+        var label = document.getElementById('mkSortLabel');
+        var btn = document.getElementById('mkBtnSort');
+        if (!label || !btn) return;
+        if (_sortKey && _sortKey !== 'default') {
+            var s = MK_SORT_OPTIONS.find(function (x) { return x.k === _sortKey; });
+            label.textContent = s ? s.lbl : 'Ordenar';
+            btn.classList.add('has-sort');
+        } else {
+            label.textContent = 'Ordenar';
+            btn.classList.remove('has-sort');
+        }
+    }
+
+    function renderFacetChips() {
+        var cont = document.getElementById('mkFacetChips');
+        if (!cont) return;
+        var chips = '';
+        MK_FILTER_FIELDS.forEach(function (fld) {
+            var v = _filters[fld.key];
+            if (!v || v === 'all') return;
+            var label = fld.label + ': ';
+            if (fld.type === 'marca') {
+                var mm = _marcasCache.find(function (m) { return String(m.key) === String(v); });
+                label += mm ? mm.label : v;
+            } else if (fld.type === 'enum') {
+                var op = (fld.options || []).find(function (o) { return String(o.v) === String(v); });
+                label += op ? op.l : v;
+            }
+            chips += '<span class="mk-facet-chip" data-mk-chip-field="' + fld.key + '">' +
+                        escHtml(label) +
+                        '<button type="button" class="mk-facet-chip-x" title="Quitar filtro">' +
+                            '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+                        '</button>' +
+                     '</span>';
+        });
+        // Botón "Limpiar todo" si hay al menos un filtro activo.
+        var activos = MK_FILTER_FIELDS.some(function (f) {
+            return _filters[f.key] && _filters[f.key] !== 'all';
+        });
+        if (activos) {
+            chips += '<button type="button" class="mk-facet-clear-all" id="mkBtnClearAll" title="Limpiar todos los filtros">Limpiar</button>';
+        }
+        cont.innerHTML = chips;
+        // Wire chips
+        cont.querySelectorAll('.mk-facet-chip-x').forEach(function (x) {
+            x.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var key = x.closest('[data-mk-chip-field]').getAttribute('data-mk-chip-field');
+                _filters[key] = 'all';
+                renderAll();
+            });
+        });
+        var btnAll = document.getElementById('mkBtnClearAll');
+        if (btnAll) {
+            btnAll.addEventListener('click', function () {
+                _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
+                renderAll();
+            });
+        }
     }
 
     function renderKpis() {
@@ -221,10 +431,10 @@
             }
         }
 
-        // Ring: dashoffset según avance (circunferencia ≈ 163.36)
+        // Ring: dashoffset según avance (circunferencia ≈ 119.38 con r=19)
         var ring = document.querySelector('#mkKpiRing .marcas-ring-fg');
         if (ring) {
-            var c = 2 * Math.PI * 26;
+            var c = 2 * Math.PI * 19;
             var off = c * (1 - Math.min(avance, 1));
             ring.style.strokeDasharray = c;
             ring.style.strokeDashoffset = off;
@@ -235,7 +445,7 @@
         var tb = document.getElementById('mkTableBody');
         if (!tb) return;
         var rows = visiblesFiltradas().slice().sort(function (a, b) {
-            return _sortDesc ? (b.facturado - a.facturado) : (a.facturado - b.facturado);
+            return sortComparator('marca', a, b);
         });
         if (!rows.length) {
             tb.innerHTML = '<tr><td colspan="7" class="marcas-empty-cell">Sin marcas para la búsqueda actual.</td></tr>';
@@ -323,7 +533,7 @@
                 }
             }
             flat.sort(function (a, b) {
-                return _sortDesc ? (b.op.monto - a.op.monto) : (a.op.monto - b.op.monto);
+                return sortComparator('op', a, b);
             });
             if (!flat.length) {
                 tlBody.innerHTML = '<div class="marcas-empty-state"><p>Sin oportunidades para los filtros actuales.</p></div>';
@@ -689,28 +899,24 @@
                     if (vt) vt.hidden = v !== 'tabla';
                     if (vl) vl.hidden = v !== 'timeline';
                     if (v === 'timeline') renderTimeline();
-                    actualizarVisibilidadFiltroMarca();
                     actualizarFilterCount();
                 });
             }
         }
 
+        // Botones Filtro y Ordenar — usan popovers estilo CRM
         var btnFilter = document.getElementById('mkBtnFilter');
-        var fb = document.getElementById('mkFilterbar');
-        if (btnFilter && fb) {
-            btnFilter.addEventListener('click', function () {
-                _filtersOpen = !_filtersOpen;
-                fb.hidden = !_filtersOpen;
-                btnFilter.classList.toggle('is-on', _filtersOpen);
+        if (btnFilter) {
+            btnFilter.addEventListener('click', function (e) {
+                e.stopPropagation();
+                togglePopover('mkPopFilter', btnFilter, renderFilterFieldsPopover);
             });
         }
-
         var btnSort = document.getElementById('mkBtnSort');
         if (btnSort) {
-            btnSort.addEventListener('click', function () {
-                _sortDesc = !_sortDesc;
-                renderAll();
-                if (_view === 'timeline') renderTimeline();
+            btnSort.addEventListener('click', function (e) {
+                e.stopPropagation();
+                togglePopover('mkPopSort', btnSort, renderSortPopover);
             });
         }
 
@@ -726,67 +932,22 @@
             });
         }
 
-        // Chips de filtro (trimestre + prob)
-        var chipGroups = document.querySelectorAll('#mkFilterbar [data-filter]');
-        for (var k = 0; k < chipGroups.length; k++) {
-            (function (group) {
-                var name = group.getAttribute('data-filter');
-                var btns = group.querySelectorAll('.marcas-chip');
-                for (var i = 0; i < btns.length; i++) {
-                    btns[i].addEventListener('click', function () {
-                        var val = this.getAttribute('data-val');
-                        _filters[name] = val;
-                        for (var j = 0; j < btns.length; j++) {
-                            btns[j].classList.toggle('is-on', btns[j].getAttribute('data-val') === val);
-                        }
-                        if (_view === 'timeline') renderTimeline();
-                        actualizarFilterCount();
-                    });
-                }
-            })(chipGroups[k]);
-        }
-
-        var mesSel = document.getElementById('mkFilterMes');
-        if (mesSel) {
-            mesSel.addEventListener('change', function () {
-                _filters.mes = this.value;
-                if (_view === 'timeline') renderTimeline();
-                actualizarFilterCount();
-            });
-        }
-        var marcaSel = document.getElementById('mkFilterMarca');
-        if (marcaSel) {
-            marcaSel.addEventListener('change', function () {
-                _filters.marca = this.value;
-                if (_view === 'timeline') renderTimeline();
-                actualizarFilterCount();
-            });
-        }
-
-        var btnClear = document.getElementById('mkBtnClearFilters');
-        if (btnClear) {
-            btnClear.addEventListener('click', function () {
-                _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
-                var allChips = document.querySelectorAll('#mkFilterbar .marcas-chip');
-                for (var i = 0; i < allChips.length; i++) {
-                    allChips[i].classList.toggle('is-on', allChips[i].getAttribute('data-val') === 'all');
-                }
-                if (mesSel) mesSel.value = 'all';
-                if (marcaSel) marcaSel.value = 'all';
-                if (_view === 'timeline') renderTimeline();
-                actualizarFilterCount();
-            });
-        }
-
         var btnReset = document.getElementById('mkBtnReset');
         if (btnReset) {
             btnReset.addEventListener('click', function () {
                 _query = ''; if (search) search.value = '';
-                _filters = { quarter: 'all', prob: 'all', mes: 'all' };
+                _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
+                _sortKey = 'default';
                 renderAll();
-                if (_view === 'timeline') renderTimeline();
             });
         }
+
+        // Cerrar popovers al click fuera o ESC.
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.crm-popover')) return;
+            if (e.target.closest('#mkBtnFilter') || e.target.closest('#mkBtnSort')) return;
+            closeAllMkPopovers();
+        });
 
         // Overlay click cierra widget
         var overlay = document.getElementById('marcaWidgetOverlay');
