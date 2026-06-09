@@ -953,6 +953,10 @@
         if (document.body) document.body.classList.add('crm-marcas-active');
 
         try { localStorage.setItem('crm_clientes_mode', 'marcas'); } catch (e) {}
+        // Medir y fijar altura del viewport disponible (más confiable que
+        // calc(100vh - X) porque X depende del topbar/padding variable).
+        ajustarAlturaSeccion();
+        window.addEventListener('resize', ajustarAlturaSeccion);
         fetchMarcas();
     }
 
@@ -961,9 +965,30 @@
         var btn = document.getElementById('crmModeMarcas');
         if (btn) btn.classList.remove('active');
         var section = document.getElementById('ckMarcasSection');
-        if (section) section.style.display = 'none';
+        if (section) {
+            section.style.display = 'none';
+            section.style.height = '';
+        }
         if (document.body) document.body.classList.remove('crm-marcas-active');
         toggleMarcaWidget(false);
+        window.removeEventListener('resize', ajustarAlturaSeccion);
+    }
+
+    /* Mide el espacio real desde el top de la sección Marcas hasta el
+       bottom del viewport y lo aplica como style.height. Garantiza que
+       NUNCA crezca más allá del viewport (sin importar topbar / padding
+       del .crm-main / chrome del navegador). Necesita correrse después
+       de display:block para que getBoundingClientRect() sea válido. */
+    function ajustarAlturaSeccion() {
+        var section = document.getElementById('ckMarcasSection');
+        if (!section || section.style.display === 'none') return;
+        // Defer a next frame: si display:block recién pasó, los layouts
+        // aún no terminaron y .top puede dar 0.
+        requestAnimationFrame(function () {
+            var rect = section.getBoundingClientRect();
+            var avail = Math.max(420, window.innerHeight - rect.top - 14);
+            section.style.height = avail + 'px';
+        });
     }
 
     function instalarGuard() {

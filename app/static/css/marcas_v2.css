@@ -41,13 +41,15 @@ body.marca-modal-open {
     --mk-rowH: 60px;
     --mk-rowpad: 14px;
 
-    /* Altura fija = viewport - topbar global del CRM (~64px). La tabla
-       interna tiene su propio scroll para no exceder el bottom de la
-       sidebar. overflow:hidden evita que un hijo (timeline con muchas
-       rows) "empuje" la sección y la haga crecer fuera del viewport. */
+    /* La altura la setea crm_marcas_v2.js en activar() midiendo el
+       espacio real desde el top de la sección hasta el bottom del
+       viewport (con resize listener). El cálculo `calc(100vh - 64px)`
+       no era confiable porque el topbar del CRM + padding del .crm-main
+       pueden variar y empujaban el contenido fuera del viewport.
+       Fallback CSS por si el JS no corre: min-height grande. */
     padding: 0 26px 14px;
     background: var(--mk-bg);
-    height: calc(100vh - 64px);
+    min-height: 540px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
