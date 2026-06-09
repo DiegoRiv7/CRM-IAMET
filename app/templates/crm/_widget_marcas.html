@@ -247,8 +247,10 @@ Datos: GET /app/api/marcas/resumen/?anio=YYYY&vendedores=CSV
 
 </div>
 
-{# Popovers de filtro y ordenar — viven a nivel sección para flotar libres
-   (position:fixed los posiciona vía JS al lado del botón clickeado). #}
+{% comment %}
+Popovers de filtro y ordenar — viven a nivel sección para flotar libres
+(position:fixed los posiciona vía JS al lado del botón clickeado).
+{% endcomment %}
 <div class="crm-popover" id="mkPopFilter" role="menu"></div>
 <div class="crm-popover" id="mkPopFilterValue" role="menu"></div>
 <div class="crm-popover" id="mkPopSort" role="menu"></div>
