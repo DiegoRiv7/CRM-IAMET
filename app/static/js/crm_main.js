@@ -1668,6 +1668,9 @@
                 cotizadorOppId = oppId;
                 cotizadorOverlay.classList.add('active');
                 cotizadorOverlay.classList.remove('closing');
+                // body.cotizador-open habilita el CSS que oculta breadcrumbs
+                // de widgets de oportunidad detrás del cotizador.
+                if (document.body) document.body.classList.add('cotizador-open');
                 cotizadorIframe.src = '/app/crear-cotizacion/oportunidad/' + oppId + '/?widget_mode=1';
             }
             window.openCotizador = openCotizador;
@@ -1679,6 +1682,7 @@
                 }
                 cotizadorOverlay.classList.add('active');
                 cotizadorOverlay.classList.remove('closing');
+                if (document.body) document.body.classList.add('cotizador-open');
                 cotizadorIframe.src = '/app/cotizacion/' + cotId + '/editar/?widget_mode=1';
             };
 
@@ -1686,6 +1690,7 @@
                 cotizadorOverlay.classList.add('closing');
                 setTimeout(function () {
                     cotizadorOverlay.classList.remove('active', 'closing');
+                    if (document.body) document.body.classList.remove('cotizador-open');
                     cotizadorIframe.src = 'about:blank';
                 }, 200);
                 if (cotizacionCreated) {

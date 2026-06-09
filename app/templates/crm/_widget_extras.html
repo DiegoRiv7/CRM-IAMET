@@ -1,3 +1,24 @@
+<style>
+/* Cuando el cotizador está abierto, ocultar el breadcrumb del widget de
+   oportunidad que vive en el fondo (el "REUBICACION DE 3 NODOS… > Crear
+   Cotización" con fondo oscuro que se asoma encima del cotizador). El
+   widget de opp no tiene su propio close al abrir el cotizador, así que
+   su breadcrumb sigue visible si tiene z-index parecido al del header. */
+#widgetCotizador.active ~ #widgetDetalle .wact-breadcrumb,
+#widgetCotizador.active ~ #widgetDetalle .breadcrumb,
+#widgetCotizador.active ~ #widgetDetalle [class*="breadcrumb"],
+#widgetCotizador.active ~ #widgetDetalle [class*="crumb"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+/* Si el orden DOM no coincide con el selector hermano, plan B vía body */
+body.cotizador-open .wact-breadcrumb,
+body.cotizador-open [class*="breadcrumb"]:not(#widgetCotizador *),
+body.cotizador-open [class*="-crumb"]:not(#widgetCotizador *) {
+    display: none !important;
+}
+</style>
+
 <!-- ═══ WIDGET: COTIZADOR (iframe) ═══ -->
 <div class="widget-overlay" id="widgetCotizador" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde botón Cotizar del header -->
     <div class="widget-card widget-card-cotizador">

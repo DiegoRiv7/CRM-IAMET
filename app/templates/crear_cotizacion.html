@@ -741,36 +741,37 @@
         /* DEBUG: Uncomment the next line to always show drag handles for testing */
         /* .drag-handle { opacity: 1 !important; } */
 
-        /* ── Columnas internas (proveedor + costo) ──
-           Fondo amarillo suave para que sea visualmente evidente que estas
-           columnas NO aparecen en el PDF — solo viven en BD para reportes
-           de utilidad y para vincular proveedores a la oportunidad. */
+        /* Columnas internas (proveedor + costo): SOLO el header en amarillo
+           para indicar que son internas. Las celdas de las filas en color
+           normal — el bordillo del input ya da contexto suficiente. */
         .product-table th.internal-col {
             background-color: rgba(250, 204, 21, 0.18) !important;
             color: #92400E !important;
             border-bottom-color: rgba(250, 204, 21, 0.4) !important;
         }
         .product-table td.internal-cell {
-            background-color: rgba(250, 204, 21, 0.06);
+            background-color: transparent;
         }
         .product-table td.internal-cell .input-field.internal-input {
-            background-color: #FFFBEB !important;
-            border-color: rgba(250, 204, 21, 0.45) !important;
+            background-color: #FFFFFF !important;
+            border-color: #E2E8F0 !important;
         }
         .product-table td.internal-cell .input-field.internal-input:focus {
-            border-color: #F59E0B !important;
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+            border-color: #0052D4 !important;
+            box-shadow: 0 0 0 2px rgba(0, 82, 212, 0.18) !important;
         }
-        /* Asegurar que el h1 "Crear/Editar Cotización" del propio template se
-           oculta en widget_mode — el widget cotizador ya provee su header
-           "Crear Cotización" con icono en _widget_extras.html, así que el h1
-           interno sería un breadcrumb redundante encima del formulario.
-           La regla previa usaba `body > .min-h-screen > .max-w-full` que no
-           matchea porque body es directamente .min-h-screen, así que el
-           selector más explícito de abajo es el que realmente lo oculta. */
         {% if widget_mode %}
-        h1.text-3xl.font-bold.text-white.text-center {
+        /* Ocultar el h1 interno del template + cualquier breadcrumb dinámico
+           que se inyecte arriba (el "Camaras Edif Derecho A > Crear
+           Cotización" que aparecía con fondo oscuro). */
+        h1.text-3xl.font-bold.text-white.text-center,
+        .breadcrumb,
+        .breadcrumb-pill,
+        [class*="breadcrumb"],
+        [class*="-crumb"],
+        [class*="crumb-"] {
             display: none !important;
+            visibility: hidden !important;
         }
         {% endif %}
     </style>
@@ -906,10 +907,6 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     <button type="button" id="show-discount-btn" onclick="toggleDiscountColumn()" class="btn-secondary">+ Mostrar Columna de Descuento</button>
                 </div>
                 <input type="hidden" name="descuento_visible" id="descuento_visible" value="false">
-                {# Nota informativa: columnas internas (proveedor + costo) con fondo amarillo, NO aparecen en el PDF al cliente; solo BD para reportes. #}
-                <div class="internal-cols-note" style="margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:rgba(250,204,21,0.12);border-left:3px solid #FACC15;border-radius:6px;font-size:0.78rem;color:var(--apple-label-secondary);">
-                    <strong style="color:#CA8A04;">Nota:</strong> las columnas con fondo amarillo son <em>internas</em> &mdash; no aparecen en el PDF, son para reportes de utilidad y vincular proveedores a la oportunidad.
-                </div>
                 <div class="table-container">
                     <table class="product-table">
                         <thead>
@@ -926,8 +923,8 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                                 </th>
                                 <th class="w-1/8">Total</th>
                                 {# Columnas internas: fondo amarillo para señalar que NO van en el PDF. #}
-                                <th class="internal-col" title="Solo interno: NO aparece en el PDF. Define con qué proveedor pensaste resolver esta línea. Se vinculará automáticamente al M2M de proveedores de la oportunidad.">Proveedor</th>
-                                <th class="internal-col" title="Solo interno: NO aparece en el PDF. Costo unitario al que compras al proveedor. Sirve para calcular utilidad/margen.">Costo Unit.</th>
+                                <th class="internal-col">Proveedor</th>
+                                <th class="internal-col">Costo Unit.</th>
                                 <th class="w-8"></th>
                             </tr>
                         </thead>
@@ -1007,7 +1004,6 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             <div class="card p-6 mt-6 shadow-md-dark" style="border-left: 4px solid #16A34A;">
                 <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">
                     Resumen de Utilidad
-                    <span style="font-size:0.7rem;color:#9CA3AF;font-weight:500;margin-left:6px;">(interno &mdash; no aparece en PDF)</span>
                 </h2>
                 <div class="flex justify-between mb-2" style="color: var(--apple-label-secondary);">
                     <span>Total sin IVA (ingreso):</span>
