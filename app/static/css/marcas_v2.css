@@ -179,7 +179,7 @@ body.crm-marcas-active .crm-footer { display: none !important; }
 /* ─────────────── KPIs (compactos, tamaño Materiales) ─────────────── */
 .marcas-kpis {
     display: grid;
-    grid-template-columns: repeat(4, 1fr) 1.25fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin: 2px 0 12px;
 }
@@ -585,7 +585,6 @@ body.crm-marcas-active .crm-footer { display: none !important; }
 /* ─────────────── Responsive ─────────────── */
 @media (max-width: 1180px) {
     .marcas-kpis { grid-template-columns: repeat(2, 1fr); }
-    .marcas-kpi-meta { grid-column: span 2; }
 }
 @media (max-width: 860px) {
     .marcas-section { padding: 0 16px 40px; }

@@ -190,7 +190,6 @@
         var setT = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
         setT('mkKpiFact', '—'); setT('mkKpiOpps', '—');
         setT('mkKpiCot', '—');  setT('mkKpiCam', '—');
-        setT('mkKpiMeta', '—'); setT('mkKpiAvancePct', '—'); setT('mkKpiGap', '');
     }
 
     function renderError(msg) {
@@ -230,8 +229,7 @@
         });
     }
 
-    function positionPopover(pop, anchor) {
-        var r = anchor.getBoundingClientRect();
+    function positionPopoverFromRect(pop, r) {
         pop.style.top  = (r.bottom + 6) + 'px';
         pop.style.left = r.left + 'px';
         pop.style.right = 'auto';
@@ -252,10 +250,16 @@
             pop.classList.remove('open');
             return;
         }
+        // IMPORTANTE: capturar el rect del anchor ANTES de cerrar los demás
+        // popovers — si el anchor es un item de un popover hermano (caso del
+        // sub-popover de valores), al cerrarlo el anchor queda display:none y
+        // su getBoundingClientRect() devuelve 0/0 → el sub-popover salía
+        // posicionado arriba a la izquierda.
+        var anchorRect = anchor.getBoundingClientRect();
         closeAllMkPopovers(popId);
         if (typeof renderer === 'function') renderer(pop);
         pop.classList.add('open');
-        positionPopover(pop, anchor);
+        positionPopoverFromRect(pop, anchorRect);
     }
 
     function renderFilterFieldsPopover(pop) {
@@ -407,38 +411,14 @@
             t.pipeline  += Number(base[i].pipeline || 0);
             t.cotizaciones += Number(base[i].cotizaciones || 0);
             t.campanias    += Number(base[i].campanias || 0);
-            t.meta += Number(base[i].meta || 0);
         }
-        var gap = t.facturado - t.meta;
-        var avance = t.meta ? (t.facturado / t.meta) : 0;
-
         var setT = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
         setT('mkKpiFact', fmtMoney(t.facturado, true));
         setT('mkKpiOpps', fmtMoney(t.pipeline, true));
         setT('mkKpiCot',  String(t.cotizaciones));
         setT('mkKpiCam',  String(t.campanias));
-        setT('mkKpiMeta', t.meta ? fmtMoney(t.meta, true) : 'Sin meta');
-        setT('mkKpiAvancePct', t.meta ? (Math.round(avance * 100) + '%') : '—');
-
-        var gapEl = document.getElementById('mkKpiGap');
-        if (gapEl) {
-            if (!t.meta) {
-                gapEl.textContent = '';
-                gapEl.className = 'marcas-kpi-meta-gap neutral';
-            } else {
-                gapEl.textContent = (gap >= 0 ? '+' : '−') + fmtMoney(Math.abs(gap), true);
-                gapEl.className = 'marcas-kpi-meta-gap ' + (gap >= 0 ? 'pos' : 'neg');
-            }
-        }
-
-        // Ring: dashoffset según avance (circunferencia ≈ 119.38 con r=19)
-        var ring = document.querySelector('#mkKpiRing .marcas-ring-fg');
-        if (ring) {
-            var c = 2 * Math.PI * 19;
-            var off = c * (1 - Math.min(avance, 1));
-            ring.style.strokeDasharray = c;
-            ring.style.strokeDashoffset = off;
-        }
+        // Meta global se removió: la meta es por marca individual y vive en
+        // el widget detalle. Sin más cálculo aquí.
     }
 
     function renderTabla() {
