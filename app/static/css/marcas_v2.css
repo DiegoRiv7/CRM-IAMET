@@ -43,13 +43,15 @@ body.marca-modal-open {
 
     /* Altura fija = viewport - topbar global del CRM (~64px). La tabla
        interna tiene su propio scroll para no exceder el bottom de la
-       sidebar. */
+       sidebar. overflow:hidden evita que un hijo (timeline con muchas
+       rows) "empuje" la sección y la haga crecer fuera del viewport. */
     padding: 0 26px 14px;
     background: var(--mk-bg);
     height: calc(100vh - 64px);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', system-ui, sans-serif;
     color: var(--mk-text);
 }
@@ -287,9 +289,12 @@ body.marca-modal-open {
     border-radius: var(--mk-radius);
     box-shadow: var(--mk-shadow-card);
     border: 1px solid var(--mk-hairline-2);
-    /* Crece para llenar el espacio entre KPIs y bottom de la sección,
-       con scroll interno cuando hay muchas marcas. */
-    flex: 1 1 auto;
+    /* flex-basis 0 (NO auto): si fuera auto, el contenido enorme del
+       timeline definiría el tamaño base y el navegador haría crecer la
+       card antes de iniciar el scroll. Con basis 0 + grow 1, la card
+       toma exactamente el espacio sobrante del viewport y el overflow
+       interno arranca de inmediato. */
+    flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
     overflow-x: auto;
