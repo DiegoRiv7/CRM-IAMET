@@ -309,10 +309,9 @@ body.marca-modal-open {
        interno arranca de inmediato. */
     flex: 1 1 0;
     min-height: 0;
-    height: 0;  /* refuerza basis 0 incluso si algún CSS heredado mete altura */
     /* `scroll` (no `auto`) garantiza scrollbar SIEMPRE visible —
        en macOS las auto se ocultan. */
-    overflow-y: scroll !important;
+    overflow-y: scroll;
     overflow-x: auto;
     /* Firefox: scrollbar fina con color customizado */
     scrollbar-width: thin;
