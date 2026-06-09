@@ -6218,3 +6218,52 @@ class MaterialEsperado(models.Model):
             raise ValidationError({
                 'fecha_fin': 'La fecha fin no puede ser anterior a la fecha de inicio.',
             })
+
+
+# ════════════════════════════════════════════════════════════════════════
+# MarcaCRM — Junio 2026
+#
+# Catálogo de marcas/productos del distribuidor con metadata rica:
+# logo, descripción, contactos (marca / ingeniería / mayorista), meta
+# anual de venta y estrategia documentada. La `key` mapea al CharField
+# `producto` de TodoItem.PRODUCTO_CHOICES (ZEBRA, PANDUIT, APC, etc.) y
+# se usa como identificador estable en URLs y JS. Soft-delete vía
+# `activa=False` para preservar referencias históricas.
+#
+# Reemplaza la constante hardcoded MARCAS_CATALOGO de views_v2/marcas_v2.py
+# (las 11 marcas iniciales se siembran vía migration de datos).
+# ════════════════════════════════════════════════════════════════════════
+class MarcaCRM(models.Model):
+    nombre = models.CharField(max_length=80, unique=True)
+    key = models.CharField(max_length=40, unique=True, db_index=True)
+    categoria = models.CharField(max_length=100, blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    logo = models.ImageField(upload_to='marcas/logos/', null=True, blank=True)
+
+    # Contactos planos (3 grupos × 3 campos cada uno).
+    contacto_marca_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_marca_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_marca_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_ingenieria_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_ingenieria_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_ingenieria_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_mayorista_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_mayorista_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_mayorista_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    meta_anual = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    estrategia = models.TextField(blank=True, default='')
+    activa = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Marca CRM'
+        verbose_name_plural = 'Marcas CRM'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre

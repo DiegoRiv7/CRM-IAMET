@@ -492,6 +492,12 @@ urlpatterns = [
 
     # ── Dashboard Marcas (V2) ────────────────────────────────────────────────
     path('api/marcas/resumen/', views_v2_marcas.api_marcas_resumen, name='api_marcas_resumen'),
+    # CRUD del catálogo (solo supervisores). Las rutas concretas van antes
+    # del catch-all <str:marca_key>/ para que no las capture.
+    path('api/marcas/crear/', views_v2_marcas.api_marca_crear, name='api_marca_crear'),
+    path('api/marcas/<str:marca_key>/edit/', views_v2_marcas.api_marca_edit, name='api_marca_edit'),
+    path('api/marcas/<str:marca_key>/actualizar/', views_v2_marcas.api_marca_actualizar, name='api_marca_actualizar'),
+    path('api/marcas/<str:marca_key>/eliminar/', views_v2_marcas.api_marca_eliminar, name='api_marca_eliminar'),
     path('api/marcas/<str:marca_key>/', views_v2_marcas.api_marca_detalle, name='api_marca_detalle'),
 
     path('api/iamet/proyectos/financiero/', views_iamet.api_proyectos_financiero, name='api_proyectos_financiero'),

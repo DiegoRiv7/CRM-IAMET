@@ -442,11 +442,14 @@
                   '</div>'
                 : '<span class="marcas-avance-na">Sin meta</span>';
 
+            var logoT = m.logo_url
+                ? '<div class="marcas-logo has-img" style="width:38px;height:38px;font-size:13.7px;--mk-h:' + hueOf(m.label) + ';"><img src="' + escHtml(m.logo_url) + '" alt="' + escHtml(m.label) + '"></div>'
+                : '<div class="marcas-logo" style="width:38px;height:38px;font-size:13.7px;--mk-h:' + hueOf(m.label) + ';">' + escHtml(initials(m.label)) + '</div>';
             html +=
                 '<tr class="marcas-drow" data-marca-key="' + escHtml(m.key) + '">' +
                     '<td class="marcas-c-name">' +
                         '<div class="marcas-namecell">' +
-                            '<div class="marcas-logo" style="width:38px;height:38px;font-size:13.7px;--mk-h:' + hueOf(m.label) + ';">' + escHtml(initials(m.label)) + '</div>' +
+                            logoT +
                             '<div>' +
                                 '<div class="marcas-namecell-t">' + escHtml(m.label) + '</div>' +
                                 '<div class="marcas-namecell-s">' + escHtml(m.cat) + '</div>' +
@@ -563,11 +566,14 @@
             }
             cells += '<div class="marcas-tl-cell marcas-' + qtone + '">' + chip + '</div>';
         }
+        var logoTl = marca.logo_url
+            ? '<div class="marcas-logo has-img" style="width:30px;height:30px;font-size:11px;--mk-h:' + hueOf(marca.label) + ';"><img src="' + escHtml(marca.logo_url) + '" alt="' + escHtml(marca.label) + '"></div>'
+            : '<div class="marcas-logo" style="width:30px;height:30px;font-size:11px;--mk-h:' + hueOf(marca.label) + ';">' + escHtml(initials(marca.label)) + '</div>';
         return '' +
             '<div class="marcas-tl-row" data-marca-key="' + escHtml(marca.key) + '">' +
                 '<div class="marcas-tl-left">' +
                     '<div class="marcas-tl-op">' +
-                        '<div class="marcas-logo" style="width:30px;height:30px;font-size:11px;--mk-h:' + hueOf(marca.label) + ';">' + escHtml(initials(marca.label)) + '</div>' +
+                        logoTl +
                         '<div class="marcas-tl-op-txt">' +
                             '<div class="marcas-tl-op-cli">' + escHtml(op.oportunidad || '—') + '</div>' +
                             '<div class="marcas-tl-op-sub">' + escHtml(marca.label) + ' · ' + escHtml(op.cliente || '—') + '</div>' +
@@ -662,6 +668,50 @@
                 '<div class="marca-widget-stat"><div class="marca-widget-stat-v">' + m.campanias + '</div><div class="marca-widget-stat-l">Campañas</div></div>' +
             '</div>';
 
+        // ── Bloque descripción (si existe) ──
+        var descHtml = m.descripcion
+            ? '<p class="marca-widget-desc">' + escHtml(m.descripcion) + '</p>'
+            : '';
+
+        // ── Logo hero: imagen si hay logo_url; iniciales si no ──
+        var logoCls = 'marcas-logo' + (m.logo_url ? ' has-img' : '');
+        var logoInner = m.logo_url
+            ? '<img src="' + escHtml(m.logo_url) + '" alt="' + escHtml(m.label) + '">'
+            : escHtml(initials(m.label));
+        var logoHtml = '<div class="' + logoCls + '" style="width:56px;height:56px;font-size:20px;--mk-h:' + hueOf(m.label) + ';">' + logoInner + '</div>';
+
+        // ── Contactos (solo los grupos con datos) ──
+        var contactos = m.contactos || {};
+        var contactosLabels = { marca: 'Marca', ingenieria: 'Ingeniería', mayorista: 'Mayorista' };
+        var contactosHtml = '';
+        ['marca', 'ingenieria', 'mayorista'].forEach(function (grp) {
+            var c = contactos[grp] || {};
+            if (!c.nombre && !c.email && !c.telefono) return;
+            var lines = '';
+            if (c.email) lines += '<div class="marca-widget-contacto-line">' + escHtml(c.email) + '</div>';
+            if (c.telefono) lines += '<div class="marca-widget-contacto-line">' + escHtml(c.telefono) + '</div>';
+            contactosHtml +=
+                '<div class="marca-widget-contacto">' +
+                    '<div class="marca-widget-contacto-rol">' + escHtml(contactosLabels[grp]) + '</div>' +
+                    (c.nombre ? '<div class="marca-widget-contacto-nombre">' + escHtml(c.nombre) + '</div>' : '') +
+                    lines +
+                '</div>';
+        });
+        var contactosSecHtml = contactosHtml
+            ? '<div class="marca-widget-section">' +
+                  '<h3 class="marca-widget-section-title">Contactos</h3>' +
+                  '<div class="marca-widget-contactos">' + contactosHtml + '</div>' +
+              '</div>'
+            : '';
+
+        // ── Estrategia ──
+        var estrategiaHtml = m.estrategia
+            ? '<div class="marca-widget-section">' +
+                  '<h3 class="marca-widget-section-title">Estrategia</h3>' +
+                  '<div class="marca-widget-estrategia">' + escHtml(m.estrategia) + '</div>' +
+              '</div>'
+            : '';
+
         var opsHtml = '';
         if (!ops.length) {
             opsHtml = '<div style="grid-column:1/-1;padding:20px 0;text-align:center;color:#86868B;font-size:13px;font-style:italic;">Sin oportunidades para este año.</div>';
@@ -690,17 +740,30 @@
                 '<button class="marca-widget-iconbtn" type="button" data-mk-close>' +
                     '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
                 '</button>' +
-                '<button class="marca-widget-iconbtn" type="button" aria-label="Más acciones">' +
-                    '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>' +
-                '</button>' +
+                '<div style="position:relative;">' +
+                    '<button class="marca-widget-iconbtn" type="button" id="mkWidgetMenuBtn" aria-label="Más acciones">' +
+                        '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>' +
+                    '</button>' +
+                    '<div class="marca-widget-menu" id="mkWidgetMenu" role="menu" style="top:34px;right:0;">' +
+                        '<button type="button" data-mk-menu="editar">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+                            'Editar marca' +
+                        '</button>' +
+                        '<button type="button" class="danger" data-mk-menu="eliminar">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>' +
+                            'Eliminar marca' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
             '<div class="marca-widget-hero">' +
-                '<div class="marcas-logo" style="width:56px;height:56px;font-size:20px;--mk-h:' + hueOf(m.label) + ';">' + escHtml(initials(m.label)) + '</div>' +
+                logoHtml +
                 '<div>' +
                     '<h2 class="marca-widget-name">' + escHtml(m.label) + '</h2>' +
                     '<div class="marca-widget-cat">' + escHtml(m.cat) + '</div>' +
                 '</div>' +
             '</div>' +
+            descHtml +
             '<div class="marca-widget-meta">' +
                 '<div class="marca-widget-meta-row">' +
                     '<span>Avance a meta</span>' +
@@ -710,6 +773,8 @@
                 gapHtml +
             '</div>' +
             statsHtml +
+            contactosSecHtml +
+            estrategiaHtml +
             '<div class="marca-widget-sec-h">' +
                 '<span>Oportunidades</span>' +
                 '<span class="marca-widget-sec-count">' + ops.length + '</span>' +
@@ -724,7 +789,55 @@
 
         wireWidgetClose();
         wireWidgetActions(m);
+        wireWidgetMenu(m);
         wireOppClicks();
+    }
+
+    function wireWidgetMenu(m) {
+        var btn = document.getElementById('mkWidgetMenuBtn');
+        var menu = document.getElementById('mkWidgetMenu');
+        if (!btn || !menu) return;
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            menu.classList.toggle('is-open');
+        });
+        // Click fuera cierra
+        document.addEventListener('click', function (e) {
+            if (!menu.contains(e.target) && e.target !== btn) {
+                menu.classList.remove('is-open');
+            }
+        }, { once: false });
+        menu.querySelectorAll('[data-mk-menu]').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menu.classList.remove('is-open');
+                var action = b.getAttribute('data-mk-menu');
+                if (action === 'editar') {
+                    if (window._crmMarcaEditor && window._crmMarcaEditor.open) {
+                        // Cierra primero el widget detalle (z-index conflict).
+                        toggleMarcaWidget(false);
+                        setTimeout(function () {
+                            window._crmMarcaEditor.open({ mode: 'edit', key: m.key });
+                        }, 100);
+                    }
+                } else if (action === 'eliminar') {
+                    if (!window.confirm('¿Eliminar la marca "' + (m.label || m.key) + '"? Se ocultará del catálogo.')) return;
+                    fetch('/app/api/marcas/' + encodeURIComponent(m.key) + '/eliminar/', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '' }
+                    }).then(function (r) { return r.json(); }).then(function (res) {
+                        if (res && res.ok) {
+                            if (typeof window.toast === 'function') window.toast('Marca eliminada', 'success');
+                            toggleMarcaWidget(false);
+                            fetchMarcas();
+                        } else if (typeof window.toast === 'function') {
+                            window.toast((res && res.error) || 'No se pudo eliminar.', 'error');
+                        }
+                    });
+                }
+            });
+        });
     }
 
     function wireOppClicks() {
@@ -900,14 +1013,16 @@
             });
         }
 
-        // "+ Nueva marca" — placeholder hasta que se defina el flujo de
-        // alta (probablemente modal con nombre + categoría + meta inicial).
+        // "+ Nueva marca" — abre el editor en modo create. El backend
+        // valida que solo supervisores puedan crear (devuelve 403 si no).
         var btnAdd = document.getElementById('mkBtnAddMarca');
         if (btnAdd) {
             btnAdd.addEventListener('click', function (e) {
                 e.preventDefault();
-                if (typeof window.toast === 'function') {
-                    window.toast('Próximamente: alta de marca nueva.', 'info');
+                if (window._crmMarcaEditor && window._crmMarcaEditor.open) {
+                    window._crmMarcaEditor.open({ mode: 'create' });
+                } else if (typeof window.toast === 'function') {
+                    window.toast('Editor de marcas no disponible.', 'error');
                 }
             });
         }

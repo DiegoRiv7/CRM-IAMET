@@ -1,0 +1,152 @@
+{% comment %}
+_widget_marca_editar.html — Widget overlay para CREAR o EDITAR una marca
+del catálogo CRM. Lógica completa en crm_marca_editar_v2.js (expone
+window._crmMarcaEditor con .open({mode, key?}), .close(), .save()).
+
+Estructura:
+  - Header con título dinámico (Nueva marca / Editar: <nombre>)
+  - Body con secciones: Datos generales · Logo · Contactos (tabs) ·
+    Meta anual · Estrategia
+  - Footer con Cancelar + Eliminar (solo edit) + Guardar
+
+Solo supervisores deben poder llegar aquí (lo valida el endpoint también).
+{% endcomment %}
+
+<div id="meOverlay" class="me-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="meTitle">
+    <div class="me-card" id="meCard">
+        <header class="me-header">
+            <div class="me-header-ico">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 7.5A1.5 1.5 0 014.5 6h6.3a2 2 0 011.4.6l8.2 8.2a1.5 1.5 0 010 2.1l-4.5 4.5a1.5 1.5 0 01-2.1 0L5.6 13.2A2 2 0 015 11.8V7.5z"/>
+                    <circle cx="8" cy="11" r="1.4" fill="currentColor"/>
+                </svg>
+            </div>
+            <div class="me-header-txt">
+                <h2 class="me-header-title" id="meTitle">Editar marca</h2>
+                <div class="me-header-sub" id="meSubtitle">Datos, contactos y estrategia</div>
+            </div>
+            <button type="button" class="me-close-btn" id="meBtnClose" title="Cerrar (Esc)" aria-label="Cerrar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="me-body">
+            <div class="me-error" id="meError"></div>
+
+            {% comment %} === Datos generales === {% endcomment %}
+            <section class="me-section">
+                <h3 class="me-section-title">Datos generales</h3>
+                <div class="me-row">
+                    <div class="me-field" style="flex:2;">
+                        <label class="me-label" for="meNombre">Nombre <span class="me-req">*</span></label>
+                        <input type="text" id="meNombre" class="me-input" maxlength="80" placeholder="Ej. Hikvision" autocomplete="off">
+                    </div>
+                    <div class="me-field" style="flex:1;">
+                        <label class="me-label" for="meKey">Key (slug)</label>
+                        <input type="text" id="meKey" class="me-input" maxlength="40" placeholder="HIKVISION" autocomplete="off" style="text-transform:uppercase;">
+                        <div class="me-help" id="meKeyHelp">A-Z, 0-9, _, -. No editable después.</div>
+                    </div>
+                </div>
+                <div class="me-row">
+                    <div class="me-field">
+                        <label class="me-label" for="meCategoria">Categoría</label>
+                        <input type="text" id="meCategoria" class="me-input" maxlength="100" placeholder="Ej. Cámaras premium" autocomplete="off">
+                    </div>
+                </div>
+                <div class="me-row">
+                    <div class="me-field">
+                        <label class="me-label" for="meDescripcion">Descripción</label>
+                        <textarea id="meDescripcion" class="me-textarea" rows="2" placeholder="Resumen corto de la marca y su lugar en el portafolio."></textarea>
+                    </div>
+                </div>
+            </section>
+
+            {% comment %} === Logo === {% endcomment %}
+            <section class="me-section">
+                <h3 class="me-section-title">Logo</h3>
+                <div class="me-logo-row">
+                    <div class="me-logo-preview" id="meLogoPreview">
+                        <span id="meLogoInitials">?</span>
+                    </div>
+                    <div class="me-logo-actions">
+                        <input type="file" id="meLogoInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display:none;">
+                        <button type="button" class="me-btn me-btn-secondary" id="meBtnLogoUpload">Subir imagen</button>
+                        <button type="button" class="me-btn me-btn-ghost" id="meBtnLogoRemove" style="display:none;">Quitar logo</button>
+                        <div class="me-logo-help">PNG, JPEG, SVG o WEBP · máx. 5 MB.</div>
+                    </div>
+                </div>
+            </section>
+
+            {% comment %} === Contactos (3 tabs) === {% endcomment %}
+            <section class="me-section">
+                <h3 class="me-section-title">Contactos</h3>
+                <div class="me-tabs" role="tablist">
+                    <button type="button" class="me-tab is-on" data-me-tab="marca" role="tab">Marca</button>
+                    <button type="button" class="me-tab" data-me-tab="ingenieria" role="tab">Ingeniería</button>
+                    <button type="button" class="me-tab" data-me-tab="mayorista" role="tab">Mayorista</button>
+                </div>
+
+                <div class="me-tab-panel is-on" data-me-panel="marca">
+                    <div class="me-row">
+                        <div class="me-field"><label class="me-label">Nombre</label><input type="text" id="meCtMarcaNombre" class="me-input" maxlength="120" autocomplete="off"></div>
+                    </div>
+                    <div class="me-row">
+                        <div class="me-field"><label class="me-label">Email</label><input type="email" id="meCtMarcaEmail" class="me-input" maxlength="120" autocomplete="off"></div>
+                        <div class="me-field"><label class="me-label">Teléfono</label><input type="text" id="meCtMarcaTel" class="me-input" maxlength="40" autocomplete="off"></div>
+                    </div>
+                </div>
+
+                <div class="me-tab-panel" data-me-panel="ingenieria">
+                    <div class="me-row">
+                        <div class="me-field"><label class="me-label">Nombre</label><input type="text" id="meCtIngNombre" class="me-input" maxlength="120" autocomplete="off"></div>
+                    </div>
+                    <div class="me-row">
+                        <div class="me-field"><label class="me-label">Email</label><input type="email" id="meCtIngEmail" class="me-input" maxlength="120" autocomplete="off"></div>
+                        <div class="me-field"><label class="me-label">Teléfono</label><input type="text" id="meCtIngTel" class="me-input" maxlength="40" autocomplete="off"></div>
+                    </div>
+                </div>
+
+                <div class="me-tab-panel" data-me-panel="mayorista">
+                    <div class="me-row">
+                        <div class="me-field"><label class="me-label">Nombre</label><input type="text" id="meCtMayNombre" class="me-input" maxlength="120" autocomplete="off"></div>
+                    </div>
+                    <div class="me-row">
+                        <div class="me-field"><label class="me-label">Email</label><input type="email" id="meCtMayEmail" class="me-input" maxlength="120" autocomplete="off"></div>
+                        <div class="me-field"><label class="me-label">Teléfono</label><input type="text" id="meCtMayTel" class="me-input" maxlength="40" autocomplete="off"></div>
+                    </div>
+                </div>
+            </section>
+
+            {% comment %} === Meta anual + Estrategia === {% endcomment %}
+            <section class="me-section">
+                <h3 class="me-section-title">Meta y estrategia</h3>
+                <div class="me-row">
+                    <div class="me-field">
+                        <label class="me-label" for="meMetaAnual">Meta anual (MXN)</label>
+                        <input type="text" id="meMetaAnual" class="me-input" inputmode="numeric" placeholder="$0 MXN" autocomplete="off">
+                    </div>
+                </div>
+                <div class="me-row">
+                    <div class="me-field">
+                        <label class="me-label" for="meEstrategia">Estrategia de venta</label>
+                        <textarea id="meEstrategia" class="me-textarea lg" rows="5" placeholder="Cómo se vende esta marca: argumentario, mercados, partners, condiciones comerciales clave…"></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="me-footer">
+            <div class="me-footer-left">
+                <button type="button" class="me-btn me-btn-danger" id="meBtnDelete" style="display:none;">Eliminar</button>
+            </div>
+            <div class="me-footer-right">
+                <button type="button" class="me-btn me-btn-secondary" id="meBtnCancel">Cancelar</button>
+                <button type="button" class="me-btn me-btn-primary" id="meBtnSave">
+                    <span id="meBtnSaveLbl">Guardar</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>
