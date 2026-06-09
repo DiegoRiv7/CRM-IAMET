@@ -740,6 +740,39 @@
         
         /* DEBUG: Uncomment the next line to always show drag handles for testing */
         /* .drag-handle { opacity: 1 !important; } */
+
+        /* ── Columnas internas (proveedor + costo) ──
+           Fondo amarillo suave para que sea visualmente evidente que estas
+           columnas NO aparecen en el PDF — solo viven en BD para reportes
+           de utilidad y para vincular proveedores a la oportunidad. */
+        .product-table th.internal-col {
+            background-color: rgba(250, 204, 21, 0.18) !important;
+            color: #92400E !important;
+            border-bottom-color: rgba(250, 204, 21, 0.4) !important;
+        }
+        .product-table td.internal-cell {
+            background-color: rgba(250, 204, 21, 0.06);
+        }
+        .product-table td.internal-cell .input-field.internal-input {
+            background-color: #FFFBEB !important;
+            border-color: rgba(250, 204, 21, 0.45) !important;
+        }
+        .product-table td.internal-cell .input-field.internal-input:focus {
+            border-color: #F59E0B !important;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+        }
+        /* Asegurar que el h1 "Crear/Editar Cotización" del propio template se
+           oculta en widget_mode — el widget cotizador ya provee su header
+           "Crear Cotización" con icono en _widget_extras.html, así que el h1
+           interno sería un breadcrumb redundante encima del formulario.
+           La regla previa usaba `body > .min-h-screen > .max-w-full` que no
+           matchea porque body es directamente .min-h-screen, así que el
+           selector más explícito de abajo es el que realmente lo oculta. */
+        {% if widget_mode %}
+        h1.text-3xl.font-bold.text-white.text-center {
+            display: none !important;
+        }
+        {% endif %}
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
@@ -873,6 +906,10 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     <button type="button" id="show-discount-btn" onclick="toggleDiscountColumn()" class="btn-secondary">+ Mostrar Columna de Descuento</button>
                 </div>
                 <input type="hidden" name="descuento_visible" id="descuento_visible" value="false">
+                {# Nota informativa: columnas internas (proveedor + costo) con fondo amarillo, NO aparecen en el PDF al cliente; solo BD para reportes. #}
+                <div class="internal-cols-note" style="margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:rgba(250,204,21,0.12);border-left:3px solid #FACC15;border-radius:6px;font-size:0.78rem;color:var(--apple-label-secondary);">
+                    <strong style="color:#CA8A04;">Nota:</strong> las columnas con fondo amarillo son <em>internas</em> &mdash; no aparecen en el PDF, son para reportes de utilidad y vincular proveedores a la oportunidad.
+                </div>
                 <div class="table-container">
                     <table class="product-table">
                         <thead>
@@ -888,6 +925,9 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                                     <button type="button" onclick="toggleDiscountColumn()" class="text-red-400 hover:text-red-600 font-bold ml-2" title="Ocultar columna de descuento">&times;</button>
                                 </th>
                                 <th class="w-1/8">Total</th>
+                                {# Columnas internas: fondo amarillo para señalar que NO van en el PDF. #}
+                                <th class="internal-col" title="Solo interno: NO aparece en el PDF. Define con qué proveedor pensaste resolver esta línea. Se vinculará automáticamente al M2M de proveedores de la oportunidad.">Proveedor</th>
+                                <th class="internal-col" title="Solo interno: NO aparece en el PDF. Costo unitario al que compras al proveedor. Sirve para calcular utilidad/margen.">Costo Unit.</th>
                                 <th class="w-8"></th>
                             </tr>
                         </thead>
@@ -918,6 +958,9 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     {% endif %}
                 </div>
             </div>
+
+            {# Datalist global para autocomplete de Proveedor por fila. Se puebla via fetch a /app/api/proveedores/resumen/. Nombres libres también son válidos — el backend los crea. #}
+            <datalist id="proveedores-datalist"></datalist>
 
             <div class="card p-6 mt-8 shadow-md-dark">
                 <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">Resumen de la Cotización</h2>
@@ -957,6 +1000,30 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                             <option value="Iamet">IAMET</option>
                         </select>
                     </div>
+                </div>
+            </div>
+
+            {# Resumen de Utilidad (interno): ganancia y margen calculados a partir del costo unitario por línea. NO afecta el PDF. #}
+            <div class="card p-6 mt-6 shadow-md-dark" style="border-left: 4px solid #16A34A;">
+                <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">
+                    Resumen de Utilidad
+                    <span style="font-size:0.7rem;color:#9CA3AF;font-weight:500;margin-left:6px;">(interno &mdash; no aparece en PDF)</span>
+                </h2>
+                <div class="flex justify-between mb-2" style="color: var(--apple-label-secondary);">
+                    <span>Total sin IVA (ingreso):</span>
+                    <span id="util-total" class="font-semibold" style="color: var(--apple-label);">$0.00</span>
+                </div>
+                <div class="flex justify-between mb-2" style="color: var(--apple-label-secondary);">
+                    <span>Costo total:</span>
+                    <span id="util-costo" class="font-semibold" style="color: var(--apple-label);">$0.00</span>
+                </div>
+                <div class="flex justify-between mb-2 pt-2" style="border-top: 1px solid var(--apple-separator);">
+                    <span class="font-bold" style="color: var(--apple-label);">Ganancia (utilidad):</span>
+                    <span id="util-ganancia" class="font-bold" style="color:#16A34A;">$0.00</span>
+                </div>
+                <div class="flex justify-between" style="color: var(--apple-label-secondary);">
+                    <span>Margen:</span>
+                    <span id="util-margen" class="font-semibold" style="color:#16A34A;">0%</span>
                 </div>
             </div>
 
@@ -1134,8 +1201,11 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             }
         }
 
-        // Function to add a new product row to the main table
-        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0, nombre_producto = '') {
+        // Function to add a new product row to the main table.
+        // Parámetros extra (proveedor, costo) son opcionales para preservar
+        // compatibilidad con call sites que no los pasan; el modo edición y
+        // el paste de Excel pueden alimentarlos cuando estén disponibles.
+        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0, nombre_producto = '', proveedor = '', costo = 0) {
             const tbody = document.getElementById('productos-tbody');
             const newRowNumber = tbody.rows.length + 1;
             const rowId = `row-${newRowNumber}`;
@@ -1158,6 +1228,12 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals(); hideValidationError()"></td>
                 <td class="descuento-cell"><input type="number" id="descuento_${newRowNumber}" name="productos[${newRowNumber}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
                 <td><input type="text" id="total_producto_${newRowNumber}" class="input-field bg-gray-800" style="font-size:1.2rem; font-weight:600; width:130px; min-width:100px; text-align:right;" value="0.00" readonly></td>
+                <td class="internal-cell">
+                    <input type="text" list="proveedores-datalist" id="proveedor_${newRowNumber}" name="productos[${newRowNumber}][proveedor]" class="input-field internal-input" placeholder="Escribe o elige…" value="${proveedor || ''}" autocomplete="off">
+                </td>
+                <td class="internal-cell">
+                    <input type="number" id="costo_${newRowNumber}" name="productos[${newRowNumber}][costo]" class="input-field internal-input" value="${costo || 0}" min="0" step="0.01" oninput="calculateTotals()" style="width:110px; text-align:right;">
+                </td>
                 <td class="text-center">
                     <button type="button" onclick="removeRow('${rowId}')" class="text-red-400 hover:text-red-600 text-xl font-bold leading-none">&times;</button>
                 </td>
@@ -1193,7 +1269,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             newRow.id = rowId;
             newRow.className = 'title-row sortable-row';
             newRow.innerHTML = `
-                <td colspan="9" style="position: relative;">
+                <td colspan="11" style="position: relative;">
                     <div class="drag-handle" title="Arrastrar para reordenar"></div>
                     <input type="text" 
                            id="titulo_${titleCounter}" 
@@ -1233,9 +1309,12 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             }, 100);
         }
 
-        // Function to calculate totals (subtotal, IVA, total) - Updated to skip title rows
+        // Function to calculate totals (subtotal, IVA, total) - Updated to skip title rows.
+        // Además calcula el "Resumen de Utilidad" (interno): costo total,
+        // ganancia y margen %, leyendo costo_unitario × cantidad por línea.
         function calculateTotals() {
             let subtotal = 0;
+            let costoTotal = 0;
             const currency = document.getElementById('currency-select').value;
             const ivaRate = parseFloat(document.getElementById('iva-rate').value);
 
@@ -1254,12 +1333,19 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
 
                 let totalProducto = quantity * price;
                 totalProducto -= totalProducto * (discount / 100);
-                
+
                 // Update the total for each product, ensuring it's just the number
                 totalProductoInput.value = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProducto);
                 console.log(`DEBUG JS: Producto ${id} - Cantidad: ${quantity}, Precio: ${price}, Descuento: ${discount}%, Total Producto (raw float): ${totalProducto}`);
 
                 subtotal += totalProducto;
+
+                // ── Costo interno (no afecta totales del PDF) ──
+                const costoInput = document.getElementById(`costo_${id}`);
+                if (costoInput) {
+                    const costoUnit = parseFloat(costoInput.value) || 0;
+                    costoTotal += costoUnit * quantity;
+                }
             });
 
             // Redondear subtotal y luego calcular IVA y Total para mayor precisión
@@ -1273,6 +1359,28 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             document.getElementById('total').textContent = formatCurrency(total, currency);
 
             console.log(`DEBUG JS: Subtotal (rounded for display): ${subtotal}, IVARate: ${ivaRate}, IVA Amount (rounded for display): ${ivaAmount}, Total (rounded for display): ${total}`);
+
+            // ── Resumen de Utilidad (interno) ──
+            costoTotal = parseFloat(costoTotal.toFixed(2));
+            const utilidad = parseFloat((subtotal - costoTotal).toFixed(2));
+            const margenPct = subtotal > 0 ? (utilidad / subtotal) * 100 : 0;
+
+            const elTotal    = document.getElementById('util-total');
+            const elCosto    = document.getElementById('util-costo');
+            const elGanancia = document.getElementById('util-ganancia');
+            const elMargen   = document.getElementById('util-margen');
+            if (elTotal)    elTotal.textContent    = formatCurrency(subtotal, currency);
+            if (elCosto)    elCosto.textContent    = formatCurrency(costoTotal, currency);
+            if (elGanancia) elGanancia.textContent = formatCurrency(utilidad, currency);
+            if (elMargen)   elMargen.textContent   = `${margenPct.toFixed(2)}%`;
+
+            // Color del margen: rojo si negativo, naranja si 0-15%, verde si ≥15%.
+            // Aplica al monto de ganancia y al % de margen.
+            let colorMargen = '#16A34A'; // verde por defecto
+            if (margenPct < 0)        colorMargen = '#DC2626'; // rojo
+            else if (margenPct < 15)  colorMargen = '#F59E0B'; // naranja
+            if (elGanancia) elGanancia.style.color = colorMargen;
+            if (elMargen)   elMargen.style.color   = colorMargen;
         }
 
         // Function to remove a product row from the main table
@@ -1724,10 +1832,44 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             }
         }
 
+        // Cargar catálogo de proveedores activos en cache global, para que
+        // el <datalist> del campo Proveedor en cada fila tenga sugerencias.
+        // Se hace fetch a /app/api/proveedores/resumen/ — endpoint público
+        // a cualquier login que retorna {proveedores: [{key,label,...}]}.
+        // Falla silenciosa: si el endpoint no responde, el datalist queda
+        // vacío y el usuario aún puede tipear cualquier nombre libre.
+        window._PROVEEDORES_CACHE = [];
+        function loadProveedoresCatalogo() {
+            return fetch('/app/api/proveedores/resumen/', { credentials: 'same-origin' })
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(data => {
+                    if (data && data.ok && Array.isArray(data.proveedores)) {
+                        window._PROVEEDORES_CACHE = data.proveedores;
+                        populateProveedoresDatalist();
+                    }
+                })
+                .catch(err => {
+                    console.warn('No se pudo cargar catálogo de proveedores:', err);
+                });
+        }
+
+        function populateProveedoresDatalist() {
+            const dl = document.getElementById('proveedores-datalist');
+            if (!dl) return;
+            dl.innerHTML = '';
+            (window._PROVEEDORES_CACHE || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.label || p.key;
+                if (p.cat) opt.label = p.cat;
+                dl.appendChild(opt);
+            });
+        }
+
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             populateClientSelect(); // Populate client dropdown on page load
             fetchOportunidadesForClient(); // Load recent opportunities on page load
+            loadProveedoresCatalogo(); // Cargar proveedores para el datalist del campo proveedor
             
             // Add drag handles to any existing rows first
             setTimeout(() => {
@@ -1976,7 +2118,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                         newRow.id = rowId;
                         newRow.className = 'title-row sortable-row';
                         newRow.innerHTML = `
-                            <td colspan="9" style="position: relative;">
+                            <td colspan="11" style="position: relative;">
                                 <div class="drag-handle" title="Arrastrar para reordenar"></div>
                                 <input type="text" 
                                        id="titulo_${titleCounter}" 
@@ -1997,8 +2139,17 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                         `;
                         tbody.appendChild(newRow);
                     } else {
-                        // Es un producto normal, usar addRow
-                        addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento, d.nombre_producto);
+                        // Es un producto normal, usar addRow.
+                        // Pasamos proveedor (nombre) y costo si vienen del
+                        // serializer del modo edición; campos opcionales con
+                        // default '' / 0.
+                        addRow(
+                            d.marca, d.no_parte, d.descripcion,
+                            d.cantidad, d.precio, d.descuento,
+                            d.nombre_producto,
+                            d.proveedor || '',
+                            d.costo || 0
+                        );
                     }
                 });
                 // Actualizar numeración y recalcular totales después de cargar todos los productos

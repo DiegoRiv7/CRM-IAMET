@@ -619,6 +619,25 @@ class DetalleCotizacion(models.Model):
     ]
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='producto', verbose_name="Tipo")
 
+    # Campos internos (NO aparecen en el PDF, solo para reportes/utilidad).
+    # `proveedor` permite enlazar cada línea de la cotización con el ProveedorCRM
+    # del cual se obtuvo. El backend además sincroniza estos proveedores al
+    # M2M `TodoItem.proveedores` de la oportunidad asociada.
+    # `costo_unitario` se captura para calcular utilidad/margen sin exponer
+    # esos números al cliente en el PDF.
+    proveedor = models.ForeignKey(
+        'ProveedorCRM',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='detalles_cotizacion',
+        verbose_name='Proveedor de esta línea (interno, no aparece en PDF)',
+    )
+    costo_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name='Costo unitario (interno, no aparece en PDF)',
+    )
+
     class Meta:
         """
         Metadatos del modelo DetalleCotizacion.

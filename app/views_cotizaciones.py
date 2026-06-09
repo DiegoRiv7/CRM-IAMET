@@ -24,7 +24,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto, ArchivoFacturacion, CarpetaOportunidad, ArchivoOportunidad, MensajeOportunidad, TareaOportunidad, ComentarioTareaOpp, PostMuro, ComentarioMuro, ProductoOportunidad, AsistenciaJornada, EficienciaMensual, SolicitudCambioPerfil, ProgramacionActividad, ProveedorCRM
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -380,6 +380,44 @@ def oportunidades_por_cliente_view(request, cliente_id):
     return render(request, 'oportunidades_por_cliente.html', context)
 
 
+def _resolver_o_crear_proveedor(nombre_raw):
+    """Dado un nombre escrito por el usuario en el formulario de cotización,
+    devuelve un `ProveedorCRM` existente (lookup case-insensitive) o crea
+    uno nuevo con `key` autogenerada.
+
+    Reutiliza `_normalizar_key` del módulo de proveedores para mantener
+    consistencia con el endpoint quick-create. Si el nombre quedara vacío
+    tras el strip, retorna None (caller decide qué hacer).
+
+    Es idempotente: llamarlo dos veces con el mismo nombre retorna el
+    mismo proveedor, no crea duplicados.
+    """
+    from .views_v2.proveedores_v2 import _normalizar_key
+
+    nombre = (nombre_raw or '').strip()
+    if not nombre:
+        return None
+    nombre = nombre[:80]
+
+    existente = ProveedorCRM.objects.filter(nombre__iexact=nombre).first()
+    if existente is not None:
+        return existente
+
+    base_key = _normalizar_key(nombre)
+    if not base_key:
+        return None
+    key = base_key
+    sufijo = 2
+    while ProveedorCRM.objects.filter(key=key).exists():
+        sufijo_str = f'_{sufijo}'
+        key = (base_key[:40 - len(sufijo_str)] + sufijo_str)
+        sufijo += 1
+        if sufijo > 100:
+            return None  # safeguard
+
+    return ProveedorCRM.objects.create(nombre=nombre, key=key, activa=True)
+
+
 @login_required
 @csrf_exempt
 @xframe_options_sameorigin
@@ -667,7 +705,11 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 opp.monto = monto_mxn
                 opp.save(update_fields=['monto', 'fecha_actualizacion'])
             
-            # Guardar elementos en orden correcto (títulos Y productos)
+            # Guardar elementos en orden correcto (títulos Y productos).
+            # Mientras tanto vamos recolectando los proveedores únicos
+            # asignados a las líneas; al final los sincronizamos al M2M
+            # `proveedores` de la oportunidad asociada (si existe).
+            proveedores_unicos = {}  # id → ProveedorCRM
             for elemento in elementos_combinados:
                 if elemento['tipo'] == 'titulo':
                     titulo_data = elemento['datos']
@@ -688,7 +730,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             print(f"DEBUG ORDER: Title created: {titulo_data.get('texto')} with orden {elemento['posicion_final']}")
                     except Exception as e:
                         print(f"WARNING: Error creating title {titulo_data}: {e}")
-                        
+
                 else:  # producto
                     item_data = elemento['datos']
                     try:
@@ -697,13 +739,39 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                         if not precio_str or precio_str == '':
                             precio_str = '0.00'
                         precio_unitario = Decimal(precio_str)
-                        
+
                         # Manejo seguro del descuento
                         descuento_str = str(item_data.get('descuento', '0.00')).strip()
                         if not descuento_str or descuento_str == '':
                             descuento_str = '0.00'
                         descuento_porcentaje = Decimal(descuento_str)
-                        
+
+                        # ── Costo unitario interno (no aparece en PDF) ──
+                        costo_str = str(item_data.get('costo', '0.00')).strip()
+                        if not costo_str:
+                            costo_str = '0.00'
+                        try:
+                            costo_unitario = Decimal(costo_str)
+                        except (decimal.InvalidOperation, ValueError):
+                            costo_unitario = Decimal('0.00')
+
+                        # ── Proveedor por línea (interno, no aparece en PDF) ──
+                        # Resolución case-insensitive sobre el nombre; si no
+                        # existe lo creamos con key autogenerada. Cualquier
+                        # error en esta sección NO debe romper la creación
+                        # de la cotización — el campo es opcional.
+                        proveedor_obj = None
+                        proveedor_nombre_raw = (item_data.get('proveedor') or '').strip()
+                        if proveedor_nombre_raw:
+                            try:
+                                proveedor_obj = _resolver_o_crear_proveedor(proveedor_nombre_raw)
+                            except Exception:
+                                logger.exception(
+                                    'Fallo al resolver/crear proveedor "%s" — la línea se guarda sin proveedor',
+                                    proveedor_nombre_raw,
+                                )
+                                proveedor_obj = None
+
                         DetalleCotizacion.objects.create(
                             cotizacion=cotizacion,
                             nombre_producto=item_data.get('nombre_producto', ''),
@@ -714,12 +782,31 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             marca=item_data.get('marca', ''),
                             no_parte=item_data.get('no_parte', ''),
                             tipo='producto',
-                            orden=elemento['posicion_final']
+                            orden=elemento['posicion_final'],
+                            proveedor=proveedor_obj,
+                            costo_unitario=costo_unitario,
                         )
+                        if proveedor_obj is not None:
+                            proveedores_unicos[proveedor_obj.id] = proveedor_obj
                         print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')} with orden {elemento['posicion_final']}")
                     except (ValueError, TypeError, decimal.InvalidOperation) as e:
                         cotizacion.delete()
                         return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
+
+            # Sincronizar proveedores con la oportunidad asociada (M2M).
+            # Usamos `.add(*objs)` para AÑADIR sin remover los proveedores
+            # que la opp ya tuviera asignados desde otras cotizaciones u
+            # otras fuentes. Esto enriquece la columna "proveedores" sin
+            # destruir datos previos.
+            if cotizacion.oportunidad_id and proveedores_unicos:
+                try:
+                    cotizacion.oportunidad.proveedores.add(*proveedores_unicos.values())
+                    print(f"DEBUG PROVEEDORES: Sincronizados {len(proveedores_unicos)} proveedores con opp {cotizacion.oportunidad_id}")
+                except Exception:
+                    logger.exception(
+                        'No se pudo sincronizar proveedores con la opp %s — la cotización ya fue creada',
+                        cotizacion.oportunidad_id,
+                    )
 
             # Los títulos ya se procesaron en orden combinado arriba
             print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
@@ -837,7 +924,10 @@ def editar_cotizacion_view(request, cotizacion_id):
     cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
     detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original).order_by('id')
 
-    # Formatear detalles para el JavaScript del template
+    # Formatear detalles para el JavaScript del template. Incluimos los
+    # campos internos `proveedor` (nombre, no key — el input es texto libre
+    # con datalist) y `costo` para que al editar la cotización los campos
+    # se pre-llenen. Si el detalle no tenía proveedor, manda string vacío.
     detalles_list = [{
         'nombre_producto': d.nombre_producto,
         'marca': d.marca,
@@ -847,6 +937,8 @@ def editar_cotizacion_view(request, cotizacion_id):
         'precio': str(d.precio_unitario),
         'descuento': str(d.descuento_porcentaje),
         'tipo': getattr(d, 'tipo', 'producto') or 'producto',  # Incluir el tipo (producto o titulo)
+        'proveedor': (d.proveedor.nombre if getattr(d, 'proveedor', None) else ''),
+        'costo': str(getattr(d, 'costo_unitario', None) or '0.00'),
     } for d in detalles_originales]
 
     # Cualquier usuario autenticado puede editar cualquier cotización:

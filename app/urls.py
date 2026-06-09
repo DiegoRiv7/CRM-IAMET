@@ -505,6 +505,7 @@ urlpatterns = [
     # Las rutas concretas van antes del catch-all <str:proveedor_key>/.
     path('api/proveedores/resumen/', views_v2_proveedores.api_proveedores_resumen, name='api_proveedores_resumen'),
     path('api/proveedores/crear/', views_v2_proveedores.api_proveedor_crear, name='api_proveedor_crear'),
+    path('api/proveedores/quick-create/', views_v2_proveedores.api_proveedor_quick_create, name='api_proveedor_quick_create'),
     path('api/proveedores/<str:proveedor_key>/edit/', views_v2_proveedores.api_proveedor_edit, name='api_proveedor_edit'),
     path('api/proveedores/<str:proveedor_key>/actualizar/', views_v2_proveedores.api_proveedor_actualizar, name='api_proveedor_actualizar'),
     path('api/proveedores/<str:proveedor_key>/eliminar/', views_v2_proveedores.api_proveedor_eliminar, name='api_proveedor_eliminar'),

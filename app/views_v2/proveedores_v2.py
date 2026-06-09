@@ -613,6 +613,81 @@ def api_proveedor_crear(request):
 
 
 @login_required
+@require_http_methods(["POST"])
+def api_proveedor_quick_create(request):
+    """Crea un ProveedorCRM mínimo a partir de un nombre escrito por el
+    usuario (típicamente desde el dropdown del formulario de cotización).
+
+    Reglas:
+      * Si ya existe un proveedor con el mismo nombre case-insensitive →
+        lo retorna sin crear duplicado (`ya_existia: true`).
+      * Si no existe → lo crea con `key` autogenerada vía `_normalizar_key`
+        sobre el nombre, y `activa=True`.
+      * Cualquier usuario autenticado puede invocarlo (NO restringido a
+        supervisor) — el caso de uso es agregar proveedores sobre la
+        marcha mientras se llena una cotización, sin bloquear al vendedor.
+
+    Body: JSON `{nombre: "X"}` o form-encoded `nombre=X`.
+    Response 200/201:
+        {ok: true, id, key, nombre, ya_existia: bool}
+    """
+    try:
+        data = _read_body(request)
+        nombre = (data.get('nombre') or '').strip()
+        if not nombre:
+            return JsonResponse(
+                {'ok': False, 'error': 'El nombre es requerido.'}, status=400,
+            )
+        nombre = nombre[:80]
+
+        # Buscar duplicado case-insensitive sobre nombre.
+        existente = ProveedorCRM.objects.filter(nombre__iexact=nombre).first()
+        if existente is not None:
+            return JsonResponse({
+                'ok': True,
+                'id': existente.id,
+                'key': existente.key,
+                'nombre': existente.nombre,
+                'ya_existia': True,
+            })
+
+        # Generar key canónica a partir del nombre. Si colisiona (otro
+        # proveedor con misma key pero distinto nombre, ej. tildes), añade
+        # sufijo numérico hasta encontrar libre.
+        base_key = _normalizar_key(nombre)
+        if not base_key:
+            return JsonResponse(
+                {'ok': False, 'error': 'No se pudo generar key a partir del nombre.'},
+                status=400,
+            )
+        key = base_key
+        sufijo = 2
+        while ProveedorCRM.objects.filter(key=key).exists():
+            sufijo_str = f'_{sufijo}'
+            key = (base_key[:40 - len(sufijo_str)] + sufijo_str)
+            sufijo += 1
+            if sufijo > 100:
+                return JsonResponse(
+                    {'ok': False, 'error': 'No se pudo generar key única.'},
+                    status=500,
+                )
+
+        proveedor = ProveedorCRM.objects.create(
+            key=key, nombre=nombre, activa=True,
+        )
+        return JsonResponse({
+            'ok': True,
+            'id': proveedor.id,
+            'key': proveedor.key,
+            'nombre': proveedor.nombre,
+            'ya_existia': False,
+        }, status=201)
+    except Exception as e:
+        logger.exception('api_proveedor_quick_create failed')
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
 @require_http_methods(["GET"])
 def api_proveedor_edit(request, proveedor_key):
     """Devuelve TODA la metadata del proveedor para alimentar el editor."""
