@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 08 de Junio</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .badge-perf { background: #cffafe; color: #155e75; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .quote-box {
+            background: #fef9c3;
+            border-left: 4px solid #ca8a04;
+            padding: 14px 18px;
+            margin: 18px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13.5px;
+            color: #713f12;
+            font-style: italic;
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 08 de Junio, 2026</p>
+            <p>Periodo: 08 Junio (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Si el reporte anterior fue sobre <em>ordenar y preparar</em>, hoy fue sobre <strong>construir encima de esa base</strong>. En una sola jornada el Dashboard pasó de tener 4 pestañas a tener <strong>7</strong>, con dos secciones completamente nuevas (Materiales y Marcas) ya conectadas a los datos reales del sistema, y una tercera (Proveedores) lista esperando definición. Es el primer día desde el arranque del plan de handoff donde se ve un <strong>resultado tangible al usuario final</strong> — no son cambios de archivos invisibles, son funcionalidades que el equipo de ventas y los ingenieros pueden empezar a usar para tomar decisiones del día a día.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">15</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Secciones nuevas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">8</div>
+            <div class="stat-label">Endpoints API nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">11</div>
+            <div class="stat-label">Archivos nuevos</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+            Hito del Día: El Dashboard Crece de 4 a 7 Pestañas con Funcionalidad Real
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Hasta ayer, el Dashboard del CRM tenía cuatro entradas: <strong>Oportunidades, Prospectos, Proyectos y Clientes</strong>. Hoy se sumaron tres pestañas nuevas — <strong>Materiales, Proveedores y Marcas</strong> — y dos de ellas ya están conectadas a los datos reales del sistema. <strong>Materiales</strong> es una pestaña completa para que la persona de logística vea de un vistazo qué proyectos tienen materiales en tránsito, cuáles están listos para instalar, y agregue materiales esperados con fechas (que aparecen como barras en una línea de tiempo, estilo Gantt). <strong>Marcas</strong> es un catálogo visual de las 11 marcas del distribuidor (Zebra, Panduit, APC, Avigilon, etc.) con su facturación del año, pipeline abierto, cotizaciones y campañas activas — todo agregado en tiempo real desde las oportunidades existentes. <strong>Proveedores</strong> queda como skeleton esperando definición. Esto es un día en el que <em>se ve crecer el sistema</em>.</p>
+    </div>
+
+    <h2>1. Materiales — Una Línea de Tiempo Visual para Logística</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">La sección <strong>Materiales</strong> resuelve un problema real: hoy, saber en qué etapa está el material de un proyecto (¿ya se compró?, ¿está en tránsito?, ¿llegó al almacén?) requiere preguntarle a alguien por mensaje o revisar archivos sueltos. Ahora vive todo en una pantalla, organizado por proyecto, con barras de color sobre una línea de tiempo de dos meses. Click en una barra abre el detalle del material; click en un proyecto resalta su renglón completo y muestra sus métricas arriba.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Layout split: proyectos a la izquierda, línea de tiempo a la derecha</span>
+        <div class="update-desc">Inspirado en el patrón de Asana / Linear: una lista compacta de proyectos a la izquierda (con cliente, PO, oportunidad y jornadas estimadas del último levantamiento) y a la derecha la línea de tiempo donde aparecen las barras de material. Las filas de ambos paneles están <strong>alineadas una a una</strong>: la fila 3 de la lista corresponde exactamente con la fila 3 del timeline.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">KPIs dinámicos que cambian al seleccionar un proyecto</span>
+        <div class="update-desc">Las 4 tarjetas grandes de arriba muestran por defecto el resumen global (proyectos visibles, con PO, con levantamiento, periodo). Al hacer click en un proyecto, las mismas 4 tarjetas <strong>cambian su contenido</strong> a las métricas de ese proyecto: Monto PO, Utilidad estimada, Días de ejecución y número de Técnicos asignados. Click otra vez = vuelve a la vista general. Mismo espacio en pantalla, dos vistas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Crear, editar, eliminar y comentar materiales esperados</span>
+        <div class="update-desc">Al seleccionar un proyecto aparece la opción <strong>"Agregar material"</strong>: se abre un widget para capturar título, fechas de inicio y fin, y estado (pendiente compra, en tránsito, material listo, en espera del cliente, recibido). Cada material guardado aparece como <strong>barra de color sobre la línea de tiempo</strong>, con puntitos en los extremos y la fecha. Click en una barra abre su detalle, donde se pueden <strong>editar campos de forma inline</strong>, agregar comentarios con timestamp + autor, eliminar, o marcar como recibido (queda registro de quién y cuándo confirmó la recepción).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Flechas para navegar mes a mes</span>
+        <div class="update-desc">El header de la línea de tiempo tiene dos flechas <strong>◀ ▶</strong> que mueven la ventana visible en pasos de un mes. Permite revisar materiales que vencen en agosto o que se compraron en mayo sin perder el contexto del proyecto. Es solo navegación visual — los proyectos visibles siguen siendo los del periodo del topbar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Botón "Ir al proyecto" para abrir el detalle completo</span>
+        <div class="update-desc">Cuando hay un proyecto seleccionado, aparece un botón que <strong>lleva directo al proyecto completo</strong> en la sección Proyectos (con sus tareas, drive, partidas, finanzas). Es el puente natural entre la vista de logística y la vista de gestión del proyecto.</div>
+    </div>
+
+    <div class="callout">
+        <strong>Por qué importa:</strong> Hoy la persona de logística tiene que <em>preguntar</em> en qué etapa está cada material. Mañana lo ve en una pantalla. Es una de esas funcionalidades que parecen pequeñas pero que cambian la rutina diaria del equipo.
+    </div>
+
+    <h2>2. Marcas — Catálogo Visual con Datos Reales del Año</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">La sección <strong>Marcas</strong> nació de un diseño previo en Claude Design que ya tenía la estética definida. El trabajo de hoy fue <strong>portarlo a la realidad del sistema</strong>: en lugar de datos de ejemplo, cada marca muestra su facturación real del año, sus oportunidades abiertas, sus cotizaciones en curso y sus campañas activas, todo agregado en tiempo real desde las oportunidades existentes. Respeta la lógica de visibilidad del CRM (supervisores ven todo, vendedores ven solo lo suyo y lo de su equipo).</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Dos vistas: Tabla y Timeline</span>
+        <div class="update-desc">La vista <strong>Tabla</strong> muestra las 11 marcas como filas, cada una con su facturado, pipeline, cotizaciones, campañas y barra de avance a meta. La vista <strong>Timeline</strong> aplana todas las oportunidades en un calendario trimestral (Q1-Q4 con sus 12 meses) — cada oportunidad aparece como un chip de porcentaje en el mes de cierre esperado, coloreado según la probabilidad (verde alta, naranja media, gris baja).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Widget de detalle por marca</span>
+        <div class="update-desc">Click en cualquier fila o chip abre un <strong>widget grande (880px)</strong> con: nombre y categoría de la marca, barra de avance a meta, 4 estadísticas (Facturado / Oportunidades / Cotizaciones / Campañas), y lista clickeable de las oportunidades del año (cada una abre el detalle de la oportunidad existente del CRM). Botón "Nueva oportunidad" abre el formulario de creación con la marca pre-seleccionada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtros: búsqueda, trimestre, probabilidad, mes y marca</span>
+        <div class="update-desc">La barra de filtros permite acotar la vista por trimestre (Q1-Q4), banda de probabilidad (alta ≥60%, media 40-59%, baja &lt;40%), mes específico y marca puntual. El buscador filtra en tiempo real tanto por nombre de marca como por cliente u oportunidad. "Limpiar" resetea todo de un click.</div>
+    </div>
+
+    <div class="callout">
+        <strong>Decisión de diseño aceptada:</strong> El diseño original tenía una barra lateral derecha estilo Notion. A pedido del usuario se cambió por un <strong>widget centrado tipo modal</strong> — más consistente con el resto de widgets del CRM (Oportunidades, Cotizaciones, etc.) y más cómodo de leer.
+    </div>
+
+    <h2>3. Sidebar Renombrado: "Dashboard" → "Reportes"</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">UX</span>
+        <span class="update-title">El item del sidebar ahora dice "Reportes" con ícono de documento</span>
+        <div class="update-desc">Antes, la entrada principal al dashboard se llamaba "Dashboard" con un ícono de gráfico de barras. Ahora se llama <strong>"Reportes"</strong> con el ícono de documento — más alineado con cómo el equipo se refiere a esta sección en el día a día ("voy a reportes a ver mis números"). La URL destino sigue siendo la misma; solo cambia la etiqueta y el ícono.</div>
+    </div>
+
+    <h2>4. Trabajo en Paralelo con un Agente Opus en Background</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Aprovechando que la sección Marcas y la sección Materiales son <strong>independientes entre sí</strong>, se delegó el feature completo de "agregar material esperado" (modelo nuevo en base de datos, migración, 6 endpoints CRUD, dos widgets, edición inline) a un <strong>agente Opus corriendo en background</strong>. Mientras ese agente trabajaba en Materiales, el desarrollo principal seguía con Marcas. Ambos commits se mezclaron sin conflictos.</p>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Proceso</span>
+        <span class="update-title">Paralelización efectiva en archivos no superpuestos</span>
+        <div class="update-desc">El agente trabajó en <code>models.py</code> (modelo nuevo al final), <code>views_v2/proyectos_v2.py</code> (endpoints nuevos), templates de widgets y JS nuevos. El desarrollo principal trabajó en archivos completamente distintos (<code>views_v2/marcas_v2.py</code>, <code>marcas_v2.css</code>, <code>crm_marcas_v2.js</code>, etc.). Solo dos archivos compartidos (<code>urls.py</code> y <code>crm_home.html</code>) recibieron líneas aditivas al final — sin conflictos de merge.</div>
+    </div>
+
+    <h2>5. Backend Nuevo (8 Endpoints + 1 Modelo + 1 Migración)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">API</span>
+        <span class="update-title">6 endpoints para gestión de materiales esperados</span>
+        <div class="update-desc">Listar materiales por proyecto, crear, ver detalle, actualizar (con soporte para agregar comentarios con timestamp), eliminar, y confirmar recepción (marca como recibido + guarda usuario y fecha). Permisos: el creador, el dueño del proyecto y los supervisores pueden editar/eliminar. Cualquier persona con acceso al proyecto puede confirmar recepción (el personal de campo no siempre es el mismo que creó el registro).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">API</span>
+        <span class="update-title">2 endpoints para el catálogo de marcas</span>
+        <div class="update-desc">Uno devuelve el resumen de las 11 marcas con sus métricas agregadas (facturado, pipeline, # cotizaciones, # campañas) — sirve a la vista Tabla y a los KPIs grandes. El otro devuelve el detalle de una marca puntual con su lista completa de oportunidades del año — sirve al widget de detalle y a la vista Timeline. Ambos respetan visibilidad supervisor / equipo / individual.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">DB</span>
+        <span class="update-title">Modelo nuevo: MaterialEsperado</span>
+        <div class="update-desc">Un material esperado pertenece a un proyecto, tiene título, fechas de inicio y fin, estado (5 opciones con su color), bandera de recepción confirmada (con usuario y fecha), comentarios libres (con timestamp y autor), y trazabilidad de creación. Migración <code>0178_materialesperado</code> lista para correr en producción cuando se haga el merge.</div>
+    </div>
+
+    <h2>6. Pulido Visual e Iteración con el Usuario</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Una buena parte del día se invirtió en <strong>iteraciones de diseño en vivo</strong> con feedback inmediato: rediseñar Materiales tres veces hasta que se vio bien, ajustar el ancho del widget de Marcas para que coincidiera con el de Oportunidades, alinear la leyenda al final del viewport sin pasarse de la sidebar, decidir si los markers de fecha van encima o dentro de las barras. Es trabajo invisible en un sentido pero crítico en otro: <strong>la diferencia entre una pantalla que se usa y una que se ignora</strong> está casi siempre en estos detalles.</p>
+
+    <div class="feature-list" style="padding-left: 5px;">
+        <div><strong>Materiales</strong> evolucionó: cards iPadOS → split lista+timeline.</div>
+        <div><strong>Tabs interlock:</strong> al cambiar de Marcas a Materiales, el anterior se apaga correctamente.</div>
+        <div><strong>Markers de fecha</strong> ahora viven dentro de las barras, no encima (más limpio).</div>
+        <div><strong>Footer global</strong> oculto en Materiales y Marcas (más espacio vertical).</div>
+        <div><strong>Widget de marca</strong> ensanchado a 880px (igual que el de oportunidad).</div>
+        <div><strong>Scroll interno</strong> en tabla y timeline de Marcas para no salirse de la sidebar.</div>
+    </div>
+
+    <h2>7. ¿Por Qué Este Trabajo Importa?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Por primera vez el equipo ve resultados visibles del Plan de Handoff</span>
+        <div class="update-desc">Los primeros días del plan fueron sobre <em>ordenar y preparar</em> — trabajo invisible para el equipo de ventas. Hoy, después de esa preparación, se construyó <strong>encima de la base</strong>: tres secciones nuevas en el dashboard, dos ya operativas. El equipo abre el CRM y ve cosas nuevas y útiles. Es la prueba de que la inversión en preparación rinde.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Materiales elimina conversaciones de "¿en qué va eso?"</span>
+        <div class="update-desc">El típico chat de "¿ya llegó el material del proyecto X?" / "no, sigue en tránsito" / "¿cuándo llega?" / "déjame ver y te aviso" se reemplaza por una pantalla que <strong>cualquiera con acceso al proyecto puede consultar</strong>. Menos interrupciones, menos errores de comunicación, menos clientes esperando una respuesta que se quedó en algún WhatsApp.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Marcas da contexto comercial de un vistazo</span>
+        <div class="update-desc">En una junta de ventas, cuando alguien pregunta "¿cómo vamos con Zebra este año?", la respuesta deja de requerir abrir Excel: se ve en una sola pantalla qué se facturó, qué oportunidades están abiertas, cuántas cotizaciones en curso, y qué porcentaje de probabilidad de cierre tienen. Toma de decisiones más rápida.</div>
+    </div>
+
+    <h2>8. Próximos Pasos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Validar Materiales en pruebas y correr la migración</span>
+        <div class="update-desc">Antes de subir Materiales a producción hay que ejecutar la migración <code>0178_materialesperado</code> en el servidor (crea la tabla en base de datos). En pruebas hay que probar el flujo completo: crear → editar inline → agregar comentario → confirmar recepción → eliminar. Sin esa validación no entra a producción.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Definir el contenido de la sección Proveedores</span>
+        <div class="update-desc">La pestaña Proveedores ya existe como skeleton con un placeholder que dice "en construcción" y propone ideas (listado de proveedores con OCs activas y monto comprometido, tiempos promedio de entrega, top proveedores por gasto del año, alertas de OCs vencidas). Falta la conversación para decidir cuáles de esas vistas importan y conectarlas a los datos existentes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Widget de alta de marca nueva</span>
+        <div class="update-desc">El botón "+ Nueva marca" del topbar de Marcas existe pero todavía solo muestra un aviso de "próximamente". Falta decidir qué información se captura al alta (nombre, categoría, meta del año, color de identificación, vendedor responsable) y construir el formulario correspondiente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Modelo de metas por marca y año</span>
+        <div class="update-desc">Hoy el KPI "Meta" de Marcas dice "Sin meta" porque no existe el modelo en base de datos. Es la siguiente pieza natural para que el avance a meta de cada marca sea un dato real, no un placeholder. Decisión pendiente: ¿meta por marca, por marca + vendedor, por marca + cliente? La estructura define la complejidad del modelo.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 08 de Junio, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>
