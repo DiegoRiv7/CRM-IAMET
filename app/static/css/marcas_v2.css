@@ -41,11 +41,11 @@ body.marca-modal-open {
     --mk-rowH: 60px;
     --mk-rowpad: 14px;
 
-    /* La sección se ancla al viewport visible con position:fixed cuando
-       está activa (clase .is-anchored la pone el JS) — eso garantiza
-       que NUNCA crezca más allá del viewport, sin importar topbar /
-       sidebar / padding del .crm-main. El JS mide topbar y sidebar
-       reales y aplica top + left exactos. */
+    /* Altura limitada al viewport. La altura exacta la setea el JS
+       midiendo `window.innerHeight - section.top - margen` para no
+       depender de constantes mágicas. El JS también esconde la tabla
+       principal de opps (#crmTableWrap) que de otro modo agrega
+       altura al body y dispara scroll de página. */
     padding: 0 26px 14px;
     background: var(--mk-bg);
     min-height: 540px;
@@ -53,14 +53,6 @@ body.marca-modal-open {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-}
-.marcas-section.is-anchored {
-    position: fixed !important;
-    /* top / left / right / bottom se aplican vía style inline desde el JS */
-    bottom: 0 !important;
-    right: 0 !important;
-    z-index: 5;
-    min-height: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', system-ui, sans-serif;
     color: var(--mk-text);
 }

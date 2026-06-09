@@ -58,7 +58,12 @@
         'ckKpiRow', 'ckKpiRowProsp', 'ckKpiRowProy',
         'ckChartsSection', 'ckChartsSectionProsp', 'ckChartsSectionProy',
         'ckDetalleSection', 'ckClientesTablaSection',
-        'ckControlSection', 'ckProveedoresSection'
+        'ckControlSection', 'ckProveedoresSection',
+        // CRÍTICO: la tabla principal de opps (#crmTableWrap) y el grid
+        // de tarjetas (#crmCardsGrid) suman ALTURA al body si quedan
+        // visibles → dispara scroll de página y la sección Marcas, aun
+        // con altura fija, queda fuera del viewport. Ocultarlos.
+        'crmTableWrap', 'crmCardsGrid'
     ];
     var IDS_OTROS_BTNS = [
         'crmModeOpp', 'crmModeProsp', 'crmModeProyectos', 'crmModeClientes',
@@ -972,51 +977,26 @@
         window.removeEventListener('resize', ajustarAlturaSeccion);
     }
 
-    /* Ancla la sección al viewport con position:fixed cuando está activa.
-       Mide top/left REALES del topbar global del CRM y del sidebar para
-       que la sección no se superponga con ellos. Es la solución más
-       agresiva: no depende de heredar altura del padre (que no funciona
-       cuando hay padding/margin variable en el .crm-main).
-
-       Al desactivar, removemos la clase y limpiamos style inline.
-    */
+    /* Mide la altura DISPONIBLE desde el top de la sección Marcas hasta
+       el bottom del viewport y la aplica como style.height. Esto
+       garantiza scroll interno (.marcas-card con overflow-y:scroll) y
+       que la página NO scrollee (overflow:hidden en .marcas-section).
+       Requiere que los elementos hermanos (#crmTableWrap, etc.) estén
+       ocultos antes de medir; si no, la sección queda empujada abajo y
+       avail sale negativo. */
     function ajustarAlturaSeccion() {
         var section = document.getElementById('ckMarcasSection');
         if (!section || section.style.display === 'none') return;
-        // Defer a next frame para que el layout esté estable.
         requestAnimationFrame(function () {
-            // Medir el SIDEBAR del CRM (ancho). Se intenta varios IDs/
-            // selectores comunes; si no encuentra, asume 60-80px típicos.
-            var sidebar =
-                document.querySelector('.crm-sidebar') ||
-                document.querySelector('.crm-page-sidebar > .crm-sidebar') ||
-                document.querySelector('aside.crm-sidebar');
-            var sidebarW = sidebar ? Math.round(sidebar.getBoundingClientRect().right) : 80;
-
-            // Medir el TOPBAR global del CRM (donde están las tabs
-            // Oportunidades, Prospectos, ..., Marcas).
-            var dashIsland = document.getElementById('dashDynamicIsland');
-            var topBottom = 0;
-            if (dashIsland) {
-                // El bottom del contenedor padre del dashDynamicIsland nos da
-                // la línea donde termina el topbar de tabs.
-                var bar = dashIsland.closest('.crm-bar') || dashIsland;
-                topBottom = Math.round(bar.getBoundingClientRect().bottom);
-            }
-            if (!topBottom || topBottom < 40) topBottom = 70; // fallback
-
-            section.classList.add('is-anchored');
-            section.style.top = topBottom + 'px';
-            section.style.left = sidebarW + 'px';
+            var rect = section.getBoundingClientRect();
+            var avail = Math.max(440, window.innerHeight - rect.top - 12);
+            section.style.height = avail + 'px';
         });
     }
 
     function liberarAlturaSeccion() {
         var section = document.getElementById('ckMarcasSection');
         if (!section) return;
-        section.classList.remove('is-anchored');
-        section.style.top = '';
-        section.style.left = '';
         section.style.height = '';
     }
 
