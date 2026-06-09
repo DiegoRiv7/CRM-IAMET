@@ -989,20 +989,34 @@
         window.removeEventListener('resize', ajustarAlturaSeccion);
     }
 
-    /* Mide la altura DISPONIBLE desde el top de la sección Marcas hasta
-       el bottom del viewport y la aplica como style.height. Esto
-       garantiza scroll interno (.marcas-card con overflow-y:scroll) y
-       que la página NO scrollee (overflow:hidden en .marcas-section).
-       Requiere que los elementos hermanos (#crmTableWrap, etc.) estén
-       ocultos antes de medir; si no, la sección queda empujada abajo y
-       avail sale negativo. */
+    /* Mide y APLICA alturas exactas a la sección Y a las cards de
+       tabla/timeline. Confiar en flex falló en intentos previos porque
+       algún CSS heredado interfería. Aquí dictamos los valores px
+       directamente — el scroll de la card es matemático, no inferido. */
     function ajustarAlturaSeccion() {
         var section = document.getElementById('ckMarcasSection');
         if (!section || section.style.display === 'none') return;
         requestAnimationFrame(function () {
-            var rect = section.getBoundingClientRect();
-            var avail = Math.max(440, window.innerHeight - rect.top - 12);
-            section.style.height = avail + 'px';
+            var sRect = section.getBoundingClientRect();
+            var sectionH = Math.max(440, window.innerHeight - sRect.top - 12);
+            section.style.height = sectionH + 'px';
+
+            // Después de aplicar la altura de la sección, medir cuánto
+            // ocupan los hijos no-scrolleables (topbar + KPIs) y dar el
+            // resto a las cards de tabla/timeline.
+            requestAnimationFrame(function () {
+                var topbar = section.querySelector('.marcas-topbar');
+                var kpis = section.querySelector('.marcas-kpis');
+                var topbarH = topbar ? topbar.offsetHeight : 0;
+                var kpisH = kpis ? kpis.offsetHeight : 0;
+                // 18 ≈ gap+padding-bottom de la sección
+                var cardH = Math.max(200, sectionH - topbarH - kpisH - 18);
+
+                var cardTabla = document.getElementById('mkViewTabla');
+                var cardTl = document.getElementById('mkViewTimeline');
+                if (cardTabla) cardTabla.style.height = cardH + 'px';
+                if (cardTl)    cardTl.style.height = cardH + 'px';
+            });
         });
     }
 
@@ -1010,6 +1024,10 @@
         var section = document.getElementById('ckMarcasSection');
         if (!section) return;
         section.style.height = '';
+        ['mkViewTabla', 'mkViewTimeline'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.style.height = '';
+        });
     }
 
     function instalarGuard() {

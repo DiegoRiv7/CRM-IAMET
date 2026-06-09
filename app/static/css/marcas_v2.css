@@ -304,11 +304,11 @@ body.marca-modal-open {
     border-radius: var(--mk-radius);
     box-shadow: var(--mk-shadow-card);
     border: 1px solid var(--mk-hairline-2);
-    /* flex-basis 0 + grow 1 + min-height 0: toma EXACTAMENTE el espacio
-       sobrante del flex column (después de topbar + KPIs) y el overflow
-       interno arranca de inmediato. */
-    flex: 1 1 0;
-    min-height: 0;
+    /* La altura la dicta el JS via style.height (matemática exacta:
+       sectionH - topbarH - kpisH). NO usar flex aquí — peleaba con el
+       style inline y el navegador escogía el max. Box-sizing border-box
+       para que el border+padding queden DENTRO de la altura asignada. */
+    box-sizing: border-box;
     /* `scroll` (no `auto`) garantiza scrollbar SIEMPRE visible —
        en macOS las auto se ocultan. */
     overflow-y: scroll;
