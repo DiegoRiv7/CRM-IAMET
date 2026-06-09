@@ -20,7 +20,14 @@
     var _totalsCache = null;
     var _view = 'tabla';
     var _query = '';
-    var _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
+    // Filtros multi-select: array vacío = "todas/todos", array con
+    // valores = solo esos. Click en una opción la togglea.
+    var _filters = { quarter: [], prob: [], mes: [], marca: [] };
+
+    // Helper: check si una opp pasa un filtro multi-select
+    function passesMulti(filtroArr, val) {
+        return !filtroArr.length || filtroArr.indexOf(String(val)) !== -1;
+    }
     // Sort key: 'default' | 'monto-desc' | 'monto-asc' | 'prob-desc' | 'prob-asc' | 'nombre-asc' | 'fact-desc' | 'fact-asc'
     var _sortKey = 'default';
 
@@ -287,14 +294,15 @@
     function renderFilterFieldsPopover(pop) {
         var html = '<div class="crm-pop-section">Filtrar por</div><div class="crm-pop-list">';
         MK_FILTER_FIELDS.forEach(function (fld) {
-            var active = (_filters[fld.key] && _filters[fld.key] !== 'all');
-            html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-mk-field="' + fld.key + '">' +
-                        '<span>' + escHtml(fld.label) + '</span>' +
+            var arr = _filters[fld.key] || [];
+            var active = arr.length > 0;
+            var badge = active ? ' <span style="margin-left:auto;font-size:10px;font-weight:800;color:#2563EB;">' + arr.length + '</span>' : '';
+            html += '<button type="button" class="crm-pop-item ' + (active ? 'active' : '') + '" data-mk-field="' + fld.key + '" style="display:flex;justify-content:space-between;align-items:center;width:100%;">' +
+                        '<span>' + escHtml(fld.label) + '</span>' + badge +
                     '</button>';
         });
         html += '</div>';
         pop.innerHTML = html;
-        // Wire items
         pop.querySelectorAll('[data-mk-field]').forEach(function (btn) {
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
@@ -309,34 +317,58 @@
     }
 
     function renderFilterValuePopover(pop, field) {
-        var current = _filters[field.key] || 'all';
+        var currentArr = _filters[field.key] || [];
         var options = [];
         if (field.type === 'marca') {
-            options.push({ v: 'all', l: 'Todas' });
             _marcasCache.forEach(function (m) {
                 options.push({ v: m.key, l: m.label });
             });
         } else if (field.type === 'enum') {
-            options.push({ v: 'all', l: 'Todas' });
             (field.options || []).forEach(function (o) { options.push(o); });
         }
-        var html = '<div class="crm-pop-section">' + escHtml(field.label) + '</div><div class="crm-pop-list">';
+        var html =
+            '<div class="crm-pop-section" style="display:flex;justify-content:space-between;align-items:center;">' +
+                '<span>' + escHtml(field.label) + ' (multi)</span>' +
+                (currentArr.length ? '<button type="button" data-mk-clear="1" style="background:none;border:none;color:#FF3B30;font-size:10px;font-weight:700;cursor:pointer;padding:2px 6px;">Limpiar</button>' : '') +
+            '</div>' +
+            '<div class="crm-pop-list">';
         options.forEach(function (o) {
-            var act = String(o.v) === String(current) ? 'active' : '';
+            var act = currentArr.indexOf(String(o.v)) !== -1 ? 'active' : '';
             html += '<button type="button" class="crm-pop-item ' + act + '" data-mk-val="' + escHtml(o.v) + '">' +
                         '<span>' + escHtml(o.l) + '</span>' +
                     '</button>';
         });
         html += '</div>';
         pop.innerHTML = html;
+
+        function rerender() {
+            // Re-render del propio popover para reflejar el nuevo estado
+            // sin cerrarlo — permite seleccionar múltiples sin reabrir.
+            renderFilterValuePopover(pop, field);
+        }
+
         pop.querySelectorAll('[data-mk-val]').forEach(function (btn) {
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                _filters[field.key] = btn.getAttribute('data-mk-val');
-                closeAllMkPopovers();
+                var val = String(btn.getAttribute('data-mk-val'));
+                var arr = _filters[field.key] || [];
+                var idx = arr.indexOf(val);
+                if (idx === -1) arr.push(val);
+                else arr.splice(idx, 1);
+                _filters[field.key] = arr;
                 renderAll();
+                rerender();
             });
         });
+        var btnClr = pop.querySelector('[data-mk-clear]');
+        if (btnClr) {
+            btnClr.addEventListener('click', function (e) {
+                e.stopPropagation();
+                _filters[field.key] = [];
+                renderAll();
+                rerender();
+            });
+        }
     }
 
     function renderSortPopover(pop) {
@@ -379,15 +411,19 @@
         if (!cont) return;
         var chips = '';
         MK_FILTER_FIELDS.forEach(function (fld) {
-            var v = _filters[fld.key];
-            if (!v || v === 'all') return;
+            var arr = _filters[fld.key] || [];
+            if (!arr.length) return;
             var label = fld.label + ': ';
-            if (fld.type === 'marca') {
-                var mm = _marcasCache.find(function (m) { return String(m.key) === String(v); });
-                label += mm ? mm.label : v;
-            } else if (fld.type === 'enum') {
-                var op = (fld.options || []).find(function (o) { return String(o.v) === String(v); });
-                label += op ? op.l : v;
+            if (arr.length === 1) {
+                if (fld.type === 'marca') {
+                    var mm = _marcasCache.find(function (m) { return String(m.key) === String(arr[0]); });
+                    label += mm ? mm.label : arr[0];
+                } else if (fld.type === 'enum') {
+                    var op = (fld.options || []).find(function (o) { return String(o.v) === String(arr[0]); });
+                    label += op ? op.l : arr[0];
+                }
+            } else {
+                label += arr.length + ' seleccionadas';
             }
             chips += '<span class="mk-facet-chip" data-mk-chip-field="' + fld.key + '">' +
                         escHtml(label) +
@@ -398,25 +434,24 @@
         });
         // Botón "Limpiar todo" si hay al menos un filtro activo.
         var activos = MK_FILTER_FIELDS.some(function (f) {
-            return _filters[f.key] && _filters[f.key] !== 'all';
+            return (_filters[f.key] || []).length > 0;
         });
         if (activos) {
             chips += '<button type="button" class="mk-facet-clear-all" id="mkBtnClearAll" title="Limpiar todos los filtros">Limpiar</button>';
         }
         cont.innerHTML = chips;
-        // Wire chips
         cont.querySelectorAll('.mk-facet-chip-x').forEach(function (x) {
             x.addEventListener('click', function (e) {
                 e.stopPropagation();
                 var key = x.closest('[data-mk-chip-field]').getAttribute('data-mk-chip-field');
-                _filters[key] = 'all';
+                _filters[key] = [];
                 renderAll();
             });
         });
         var btnAll = document.getElementById('mkBtnClearAll');
         if (btnAll) {
             btnAll.addEventListener('click', function () {
-                _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
+                _filters = { quarter: [], prob: [], mes: [], marca: [] };
                 renderAll();
             });
         }
@@ -529,7 +564,7 @@
             for (var i = 0; i < marcasConOps.length; i++) {
                 var mm = marcasConOps[i];
                 // Filtro por marca aplicado primero (skip antes del loop interno).
-                if (_filters.marca !== 'all' && String(mm.key) !== String(_filters.marca)) continue;
+                if (!passesMulti(_filters.marca, mm.key)) continue;
                 for (var k = 0; k < (mm._ops || []).length; k++) {
                     var op = mm._ops[k];
                     if (!opPasaFiltros(op)) continue;
@@ -553,20 +588,24 @@
             tlBody.innerHTML = html;
             actualizarFilterCount(flat.length);
 
+            // Click en una row del timeline = abrir la OPORTUNIDAD (no la
+            // marca). Cada row representa una opp individual.
             var rowEls = tlBody.querySelectorAll('.marcas-tl-row');
             for (var q = 0; q < rowEls.length; q++) {
                 rowEls[q].addEventListener('click', function () {
-                    var key = this.getAttribute('data-marca-key');
-                    openMarcaDetalle(key);
+                    var oppId = parseInt(this.getAttribute('data-opp-id'), 10);
+                    if (oppId && typeof window.openDetalle === 'function') {
+                        window.openDetalle(oppId);
+                    }
                 });
             }
         });
     }
 
     function opPasaFiltros(op) {
-        if (_filters.quarter !== 'all' && String(quarterOf(op.mes)) !== String(_filters.quarter)) return false;
-        if (_filters.prob !== 'all' && probBand(op.prob) !== _filters.prob) return false;
-        if (_filters.mes !== 'all' && String(op.mes) !== String(_filters.mes)) return false;
+        if (!passesMulti(_filters.quarter, quarterOf(op.mes))) return false;
+        if (!passesMulti(_filters.prob,    probBand(op.prob))) return false;
+        if (!passesMulti(_filters.mes,     op.mes)) return false;
         return true;
     }
     function opPasaBusqueda(op, marca) {
@@ -592,7 +631,7 @@
             ? '<div class="marcas-logo has-img" style="width:30px;height:30px;font-size:11px;--mk-h:' + hueOf(marca.label) + ';"><img src="' + escHtml(marca.logo_url) + '" alt="' + escHtml(marca.label) + '"></div>'
             : '<div class="marcas-logo" style="width:30px;height:30px;font-size:11px;--mk-h:' + hueOf(marca.label) + ';">' + escHtml(initials(marca.label)) + '</div>';
         return '' +
-            '<div class="marcas-tl-row" data-marca-key="' + escHtml(marca.key) + '">' +
+            '<div class="marcas-tl-row" data-marca-key="' + escHtml(marca.key) + '" data-opp-id="' + op.id + '" title="Abrir oportunidad">' +
                 '<div class="marcas-tl-left">' +
                     '<div class="marcas-tl-op">' +
                         logoTl +
@@ -1118,7 +1157,7 @@
         if (btnReset) {
             btnReset.addEventListener('click', function () {
                 _query = ''; if (search) search.value = '';
-                _filters = { quarter: 'all', prob: 'all', mes: 'all', marca: 'all' };
+                _filters = { quarter: [], prob: [], mes: [], marca: [] };
                 _sortKey = 'default';
                 renderAll();
             });
