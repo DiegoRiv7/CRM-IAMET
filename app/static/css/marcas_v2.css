@@ -13,6 +13,20 @@
    Materiales con .crm-control-active). */
 body.crm-marcas-active .crm-footer { display: none !important; }
 
+/* SCROLL LOCK GLOBAL cuando Marcas está activo. Forzamos overflow:
+   hidden en todos los wrappers padres para que NUNCA exista scroll de
+   página. La sección Marcas (con altura medida en JS) y su card interna
+   (overflow-y:scroll) son los únicos responsables del scroll. */
+body.crm-marcas-active,
+body.crm-marcas-active html,
+body.crm-marcas-active .crm-page,
+body.crm-marcas-active .crm-main,
+body.crm-marcas-active #crmContentSection,
+body.crm-marcas-active #crmTableWrap {
+    overflow: hidden !important;
+    max-height: 100vh !important;
+}
+
 /* Cuando un overlay de marca está abierto (detalle o editor) bloqueamos
    el scroll de la página de fondo — el JS pone .marca-modal-open en
    <body>. El overlay maneja su propio scroll interno. */
@@ -290,17 +304,15 @@ body.marca-modal-open {
     border-radius: var(--mk-radius);
     box-shadow: var(--mk-shadow-card);
     border: 1px solid var(--mk-hairline-2);
-    /* flex-basis 0 (NO auto): si fuera auto, el contenido enorme del
-       timeline definiría el tamaño base y el navegador haría crecer la
-       card antes de iniciar el scroll. Con basis 0 + grow 1, la card
-       toma exactamente el espacio sobrante del viewport y el overflow
+    /* flex-basis 0 + grow 1 + min-height 0: toma EXACTAMENTE el espacio
+       sobrante del flex column (después de topbar + KPIs) y el overflow
        interno arranca de inmediato. */
     flex: 1 1 0;
     min-height: 0;
-    /* `scroll` (no `auto`) garantiza que la scrollbar SIEMPRE esté
-       visible — en macOS las scrollbars auto se ocultan y el usuario
-       no se da cuenta de que hay más contenido abajo. */
-    overflow-y: scroll;
+    height: 0;  /* refuerza basis 0 incluso si algún CSS heredado mete altura */
+    /* `scroll` (no `auto`) garantiza scrollbar SIEMPRE visible —
+       en macOS las auto se ocultan. */
+    overflow-y: scroll !important;
     overflow-x: auto;
     /* Firefox: scrollbar fina con color customizado */
     scrollbar-width: thin;
