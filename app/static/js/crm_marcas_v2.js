@@ -1001,6 +1001,16 @@
         // algún rastro.
         IDS_TABLA_OPPS.forEach(hide);
 
+        // _crmSetMode('clientes_tabla') deja el botón Clientes con .active
+        // y los demás tabs en su estado anterior. Limpiamos TODOS los .active
+        // de los otros tabs antes de marcar el nuestro.
+        IDS_OTROS_BTNS.forEach(function (id) {
+            var b = document.getElementById(id);
+            if (b) b.classList.remove('active');
+        });
+        var btnRep2 = document.getElementById('crmModeReportes');
+        if (btnRep2) btnRep2.classList.remove('active');
+
         var btn = document.getElementById('crmModeMarcas');
         if (btn) btn.classList.add('active');
         var section = document.getElementById('ckMarcasSection');
