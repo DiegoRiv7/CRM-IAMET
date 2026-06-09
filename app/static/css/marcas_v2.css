@@ -41,12 +41,11 @@ body.marca-modal-open {
     --mk-rowH: 60px;
     --mk-rowpad: 14px;
 
-    /* La altura la setea crm_marcas_v2.js en activar() midiendo el
-       espacio real desde el top de la sección hasta el bottom del
-       viewport (con resize listener). El cálculo `calc(100vh - 64px)`
-       no era confiable porque el topbar del CRM + padding del .crm-main
-       pueden variar y empujaban el contenido fuera del viewport.
-       Fallback CSS por si el JS no corre: min-height grande. */
+    /* La sección se ancla al viewport visible con position:fixed cuando
+       está activa (clase .is-anchored la pone el JS) — eso garantiza
+       que NUNCA crezca más allá del viewport, sin importar topbar /
+       sidebar / padding del .crm-main. El JS mide topbar y sidebar
+       reales y aplica top + left exactos. */
     padding: 0 26px 14px;
     background: var(--mk-bg);
     min-height: 540px;
@@ -54,6 +53,14 @@ body.marca-modal-open {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+.marcas-section.is-anchored {
+    position: fixed !important;
+    /* top / left / right / bottom se aplican vía style inline desde el JS */
+    bottom: 0 !important;
+    right: 0 !important;
+    z-index: 5;
+    min-height: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', system-ui, sans-serif;
     color: var(--mk-text);
 }
