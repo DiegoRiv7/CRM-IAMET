@@ -9,9 +9,9 @@
 <link rel="stylesheet" href="{% static 'css/crm_volumetria.css' %}?v=20260507-mxn-highlight">
 <link rel="stylesheet" href="{% static 'css/control_v2.css' %}?v=20260608-grow-back">
 <link rel="stylesheet" href="{% static 'css/control_material.css' %}?v=20260608-grow-back">
-<link rel="stylesheet" href="{% static 'css/marcas_v2.css' %}?v=20260609-popfix">
-<link rel="stylesheet" href="{% static 'css/marca_editar.css' %}?v=20260609-marca-crud">
-<link rel="stylesheet" href="{% static 'css/proveedores_v2.css' %}?v=20260609-popfix">
+<link rel="stylesheet" href="{% static 'css/marcas_v2.css' %}?v=20260609-editor2">
+<link rel="stylesheet" href="{% static 'css/marca_editar.css' %}?v=20260609-editor2">
+<link rel="stylesheet" href="{% static 'css/proveedores_v2.css' %}?v=20260609-editor2">
 {% if es_ingeniero %}
 <style>
     /* Anti-FOUC: mientras body tiene .eng-initial-hide, oculta todas las
@@ -161,8 +161,8 @@ dobles, posibles SyntaxErrors.
 <script src="{% static 'js/crm_campanas.js' %}" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_control_v2.js' %}?v=20260608-grow-back" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_control_material_v2.js' %}?v=20260608-control-material-1" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_marcas_v2.js' %}?v=20260609-marca-crud" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_marca_editar_v2.js' %}?v=20260609-marca-crud" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_marcas_v2.js' %}?v=20260609-editor2" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_marca_editar_v2.js' %}?v=20260609-editor2" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_proveedores_v2.js' %}?v=20260608-marcas-1" data-turbo-eval="false"></script>
 
 {% endblock %}

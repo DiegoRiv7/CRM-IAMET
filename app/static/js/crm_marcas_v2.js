@@ -216,7 +216,24 @@
         renderTabla();
         renderTimeline();
         renderFacetChips();
+        actualizarVisibilidadFiltro();
         actualizarFilterCount();
+    }
+
+    /* El botón "Filtro" solo aplica a vista Timeline (sus campos —
+       trimestre, probabilidad, mes, marca — son por oportunidad, no por
+       marca). En Tabla cada fila ya es una marca, así que el filtro es
+       redundante con el buscador. Lo ocultamos en Tabla; el botón
+       Ordenar queda visible en ambas vistas. */
+    function actualizarVisibilidadFiltro() {
+        var btn = document.getElementById('mkBtnFilter');
+        var chips = document.getElementById('mkFacetChips');
+        if (!btn) return;
+        var show = (_view === 'timeline');
+        btn.style.display = show ? '' : 'none';
+        if (chips) chips.style.display = show ? '' : 'none';
+        // Si oculto el botón, cerrar el popover si quedó abierto.
+        if (!show) closeAllMkPopovers();
     }
 
     /* ─────────── POPOVERS estilo CRM (filtros + ordenar) ─────────── */
@@ -623,9 +640,14 @@
         if (open) {
             overlay.classList.add('is-open');
             overlay.setAttribute('aria-hidden', 'false');
+            if (document.body) document.body.classList.add('marca-modal-open');
         } else {
             overlay.classList.remove('is-open');
             overlay.setAttribute('aria-hidden', 'true');
+            // Solo quitar el lock si tampoco está abierto el editor.
+            var ed = document.getElementById('meOverlay');
+            var edOpen = ed && ed.classList.contains('is-open');
+            if (!edOpen && document.body) document.body.classList.remove('marca-modal-open');
         }
     }
 
@@ -992,6 +1014,7 @@
                     if (vt) vt.hidden = v !== 'tabla';
                     if (vl) vl.hidden = v !== 'timeline';
                     if (v === 'timeline') renderTimeline();
+                    actualizarVisibilidadFiltro();
                     actualizarFilterCount();
                 });
             }

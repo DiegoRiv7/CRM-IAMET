@@ -30,9 +30,9 @@
     to   { opacity: 1; }
 }
 
-/* Card principal */
+/* Card principal — más ancha y menos alargada */
 .me-card {
-    width: 720px;
+    width: 980px;
     max-width: 100%;
     max-height: 90vh;
     background: rgba(255, 255, 255, 0.96);
@@ -459,4 +459,152 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HERO (logo arriba centrado + nombre debajo) — rediseño jun-09
+   ═══════════════════════════════════════════════════════════════════ */
+.me-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px 24px 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: linear-gradient(180deg, rgba(248,249,251,0.6) 0%, rgba(255,255,255,0) 100%);
+}
+.me-dropzone {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    border-radius: 22px;
+    border: 2px dashed rgba(0,0,0,0.14);
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.16s, background 0.16s, transform 0.16s;
+    overflow: hidden;
+}
+.me-dropzone:hover,
+.me-dropzone:focus-visible {
+    border-color: #0052D4;
+    outline: none;
+}
+.me-dropzone.is-dragover {
+    border-color: #0052D4;
+    border-style: solid;
+    background: #EFF6FF;
+    transform: scale(1.02);
+}
+.me-dropzone-preview {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 800;
+    color: #C7C7CC;
+    background: #F8F8FA;
+    border-radius: 20px;
+    overflow: hidden;
+}
+.me-dropzone-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.me-dropzone.has-img .me-dropzone-preview {
+    background: #fff;
+    color: transparent;
+}
+.me-dropzone-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(0,82,212,0.92);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+}
+.me-dropzone:hover .me-dropzone-overlay,
+.me-dropzone.is-dragover .me-dropzone-overlay { opacity: 1; }
+.me-dropzone.is-dragover .me-dropzone-overlay { background: rgba(0,82,212,0.96); }
+/* Cuando NO hay logo: el overlay siempre visible suave para invitar a subir */
+.me-dropzone:not(.has-img) .me-dropzone-overlay { opacity: 0.85; background: rgba(60,60,67,0.55); }
+.me-dropzone:not(.has-img):hover .me-dropzone-overlay { opacity: 1; background: rgba(0,82,212,0.92); }
+
+.me-logo-remove {
+    margin-top: 8px;
+    background: none;
+    border: none;
+    color: #FF3B30;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background 0.12s;
+}
+.me-logo-remove:hover { background: rgba(255,59,48,0.08); }
+
+.me-hero-name {
+    margin-top: 14px;
+    width: 100%;
+    max-width: 460px;
+}
+.me-name-input {
+    width: 100%;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid transparent;
+    padding: 6px 8px 8px;
+    font: inherit;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #1D1D1F;
+    outline: none;
+    transition: border-color 0.16s;
+}
+.me-name-input::placeholder {
+    color: #C7C7CC;
+    font-weight: 700;
+}
+.me-name-input:focus {
+    border-bottom-color: #0052D4;
+}
+.me-hero-help {
+    margin-top: 8px;
+    font-size: 0.66rem;
+    color: #8E8E93;
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GRID 2 columnas (Datos+Meta+Estrategia | Contactos)
+   ═══════════════════════════════════════════════════════════════════ */
+.me-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+    padding: 16px 22px 20px;
+}
+.me-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.me-col .me-section { padding: 0; margin: 0; border: none; }
+.me-col .me-section + .me-section { margin-top: 6px; }
+.me-col .me-field + .me-field { margin-top: 10px; }
+
+@media (max-width: 820px) {
+    .me-grid { grid-template-columns: 1fr; }
 }

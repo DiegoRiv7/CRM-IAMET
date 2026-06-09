@@ -90,6 +90,7 @@
             renderActiveTab('marca');
             ov.classList.add('is-open');
             ov.setAttribute('aria-hidden', 'false');
+            if (document.body) document.body.classList.add('marca-modal-open');
             setTimeout(function () { var n = $('meNombre'); if (n) n.focus(); }, 50);
             return;
         }
@@ -97,6 +98,7 @@
         // mode === 'edit': fetch payload
         ov.classList.add('is-open');
         ov.setAttribute('aria-hidden', 'false');
+        if (document.body) document.body.classList.add('marca-modal-open');
         setHeader('Cargando…', '');
         renderActiveTab('marca');
 
@@ -133,6 +135,10 @@
         if (!ov) return;
         ov.classList.remove('is-open');
         ov.setAttribute('aria-hidden', 'true');
+        // Solo quitar el lock si tampoco está abierto el detalle de marca.
+        var det = document.getElementById('marcaWidgetOverlay');
+        var detOpen = det && det.classList.contains('is-open');
+        if (!detOpen && document.body) document.body.classList.remove('marca-modal-open');
     }
 
     function setHeader(title, sub) {
@@ -179,15 +185,17 @@
 
     function setLogoPreview(url, name) {
         var box = $('meLogoPreview');
-        var ini = $('meLogoInitials');
         var rm = $('meBtnLogoRemove');
+        var dz = $('meDropzone');
         if (!box) return;
         if (url) {
             box.innerHTML = '<img src="' + escHtml(url) + '" alt="Logo">';
             if (rm) rm.style.display = '';
+            if (dz) dz.classList.add('has-img');
         } else {
-            box.innerHTML = '<span id="meLogoInitials">' + escHtml(initials(name)) + '</span>';
+            box.innerHTML = '<span id="meLogoInitials">' + escHtml(initials(name) || '?') + '</span>';
             if (rm) rm.style.display = 'none';
+            if (dz) dz.classList.remove('has-img');
         }
     }
 
@@ -290,18 +298,9 @@
             $('meNombre').focus();
             return;
         }
-        if (STATE.mode === 'create') {
-            if (!p.key) {
-                showError('La key es requerida.');
-                $('meKey').focus();
-                return;
-            }
-            if (!/^[A-Z0-9_-]{1,40}$/.test(p.key)) {
-                showError('Key inválida (usa A-Z, 0-9, _, -).');
-                $('meKey').focus();
-                return;
-            }
-        }
+        // En create no validamos `key` en el cliente: el backend la
+        // autogenera del nombre (translitera tildes + filtra a [A-Z0-9_-]).
+        // Si el backend rechaza por algún motivo, su error se muestra arriba.
         showError('');
         setSaving(true);
 
@@ -445,16 +444,40 @@
             b.addEventListener('click', function () { renderActiveTab(b.getAttribute('data-me-tab')); });
         });
 
-        // Logo
-        var up = $('meBtnLogoUpload'); var fi = $('meLogoInput');
-        if (up && fi) {
-            up.addEventListener('click', function () { fi.click(); });
+        // Logo — dropzone click + drag&drop + file input
+        var dz = $('meDropzone'); var fi = $('meLogoInput');
+        if (dz && fi) {
+            dz.addEventListener('click', function () { fi.click(); });
+            dz.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fi.click(); }
+            });
+            // Drag & drop
+            ['dragenter', 'dragover'].forEach(function (ev) {
+                dz.addEventListener(ev, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dz.classList.add('is-dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(function (ev) {
+                dz.addEventListener(ev, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dz.classList.remove('is-dragover');
+                });
+            });
+            dz.addEventListener('drop', function (e) {
+                var dt = e.dataTransfer;
+                if (!dt || !dt.files || !dt.files.length) return;
+                onLogoSelected(dt.files[0]);
+            });
             fi.addEventListener('change', function (e) {
                 onLogoSelected(e.target.files && e.target.files[0]);
             });
         }
         var rm = $('meBtnLogoRemove');
-        if (rm) rm.addEventListener('click', function () {
+        if (rm) rm.addEventListener('click', function (e) {
+            e.stopPropagation();   // no abrir el dropzone
             STATE.logoFile = null;
             STATE.logoRemoved = true;
             if (fi) fi.value = '';

@@ -13,6 +13,13 @@
    Materiales con .crm-control-active). */
 body.crm-marcas-active .crm-footer { display: none !important; }
 
+/* Cuando un overlay de marca está abierto (detalle o editor) bloqueamos
+   el scroll de la página de fondo — el JS pone .marca-modal-open en
+   <body>. El overlay maneja su propio scroll interno. */
+body.marca-modal-open {
+    overflow: hidden !important;
+}
+
 .marcas-section {
     --mk-accent: #5e5ce6;
     --mk-bg: #f2f2f7;
