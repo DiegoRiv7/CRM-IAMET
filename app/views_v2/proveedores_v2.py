@@ -5,11 +5,14 @@ CRUD del catálogo persistido en DB (modelo ProveedorCRM).
 Espejo estructural de marcas_v2.py. Difiere en:
   * Contactos renombrados: principal / ventas / soporte (en vez de
     marca / ingenieria / mayorista).
-  * El campo TodoItem.proveedor AÚN no existe en el modelo — los
-    endpoints que dependen de él retornan payloads vacíos (facturado=0,
-    pipeline=0, ops=[]). Cuando se agregue el campo, automáticamente se
-    poblará. La query se hace dentro de try/except para no romper
-    mientras no exista.
+  * Pipeline de opps via M2M `TodoItem.proveedores` (no CharField como
+    Marcas con `producto`). Una opp puede tener N proveedores; las
+    agregaciones cuentan correctamente con `distinct=True` para ops
+    e implícito para sums (cada par opp-proveedor suma 1 vez, dando a
+    cada proveedor el crédito de la opp en su columna).
+  * Si la migración 0182 (que agrega el M2M) aún no se ha aplicado, los
+    queries devuelven payloads vacíos en lugar de fallar — chequeo via
+    _has_proveedor_field() con introspection del meta.
 
 Endpoints:
     GET  /app/api/proveedores/resumen/                  — todos + totales
@@ -182,10 +185,10 @@ def _proveedor_full_dict(proveedor, request=None):
 
 
 def _has_proveedor_field():
-    """¿Existe el campo `proveedor` en TodoItem? Si no, los queries que
+    """¿Existe el M2M `proveedores` en TodoItem? Si no, los queries que
     lo usan se cortocircuitan con queryset vacío para no romper."""
     try:
-        TodoItem._meta.get_field('proveedor')
+        TodoItem._meta.get_field('proveedores')
         return True
     except Exception:
         return False
@@ -193,9 +196,9 @@ def _has_proveedor_field():
 
 def _safe_opp_qs(user, anio, request, es_super, proveedor=None):
     """Devuelve el queryset base de TodoItem filtrado por visibilidad,
-    año y vendedores. Si `proveedor` está dado, también filtra por
-    `proveedor__in=proveedor['match']`. Si el campo `proveedor` no
-    existe en TodoItem, retorna queryset vacío.
+    año y vendedores. Si `proveedor` está dado, filtra opps que tengan
+    ese proveedor asignado (M2M). Si el M2M `proveedores` no existe en
+    TodoItem aún (antes de la migración 0182), retorna queryset vacío.
     """
     qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
         anio_cierre=anio,
@@ -205,7 +208,9 @@ def _safe_opp_qs(user, anio, request, es_super, proveedor=None):
         if not _has_proveedor_field():
             return TodoItem.objects.none()
         try:
-            qs = qs.filter(proveedor__in=proveedor['match'])
+            # .distinct() porque una opp con N proveedores aparece N veces
+            # en el JOIN del M2M; sin distinct duplica filas.
+            qs = qs.filter(proveedores__key__in=proveedor['match']).distinct()
         except (FieldError, AttributeError):
             return TodoItem.objects.none()
     return qs
@@ -237,8 +242,8 @@ def api_proveedores_resumen(request):
             totals: { facturado, pipeline, meta, gap }
         }
 
-    Mientras `TodoItem.proveedor` no exista, facturado/pipeline/ops
-    quedan en 0.
+    Mientras la migración 0182 (M2M `TodoItem.proveedores`) no se haya
+    aplicado, facturado/pipeline/ops quedan en 0.
     """
     try:
         user = request.user
@@ -258,25 +263,33 @@ def api_proveedores_resumen(request):
             try:
                 opp_qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
                     anio_cierre=anio,
-                )
+                ).filter(proveedores__isnull=False)
                 opp_qs = _aplicar_vendedores(opp_qs, request, es_super)
+                # Agrupar por key del proveedor relacionado vía M2M. Como
+                # cada opp puede tener N proveedores, los Sum/Count cuentan
+                # 1 vez por (opp, proveedor) — que es CORRECTO: cada
+                # proveedor "gana" el crédito de esa opp en su columna.
                 agg = (
-                    opp_qs.values('proveedor')
+                    opp_qs.values('proveedores__key')
                     .annotate(
                         fact_sum=Sum('monto_facturacion'),
                         pipe_sum=Sum('monto'),
-                        ops_count=Count('id'),
+                        ops_count=Count('id', distinct=True),
                     )
                 )
                 for r in agg:
-                    key = _normalizar_proveedor_with_idx(r['proveedor'], key_idx)
-                    if not key:
+                    key_raw = r['proveedores__key']
+                    if not key_raw:
                         continue
+                    # La key del M2M ya es la canónica de ProveedorCRM, no
+                    # necesita normalización (no hay aliases históricos
+                    # como en Marcas).
+                    key = key_raw
                     por_prov[key]['facturado'] += (r['fact_sum'] or Decimal('0'))
                     por_prov[key]['pipeline']  += (r['pipe_sum'] or Decimal('0'))
                     por_prov[key]['ops_count'] += int(r['ops_count'] or 0)
             except (FieldError, AttributeError):
-                logger.exception('proveedores: TodoItem.proveedor existe pero falla la query')
+                logger.exception('proveedores: M2M proveedores existe pero falla la query')
 
         proveedores_out = []
         for p in catalogo:
@@ -333,7 +346,8 @@ def api_proveedores_resumen(request):
 def api_proveedor_detalle(request, proveedor_key):
     """Detalle: KPIs + oportunidades + metadata rica del proveedor.
 
-    Si `TodoItem.proveedor` no existe, devuelve ops=[] y facturado=0.
+    Si el M2M `proveedores` no existe aún en TodoItem, devuelve
+    ops=[] y facturado=0.
     """
     try:
         user = request.user

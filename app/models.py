@@ -376,6 +376,17 @@ class TodoItem(models.Model):
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
     po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO", db_index=True)
     factura_numero = models.CharField(max_length=100, blank=True, default='', verbose_name="Factura")
+    # Proveedores asignados a esta oportunidad. M2M para soportar varios
+    # proveedores por opp (ej. una venta que cubre distribuidor Zebra +
+    # mayorista Panduit). related_name='oportunidades' permite a
+    # ProveedorCRM consultar sus opps directamente. La sección Proveedores
+    # del dashboard agrega facturado/pipeline via este M2M.
+    proveedores = models.ManyToManyField(
+        'ProveedorCRM',
+        related_name='oportunidades',
+        blank=True,
+        verbose_name='Proveedores',
+    )
     # FK directo al prospecto del que se generó esta oportunidad. A
     # diferencia de Prospecto.oportunidad_creada (FK al revés que solo
     # apunta a UNA opp), aquí CADA opp generada apunta al mismo
