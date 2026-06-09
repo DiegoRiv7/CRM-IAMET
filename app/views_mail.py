@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -872,6 +873,43 @@ def api_mail_enviar(request):
             tamanio_bytes=f.size,
             datos_b64=base64.b64encode(f.read()).decode(),
         )
+
+    # ── Hook Marketing → Campañas de marca ────────────────────────────
+    # Si el correo se disparó desde el módulo Marketing (Compartir
+    # material) y vino el slug de la marca, registramos un envío como
+    # `Campana(estado='enviada', producto=KEY_MARCA)`. Eso hace que el
+    # contador de "Campañas" de la sección Marcas refleje envíos reales
+    # del equipo. Los aliases de key (zebra/ZEBRA/Zebra) se resuelven
+    # vía MarcaCRM para mantener una sola fuente de verdad.
+    marketing_brand = (data.get('marketing_brand') or '').strip()
+    if marketing_brand:
+        try:
+            from .models import Campana, MarcaCRM
+            slug_up = marketing_brand.upper()
+            # Match por key exacto o por nombre (Marketing Hub usa slugs
+            # como 'panduit' / 'avigilion'; MarcaCRM.key suele ser
+            # 'PANDUIT' / 'AVIGILON').
+            marca_obj = MarcaCRM.objects.filter(
+                Q(key__iexact=slug_up) | Q(nombre__iexact=marketing_brand)
+            ).first()
+            producto_val = (marca_obj.key if marca_obj else slug_up) or ''
+            if producto_val:
+                Campana.objects.create(
+                    nombre=asunto[:200] or 'Envío de marketing',
+                    asunto=asunto[:200] or '',
+                    estado='enviada',
+                    producto=producto_val,
+                    creado_por=request.user,
+                    total_enviados=len(recipients),
+                    fecha_envio=django_tz.now(),
+                )
+        except Exception:
+            # Auditoría defensive: si por algún motivo el registro falla,
+            # NO debe romper el envío de correo (que ya pasó). Lo logueamos.
+            try:
+                logger.exception('Failed to record Campana from marketing share')
+            except Exception:
+                pass
 
     return JsonResponse({'ok': True})
 

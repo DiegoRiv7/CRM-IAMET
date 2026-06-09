@@ -644,6 +644,13 @@
             if (window._mailCorreoContextoProspectoId) {
                 fd.append('prospecto_id', window._mailCorreoContextoProspectoId);
             }
+            // Hook: cuando el composer se abrió desde "Compartir" del Marketing
+            // Hub, window._marketingShareCtx queda con el slug de la marca
+            // (ej. 'panduit'). El backend crea un Campana(producto=KEY) para
+            // que cuente en el KPI "Campañas" de la sección Marcas.
+            if (window._marketingShareCtx && window._marketingShareCtx.brand) {
+                fd.append('marketing_brand', window._marketingShareCtx.brand);
+            }
             _mailComposeAttachments.forEach(function (f) { fd.append('adjuntos', f); });
 
             fetch('/app/api/mail/enviar/', {
@@ -658,6 +665,9 @@
                         _showToastMail((data && data.error) || 'Error al enviar el correo', false);
                         return;
                     }
+                    // Limpiar el contexto de marketing si lo había para que
+                    // un siguiente correo (sin contexto) no herede el brand.
+                    if (window._marketingShareCtx) window._marketingShareCtx = null;
                     // Guardar en historial los destinatarios usados
                     _mailSaveRecentRecips(paraRecips.concat(ccRecips));
 
