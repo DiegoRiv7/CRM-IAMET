@@ -24,6 +24,7 @@ from . import views_asistente_oportunidades
 from . import views_asistente_calendario
 from .views_v2 import proyectos_v2 as views_v2_proyectos
 from .views_v2 import marcas_v2 as views_v2_marcas
+from .views_v2 import proveedores_v2 as views_v2_proveedores
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
@@ -499,6 +500,15 @@ urlpatterns = [
     path('api/marcas/<str:marca_key>/actualizar/', views_v2_marcas.api_marca_actualizar, name='api_marca_actualizar'),
     path('api/marcas/<str:marca_key>/eliminar/', views_v2_marcas.api_marca_eliminar, name='api_marca_eliminar'),
     path('api/marcas/<str:marca_key>/', views_v2_marcas.api_marca_detalle, name='api_marca_detalle'),
+
+    # ── Dashboard Proveedores (V2) — espejo de Marcas ───────────────────────
+    # Las rutas concretas van antes del catch-all <str:proveedor_key>/.
+    path('api/proveedores/resumen/', views_v2_proveedores.api_proveedores_resumen, name='api_proveedores_resumen'),
+    path('api/proveedores/crear/', views_v2_proveedores.api_proveedor_crear, name='api_proveedor_crear'),
+    path('api/proveedores/<str:proveedor_key>/edit/', views_v2_proveedores.api_proveedor_edit, name='api_proveedor_edit'),
+    path('api/proveedores/<str:proveedor_key>/actualizar/', views_v2_proveedores.api_proveedor_actualizar, name='api_proveedor_actualizar'),
+    path('api/proveedores/<str:proveedor_key>/eliminar/', views_v2_proveedores.api_proveedor_eliminar, name='api_proveedor_eliminar'),
+    path('api/proveedores/<str:proveedor_key>/', views_v2_proveedores.api_proveedor_detalle, name='api_proveedor_detalle'),
 
     path('api/iamet/proyectos/financiero/', views_iamet.api_proyectos_financiero, name='api_proyectos_financiero'),
     path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),

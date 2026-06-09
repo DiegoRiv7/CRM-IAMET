@@ -1,39 +1,233 @@
 {% comment %}
 _widget_proveedores.html — Sección "Proveedores" del dashboard CRM.
 
-Placeholder por ahora — pendiente de que el usuario especifique el contenido
-(qué KPIs, qué datos por proveedor, cómo se carga el catálogo).
+Espejo estructural de _widget_marcas.html. Diseño basado en el mismo
+handoff (Modulo Marcas.html), prefijos cambiados a proveedores- / pv-.
 
-La activación de la tab está en crm_proveedores_v2.js (mismo patrón que Control
-y Marcas: monkey-patch a _crmSetMode, persistencia en localStorage,
-deactivate vía capture-phase en otras tabs).
+Estructura:
+    .proveedores-section
+      .proveedores-topbar       (segmented + filtros + ordenar + buscador + Nuevo)
+      .proveedores-kpis         (4 cards: Facturado / Oportunidades / Cotiz / Camp)
+      .proveedores-filterbar    (oculto por default; chips trimestre/prob/mes)
+      .proveedores-card         (vista TABLA o vista TIMELINE)
+
+Sin sidebar — la navegación entre módulos viene del tab del CRM.
+El widget detalle se renderiza en _widget_proveedor_detalle.html (overlay).
+
+Datos: GET /app/api/proveedores/resumen/?anio=YYYY&vendedores=CSV
 {% endcomment %}
 
 <div id="ckProveedoresSection" class="proveedores-section" style="display:none;">
 
+    {% comment %}
+    TOPBAR — sin título "Proveedores" (la tab del CRM ya lo indica).
+        Izquierda: Tabla/Timeline + Filtro + Ordenar.
+        Derecha:   Buscador + "+ Nuevo proveedor".
+    {% endcomment %}
     <div class="proveedores-topbar">
-        <div class="proveedores-titles">
-            <h1 class="proveedores-title">Proveedores</h1>
-            <p class="proveedores-sub">Catálogo de proveedores, órdenes de compra y entregas</p>
+        <div class="proveedores-actions proveedores-actions--left">
+            <div class="proveedores-segmented" id="pvSegView">
+                <button class="proveedores-seg is-on" data-view="tabla">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+                    Tabla
+                </button>
+                <button class="proveedores-seg" data-view="timeline">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+                    Timeline
+                </button>
+            </div>
+            {% comment %}
+            Botones Filtro y Ordenar reutilizan las clases del CRM
+            (.crm-facet-btn + .crm-popover) para mantener congruencia
+            visual con la sección Oportunidades. La lógica vive en
+            crm_proveedores_v2.js — popovers propios.
+            {% endcomment %}
+            <button type="button" class="crm-facet-btn crm-facet-add" id="pvBtnFilter" title="Agregar filtro">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Filtro</span>
+            </button>
+            <button type="button" class="crm-facet-btn crm-facet-sort" id="pvBtnSort" title="Ordenar">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                <span id="pvSortLabel">Ordenar</span>
+            </button>
+            {# Chips de filtros activos #}
+            <div class="pv-facet-chips" id="pvFacetChips"></div>
+        </div>
+        <div class="proveedores-actions proveedores-actions--right">
+            <div class="proveedores-searchbox">
+                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input id="pvSearch" type="text" placeholder="Buscar…" spellcheck="false">
+                <button id="pvSearchClear" class="proveedores-search-clear" hidden>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+            <button class="proveedores-primarybtn" id="pvBtnAddProveedor" title="Agregar nuevo proveedor al catálogo">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo proveedor
+            </button>
         </div>
     </div>
 
-    <div class="proveedores-placeholder">
-        <svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="3" width="11" height="18" rx="1.2"/>
-            <path d="M15 9h4a1 1 0 011 1v10a1 1 0 01-1 1H4M8 7h3M8 11h3M8 15h3"/>
-        </svg>
-        <h3>En construcción</h3>
-        <p>Esta sección está pendiente de definición. Cuando confirmes los KPIs y el catálogo de proveedores que quieres ver aquí, la conectamos con los mismos endpoints que ya alimentan Control y Marcas.</p>
-        <div class="proveedores-hints">
-            <span>Algunas ideas:</span>
-            <ul>
-                <li>Listado de proveedores con # de OCs activas y monto comprometido</li>
-                <li>Tiempos promedio de entrega por proveedor</li>
-                <li>Top proveedores por gasto del año</li>
-                <li>Alertas de OCs vencidas</li>
-            </ul>
+    <!-- KPIs (4 cards) -->
+    <div class="proveedores-kpis">
+        <div class="proveedores-kpi">
+            <div class="proveedores-kpi-ico proveedores-tone-indigo">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M16 7.5c0-1.7-1.8-3-4-3s-4 1.1-4 2.8c0 4 8 2.2 8 6.4 0 1.8-1.8 3-4 3s-4-1.2-4-3"/></svg>
+            </div>
+            <div class="proveedores-kpi-label">Facturado</div>
+            <div class="proveedores-kpi-value" id="pvKpiFact">—</div>
+            <div class="proveedores-kpi-sub">Acumulado del año</div>
         </div>
+        <div class="proveedores-kpi">
+            <div class="proveedores-kpi-ico proveedores-tone-teal">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l5-5 3.5 3.5L20 6M20 6h-4.5M20 6v4.5"/></svg>
+            </div>
+            <div class="proveedores-kpi-label">Oportunidades</div>
+            <div class="proveedores-kpi-value" id="pvKpiOpps">—</div>
+            <div class="proveedores-kpi-sub">Pipeline abierto</div>
+        </div>
+        <div class="proveedores-kpi">
+            <div class="proveedores-kpi-ico proveedores-tone-blue">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h7l5 5V20a1 1 0 01-1 1H6a1 1 0 01-1-1V4.5a1 1 0 011-1z"/><path d="M13 3.5V9h5"/></svg>
+            </div>
+            <div class="proveedores-kpi-label">Cotizaciones</div>
+            <div class="proveedores-kpi-value" id="pvKpiCot">—</div>
+            <div class="proveedores-kpi-sub">En curso</div>
+        </div>
+        <div class="proveedores-kpi">
+            <div class="proveedores-kpi-ico proveedores-tone-orange">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 001 1h2l6 4V5L7 9H5a1 1 0 00-1 1z"/><path d="M17 8.5a5 5 0 010 7"/></svg>
+            </div>
+            <div class="proveedores-kpi-label">Campañas</div>
+            <div class="proveedores-kpi-value" id="pvKpiCam">—</div>
+            <div class="proveedores-kpi-sub">Activas</div>
+        </div>
+    </div>
+
+    {% comment %}
+    Filterbar inline ANTIGUO — deprecado a favor de popovers con clases
+    .crm-popover. Se mantiene oculto por compatibilidad con cualquier JS
+    que aún consulte los selects/chips, pero ya no se muestra al usuario.
+    {% endcomment %}
+    <div class="proveedores-filterbar" id="pvFilterbar" hidden style="display:none !important;">
+        <div class="proveedores-filter-grp">
+            <span class="proveedores-filter-lab">Trimestre</span>
+            <div class="proveedores-chips" data-filter="quarter">
+                <button class="proveedores-chip is-on" data-val="all">Todos</button>
+                <button class="proveedores-chip" data-val="1">Q1</button>
+                <button class="proveedores-chip" data-val="2">Q2</button>
+                <button class="proveedores-chip" data-val="3">Q3</button>
+                <button class="proveedores-chip" data-val="4">Q4</button>
+            </div>
+        </div>
+        <span class="proveedores-filterbar-div"></span>
+        <div class="proveedores-filter-grp">
+            <span class="proveedores-filter-lab">Probabilidad</span>
+            <div class="proveedores-chips" data-filter="prob">
+                <button class="proveedores-chip is-on" data-val="all">Todas</button>
+                <button class="proveedores-chip" data-val="high">Alta (≥60%)</button>
+                <button class="proveedores-chip" data-val="mid">Media (40-59%)</button>
+                <button class="proveedores-chip" data-val="low">Baja (&lt;40%)</button>
+            </div>
+        </div>
+        <span class="proveedores-filterbar-div"></span>
+        <div class="proveedores-filter-grp">
+            <span class="proveedores-filter-lab">Mes</span>
+            <select class="proveedores-filter-select" id="pvFilterMes">
+                <option value="all">Todos</option>
+                <option value="1">ENE</option><option value="2">FEB</option><option value="3">MAR</option>
+                <option value="4">ABR</option><option value="5">MAY</option><option value="6">JUN</option>
+                <option value="7">JUL</option><option value="8">AGO</option><option value="9">SEP</option>
+                <option value="10">OCT</option><option value="11">NOV</option><option value="12">DIC</option>
+            </select>
+        </div>
+        {% comment %}
+        Filtro por PROVEEDOR — solo aplica a vista Timeline (en Tabla cada
+        fila ya es un proveedor). El JS oculta este grupo cuando estamos
+        en vista Tabla.
+        {% endcomment %}
+        <div class="proveedores-filter-grp" id="pvFilterProveedorGrp">
+            <span class="proveedores-filter-lab">Proveedor</span>
+            <select class="proveedores-filter-select" id="pvFilterProveedor">
+                <option value="all">Todos</option>
+            </select>
+        </div>
+        <div class="proveedores-filterbar-spacer"></div>
+        <span class="proveedores-filter-count" id="pvFilterCount">— resultados</span>
+        <button class="proveedores-textbtn" id="pvBtnClearFilters">Limpiar</button>
+    </div>
+
+    <!-- VISTA TABLA -->
+    <div class="proveedores-card" id="pvViewTabla">
+        <table class="proveedores-dtable">
+            <thead>
+                <tr>
+                    <th class="proveedores-c-name">Proveedor</th>
+                    <th class="proveedores-num">Facturado</th>
+                    <th class="proveedores-num">Oportunidades</th>
+                    <th class="proveedores-num">Cotiz.</th>
+                    <th class="proveedores-num">Camp.</th>
+                    <th class="proveedores-c-avance">Avance a meta</th>
+                    <th class="proveedores-c-chev"></th>
+                </tr>
+            </thead>
+            <tbody id="pvTableBody">
+                <tr><td colspan="7" class="proveedores-empty-cell">Cargando…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- VISTA TIMELINE -->
+    <div class="proveedores-card proveedores-tlwrap" id="pvViewTimeline" hidden>
+        <div class="proveedores-tl">
+            <div class="proveedores-tl-head">
+                <div class="proveedores-tl-left proveedores-tl-head-left">
+                    <div class="proveedores-tlh">Oportunidad</div>
+                    <div class="proveedores-tlh proveedores-num">Monto</div>
+                </div>
+                <div class="proveedores-tl-grid proveedores-tl-qrow">
+                    <div class="proveedores-tl-qcell proveedores-t-q1">Q1</div>
+                    <div class="proveedores-tl-qcell proveedores-t-q2">Q2</div>
+                    <div class="proveedores-tl-qcell proveedores-t-q3">Q3</div>
+                    <div class="proveedores-tl-qcell proveedores-t-q4">Q4</div>
+                </div>
+            </div>
+            <div class="proveedores-tl-head proveedores-tl-subhead">
+                <div class="proveedores-tl-left"></div>
+                <div class="proveedores-tl-grid">
+                    <div class="proveedores-tl-mcell proveedores-t-q1">ENE</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q1">FEB</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q1">MAR</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q2">ABR</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q2">MAY</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q2">JUN</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q3">JUL</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q3">AGO</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q3">SEP</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q4">OCT</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q4">NOV</div>
+                    <div class="proveedores-tl-mcell proveedores-t-q4">DIC</div>
+                </div>
+            </div>
+            <div class="proveedores-tl-body" id="pvTimelineBody">
+                <div class="proveedores-empty-state"><p>Cargando…</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty state si no hay datos -->
+    <div class="proveedores-empty-state" id="pvEmpty" hidden>
+        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p>Sin resultados para los filtros actuales.</p>
+        <button class="proveedores-textbtn" id="pvBtnReset">Restablecer</button>
     </div>
 
 </div>
+
+{% comment %}
+Popovers de filtro y ordenar — viven a nivel sección para flotar libres
+(position:fixed los posiciona vía JS al lado del botón clickeado).
+{% endcomment %}
+<div class="crm-popover" id="pvPopFilter" role="menu"></div>
+<div class="crm-popover" id="pvPopFilterValue" role="menu"></div>
+<div class="crm-popover" id="pvPopSort" role="menu"></div>

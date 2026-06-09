@@ -6267,3 +6267,54 @@ class MarcaCRM(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class ProveedorCRM(models.Model):
+    """Catálogo de proveedores del distribuidor — espejo de MarcaCRM.
+
+    Mismo diseño que MarcaCRM: metadata rica (logo, descripción, 3
+    contactos planos, meta anual, estrategia). La `key` es el
+    identificador estable usado en URLs y, cuando se cree el campo
+    `TodoItem.proveedor`, en filtros de pipeline/facturación.
+
+    Mientras `TodoItem.proveedor` no exista, los endpoints de detalle
+    devuelven payloads vacíos para opps/facturado/pipeline. Esto permite
+    capturar proveedores manualmente sin esperar el campo.
+
+    Soft-delete vía `activa=False` para preservar referencias históricas.
+    """
+    nombre = models.CharField(max_length=80, unique=True)
+    key = models.CharField(max_length=40, unique=True, db_index=True)
+    categoria = models.CharField(max_length=100, blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    logo = models.ImageField(upload_to='proveedores/logos/', null=True, blank=True)
+
+    # Contactos planos (3 grupos × 3 campos cada uno).
+    # Naming "principal / ventas / soporte" — más natural para proveedores
+    # que el triplete marca/ingenieria/mayorista de MarcaCRM.
+    contacto_principal_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_principal_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_principal_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_ventas_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_ventas_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_ventas_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_soporte_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_soporte_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_soporte_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    meta_anual = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    estrategia = models.TextField(blank=True, default='')
+    activa = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Proveedor CRM'
+        verbose_name_plural = 'Proveedores CRM'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
