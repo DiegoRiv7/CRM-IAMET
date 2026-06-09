@@ -50,6 +50,7 @@ para nuevos módulos:
 | `widget_toast.js` | Helper global `window.toast(msg, type, ttl)` |
 | `widget_data_bus.js` | Event bus `crm:data-changed` + auto-emit en fetch |
 | `widget_url_sync.js` | URL syncing con `crmWidgetUrl.set/clear/read` |
+| `widget_window.js` | Sistema de ventanas: resize por esquinas, drag, minimizar a dock, máx 4 ventanas. Piloto en widgets de Oportunidad (whitelist `WINDOWABLE_IDS` o `data-windowable="1"`). CSS en `widget_window.css` |
 
 ## 📝 Convenciones obligatorias para archivos V2
 

@@ -1,0 +1,236 @@
+/* ═══════════════════════════════════════════════════════════════════
+   widget_window.css — Sistema de ventanas para widgets (widget_window.js)
+
+   Un overlay con .ww-windowed deja de ser modal: pierde el fondo y los
+   clicks pasan al contenido de atrás; su card se vuelve una ventana
+   flotante posicionada con custom properties (--ww-x/y/w/h) que el JS
+   actualiza al arrastrar/redimensionar.
+
+   Los !important son necesarios: las cards grandes (.widget-card-lg,
+   .widget-card-cotizador) fijan width/height con !important en crm.css.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Overlay en modo ventana ── */
+.widget-overlay.ww-windowed {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none;
+    animation: none !important;
+}
+
+/* ── Card en modo ventana ── */
+.ww-card {
+    position: relative;  /* ancla de los handles también en modo maximizado */
+}
+
+.widget-overlay.ww-windowed .ww-card {
+    pointer-events: auto;
+    position: fixed !important;
+    left: var(--ww-x) !important;
+    top: var(--ww-y) !important;
+    width: var(--ww-w) !important;
+    height: var(--ww-h) !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.07);
+    animation: none !important;
+}
+
+/* ── Esquinas de resize ── */
+.ww-handle {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    z-index: 60;
+    touch-action: none;
+}
+
+.ww-handle-nw { top: -4px; left: -4px; cursor: nwse-resize; }
+.ww-handle-ne { top: -4px; right: -4px; cursor: nesw-resize; }
+.ww-handle-sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.ww-handle-se { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
+/* Indicador sutil de la esquina inferior derecha al pasar el mouse */
+.ww-handle-se::after {
+    content: '';
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #C7C7CC;
+    border-bottom: 2px solid #C7C7CC;
+    border-radius: 0 0 3px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.ww-card:hover .ww-handle-se::after {
+    opacity: 1;
+}
+
+/* ── Botones de ventana (— y □) junto a la X ── */
+.ww-ctrls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ww-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #F2F2F7;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    color: #86868B;
+    flex-shrink: 0;
+}
+
+.ww-btn:hover {
+    background: #E8E8ED;
+    color: #1D1D1F;
+}
+
+/* ── Capa de protección durante drag/resize (iframes, selección) ── */
+.ww-drag-shield {
+    position: fixed;
+    inset: 0;
+    z-index: 9400;
+    background: transparent;
+}
+
+body.ww-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* En modo ventana la franja superior funciona como barra de título */
+.widget-overlay.ww-windowed .ww-card .wo-header {
+    cursor: grab;
+}
+
+/* ── Dock de minimizados ── */
+#wwDock {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 8900;  /* arriba de los widgets (≤8000), abajo del toast (9000) */
+    max-width: 92vw;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ww-dock-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 10px 8px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: transform 0.15s ease, background 0.15s ease;
+    max-width: 240px;
+}
+
+.ww-dock-chip:hover {
+    transform: translateY(-2px);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+.ww-dock-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ww-dock-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.ww-dock-close:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Responsive por contenedor — el JS pone ww-md / ww-sm / ww-xs en la
+   card según su ancho REAL (no el viewport). Espeja y extiende el
+   @media (max-width: 900px) de crm.css para el widget de Oportunidad.
+   Los !important ganan a los grid-template-columns inline del template.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── ww-md (< 1100px) ── */
+.ww-card.ww-md .wo-content {
+    padding: 1.25rem 1.5rem 1.75rem;
+}
+
+.ww-card.ww-md .wo-header {
+    padding: 1.25rem 1.5rem 0.65rem;
+}
+
+/* ── ww-sm (< 820px) ── */
+.ww-card.ww-sm .wo-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+}
+
+.ww-card.ww-sm .wo-info-grid {
+    grid-template-columns: 1fr 1fr !important;
+}
+
+.ww-card.ww-sm .wo-title {
+    font-size: 1.25rem;
+}
+
+/* ── ww-xs (< 560px) ── */
+.ww-card.ww-xs .wo-content {
+    padding: 0.9rem 1rem 1.25rem;
+}
+
+.ww-card.ww-xs .wo-header {
+    padding: 1rem 1rem 0.5rem;
+}
+
+.ww-card.ww-xs .wo-info-grid {
+    grid-template-columns: 1fr !important;
+}
+
+.ww-card.ww-xs .wo-title {
+    font-size: 1.05rem;
+}
+
+.ww-card.ww-xs .wo-scroll-btn {
+    display: none;
+}
+
+.ww-card.ww-xs .wo-card {
+    padding: 1rem;
+}
