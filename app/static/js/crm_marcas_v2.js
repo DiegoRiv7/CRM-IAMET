@@ -58,13 +58,13 @@
         'ckKpiRow', 'ckKpiRowProsp', 'ckKpiRowProy',
         'ckChartsSection', 'ckChartsSectionProsp', 'ckChartsSectionProy',
         'ckDetalleSection', 'ckClientesTablaSection',
-        'ckControlSection', 'ckProveedoresSection',
-        // CRÍTICO: la tabla principal de opps (#crmTableWrap) y el grid
-        // de tarjetas (#crmCardsGrid) suman ALTURA al body si quedan
-        // visibles → dispara scroll de página y la sección Marcas, aun
-        // con altura fija, queda fuera del viewport. Ocultarlos.
-        'crmTableWrap', 'crmCardsGrid'
+        'ckControlSection', 'ckProveedoresSection'
     ];
+    // IDs internos de la tabla principal de opps que SI ocultamos al
+    // activar Marcas — viven DENTRO de #crmTableWrap (que es el wrapper
+    // del que cuelga TODA la sección de dashboard, incluido mi widget,
+    // así que NO podemos ocultar #crmTableWrap entero, solo su contenido).
+    var IDS_TABLA_OPPS = ['crmListBody', 'crmCardsGrid'];
     var IDS_OTROS_BTNS = [
         'crmModeOpp', 'crmModeProsp', 'crmModeProyectos', 'crmModeClientes',
         'crmModeControl', 'crmModeProveedores'
@@ -946,9 +946,21 @@
     // ─────────────────────────────────────────────────────────────────────
 
     function activar() {
+        // PRIMERO: llamar al legacy con 'clientes_tabla' (mientras _activo
+        // sigue false → el monkey-patch no bloquea). Eso hace que la
+        // lógica nativa esconda kpi/charts/tabla de opps y muestre
+        // ckClientesTablaSection. Luego subimos _activo a true y nuestro
+        // monkey-patch bloquea cualquier refresh automático.
+        try {
+            if (typeof window._crmSetMode === 'function') {
+                window._crmSetMode('clientes_tabla');
+            }
+        } catch (e) {}
         _activo = true;
-        try { if (typeof window._crmSetMode === 'function') window._crmSetMode('__marcas__'); } catch (e) {}
         IDS_OTROS_KPI.forEach(hide);
+        // Defensa extra: forzar ocultar la tabla de opps por si quedó
+        // algún rastro.
+        IDS_TABLA_OPPS.forEach(hide);
 
         var btn = document.getElementById('crmModeMarcas');
         if (btn) btn.classList.add('active');
