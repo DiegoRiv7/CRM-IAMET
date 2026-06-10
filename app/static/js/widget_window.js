@@ -380,10 +380,11 @@
         // posicionan respecto al satCard mismo.
         satCard.classList.add('ww-card');
         injectHandles(satellite);
-        // z-index del satélite = z-index de la opp + 5 (queda por encima
-        // de la opp pero por debajo del shield de drag y del picker).
-        var oppZ = parseInt(window.getComputedStyle(opp).zIndex, 10) || 1000;
-        satellite.style.zIndex = (oppZ + 5);
+        // NOTA: NO seteamos z-index aquí — widget_stack ya le asigna
+        // dinámicamente z-index !important al satélite cuando se vuelve
+        // visible (queda por encima de la opp porque entra después en
+        // el stack). Cualquier manipulación manual aquí entra en pelea
+        // con widget_stack y causa el bug "el drive se abre detrás".
     }
 
     function unembedSatellite(satellite) {
@@ -414,7 +415,9 @@
                 h.remove();
             });
         }
-        satellite.style.removeProperty('z-index');
+        // NO tocar el z-index del overlay — widget_stack lo gestiona
+        // dinámicamente con !important. Tocarlo aquí causaba que el
+        // drive quedara DETRÁS de la opp (se quitaba el !important).
     }
 
     var _embedRefreshScheduled = false;
@@ -1333,6 +1336,13 @@
         // oscuro del fondo se quite cuando ya no quedan ventanas.
         // refreshFocusState está debounced con RAF — barato.
         document.addEventListener('click', function () { refreshFocusState(); }, true);
+        // Red de seguridad: poll ligero cada 800ms para sincronizar
+        // body.ww-has-windows si algún cierre escapó a nuestros
+        // observers (cierre con X de widgets que no llaman hooks
+        // directos, transiciones que retrasan el display:none, etc.).
+        // refreshFocusState es debounced con RAF → real-cost ~0.1ms
+        // por tick + skip si ya hay uno scheduled.
+        setInterval(refreshFocusState, 800);
         // Click DENTRO de un iframe en ventana (ej. cotizador instanciado):
         // no burbujea al padre, pero el focus sí se mueve — si lo ganó un
         // iframe dentro de una ventana, traerla al frente.
