@@ -23,6 +23,10 @@ from .models import (
     ArchivoOportunidad,
     CarpetaOportunidad,
     OportunidadComentario,
+    ComentarioTareaOpp,
+    TareaComentario,
+    Instalacion,
+    Notificacion,
     Prospecto,
     ProyectoIAMET,
 )
@@ -155,6 +159,66 @@ def _comentario_save(sender, instance, created, **kw):
 @receiver(post_delete, sender=OportunidadComentario)
 def _comentario_delete(sender, instance, **kw):
     _log('comentario', instance, 'delete', _opp_extra(instance))
+
+
+# ── Comentarios de tareas (ambos modelos de tarea) ─────────────────────
+# Entidad 'comentario-tarea': el consumidor (crm_sync.js) recarga los
+# comentarios del detalle de tarea abierto si el tarea_id coincide.
+
+def _tarea_extra(instance):
+    extra = {'tarea_id': getattr(instance, 'tarea_id', None)}
+    try:
+        opp = getattr(getattr(instance, 'tarea', None), 'oportunidad_id', None)
+        if opp:
+            extra['oportunidad_id'] = opp
+    except Exception:
+        pass
+    return extra
+
+
+@receiver(post_save, sender=ComentarioTareaOpp)
+def _coment_tarea_opp_save(sender, instance, created, **kw):
+    _log('comentario-tarea', instance, _accion(created), _tarea_extra(instance))
+
+
+@receiver(post_delete, sender=ComentarioTareaOpp)
+def _coment_tarea_opp_delete(sender, instance, **kw):
+    _log('comentario-tarea', instance, 'delete', _tarea_extra(instance))
+
+
+@receiver(post_save, sender=TareaComentario)
+def _coment_tarea_save(sender, instance, created, **kw):
+    _log('comentario-tarea', instance, _accion(created), _tarea_extra(instance))
+
+
+@receiver(post_delete, sender=TareaComentario)
+def _coment_tarea_delete(sender, instance, **kw):
+    _log('comentario-tarea', instance, 'delete', _tarea_extra(instance))
+
+
+# ── Programa de obra ───────────────────────────────────────────────────
+# El bus ya tiene consumidores para 'instalacion' (pobCargarLista +
+# refetch del calendario) — con el signal quedan sincronizados gratis.
+
+@receiver(post_save, sender=Instalacion)
+def _instalacion_save(sender, instance, created, **kw):
+    _log('instalacion', instance, _accion(created))
+
+
+@receiver(post_delete, sender=Instalacion)
+def _instalacion_delete(sender, instance, **kw):
+    _log('instalacion', instance, 'delete')
+
+
+# ── Notificaciones ─────────────────────────────────────────────────────
+# El widget de notificaciones ya escucha 'notificacion' en el bus
+# (refreshSoon) — el signal hace que el badge/toast del DESTINATARIO
+# reaccione en ≤20s aunque el cambio lo haya hecho otro usuario.
+
+@receiver(post_save, sender=Notificacion)
+def _notif_save(sender, instance, created, **kw):
+    _log('notificacion', instance, _accion(created),
+         {'destinatario_id': getattr(instance, 'usuario_destinatario_id', None)})
 
 
 # ── Prospección y Proyectos ────────────────────────────────────────────

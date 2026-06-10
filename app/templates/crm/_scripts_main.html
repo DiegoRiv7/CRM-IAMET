@@ -33,14 +33,14 @@ forzar full reload al volver al CRM evita estados parciales raros.
 <script src="{% static 'js/widget_data_bus.js' %}?v=20260603-data-bus-v1" data-turbo-eval="false"></script>
 <script src="{% static 'js/widget_url_sync.js' %}?v=20260603-url-sync-v1" data-turbo-eval="false"></script>
 <script src="{% static 'js/widget_window.js' %}?v=20260610-ww-v7-pulido" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_main.js' %}?v=20260610-spa-setter" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_main.js' %}?v=20260610-sync-hook" data-turbo-eval="false"></script>
 {% comment %}
 oportunidad_widget_v2.js DEBE cargar DESPUÉS de crm_main.js: reasigna
 window.openDetalle (takeover del widget instanciable, Refactor Etapa 1).
 {% endcomment %}
 <script src="{% static 'js/oportunidad_widget_v2.js' %}?v=20260610-oppv2-3" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_nav_v2.js' %}?v=20260610-nav-v4" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_sync.js' %}?v=20260610-sync-v1" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_sync.js' %}?v=20260610-sync-v2" data-turbo-eval="false"></script>
 <script>
 /* Contador workspace: # real de filas (excluye Ganado/Perdido/Pagado) */
 (function(){

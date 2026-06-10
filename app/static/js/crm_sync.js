@@ -110,6 +110,22 @@
         });
     }
 
+    // ── Consumidores propios del sync ──────────────────────────────────
+    // La mayoría de las entidades ya tienen consumidores en
+    // widget_data_bus.js / los widgets. Aquí solo los que nacieron con
+    // el sync y no tienen dueño natural:
+    //   · comentario-tarea → recargar el feed del detalle de tarea abierto
+    //     (hook _crmTaskRecargarComentarios expuesto por crm_main).
+    window.crmReady(function () {
+        if (window._crmSyncConsumersWired || !window.crmDataBus) return;
+        window._crmSyncConsumersWired = true;
+        window.crmDataBus.on('comentario-tarea', function (d) {
+            if (typeof window._crmTaskRecargarComentarios === 'function') {
+                try { window._crmTaskRecargarComentarios(d.extra && d.extra.tarea_id); } catch (e) { }
+            }
+        });
+    });
+
     // Debug en consola: crmSync.now() fuerza un poll.
     window.crmSync = {
         now: function () { clearTimeout(timer); poll(); },

@@ -9907,6 +9907,15 @@
             }
         })();
 
+        // Hook para el sync entre usuarios (crm_sync.js): recargar los
+        // comentarios del detalle de tarea ABIERTO cuando otro usuario
+        // comenta. La función y _crmCurrentTaskId viven en este closure.
+        window._crmTaskRecargarComentarios = function (tareaId) {
+            if (!_crmCurrentTaskId) return;
+            if (tareaId && String(tareaId) !== String(_crmCurrentTaskId)) return;
+            crmTaskCargarComentarios(_crmCurrentTaskId);
+        };
+
         function crmTaskCargarComentarios(tareaId) {
             var feed = document.getElementById('crm-task-activity-feed');
             if (!feed) return;
