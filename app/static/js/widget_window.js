@@ -354,6 +354,9 @@
         return satellite.querySelector('.widget-card, .ww-card, .wco-card');
     }
 
+    var EMBED_PROPS = ['position', 'left', 'top', 'width', 'height',
+        'maxWidth', 'maxHeight', 'margin', 'borderRadius'];
+
     function embedSatelliteToOpp(satellite, opp) {
         var oppCard = getCard(opp);
         if (!oppCard) return;
@@ -364,6 +367,16 @@
         // Asociar al satélite la opp host para que onPointerDown sepa
         // que drag/resize en el satélite deben aplicarse a la opp.
         satellite._wwOppHost = opp;
+        // Snapshot de los styles ORIGINALES del template para poder
+        // restaurarlos limpio al desembebter. Sin esto, el unembed
+        // mataba estilos legítimos como el width:850px del drive y
+        // la card quedaba sin dimensiones (drive invisible en modal).
+        if (!satCard._wwOriginalStyles) {
+            satCard._wwOriginalStyles = {};
+            EMBED_PROPS.forEach(function (p) {
+                satCard._wwOriginalStyles[p] = satCard.style.getPropertyValue(p);
+            });
+        }
         satCard.style.position = 'fixed';
         satCard.style.left = rect.left + 'px';
         satCard.style.top = rect.top + 'px';
@@ -403,21 +416,29 @@
     // detrás").
     function ensureSatelliteIsClean(satellite) {
         var satCard = getSatelliteCard(satellite);
-        if (satCard) {
-            ['position', 'left', 'top', 'width', 'height', 'maxWidth',
-             'maxHeight', 'margin', 'borderRadius', 'transform',
-             'transition'].forEach(function (p) {
-                satCard.style.removeProperty(p);
-            });
-            satCard.classList.remove('ww-card');
-            // Quitar handles que el embed haya inyectado.
-            satCard.querySelectorAll('.ww-handle').forEach(function (h) {
-                h.remove();
-            });
-        }
+        // Si nunca fue embebido, no tocar NADA — la card mantiene sus
+        // styles originales del template (width:850px, height:80vh, etc.).
+        // Sin este guard, ensureSatelliteIsClean al primer open destruía
+        // las dimensiones del drive y lo dejaba colapsado/invisible.
+        if (!satCard || !satCard._wwOriginalStyles) return;
+        // Restaurar exactamente lo que tenía antes del embed.
+        var snap = satCard._wwOriginalStyles;
+        EMBED_PROPS.forEach(function (p) {
+            var orig = snap[p];
+            if (orig) satCard.style.setProperty(p, orig);
+            else satCard.style.removeProperty(p);
+        });
+        // transform/transition los limpiamos siempre porque solo los
+        // pone Mission Control y son temporales.
+        satCard.style.removeProperty('transform');
+        satCard.style.removeProperty('transition');
+        satCard._wwOriginalStyles = null;
+        satCard.classList.remove('ww-card');
+        satCard.querySelectorAll('.ww-handle').forEach(function (h) {
+            h.remove();
+        });
         // NO tocar el z-index del overlay — widget_stack lo gestiona
-        // dinámicamente con !important. Tocarlo aquí causaba que el
-        // drive quedara DETRÁS de la opp (se quitaba el !important).
+        // dinámicamente con !important.
     }
 
     var _embedRefreshScheduled = false;
