@@ -30,51 +30,6 @@
 (function () {
     'use strict';
 
-    /* ── Modo embebido (dentro de una ventana-iframe) ─────────────────
-       Las ventanas secundarias de oportunidad son iframes que cargan el
-       CRM completo con ?ww=1&open_opp=<id> — así crm_main.js corre en un
-       documento propio con su propio estado y la edición funciona igual
-       que en la ventana principal. Dentro del iframe este módulo NO
-       inicializa ventanas; solo:
-         · marca el body (CSS oculta el CRM de fondo, deja los widgets)
-         · avisa al padre cuando el widget raíz se cierra (X/Esc)
-         · puentea el data bus al padre (refresh de kanban/listas)      */
-    var IS_EMBED = (function () {
-        try { return window.top !== window && /[?&]ww=1(&|$)/.test(window.location.search); }
-        catch (e) { return true; }  // top inaccesible = seguro estamos embebidos
-    })();
-
-    if (IS_EMBED) {
-        window.crmReady(function () {
-            if (document.body.classList.contains('ww-embed')) return;
-            document.body.classList.add('ww-embed');
-
-            var overlay = document.getElementById('widgetDetalle');
-            if (overlay) {
-                var seen = false;
-                new MutationObserver(function () {
-                    var cs = window.getComputedStyle(overlay);
-                    var vis = cs.display !== 'none' && cs.visibility !== 'hidden';
-                    if (vis) { seen = true; return; }
-                    if (seen) {
-                        try { window.parent.postMessage({ type: 'ww:close-opp' }, window.location.origin); } catch (e) { }
-                    }
-                }).observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
-            }
-
-            document.addEventListener('crm:data-changed', function (e) {
-                if (!e.detail) return;
-                try {
-                    window.parent.postMessage({
-                        type: 'ww:data-changed',
-                        detail: { entidad: e.detail.entidad, accion: e.detail.accion, id: e.detail.id, extra: e.detail.extra },
-                    }, window.location.origin);
-                } catch (err) { }
-            });
-        });
-        return;  // nada más del módulo aplica dentro del iframe
-    }
-
     var MAX_WINDOWS = 4;
     var MIN_W = 380;
     var MIN_H = 260;
@@ -471,7 +426,6 @@
         if (!card) return;
         var overlay = card.closest('.widget-overlay');
         if (!overlay || !overlay.classList.contains('ww-windowed')) return;
-        if (overlay.classList.contains('ww-iframe')) return;  // las ventanas-iframe no se maximizan
         if (ev.target.closest(INTERACTIVE)) return;
         if (ev.clientY - card.getBoundingClientRect().top > DRAG_STRIP) return;
         unwindowize(overlay);
@@ -510,148 +464,6 @@
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 
-    /* ── Multi-oportunidad: ventanas-iframe (edición completa) ────────
-       El widget de Oportunidad es un singleton (#widgetDetalle, ids
-       únicos que el legacy llena por getElementById), así que no puede
-       haber dos instancias vivas EN EL MISMO DOCUMENTO. Solución: cuando
-       está en modo ventana y se abre OTRA oportunidad, la actual se muda
-       a una ventana-iframe que carga el CRM con ?ww=1&open_opp=<id> —
-       documento independiente = estado independiente = edición real en
-       cada ventana. Los cambios hechos dentro se puentean al data bus
-       del padre vía postMessage (ver IS_EMBED arriba). */
-
-    var lastOppId = null;
-    var winSeq = 0;
-
-    // NO se puede envolver window.openDetalle: los callers internos de
-    // crm_main.js (kanban, lista — el camino más común) llaman a la
-    // función LOCAL por closure y brincarían el wrapper. En cambio,
-    // TODAS las aperturas disparan el fetch al endpoint de detalle, y en
-    // ese momento el DOM todavía muestra la oportunidad anterior (el
-    // render espera la respuesta) — el punto perfecto para mudar la
-    // oportunidad anterior a su propia ventana.
-    function wrapDetalleFetch() {
-        if (window._wwFetchWrapped) return;
-        window._wwFetchWrapped = true;
-        var origFetch = window.fetch;
-        window.fetch = function (input) {
-            try {
-                var url = typeof input === 'string' ? input : (input && input.url) || '';
-                var m = url.match(/oportunidad-detalle-crm\/(\d+)/);
-                if (m) {
-                    var newId = parseInt(m[1], 10);
-                    maybeSpawnWindow(newId);
-                    lastOppId = newId;
-                    // Si el widget vivo estaba minimizado, regresarlo del dock.
-                    var overlay = document.getElementById('widgetDetalle');
-                    if (overlay && st(overlay).minimized) restoreFromDock(overlay);
-                }
-            } catch (e) { console.error('[widgetWindow] detalle-fetch hook:', e); }
-            return origFetch.apply(this, arguments);
-        };
-    }
-
-    function readStoredOppId() {
-        // openDetalle (crm_main.js:799) guarda el id en sessionStorage en
-        // CADA apertura. Sirve para inicializar lastOppId tras un reload
-        // con ?open_opp= en la URL (el valor sobrevive del page load
-        // anterior porque el widget seguía abierto al recargar).
-        try {
-            return parseInt(sessionStorage.getItem('_crm_open_opp_id'), 10) || null;
-        } catch (e) { return null; }
-    }
-
-    function maybeSpawnWindow(newId) {
-        // Con el widget v2 instanciable activo, el multi-ventana es nativo
-        // (cada oportunidad es su propia instancia) — los iframes ya no aplican.
-        if (window.OppWidgetV2 && window.OppWidgetV2.takeover) return;
-        var overlay = document.getElementById('widgetDetalle');
-        if (!overlay || !newId) return;
-        var liveId = lastOppId || readStoredOppId();
-        if (!liveId || newId === liveId) return;
-        var s = st(overlay);
-        // Minimizado: la oportunidad sigue "abierta" en el dock — debe
-        // sobrevivir como ventana minimizada, no ser reemplazada en silencio.
-        if (!s.minimized) {
-            if (!overlay.classList.contains('ww-windowed')) return;  // modal → reemplaza, como siempre
-            if (!isVisible(overlay)) return;
-        }
-        if (countWindows() >= MAX_WINDOWS) {
-            notify('Máximo ' + MAX_WINDOWS + ' ventanas: la oportunidad abierta se reemplazará');
-            return;
-        }
-        var rect = s.rect || defaultRect();
-        var titleEl = overlay.querySelector('#woTitle');
-        var title = (titleEl && titleEl.textContent.trim()) || ('Oportunidad ' + liveId);
-        var win = createOppWindow(liveId, title, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
-        if (s.minimized) minimize(win);  // hereda el lugar en el dock
-        // La ventana viva se corre en cascada para no tapar a la nueva.
-        if (overlay.classList.contains('ww-windowed')) {
-            applyRect(overlay, snapToEdges({ x: rect.x + 36, y: rect.y + 36, w: rect.w, h: rect.h }));
-        }
-    }
-
-    var ICON_MIN = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-
-    function createOppWindow(oppId, title, rect) {
-        var ov = document.createElement('div');
-        ov.className = 'widget-overlay ww-iframe';
-        ov.id = 'wwOpp' + (++winSeq);
-        ov.setAttribute('data-widget-title', title);
-        ov.setAttribute('data-ww-enhanced', '1');  // no pasar por enhance()
-        ov.innerHTML =
-            '<div class="ww-card ww-iframe-card">' +
-                '<div class="ww-titlebar">' +
-                    '<span class="ww-titlebar-text"></span>' +
-                    '<div class="ww-ctrls">' +
-                        '<button type="button" class="ww-btn ww-ifr-min" title="Minimizar">' + ICON_MIN + '</button>' +
-                        '<button type="button" class="ww-btn ww-ifr-close" data-widget-close title="Cerrar">&times;</button>' +
-                    '</div>' +
-                '</div>' +
-                '<iframe class="ww-opp-frame" src="/app/home/?tab=crm&ww=1&open_opp=' + encodeURIComponent(oppId) + '"></iframe>' +
-            '</div>';
-        ov.querySelector('.ww-titlebar-text').textContent = title;
-        ov.querySelector('.ww-ifr-min').addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            minimize(ov);
-        });
-        ov.querySelector('.ww-ifr-close').addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            destroyOppWindow(ov);
-        });
-
-        document.body.appendChild(ov);
-        ov.style.display = 'flex';  // visible: widget_stack lo registra solo
-        ov.classList.add('ww-windowed');
-        st(ov).windowed = true;
-        applyRect(ov, rect);
-        injectHandles(ov);
-        return ov;
-    }
-
-    function destroyOppWindow(ov) {
-        removeChip(ov);
-        if (window.crmWidgetStack) window.crmWidgetStack.remove(ov);
-        ov.remove();
-    }
-
-    // Mensajes desde los iframes: cierre del widget raíz y data bus.
-    function onFrameMessage(ev) {
-        if (ev.origin !== window.location.origin) return;
-        var d = ev.data || {};
-        if (d.type === 'ww:close-opp') {
-            var frames = document.querySelectorAll('.ww-opp-frame');
-            for (var i = 0; i < frames.length; i++) {
-                if (frames[i].contentWindow === ev.source) {
-                    destroyOppWindow(frames[i].closest('.widget-overlay'));
-                    return;
-                }
-            }
-        } else if (d.type === 'ww:data-changed' && d.detail && window.crmDataBus) {
-            window.crmDataBus.emit(d.detail.entidad, d.detail.accion, d.detail.id, d.detail.extra);
-        }
-    }
-
     /* ── Bootstrap ────────────────────────────────────────────────── */
 
     function enhance(overlay) {
@@ -672,23 +484,20 @@
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
         document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
-        if (lastOppId === null) lastOppId = readStoredOppId();
     }
 
     if (!window._widgetWindowWired) {
         window._widgetWindowWired = true;
-        wrapDetalleFetch();
-        window.addEventListener('message', onFrameMessage);
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('dblclick', onDblClick, true);
-        // Click DENTRO de una ventana-iframe: no burbujea al padre, pero el
-        // focus sí se mueve — al perder el foco la ventana del padre, si lo
-        // ganó un iframe de oportunidad, traerlo al frente.
+        // Click DENTRO de un iframe en ventana (ej. cotizador instanciado):
+        // no burbujea al padre, pero el focus sí se mueve — si lo ganó un
+        // iframe dentro de una ventana, traerla al frente.
         window.addEventListener('blur', function () {
             setTimeout(function () {
                 var ae = document.activeElement;
-                if (ae && ae.classList && ae.classList.contains('ww-opp-frame')) {
-                    var ov = ae.closest('.widget-overlay');
+                if (ae && ae.tagName === 'IFRAME') {
+                    var ov = ae.closest('.widget-overlay.ww-windowed');
                     if (ov) bringToFront(ov);
                 }
             }, 0);

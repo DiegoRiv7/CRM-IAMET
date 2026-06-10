@@ -30,7 +30,7 @@ corresponda según dominio.
 | `crm_tareas_v2.js` | Tareas, subtareas, comentarios, timer |
 | `crm_clientes_v2.js` | Dashboard de clientes (ck*, drill-down, gráficas) |
 | `crm_features_misc.js` | Features sueltos que no encajan en otro lado |
-| `oportunidad_widget_v2.js` | **Widget de Oportunidad instanciable** (Refactor Etapa 1, 2026-06-09). Reemplaza el bloque detalle de crm_main.js (~751-2041) y el singleton #widgetDetalle. Template clonable `_widget_oportunidad_v2.html` (data-wo, sin ids), hasta 4 instancias editables, integrado con widget_window. Toma `window.openDetalle` + guard de 1 línea en el openDetalle legacy. Rollback: `localStorage.setItem('opp_v2_off','1')` |
+| `oportunidad_widget_v2.js` | **Widget de Oportunidad instanciable** (Refactor Etapa 1, 2026-06). Reemplaza el bloque detalle de crm_main.js (~751-2041, ahora muerto) y el singleton #widgetDetalle (reducido a stub de ids). Template clonable `_widget_oportunidad_v2.html` (data-wo, sin ids), hasta 4 instancias editables + cotizador instanciado, integrado con widget_window. Activo en CRM home y reportes. Toma `window.openDetalle/openCotizador/openEditCotizacion` + guards de 1 línea en el legacy. Rollback: `git revert` (el markup legacy ya fue retirado) |
 | `proyectos_v2.js` | Módulo de proyectos (lista, detalle, drive, programa obra) |
 
 **Activación**: cuando un `*_v2.js` reciba su primer código real, hay que
@@ -51,7 +51,7 @@ para nuevos módulos:
 | `widget_toast.js` | Helper global `window.toast(msg, type, ttl)` |
 | `widget_data_bus.js` | Event bus `crm:data-changed` + auto-emit en fetch |
 | `widget_url_sync.js` | URL syncing con `crmWidgetUrl.set/clear/read` |
-| `widget_window.js` | Sistema de ventanas: resize por esquinas, drag, minimizar a dock, máx 4 ventanas. Oportunidades adicionales = ventanas-iframe EDITABLES (`/app/home/?ww=1&open_opp=<id>`; documento propio → estado propio; data bus puenteado por postMessage). Piloto: whitelist `WINDOWABLE_IDS` o `data-windowable="1"`. CSS en `widget_window.css` |
+| `widget_window.js` | Sistema de ventanas: resize por esquinas, drag, minimizar a dock, máx 4 ventanas. Opt-in: whitelist `WINDOWABLE_IDS`, `data-windowable="1"`, o `crmWidgetWindow.enhance(overlay)` (así lo usa oportunidad_widget_v2). CSS en `widget_window.css` |
 
 ## 📝 Convenciones obligatorias para archivos V2
 
