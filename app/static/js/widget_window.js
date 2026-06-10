@@ -431,11 +431,18 @@
         // posicionan respecto al satCard mismo.
         satCard.classList.add('ww-card');
         injectHandles(satellite);
-        // NOTA: NO seteamos z-index aquí — widget_stack ya le asigna
-        // dinámicamente z-index !important al satélite cuando se vuelve
-        // visible (queda por encima de la opp porque entra después en
-        // el stack). Cualquier manipulación manual aquí entra en pelea
-        // con widget_stack y causa el bug "el drive se abre detrás".
+        // Tras embed, traer el satélite al TOPE del stack para que
+        // quede visualmente ARRIBA de su nuevo host. Sin esto, si el
+        // host actual entró al stack DESPUÉS que el satélite (caso:
+        // drive abierto en opp A, luego user abre opp B y click drive
+        // desde B), el host nuevo tiene z-index mayor que el satélite
+        // y lo tapa. El usuario veía "se quita el drive" cuando en
+        // realidad solo quedaba detrás del nuevo host.
+        var ws = window.crmWidgetStack;
+        if (ws) {
+            ws.remove(satellite);
+            ws.push(satellite);
+        }
     }
 
     function unembedSatellite(satellite) {
