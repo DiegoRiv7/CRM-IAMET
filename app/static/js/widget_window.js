@@ -443,6 +443,151 @@
             : '<svg width="12" height="12" viewBox="0 0 12 12"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 8.5 v-5 a1.5 1.5 0 0 1 1.5-1.5 h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
     }
 
+    /* ── Snap a bordes/mitades/cuartos (durante drag de mover) ──────
+       Estilo macOS/Windows: arrastrar al tope → maximizar, a los lados
+       izq/der → mitad de pantalla, a las esquinas → un cuarto. Un
+       "ghost rectangle" semitransparente muestra dónde caerá la
+       ventana mientras se sostiene en la zona.
+
+       Las zonas se evalúan POR POSICIÓN DEL PUNTERO, no del rect de
+       la card — así el usuario apunta a la zona deseada sin importar
+       qué tan grande sea la ventana. Esquinas (60×60 px) tienen
+       prioridad sobre los lados (6 px desde el borde).                */
+
+    var SNAP_CORNER = 60;     // px de esquina para activar cuarto
+    var SNAP_EDGE = 6;        // px de borde para activar lado/maximize
+
+    function snapZoneFor(x, y) {
+        var vw = window.innerWidth, vh = window.innerHeight;
+        // Esquinas (cuartos)
+        if (x < SNAP_CORNER && y < SNAP_CORNER)
+            return { x: 0, y: 0, w: Math.round(vw / 2), h: Math.round(vh / 2), kind: 'tl' };
+        if (x > vw - SNAP_CORNER && y < SNAP_CORNER)
+            return { x: Math.round(vw / 2), y: 0, w: Math.round(vw / 2), h: Math.round(vh / 2), kind: 'tr' };
+        if (x < SNAP_CORNER && y > vh - SNAP_CORNER)
+            return { x: 0, y: Math.round(vh / 2), w: Math.round(vw / 2), h: Math.round(vh / 2), kind: 'bl' };
+        if (x > vw - SNAP_CORNER && y > vh - SNAP_CORNER)
+            return { x: Math.round(vw / 2), y: Math.round(vh / 2), w: Math.round(vw / 2), h: Math.round(vh / 2), kind: 'br' };
+        // Lados
+        if (y < SNAP_EDGE) return { x: 0, y: 0, w: vw, h: vh, kind: 'max' };
+        if (x < SNAP_EDGE) return { x: 0, y: 0, w: Math.round(vw / 2), h: vh, kind: 'left' };
+        if (x > vw - SNAP_EDGE) return { x: Math.round(vw / 2), y: 0, w: Math.round(vw / 2), h: vh, kind: 'right' };
+        return null;
+    }
+
+    var snapGhost = null;
+    var snapTarget = null;
+
+    function showSnapGhost(rect) {
+        if (!snapGhost) {
+            snapGhost = document.createElement('div');
+            snapGhost.className = 'ww-snap-ghost';
+            document.body.appendChild(snapGhost);
+            void snapGhost.offsetHeight;  // forzar reflow para que el .visible anime
+        }
+        snapGhost.style.left = rect.x + 'px';
+        snapGhost.style.top = rect.y + 'px';
+        snapGhost.style.width = rect.w + 'px';
+        snapGhost.style.height = rect.h + 'px';
+        snapGhost.classList.add('ww-snap-ghost-visible');
+    }
+
+    function hideSnapGhost() {
+        if (snapGhost) snapGhost.classList.remove('ww-snap-ghost-visible');
+        snapTarget = null;
+    }
+
+    function removeSnapGhost() {
+        if (snapGhost) { snapGhost.remove(); snapGhost = null; }
+        snapTarget = null;
+    }
+
+    /* ── Mission Control / Show Desktop (estilo macOS) ──────────────
+       Click en zona vacía del fondo (fuera de ventanas, dock y
+       elementos interactivos) → las ventanas flotantes "vuelan" hacia
+       el borde más cercano, revelando el CRM debajo. Otro click en
+       zona vacía las restaura idénticas (posición, tamaño, z-order).
+       NO es minimize: las ventanas no van al dock, su estado se
+       preserva por completo — solo se ocultan visualmente.            */
+
+    var missionControlActive = false;
+    var missionHint = null;
+
+    function activeWindows() {
+        return Array.prototype.slice.call(
+            document.querySelectorAll('.widget-overlay.ww-windowed:not(.ww-minimized)')
+        ).filter(isVisible);
+    }
+
+    function activateMissionControl() {
+        if (missionControlActive) return;
+        var wins = activeWindows();
+        if (!wins.length) return;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        wins.forEach(function (overlay) {
+            var card = getCard(overlay);
+            if (!card) return;
+            var rect = card.getBoundingClientRect();
+            // Borde más cercano → empujamos la card por ahí
+            var dT = rect.top, dB = vh - rect.bottom, dL = rect.left, dR = vw - rect.right;
+            var minD = Math.min(dT, dB, dL, dR);
+            var tx = 0, ty = 0;
+            if (minD === dT)       ty = -(rect.bottom + 40);
+            else if (minD === dB)  ty = (vh - rect.top) + 40;
+            else if (minD === dL)  tx = -(rect.right + 40);
+            else                   tx = (vw - rect.left) + 40;
+            card.style.transition = 'transform 0.36s ' + EASE;
+            card.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+        });
+        var dock = document.getElementById('wwDock');
+        if (dock) {
+            dock.style.transition = 'transform 0.36s ' + EASE + ', opacity 0.28s ease-out';
+            dock.style.transform = 'translateX(-50%) translateY(120%)';
+            dock.style.opacity = '0';
+        }
+        // Pista discreta de cómo restaurar.
+        missionHint = document.createElement('div');
+        missionHint.className = 'ww-mc-hint';
+        missionHint.textContent = 'Toca cualquier área vacía para restaurar las ventanas';
+        document.body.appendChild(missionHint);
+        document.body.classList.add('ww-mission-control');
+        missionControlActive = true;
+    }
+
+    function deactivateMissionControl() {
+        if (!missionControlActive) return;
+        var wins = activeWindows();
+        wins.forEach(function (overlay) {
+            var card = getCard(overlay);
+            if (!card) return;
+            card.style.transition = 'transform 0.4s ' + EASE;
+            card.style.transform = '';
+            var done = function () {
+                card.style.transition = '';
+                card.style.transform = '';
+                card.removeEventListener('transitionend', done);
+            };
+            card.addEventListener('transitionend', done);
+            setTimeout(done, 440);
+        });
+        var dock = document.getElementById('wwDock');
+        if (dock) {
+            dock.style.transition = 'transform 0.4s ' + EASE + ', opacity 0.3s ease-out';
+            dock.style.transform = '';
+            dock.style.opacity = '';
+            setTimeout(function () {
+                if (dock) {
+                    dock.style.transition = '';
+                    dock.style.transform = '';
+                    dock.style.opacity = '';
+                }
+            }, 440);
+        }
+        if (missionHint) { missionHint.remove(); missionHint = null; }
+        document.body.classList.remove('ww-mission-control');
+        missionControlActive = false;
+    }
+
     /* ── Drag + resize ────────────────────────────────────────────── */
 
     var dragState = null;  // { overlay, mode:'move'|dir, startX, startY, startRect }
@@ -498,6 +643,15 @@
         if (dragState.mode === 'move') {
             r.x = s0.x + dx;
             r.y = s0.y + dy;
+            // Snap visual: si el puntero entra en una zona, mostrar
+            // el ghost. La aplicación real ocurre en onPointerUp.
+            var zone = snapZoneFor(ev.clientX, ev.clientY);
+            if (zone) {
+                snapTarget = zone;
+                showSnapGhost(zone);
+            } else {
+                hideSnapGhost();
+            }
         } else {
             // Resize por esquina: 'nw' | 'ne' | 'sw' | 'se'
             var dir = dragState.mode;
@@ -522,12 +676,24 @@
         window.removeEventListener('pointermove', onPointerMove);
         if (dragState) {
             var s = st(dragState.overlay);
-            if (dragState.mode === 'move' && s.rect) {
-                applyRect(dragState.overlay, snapToEdges(s.rect));
+            if (dragState.mode === 'move') {
+                if (snapTarget) {
+                    // Aplicar snap rect con animación FLIP suave.
+                    var card = getCard(dragState.overlay);
+                    var fromRect = card ? card.getBoundingClientRect() : null;
+                    applyRect(dragState.overlay, {
+                        x: snapTarget.x, y: snapTarget.y,
+                        w: snapTarget.w, h: snapTarget.h,
+                    });
+                    if (fromRect) flipAnimate(card, fromRect, 240);
+                } else if (s.rect) {
+                    applyRect(dragState.overlay, snapToEdges(s.rect));
+                }
             }
         }
         dragState = null;
         removeShield();
+        removeSnapGhost();
     }
 
     var HANDLE_CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize' };
@@ -638,10 +804,43 @@
         document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
     }
 
+    /* ── Mission Control: click en zona vacía ─────────────────────── */
+
+    // Selectores de elementos del CRM que NO deben disparar Mission
+    // Control aunque el target sea "vacío visualmente": cards del
+    // kanban, filas de lista, etc. (el click ahí tiene su propio
+    // handler que abre detalle/edita).
+    var MC_CRM_CARDS = '.kanban-card, .crm-row, .crm-card, tr[data-opp-id], ' +
+        '[data-opp-id], [data-card-id], [data-action]';
+
+    function onGlobalClickForMC(ev) {
+        if (ev.button !== 0) return;
+        // Click dentro de una ventana, otro widget o el dock → no MC
+        // (esos clicks tienen su propio comportamiento).
+        if (ev.target.closest('.widget-overlay, #wwDock, .ww-snap-ghost, .ww-mc-hint')) {
+            return;
+        }
+        // Si el target es interactivo (botón, link, input, card del
+        // CRM, etc.) → dejamos pasar al handler normal.
+        if (ev.target.closest(INTERACTIVE)) return;
+        if (ev.target.closest(MC_CRM_CARDS)) return;
+
+        if (missionControlActive) {
+            deactivateMissionControl();
+            ev.preventDefault();
+            ev.stopPropagation();
+        } else if (activeWindows().length > 0) {
+            activateMissionControl();
+            ev.preventDefault();
+            ev.stopPropagation();
+        }
+    }
+
     if (!window._widgetWindowWired) {
         window._widgetWindowWired = true;
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('dblclick', onDblClick, true);
+        document.addEventListener('click', onGlobalClickForMC);
         // Click DENTRO de un iframe en ventana (ej. cotizador instanciado):
         // no burbujea al padre, pero el focus sí se mueve — si lo ganó un
         // iframe dentro de una ventana, traerla al frente.
@@ -654,12 +853,26 @@
                 }
             }, 0);
         });
-        // Reajustar ventanas al cambiar el tamaño del viewport.
+        // Reajustar ventanas al cambiar el tamaño del viewport. Si MC
+        // está activo, recalcular las posiciones de salida para que
+        // sigan ocultas correctamente tras el resize.
         window.addEventListener('resize', function () {
             document.querySelectorAll('.widget-overlay.ww-windowed').forEach(function (el) {
                 var s = st(el);
                 if (s.rect) applyRect(el, s.rect);
             });
+            if (missionControlActive) {
+                // Re-aplicar el "esconder" con los nuevos cálculos.
+                missionControlActive = false;
+                activateMissionControl();
+            }
+        });
+        // Esc cierra Mission Control si está activo.
+        document.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Escape' && missionControlActive) {
+                deactivateMissionControl();
+                ev.preventDefault();
+            }
         });
     }
     window.crmReady(scan);
@@ -670,5 +883,10 @@
         unwindowize: unwindowize,
         minimize: minimize,
         enhance: enhance,
+        missionControl: {
+            activate: activateMissionControl,
+            deactivate: deactivateMissionControl,
+            isActive: function () { return missionControlActive; },
+        },
     };
 })();
