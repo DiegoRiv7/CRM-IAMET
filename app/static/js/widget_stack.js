@@ -304,7 +304,12 @@
 
     var lastBreadcrumbHTML = '';
     function updateBreadcrumb() {
-        if (stack.length < 2) {
+        // Las VENTANAS (widget_window.js) no son anidamiento: son hermanas
+        // flotantes. Solo los modales cuentan para el trail "Padre › Hijo".
+        var trail = stack.filter(function (el) {
+            return !el.classList.contains('ww-windowed');
+        });
+        if (trail.length < 2) {
             var bc = document.getElementById('crmWidgetBreadcrumb');
             if (bc) {
                 bc.style.opacity = '0';
@@ -316,8 +321,8 @@
         }
         var bc = ensureBreadcrumb();
         // Construir trail. Truncamos a 3 niveles para no inundar.
-        var visible = stack.slice(-3);
-        var skipped = stack.length - visible.length;
+        var visible = trail.slice(-3);
+        var skipped = trail.length - visible.length;
         var html = '';
         if (skipped > 0) {
             html += '<span style="opacity:0.55;">…</span>';
@@ -331,8 +336,8 @@
                 html += '<span style="font-weight:600;">' + label + '</span>';
             } else {
                 // Padre — click cierra todo lo que está encima de él.
-                var deltaFromTop = visible.length - 1 - idx + skipped;
-                html += '<span data-bc-target="' + (stack.length - 1 - (visible.length - 1 - idx)) + '" '
+                // El índice apunta al TRAIL (modales sin ventanas), no al stack.
+                html += '<span data-bc-target="' + (skipped + idx) + '" '
                       + 'style="cursor:pointer;opacity:0.85;text-decoration:none;border-bottom:1px dashed rgba(255,255,255,0.4);" '
                       + 'onmouseover="this.style.opacity=\'1\'" '
                       + 'onmouseout="this.style.opacity=\'0.85\'">' + label + '</span>';
@@ -363,12 +368,18 @@
         ev.stopPropagation();
         var keepIdx = parseInt(target.getAttribute('data-bc-target'), 10);
         if (isNaN(keepIdx)) return;
-        // Cerrar desde el top hasta dejar solo hasta keepIdx (inclusive).
-        // Como cerrar dispara el observer que saca del stack, iteramos
-        // mientras stack.length > keepIdx + 1.
+        // Cerrar modales desde el top del trail hasta dejar solo hasta
+        // keepIdx (inclusive). Las VENTANAS (ww-windowed) no se tocan.
         var guard = 0;
-        while (stack.length > keepIdx + 1 && guard++ < 10) {
-            var top = stack[stack.length - 1];
+        var lastClosed = null;
+        while (guard++ < 10) {
+            var trail = stack.filter(function (el) {
+                return !el.classList.contains('ww-windowed');
+            });
+            if (trail.length <= keepIdx + 1) break;
+            var top = trail[trail.length - 1];
+            if (top === lastClosed) break;  // cierre asíncrono en curso
+            lastClosed = top;
             closeWidget(top);
         }
     });

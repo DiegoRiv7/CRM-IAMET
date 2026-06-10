@@ -30,6 +30,51 @@
 (function () {
     'use strict';
 
+    /* ── Modo embebido (dentro de una ventana-iframe) ─────────────────
+       Las ventanas secundarias de oportunidad son iframes que cargan el
+       CRM completo con ?ww=1&open_opp=<id> — así crm_main.js corre en un
+       documento propio con su propio estado y la edición funciona igual
+       que en la ventana principal. Dentro del iframe este módulo NO
+       inicializa ventanas; solo:
+         · marca el body (CSS oculta el CRM de fondo, deja los widgets)
+         · avisa al padre cuando el widget raíz se cierra (X/Esc)
+         · puentea el data bus al padre (refresh de kanban/listas)      */
+    var IS_EMBED = (function () {
+        try { return window.top !== window && /[?&]ww=1(&|$)/.test(window.location.search); }
+        catch (e) { return true; }  // top inaccesible = seguro estamos embebidos
+    })();
+
+    if (IS_EMBED) {
+        window.crmReady(function () {
+            if (document.body.classList.contains('ww-embed')) return;
+            document.body.classList.add('ww-embed');
+
+            var overlay = document.getElementById('widgetDetalle');
+            if (overlay) {
+                var seen = false;
+                new MutationObserver(function () {
+                    var cs = window.getComputedStyle(overlay);
+                    var vis = cs.display !== 'none' && cs.visibility !== 'hidden';
+                    if (vis) { seen = true; return; }
+                    if (seen) {
+                        try { window.parent.postMessage({ type: 'ww:close-opp' }, window.location.origin); } catch (e) { }
+                    }
+                }).observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
+            }
+
+            document.addEventListener('crm:data-changed', function (e) {
+                if (!e.detail) return;
+                try {
+                    window.parent.postMessage({
+                        type: 'ww:data-changed',
+                        detail: { entidad: e.detail.entidad, accion: e.detail.accion, id: e.detail.id, extra: e.detail.extra },
+                    }, window.location.origin);
+                } catch (err) { }
+            });
+        });
+        return;  // nada más del módulo aplica dentro del iframe
+    }
+
     var MAX_WINDOWS = 4;
     var MIN_W = 380;
     var MIN_H = 260;
@@ -426,7 +471,7 @@
         if (!card) return;
         var overlay = card.closest('.widget-overlay');
         if (!overlay || !overlay.classList.contains('ww-windowed')) return;
-        if (overlay.classList.contains('ww-snapshot')) return;  // las vistas no se maximizan
+        if (overlay.classList.contains('ww-iframe')) return;  // las ventanas-iframe no se maximizan
         if (ev.target.closest(INTERACTIVE)) return;
         if (ev.clientY - card.getBoundingClientRect().top > DRAG_STRIP) return;
         unwindowize(overlay);
@@ -465,23 +510,26 @@
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 
-    /* ── Multi-oportunidad: ventanas-vista (snapshots) ────────────────
+    /* ── Multi-oportunidad: ventanas-iframe (edición completa) ────────
        El widget de Oportunidad es un singleton (#widgetDetalle, ids
        únicos que el legacy llena por getElementById), así que no puede
-       haber dos instancias "vivas". En su lugar: si está en modo ventana
-       y se abre OTRA oportunidad, la actual se congela como una ventana
-       de solo lectura (clon del DOM sin ids). El botón ⤢ la "activa":
-       intercambia su contenido con el del widget vivo. */
+       haber dos instancias vivas EN EL MISMO DOCUMENTO. Solución: cuando
+       está en modo ventana y se abre OTRA oportunidad, la actual se muda
+       a una ventana-iframe que carga el CRM con ?ww=1&open_opp=<id> —
+       documento independiente = estado independiente = edición real en
+       cada ventana. Los cambios hechos dentro se puentean al data bus
+       del padre vía postMessage (ver IS_EMBED arriba). */
 
     var lastOppId = null;
-    var snapSeq = 0;
+    var winSeq = 0;
 
     // NO se puede envolver window.openDetalle: los callers internos de
     // crm_main.js (kanban, lista — el camino más común) llaman a la
     // función LOCAL por closure y brincarían el wrapper. En cambio,
     // TODAS las aperturas disparan el fetch al endpoint de detalle, y en
     // ese momento el DOM todavía muestra la oportunidad anterior (el
-    // render espera la respuesta) — el punto perfecto para el snapshot.
+    // render espera la respuesta) — el punto perfecto para mudar la
+    // oportunidad anterior a su propia ventana.
     function wrapDetalleFetch() {
         if (window._wwFetchWrapped) return;
         window._wwFetchWrapped = true;
@@ -492,7 +540,7 @@
                 var m = url.match(/oportunidad-detalle-crm\/(\d+)/);
                 if (m) {
                     var newId = parseInt(m[1], 10);
-                    maybeSnapshot(newId);
+                    maybeSpawnWindow(newId);
                     lastOppId = newId;
                     // Si el widget vivo estaba minimizado, regresarlo del dock.
                     var overlay = document.getElementById('widgetDetalle');
@@ -513,14 +561,14 @@
         } catch (e) { return null; }
     }
 
-    function maybeSnapshot(newId) {
+    function maybeSpawnWindow(newId) {
         var overlay = document.getElementById('widgetDetalle');
         if (!overlay || !newId) return;
         var liveId = lastOppId || readStoredOppId();
         if (!liveId || newId === liveId) return;
         var s = st(overlay);
         // Minimizado: la oportunidad sigue "abierta" en el dock — debe
-        // sobrevivir como vista minimizada, no ser reemplazada en silencio.
+        // sobrevivir como ventana minimizada, no ser reemplazada en silencio.
         if (!s.minimized) {
             if (!overlay.classList.contains('ww-windowed')) return;  // modal → reemplaza, como siempre
             if (!isVisible(overlay)) return;
@@ -529,101 +577,75 @@
             notify('Máximo ' + MAX_WINDOWS + ' ventanas: la oportunidad abierta se reemplazará');
             return;
         }
-        var snap = createSnapshot(overlay, liveId);
-        if (snap && s.minimized) minimize(snap);  // hereda el lugar en el dock
-    }
-
-    var ICON_MIN = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-    var ICON_ACT = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M4.5 1.5h6v6M10.5 1.5 5 7M5.5 2.5h-4v8h8v-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-    function createSnapshot(overlay, oppId) {
-        var card = getCard(overlay);
-        var rect = st(overlay).rect || defaultRect();
+        var rect = s.rect || defaultRect();
         var titleEl = overlay.querySelector('#woTitle');
-        var title = (titleEl && titleEl.textContent.trim()) || ('Oportunidad ' + oppId);
-
-        var snap = document.createElement('div');
-        snap.className = 'widget-overlay ww-snapshot';
-        snap.id = 'wwSnap' + (++snapSeq);
-        snap.setAttribute('data-widget-title', title);
-        snap.setAttribute('data-ww-enhanced', '1');  // no pasar por enhance()
-
-        var clone = card.cloneNode(true);
-        clone.removeAttribute('id');
-        // Sin ids duplicados: el legacy renderiza por getElementById y debe
-        // seguir encontrando SOLO el widget vivo.
-        clone.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
-        clone.querySelectorAll('.ww-handle, .ww-ctrls, script').forEach(function (n) { n.remove(); });
-        snap.appendChild(clone);
-
-        // Controles propios: activar / minimizar / cerrar
-        var headerTop = clone.querySelector('.wo-header-top') || clone;
-        var ctr = document.createElement('div');
-        ctr.className = 'ww-ctrls';
-        ctr.innerHTML =
-            '<span class="ww-snap-badge">Solo lectura</span>' +
-            '<button type="button" class="ww-btn ww-snap-activate" title="Activar para editar">' + ICON_ACT + '</button>' +
-            '<button type="button" class="ww-btn ww-snap-min" title="Minimizar">' + ICON_MIN + '</button>' +
-            '<button type="button" class="ww-btn ww-snap-close" data-widget-close title="Cerrar vista">&times;</button>';
-        headerTop.appendChild(ctr);
-
-        ctr.querySelector('.ww-snap-min').addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            minimize(snap);
-        });
-        ctr.querySelector('.ww-snap-close').addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            destroySnapshot(snap);
-        });
-        ctr.querySelector('.ww-snap-activate').addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            activateSnapshot(snap, oppId);
-        });
-
-        // Solo lectura: bloquear interacción con el contenido clonado
-        // (los controles propios y las esquinas sí funcionan; el scroll
-        // no pasa por aquí). Capture: corre antes que onclick inline.
-        ['click', 'pointerdown'].forEach(function (evName) {
-            snap.addEventListener(evName, function (ev) {
-                if (ev.target.closest('.ww-ctrls, .ww-handle')) return;
-                if (ev.target.closest(INTERACTIVE)) {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    if (evName === 'click') notify('Vista de solo lectura — usa ⤢ para activarla');
-                }
-            }, true);
-        });
-
-        document.body.appendChild(snap);
-        snap.style.display = 'flex';  // visible: widget_stack lo registra solo
-        snap.classList.add('ww-windowed');
-        st(snap).windowed = true;
-        applyRect(snap, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
-        injectHandles(snap);
-        watchSize(snap);
-
-        // La ventana viva se corre en cascada para no tapar la vista.
+        var title = (titleEl && titleEl.textContent.trim()) || ('Oportunidad ' + liveId);
+        var win = createOppWindow(liveId, title, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+        if (s.minimized) minimize(win);  // hereda el lugar en el dock
+        // La ventana viva se corre en cascada para no tapar a la nueva.
         if (overlay.classList.contains('ww-windowed')) {
             applyRect(overlay, snapToEdges({ x: rect.x + 36, y: rect.y + 36, w: rect.w, h: rect.h }));
         }
-        return snap;
     }
 
-    function destroySnapshot(snap) {
-        removeChip(snap);
-        if (window.crmWidgetStack) window.crmWidgetStack.remove(snap);
-        snap.remove();
+    var ICON_MIN = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+    function createOppWindow(oppId, title, rect) {
+        var ov = document.createElement('div');
+        ov.className = 'widget-overlay ww-iframe';
+        ov.id = 'wwOpp' + (++winSeq);
+        ov.setAttribute('data-widget-title', title);
+        ov.setAttribute('data-ww-enhanced', '1');  // no pasar por enhance()
+        ov.innerHTML =
+            '<div class="ww-card ww-iframe-card">' +
+                '<div class="ww-titlebar">' +
+                    '<span class="ww-titlebar-text"></span>' +
+                    '<div class="ww-ctrls">' +
+                        '<button type="button" class="ww-btn ww-ifr-min" title="Minimizar">' + ICON_MIN + '</button>' +
+                        '<button type="button" class="ww-btn ww-ifr-close" data-widget-close title="Cerrar">&times;</button>' +
+                    '</div>' +
+                '</div>' +
+                '<iframe class="ww-opp-frame" src="/app/home/?tab=crm&ww=1&open_opp=' + encodeURIComponent(oppId) + '"></iframe>' +
+            '</div>';
+        ov.querySelector('.ww-titlebar-text').textContent = title;
+        ov.querySelector('.ww-ifr-min').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            minimize(ov);
+        });
+        ov.querySelector('.ww-ifr-close').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            destroyOppWindow(ov);
+        });
+
+        document.body.appendChild(ov);
+        ov.style.display = 'flex';  // visible: widget_stack lo registra solo
+        ov.classList.add('ww-windowed');
+        st(ov).windowed = true;
+        applyRect(ov, rect);
+        injectHandles(ov);
+        return ov;
     }
 
-    function activateSnapshot(snap, oppId) {
-        var live = document.getElementById('widgetDetalle');
-        var targetRect = st(snap).rect;
-        destroySnapshot(snap);  // liberar el slot antes del snapshot recíproco
-        if (typeof window.openDetalle === 'function') window.openDetalle(oppId);
-        // Colocar la ventana viva donde estaba la vista (continuidad espacial).
-        if (live && targetRect) {
-            if (live.classList.contains('ww-windowed')) applyRect(live, targetRect);
-            else windowize(live, targetRect);
+    function destroyOppWindow(ov) {
+        removeChip(ov);
+        if (window.crmWidgetStack) window.crmWidgetStack.remove(ov);
+        ov.remove();
+    }
+
+    // Mensajes desde los iframes: cierre del widget raíz y data bus.
+    function onFrameMessage(ev) {
+        if (ev.origin !== window.location.origin) return;
+        var d = ev.data || {};
+        if (d.type === 'ww:close-opp') {
+            var frames = document.querySelectorAll('.ww-opp-frame');
+            for (var i = 0; i < frames.length; i++) {
+                if (frames[i].contentWindow === ev.source) {
+                    destroyOppWindow(frames[i].closest('.widget-overlay'));
+                    return;
+                }
+            }
+        } else if (d.type === 'ww:data-changed' && d.detail && window.crmDataBus) {
+            window.crmDataBus.emit(d.detail.entidad, d.detail.accion, d.detail.id, d.detail.extra);
         }
     }
 
@@ -653,8 +675,21 @@
     if (!window._widgetWindowWired) {
         window._widgetWindowWired = true;
         wrapDetalleFetch();
+        window.addEventListener('message', onFrameMessage);
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('dblclick', onDblClick, true);
+        // Click DENTRO de una ventana-iframe: no burbujea al padre, pero el
+        // focus sí se mueve — al perder el foco la ventana del padre, si lo
+        // ganó un iframe de oportunidad, traerlo al frente.
+        window.addEventListener('blur', function () {
+            setTimeout(function () {
+                var ae = document.activeElement;
+                if (ae && ae.classList && ae.classList.contains('ww-opp-frame')) {
+                    var ov = ae.closest('.widget-overlay');
+                    if (ov) bringToFront(ov);
+                }
+            }, 0);
+        });
         // Reajustar ventanas al cambiar el tamaño del viewport.
         window.addEventListener('resize', function () {
             document.querySelectorAll('.widget-overlay.ww-windowed').forEach(function (el) {
