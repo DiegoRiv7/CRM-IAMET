@@ -49,12 +49,16 @@
 }
 
 /* Foco por CONTRASTE — el énfasis lo da la oscuridad del entorno,
-   no halos ni zooms. Cuando hay al menos una ventana flotante,
-   body.ww-has-windows pinta un velo oscuro sobre el CRM detrás; las
-   ventanas que NO están al frente reciben un filter:brightness leve
-   para perder protagonismo. La ventana .ww-focused queda con brillo
-   pleno y "flota" visualmente por simple contraste con el resto. */
-body.ww-has-windows::after {
+   no halos ni zooms. Cuando hay al menos una ventana flotante
+   visible, un velo oscuro cubre el CRM detrás; las ventanas que
+   NO están al frente reciben filter:brightness leve para perder
+   protagonismo. La ventana .ww-focused queda con brillo pleno y
+   "flota" visualmente por simple contraste con el resto.
+
+   El selector :has() es reactivo: aparece/desaparece sin que JS
+   tenga que mantener una clase en el body. Evita el bug de "se
+   queda oscuro cuando ya cerré todas las ventanas". */
+body:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
     content: '';
     position: fixed;
     inset: 0;
@@ -65,13 +69,21 @@ body.ww-has-windows::after {
 }
 
 /* Mission Control activo → fondo limpio (las ventanas se fueron) */
-body.ww-mission-control.ww-has-windows::after {
+body.ww-mission-control:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
     opacity: 0;
 }
 
 /* Ventanas en SEGUNDO plano: un poco más oscuras que la activa */
 .widget-overlay.ww-windowed:not(.ww-focused) .ww-card {
     filter: brightness(0.88);
+}
+
+/* Ocultar el pill negro de breadcrumb del widget_stack cuando hay
+   ventanas flotantes — el sistema de ventanas tiene su propio
+   sistema de identificación (foco visual + dock). El breadcrumb
+   solo aplicaba al modo modal apilado. */
+body:has(.widget-overlay.ww-windowed:not(.ww-minimized)) #crmWidgetBreadcrumb {
+    display: none !important;
 }
 
 /* ── Esquinas de resize ── */

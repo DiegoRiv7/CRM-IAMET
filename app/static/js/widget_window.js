@@ -200,6 +200,11 @@
         st(overlay).windowed = true;
         updateWinBtn(overlay);
         bringToFront(overlay);
+        // Garantiza .ww-focused en este overlay aunque bringToFront
+        // haya hecho early-return (caso: la ventana ya era top del
+        // stack). Sin esto, el CSS aplica brightness(0.88) por 1+
+        // frames y la ventana se ve oscura al abrirse.
+        _doRefreshFocus();
         // FLIP: cuando se windowiza desde un drag de esquina, fromRect ≈
         // toRect y la animación se auto-cancela. Cuando se windowiza con
         // un rect distinto (botón □ → defaultRect centrado), anima suave.
@@ -220,7 +225,7 @@
         s.rect = null;
         updateWinBtn(overlay);
         flipAnimate(card, fromRect);
-        refreshFocusState();
+        _doRefreshFocus();  // síncrono: evita flash de 1 frame
     }
 
     function bringToFront(overlay) {
@@ -230,19 +235,21 @@
         if (top.length && top[top.length - 1] === overlay) return;  // ya está al frente
         ws.remove(overlay);
         ws.push(overlay);
-        refreshFocusState();
+        // SÍNCRONO aquí: si esperamos al RAF, hay 1 frame donde la
+        // ventana nueva está visible sin .ww-focused y se ve oscura.
+        _doRefreshFocus();
     }
 
-    /* ── Foco visual minimal: solo clases, CSS hace el resto ──────
-       En lugar de halos/zooms, el énfasis se da por CONTRASTE:
-         · body.ww-has-windows → overlay oscuro sobre el CRM (CSS)
-         · .ww-windowed:not(.ww-focused) → brillo reducido (CSS)
-       Aquí en JS solo mantenemos esas dos clases sincronizadas con
-       el estado del stack. Llamado en los puntos clave + RAF debounce
-       para que múltiples invocaciones en el mismo tick se colapsen. */
+    /* ── Foco visual minimal: solo clase .ww-focused, CSS hace el resto.
+       El velo oscuro del fondo se aplica automáticamente vía CSS
+       :has() — no necesitamos mantener body.ww-has-windows en JS. */
 
     var _focusScheduled = false;
 
+    // Versión DEBOUNCED — para callbacks que pueden disparar muchas
+    // veces (como el MutationObserver de watchVisibility con el
+    // widget v2 de Oportunidad). RAF colapsa múltiples invocaciones
+    // del mismo tick en una sola.
     function refreshFocusState() {
         if (_focusScheduled) return;
         _focusScheduled = true;
@@ -257,7 +264,6 @@
         if (!ws) return;
         var stack = ws.get();
         var focused = null;
-        var anyWindowed = false;
         for (var i = stack.length - 1; i >= 0; i--) {
             var el = stack[i];
             if (!el || !el.classList) continue;
@@ -265,8 +271,8 @@
             if (!el.classList.contains('ww-windowed')) continue;
             if (el.classList.contains('ww-minimized')) continue;
             if (!isVisible(el)) continue;
-            anyWindowed = true;
-            if (!focused) focused = el;  // el de mayor z (top del stack)
+            focused = el;  // el de mayor z (top del stack)
+            break;
         }
         document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
             if (el !== focused) el.classList.remove('ww-focused');
@@ -274,7 +280,6 @@
         if (focused && !focused.classList.contains('ww-focused')) {
             focused.classList.add('ww-focused');
         }
-        document.body.classList.toggle('ww-has-windows', anyWindowed);
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -345,7 +350,7 @@
             chip.style.opacity = '';
             chip.style.pointerEvents = '';
             chip.classList.add('ww-dock-chip-enter');
-            refreshFocusState();
+            _doRefreshFocus();
         };
 
         if (!card || !cardRect || !chipRect.width) {
