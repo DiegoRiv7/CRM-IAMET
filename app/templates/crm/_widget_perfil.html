@@ -351,17 +351,26 @@
         --accent-crm: #00a86b;
         --island-bg: rgba(255, 255, 255, 0.14);
         --island-border: rgba(255, 255, 255, 0.28);
-        /* Fondo en el CSS (no solo en JS) para que SIEMPRE cargue la imagen.
-           Scrim casi transparente: la cancha es protagonista. El JS encima
-           le agrega cache-bust al subir una imagen nueva. */
+        background-color: #04210f;
+    }
+
+    /* Capa de fondo FIJA y dedicada (técnica a prueba de balas): se pinta
+       detrás de todo el contenido (z-index:-1) y cubre el viewport completo.
+       No compite con el background-color del body ni con estilos inline.
+       Scrim casi transparente para que la cancha sea protagonista.
+       El JS sobreescribe --mundial-img con cache-bust al subir una imagen. */
+    body[data-theme="mundial"]::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
         background-image:
             radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%),
-            url('/media/fondos/mundial.jpg');
+            var(--mundial-img, url('/media/fondos/mundial.jpg'));
         background-size: cover;
         background-position: center;
-        background-attachment: fixed;
         background-repeat: no-repeat;
-        background-color: #04210f;
     }
 
     /* Si el body tiene el data-theme, cambiamos su fondo y el de crm-page */
@@ -591,17 +600,15 @@
         // Fondo del tema Mundial — administrado desde /app/config/fondo-mundial/
         // y guardado en media/ (no static), para cambiarlo sin redeploy.
         var _mundialBgUrl = '/media/fondos/mundial.jpg';
-        // Scrim casi transparente: la cancha es protagonista, solo un velo
-        // mínimo en las esquinas para legibilidad. Mismo valor que el CSS.
-        var _mundialScrim = 'radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%)';
         function applyThemeToBody(theme) {
             document.body.setAttribute('data-theme', theme);
             if (theme === 'mundial') {
-                // Cache-bust con timestamp para tomar la imagen recién subida.
-                var url = _mundialBgUrl + '?t=' + Date.now();
-                document.body.style.backgroundImage = _mundialScrim + ', url("' + url + '")';
+                // El fondo lo pinta body[data-theme="mundial"]::before vía la
+                // variable --mundial-img. Aquí solo le ponemos cache-bust para
+                // tomar la imagen recién subida sin quedarnos con la cacheada.
+                document.body.style.setProperty('--mundial-img', 'url("' + _mundialBgUrl + '?t=' + Date.now() + '")');
             } else {
-                document.body.style.backgroundImage = '';
+                document.body.style.removeProperty('--mundial-img');
             }
         }
 
