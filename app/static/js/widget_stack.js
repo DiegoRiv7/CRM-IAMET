@@ -304,12 +304,18 @@
 
     var lastBreadcrumbHTML = '';
     function updateBreadcrumb() {
+        // Si hay alguna ventana flotante visible, ocultar el breadcrumb
+        // por completo. El sistema de ventanas (widget_window.js) tiene
+        // su propio foco visual y dock; el pill negro arriba sería ruido.
+        var hasFloatingWindows = !!document.querySelector(
+            '.widget-overlay.ww-windowed:not(.ww-minimized)'
+        );
         // Las VENTANAS (widget_window.js) no son anidamiento: son hermanas
         // flotantes. Solo los modales cuentan para el trail "Padre › Hijo".
         var trail = stack.filter(function (el) {
             return !el.classList.contains('ww-windowed');
         });
-        if (trail.length < 2) {
+        if (hasFloatingWindows || trail.length < 2) {
             var bc = document.getElementById('crmWidgetBreadcrumb');
             if (bc) {
                 bc.style.opacity = '0';

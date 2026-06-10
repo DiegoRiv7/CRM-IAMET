@@ -162,6 +162,9 @@
         overlay.style.setProperty('--ww-w', r.w + 'px');
         overlay.style.setProperty('--ww-h', r.h + 'px');
         st(overlay).rect = r;
+        // Si esta opp tiene satélites abiertos, re-encuadrarlos al
+        // nuevo rect (debounced via RAF para no saturar durante drag).
+        scheduleSatelliteRefresh();
     }
 
     function snapToEdges(r) {
@@ -284,6 +287,149 @@
         if (focused && !focused.classList.contains('ww-focused')) {
             focused.classList.add('ww-focused');
         }
+        // Si la opp focused cambió, los satélites abiertos se mueven
+        // con ella (o se desembebter si ya no hay ninguna opp activa).
+        scheduleSatelliteRefresh();
+    }
+
+    /* ── Widgets satélite "embebidos" en la opp activa ────────────
+       Drive, Conversación, Crear/Ver Actividad, Todas las Tareas y
+       otros sub-modales abiertos DESDE el widget de oportunidad se
+       posicionan dentro del rect de la opp focused windowed — así no
+       invaden el viewport global ni tapan otras ventanas.
+
+       Si NO hay opp en modo ventana, conservan su comportamiento
+       modal original (cubren todo el viewport). El cotizador NO está
+       en esta lista a propósito: ya es ventana propia instanciada. */
+
+    var OPP_SATELLITE_IDS = [
+        'widgetOppDrive',
+        'widgetOppConversacion',
+        'widgetOppCrearActividad',
+        'widgetOppVerActividad',
+        'widgetTodasTareas',
+        'widgetOppDialog',
+        'widgetConfirmTipo',
+        'crmCreateTaskModal',
+        'widgetSubirFactura',
+        'widgetContacto',
+    ];
+    var OPP_SATELLITE_SET = {};
+    OPP_SATELLITE_IDS.forEach(function (id) { OPP_SATELLITE_SET[id] = true; });
+
+    function getActiveOppOverlay() {
+        // 1) Opp v2 focused windowed
+        var f = document.querySelector(
+            '.widget-overlay.opp-v2.ww-windowed.ww-focused:not(.ww-minimized)'
+        );
+        if (f && isVisible(f)) return f;
+        // 2) Cualquier opp v2 windowed visible (la más reciente del stack)
+        var ws = window.crmWidgetStack;
+        if (ws) {
+            var stack = ws.get();
+            for (var i = stack.length - 1; i >= 0; i--) {
+                var el = stack[i];
+                if (el && el.classList && el.classList.contains('opp-v2') &&
+                    el.classList.contains('ww-windowed') &&
+                    !el.classList.contains('ww-minimized') && isVisible(el)) {
+                    return el;
+                }
+            }
+        }
+        // 3) Legacy widgetDetalle windowed (por si vuelve a usarse)
+        var legacy = document.getElementById('widgetDetalle');
+        if (legacy && legacy.classList.contains('ww-windowed') &&
+            !legacy.classList.contains('ww-minimized') && isVisible(legacy)) {
+            return legacy;
+        }
+        return null;
+    }
+
+    function getSatelliteCard(satellite) {
+        return satellite.querySelector('.widget-card, .ww-card, .wco-card');
+    }
+
+    function embedSatelliteToOpp(satellite, opp) {
+        var oppCard = getCard(opp);
+        if (!oppCard) return;
+        var satCard = getSatelliteCard(satellite);
+        if (!satCard) return;
+        var rect = oppCard.getBoundingClientRect();
+        satellite.classList.add('ww-embedded-opp');
+        satCard.style.position = 'fixed';
+        satCard.style.left = rect.left + 'px';
+        satCard.style.top = rect.top + 'px';
+        satCard.style.width = rect.width + 'px';
+        satCard.style.height = rect.height + 'px';
+        satCard.style.maxWidth = 'none';
+        satCard.style.maxHeight = 'none';
+        satCard.style.margin = '0';
+        satCard.style.borderRadius = '16px';
+        // z-index del satélite = z-index de la opp + 5 (queda por encima
+        // de la opp pero por debajo del shield de drag y del picker).
+        var oppZ = parseInt(window.getComputedStyle(opp).zIndex, 10) || 1000;
+        satellite.style.zIndex = (oppZ + 5);
+    }
+
+    function unembedSatellite(satellite) {
+        satellite.classList.remove('ww-embedded-opp');
+        var satCard = getSatelliteCard(satellite);
+        if (satCard) {
+            ['position', 'left', 'top', 'width', 'height', 'maxWidth',
+             'maxHeight', 'margin', 'borderRadius'].forEach(function (p) {
+                satCard.style.removeProperty(p);
+            });
+        }
+        satellite.style.removeProperty('z-index');
+    }
+
+    var _embedRefreshScheduled = false;
+    function scheduleSatelliteRefresh() {
+        if (_embedRefreshScheduled) return;
+        _embedRefreshScheduled = true;
+        requestAnimationFrame(function () {
+            _embedRefreshScheduled = false;
+            refreshEmbeddedSatellites();
+        });
+    }
+
+    function refreshEmbeddedSatellites() {
+        var opp = getActiveOppOverlay();
+        OPP_SATELLITE_IDS.forEach(function (id) {
+            var sat = document.getElementById(id);
+            if (!sat) return;
+            if (!isVisible(sat)) {
+                if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
+                return;
+            }
+            if (opp) embedSatelliteToOpp(sat, opp);
+            else if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
+        });
+    }
+
+    // MutationObserver por satélite: cuando se vuelve visible, embeber
+    // si hay opp activa. Solo se setea una vez por elemento.
+    function watchSatellite(id) {
+        var el = document.getElementById(id);
+        if (!el || el._wwSatWatched) return;
+        el._wwSatWatched = true;
+        var lastVisible = isVisible(el);
+        var obs = new MutationObserver(function () {
+            var visible = isVisible(el);
+            if (visible === lastVisible) return;
+            lastVisible = visible;
+            if (visible) {
+                var opp = getActiveOppOverlay();
+                if (opp) embedSatelliteToOpp(el, opp);
+            } else {
+                unembedSatellite(el);
+            }
+        });
+        obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+
+    function setupAllSatelliteWatchers() {
+        OPP_SATELLITE_IDS.forEach(watchSatellite);
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -1010,6 +1156,7 @@
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
         document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
+        setupAllSatelliteWatchers();
     }
 
     /* ── Mission Control: click en zona vacía ─────────────────────── */
