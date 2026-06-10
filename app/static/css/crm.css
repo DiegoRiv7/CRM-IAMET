@@ -17658,3 +17658,72 @@ body[data-theme="mundial"] .crm-search-pill::placeholder,
 body[data-theme="mundial"] #crmSearchInput::placeholder {
     color: rgba(255, 255, 255, 0.6) !important;
 }
+
+/* ═══ Barra superior (facet-bar + tabs + periodo + CTA) en glass oscuro ═══ */
+
+/* Contenedor de tabs: glass oscuro en vez de pill blanco */
+body[data-theme="mundial"] .crm-page-sidebar .crm-tabs {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+body[data-theme="mundial"] .crm-page-sidebar .crm-tab {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+body[data-theme="mundial"] .crm-page-sidebar .crm-tab:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-page-sidebar .crm-tab.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
+}
+
+/* Botones facet (Filtro, Ordenar, Excel, vista, Cotizar) */
+body[data-theme="mundial"] .crm-facet-btn {
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .crm-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-facet-sort {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.24) !important;
+}
+/* "Solo Proyectos" / facet activo */
+body[data-theme="mundial"] .crm-facet-btn.active {
+    background: rgba(0, 168, 107, 0.30) !important;
+    border-color: rgba(0, 168, 107, 0.70) !important;
+    color: #ffffff !important;
+}
+
+/* +Nuevo — CTA principal en verde mexicano */
+body[data-theme="mundial"] .crm-facet-new {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    border-color: #007a4d !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+}
+body[data-theme="mundial"] .crm-facet-new:hover {
+    background: linear-gradient(135deg, #00bd78 0%, #007a4d 100%) !important;
+    border-color: #00a86b !important;
+    box-shadow: 0 4px 14px rgba(0, 168, 107, 0.45) !important;
+}
+
+/* Pills de periodo / vendedores (der) */
+body[data-theme="mundial"] .crm-period-pills {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="mundial"] .crm-period-pill {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .crm-period-pill.is-default { color: rgba(255,255,255,0.62) !important; }
+body[data-theme="mundial"] .crm-period-pill:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.30) !important;
+    color: #ffffff !important;
+}
