@@ -1670,6 +1670,8 @@
             var cotizadorOppId = null;
 
             function openCotizador(oppId) {
+                // V2 takeover: cotizador instanciado (una ventana por opp).
+                if (window.OppWidgetV2 && window.OppWidgetV2.takeover) { return window.OppWidgetV2.openCotizador(oppId); }
                 cotizadorOppId = oppId;
                 cotizadorOverlay.classList.add('active');
                 cotizadorOverlay.classList.remove('closing');

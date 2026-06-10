@@ -241,7 +241,7 @@
                 break;
             case 'nueva-cot':
                 setFocus(inst);
-                if (typeof window.openCotizador === 'function') window.openCotizador(inst.oppId);
+                openCotizadorV2(inst.oppId, inst);
                 break;
             case 'nueva-actividad':
                 ev.stopPropagation();
@@ -364,8 +364,23 @@
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;  // cerrada o reusada mientras cargaba
-                if (data.error) { notify('Error: ' + data.error, 'error'); return; }
-                render(inst, data);
+                if (data.error) {
+                    notify('Error: ' + data.error, 'error');
+                    doClose(inst);
+                    return;
+                }
+                try {
+                    render(inst, data);
+                } catch (err) {
+                    // Nunca dejar el spinner infinito: el error se muestra en
+                    // la card (diagnosticable) y la instancia se puede cerrar.
+                    console.error('[oppV2] render error opp ' + oppId + ':', err);
+                    q(inst, 'loading').innerHTML =
+                        '<div style="color:#FF3B30;font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">Error al mostrar la oportunidad</div>' +
+                        '<div style="color:#86868B;font-size:0.78rem;font-family:monospace;max-width:480px;margin:0 auto 1rem;word-break:break-word;">' + esc(err && err.message) + '</div>' +
+                        '<button type="button" data-action="close" style="background:#F2F2F7;border:none;border-radius:10px;padding:0.55rem 1.4rem;font-weight:600;cursor:pointer;">Cerrar</button>';
+                    return;
+                }
                 q(inst, 'loading').style.display = 'none';
                 q(inst, 'content').style.display = 'flex';
                 setFocus(inst);  // ahora con data completa
@@ -538,10 +553,10 @@
         if (!ing) setupEditable(inst, d);
         else aplicarRestriccionesIngeniero(inst);
 
-        // ── Secciones asíncronas ──
-        renderTareas(inst);
-        renderActividad(inst);
-        renderProyecto(inst, d);
+        // ── Secciones asíncronas (un error en una sección no tumba el render) ──
+        try { renderTareas(inst); } catch (e) { console.error('[oppV2] tareas:', e); }
+        try { renderActividad(inst); } catch (e) { console.error('[oppV2] actividad:', e); }
+        try { renderProyecto(inst, d); } catch (e) { console.error('[oppV2] proyecto:', e); }
     }
 
     function renderCotizaciones(inst, d) {
@@ -553,8 +568,8 @@
             d.cotizaciones.forEach(function (cot) {
                 var card = document.createElement('div');
                 card.className = 'wo-quote-card';
-                var cotId = cot.id.toString().padStart(3, '0');
-                var totalStr = Number(cot.total).toLocaleString('es-MX', { minimumFractionDigits: 0 });
+                var cotId = String(cot.id == null ? '' : cot.id).padStart(3, '0');
+                var totalStr = (Number(cot.total) || 0).toLocaleString('es-MX', { minimumFractionDigits: 0 });
                 card.innerHTML =
                     '<div class="wo-quote-left">' +
                     '<div class="wo-quote-badge">#' + cotId + '</div>' +
@@ -573,7 +588,7 @@
                 card.querySelector('[data-cot-edit]').addEventListener('click', function (e) {
                     e.preventDefault();
                     setFocus(inst);
-                    if (typeof window.openEditCotizacion === 'function') window.openEditCotizacion(cot.id);
+                    openEditCotizacionV2(cot.id, inst);
                 });
                 quoteList.appendChild(card);
             });
@@ -1249,6 +1264,120 @@
         buscar('');
     }
 
+    /* ── Cotizador instanciado ────────────────────────────────────────
+       El cotizador legacy (#widgetCotizador) es un singleton: abrirlo
+       para otra opp reemplaza el anterior. Aquí cada cotización abierta
+       es su propia ventana-iframe (key 'opp:<id>' al crear, 'cot:<id>'
+       al editar), integrada con widget_window. El iframe postea
+       {type:'cotizacion-created'} al guardar (protocolo legacy). */
+
+    var cotWindows = {};  // key -> overlay
+
+    function openCotWindow(key, src, titulo, inst) {
+        var existing = cotWindows[key];
+        if (existing && document.body.contains(existing)) {
+            existing.classList.remove('ww-minimized');
+            existing.style.display = 'flex';
+            if (window.crmWidgetStack) {
+                window.crmWidgetStack.remove(existing);
+                window.crmWidgetStack.push(existing);
+            }
+            return existing;
+        }
+
+        var ov = document.createElement('div');
+        ov.className = 'widget-overlay oppv2-cot';
+        ov.setAttribute('data-widget-title', titulo);
+        ov.innerHTML =
+            '<div class="widget-card widget-card-cotizador">' +
+            '<div class="wo-header" style="padding:1rem 1.5rem 0.75rem;border-bottom:1px solid #F2F2F7;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
+            '<div data-cot-title style="font-size:1.05rem;font-weight:700;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></div>' +
+            '<button type="button" class="widget-close">&times;</button>' +
+            '</div>' +
+            '<iframe class="cotizador-iframe"></iframe>' +
+            '</div>';
+        ov.querySelector('[data-cot-title]').textContent = titulo;
+        ov.querySelector('iframe').src = src;
+        ov.querySelector('.widget-close').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            closeCotWindow(key);
+        });
+        ov._oppV2CotKey = key;
+        ov._oppV2Inst = inst || null;
+
+        document.body.appendChild(ov);
+        ov.style.display = 'flex';  // widget_stack lo registra solo
+        cotWindows[key] = ov;
+        if (window.crmWidgetWindow) {
+            try { window.crmWidgetWindow.enhance(ov); } catch (e) { }
+        }
+        // Si la opp está en modo ventana, el cotizador también nace como
+        // ventana (encimada con offset) para no tapar a las demás.
+        if (inst && isWindowed(inst) && window.crmWidgetWindow) {
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var w = Math.min(Math.round(vw * 0.72), 1400);
+            var h = Math.round(vh * 0.86);
+            var n = Object.keys(cotWindows).length;
+            window.crmWidgetWindow.windowize(ov, {
+                x: Math.max(8, Math.min(60 + n * 30, vw - w - 12)),
+                y: Math.max(6, Math.min(20 + n * 26, vh - h - 8)),
+                w: w, h: h,
+            });
+        }
+        return ov;
+    }
+
+    function closeCotWindow(key) {
+        var ov = cotWindows[key];
+        if (!ov) return;
+        delete cotWindows[key];
+        var inst = ov._oppV2Inst;
+        ov.classList.add('closing');
+        setTimeout(function () {
+            if (window.crmWidgetStack) window.crmWidgetStack.remove(ov);
+            ov.remove();
+        }, 200);
+        // Refrescar la opp ligada (lista de cotizaciones) + kanban.
+        if (inst && alive(inst) && isVisible(inst)) load(inst, inst.oppId);
+        if (window.crmDataBus && inst) window.crmDataBus.emit('oportunidad', 'update', inst ? inst.oppId : null);
+    }
+
+    function openCotizadorV2(oppId, inst) {
+        var id = parseInt(String(oppId).replace(/[^\d]/g, ''), 10);
+        if (!id) return;
+        if (!inst) {
+            inst = liveInstances().find(function (i) { return i.oppId === id; }) || null;
+        }
+        var titulo = 'Cotizar — ' + ((inst && inst.data && inst.data.oportunidad) || ('Oportunidad #' + id));
+        openCotWindow('opp:' + id, '/app/crear-cotizacion/oportunidad/' + id + '/?widget_mode=1', titulo, inst);
+    }
+
+    function openEditCotizacionV2(cotId, inst) {
+        var id = parseInt(String(cotId).replace(/[^\d]/g, ''), 10);
+        if (!id) return;
+        openCotWindow('cot:' + id, '/app/cotizacion/' + id + '/editar/?widget_mode=1', 'Editar cotización #' + id, inst || null);
+    }
+
+    // El iframe del cotizador postea 'cotizacion-created' al guardar:
+    // identificar QUÉ ventana lo envió (e.source) y refrescar su opp.
+    window.addEventListener('message', function (e) {
+        if (!e.data || e.data.type !== 'cotizacion-created') return;
+        for (var key in cotWindows) {
+            var ov = cotWindows[key];
+            if (!ov || !document.body.contains(ov)) continue;
+            var ifr = ov.querySelector('iframe');
+            if (ifr && ifr.contentWindow === e.source) {
+                var inst = ov._oppV2Inst;
+                if (inst && alive(inst) && isVisible(inst)) load(inst, inst.oppId);
+                if (window.crmDataBus) {
+                    window.crmDataBus.emit('cotizacion', 'create', null);
+                    if (inst) window.crmDataBus.emit('oportunidad', 'update', inst.oppId);
+                }
+                return;
+            }
+        }
+    });
+
     /* ── Data bus: refrescar instancias cuando cambian datos ──────── */
 
     var busTimers = {};
@@ -1293,6 +1422,8 @@
     window.OppWidgetV2 = {
         get takeover() { return takeoverActive(); },
         open: open,
+        openCotizador: openCotizadorV2,
+        openEditCotizacion: openEditCotizacionV2,
         instances: function () { return liveInstances().slice(); },
         focused: function () { return focused; },
         close: function (oppId) {
@@ -1301,12 +1432,22 @@
         },
     };
 
-    // window.openDetalle: este script carga DESPUÉS de crm_main.js, así que
-    // gana la asignación. Si el takeover está apagado, delega al legacy.
+    // Globals: este script carga DESPUÉS de crm_main.js, así que gana la
+    // asignación. Si el takeover está apagado, delega al legacy.
     var legacyOpenDetalle = window.openDetalle;
     window.openDetalle = function (oppId) {
         if (takeoverActive()) return open(oppId);
         if (typeof legacyOpenDetalle === 'function') return legacyOpenDetalle(oppId);
+    };
+    var legacyOpenCotizador = window.openCotizador;
+    window.openCotizador = function (oppId) {
+        if (takeoverActive()) return openCotizadorV2(oppId);
+        if (typeof legacyOpenCotizador === 'function') return legacyOpenCotizador(oppId);
+    };
+    var legacyOpenEditCot = window.openEditCotizacion;
+    window.openEditCotizacion = function (cotId) {
+        if (takeoverActive()) return openEditCotizacionV2(cotId);
+        if (typeof legacyOpenEditCot === 'function') return legacyOpenEditCot(cotId);
     };
 
     if (!window._oppV2Wired) {
