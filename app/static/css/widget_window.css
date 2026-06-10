@@ -58,6 +58,7 @@
    El selector :has() es reactivo: aparece/desaparece sin que JS
    tenga que mantener una clase en el body. Evita el bug de "se
    queda oscuro cuando ya cerré todas las ventanas". */
+body.ww-has-windows::after,
 body:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
     content: '';
     position: fixed;
@@ -69,6 +70,7 @@ body:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
 }
 
 /* Mission Control activo → fondo limpio (las ventanas se fueron) */
+body.ww-mission-control.ww-has-windows::after,
 body.ww-mission-control:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
     opacity: 0;
 }

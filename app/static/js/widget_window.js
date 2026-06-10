@@ -287,6 +287,11 @@
         if (focused && !focused.classList.contains('ww-focused')) {
             focused.classList.add('ww-focused');
         }
+        // Mantener body.ww-has-windows sincronizado — el CSS :has() no
+        // se evalúa reactivamente en todos los browsers/timings, así
+        // que el tracking JS es la garantía de que el velo oscuro del
+        // fondo aparece/desaparece correctamente.
+        document.body.classList.toggle('ww-has-windows', candidates.length > 0);
         // Si la opp focused cambió, los satélites abiertos se mueven
         // con ella (o se desembebter si ya no hay ninguna opp activa).
         scheduleSatelliteRefresh();
