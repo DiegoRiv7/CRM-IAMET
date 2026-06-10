@@ -372,6 +372,14 @@
         if (!oppCard) return;
         var satCard = getSatelliteCard(satellite);
         if (!satCard) return;
+        // Si ya está embebido en OTRA opp, desembeber primero para
+        // restaurar styles originales — sino el snapshot que se toma
+        // abajo guardaría el ESTADO ACTUAL embebido (con position:fixed
+        // y coords de la opp vieja) en lugar de los styles del template,
+        // y un unembed posterior dejaría el satélite corrupto.
+        if (satellite._wwOppHost && satellite._wwOppHost !== opp) {
+            unembedSatellite(satellite);
+        }
         var rect = oppCard.getBoundingClientRect();
         satellite.classList.add('ww-embedded-opp');
         // Asociar al satélite la opp host para que onPointerDown sepa
@@ -566,21 +574,39 @@
         // Dejamos que el handler legacy del v2 corra normal. En el
         // siguiente tick, evaluamos si necesita mudarse de host.
         setTimeout(function () {
-            var sat = document.getElementById(satId);
-            if (!sat || !isVisible(sat)) return;
-            var currentOpp = getActiveOppOverlay();
-            if (!currentOpp) {
-                // No hay opp en ventana → debe verse modal normal.
-                if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
-                return;
-            }
-            if (sat._wwOppHost && sat._wwOppHost !== currentOpp) {
-                // Mismo widget abierto desde otra opp → mudar de host.
-                unembedSatellite(sat);
+            try {
+                var sat = document.getElementById(satId);
+                if (!sat || !isVisible(sat)) return;
+                var currentOpp = getActiveOppOverlay();
+                if (!currentOpp) {
+                    // No hay opp en ventana → debe verse modal normal.
+                    if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
+                    return;
+                }
+                if (sat._wwOppHost === currentOpp) {
+                    // Ya embebido en la opp correcta → solo reposicionar
+                    // (la opp pudo haberse movido entre clicks).
+                    var oppCard = getCard(currentOpp);
+                    if (oppCard) {
+                        var r = oppCard.getBoundingClientRect();
+                        var sc = getSatelliteCard(sat);
+                        if (sc) {
+                            sc.style.left = r.left + 'px';
+                            sc.style.top = r.top + 'px';
+                            sc.style.width = r.width + 'px';
+                            sc.style.height = r.height + 'px';
+                        }
+                    }
+                    return;
+                }
+                // Cambio de host O primera vez con opp activa.
+                // embedSatelliteToOpp ya hace el unembed previo si hay
+                // host distinto (guard interno), así que es seguro
+                // llamarlo directamente.
                 embedSatelliteToOpp(sat, currentOpp);
-            } else if (!sat._wwOppHost) {
-                // Primera vez visible con opp activa.
-                embedSatelliteToOpp(sat, currentOpp);
+            } catch (e) {
+                // Cualquier error aquí NO debe tumbar la página.
+                console.error('[wwSatellite] onSatelliteActionClick:', e);
             }
         }, 40);
     }
