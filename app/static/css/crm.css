@@ -17577,31 +17577,32 @@ body[data-theme="mundial"] .vendor-card {
     box-shadow: 0 8px 34px rgba(0, 0, 0, 0.32) !important;
 }
 
-/* ── Kanban board: columnas glass oscuro con borde sutil ── */
+/* ── Kanban board: columnas casi invisibles, solo borde — la cancha se ve ── */
 body[data-theme="mundial"] .crm-kanban-col {
-    background: rgba(255, 255, 255, 0.06) !important;
-    backdrop-filter: blur(16px) saturate(130%);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.20) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: none !important;
 }
 body[data-theme="mundial"] .crm-kanban-col.collapsed {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(0, 0, 0, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
 }
 body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(255, 255, 255, 0.24) !important;
+    background: rgba(0, 0, 0, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.30) !important;
 }
+/* Solo el encabezado lleva un velo oscuro para legibilidad del texto */
 body[data-theme="mundial"] .crm-kanban-head {
-    background: rgba(0, 30, 15, 0.42) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom-color: rgba(255, 255, 255, 0.14) !important;
+    background: rgba(0, 22, 11, 0.40) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
 }
 body[data-theme="mundial"] .crm-kanban-stage-name {
     color: #ffffff !important;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.85);
 }
 body[data-theme="mundial"] .crm-kanban-total-label { color: rgba(255,255,255,0.58) !important; }
 body[data-theme="mundial"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
@@ -17620,17 +17621,17 @@ body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.22) !important;
 }
 
-/* ── Cards de oportunidades: glass blanco crujiente ── */
+/* ── Cards de oportunidades: glass esmerilado translúcido ── */
 body[data-theme="mundial"] .crm-kanban-card.crm-postit {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.65) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.14) !important;
+    background: rgba(255, 255, 255, 0.80) !important;
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255,255,255,0.5) !important;
 }
 body[data-theme="mundial"] .crm-kanban-card.crm-postit:hover {
-    background: #ffffff !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.30) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
     transform: translateY(-3px) !important;
 }
 
