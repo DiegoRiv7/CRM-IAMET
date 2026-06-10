@@ -476,33 +476,61 @@
     var lastOppId = null;
     var snapSeq = 0;
 
-    function wrapOpenDetalle() {
-        if (window._wwOpenDetalleWrapped) return;
-        if (typeof window.openDetalle !== 'function') return;
-        var orig = window.openDetalle;
-        window._wwOpenDetalleWrapped = true;
-        window.openDetalle = function (oppId) {
-            var clean = parseInt(String(oppId).replace(/[^\d]/g, ''), 10) || null;
-            try { maybeSnapshot(clean); } catch (e) { console.error('[widgetWindow] snapshot:', e); }
-            var out = orig.apply(this, arguments);
-            if (clean) lastOppId = clean;
-            // Si el widget vivo estaba minimizado, regresarlo del dock.
-            var overlay = document.getElementById('widgetDetalle');
-            if (overlay && st(overlay).minimized) restoreFromDock(overlay);
-            return out;
+    // NO se puede envolver window.openDetalle: los callers internos de
+    // crm_main.js (kanban, lista — el camino más común) llaman a la
+    // función LOCAL por closure y brincarían el wrapper. En cambio,
+    // TODAS las aperturas disparan el fetch al endpoint de detalle, y en
+    // ese momento el DOM todavía muestra la oportunidad anterior (el
+    // render espera la respuesta) — el punto perfecto para el snapshot.
+    function wrapDetalleFetch() {
+        if (window._wwFetchWrapped) return;
+        window._wwFetchWrapped = true;
+        var origFetch = window.fetch;
+        window.fetch = function (input) {
+            try {
+                var url = typeof input === 'string' ? input : (input && input.url) || '';
+                var m = url.match(/oportunidad-detalle-crm\/(\d+)/);
+                if (m) {
+                    var newId = parseInt(m[1], 10);
+                    maybeSnapshot(newId);
+                    lastOppId = newId;
+                    // Si el widget vivo estaba minimizado, regresarlo del dock.
+                    var overlay = document.getElementById('widgetDetalle');
+                    if (overlay && st(overlay).minimized) restoreFromDock(overlay);
+                }
+            } catch (e) { console.error('[widgetWindow] detalle-fetch hook:', e); }
+            return origFetch.apply(this, arguments);
         };
+    }
+
+    function readStoredOppId() {
+        // openDetalle (crm_main.js:799) guarda el id en sessionStorage en
+        // CADA apertura. Sirve para inicializar lastOppId tras un reload
+        // con ?open_opp= en la URL (el valor sobrevive del page load
+        // anterior porque el widget seguía abierto al recargar).
+        try {
+            return parseInt(sessionStorage.getItem('_crm_open_opp_id'), 10) || null;
+        } catch (e) { return null; }
     }
 
     function maybeSnapshot(newId) {
         var overlay = document.getElementById('widgetDetalle');
-        if (!overlay || !newId || !lastOppId || newId === lastOppId) return;
-        if (!overlay.classList.contains('ww-windowed')) return;  // modal → reemplaza, como siempre
-        if (st(overlay).minimized || !isVisible(overlay)) return;
+        if (!overlay || !newId) return;
+        var liveId = lastOppId || readStoredOppId();
+        if (!liveId || newId === liveId) return;
+        var s = st(overlay);
+        // Minimizado: la oportunidad sigue "abierta" en el dock — debe
+        // sobrevivir como vista minimizada, no ser reemplazada en silencio.
+        if (!s.minimized) {
+            if (!overlay.classList.contains('ww-windowed')) return;  // modal → reemplaza, como siempre
+            if (!isVisible(overlay)) return;
+        }
         if (countWindows() >= MAX_WINDOWS) {
             notify('Máximo ' + MAX_WINDOWS + ' ventanas: la oportunidad abierta se reemplazará');
             return;
         }
-        createSnapshot(overlay, lastOppId);
+        var snap = createSnapshot(overlay, liveId);
+        if (snap && s.minimized) minimize(snap);  // hereda el lugar en el dock
     }
 
     var ICON_MIN = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
@@ -575,7 +603,10 @@
         watchSize(snap);
 
         // La ventana viva se corre en cascada para no tapar la vista.
-        applyRect(overlay, snapToEdges({ x: rect.x + 36, y: rect.y + 36, w: rect.w, h: rect.h }));
+        if (overlay.classList.contains('ww-windowed')) {
+            applyRect(overlay, snapToEdges({ x: rect.x + 36, y: rect.y + 36, w: rect.w, h: rect.h }));
+        }
+        return snap;
     }
 
     function destroySnapshot(snap) {
@@ -616,11 +647,12 @@
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
         document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
-        wrapOpenDetalle();
+        if (lastOppId === null) lastOppId = readStoredOppId();
     }
 
     if (!window._widgetWindowWired) {
         window._widgetWindowWired = true;
+        wrapDetalleFetch();
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('dblclick', onDblClick, true);
         // Reajustar ventanas al cambiar el tamaño del viewport.
