@@ -390,11 +390,28 @@
         if (!satellite.classList.contains('ww-embedded-opp')) return;
         satellite.classList.remove('ww-embedded-opp');
         satellite._wwOppHost = null;
+        ensureSatelliteIsClean(satellite);
+    }
+
+    // Restaura el satélite a estado "modal limpio": sin clases, handles
+    // ni styles inline residuales que mi código pudo haber inyectado.
+    // Crítico para el caso: el satélite se embebió ANTES con una opp en
+    // ventana, después se cerró todo, y ahora se abre con la opp en
+    // modal — sin esto, los handles y position:fixed con coords viejas
+    // hacían que el drive apareciera fuera del viewport ("se abre por
+    // detrás").
+    function ensureSatelliteIsClean(satellite) {
         var satCard = getSatelliteCard(satellite);
         if (satCard) {
             ['position', 'left', 'top', 'width', 'height', 'maxWidth',
-             'maxHeight', 'margin', 'borderRadius'].forEach(function (p) {
+             'maxHeight', 'margin', 'borderRadius', 'transform',
+             'transition'].forEach(function (p) {
                 satCard.style.removeProperty(p);
+            });
+            satCard.classList.remove('ww-card');
+            // Quitar handles que el embed haya inyectado.
+            satCard.querySelectorAll('.ww-handle').forEach(function (h) {
+                h.remove();
             });
         }
         satellite.style.removeProperty('z-index');
@@ -419,8 +436,16 @@
                 if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
                 return;
             }
-            if (opp) embedSatelliteToOpp(sat, opp);
-            else if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
+            if (opp) {
+                embedSatelliteToOpp(sat, opp);
+            } else {
+                // No hay opp en ventana → el satélite debe verse modal
+                // normal. Asegurar que no quede residuo de un embed
+                // anterior (handles, position:fixed, etc.) — ese era
+                // el bug "el drive se abre por detrás".
+                if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
+                else ensureSatelliteIsClean(sat);
+            }
         });
     }
 
@@ -438,6 +463,11 @@
             if (visible) {
                 var opp = getActiveOppOverlay();
                 if (opp) embedSatelliteToOpp(el, opp);
+                // Si NO hay opp en ventana, limpiar residuos de un
+                // embed anterior — el drive abierto sin opp en
+                // ventana se mostraba en posición fantasma de la
+                // última embed (handles + position:fixed pegados).
+                else ensureSatelliteIsClean(el);
             } else {
                 unembedSatellite(el);
             }
