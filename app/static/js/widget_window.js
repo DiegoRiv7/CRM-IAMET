@@ -211,6 +211,7 @@
         var card = getCard(overlay);
         var fromRect = card ? card.getBoundingClientRect() : null;
         overlay.classList.remove('ww-windowed');
+        overlay.classList.remove('ww-focused');
         ['--ww-x', '--ww-y', '--ww-w', '--ww-h'].forEach(function (p) {
             overlay.style.removeProperty(p);
         });
@@ -219,6 +220,7 @@
         s.rect = null;
         updateWinBtn(overlay);
         flipAnimate(card, fromRect);
+        updateFocusedWindow();
     }
 
     function bringToFront(overlay) {
@@ -228,6 +230,55 @@
         if (top.length && top[top.length - 1] === overlay) return;  // ya está al frente
         ws.remove(overlay);
         ws.push(overlay);
+        updateFocusedWindow();
+        // Micro-zoom de feedback: la card se hunde un toque y vuelve.
+        // Solo en modo ventana — en modal grande el zoom se vería raro.
+        // Si justo después se inicia un drag/resize, startInteraction
+        // limpia transition y el zoom no estorba.
+        var card = getCard(overlay);
+        if (card && overlay.classList.contains('ww-windowed')) {
+            card.style.transition = 'transform 0.18s ease-out';
+            card.style.transformOrigin = '50% 50%';
+            card.style.transform = 'scale(0.98)';
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    card.style.transform = '';
+                    var done = function () {
+                        card.style.transition = '';
+                        card.style.transform = '';
+                        card.style.transformOrigin = '';
+                        card.removeEventListener('transitionend', done);
+                    };
+                    card.addEventListener('transitionend', done);
+                    setTimeout(done, 220);
+                });
+            });
+        }
+    }
+
+    /* ── Foco visual (ventana al frente vs. detrás) ───────────────── */
+
+    function updateFocusedWindow() {
+        var ws = window.crmWidgetStack;
+        if (!ws) return;
+        var stack = ws.get();
+        var focused = null;
+        for (var i = stack.length - 1; i >= 0; i--) {
+            var el = stack[i];
+            if (el && el.classList &&
+                el.classList.contains('widget-overlay') &&
+                el.classList.contains('ww-windowed') &&
+                !el.classList.contains('ww-minimized') &&
+                isVisible(el)) {
+                focused = el;
+                break;
+            }
+        }
+        // Limpiar la clase en todas las que ya no son el foco.
+        document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
+            if (el !== focused) el.classList.remove('ww-focused');
+        });
+        if (focused) focused.classList.add('ww-focused');
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -287,6 +338,7 @@
             // abren/cierran con classList 'active' y un display inline pegado
             // le ganaría al CSS dejando el widget imposible de cerrar con la X.
             overlay.classList.add('ww-minimized');
+            overlay.classList.remove('ww-focused');
             if (card) {
                 card.style.transition = '';
                 card.style.transform = '';
@@ -297,6 +349,7 @@
             chip.style.opacity = '';
             chip.style.pointerEvents = '';
             chip.classList.add('ww-dock-chip-enter');
+            updateFocusedWindow();
         };
 
         if (!card || !cardRect || !chipRect.width) {
@@ -796,6 +849,8 @@
                 // Cerrado en modo ventana → la próxima apertura regresa como modal.
                 unwindowize(overlay);
             }
+            // Apertura/cierre puede cambiar quién es la ventana al frente.
+            updateFocusedWindow();
         });
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
     }
