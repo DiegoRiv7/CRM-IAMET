@@ -631,6 +631,7 @@
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp, { once: true });
         ev.preventDefault();
+        ev.stopPropagation();
     }
 
     function onPointerMove(ev) {
@@ -672,6 +673,14 @@
         applyRect(dragState.overlay, r);
     }
 
+    // Marca de tiempo del último pointerup que terminó un drag/resize.
+    // Sirve para SUPRIMIR el click sintético que el browser dispara
+    // después — sin esto, un click suelto encima del header (que ya
+    // inició un drag) se dispararía como click "en zona vacía" y
+    // activaría Mission Control. 220ms cubre clicks normales sin
+    // bloquear interacción rápida después.
+    var lastDragEnd = 0;
+
     function onPointerUp() {
         window.removeEventListener('pointermove', onPointerMove);
         if (dragState) {
@@ -690,6 +699,7 @@
                     applyRect(dragState.overlay, snapToEdges(s.rect));
                 }
             }
+            lastDragEnd = Date.now();
         }
         dragState = null;
         removeShield();
@@ -815,9 +825,20 @@
 
     function onGlobalClickForMC(ev) {
         if (ev.button !== 0) return;
-        // Click dentro de una ventana, otro widget o el dock → no MC
-        // (esos clicks tienen su propio comportamiento).
-        if (ev.target.closest('.widget-overlay, #wwDock, .ww-snap-ghost, .ww-mc-hint')) {
+        // Suprimir clicks sintéticos justo después de un drag/resize
+        // que terminó sin moverse (el browser sigue disparando click
+        // aunque el pointerdown haya hecho preventDefault).
+        if (Date.now() - lastDragEnd < 220) return;
+        // Si hay un drag activo aún (raro: pointerup no llegó), ignorar.
+        if (dragState) return;
+        // Click dentro de una ventana, otro widget, el dock o el
+        // shield invisible del drag → no MC (esos clicks tienen su
+        // propio comportamiento). El shield se incluye por defensa:
+        // en algunos browsers el target del click se determina al
+        // pointerdown, cuando el shield aún cubría el viewport.
+        if (ev.target.closest(
+            '.widget-overlay, #wwDock, .ww-snap-ghost, .ww-mc-hint, .ww-drag-shield'
+        )) {
             return;
         }
         // Si el target es interactivo (botón, link, input, card del
