@@ -27,7 +27,7 @@
     'use strict';
 
     var SWAP_IDS = ['crmTbody', 'crmListBody', 'crmCardsGrid'];
-    var LABEL_IDS = ['pillPeriodoLabel', 'pillVendedorLabel', 'crmWorkspaceCount'];
+    var LABEL_IDS = ['crmWorkspaceCount'];
     var busy = false;
 
     function setLoading(on) {
@@ -37,6 +37,31 @@
                 el.style.transition = 'opacity 0.15s ease';
                 el.style.opacity = on ? '0.45' : '';
                 el.style.pointerEvents = on ? 'none' : '';
+            }
+        });
+        // Pills atenuadas mientras aplica (el server puede tardar varios seg).
+        ['pillPeriodo', 'pillVendedor'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.style.opacity = on ? '0.55' : '';
+                el.style.pointerEvents = on ? 'none' : '';
+            }
+        });
+        // Botón "Aplicar" del popover abierto: gris + texto de estado. El
+        // popover se queda abierto hasta que el cambio termina (lo cierra
+        // _crmSyncPeriodPills) para que el usuario VEA que está trabajando.
+        document.querySelectorAll('[data-act="periodo-apply"], [data-act="period-apply-vendor"]').forEach(function (btn) {
+            if (on) {
+                btn.dataset.prevText = btn.textContent;
+                btn.textContent = 'Aplicando…';
+                btn.disabled = true;
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'wait';
+            } else {
+                if (btn.dataset.prevText) btn.textContent = btn.dataset.prevText;
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.cursor = '';
             }
         });
     }
@@ -112,6 +137,12 @@
                     window._CRM_CONFIG.vendedoresFilter = params.get('vendedores') || '';
                 }
                 try { window.history.replaceState({}, '', url); } catch (e) { }
+
+                // Pills: re-sincronizar labels desde la URL nueva ("Junio · 2026",
+                // "2 vendedores"…) y cerrar el popover de "Aplicando…".
+                if (typeof window._crmSyncPeriodPills === 'function') {
+                    try { window._crmSyncPeriodPills(); } catch (e) { }
+                }
 
                 // 5. Colores/KPIs/kanban/binds — el mismo pase que corre en
                 //    cada page load (refreshCrmTable usa el periodo ya seteado).

@@ -3238,6 +3238,21 @@
         if (ven) ven.classList.toggle('is-default', _currentVendors.length === 0);
     }
 
+    // Expuesto para crm_nav_v2.js: tras un cambio de periodo in-place (sin
+    // reload no se re-leen los <script type="application/json"> del server),
+    // re-sincroniza el estado de las pills desde la URL y re-pinta labels.
+    window._crmSyncPeriodPills = function () {
+        var p = new URLSearchParams(window.location.search);
+        var mesP = (p.get('mes') || '').trim();
+        var anioP = (p.get('anio') || '').trim();
+        _mesesSelected = (mesP && mesP !== 'todos') ? mesP.split(',').filter(Boolean) : [];
+        _aniosSelected = (anioP && anioP !== 'todos') ? anioP.split(',').filter(Boolean) : [];
+        _currentVendors = (p.get('vendedores') || '').split(',').filter(Boolean);
+        renderPeriodPills();
+        // Cerrar el popover si seguía abierto mostrando "Aplicando…".
+        if (popValue) popValue.classList.remove('open');
+    };
+
     function renderChips(){
         if (!chipsEl) return;
         var f = readFilters();

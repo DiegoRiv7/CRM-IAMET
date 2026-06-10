@@ -140,19 +140,21 @@
     // click. Cuando el usuario hace click, navegación SIENTE instantánea.
     // No requiere configuración explícita; está activo por default.
 
-    // ── Ocultar Turbo Progress Bar ──
-    // Por defecto Turbo muestra una barra azul en la parte superior si
-    // el fetch tarda más de 500ms. En este sistema, eso genera "flash"
-    // visual después de que el contenido ya se mostró (cached + fresh
-    // render). Mejor sin ella — el usuario ya tiene el contenido, no
-    // necesita ver progreso de un fetch que termina detrás de escenas.
+    // ── Turbo Progress Bar ──
+    // (2026-06-10) Antes estaba oculta porque con páginas CACHEADAS generaba
+    // un flash post-render. Pero estas navegaciones usan turbo-cache-control
+    // no-cache: el usuario se queda viendo la página vieja varios segundos
+    // SIN ninguna señal de que algo está pasando (feedback del usuario al
+    // navegar a Reportes/Calendario). Barra delgada con delay de 300ms:
+    // navegaciones rápidas no la ven; las lentas muestran progreso.
     try {
-        window.Turbo.session.progressBarDelay = 999999;  // efectivamente nunca
+        window.Turbo.session.progressBarDelay = 300;
     } catch (e) { /* noop si la API cambió */ }
 
-    // Backup CSS por si la API JS no funciona en alguna versión:
     var _styleProgress = document.createElement('style');
-    _styleProgress.textContent = '.turbo-progress-bar { display: none !important; visibility: hidden !important; }';
+    _styleProgress.textContent =
+        '.turbo-progress-bar { height: 3px; background: linear-gradient(90deg, #0052D4, #5856D6); ' +
+        'box-shadow: 0 0 8px rgba(0,82,212,0.5); z-index: 99999; }';
     document.head.appendChild(_styleProgress);
 
     // ── Reducir flicker del cached → fresh render ──
