@@ -548,42 +548,41 @@
                 ensureSatelliteIsClean(el);
             }
         });
-        // Wrappear funciones de apertura conocidas: cuando el user
-        // click drive/conversación desde otra opp con el widget ya
-        // abierto en una primera opp, re-embebter al nuevo host
-        // (sino el contenido cambia pero el widget sigue posicionado
-        // sobre la primera opp).
-        wrapSatelliteOpener('woAbrirGestorDrive', 'widgetOppDrive');
-        wrapSatelliteOpener('woAbrirGestorConversacion', 'widgetOppConversacion');
     }
 
-    function wrapSatelliteOpener(funcName, satId) {
-        var orig = window[funcName];
-        if (!orig || orig._wwWrapped) return;
-        var wrapped = function () {
-            var result;
-            try { result = orig.apply(this, arguments); } catch (e) {
-                console.error('[wwSatellite]', funcName, 'lanzó:', e);
-            }
-            // Fallback: si la función legacy falló o no abrió el widget
-            // por algún error silencioso, forzar display:flex para que
-            // al menos sea visible.
+    // Mapeo data-action → satellite ID, para detectar reapertura del
+    // mismo satélite desde otra opp y mudarlo de host sin romper la
+    // función legacy de apertura.
+    var SATELLITE_ACTION_MAP = {
+        'abrir-drive': 'widgetOppDrive',
+        'abrir-conversacion': 'widgetOppConversacion',
+    };
+
+    function onSatelliteActionClick(ev) {
+        var btn = ev.target.closest('[data-action]');
+        if (!btn) return;
+        var satId = SATELLITE_ACTION_MAP[btn.getAttribute('data-action')];
+        if (!satId) return;
+        // Dejamos que el handler legacy del v2 corra normal. En el
+        // siguiente tick, evaluamos si necesita mudarse de host.
+        setTimeout(function () {
             var sat = document.getElementById(satId);
-            if (sat && !isVisible(sat)) {
-                sat.style.display = 'flex';
+            if (!sat || !isVisible(sat)) return;
+            var currentOpp = getActiveOppOverlay();
+            if (!currentOpp) {
+                // No hay opp en ventana → debe verse modal normal.
+                if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
+                return;
             }
-            // Re-embeber al nuevo host si cambió de opp focused.
-            if (sat && sat._wwOppHost) {
-                var currentOpp = getActiveOppOverlay();
-                if (currentOpp && currentOpp !== sat._wwOppHost) {
-                    unembedSatellite(sat);
-                    embedSatelliteToOpp(sat, currentOpp);
-                }
+            if (sat._wwOppHost && sat._wwOppHost !== currentOpp) {
+                // Mismo widget abierto desde otra opp → mudar de host.
+                unembedSatellite(sat);
+                embedSatelliteToOpp(sat, currentOpp);
+            } else if (!sat._wwOppHost) {
+                // Primera vez visible con opp activa.
+                embedSatelliteToOpp(sat, currentOpp);
             }
-            return result;
-        };
-        wrapped._wwWrapped = true;
-        window[funcName] = wrapped;
+        }, 40);
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -1427,6 +1426,9 @@
         // oscuro del fondo se quite cuando ya no quedan ventanas.
         // refreshFocusState está debounced con RAF — barato.
         document.addEventListener('click', function () { refreshFocusState(); }, true);
+        // Click en botones [data-action="abrir-drive"/"abrir-conversacion"]
+        // → evaluar si el satélite debe mudarse de host (cambio de opp).
+        document.addEventListener('click', onSatelliteActionClick, true);
         // Red de seguridad: poll ligero cada 800ms para sincronizar
         // body.ww-has-windows si algún cierre escapó a nuestros
         // observers (cierre con X de widgets que no llaman hooks
