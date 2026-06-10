@@ -706,12 +706,20 @@
         removeSnapGhost();
     }
 
-    var HANDLE_CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize' };
+    // 8 puntos de resize: 4 esquinas + 4 lados. La lógica de
+    // onPointerMove ya soporta los 8 modos (usa indexOf en 'n/s/e/w'),
+    // sólo había que activar los handles de lado en el DOM.
+    var HANDLE_CURSORS = {
+        nw: 'nwse-resize', se: 'nwse-resize',
+        ne: 'nesw-resize', sw: 'nesw-resize',
+        n:  'ns-resize',   s:  'ns-resize',
+        e:  'ew-resize',   w:  'ew-resize',
+    };
 
     function injectHandles(overlay) {
         var card = getCard(overlay);
         if (!card || card.querySelector('.ww-handle')) return;
-        ['nw', 'ne', 'sw', 'se'].forEach(function (dir) {
+        ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'].forEach(function (dir) {
             var h = document.createElement('div');
             h.className = 'ww-handle ww-handle-' + dir;
             h.setAttribute('data-ww-dir', dir);

@@ -56,10 +56,31 @@
     touch-action: none;
 }
 
+/* Esquinas (cuadrados de 18×18 que toman cuadrante completo) */
 .ww-handle-nw { top: -4px; left: -4px; cursor: nwse-resize; }
 .ww-handle-ne { top: -4px; right: -4px; cursor: nesw-resize; }
 .ww-handle-sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
 .ww-handle-se { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
+/* Lados: tiras finas (8 px de grosor) entre las esquinas, con
+   18 px de offset a cada extremo para no solapar los handles de
+   esquina. Sobrescriben width/height de la regla base .ww-handle. */
+.ww-handle-n {
+    top: -4px; left: 18px; right: 18px; bottom: auto;
+    width: auto; height: 8px; cursor: ns-resize;
+}
+.ww-handle-s {
+    bottom: -4px; left: 18px; right: 18px; top: auto;
+    width: auto; height: 8px; cursor: ns-resize;
+}
+.ww-handle-e {
+    right: -4px; top: 18px; bottom: 18px; left: auto;
+    width: 8px; height: auto; cursor: ew-resize;
+}
+.ww-handle-w {
+    left: -4px; top: 18px; bottom: 18px; right: auto;
+    width: 8px; height: auto; cursor: ew-resize;
+}
 
 /* Indicador sutil de la esquina inferior derecha al pasar el mouse */
 .ww-handle-se::after {
