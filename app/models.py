@@ -376,17 +376,11 @@ class TodoItem(models.Model):
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
     po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO", db_index=True)
     factura_numero = models.CharField(max_length=100, blank=True, default='', verbose_name="Factura")
-    # Proveedores asignados a esta oportunidad. M2M para soportar varios
-    # proveedores por opp (ej. una venta que cubre distribuidor Zebra +
-    # mayorista Panduit). related_name='oportunidades' permite a
-    # ProveedorCRM consultar sus opps directamente. La sección Proveedores
-    # del dashboard agrega facturado/pipeline via este M2M.
-    proveedores = models.ManyToManyField(
-        'ProveedorCRM',
-        related_name='oportunidades',
-        blank=True,
-        verbose_name='Proveedores',
-    )
+    # NOTA: el M2M `proveedores` fue eliminado en migración 0184. Los
+    # proveedores asociados a una opp se derivan ahora directamente de las
+    # líneas (DetalleCotizacion.proveedor) de la ÚLTIMA cotización de la
+    # opp. Esto evita la desincronización del M2M acumulador y mantiene
+    # una sola fuente de verdad: la cotización vigente.
     # FK directo al prospecto del que se generó esta oportunidad. A
     # diferencia de Prospecto.oportunidad_creada (FK al revés que solo
     # apunta a UNA opp), aquí CADA opp generada apunta al mismo
@@ -619,18 +613,24 @@ class DetalleCotizacion(models.Model):
     ]
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='producto', verbose_name="Tipo")
 
-    # Campos internos (NO aparecen en el PDF, solo para reportes/utilidad).
-    # `proveedor` permite enlazar cada línea de la cotización con el ProveedorCRM
-    # del cual se obtuvo. El backend además sincroniza estos proveedores al
-    # M2M `TodoItem.proveedores` de la oportunidad asociada.
-    # `costo_unitario` se captura para calcular utilidad/margen sin exponer
-    # esos números al cliente en el PDF.
+    # Campos INTERNOS (NO aparecen en el PDF, solo para reportes/utilidad).
+    # Una opp/cotización puede llevar varias marcas y varios proveedores;
+    # se capturan por línea para precisión en el reporte.
+    # El dashboard de Marcas y Proveedores deriva pipeline/facturado de
+    # estas líneas tomando SOLO la última cotización de cada opp.
     proveedor = models.ForeignKey(
         'ProveedorCRM',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='detalles_cotizacion',
         verbose_name='Proveedor de esta línea (interno, no aparece en PDF)',
+    )
+    marca_crm = models.ForeignKey(
+        'MarcaCRM',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='detalles_cotizacion',
+        verbose_name='Marca de esta línea (interno, no aparece en PDF)',
     )
     costo_unitario = models.DecimalField(
         max_digits=10, decimal_places=2,

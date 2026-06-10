@@ -418,6 +418,41 @@ def _resolver_o_crear_proveedor(nombre_raw):
     return ProveedorCRM.objects.create(nombre=nombre, key=key, activa=True)
 
 
+def _resolver_o_crear_marca(nombre_raw):
+    """Análogo a _resolver_o_crear_proveedor pero para MarcaCRM.
+
+    Dado un nombre escrito por el usuario en el formulario de cotización,
+    devuelve una MarcaCRM existente (lookup case-insensitive sobre nombre)
+    o crea una nueva con `key` autogenerada via `_normalizar_key`.
+    Idempotente: dos llamadas con el mismo nombre retornan la misma marca.
+    """
+    from .views_v2.marcas_v2 import _normalizar_key
+    from .models import MarcaCRM
+
+    nombre = (nombre_raw or '').strip()
+    if not nombre:
+        return None
+    nombre = nombre[:80]
+
+    existente = MarcaCRM.objects.filter(nombre__iexact=nombre).first()
+    if existente is not None:
+        return existente
+
+    base_key = _normalizar_key(nombre)
+    if not base_key:
+        return None
+    key = base_key
+    sufijo = 2
+    while MarcaCRM.objects.filter(key=key).exists():
+        sufijo_str = f'_{sufijo}'
+        key = (base_key[:40 - len(sufijo_str)] + sufijo_str)
+        sufijo += 1
+        if sufijo > 100:
+            return None
+
+    return MarcaCRM.objects.create(nombre=nombre, key=key, activa=True)
+
+
 @login_required
 @csrf_exempt
 @xframe_options_sameorigin
@@ -706,10 +741,6 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 opp.save(update_fields=['monto', 'fecha_actualizacion'])
             
             # Guardar elementos en orden correcto (títulos Y productos).
-            # Mientras tanto vamos recolectando los proveedores únicos
-            # asignados a las líneas; al final los sincronizamos al M2M
-            # `proveedores` de la oportunidad asociada (si existe).
-            proveedores_unicos = {}  # id → ProveedorCRM
             for elemento in elementos_combinados:
                 if elemento['tipo'] == 'titulo':
                     titulo_data = elemento['datos']
@@ -756,10 +787,6 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             costo_unitario = Decimal('0.00')
 
                         # ── Proveedor por línea (interno, no aparece en PDF) ──
-                        # Resolución case-insensitive sobre el nombre; si no
-                        # existe lo creamos con key autogenerada. Cualquier
-                        # error en esta sección NO debe romper la creación
-                        # de la cotización — el campo es opcional.
                         proveedor_obj = None
                         proveedor_nombre_raw = (item_data.get('proveedor') or '').strip()
                         if proveedor_nombre_raw:
@@ -771,6 +798,23 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                                     proveedor_nombre_raw,
                                 )
                                 proveedor_obj = None
+
+                        # ── Marca por línea (interno, no aparece en PDF) ──
+                        # Mismo patrón que proveedor: lookup case-insensitive,
+                        # creación si no existe. Una opp puede llevar varias
+                        # marcas (una por línea) → el dashboard de Marcas
+                        # agrega por LÍNEA, no por opp entera.
+                        marca_crm_obj = None
+                        marca_crm_nombre_raw = (item_data.get('marca_crm') or '').strip()
+                        if marca_crm_nombre_raw:
+                            try:
+                                marca_crm_obj = _resolver_o_crear_marca(marca_crm_nombre_raw)
+                            except Exception:
+                                logger.exception(
+                                    'Fallo al resolver/crear marca "%s" — la línea se guarda sin marca_crm',
+                                    marca_crm_nombre_raw,
+                                )
+                                marca_crm_obj = None
 
                         DetalleCotizacion.objects.create(
                             cotizacion=cotizacion,
@@ -784,29 +828,19 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             tipo='producto',
                             orden=elemento['posicion_final'],
                             proveedor=proveedor_obj,
+                            marca_crm=marca_crm_obj,
                             costo_unitario=costo_unitario,
                         )
-                        if proveedor_obj is not None:
-                            proveedores_unicos[proveedor_obj.id] = proveedor_obj
                         print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')} with orden {elemento['posicion_final']}")
                     except (ValueError, TypeError, decimal.InvalidOperation) as e:
                         cotizacion.delete()
                         return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
-            # Sincronizar proveedores con la oportunidad asociada (M2M).
-            # Usamos `.add(*objs)` para AÑADIR sin remover los proveedores
-            # que la opp ya tuviera asignados desde otras cotizaciones u
-            # otras fuentes. Esto enriquece la columna "proveedores" sin
-            # destruir datos previos.
-            if cotizacion.oportunidad_id and proveedores_unicos:
-                try:
-                    cotizacion.oportunidad.proveedores.add(*proveedores_unicos.values())
-                    print(f"DEBUG PROVEEDORES: Sincronizados {len(proveedores_unicos)} proveedores con opp {cotizacion.oportunidad_id}")
-                except Exception:
-                    logger.exception(
-                        'No se pudo sincronizar proveedores con la opp %s — la cotización ya fue creada',
-                        cotizacion.oportunidad_id,
-                    )
+            # NOTA: el M2M TodoItem.proveedores fue eliminado en migración
+            # 0184. Los proveedores y marcas se derivan ahora directamente
+            # desde DetalleCotizacion (filtrando por la última cotización
+            # de cada opp) en views_v2/proveedores_v2.py y marcas_v2.py.
+            # No se requiere sincronización adicional aquí.
 
             # Los títulos ya se procesaron en orden combinado arriba
             print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
@@ -936,8 +970,9 @@ def editar_cotizacion_view(request, cotizacion_id):
         'cantidad': d.cantidad,
         'precio': str(d.precio_unitario),
         'descuento': str(d.descuento_porcentaje),
-        'tipo': getattr(d, 'tipo', 'producto') or 'producto',  # Incluir el tipo (producto o titulo)
+        'tipo': getattr(d, 'tipo', 'producto') or 'producto',
         'proveedor': (d.proveedor.nombre if getattr(d, 'proveedor', None) else ''),
+        'marca_crm': (d.marca_crm.nombre if getattr(d, 'marca_crm', None) else ''),
         'costo': str(getattr(d, 'costo_unitario', None) or '0.00'),
     } for d in detalles_originales]
 

@@ -5,14 +5,19 @@ CRUD del catálogo persistido en DB (modelo ProveedorCRM).
 Espejo estructural de marcas_v2.py. Difiere en:
   * Contactos renombrados: principal / ventas / soporte (en vez de
     marca / ingenieria / mayorista).
-  * Pipeline de opps via M2M `TodoItem.proveedores` (no CharField como
-    Marcas con `producto`). Una opp puede tener N proveedores; las
-    agregaciones cuentan correctamente con `distinct=True` para ops
-    e implícito para sums (cada par opp-proveedor suma 1 vez, dando a
-    cada proveedor el crédito de la opp en su columna).
-  * Si la migración 0182 (que agrega el M2M) aún no se ha aplicado, los
-    queries devuelven payloads vacíos en lugar de fallar — chequeo via
-    _has_proveedor_field() con introspection del meta.
+  * Pipeline derivado de DetalleCotizacion.proveedor (FK por línea),
+    filtrando a la ÚLTIMA cotización de cada opp (junio 2026).
+    El M2M `TodoItem.proveedores` fue eliminado en migración 0184 —
+    una opp con N proveedores se cubre porque cada línea de su última
+    cotización tiene su propio FK proveedor.
+
+Reglas (alineadas con marcas_v2.py):
+  1. SOLO la última cotización (id más alto) de cada opp cuenta.
+  2. Monto por proveedor = subtotales de SUS líneas (no monto total
+     del TodoItem).
+  3. Opps sin cotización quedan fuera.
+  4. Una línea cuenta como facturado si su opp tiene
+     monto_facturacion > 0, sino como pipeline.
 
 Endpoints:
     GET  /app/api/proveedores/resumen/                  — todos + totales
@@ -33,13 +38,12 @@ from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import FieldError
-from django.db.models import Count, Q, Sum
+from django.db.models import Max, Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from app.models import ProveedorCRM, TodoItem
+from app.models import Cotizacion, DetalleCotizacion, ProveedorCRM, TodoItem
 from app.views_utils import is_supervisor
 from app.views_grupos import get_usuarios_visibles_ids
 
@@ -184,36 +188,94 @@ def _proveedor_full_dict(proveedor, request=None):
     }
 
 
-def _has_proveedor_field():
-    """¿Existe el M2M `proveedores` en TodoItem? Si no, los queries que
-    lo usan se cortocircuitan con queryset vacío para no romper."""
-    try:
-        TodoItem._meta.get_field('proveedores')
-        return True
-    except Exception:
-        return False
+# ─────────────────────────────────────────────────────────────────────
+# AGREGACIÓN desde DetalleCotizacion (regla "última cotización por opp")
+# ─────────────────────────────────────────────────────────────────────
 
-
-def _safe_opp_qs(user, anio, request, es_super, proveedor=None):
-    """Devuelve el queryset base de TodoItem filtrado por visibilidad,
-    año y vendedores. Si `proveedor` está dado, filtra opps que tengan
-    ese proveedor asignado (M2M). Si el M2M `proveedores` no existe en
-    TodoItem aún (antes de la migración 0182), retorna queryset vacío.
-    """
-    qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
-        anio_cierre=anio,
+def _ultimas_cotizaciones_ids(opp_qs):
+    """Lista de IDs de la última cotización (mayor id) por opp."""
+    return list(
+        Cotizacion.objects
+        .filter(oportunidad_id__in=opp_qs.values_list('id', flat=True))
+        .values('oportunidad_id')
+        .annotate(max_id=Max('id'))
+        .values_list('max_id', flat=True)
     )
-    qs = _aplicar_vendedores(qs, request, es_super)
-    if proveedor is not None:
-        if not _has_proveedor_field():
-            return TodoItem.objects.none()
-        try:
-            # .distinct() porque una opp con N proveedores aparece N veces
-            # en el JOIN del M2M; sin distinct duplica filas.
-            qs = qs.filter(proveedores__key__in=proveedor['match']).distinct()
-        except (FieldError, AttributeError):
-            return TodoItem.objects.none()
-    return qs
+
+
+def _subtotal_linea(detalle):
+    """cantidad * precio_unitario * (1 - descuento/100). Decimal."""
+    cant = Decimal(detalle.cantidad or 0)
+    precio = detalle.precio_unitario or Decimal('0')
+    desc = detalle.descuento_porcentaje or Decimal('0')
+    return cant * precio * (Decimal('1') - desc / Decimal('100'))
+
+
+def _agregar_por_proveedor(ultimas_cot_ids):
+    """Itera líneas de las últimas cotizaciones y agrega por
+    DetalleCotizacion.proveedor. Devuelve dict
+    {key_proveedor: {facturado, pipeline, ops_count, cotizaciones}}.
+    """
+    qs = (
+        DetalleCotizacion.objects
+        .filter(cotizacion_id__in=ultimas_cot_ids, proveedor__isnull=False)
+        .select_related('cotizacion__oportunidad', 'proveedor')
+    )
+    por_prov = defaultdict(lambda: {
+        'facturado': Decimal('0'),
+        'pipeline': Decimal('0'),
+        'opps': set(),
+        'cots': set(),
+    })
+    for d in qs:
+        cot = d.cotizacion
+        opp = cot.oportunidad if cot is not None else None
+        if opp is None or d.proveedor is None:
+            continue
+        if (d.tipo or 'producto') != 'producto':
+            continue
+        sub = _subtotal_linea(d)
+        key = d.proveedor.key
+        if opp.monto_facturacion and opp.monto_facturacion > 0:
+            por_prov[key]['facturado'] += sub
+        else:
+            por_prov[key]['pipeline'] += sub
+        por_prov[key]['opps'].add(opp.id)
+        por_prov[key]['cots'].add(cot.id)
+    return {
+        k: {
+            'facturado':   v['facturado'],
+            'pipeline':    v['pipeline'],
+            'ops_count':   len(v['opps']),
+            'cotizaciones': len(v['cots']),
+        }
+        for k, v in por_prov.items()
+    }
+
+
+def _opps_de_proveedor(ultimas_cot_ids, proveedor_key):
+    """{opp_id: {opp, monto_prov}} donde monto_prov = suma de
+    subtotales de las líneas del proveedor en la última cotización."""
+    qs = (
+        DetalleCotizacion.objects
+        .filter(
+            cotizacion_id__in=ultimas_cot_ids,
+            proveedor__key=proveedor_key,
+        )
+        .select_related('cotizacion__oportunidad__cliente')
+    )
+    out = {}
+    for d in qs:
+        cot = d.cotizacion
+        opp = cot.oportunidad if cot is not None else None
+        if opp is None:
+            continue
+        if (d.tipo or 'producto') != 'producto':
+            continue
+        sub = _subtotal_linea(d)
+        rec = out.setdefault(opp.id, {'opp': opp, 'monto_prov': Decimal('0')})
+        rec['monto_prov'] += sub
+    return out
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -235,61 +297,25 @@ def api_proveedores_resumen(request):
                     key, label, cat, descripcion, logo_url,
                     contactos: {principal, ventas, soporte},
                     meta_anual, estrategia,
-                    facturado, pipeline, ops_count,
+                    facturado, pipeline, ops_count, cotizaciones,
                     meta, avance, gap,
                 }, ...
             ],
-            totals: { facturado, pipeline, meta, gap }
+            totals: { facturado, pipeline, cotizaciones, meta, gap }
         }
-
-    Mientras la migración 0182 (M2M `TodoItem.proveedores`) no se haya
-    aplicado, facturado/pipeline/ops quedan en 0.
     """
     try:
         user = request.user
         anio = _parse_anio(request)
         es_super = is_supervisor(user)
         catalogo = _get_proveedores_catalogo()
-        key_idx = _build_key_index(catalogo)
 
-        # Agregaciones por proveedor (vacío si el campo no existe).
-        por_prov = defaultdict(lambda: {
-            'facturado': Decimal('0'),
-            'pipeline': Decimal('0'),
-            'ops_count': 0,
-        })
-
-        if _has_proveedor_field():
-            try:
-                opp_qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
-                    anio_cierre=anio,
-                ).filter(proveedores__isnull=False)
-                opp_qs = _aplicar_vendedores(opp_qs, request, es_super)
-                # Agrupar por key del proveedor relacionado vía M2M. Como
-                # cada opp puede tener N proveedores, los Sum/Count cuentan
-                # 1 vez por (opp, proveedor) — que es CORRECTO: cada
-                # proveedor "gana" el crédito de esa opp en su columna.
-                agg = (
-                    opp_qs.values('proveedores__key')
-                    .annotate(
-                        fact_sum=Sum('monto_facturacion'),
-                        pipe_sum=Sum('monto'),
-                        ops_count=Count('id', distinct=True),
-                    )
-                )
-                for r in agg:
-                    key_raw = r['proveedores__key']
-                    if not key_raw:
-                        continue
-                    # La key del M2M ya es la canónica de ProveedorCRM, no
-                    # necesita normalización (no hay aliases históricos
-                    # como en Marcas).
-                    key = key_raw
-                    por_prov[key]['facturado'] += (r['fact_sum'] or Decimal('0'))
-                    por_prov[key]['pipeline']  += (r['pipe_sum'] or Decimal('0'))
-                    por_prov[key]['ops_count'] += int(r['ops_count'] or 0)
-            except (FieldError, AttributeError):
-                logger.exception('proveedores: M2M proveedores existe pero falla la query')
+        opp_qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
+            anio_cierre=anio,
+        )
+        opp_qs = _aplicar_vendedores(opp_qs, request, es_super)
+        ultimas_cot_ids = _ultimas_cotizaciones_ids(opp_qs)
+        por_prov = _agregar_por_proveedor(ultimas_cot_ids)
 
         proveedores_out = []
         for p in catalogo:
@@ -297,6 +323,7 @@ def api_proveedores_resumen(request):
             facturado = float(d.get('facturado') or 0)
             pipeline  = float(d.get('pipeline') or 0)
             ops_count = int(d.get('ops_count') or 0)
+            cotizaciones = int(d.get('cotizaciones') or 0)
             obj = p['_obj']
             meta = float(obj.meta_anual or 0)
             avance = (facturado / meta) if meta else 0
@@ -313,7 +340,7 @@ def api_proveedores_resumen(request):
                 'facturado': facturado,
                 'pipeline': pipeline,
                 'ops_count': ops_count,
-                'cotizaciones': 0,
+                'cotizaciones': cotizaciones,
                 'campanias': 0,
                 'meta': meta,
                 'avance': avance,
@@ -323,7 +350,7 @@ def api_proveedores_resumen(request):
         totals = {
             'facturado': sum(x['facturado'] for x in proveedores_out),
             'pipeline': sum(x['pipeline'] for x in proveedores_out),
-            'cotizaciones': 0,
+            'cotizaciones': sum(x['cotizaciones'] for x in proveedores_out),
             'campanias': 0,
             'meta': sum(x['meta'] for x in proveedores_out),
         }
@@ -346,8 +373,9 @@ def api_proveedores_resumen(request):
 def api_proveedor_detalle(request, proveedor_key):
     """Detalle: KPIs + oportunidades + metadata rica del proveedor.
 
-    Si el M2M `proveedores` no existe aún en TodoItem, devuelve
-    ops=[] y facturado=0.
+    Las ops listadas son las cuya última cotización tiene al menos
+    una línea con `proveedor` = este. El "monto" mostrado por opp
+    es lo que aporta ESTE proveedor (subtotales de sus líneas).
     """
     try:
         user = request.user
@@ -361,32 +389,35 @@ def api_proveedor_detalle(request, proveedor_key):
             return JsonResponse({'ok': False, 'error': 'Proveedor no encontrado'}, status=404)
         obj = proveedor['_obj']
 
+        opp_qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
+            anio_cierre=anio,
+        )
+        opp_qs = _aplicar_vendedores(opp_qs, request, es_super)
+        ultimas_cot_ids = _ultimas_cotizaciones_ids(opp_qs)
+        opps_prov = _opps_de_proveedor(ultimas_cot_ids, proveedor['key'])
+
         ops = []
         facturado = Decimal('0')
         pipeline  = Decimal('0')
-
-        if _has_proveedor_field():
-            try:
-                opp_qs = _safe_opp_qs(user, anio, request, es_super, proveedor=proveedor)
-                opp_qs = opp_qs.select_related('cliente')
-                for o in opp_qs:
-                    mes = int(o.mes_cierre) if o.mes_cierre else 0
-                    monto = float(o.monto or 0)
-                    prob = int(o.probabilidad_cierre or 0)
-                    ops.append({
-                        'id': o.id,
-                        'cliente': (o.cliente.nombre_empresa if o.cliente_id else ''),
-                        'oportunidad': o.oportunidad or '',
-                        'monto': monto,
-                        'mes': mes,
-                        'prob': prob,
-                        'etapa': o.etapa_corta or '',
-                        'po': (o.po_number or '').strip(),
-                    })
-                    facturado += (o.monto_facturacion or Decimal('0'))
-                    pipeline += (o.monto or Decimal('0'))
-            except (FieldError, AttributeError):
-                logger.exception('proveedor_detalle: query con campo proveedor falló')
+        for rec in opps_prov.values():
+            o = rec['opp']
+            monto_prov = rec['monto_prov']
+            mes = int(o.mes_cierre) if o.mes_cierre else 0
+            prob = int(o.probabilidad_cierre or 0)
+            ops.append({
+                'id': o.id,
+                'cliente': (o.cliente.nombre_empresa if o.cliente_id else ''),
+                'oportunidad': o.oportunidad or '',
+                'monto': float(monto_prov),
+                'mes': mes,
+                'prob': prob,
+                'etapa': o.etapa_corta or '',
+                'po': (o.po_number or '').strip(),
+            })
+            if o.monto_facturacion and o.monto_facturacion > 0:
+                facturado += monto_prov
+            else:
+                pipeline += monto_prov
 
         meta = float(obj.meta_anual or 0)
         avance = (float(facturado) / meta) if meta else 0
@@ -407,7 +438,7 @@ def api_proveedor_detalle(request, proveedor_key):
                 'facturado': float(facturado),
                 'pipeline': float(pipeline),
                 'ops_count': len(ops),
-                'cotizaciones': 0,
+                'cotizaciones': len(ops),
                 'campanias': 0,
                 'meta': meta,
                 'avance': avance,

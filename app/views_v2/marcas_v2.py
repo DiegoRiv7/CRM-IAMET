@@ -27,12 +27,12 @@ from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Max, Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from app.models import Campana, Cotizacion, MarcaCRM, TodoItem
+from app.models import Campana, Cotizacion, DetalleCotizacion, MarcaCRM, TodoItem
 from app.views_utils import is_supervisor
 from app.views_grupos import get_usuarios_visibles_ids
 
@@ -184,6 +184,117 @@ def _marca_full_dict(marca, request=None):
 
 
 # ─────────────────────────────────────────────────────────────────────
+# AGREGACIÓN desde DetalleCotizacion (regla "última cotización por opp")
+# ─────────────────────────────────────────────────────────────────────
+#
+# Reglas definidas con el usuario (junio 2026):
+#   1. SOLO la última cotización (id más alto) de cada opp cuenta para
+#      los reportes — al crear una nueva, la anterior queda obsoleta.
+#   2. Los montos por marca/proveedor se calculan por LÍNEA, no a
+#      partir de TodoItem.monto: una opp con líneas Zebra $300 +
+#      Panduit $200 contribuye $300 a Zebra y $200 a Panduit.
+#   3. Opps sin cotización NO aparecen en los dashboards (aunque
+#      tengan una marca/proveedor histórico en otro campo).
+#   4. Una línea cuenta como "facturado" si su opp tiene
+#      `monto_facturacion > 0`, sino cuenta como "pipeline".
+
+def _ultimas_cotizaciones_ids(opp_qs):
+    """Devuelve la lista de IDs de la última cotización (mayor id) por
+    cada opp del queryset dado. Opps sin cotización quedan fuera.
+    """
+    return list(
+        Cotizacion.objects
+        .filter(oportunidad_id__in=opp_qs.values_list('id', flat=True))
+        .values('oportunidad_id')
+        .annotate(max_id=Max('id'))
+        .values_list('max_id', flat=True)
+    )
+
+
+def _subtotal_linea(detalle):
+    """Subtotal de una línea (sin IVA): cantidad * precio_unitario *
+    (1 - descuento/100). Cualquier valor None se trata como 0/1.
+    """
+    cant = Decimal(detalle.cantidad or 0)
+    precio = detalle.precio_unitario or Decimal('0')
+    desc = detalle.descuento_porcentaje or Decimal('0')
+    return cant * precio * (Decimal('1') - desc / Decimal('100'))
+
+
+def _agregar_por_marca(ultimas_cot_ids):
+    """Itera las líneas (tipo=producto) de las últimas cotizaciones y
+    agrega por marca_crm. Devuelve dict
+    {key_marca: {facturado, pipeline, ops_count, cotizaciones}}.
+
+    Si una opp tiene varias líneas con la misma marca, todas suman;
+    pero la opp se cuenta UNA vez en ops_count y la cotización UNA vez
+    en cotizaciones.
+    """
+    qs = (
+        DetalleCotizacion.objects
+        .filter(cotizacion_id__in=ultimas_cot_ids, marca_crm__isnull=False)
+        .select_related('cotizacion__oportunidad', 'marca_crm')
+    )
+    por_marca = defaultdict(lambda: {
+        'facturado': Decimal('0'),
+        'pipeline': Decimal('0'),
+        'opps': set(),
+        'cots': set(),
+    })
+    for d in qs:
+        cot = d.cotizacion
+        opp = cot.oportunidad if cot is not None else None
+        if opp is None or d.marca_crm is None:
+            continue
+        if (d.tipo or 'producto') != 'producto':
+            continue  # los títulos no suman
+        sub = _subtotal_linea(d)
+        key = d.marca_crm.key
+        if opp.monto_facturacion and opp.monto_facturacion > 0:
+            por_marca[key]['facturado'] += sub
+        else:
+            por_marca[key]['pipeline'] += sub
+        por_marca[key]['opps'].add(opp.id)
+        por_marca[key]['cots'].add(cot.id)
+    return {
+        k: {
+            'facturado': v['facturado'],
+            'pipeline':  v['pipeline'],
+            'ops_count': len(v['opps']),
+            'cotizaciones': len(v['cots']),
+        }
+        for k, v in por_marca.items()
+    }
+
+
+def _opps_de_marca(ultimas_cot_ids, marca_key):
+    """Devuelve dict {opp_id: {monto_marca, opp_obj}} para una marca
+    dada. monto_marca = suma de subtotales de las líneas de esa marca
+    en la última cotización de la opp.
+    """
+    qs = (
+        DetalleCotizacion.objects
+        .filter(
+            cotizacion_id__in=ultimas_cot_ids,
+            marca_crm__key=marca_key,
+        )
+        .select_related('cotizacion__oportunidad__cliente')
+    )
+    out = {}
+    for d in qs:
+        cot = d.cotizacion
+        opp = cot.oportunidad if cot is not None else None
+        if opp is None:
+            continue
+        if (d.tipo or 'producto') != 'producto':
+            continue
+        sub = _subtotal_linea(d)
+        rec = out.setdefault(opp.id, {'opp': opp, 'monto_marca': Decimal('0')})
+        rec['monto_marca'] += sub
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────
 # READ — Resumen y detalle (públicos a cualquier login)
 # ─────────────────────────────────────────────────────────────────────
 
@@ -222,40 +333,15 @@ def api_marcas_resumen(request):
         )
         opp_qs = _aplicar_vendedores(opp_qs, request, es_super)
 
-        agg = (
-            opp_qs.values('producto')
-            .annotate(
-                fact_sum=Sum('monto_facturacion'),
-                pipe_sum=Sum('monto'),
-                ops_count=Count('id'),
-            )
-        )
-        por_marca = defaultdict(lambda: {
-            'facturado': Decimal('0'),
-            'pipeline': Decimal('0'),
-            'ops_count': 0,
-        })
-        for r in agg:
-            key = _normalizar_marca_with_idx(r['producto'], key_idx)
-            if not key:
-                continue
-            por_marca[key]['facturado'] += (r['fact_sum'] or Decimal('0'))
-            por_marca[key]['pipeline']  += (r['pipe_sum'] or Decimal('0'))
-            por_marca[key]['ops_count'] += int(r['ops_count'] or 0)
+        # Agregación desde líneas de la ÚLTIMA cotización por opp.
+        # Opps sin cotización quedan fuera por construcción del
+        # subquery de ultimas_cot_ids.
+        ultimas_cot_ids = _ultimas_cotizaciones_ids(opp_qs)
+        por_marca = _agregar_por_marca(ultimas_cot_ids)
 
-        # Cotizaciones por marca
-        cot_counts = defaultdict(int)
-        cot_qs = (
-            Cotizacion.objects
-            .select_related('oportunidad')
-            .filter(oportunidad__in=opp_qs)
-        )
-        for c in cot_qs.values('oportunidad__producto').annotate(n=Count('id')):
-            key = _normalizar_marca_with_idx(c['oportunidad__producto'], key_idx)
-            if key:
-                cot_counts[key] += int(c['n'] or 0)
-
-        # Campañas por marca
+        # Campañas por marca (sigue agrupando por CharField `producto`
+        # del modelo Campana — la regla de "última cotización" no
+        # aplica aquí porque las campañas no son cotizaciones).
         cam_counts = defaultdict(int)
         try:
             cam_qs = Campana.objects.filter(
@@ -277,7 +363,7 @@ def api_marcas_resumen(request):
             facturado = float(d.get('facturado') or 0)
             pipeline  = float(d.get('pipeline') or 0)
             ops_count = int(d.get('ops_count') or 0)
-            cotizaciones = int(cot_counts.get(m['key'], 0))
+            cotizaciones = int(d.get('cotizaciones') or 0)
             campanias    = int(cam_counts.get(m['key'], 0))
             obj = m['_obj']
             meta = float(obj.meta_anual or 0)
@@ -339,37 +425,45 @@ def api_marca_detalle(request, marca_key):
             return JsonResponse({'ok': False, 'error': 'Marca no encontrada'}, status=404)
         obj = marca['_obj']
 
+        # Universo de opps: las del año, visibles para el user, con
+        # cotización. Las opps que aparecen son SOLO aquellas cuya
+        # última cotización tiene al menos una línea con esta marca.
         opp_qs = TodoItem.objects.filter(_filtros_visibilidad(user)).filter(
             anio_cierre=anio,
-            producto__in=marca['match'],
-        ).select_related('cliente')
+        )
         opp_qs = _aplicar_vendedores(opp_qs, request, es_super)
+        ultimas_cot_ids = _ultimas_cotizaciones_ids(opp_qs)
+        opps_marca = _opps_de_marca(ultimas_cot_ids, marca['key'])
 
         ops = []
         facturado = Decimal('0')
         pipeline  = Decimal('0')
-        for o in opp_qs:
+        for rec in opps_marca.values():
+            o = rec['opp']
+            monto_marca = rec['monto_marca']
             mes = int(o.mes_cierre) if o.mes_cierre else 0
-            monto = float(o.monto or 0)
             prob = int(o.probabilidad_cierre or 0)
             ops.append({
                 'id': o.id,
                 'cliente': (o.cliente.nombre_empresa if o.cliente_id else ''),
                 'oportunidad': o.oportunidad or '',
-                'monto': monto,
+                # En el detalle, "monto" es lo que aporta ESTA marca
+                # a la opp (suma de subtotales de sus líneas), no el
+                # monto total del TodoItem.
+                'monto': float(monto_marca),
                 'mes': mes,
                 'prob': prob,
                 'etapa': o.etapa_corta or '',
                 'po': (o.po_number or '').strip(),
             })
-            facturado += (o.monto_facturacion or Decimal('0'))
-            pipeline += (o.monto or Decimal('0'))
+            if o.monto_facturacion and o.monto_facturacion > 0:
+                facturado += monto_marca
+            else:
+                pipeline += monto_marca
 
-        cot_count = (
-            Cotizacion.objects
-            .filter(oportunidad__in=opp_qs)
-            .count()
-        )
+        # Cada opp tiene exactamente UNA última cotización; el contador
+        # de "cotizaciones" en el detalle de una marca == ops_count.
+        cot_count = len(ops)
         cam_count = 0
         try:
             cam_qs = Campana.objects.filter(
@@ -701,4 +795,73 @@ def api_marca_eliminar(request, marca_key):
         return JsonResponse({'ok': True})
     except Exception as e:
         logger.exception('api_marca_eliminar failed')
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_marca_quick_create(request):
+    """Crea una MarcaCRM mínima a partir de un nombre escrito por el
+    usuario (típicamente desde el dropdown del formulario de cotización).
+    Mismo patrón que api_proveedor_quick_create en proveedores_v2.py.
+
+    Reglas:
+      * Si ya existe una marca con el mismo nombre case-insensitive →
+        la retorna sin crear duplicado (`ya_existia: true`).
+      * Si no existe → la crea con `key` autogenerada vía
+        `_normalizar_key` sobre el nombre, y `activa=True`.
+      * Cualquier usuario autenticado puede invocarlo (no restringido a
+        supervisor) — el caso de uso es agregar marcas sobre la marcha
+        mientras se llena una cotización sin bloquear al vendedor.
+
+    Body: JSON {nombre: "X"} o form-encoded nombre=X.
+    Response 200/201: {ok: true, id, key, nombre, ya_existia: bool}
+    """
+    try:
+        data = _read_body(request)
+        nombre = (data.get('nombre') or '').strip()
+        if not nombre:
+            return JsonResponse(
+                {'ok': False, 'error': 'El nombre es requerido.'}, status=400,
+            )
+        nombre = nombre[:80]
+
+        existente = MarcaCRM.objects.filter(nombre__iexact=nombre).first()
+        if existente is not None:
+            return JsonResponse({
+                'ok': True,
+                'id': existente.id,
+                'key': existente.key,
+                'nombre': existente.nombre,
+                'ya_existia': True,
+            })
+
+        base_key = _normalizar_key(nombre)
+        if not base_key:
+            return JsonResponse(
+                {'ok': False, 'error': 'No se pudo generar key a partir del nombre.'},
+                status=400,
+            )
+        key = base_key
+        sufijo = 2
+        while MarcaCRM.objects.filter(key=key).exists():
+            sufijo_str = f'_{sufijo}'
+            key = (base_key[:40 - len(sufijo_str)] + sufijo_str)
+            sufijo += 1
+            if sufijo > 100:
+                return JsonResponse(
+                    {'ok': False, 'error': 'No se pudo generar key única.'},
+                    status=500,
+                )
+
+        marca = MarcaCRM.objects.create(key=key, nombre=nombre, activa=True)
+        return JsonResponse({
+            'ok': True,
+            'id': marca.id,
+            'key': marca.key,
+            'nombre': marca.nombre,
+            'ya_existia': False,
+        }, status=201)
+    except Exception as e:
+        logger.exception('api_marca_quick_create failed')
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)

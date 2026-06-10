@@ -923,6 +923,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                                 </th>
                                 <th class="w-1/8">Total</th>
                                 {# Columnas internas: fondo amarillo para señalar que NO van en el PDF. #}
+                                <th class="internal-col">Marca</th>
                                 <th class="internal-col">Proveedor</th>
                                 <th class="internal-col">Costo Unit.</th>
                                 <th class="w-8"></th>
@@ -958,6 +959,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
 
             {# Datalist global para autocomplete de Proveedor por fila. Se puebla via fetch a /app/api/proveedores/resumen/. Nombres libres también son válidos — el backend los crea. #}
             <datalist id="proveedores-datalist"></datalist>
+            <datalist id="marcas-datalist"></datalist>
 
             <div class="card p-6 mt-8 shadow-md-dark">
                 <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">Resumen de la Cotización</h2>
@@ -1198,10 +1200,13 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         }
 
         // Function to add a new product row to the main table.
-        // Parámetros extra (proveedor, costo) son opcionales para preservar
-        // compatibilidad con call sites que no los pasan; el modo edición y
-        // el paste de Excel pueden alimentarlos cuando estén disponibles.
-        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0, nombre_producto = '', proveedor = '', costo = 0) {
+        // Parámetros internos (proveedor, costo, marcaCrm) son opcionales para
+        // preservar compatibilidad con call sites que no los pasan. El modo
+        // edición y el paste de Excel pueden alimentarlos cuando estén
+        // disponibles. `marca` (1er parámetro) es el CharField legacy que aún
+        // se incluye hidden y va al PDF; `marcaCrm` (último) es la marca
+        // canónica del catálogo para reportes — convive con marca legacy.
+        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0, nombre_producto = '', proveedor = '', costo = 0, marcaCrm = '') {
             const tbody = document.getElementById('productos-tbody');
             const newRowNumber = tbody.rows.length + 1;
             const rowId = `row-${newRowNumber}`;
@@ -1224,6 +1229,9 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals(); hideValidationError()"></td>
                 <td class="descuento-cell"><input type="number" id="descuento_${newRowNumber}" name="productos[${newRowNumber}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
                 <td><input type="text" id="total_producto_${newRowNumber}" class="input-field bg-gray-800" style="font-size:1.2rem; font-weight:600; width:130px; min-width:100px; text-align:right;" value="0.00" readonly></td>
+                <td class="internal-cell">
+                    <input type="text" list="marcas-datalist" id="marca_crm_${newRowNumber}" name="productos[${newRowNumber}][marca_crm]" class="input-field internal-input" placeholder="Escribe o elige…" value="${marcaCrm || ''}" autocomplete="off">
+                </td>
                 <td class="internal-cell">
                     <input type="text" list="proveedores-datalist" id="proveedor_${newRowNumber}" name="productos[${newRowNumber}][proveedor]" class="input-field internal-input" placeholder="Escribe o elige…" value="${proveedor || ''}" autocomplete="off">
                 </td>
@@ -1861,11 +1869,43 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             });
         }
 
+        // Cargar catálogo de marcas activas en cache global, para que el
+        // <datalist> del campo Marca en cada fila tenga sugerencias. Mismo
+        // patrón que loadProveedoresCatalogo: fetch a /app/api/marcas/resumen/.
+        // Nombres libres también son válidos — el backend los crea si no existen.
+        window._MARCAS_CACHE = [];
+        function loadMarcasCatalogo() {
+            return fetch('/app/api/marcas/resumen/', { credentials: 'same-origin' })
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(data => {
+                    if (data && data.ok && Array.isArray(data.marcas)) {
+                        window._MARCAS_CACHE = data.marcas;
+                        populateMarcasDatalist();
+                    }
+                })
+                .catch(err => {
+                    console.warn('No se pudo cargar catálogo de marcas:', err);
+                });
+        }
+
+        function populateMarcasDatalist() {
+            const dl = document.getElementById('marcas-datalist');
+            if (!dl) return;
+            dl.innerHTML = '';
+            (window._MARCAS_CACHE || []).forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.label || m.key;
+                if (m.cat) opt.label = m.cat;
+                dl.appendChild(opt);
+            });
+        }
+
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             populateClientSelect(); // Populate client dropdown on page load
             fetchOportunidadesForClient(); // Load recent opportunities on page load
             loadProveedoresCatalogo(); // Cargar proveedores para el datalist del campo proveedor
+            loadMarcasCatalogo(); // Cargar marcas para el datalist del campo marca
             
             // Add drag handles to any existing rows first
             setTimeout(() => {

@@ -496,6 +496,8 @@ urlpatterns = [
     # CRUD del catálogo (solo supervisores). Las rutas concretas van antes
     # del catch-all <str:marca_key>/ para que no las capture.
     path('api/marcas/crear/', views_v2_marcas.api_marca_crear, name='api_marca_crear'),
+    # Quick-create: cualquier login. Crea marca mínima desde nombre (form cotización).
+    path('api/marcas/quick-create/', views_v2_marcas.api_marca_quick_create, name='api_marca_quick_create'),
     path('api/marcas/<str:marca_key>/edit/', views_v2_marcas.api_marca_edit, name='api_marca_edit'),
     path('api/marcas/<str:marca_key>/actualizar/', views_v2_marcas.api_marca_actualizar, name='api_marca_actualizar'),
     path('api/marcas/<str:marca_key>/eliminar/', views_v2_marcas.api_marca_eliminar, name='api_marca_eliminar'),
