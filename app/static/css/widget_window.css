@@ -444,33 +444,6 @@ body.ww-mission-control [data-action] {
     background: #E8E8ED;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Widgets satélite EMBEBIDOS en la ventana de oportunidad
-   Cuando la opp está en modo ventana flotante, sus sub-modales (Drive,
-   Conversación, Actividad, Tareas, etc.) se posicionan dentro del rect
-   de la opp en lugar de cubrir todo el viewport. El JS los reposiciona
-   en cada drag/resize de la opp via applyRect → scheduleSatelliteRefresh.
-   ═══════════════════════════════════════════════════════════════════ */
-.widget-overlay.ww-embedded-opp {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    pointer-events: none;       /* clicks fuera de la card → pasan */
-    animation: none !important;
-}
-
-.widget-overlay.ww-embedded-opp > * {
-    pointer-events: auto;        /* la card sí captura clicks */
-}
-
-.widget-overlay.ww-embedded-opp .widget-card,
-.widget-overlay.ww-embedded-opp .ww-card,
-.widget-overlay.ww-embedded-opp .wco-card {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20),
-                0 0 0 1px rgba(0, 0, 0, 0.07);
-    animation: none !important;
-}
-
 /* En modo ventana la franja superior funciona como barra de título */
 .widget-overlay.ww-windowed .ww-card .wo-header {
     cursor: grab;

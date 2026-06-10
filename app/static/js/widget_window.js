@@ -162,27 +162,6 @@
         overlay.style.setProperty('--ww-w', r.w + 'px');
         overlay.style.setProperty('--ww-h', r.h + 'px');
         st(overlay).rect = r;
-        // Si esta opp tiene satélites EMBEBIDOS, reposicionarlos al
-        // nuevo rect — solo eso (no cambia hosts, no re-embebe).
-        repositionSatellitesOf(overlay);
-    }
-
-    function repositionSatellitesOf(opp) {
-        var oppCard = getCard(opp);
-        if (!oppCard) return;
-        var rect = oppCard.getBoundingClientRect();
-        OPP_SATELLITE_IDS.forEach(function (id) {
-            var sat = document.getElementById(id);
-            if (!sat) return;
-            if (sat._wwOppHost !== opp) return;
-            if (!isVisible(sat)) return;
-            var satCard = getSatelliteCard(sat);
-            if (!satCard) return;
-            satCard.style.left = rect.left + 'px';
-            satCard.style.top = rect.top + 'px';
-            satCard.style.width = rect.width + 'px';
-            satCard.style.height = rect.height + 'px';
-        });
     }
 
     function snapToEdges(r) {
@@ -260,16 +239,6 @@
         if (top.length && top[top.length - 1] === overlay) return;  // ya está al frente
         ws.remove(overlay);
         ws.push(overlay);
-        // Si esta opp tiene satélites embebidos a ella, traerlos
-        // también al frente — sino quedaban tapados por otras opps
-        // cuyo z-index era mayor en el stack.
-        OPP_SATELLITE_IDS.forEach(function (id) {
-            var sat = document.getElementById(id);
-            if (sat && sat._wwOppHost === overlay && isVisible(sat)) {
-                ws.remove(sat);
-                ws.push(sat);
-            }
-        });
         // SÍNCRONO aquí: si esperamos al RAF, hay 1 frame donde la
         // ventana nueva está visible sin .ww-focused y se ve oscura.
         _doRefreshFocus();
@@ -320,304 +289,6 @@
         // que el tracking JS es la garantía de que el velo oscuro del
         // fondo aparece/desaparece correctamente.
         document.body.classList.toggle('ww-has-windows', candidates.length > 0);
-        // NO llamar scheduleSatelliteRefresh aquí — eso disparaba
-        // reembeds en cascada al cambiar de foco entre opps cuando
-        // había un satélite abierto, rompiendo el layout. Si el host
-        // de un satélite se cierra/des-windowiza, lo maneja
-        // watchVisibility con closeSatellitesOfOpp.
-    }
-
-    /* ── Widgets satélite "embebidos" en la opp activa ────────────
-       Drive, Conversación, Crear/Ver Actividad, Todas las Tareas y
-       otros sub-modales abiertos DESDE el widget de oportunidad se
-       posicionan dentro del rect de la opp focused windowed — así no
-       invaden el viewport global ni tapan otras ventanas.
-
-       Si NO hay opp en modo ventana, conservan su comportamiento
-       modal original (cubren todo el viewport). El cotizador NO está
-       en esta lista a propósito: ya es ventana propia instanciada. */
-
-    var OPP_SATELLITE_IDS = [
-        'widgetOppDrive',
-        'widgetOppConversacion',
-        'widgetOppCrearActividad',
-        'widgetOppVerActividad',
-        'widgetTodasTareas',
-        'widgetOppDialog',
-        'widgetConfirmTipo',
-        'crmCreateTaskModal',
-        'widgetSubirFactura',
-        'widgetContacto',
-    ];
-    var OPP_SATELLITE_SET = {};
-    OPP_SATELLITE_IDS.forEach(function (id) { OPP_SATELLITE_SET[id] = true; });
-
-    function getActiveOppOverlay() {
-        // 1) Opp v2 focused windowed
-        var f = document.querySelector(
-            '.widget-overlay.opp-v2.ww-windowed.ww-focused:not(.ww-minimized)'
-        );
-        if (f && isVisible(f)) return f;
-        // 2) Cualquier opp v2 windowed visible (la más reciente del stack)
-        var ws = window.crmWidgetStack;
-        if (ws) {
-            var stack = ws.get();
-            for (var i = stack.length - 1; i >= 0; i--) {
-                var el = stack[i];
-                if (el && el.classList && el.classList.contains('opp-v2') &&
-                    el.classList.contains('ww-windowed') &&
-                    !el.classList.contains('ww-minimized') && isVisible(el)) {
-                    return el;
-                }
-            }
-        }
-        // 3) Legacy widgetDetalle windowed (por si vuelve a usarse)
-        var legacy = document.getElementById('widgetDetalle');
-        if (legacy && legacy.classList.contains('ww-windowed') &&
-            !legacy.classList.contains('ww-minimized') && isVisible(legacy)) {
-            return legacy;
-        }
-        return null;
-    }
-
-    function getSatelliteCard(satellite) {
-        return satellite.querySelector('.widget-card, .ww-card, .wco-card');
-    }
-
-    var EMBED_PROPS = ['position', 'left', 'top', 'width', 'height',
-        'maxWidth', 'maxHeight', 'margin', 'borderRadius'];
-
-    function embedSatelliteToOpp(satellite, opp) {
-        var oppCard = getCard(opp);
-        if (!oppCard) return;
-        var satCard = getSatelliteCard(satellite);
-        if (!satCard) return;
-        // Si ya está embebido en OTRA opp, desembeber primero para
-        // restaurar styles originales — sino el snapshot que se toma
-        // abajo guardaría el ESTADO ACTUAL embebido (con position:fixed
-        // y coords de la opp vieja) en lugar de los styles del template,
-        // y un unembed posterior dejaría el satélite corrupto.
-        if (satellite._wwOppHost && satellite._wwOppHost !== opp) {
-            unembedSatellite(satellite);
-        }
-        var rect = oppCard.getBoundingClientRect();
-        satellite.classList.add('ww-embedded-opp');
-        // Asociar al satélite la opp host para que onPointerDown sepa
-        // que drag/resize en el satélite deben aplicarse a la opp.
-        satellite._wwOppHost = opp;
-        // Snapshot de los styles ORIGINALES del template para poder
-        // restaurarlos limpio al desembebter. Sin esto, el unembed
-        // mataba estilos legítimos como el width:850px del drive y
-        // la card quedaba sin dimensiones (drive invisible en modal).
-        if (!satCard._wwOriginalStyles) {
-            satCard._wwOriginalStyles = {};
-            EMBED_PROPS.forEach(function (p) {
-                satCard._wwOriginalStyles[p] = satCard.style.getPropertyValue(p);
-            });
-        }
-        satCard.style.position = 'fixed';
-        satCard.style.left = rect.left + 'px';
-        satCard.style.top = rect.top + 'px';
-        satCard.style.width = rect.width + 'px';
-        satCard.style.height = rect.height + 'px';
-        satCard.style.maxWidth = 'none';
-        satCard.style.maxHeight = 'none';
-        satCard.style.margin = '0';
-        satCard.style.borderRadius = '16px';
-        // La card del satélite necesita .ww-card para que onPointerDown
-        // la reconozca como zona de drag/handles, y position:relative
-        // (que ww-card ya define) para anclar los handles. Como en este
-        // caso seteamos position:fixed inline, los handles absolutos se
-        // posicionan respecto al satCard mismo.
-        satCard.classList.add('ww-card');
-        injectHandles(satellite);
-        // Tras embed, traer el satélite al TOPE del stack para que
-        // quede visualmente ARRIBA de su nuevo host. Sin esto, si el
-        // host actual entró al stack DESPUÉS que el satélite (caso:
-        // drive abierto en opp A, luego user abre opp B y click drive
-        // desde B), el host nuevo tiene z-index mayor que el satélite
-        // y lo tapa. El usuario veía "se quita el drive" cuando en
-        // realidad solo quedaba detrás del nuevo host.
-        var ws = window.crmWidgetStack;
-        if (ws) {
-            ws.remove(satellite);
-            ws.push(satellite);
-        }
-    }
-
-    function unembedSatellite(satellite) {
-        if (!satellite.classList.contains('ww-embedded-opp')) return;
-        satellite.classList.remove('ww-embedded-opp');
-        satellite._wwOppHost = null;
-        ensureSatelliteIsClean(satellite);
-    }
-
-    // Restaura el satélite a estado "modal limpio": sin clases, handles
-    // ni styles inline residuales que mi código pudo haber inyectado.
-    // Crítico para el caso: el satélite se embebió ANTES con una opp en
-    // ventana, después se cerró todo, y ahora se abre con la opp en
-    // modal — sin esto, los handles y position:fixed con coords viejas
-    // hacían que el drive apareciera fuera del viewport ("se abre por
-    // detrás").
-    function ensureSatelliteIsClean(satellite) {
-        var satCard = getSatelliteCard(satellite);
-        // Si nunca fue embebido, no tocar NADA — la card mantiene sus
-        // styles originales del template (width:850px, height:80vh, etc.).
-        // Sin este guard, ensureSatelliteIsClean al primer open destruía
-        // las dimensiones del drive y lo dejaba colapsado/invisible.
-        if (!satCard || !satCard._wwOriginalStyles) return;
-        // Restaurar exactamente lo que tenía antes del embed.
-        var snap = satCard._wwOriginalStyles;
-        EMBED_PROPS.forEach(function (p) {
-            var orig = snap[p];
-            if (orig) satCard.style.setProperty(p, orig);
-            else satCard.style.removeProperty(p);
-        });
-        // transform/transition los limpiamos siempre porque solo los
-        // pone Mission Control y son temporales.
-        satCard.style.removeProperty('transform');
-        satCard.style.removeProperty('transition');
-        satCard._wwOriginalStyles = null;
-        satCard.classList.remove('ww-card');
-        satCard.querySelectorAll('.ww-handle').forEach(function (h) {
-            h.remove();
-        });
-        // NO tocar el z-index del overlay — widget_stack lo gestiona
-        // dinámicamente con !important.
-    }
-
-    var _embedRefreshScheduled = false;
-    function scheduleSatelliteRefresh() {
-        if (_embedRefreshScheduled) return;
-        _embedRefreshScheduled = true;
-        requestAnimationFrame(function () {
-            _embedRefreshScheduled = false;
-            refreshEmbeddedSatellites();
-        });
-    }
-
-    function refreshEmbeddedSatellites() {
-        OPP_SATELLITE_IDS.forEach(function (id) {
-            var sat = document.getElementById(id);
-            if (!sat) return;
-            if (!isVisible(sat)) {
-                if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
-                return;
-            }
-            // CRÍTICO: si el satélite ya tiene host, RESPETARLO. No
-            // re-embebter en la opp focused — eso causaba que al abrir
-            // una 2ª opp en ventana, el drive cambiara de host y
-            // parpadeara entre las dos ventanas.
-            if (sat._wwOppHost) {
-                var host = sat._wwOppHost;
-                var hostOK = isVisible(host) &&
-                             host.classList.contains('ww-windowed') &&
-                             !host.classList.contains('ww-minimized');
-                if (hostOK) {
-                    // Host sigue vivo → solo reposicionar al rect actual.
-                    var oppCard = getCard(host);
-                    if (oppCard) {
-                        var rect = oppCard.getBoundingClientRect();
-                        var satCard = getSatelliteCard(sat);
-                        if (satCard) {
-                            satCard.style.left = rect.left + 'px';
-                            satCard.style.top = rect.top + 'px';
-                            satCard.style.width = rect.width + 'px';
-                            satCard.style.height = rect.height + 'px';
-                        }
-                    }
-                } else {
-                    // Host se cerró o salió de modo ventana → liberar
-                    // el satélite (queda visible como widget independiente
-                    // sobre lo que sea esté abajo).
-                    unembedSatellite(sat);
-                }
-                return;
-            }
-            // El satélite NO tiene host aún (recién se abrió). Embebter
-            // SOLO si hay una opp activa en modo ventana.
-            var opp = getActiveOppOverlay();
-            if (opp) embedSatelliteToOpp(sat, opp);
-            else ensureSatelliteIsClean(sat);
-        });
-    }
-
-    // MutationObserver por satélite — SOLO maneja el cierre (limpia
-    // residuos del embed). La apertura/embed la maneja
-    // onSatelliteActionClick para evitar reembeds en cascada.
-    function watchSatellite(id) {
-        var el = document.getElementById(id);
-        if (!el || el._wwSatWatched) return;
-        el._wwSatWatched = true;
-        var lastVisible = isVisible(el);
-        var obs = new MutationObserver(function () {
-            var visible = isVisible(el);
-            if (visible === lastVisible) return;
-            lastVisible = visible;
-            if (!visible) {
-                if (el.classList.contains('ww-embedded-opp')) unembedSatellite(el);
-            }
-        });
-        obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
-    }
-
-    function setupAllSatelliteWatchers() {
-        OPP_SATELLITE_IDS.forEach(function (id) {
-            watchSatellite(id);
-            // Limpieza preventiva al inicializar: si la página cargó
-            // con un satélite ya residual (raro), arranca limpio.
-            var el = document.getElementById(id);
-            if (el && !el.classList.contains('ww-embedded-opp')) {
-                ensureSatelliteIsClean(el);
-            }
-        });
-    }
-
-    // Mapeo data-action → satellite ID, para detectar reapertura del
-    // mismo satélite desde otra opp y mudarlo de host sin romper la
-    // función legacy de apertura.
-    var SATELLITE_ACTION_MAP = {
-        'abrir-drive': 'widgetOppDrive',
-        'abrir-conversacion': 'widgetOppConversacion',
-    };
-
-    function onSatelliteActionClick(ev) {
-        var btn = ev.target.closest('[data-action]');
-        if (!btn) return;
-        var satId = SATELLITE_ACTION_MAP[btn.getAttribute('data-action')];
-        if (!satId) return;
-        // Dejamos que el handler legacy del v2 corra normal y abra el
-        // widget (display:flex). En el siguiente tick, evaluamos si
-        // necesita embeber/mudar host. SOLO actuamos si hay opp en
-        // ventana — sin opp ventana, no tocamos nada (el widget se ve
-        // como modal normal con su comportamiento original).
-        setTimeout(function () {
-            try {
-                var currentOpp = getActiveOppOverlay();
-                if (!currentOpp) return;  // sin opp ventana → no-op total
-                var sat = document.getElementById(satId);
-                if (!sat || !isVisible(sat)) return;
-                if (sat._wwOppHost === currentOpp) {
-                    // Ya embebido en la opp correcta → solo reposicionar.
-                    var oppCard = getCard(currentOpp);
-                    if (oppCard) {
-                        var r = oppCard.getBoundingClientRect();
-                        var sc = getSatelliteCard(sat);
-                        if (sc) {
-                            sc.style.left = r.left + 'px';
-                            sc.style.top = r.top + 'px';
-                            sc.style.width = r.width + 'px';
-                            sc.style.height = r.height + 'px';
-                        }
-                    }
-                    return;
-                }
-                // Cambio de host O primera vez con opp activa.
-                embedSatelliteToOpp(sat, currentOpp);
-            } catch (e) {
-                console.error('[wwSatellite] onSatelliteActionClick:', e);
-            }
-        }, 80);
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -930,20 +601,6 @@
             else                   tx = (vw - rect.left) + 40;
             card.style.transition = 'transform 0.36s ' + EASE;
             card.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
-            // Los satélites embebidos viajan junto con su opp host —
-            // sin esto, el satélite se quedaba flotando aunque la opp
-            // se había escondido. Aplicamos el mismo transform.
-            OPP_SATELLITE_IDS.forEach(function (id) {
-                var sat = document.getElementById(id);
-                if (!sat || !sat.classList.contains('ww-embedded-opp')) return;
-                if (sat._wwOppHost !== overlay) return;
-                if (!isVisible(sat)) return;
-                var satCard = getSatelliteCard(sat);
-                if (satCard) {
-                    satCard.style.transition = 'transform 0.36s ' + EASE;
-                    satCard.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
-                }
-            });
         });
         var dock = document.getElementById('wwDock');
         if (dock) {
@@ -975,22 +632,6 @@
             };
             card.addEventListener('transitionend', done);
             setTimeout(done, 440);
-        });
-        // Restaurar satélites embebidos junto con sus opps
-        OPP_SATELLITE_IDS.forEach(function (id) {
-            var sat = document.getElementById(id);
-            if (!sat || !sat.classList.contains('ww-embedded-opp')) return;
-            var satCard = getSatelliteCard(sat);
-            if (!satCard) return;
-            satCard.style.transition = 'transform 0.4s ' + EASE;
-            satCard.style.transform = '';
-            var doneSat = function () {
-                satCard.style.transition = '';
-                satCard.style.transform = '';
-                satCard.removeEventListener('transitionend', doneSat);
-            };
-            satCard.addEventListener('transitionend', doneSat);
-            setTimeout(doneSat, 440);
         });
         var dock = document.getElementById('wwDock');
         if (dock) {
@@ -1280,31 +921,23 @@
         var overlay = card.closest('.widget-overlay');
         if (!overlay) return;
 
-        // Si el card pertenece a un satélite embebido, redirigir drag
-        // y resize a la OPP HOST — visualmente el usuario interactúa
-        // con "la ventana" (no sabe que la opp está debajo del satélite).
-        var dragTarget = overlay;
-        if (overlay.classList.contains('ww-embedded-opp') && overlay._wwOppHost) {
-            dragTarget = overlay._wwOppHost;
-        }
-
-        if (dragTarget.classList.contains('ww-windowed')) bringToFront(dragTarget);
+        if (overlay.classList.contains('ww-windowed')) bringToFront(overlay);
 
         // 1) Esquinas/lados → resize (windowiza primero si está maximizado)
         var handle = ev.target.closest('.ww-handle');
         if (handle) {
-            if (!dragTarget.classList.contains('ww-windowed') && !windowize(dragTarget)) return;
-            startInteraction(dragTarget, handle.getAttribute('data-ww-dir'), ev,
+            if (!overlay.classList.contains('ww-windowed') && !windowize(overlay)) return;
+            startInteraction(overlay, handle.getAttribute('data-ww-dir'), ev,
                 HANDLE_CURSORS[handle.getAttribute('data-ww-dir')]);
             return;
         }
 
         // 2) Franja superior → mover (solo en modo ventana)
-        if (!dragTarget.classList.contains('ww-windowed')) return;
+        if (!overlay.classList.contains('ww-windowed')) return;
         if (ev.target.closest(INTERACTIVE)) return;
         var top = card.getBoundingClientRect().top;
         if (ev.clientY - top > DRAG_STRIP) return;
-        startInteraction(dragTarget, 'move', ev, 'grabbing');
+        startInteraction(overlay, 'move', ev, 'grabbing');
     }
 
     // Doble click en la barra de título: alternar ventana/maximizado.
@@ -1352,37 +985,14 @@
                 removeChip(overlay);
                 refreshFocusState();
             } else if (!visible && !s.minimized && s.windowed) {
-                // Cerrado en modo ventana → cerrar también satélites
-                // embebidos a esta opp (sino quedaban huérfanos en el
-                // viewport sin host). unwindowize ya llama refreshFocusState.
-                closeSatellitesOfOpp(overlay);
+                // Cerrado en modo ventana → unwindowize ya llama
+                // refreshFocusState internamente.
                 unwindowize(overlay);
-            } else if (!visible) {
-                // Se cerró por otra ruta (sin haber estado en ventana).
-                closeSatellitesOfOpp(overlay);
-                refreshFocusState();
             } else {
                 refreshFocusState();
             }
         });
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
-    }
-
-    function closeSatellitesOfOpp(opp) {
-        OPP_SATELLITE_IDS.forEach(function (id) {
-            var sat = document.getElementById(id);
-            if (!sat) return;
-            if (sat._wwOppHost !== opp) return;
-            if (!isVisible(sat)) return;
-            // Usar el handler propio del satélite para no bypassar su
-            // lógica de cleanup.
-            var closeBtn = sat.querySelector(CLOSE_SEL);
-            if (closeBtn) closeBtn.click();
-            else {
-                sat.classList.remove('active');
-                sat.style.display = 'none';
-            }
-        });
     }
 
     /* ── Bootstrap ────────────────────────────────────────────────── */
@@ -1405,7 +1015,6 @@
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
         document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
-        setupAllSatelliteWatchers();
     }
 
     /* ── Mission Control: click en zona vacía ─────────────────────── */
@@ -1461,10 +1070,6 @@
         // oscuro del fondo se quite cuando ya no quedan ventanas.
         // refreshFocusState está debounced con RAF — barato.
         document.addEventListener('click', function () { refreshFocusState(); }, true);
-        // Click en botones [data-action="abrir-drive"/"abrir-conversacion"]
-        // → evaluar si el satélite debe mudarse de host (cambio de opp).
-        // Bubble phase (no capture) para correr DESPUÉS del handler v2.
-        document.addEventListener('click', onSatelliteActionClick);
         // Red de seguridad: poll ligero cada 800ms para sincronizar
         // body.ww-has-windows si algún cierre escapó a nuestros
         // observers (cierre con X de widgets que no llaman hooks
