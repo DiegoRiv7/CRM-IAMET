@@ -17594,14 +17594,14 @@ body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
     border-color: rgba(255, 255, 255, 0.24) !important;
 }
 body[data-theme="mundial"] .crm-kanban-head {
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(0, 30, 15, 0.42) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom-color: rgba(255, 255, 255, 0.14) !important;
 }
 body[data-theme="mundial"] .crm-kanban-stage-name {
     color: #ffffff !important;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.7);
 }
 body[data-theme="mundial"] .crm-kanban-total-label { color: rgba(255,255,255,0.58) !important; }
 body[data-theme="mundial"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
@@ -17690,9 +17690,16 @@ body[data-theme="mundial"] .crm-facet-btn:hover {
     border-color: rgba(255, 255, 255, 0.45) !important;
     color: #ffffff !important;
 }
-body[data-theme="mundial"] .crm-facet-sort {
+body[data-theme="mundial"] .crm-facet-sort,
+body[data-theme="mundial"] .crm-facet-export {
     background: rgba(255, 255, 255, 0.10) !important;
     border-color: rgba(255, 255, 255, 0.24) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .crm-facet-export:hover {
+    background: rgba(0, 168, 107, 0.28) !important;
+    border-color: rgba(0, 168, 107, 0.6) !important;
+    color: #ffffff !important;
 }
 /* "Solo Proyectos" / facet activo */
 body[data-theme="mundial"] .crm-facet-btn.active {
