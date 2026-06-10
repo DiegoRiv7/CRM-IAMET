@@ -4251,6 +4251,15 @@
                 });
         }
 
+        // Setter para la navegación in-place (crm_nav_v2.js): el periodo vive
+        // en closures de este archivo; sin esto, refreshCrmTable consultaría
+        // el periodo viejo tras un cambio de filtros sin recarga.
+        window._crmSetPeriodo = function (mes, anio, tab) {
+            if (mes != null) currentMes = String(mes);
+            if (anio != null) currentAnio = String(anio);
+            if (tab != null) currentTab = String(tab);
+        };
+
         function refreshCrmTable() {
             if (currentTab === 'clientes') {
                 loadAllClientesPanels();

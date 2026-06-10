@@ -676,17 +676,17 @@
             {% if tab_activo != 'prospeccion' or not request.GET.vista %}
             <div class="crm-tabs">
                 <a href="?tab=ideas"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'ideas' %}active{% endif %}">
                     Ideas
                 </a>
                 <a href="?tab=prospectos&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospectos' %}active{% endif %}">
                     Prospección
                 </a>
                 <a href="?tab=crm&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'crm' %}active{% endif %}">
                     {% if request.user.userprofile.language == 'en' %}Opportunities{% else %}Oportunidades{% endif %}
                     {% if tab_activo == 'crm' %}<span class="crm-tab-count" id="crmWorkspaceCount">{{ tabla_data|length }}</span>{% endif %}
@@ -694,13 +694,13 @@
                 {% if not es_ingeniero %}
                 {% comment %}Tab "Recursos" oculto temporalmente — pendiente de autorización del módulo. La URL (?tab=prospeccion) sigue funcional para deep links existentes.{% endcomment %}
                 <a href="?tab=prospeccion&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'prospeccion' %}active{% endif %}"
                     style="display:none;">
                     Recursos
                 </a>
                 <a href="?tab=marketing&mes={{ mes_filter }}&anio={{ anio_filter }}"
-                    onclick="try{localStorage.setItem('crmView','crm');}catch(e){}"
+                    data-turbo="true" onclick="if(this.classList.contains('active')){event.preventDefault();return false;}try{localStorage.setItem('crmView','crm');}catch(e){}"
                     class="crm-tab {% if tab_activo == 'marketing' %}active{% endif %}">
                     Marketing
                 </a>
@@ -3425,6 +3425,8 @@
                 if (m) params.set('tab', m[1]);
             }
         }
+        // SPA (crm_nav_v2.js): swap in-place sin recargar; true = lo tomó.
+        if (window.crmApplyPeriod && window.crmApplyPeriod(params)) return;
         window.location.href = window.location.pathname + '?' + params.toString();
     }
 
@@ -3439,6 +3441,8 @@
                 if (m) params.set('tab', m[1]);
             }
         }
+        // SPA (crm_nav_v2.js): swap in-place sin recargar; true = lo tomó.
+        if (window.crmApplyPeriod && window.crmApplyPeriod(params)) return;
         window.location.href = window.location.pathname + '?' + params.toString();
     }
 
