@@ -302,6 +302,11 @@
         return id.replace(/^widget/i, '').replace(/([A-Z])/g, ' $1').trim() || 'Widget';
     }
 
+    // (2026-06-10) Breadcrumb DESACTIVADO por pedido del usuario: el pill
+    // negro "Padre › Hijo" estorbaba encima del drive y los widgets. El
+    // código se conserva — reactivar = poner esto en true.
+    var BREADCRUMB_ON = false;
+
     var lastBreadcrumbHTML = '';
     function updateBreadcrumb() {
         // Si hay alguna ventana flotante visible, ocultar el breadcrumb
@@ -315,7 +320,7 @@
         var trail = stack.filter(function (el) {
             return !el.classList.contains('ww-windowed');
         });
-        if (hasFloatingWindows || trail.length < 2) {
+        if (!BREADCRUMB_ON || hasFloatingWindows || trail.length < 2) {
             var bc = document.getElementById('crmWidgetBreadcrumb');
             if (bc) {
                 bc.style.opacity = '0';
