@@ -6348,3 +6348,32 @@ class ProveedorCRM(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class CrmCambio(models.Model):
+    """Log ligero de cambios para el sync entre usuarios (polling).
+
+    Poblado automáticamente por signals (app/signals_sync.py) en los
+    modelos que la UI muestra en vivo. El endpoint api_sync_cambios
+    (views_sync.py) lo consulta por cursor de PK (id > since) — query
+    de índice primario, microsegundos — y el cliente (crm_sync.js)
+    re-emite cada cambio al crmDataBus para que kanban/ventanas/drive
+    se refresquen solos. Las filas viejas se purgan oportunistamente
+    desde el endpoint (>48h).
+    """
+    ACCIONES = [('create', 'create'), ('update', 'update'), ('delete', 'delete')]
+
+    entidad = models.CharField(max_length=40)          # nombre canónico del crmDataBus
+    objeto_id = models.BigIntegerField(null=True, blank=True)
+    accion = models.CharField(max_length=10, choices=ACCIONES)
+    usuario = models.ForeignKey(User, null=True, blank=True,
+                                on_delete=models.SET_NULL, related_name='+')
+    extra = models.JSONField(default=dict, blank=True)  # ej. {'oportunidad_id': 123}
+    ts = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Cambio CRM (sync)'
+        verbose_name_plural = 'Cambios CRM (sync)'
+
+    def __str__(self):
+        return f'{self.entidad}#{self.objeto_id} {self.accion}'

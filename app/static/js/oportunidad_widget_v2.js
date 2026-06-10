@@ -348,6 +348,7 @@
     function load(inst, oppId) {
         inst.oppId = oppId;
         inst.edited = {};
+        inst._lastLoad = Date.now();
         inst.root.style.display = 'flex';
         setFocus(inst);
         updateBodyScroll();
@@ -1408,6 +1409,22 @@
         window.crmDataBus.on('tarea', refreshTareas);
         window.crmDataBus.on('tarea-opp', refreshTareas);
         window.crmDataBus.on('actividad', refreshTareas);
+        // Sync entre usuarios: si OTRO usuario edita una oportunidad que
+        // tengo abierta, recargar esa instancia (sin pisar edición en curso;
+        // el guard de 2s evita el doble reload cuando el cambio fue mío —
+        // mis propios saves ya recargan vía load()).
+        window.crmDataBus.on('oportunidad', function (detail) {
+            if (!detail || !detail.id) return;
+            busDebounce('opp-' + detail.id, function () {
+                liveInstances().forEach(function (i) {
+                    if (i.oppId !== detail.id) return;
+                    if (!isVisible(i) && !isMinimized(i)) return;
+                    if (Object.keys(i.edited).length > 0) return;       // edición en curso
+                    if (i._lastLoad && Date.now() - i._lastLoad < 2000) return;  // recién cargada
+                    load(i, i.oppId);
+                });
+            });
+        });
     }
 
     /* ── API pública + takeover ───────────────────────────────────── */

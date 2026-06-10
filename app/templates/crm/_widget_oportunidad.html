@@ -1389,6 +1389,29 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 '</div>';
         }
 
+        // ── Sync entre usuarios: si OTRO usuario sube/borra algo en el drive
+        // de la opp que tengo abierta, recargar la lista al instante (el
+        // evento 'drive' llega vía crm_sync.js → crmDataBus). El extra trae
+        // la opp para no recargar drives ajenos.
+        if (window.crmDataBus) {
+            window.crmDataBus.on('drive', function (d) {
+                var w = document.getElementById('widgetOppDrive');
+                if (!w || window.getComputedStyle(w).display === 'none') return;
+                var oid = d && d.extra && d.extra.oportunidad_id;
+                if (oid && String(oid) !== String(window._woCurrentOppId)) return;
+                try { woDriveCargarDirectorio(); } catch (e) { }
+            });
+            window.crmDataBus.on('comentario', function (d) {
+                var w = document.getElementById('widgetOppConversacion');
+                if (!w || window.getComputedStyle(w).display === 'none') return;
+                var oid = d && d.extra && d.extra.oportunidad_id;
+                if (oid && String(oid) !== String(window._woCurrentOppId)) return;
+                if (typeof window.woCargarNotas === 'function' && window._woCurrentOppId) {
+                    try { window.woCargarNotas(window._woCurrentOppId); } catch (e) { }
+                }
+            });
+        }
+
         function woDriveCargarDirectorio() {
             document.getElementById('woDriveLoading').style.display = 'block';
             document.getElementById('woDriveEmpty').style.display = 'none';

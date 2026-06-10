@@ -22,6 +22,7 @@ from . import views_asistente_ideas
 from . import views_asistente_prospeccion
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
+from . import views_sync
 from .views_v2 import proyectos_v2 as views_v2_proyectos
 from .views_v2 import marcas_v2 as views_v2_marcas
 from .views_v2 import proveedores_v2 as views_v2_proveedores
@@ -31,6 +32,9 @@ urlpatterns = [
     path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
     path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     path('bitrix/lost-opportunities/', views.bitrix_lost_opportunities, name='bitrix-lost-opportunities'),
+
+    # ── Sync entre usuarios (polling ligero por cursor) ──────────────────────
+    path('api/sync/cambios/', views_sync.api_sync_cambios, name='api_sync_cambios'),
 
     # ── CRM Home ─────────────────────────────────────────────────────────────
     path('', views.crm_home, name='root_home'),

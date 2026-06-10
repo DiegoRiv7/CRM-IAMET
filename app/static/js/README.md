@@ -30,6 +30,7 @@ corresponda según dominio.
 | `crm_tareas_v2.js` | Tareas, subtareas, comentarios, timer |
 | `crm_clientes_v2.js` | Dashboard de clientes (ck*, drill-down, gráficas) |
 | `crm_features_misc.js` | Features sueltos que no encajan en otro lado |
+| `crm_sync.js` | **Sync entre usuarios** (2026-06-10): polling cada 20s a `/app/api/sync/cambios/?since=<cursor>` (tabla CrmCambio poblada por signals — `app/signals_sync.py`); re-emite cambios al crmDataBus → kanban/ventanas/drive/conversación se refrescan solos. Pausa total con pestaña oculta, backoff en errores, jitter. Requiere migración 0185 |
 | `oportunidad_widget_v2.js` | **Widget de Oportunidad instanciable** (Refactor Etapa 1, 2026-06). Reemplaza el bloque detalle de crm_main.js (~751-2041, ahora muerto) y el singleton #widgetDetalle (reducido a stub de ids). Template clonable `_widget_oportunidad_v2.html` (data-wo, sin ids), hasta 4 instancias editables + cotizador instanciado, integrado con widget_window. Activo en CRM home y reportes. Toma `window.openDetalle/openCotizador/openEditCotizacion` + guards de 1 línea en el legacy. Rollback: `git revert` (el markup legacy ya fue retirado) |
 | `proyectos_v2.js` | Módulo de proyectos (lista, detalle, drive, programa obra) |
 
