@@ -267,20 +267,20 @@
     }
 
     function _doRefreshFocus() {
-        var ws = window.crmWidgetStack;
-        if (!ws) return;
-        var stack = ws.get();
-        var focused = null;
-        for (var i = stack.length - 1; i >= 0; i--) {
-            var el = stack[i];
-            if (!el || !el.classList) continue;
-            if (!el.classList.contains('widget-overlay')) continue;
-            if (!el.classList.contains('ww-windowed')) continue;
-            if (el.classList.contains('ww-minimized')) continue;
-            if (!isVisible(el)) continue;
-            focused = el;  // el de mayor z (top del stack)
-            break;
-        }
+        // Buscamos directo en el DOM por z-index, NO en el stack
+        // interno de widget_stack: cuando una ventana se cierra, hay
+        // una breve race entre los dos observers (widget_stack quita
+        // del stack vía MutationObserver, igual que nosotros). Usar
+        // el DOM + z-index garantiza que vemos el estado real ahora.
+        var candidates = Array.prototype.slice.call(
+            document.querySelectorAll('.widget-overlay.ww-windowed:not(.ww-minimized)')
+        ).filter(isVisible);
+        candidates.sort(function (a, b) {
+            var za = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
+            var zb = parseInt(window.getComputedStyle(b).zIndex, 10) || 0;
+            return zb - za;
+        });
+        var focused = candidates[0] || null;
         document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
             if (el !== focused) el.classList.remove('ww-focused');
         });
@@ -356,6 +356,9 @@
         if (!satCard) return;
         var rect = oppCard.getBoundingClientRect();
         satellite.classList.add('ww-embedded-opp');
+        // Asociar al satélite la opp host para que onPointerDown sepa
+        // que drag/resize en el satélite deben aplicarse a la opp.
+        satellite._wwOppHost = opp;
         satCard.style.position = 'fixed';
         satCard.style.left = rect.left + 'px';
         satCard.style.top = rect.top + 'px';
@@ -365,6 +368,13 @@
         satCard.style.maxHeight = 'none';
         satCard.style.margin = '0';
         satCard.style.borderRadius = '16px';
+        // La card del satélite necesita .ww-card para que onPointerDown
+        // la reconozca como zona de drag/handles, y position:relative
+        // (que ww-card ya define) para anclar los handles. Como en este
+        // caso seteamos position:fixed inline, los handles absolutos se
+        // posicionan respecto al satCard mismo.
+        satCard.classList.add('ww-card');
+        injectHandles(satellite);
         // z-index del satélite = z-index de la opp + 5 (queda por encima
         // de la opp pero por debajo del shield de drag y del picker).
         var oppZ = parseInt(window.getComputedStyle(opp).zIndex, 10) || 1000;
@@ -372,7 +382,9 @@
     }
 
     function unembedSatellite(satellite) {
+        if (!satellite.classList.contains('ww-embedded-opp')) return;
         satellite.classList.remove('ww-embedded-opp');
+        satellite._wwOppHost = null;
         var satCard = getSatelliteCard(satellite);
         if (satCard) {
             ['position', 'left', 'top', 'width', 'height', 'maxWidth',
@@ -742,6 +754,20 @@
             else                   tx = (vw - rect.left) + 40;
             card.style.transition = 'transform 0.36s ' + EASE;
             card.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+            // Los satélites embebidos viajan junto con su opp host —
+            // sin esto, el satélite se quedaba flotando aunque la opp
+            // se había escondido. Aplicamos el mismo transform.
+            OPP_SATELLITE_IDS.forEach(function (id) {
+                var sat = document.getElementById(id);
+                if (!sat || !sat.classList.contains('ww-embedded-opp')) return;
+                if (sat._wwOppHost !== overlay) return;
+                if (!isVisible(sat)) return;
+                var satCard = getSatelliteCard(sat);
+                if (satCard) {
+                    satCard.style.transition = 'transform 0.36s ' + EASE;
+                    satCard.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+                }
+            });
         });
         var dock = document.getElementById('wwDock');
         if (dock) {
@@ -773,6 +799,22 @@
             };
             card.addEventListener('transitionend', done);
             setTimeout(done, 440);
+        });
+        // Restaurar satélites embebidos junto con sus opps
+        OPP_SATELLITE_IDS.forEach(function (id) {
+            var sat = document.getElementById(id);
+            if (!sat || !sat.classList.contains('ww-embedded-opp')) return;
+            var satCard = getSatelliteCard(sat);
+            if (!satCard) return;
+            satCard.style.transition = 'transform 0.4s ' + EASE;
+            satCard.style.transform = '';
+            var doneSat = function () {
+                satCard.style.transition = '';
+                satCard.style.transform = '';
+                satCard.removeEventListener('transitionend', doneSat);
+            };
+            satCard.addEventListener('transitionend', doneSat);
+            setTimeout(doneSat, 440);
         });
         var dock = document.getElementById('wwDock');
         if (dock) {
@@ -1062,23 +1104,31 @@
         var overlay = card.closest('.widget-overlay');
         if (!overlay) return;
 
-        if (overlay.classList.contains('ww-windowed')) bringToFront(overlay);
+        // Si el card pertenece a un satélite embebido, redirigir drag
+        // y resize a la OPP HOST — visualmente el usuario interactúa
+        // con "la ventana" (no sabe que la opp está debajo del satélite).
+        var dragTarget = overlay;
+        if (overlay.classList.contains('ww-embedded-opp') && overlay._wwOppHost) {
+            dragTarget = overlay._wwOppHost;
+        }
 
-        // 1) Esquinas → resize (windowiza primero si está maximizado)
+        if (dragTarget.classList.contains('ww-windowed')) bringToFront(dragTarget);
+
+        // 1) Esquinas/lados → resize (windowiza primero si está maximizado)
         var handle = ev.target.closest('.ww-handle');
         if (handle) {
-            if (!overlay.classList.contains('ww-windowed') && !windowize(overlay)) return;
-            startInteraction(overlay, handle.getAttribute('data-ww-dir'), ev,
+            if (!dragTarget.classList.contains('ww-windowed') && !windowize(dragTarget)) return;
+            startInteraction(dragTarget, handle.getAttribute('data-ww-dir'), ev,
                 HANDLE_CURSORS[handle.getAttribute('data-ww-dir')]);
             return;
         }
 
         // 2) Franja superior → mover (solo en modo ventana)
-        if (!overlay.classList.contains('ww-windowed')) return;
+        if (!dragTarget.classList.contains('ww-windowed')) return;
         if (ev.target.closest(INTERACTIVE)) return;
         var top = card.getBoundingClientRect().top;
         if (ev.clientY - top > DRAG_STRIP) return;
-        startInteraction(overlay, 'move', ev, 'grabbing');
+        startInteraction(dragTarget, 'move', ev, 'grabbing');
     }
 
     // Doble click en la barra de título: alternar ventana/maximizado.
@@ -1126,14 +1176,37 @@
                 removeChip(overlay);
                 refreshFocusState();
             } else if (!visible && !s.minimized && s.windowed) {
-                // Cerrado en modo ventana → unwindowize ya llama
-                // refreshFocusState internamente.
+                // Cerrado en modo ventana → cerrar también satélites
+                // embebidos a esta opp (sino quedaban huérfanos en el
+                // viewport sin host). unwindowize ya llama refreshFocusState.
+                closeSatellitesOfOpp(overlay);
                 unwindowize(overlay);
+            } else if (!visible) {
+                // Se cerró por otra ruta (sin haber estado en ventana).
+                closeSatellitesOfOpp(overlay);
+                refreshFocusState();
             } else {
                 refreshFocusState();
             }
         });
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+
+    function closeSatellitesOfOpp(opp) {
+        OPP_SATELLITE_IDS.forEach(function (id) {
+            var sat = document.getElementById(id);
+            if (!sat) return;
+            if (sat._wwOppHost !== opp) return;
+            if (!isVisible(sat)) return;
+            // Usar el handler propio del satélite para no bypassar su
+            // lógica de cleanup.
+            var closeBtn = sat.querySelector(CLOSE_SEL);
+            if (closeBtn) closeBtn.click();
+            else {
+                sat.classList.remove('active');
+                sat.style.display = 'none';
+            }
+        });
     }
 
     /* ── Bootstrap ────────────────────────────────────────────────── */
