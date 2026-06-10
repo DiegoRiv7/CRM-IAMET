@@ -562,6 +562,9 @@
     }
 
     function maybeSpawnWindow(newId) {
+        // Con el widget v2 instanciable activo, el multi-ventana es nativo
+        // (cada oportunidad es su propia instancia) — los iframes ya no aplican.
+        if (window.OppWidgetV2 && window.OppWidgetV2.takeover) return;
         var overlay = document.getElementById('widgetDetalle');
         if (!overlay || !newId) return;
         var liveId = lastOppId || readStoredOppId();

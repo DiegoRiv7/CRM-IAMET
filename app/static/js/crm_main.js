@@ -772,6 +772,11 @@
             }
 
             function openDetalle(oppId) {
+                // V2 takeover (oportunidad_widget_v2.js, Refactor Etapa 1): los
+                // callers internos (kanban/lista/restore) llaman esta función
+                // local por closure; esta guard los enruta al componente
+                // instanciable. Rollback: localStorage.setItem('opp_v2_off','1').
+                if (window.OppWidgetV2 && window.OppWidgetV2.takeover) { return window.OppWidgetV2.open(oppId); }
                 // Sanitize: strip any non-digit characters (e.g. locale thousands separators)
                 var cleanId = parseInt(String(oppId).replace(/[^\d]/g, ''), 10);
                 if (!cleanId || isNaN(cleanId)) return;

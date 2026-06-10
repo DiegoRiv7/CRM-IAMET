@@ -1,0 +1,270 @@
+{% comment %}
+═══ WIDGET OPORTUNIDAD V2 — PLANTILLA INSTANCIABLE ═══
+
+Refactor Etapa 1 (2026-06): el widget de Oportunidad como componente.
+Este <template> se CLONA por cada instancia (hasta 4 a la vez) desde
+oportunidad_widget_v2.js. Reglas:
+
+  · CERO ids — todo elemento direccionable usa data-wo="nombre"
+    (el JS resuelve con root.querySelector('[data-wo=...]')).
+  · CERO handlers inline — acciones via data-action + delegación.
+  · El markup espejea 1:1 las líneas 1-291 de _widget_oportunidad.html
+    (legacy). Al llegar a paridad, el markup legacy se retira.
+
+Los widgets satélite (Drive, crear actividad, todas-tareas, conversación,
+modal vincular proyecto, confirm tipo) siguen siendo singletons en sus
+archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
+{% endcomment %}
+<template id="tplOppWidgetV2">
+<div class="widget-overlay opp-v2" data-wo="root" data-widget-title="Oportunidad">
+    <div class="widget-card widget-card-lg" data-wo="card">
+        <!-- Loading -->
+        <div data-wo="loading" style="text-align:center;padding:4rem;color:#86868B;">
+            <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;"
+                viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="2">
+                <path
+                    d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+            </svg>
+            Cargando oportunidad...
+        </div>
+        <!-- Content (oculto hasta cargar) -->
+        <div data-wo="content" style="display:none;flex-direction:column;height:100%;">
+            <!-- Header -->
+            <div class="wo-header">
+                <div class="wo-header-top">
+                    <div style="flex:1;min-width:0;">
+                        <div class="wo-type-badge runrate" data-wo="typeBadge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            </svg>
+                            <span>VENTA RUNRATE</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                            <h1 class="wo-title" data-wo="title" style="margin:0;min-width:0;"></h1>
+                            <button type="button" data-wo="btnAsistente" data-action="abrir-asistente" class="wo-asist-btn-title"
+                                title="Asistente AI de esta oportunidad"
+                                style="background:transparent;border:none;cursor:pointer;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform 0.15s ease;">
+                                <span class="asist-orb asist-orb--static" aria-hidden="true" style="width:34px;height:34px;">
+                                    <span class="asist-orb-core"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
+                                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="widget-close" data-wo="close" data-action="close">&times;</button>
+                </div>
+            </div>
+
+            <div class="wo-tab-panel active" style="padding-top:1rem;">
+                <!-- Pipeline -->
+                <div class="wo-pipeline" data-wo="pipelineWrap">
+                    <div class="wo-pipeline-container">
+                        <div class="wo-scroll-btn" data-action="pipeline-izq">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M15 18l-6-6 6-6" />
+                            </svg>
+                        </div>
+                        <div class="wo-pipeline-scroll" data-wo="pipelineScroll">
+                            <div class="wo-pipeline-stages" data-wo="pipelineStages"></div>
+                        </div>
+                        <div class="wo-scroll-btn" data-action="pipeline-der">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 18l6-6-6-6" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="wo-content">
+                    <div class="wo-grid">
+                        <!-- Info card (Row 1, Col 1) -->
+                        <div class="wo-card" style="display:flex;flex-direction:column;">
+                            <div class="wo-info-grid"
+                                style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Monto de Oportunidad</span>
+                                    <span class="wo-info-value" data-wo="monto">$0</span>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Fecha de Cierre</span>
+                                    <span class="wo-info-value medium" data-wo="fechaCierre">-</span>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Probabilidad de Cierre</span>
+                                    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
+                                        <span class="wo-prob-value" data-wo="probValue"
+                                            style="font-size:1.1rem;margin:0;">0%</span>
+                                        <div class="wo-prob-bar" data-wo="probBar" style="flex:1;margin:0;">
+                                            <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Producto</span>
+                                    <span class="wo-info-value medium" data-wo="producto">-</span>
+                                </div>
+                                <div class="wo-info-item">
+                                    <span class="wo-info-label">Area</span>
+                                    <span class="wo-info-value medium" data-wo="area">-</span>
+                                </div>
+                                <div style="display:flex;gap:0;">
+                                    <div class="wo-info-item" style="flex:1;min-width:0;">
+                                        <span class="wo-info-label">PO</span>
+                                        <input type="text" data-wo="poNumber" maxlength="15" placeholder="—"
+                                            style="background:none;border:none;border-bottom:1px solid transparent;
+                                                   font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
+                                                   width:100%;padding:0.1rem 0;cursor:pointer;outline:none;" />
+                                    </div>
+                                    <div class="wo-info-item" style="flex:1;min-width:0;border-left:1px solid #E5E5EA;padding-left:12px;">
+                                        <span class="wo-info-label">Factura</span>
+                                        <input type="text" data-wo="facturaNumero" maxlength="7" placeholder="—"
+                                            style="background:none;border:none;border-bottom:1px solid transparent;
+                                                   font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
+                                                   width:100%;padding:0.1rem 0;cursor:pointer;outline:none;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tareas card (Row 1, Col 2) -->
+                        <div class="wo-card" style="display:flex;flex-direction:column;">
+                            <div class="wo-section-header">
+                                <h3 class="wo-section-title">Tareas</h3>
+                                <button class="wo-btn-new" data-action="nueva-tarea" type="button">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    Nueva
+                                </button>
+                            </div>
+                            <div class="wo-tareas-inline-list" data-wo="tareasList" style="flex:1;max-height:none;"></div>
+                        </div>
+
+                        <!-- Cotizaciones card (Row 2, Col 1) -->
+                        <div class="wo-card">
+                            <div class="wo-section-header">
+                                <h3 class="wo-section-title">Cotizaciones</h3>
+                                <button class="wo-btn-new" data-wo="btnNuevaCot" data-action="nueva-cot" type="button">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    Nueva
+                                </button>
+                            </div>
+                            <div class="wo-quote-list" data-wo="quoteList">
+                                <div class="wo-empty">Sin cotizaciones aun</div>
+                            </div>
+                        </div>
+
+                        <!-- Stakeholders & Drive (Row 2, Col 2) -->
+                        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+                            <div class="wo-card">
+                                <div class="wo-stakeholder">
+                                    <div class="wo-stakeholder-label">Vendedor</div>
+                                    <div class="wo-stakeholder-info">
+                                        <div class="wo-avatar blue" data-wo="vendedorAvatar"></div>
+                                        <div>
+                                            <div class="wo-stakeholder-name" data-wo="vendedorName"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="wo-divider"></div>
+                                <div class="wo-stakeholder">
+                                    <div class="wo-stakeholder-label">Cliente</div>
+                                    <div class="wo-stakeholder-info">
+                                        <div class="wo-avatar purple" data-wo="clienteAvatar"></div>
+                                        <div>
+                                            <div class="wo-stakeholder-name" data-wo="clienteName"></div>
+                                            <div class="wo-stakeholder-company" data-wo="contactoName"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actividad programada -->
+                            <div class="wo-card" data-wo="actividadCard" style="padding:0.85rem 1rem;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                                    <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">ACTIVIDAD PROGRAMADA</span>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <button data-wo="btnNuevaActividad" data-action="nueva-actividad" type="button"
+                                            style="display:none;width:20px;height:20px;border-radius:50%;background:#0052D4;border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;"
+                                            title="Nueva actividad">+</button>
+                                        <div data-action="abrir-actividad" style="cursor:pointer;">
+                                            <svg width="14" height="14" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;display:block;"><path d="M9 18l6-6-6-6"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-wo="actividadBody" data-action="abrir-actividad"
+                                    style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>
+                                </div>
+                            </div>
+
+                            <!-- Drive + Conversación -->
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                                <div class="wo-card wo-quick-card" data-action="abrir-drive" style="cursor:pointer;">
+                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
+                                            viewBox="0 0 24 24">
+                                            <path
+                                                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                                        </svg>
+                                    </div>
+                                    <span class="wo-quick-label">Drive</span>
+                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2"
+                                        viewBox="0 0 24 24" style="margin-left:auto;">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </div>
+                                <div class="wo-card wo-quick-card" data-action="abrir-conversacion" style="cursor:pointer;">
+                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
+                                            viewBox="0 0 24 24">
+                                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                                        </svg>
+                                    </div>
+                                    <span class="wo-quick-label">Conversación</span>
+                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2"
+                                        viewBox="0 0 24 24" style="margin-left:auto;">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Proyecto vinculado (solo tipo proyecto/bitrix_proyecto) -->
+                        <div class="wo-card" data-wo="proyectoCard" style="display:none;grid-column:1 / -1;">
+                            <div class="wo-section-header">
+                                <h3 class="wo-section-title">Proyecto</h3>
+                                <button class="wo-btn-new" data-action="vincular-proyecto" type="button">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                    </svg>
+                                    Vincular
+                                </button>
+                            </div>
+                            <div data-wo="proyectoList">
+                                <div class="wo-empty">Sin proyecto vinculado aún</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save bar (edición inline) -->
+            <div class="wo-save-bar" data-wo="saveBar" style="display:none;">
+                <button class="wo-save-cancel" data-action="save-cancel" type="button">Cancelar</button>
+                <button class="wo-save-confirm" data-wo="saveConfirm" data-action="save-confirm" type="button">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+</template>

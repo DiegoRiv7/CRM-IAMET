@@ -30,6 +30,7 @@ corresponda según dominio.
 | `crm_tareas_v2.js` | Tareas, subtareas, comentarios, timer |
 | `crm_clientes_v2.js` | Dashboard de clientes (ck*, drill-down, gráficas) |
 | `crm_features_misc.js` | Features sueltos que no encajan en otro lado |
+| `oportunidad_widget_v2.js` | **Widget de Oportunidad instanciable** (Refactor Etapa 1, 2026-06-09). Reemplaza el bloque detalle de crm_main.js (~751-2041) y el singleton #widgetDetalle. Template clonable `_widget_oportunidad_v2.html` (data-wo, sin ids), hasta 4 instancias editables, integrado con widget_window. Toma `window.openDetalle` + guard de 1 línea en el openDetalle legacy. Rollback: `localStorage.setItem('opp_v2_off','1')` |
 | `proyectos_v2.js` | Módulo de proyectos (lista, detalle, drive, programa obra) |
 
 **Activación**: cuando un `*_v2.js` reciba su primer código real, hay que
