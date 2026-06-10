@@ -351,9 +351,16 @@
         --accent-crm: #00a86b;
         --island-bg: rgba(255, 255, 255, 0.14);
         --island-border: rgba(255, 255, 255, 0.28);
+        /* Fondo en el CSS (no solo en JS) para que SIEMPRE cargue la imagen.
+           Scrim casi transparente: la cancha es protagonista. El JS encima
+           le agrega cache-bust al subir una imagen nueva. */
+        background-image:
+            radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%),
+            url('/media/fondos/mundial.jpg');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
+        background-repeat: no-repeat;
         background-color: #04210f;
     }
 
@@ -584,9 +591,9 @@
         // Fondo del tema Mundial — administrado desde /app/config/fondo-mundial/
         // y guardado en media/ (no static), para cambiarlo sin redeploy.
         var _mundialBgUrl = '/media/fondos/mundial.jpg';
-        // Scrim verde claro MUY ligero: la cancha se ve protagonista; solo un
-        // velo verde suave para teñir y dar contraste al glass/texto.
-        var _mundialScrim = 'radial-gradient(ellipse 130% 100% at center, rgba(18,82,42,0.18) 0%, rgba(10,55,28,0.34) 65%, rgba(6,40,20,0.50) 100%)';
+        // Scrim casi transparente: la cancha es protagonista, solo un velo
+        // mínimo en las esquinas para legibilidad. Mismo valor que el CSS.
+        var _mundialScrim = 'radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%)';
         function applyThemeToBody(theme) {
             document.body.setAttribute('data-theme', theme);
             if (theme === 'mundial') {
