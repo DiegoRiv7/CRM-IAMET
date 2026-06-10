@@ -17483,7 +17483,8 @@ body.rep-embedded .rep-header { display: none !important; }
 
 /* ═══════════════════════════════════════════════════════════════
    TEMA MUNDIAL — Edición Copa del Mundo 2026
-   Cancha fija de fondo, CRM en glass sobre el estadio.
+   Cancha fija de fondo con scrim verde oscuro; CRM en glass.
+   Protagonistas: verde (#006847 / #00a86b), blanco y rojo (#CE1126).
    ═══════════════════════════════════════════════════════════════ */
 
 /* Page container y layout — transparentes para dejar ver la cancha */
@@ -17492,48 +17493,53 @@ body[data-theme="mundial"] .crm-page-sidebar {
     background: transparent !important;
 }
 
-/* ── Sidebar: glass verde oscuro ── */
+/* ── Sidebar: degradado verde oscuro tipo estadio nocturno ── */
 body[data-theme="mundial"] .crm-sidebar {
-    background: rgba(0, 40, 5, 0.72) !important;
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
-    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: linear-gradient(180deg, rgba(0, 58, 32, 0.94) 0%, rgba(0, 32, 17, 0.96) 60%, rgba(1, 18, 9, 0.97) 100%) !important;
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
 body[data-theme="mundial"] .crm-sb-logo {
-    background: linear-gradient(135deg, #006847 0%, #004d35 100%) !important;
-    box-shadow: 0 4px 14px rgba(0, 104, 71, 0.45), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    box-shadow: 0 4px 16px rgba(0, 168, 107, 0.40), inset 0 1px 0 rgba(255,255,255,0.20) !important;
 }
 body[data-theme="mundial"] .crm-sb-btn,
-body[data-theme="mundial"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.82); }
+body[data-theme="mundial"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.78); }
 body[data-theme="mundial"] .crm-sb-btn:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.10) !important;
     color: #ffffff;
 }
 body[data-theme="mundial"] .crm-sb-btn.active {
-    background: rgba(0, 104, 71, 0.55) !important;
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
     color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(0, 168, 107, 0.35) !important;
 }
 body[data-theme="mundial"] .crm-sb-btn.active::before {
-    background: #00d46b !important;
+    background: #ffffff !important;
 }
-body[data-theme="mundial"] .crm-sb-divider { background: rgba(255, 255, 255, 0.14) !important; }
-body[data-theme="mundial"] .crm-sb-label { color: rgba(255, 255, 255, 0.75); }
+body[data-theme="mundial"] .crm-sb-divider { background: rgba(255, 255, 255, 0.10) !important; }
+body[data-theme="mundial"] .crm-sb-label { color: rgba(255, 255, 255, 0.70); }
 body[data-theme="mundial"] .crm-sb-dot { background: #CE1126 !important; }
 
 /* ── Topbar / Dynamic Island ── */
 body[data-theme="mundial"] .crm-unified-header { background: transparent !important; }
 body[data-theme="mundial"] .crm-island {
-    background: rgba(255, 255, 255, 0.18) !important;
-    backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
-    -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
-    border-color: rgba(255, 255, 255, 0.32) !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22), inset 0 1.5px 0 rgba(255,255,255,0.55) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.35) !important;
 }
 body[data-theme="mundial"] .crm-island:hover,
 body[data-theme="mundial"] .crm-island.is-expanded {
-    background: rgba(255, 255, 255, 0.28) !important;
+    background: rgba(255, 255, 255, 0.20) !important;
 }
-body[data-theme="mundial"] .island-sep { background: rgba(255, 255, 255, 0.25) !important; }
+body[data-theme="mundial"] .island-sep { background: rgba(255, 255, 255, 0.20) !important; }
+body[data-theme="mundial"] .island-select,
+body[data-theme="mundial"] .island-nav-btn {
+    color: #ffffff !important;
+}
 
 /* ── Main y contenido ── */
 body[data-theme="mundial"] .crm-main,
@@ -17542,96 +17548,113 @@ body[data-theme="mundial"] .crm-content { background: transparent !important; }
 /* Workspace title */
 body[data-theme="mundial"] .crm-workspace-title-text {
     color: #ffffff !important;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 8px rgba(0,0,0,0.6);
 }
 body[data-theme="mundial"] .crm-workspace-count {
-    background: rgba(255,255,255,0.2) !important;
-    color: #ffffff !important;
-}
-
-/* Tabs */
-body[data-theme="mundial"] .crm-bar { background: transparent !important; border-color: transparent !important; }
-body[data-theme="mundial"] .crm-tab { color: rgba(255,255,255,0.72) !important; }
-body[data-theme="mundial"] .crm-tab.active {
-    background: rgba(255,255,255,0.22) !important;
-    color: #ffffff !important;
-    border-color: rgba(255,255,255,0.3) !important;
-}
-body[data-theme="mundial"] .crm-tab:hover:not(.active) {
-    background: rgba(255,255,255,0.12) !important;
-    color: #ffffff !important;
-}
-
-/* Vendor hero card */
-body[data-theme="mundial"] .vendor-card {
-    background: linear-gradient(135deg, rgba(0, 104, 71, 0.72) 0%, rgba(0, 160, 107, 0.58) 100%) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
-    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25) !important;
-}
-
-/* ── Kanban board ── */
-body[data-theme="mundial"] .crm-kanban-col {
-    background: rgba(255, 255, 255, 0.10) !important;
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border-color: rgba(255, 255, 255, 0.18) !important;
-}
-body[data-theme="mundial"] .crm-kanban-col.collapsed {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border-color: rgba(255, 255, 255, 0.14) !important;
-}
-body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-color: rgba(255, 255, 255, 0.28) !important;
-}
-body[data-theme="mundial"] .crm-kanban-head {
-    background: rgba(255, 255, 255, 0.13) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom-color: rgba(255, 255, 255, 0.14) !important;
-}
-body[data-theme="mundial"] .crm-kanban-stage-name { color: #ffffff !important; }
-body[data-theme="mundial"] .crm-kanban-total-label { color: rgba(255,255,255,0.62) !important; }
-body[data-theme="mundial"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
-body[data-theme="mundial"] .crm-kanban-count {
-    background: rgba(255,255,255,0.22) !important;
-    color: #ffffff !important;
-}
-body[data-theme="mundial"] .crm-kanban-vertical-name { color: rgba(255,255,255,0.68) !important; }
-body[data-theme="mundial"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #ffffff !important; }
-body[data-theme="mundial"] .crm-kanban-col-btn { color: rgba(255,255,255,0.65) !important; }
-body[data-theme="mundial"] .crm-kanban-col-btn:hover {
     background: rgba(255,255,255,0.18) !important;
     color: #ffffff !important;
 }
-body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.25) !important;
+
+/* Tabs / barra de filtros */
+body[data-theme="mundial"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+body[data-theme="mundial"] .crm-tab { color: rgba(255,255,255,0.70) !important; }
+body[data-theme="mundial"] .crm-tab.active {
+    background: rgba(255,255,255,0.20) !important;
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,0.28) !important;
+}
+body[data-theme="mundial"] .crm-tab:hover:not(.active) {
+    background: rgba(255,255,255,0.10) !important;
+    color: #ffffff !important;
 }
 
-/* ── Cards de oportunidades: glass blanco ── */
-body[data-theme="mundial"] .crm-kanban-card.crm-postit {
-    background: rgba(255, 255, 255, 0.88) !important;
+/* Vendor hero card — verde mexicano translúcido */
+body[data-theme="mundial"] .vendor-card {
+    background: linear-gradient(135deg, rgba(0, 104, 71, 0.78) 0%, rgba(0, 168, 107, 0.60) 100%) !important;
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    box-shadow: 0 8px 34px rgba(0, 0, 0, 0.32) !important;
+}
+
+/* ── Kanban board: columnas glass oscuro con borde sutil ── */
+body[data-theme="mundial"] .crm-kanban-col {
+    background: rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(16px) saturate(130%);
+    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.20) !important;
+}
+body[data-theme="mundial"] .crm-kanban-col.collapsed {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.24) !important;
+}
+body[data-theme="mundial"] .crm-kanban-head {
+    background: rgba(255, 255, 255, 0.08) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.55) !important;
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="mundial"] .crm-kanban-stage-name {
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+body[data-theme="mundial"] .crm-kanban-total-label { color: rgba(255,255,255,0.58) !important; }
+body[data-theme="mundial"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
+body[data-theme="mundial"] .crm-kanban-count {
+    background: rgba(255,255,255,0.18) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-kanban-vertical-name { color: rgba(255,255,255,0.62) !important; }
+body[data-theme="mundial"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-kanban-col-btn { color: rgba(255,255,255,0.60) !important; }
+body[data-theme="mundial"] .crm-kanban-col-btn:hover {
+    background: rgba(255,255,255,0.16) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.22) !important;
+}
+
+/* ── Cards de oportunidades: glass blanco crujiente ── */
+body[data-theme="mundial"] .crm-kanban-card.crm-postit {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.65) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.14) !important;
 }
 body[data-theme="mundial"] .crm-kanban-card.crm-postit:hover {
-    background: rgba(255, 255, 255, 0.96) !important;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22) !important;
+    background: #ffffff !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.30) !important;
     transform: translateY(-3px) !important;
 }
 
 /* ── glass-card general ── */
 body[data-theme="mundial"] .glass-card {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.10) !important;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border-color: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
     color: #ffffff;
 }
 body[data-theme="mundial"] .glass-card:hover {
-    background: rgba(255, 255, 255, 0.20) !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ── Barra de búsqueda / spotlight pill en el header ── */
+body[data-theme="mundial"] .crm-search-pill,
+body[data-theme="mundial"] #crmSearchInput,
+body[data-theme="mundial"] .crm-search-wrap {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-search-pill::placeholder,
+body[data-theme="mundial"] #crmSearchInput::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
 }

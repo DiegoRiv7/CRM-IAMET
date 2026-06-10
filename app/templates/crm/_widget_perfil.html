@@ -342,20 +342,19 @@
 
     /* ── TEMA MUNDIAL — Edición Copa del Mundo 2026 ── */
     body[data-theme="mundial"] {
-        --bg-crm: transparent;
+        --bg-crm: #04210f;
         --text-crm: #ffffff;
-        --card-bg: rgba(255, 255, 255, 0.88);
-        --border-crm: rgba(255, 255, 255, 0.25);
-        --table-header-bg: rgba(255, 255, 255, 0.12);
-        --table-row-hover: rgba(255, 255, 255, 0.18);
-        --accent-crm: #006847;
-        --island-bg: rgba(255, 255, 255, 0.18);
-        --island-border: rgba(255, 255, 255, 0.32);
-        --mundial-bg-url: '';
+        --card-bg: rgba(255, 255, 255, 0.94);
+        --border-crm: rgba(255, 255, 255, 0.22);
+        --table-header-bg: rgba(255, 255, 255, 0.10);
+        --table-row-hover: rgba(255, 255, 255, 0.16);
+        --accent-crm: #00a86b;
+        --island-bg: rgba(255, 255, 255, 0.14);
+        --island-border: rgba(255, 255, 255, 0.28);
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-        background-color: #1a4c1a;
+        background-color: #04210f;
     }
 
     /* Si el body tiene el data-theme, cambiamos su fondo y el de crm-page */
@@ -583,10 +582,13 @@
         };
 
         var _mundialBgUrl = '/static/images/estadio_mundial.jpg';
+        // Scrim verde oscuro sobre la cancha: centro semi-visible (cancha+bandera),
+        // bordes oscuros para que el glass blanco y el texto resalten.
+        var _mundialScrim = 'radial-gradient(ellipse 120% 90% at center, rgba(4,38,18,0.55) 0%, rgba(2,24,11,0.82) 55%, rgba(1,15,7,0.93) 100%)';
         function applyThemeToBody(theme) {
             document.body.setAttribute('data-theme', theme);
             if (theme === 'mundial') {
-                document.body.style.backgroundImage = 'url(' + _mundialBgUrl + ')';
+                document.body.style.backgroundImage = _mundialScrim + ', url(' + _mundialBgUrl + ')';
             } else {
                 document.body.style.backgroundImage = '';
             }
