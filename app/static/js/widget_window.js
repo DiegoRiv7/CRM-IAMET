@@ -469,14 +469,27 @@
                 // última embed (handles + position:fixed pegados).
                 else ensureSatelliteIsClean(el);
             } else {
-                unembedSatellite(el);
+                // SIEMPRE limpiar al cerrarse (no solo si tenía
+                // ww-embedded-opp). Garantiza que la próxima apertura
+                // arranque sin residuos sin importar por qué camino
+                // se cerró.
+                if (el.classList.contains('ww-embedded-opp')) unembedSatellite(el);
+                else ensureSatelliteIsClean(el);
             }
         });
         obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 
     function setupAllSatelliteWatchers() {
-        OPP_SATELLITE_IDS.forEach(watchSatellite);
+        OPP_SATELLITE_IDS.forEach(function (id) {
+            watchSatellite(id);
+            // Limpieza preventiva al inicializar: si la página cargó
+            // con un satélite ya residual (raro), arranca limpio.
+            var el = document.getElementById(id);
+            if (el && !el.classList.contains('ww-embedded-opp')) {
+                ensureSatelliteIsClean(el);
+            }
+        });
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -1315,6 +1328,11 @@
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('dblclick', onDblClick, true);
         document.addEventListener('click', onGlobalClickForMC);
+        // Cualquier click puede haber cerrado una ventana (X, Esc
+        // simulado, etc.). Refresh el estado de foco para que el velo
+        // oscuro del fondo se quite cuando ya no quedan ventanas.
+        // refreshFocusState está debounced con RAF — barato.
+        document.addEventListener('click', function () { refreshFocusState(); }, true);
         // Click DENTRO de un iframe en ventana (ej. cotizador instanciado):
         // no burbujea al padre, pero el focus sí se mueve — si lo ganó un
         // iframe dentro de una ventana, traerla al frente.
