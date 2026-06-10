@@ -165,6 +165,37 @@ body.ww-dragging {
     background: rgba(30, 41, 59, 0.95);
 }
 
+/* Fade-in del chip cuando aparece tras la animación de minimize.
+   El JS lo crea con opacity:0 (para medir su rect), anima la card
+   hacia esa posición, y al finalizar agrega .ww-dock-chip-enter
+   que dispara este keyframe. */
+@keyframes ww-dock-chip-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.85);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.ww-dock-chip.ww-dock-chip-enter {
+    animation: ww-dock-chip-in 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* El botón [□] de "modo ventana" recibe un realce sutil cuando la
+   ventana ESTÁ en modo flotante, para que se note que sigue activo. */
+.widget-overlay.ww-windowed .ww-btn-win {
+    background: #007AFF;
+    color: #fff;
+}
+
+.widget-overlay.ww-windowed .ww-btn-win:hover {
+    background: #0066D6;
+    color: #fff;
+}
+
 .ww-dock-title {
     overflow: hidden;
     text-overflow: ellipsis;

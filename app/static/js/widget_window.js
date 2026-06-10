@@ -52,6 +52,12 @@
         [560, 'ww-xs'],
     ];
 
+    // Curva tipo "ease-out-expo" estilo Apple para las transiciones de
+    // entrada/salida del modo ventana y del minimize/restore.
+    var EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+    var DUR_MODE = 280;     // ms — windowize / unwindowize
+    var DUR_DOCK = 320;     // ms — minimize / restore (a/desde el chip del dock)
+
     var states = new WeakMap();  // overlay -> { windowed, minimized, rect }
 
     function st(overlay) {
@@ -61,6 +67,47 @@
             states.set(overlay, s);
         }
         return s;
+    }
+
+    /* ── FLIP (First-Last-Invert-Play) ────────────────────────────────
+       Anima la card entre dos layouts CSS sin importar que cambien las
+       reglas de posicionamiento (modal centrado ↔ position:fixed). Se
+       llama DESPUÉS del cambio de clase/style:
+         1) capturar el rect del usuario ANTES (parámetro fromRect)
+         2) capturar el rect nuevo (toRect — getBoundingClientRect aquí)
+         3) aplicar un transform que devuelve VISUALMENTE al fromRect
+         4) en el siguiente frame, transition + transform:'' → anima al
+            toRect real con suavidad
+       Si los dos rects son prácticamente iguales, no hace nada. */
+    function flipAnimate(card, fromRect, duration) {
+        if (!card || !fromRect) return;
+        duration = duration || DUR_MODE;
+        var toRect = card.getBoundingClientRect();
+        var dx = fromRect.left - toRect.left;
+        var dy = fromRect.top - toRect.top;
+        var sx = toRect.width  ? (fromRect.width  / toRect.width)  : 1;
+        var sy = toRect.height ? (fromRect.height / toRect.height) : 1;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1 &&
+            Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
+
+        card.style.transformOrigin = '0 0';
+        card.style.transition = 'none';
+        card.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')';
+        // Forzar reflow para que el browser registre el estado inicial.
+        void card.offsetHeight;
+        requestAnimationFrame(function () {
+            card.style.transition = 'transform ' + duration + 'ms ' + EASE;
+            card.style.transform = '';
+            var done = function () {
+                card.style.transition = '';
+                card.style.transform = '';
+                card.style.transformOrigin = '';
+                card.removeEventListener('transitionend', done);
+            };
+            card.addEventListener('transitionend', done);
+            // Safety net por si transitionend no dispara (interrupción).
+            setTimeout(done, duration + 60);
+        });
     }
 
     function getCard(overlay) {
@@ -143,20 +190,26 @@
         }
         var card = getCard(overlay);
         if (!card) return false;
+        var fromRect = card.getBoundingClientRect();
         var r = rect;
         if (!r) {
-            var b = card.getBoundingClientRect();
-            r = { x: b.left, y: b.top, w: b.width, h: b.height };
+            r = { x: fromRect.left, y: fromRect.top, w: fromRect.width, h: fromRect.height };
         }
         overlay.classList.add('ww-windowed');
         applyRect(overlay, r);
         st(overlay).windowed = true;
         updateWinBtn(overlay);
         bringToFront(overlay);
+        // FLIP: cuando se windowiza desde un drag de esquina, fromRect ≈
+        // toRect y la animación se auto-cancela. Cuando se windowiza con
+        // un rect distinto (botón □ → defaultRect centrado), anima suave.
+        flipAnimate(card, fromRect);
         return true;
     }
 
     function unwindowize(overlay) {
+        var card = getCard(overlay);
+        var fromRect = card ? card.getBoundingClientRect() : null;
         overlay.classList.remove('ww-windowed');
         ['--ww-x', '--ww-y', '--ww-w', '--ww-h'].forEach(function (p) {
             overlay.style.removeProperty(p);
@@ -165,6 +218,7 @@
         s.windowed = false;
         s.rect = null;
         updateWinBtn(overlay);
+        flipAnimate(card, fromRect);
     }
 
     function bringToFront(overlay) {
@@ -190,7 +244,6 @@
     function minimize(overlay) {
         var s = st(overlay);
         if (s.minimized) return;
-        s.minimized = true;
 
         var dock = ensureDock();
         var chip = document.createElement('button');
@@ -216,13 +269,63 @@
         });
         chip._wwOverlay = overlay;
         overlay._wwChip = chip;
+        // Pre-renderizar el chip pero invisible para poder medir su rect
+        // y animar la card hacia él. El chip se hace visible al final con
+        // su propio fade-in (CSS keyframe ww-dock-chip-in).
+        chip.style.opacity = '0';
+        chip.style.pointerEvents = 'none';
         dock.appendChild(chip);
 
-        // Ocultar SOLO con clase propia (display:none !important en CSS).
-        // NUNCA tocar style.display inline: widgets como widgetDetalle se
-        // abren/cierran con classList 'active' y un display inline pegado
-        // le ganaría al CSS dejando el widget imposible de cerrar con la X.
-        overlay.classList.add('ww-minimized');
+        var card = getCard(overlay);
+        var cardRect = card ? card.getBoundingClientRect() : null;
+        var chipRect = chip.getBoundingClientRect();
+
+        var finalize = function () {
+            s.minimized = true;
+            // Ocultar SOLO con clase propia (display:none !important en CSS).
+            // NUNCA tocar style.display inline: widgets como widgetDetalle se
+            // abren/cierran con classList 'active' y un display inline pegado
+            // le ganaría al CSS dejando el widget imposible de cerrar con la X.
+            overlay.classList.add('ww-minimized');
+            if (card) {
+                card.style.transition = '';
+                card.style.transform = '';
+                card.style.opacity = '';
+                card.style.transformOrigin = '';
+            }
+            // Mostrar el chip ya posicionado (fade-in vía CSS keyframe).
+            chip.style.opacity = '';
+            chip.style.pointerEvents = '';
+            chip.classList.add('ww-dock-chip-enter');
+        };
+
+        if (!card || !cardRect || !chipRect.width) {
+            finalize();
+            return;
+        }
+
+        // Calcular transform que lleva el centro de la card al centro
+        // del chip (con scale para que "encoja" hacia el dock).
+        var dx = (chipRect.left + chipRect.width  / 2) - (cardRect.left + cardRect.width  / 2);
+        var dy = (chipRect.top  + chipRect.height / 2) - (cardRect.top  + cardRect.height / 2);
+        var scale = Math.max(0.05, Math.min(
+            chipRect.width  / cardRect.width,
+            chipRect.height / cardRect.height
+        ));
+
+        card.style.transformOrigin = '50% 50%';
+        card.style.transition = 'transform ' + DUR_DOCK + 'ms ' + EASE +
+                                ', opacity ' + (DUR_DOCK - 40) + 'ms ease-out';
+        void card.offsetHeight;
+        card.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
+        card.style.opacity = '0';
+
+        var done = function () {
+            card.removeEventListener('transitionend', done);
+            finalize();
+        };
+        card.addEventListener('transitionend', done);
+        setTimeout(done, DUR_DOCK + 60);
     }
 
     function removeChip(overlay) {
@@ -240,10 +343,50 @@
             notify('Máximo ' + MAX_WINDOWS + ' ventanas abiertas a la vez');
             return;
         }
+        // Capturar rect del chip ANTES de removerlo — el destino visual
+        // desde el cual la card va a "salir".
+        var chip = overlay._wwChip;
+        var chipRect = chip ? chip.getBoundingClientRect() : null;
+
         s.minimized = false;
         removeChip(overlay);
         overlay.classList.remove('ww-minimized');
         bringToFront(overlay);
+
+        var card = getCard(overlay);
+        if (!card || !chipRect || !chipRect.width) return;
+        var cardRect = card.getBoundingClientRect();
+        if (!cardRect.width) return;
+
+        // Posicionar visualmente la card sobre el chip (escala pequeña +
+        // opacidad 0) y luego dejarla expandirse a su tamaño real.
+        var dx = (chipRect.left + chipRect.width  / 2) - (cardRect.left + cardRect.width  / 2);
+        var dy = (chipRect.top  + chipRect.height / 2) - (cardRect.top  + cardRect.height / 2);
+        var scale = Math.max(0.05, Math.min(
+            chipRect.width  / cardRect.width,
+            chipRect.height / cardRect.height
+        ));
+
+        card.style.transformOrigin = '50% 50%';
+        card.style.transition = 'none';
+        card.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
+        card.style.opacity = '0';
+        void card.offsetHeight;
+        requestAnimationFrame(function () {
+            card.style.transition = 'transform ' + DUR_DOCK + 'ms ' + EASE +
+                                    ', opacity ' + (DUR_DOCK - 40) + 'ms ease-out';
+            card.style.transform = '';
+            card.style.opacity = '';
+            var done = function () {
+                card.style.transition = '';
+                card.style.transform = '';
+                card.style.opacity = '';
+                card.style.transformOrigin = '';
+                card.removeEventListener('transitionend', done);
+            };
+            card.addEventListener('transitionend', done);
+            setTimeout(done, DUR_DOCK + 60);
+        });
     }
 
     /* ── Controles inyectados (— y □) ─────────────────────────────── */
@@ -321,6 +464,15 @@
 
     function startInteraction(overlay, mode, ev, cursor) {
         var s = st(overlay);
+        // Si una animación FLIP/minimize está corriendo, cortarla en seco:
+        // el drag debe responder 1:1 al puntero, sin "perseguir" suavemente.
+        var card = getCard(overlay);
+        if (card) {
+            card.style.transition = '';
+            card.style.transform = '';
+            card.style.opacity = '';
+            card.style.transformOrigin = '';
+        }
         dragState = {
             overlay: overlay,
             mode: mode,
