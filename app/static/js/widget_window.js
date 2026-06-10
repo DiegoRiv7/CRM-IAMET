@@ -231,34 +231,29 @@
         ws.remove(overlay);
         ws.push(overlay);
         updateFocusedWindow();
-        // Micro-zoom de feedback: la card se hunde un toque y vuelve.
-        // Solo en modo ventana — en modal grande el zoom se vería raro.
-        // Si justo después se inicia un drag/resize, startInteraction
-        // limpia transition y el zoom no estorba.
-        var card = getCard(overlay);
-        if (card && overlay.classList.contains('ww-windowed')) {
-            card.style.transition = 'transform 0.18s ease-out';
-            card.style.transformOrigin = '50% 50%';
-            card.style.transform = 'scale(0.98)';
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    card.style.transform = '';
-                    var done = function () {
-                        card.style.transition = '';
-                        card.style.transform = '';
-                        card.style.transformOrigin = '';
-                        card.removeEventListener('transitionend', done);
-                    };
-                    card.addEventListener('transitionend', done);
-                    setTimeout(done, 220);
-                });
-            });
-        }
     }
 
     /* ── Foco visual (ventana al frente vs. detrás) ───────────────── */
 
+    // updateFocusedWindow se invoca desde múltiples lugares —
+    // bringToFront, unwindowize/minimize, y el MutationObserver de
+    // watchVisibility. Sin debounce, el observer puede dispararla
+    // CIENTOS de veces durante el render inicial del widget v2 de
+    // oportunidad (que cambia class/style del overlay muchas veces
+    // al hidratarse). Con requestAnimationFrame queda capada a 1
+    // ejecución por frame del browser, suficiente para foco visual.
+    var _focusedScheduled = false;
+
     function updateFocusedWindow() {
+        if (_focusedScheduled) return;
+        _focusedScheduled = true;
+        requestAnimationFrame(function () {
+            _focusedScheduled = false;
+            _doUpdateFocused();
+        });
+    }
+
+    function _doUpdateFocused() {
         var ws = window.crmWidgetStack;
         if (!ws) return;
         var stack = ws.get();
@@ -274,11 +269,15 @@
                 break;
             }
         }
-        // Limpiar la clase en todas las que ya no son el foco.
+        // Quitar la clase SOLO de quien la tenga y ya no es el foco
+        // (idempotente: classList.remove sobre clase ausente no muta
+        // — sí lo es classList.add sobre presente, pero no muta tampoco).
         document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
             if (el !== focused) el.classList.remove('ww-focused');
         });
-        if (focused) focused.classList.add('ww-focused');
+        if (focused && !focused.classList.contains('ww-focused')) {
+            focused.classList.add('ww-focused');
+        }
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
