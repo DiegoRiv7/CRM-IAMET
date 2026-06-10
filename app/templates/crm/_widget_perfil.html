@@ -582,7 +582,7 @@
             applyThemeToBody(theme);
         };
 
-        var _mundialBgUrl = '{% static "images/estadio_mundial.jpg" %}';
+        var _mundialBgUrl = '/static/images/estadio_mundial.jpg';
         function applyThemeToBody(theme) {
             document.body.setAttribute('data-theme', theme);
             if (theme === 'mundial') {
