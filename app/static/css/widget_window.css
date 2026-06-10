@@ -10,6 +10,14 @@
    .widget-card-cotizador) fijan width/height con !important en crm.css.
    ═══════════════════════════════════════════════════════════════════ */
 
+/* ── Minimizado (al dock) ──
+   Solo con clase: jamás display inline, porque widgets como
+   widgetDetalle se cierran quitando 'active' y un inline pegado
+   dejaría la X sin efecto. */
+.widget-overlay.ww-minimized {
+    display: none !important;
+}
+
 /* ── Overlay en modo ventana ── */
 .widget-overlay.ww-windowed {
     background: transparent !important;
@@ -98,6 +106,35 @@
 .ww-btn:hover {
     background: #E8E8ED;
     color: #1D1D1F;
+}
+
+/* ── Ventanas-vista (snapshot de solo lectura) ── */
+.ww-snap-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #F2F2F7;
+    color: #86868B;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.ww-btn.ww-snap-activate {
+    background: #EAF1FE;
+    color: #0052D4;
+}
+
+.ww-btn.ww-snap-activate:hover {
+    background: #D8E6FD;
+    color: #003EA5;
+}
+
+.ww-snapshot .ww-card {
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22), 0 0 0 2px rgba(0, 82, 212, 0.18);
 }
 
 /* ── Capa de protección durante drag/resize (iframes, selección) ── */
@@ -210,27 +247,31 @@ body.ww-dragging {
     font-size: 1.25rem;
 }
 
-/* ── ww-xs (< 560px) ── */
+/* ── ww-xs (< 560px) — formato "teléfono": este es el LÍMITE de
+   compactación. La info se queda en 2 columnas y el pipeline conserva
+   sus flechas; solo se aprietan paddings y tipografía. Aunque la
+   ventana se haga aún más chica, este formato no se rompe. ── */
 .ww-card.ww-xs .wo-content {
     padding: 0.9rem 1rem 1.25rem;
 }
 
 .ww-card.ww-xs .wo-header {
-    padding: 1rem 1rem 0.5rem;
+    padding: 1rem 1.1rem 0.5rem;
 }
 
 .ww-card.ww-xs .wo-info-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem 1rem !important;
 }
 
 .ww-card.ww-xs .wo-title {
-    font-size: 1.05rem;
-}
-
-.ww-card.ww-xs .wo-scroll-btn {
-    display: none;
+    font-size: 1.1rem;
 }
 
 .ww-card.ww-xs .wo-card {
     padding: 1rem;
+}
+
+.ww-card.ww-xs .wo-info-value {
+    font-size: 1.05rem;
 }

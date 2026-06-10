@@ -191,7 +191,6 @@
         var s = st(overlay);
         if (s.minimized) return;
         s.minimized = true;
-        s.prevDisplay = overlay.style.display || 'flex';
 
         var dock = ensureDock();
         var chip = document.createElement('button');
@@ -203,11 +202,11 @@
         chip.querySelector('.ww-dock-title').textContent = widgetTitle(overlay);
         chip.addEventListener('click', function (ev) {
             if (ev.target.closest('.ww-dock-close')) {
-                // Cerrar de verdad: restaurar oculto y simular click en la X
-                // para que corran los handlers propios del widget.
+                // Cerrar de verdad: desminimizar y simular click en la X para
+                // que corran los handlers propios del widget.
                 removeChip(overlay);
                 s.minimized = false;
-                overlay.style.display = s.prevDisplay;
+                overlay.classList.remove('ww-minimized');
                 var btn = overlay.querySelector(CLOSE_SEL);
                 if (btn) btn.click();
                 else overlay.style.display = 'none';
@@ -219,9 +218,11 @@
         overlay._wwChip = chip;
         dock.appendChild(chip);
 
-        // Ocultar vía display inline: el stack lo saca del z-stack y si otro
-        // código lo "reabre" (openDetalle) el observer de abajo lo desminimiza.
-        overlay.style.display = 'none';
+        // Ocultar SOLO con clase propia (display:none !important en CSS).
+        // NUNCA tocar style.display inline: widgets como widgetDetalle se
+        // abren/cierran con classList 'active' y un display inline pegado
+        // le ganaría al CSS dejando el widget imposible de cerrar con la X.
+        overlay.classList.add('ww-minimized');
     }
 
     function removeChip(overlay) {
@@ -241,7 +242,7 @@
         }
         s.minimized = false;
         removeChip(overlay);
-        overlay.style.display = s.prevDisplay || 'flex';
+        overlay.classList.remove('ww-minimized');
         bringToFront(overlay);
     }
 
@@ -425,6 +426,7 @@
         if (!card) return;
         var overlay = card.closest('.widget-overlay');
         if (!overlay || !overlay.classList.contains('ww-windowed')) return;
+        if (overlay.classList.contains('ww-snapshot')) return;  // las vistas no se maximizan
         if (ev.target.closest(INTERACTIVE)) return;
         if (ev.clientY - card.getBoundingClientRect().top > DRAG_STRIP) return;
         unwindowize(overlay);
@@ -452,7 +454,7 @@
             var s = st(overlay);
             var visible = isVisible(overlay);
             if (visible && s.minimized) {
-                // Alguien lo reabrió desde fuera (ej. openDetalle): ya no está minimizado.
+                // Alguien lo reabrió desde fuera: ya no está minimizado.
                 s.minimized = false;
                 removeChip(overlay);
             } else if (!visible && !s.minimized && s.windowed) {
@@ -461,6 +463,137 @@
             }
         });
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+
+    /* ── Multi-oportunidad: ventanas-vista (snapshots) ────────────────
+       El widget de Oportunidad es un singleton (#widgetDetalle, ids
+       únicos que el legacy llena por getElementById), así que no puede
+       haber dos instancias "vivas". En su lugar: si está en modo ventana
+       y se abre OTRA oportunidad, la actual se congela como una ventana
+       de solo lectura (clon del DOM sin ids). El botón ⤢ la "activa":
+       intercambia su contenido con el del widget vivo. */
+
+    var lastOppId = null;
+    var snapSeq = 0;
+
+    function wrapOpenDetalle() {
+        if (window._wwOpenDetalleWrapped) return;
+        if (typeof window.openDetalle !== 'function') return;
+        var orig = window.openDetalle;
+        window._wwOpenDetalleWrapped = true;
+        window.openDetalle = function (oppId) {
+            var clean = parseInt(String(oppId).replace(/[^\d]/g, ''), 10) || null;
+            try { maybeSnapshot(clean); } catch (e) { console.error('[widgetWindow] snapshot:', e); }
+            var out = orig.apply(this, arguments);
+            if (clean) lastOppId = clean;
+            // Si el widget vivo estaba minimizado, regresarlo del dock.
+            var overlay = document.getElementById('widgetDetalle');
+            if (overlay && st(overlay).minimized) restoreFromDock(overlay);
+            return out;
+        };
+    }
+
+    function maybeSnapshot(newId) {
+        var overlay = document.getElementById('widgetDetalle');
+        if (!overlay || !newId || !lastOppId || newId === lastOppId) return;
+        if (!overlay.classList.contains('ww-windowed')) return;  // modal → reemplaza, como siempre
+        if (st(overlay).minimized || !isVisible(overlay)) return;
+        if (countWindows() >= MAX_WINDOWS) {
+            notify('Máximo ' + MAX_WINDOWS + ' ventanas: la oportunidad abierta se reemplazará');
+            return;
+        }
+        createSnapshot(overlay, lastOppId);
+    }
+
+    var ICON_MIN = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    var ICON_ACT = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M4.5 1.5h6v6M10.5 1.5 5 7M5.5 2.5h-4v8h8v-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    function createSnapshot(overlay, oppId) {
+        var card = getCard(overlay);
+        var rect = st(overlay).rect || defaultRect();
+        var titleEl = overlay.querySelector('#woTitle');
+        var title = (titleEl && titleEl.textContent.trim()) || ('Oportunidad ' + oppId);
+
+        var snap = document.createElement('div');
+        snap.className = 'widget-overlay ww-snapshot';
+        snap.id = 'wwSnap' + (++snapSeq);
+        snap.setAttribute('data-widget-title', title);
+        snap.setAttribute('data-ww-enhanced', '1');  // no pasar por enhance()
+
+        var clone = card.cloneNode(true);
+        clone.removeAttribute('id');
+        // Sin ids duplicados: el legacy renderiza por getElementById y debe
+        // seguir encontrando SOLO el widget vivo.
+        clone.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+        clone.querySelectorAll('.ww-handle, .ww-ctrls, script').forEach(function (n) { n.remove(); });
+        snap.appendChild(clone);
+
+        // Controles propios: activar / minimizar / cerrar
+        var headerTop = clone.querySelector('.wo-header-top') || clone;
+        var ctr = document.createElement('div');
+        ctr.className = 'ww-ctrls';
+        ctr.innerHTML =
+            '<span class="ww-snap-badge">Solo lectura</span>' +
+            '<button type="button" class="ww-btn ww-snap-activate" title="Activar para editar">' + ICON_ACT + '</button>' +
+            '<button type="button" class="ww-btn ww-snap-min" title="Minimizar">' + ICON_MIN + '</button>' +
+            '<button type="button" class="ww-btn ww-snap-close" data-widget-close title="Cerrar vista">&times;</button>';
+        headerTop.appendChild(ctr);
+
+        ctr.querySelector('.ww-snap-min').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            minimize(snap);
+        });
+        ctr.querySelector('.ww-snap-close').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            destroySnapshot(snap);
+        });
+        ctr.querySelector('.ww-snap-activate').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            activateSnapshot(snap, oppId);
+        });
+
+        // Solo lectura: bloquear interacción con el contenido clonado
+        // (los controles propios y las esquinas sí funcionan; el scroll
+        // no pasa por aquí). Capture: corre antes que onclick inline.
+        ['click', 'pointerdown'].forEach(function (evName) {
+            snap.addEventListener(evName, function (ev) {
+                if (ev.target.closest('.ww-ctrls, .ww-handle')) return;
+                if (ev.target.closest(INTERACTIVE)) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    if (evName === 'click') notify('Vista de solo lectura — usa ⤢ para activarla');
+                }
+            }, true);
+        });
+
+        document.body.appendChild(snap);
+        snap.style.display = 'flex';  // visible: widget_stack lo registra solo
+        snap.classList.add('ww-windowed');
+        st(snap).windowed = true;
+        applyRect(snap, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+        injectHandles(snap);
+        watchSize(snap);
+
+        // La ventana viva se corre en cascada para no tapar la vista.
+        applyRect(overlay, snapToEdges({ x: rect.x + 36, y: rect.y + 36, w: rect.w, h: rect.h }));
+    }
+
+    function destroySnapshot(snap) {
+        removeChip(snap);
+        if (window.crmWidgetStack) window.crmWidgetStack.remove(snap);
+        snap.remove();
+    }
+
+    function activateSnapshot(snap, oppId) {
+        var live = document.getElementById('widgetDetalle');
+        var targetRect = st(snap).rect;
+        destroySnapshot(snap);  // liberar el slot antes del snapshot recíproco
+        if (typeof window.openDetalle === 'function') window.openDetalle(oppId);
+        // Colocar la ventana viva donde estaba la vista (continuidad espacial).
+        if (live && targetRect) {
+            if (live.classList.contains('ww-windowed')) applyRect(live, targetRect);
+            else windowize(live, targetRect);
+        }
     }
 
     /* ── Bootstrap ────────────────────────────────────────────────── */
@@ -483,6 +616,7 @@
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
         document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
+        wrapOpenDetalle();
     }
 
     if (!window._widgetWindowWired) {
