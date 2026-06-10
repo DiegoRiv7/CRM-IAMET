@@ -242,6 +242,16 @@
         if (top.length && top[top.length - 1] === overlay) return;  // ya está al frente
         ws.remove(overlay);
         ws.push(overlay);
+        // Si esta opp tiene satélites embebidos a ella, traerlos
+        // también al frente — sino quedaban tapados por otras opps
+        // cuyo z-index era mayor en el stack.
+        OPP_SATELLITE_IDS.forEach(function (id) {
+            var sat = document.getElementById(id);
+            if (sat && sat._wwOppHost === overlay && isVisible(sat)) {
+                ws.remove(sat);
+                ws.push(sat);
+            }
+        });
         // SÍNCRONO aquí: si esperamos al RAF, hay 1 frame donde la
         // ventana nueva está visible sin .ww-focused y se ve oscura.
         _doRefreshFocus();
@@ -452,7 +462,6 @@
     }
 
     function refreshEmbeddedSatellites() {
-        var opp = getActiveOppOverlay();
         OPP_SATELLITE_IDS.forEach(function (id) {
             var sat = document.getElementById(id);
             if (!sat) return;
@@ -460,16 +469,41 @@
                 if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
                 return;
             }
-            if (opp) {
-                embedSatelliteToOpp(sat, opp);
-            } else {
-                // No hay opp en ventana → el satélite debe verse modal
-                // normal. Asegurar que no quede residuo de un embed
-                // anterior (handles, position:fixed, etc.) — ese era
-                // el bug "el drive se abre por detrás".
-                if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
-                else ensureSatelliteIsClean(sat);
+            // CRÍTICO: si el satélite ya tiene host, RESPETARLO. No
+            // re-embebter en la opp focused — eso causaba que al abrir
+            // una 2ª opp en ventana, el drive cambiara de host y
+            // parpadeara entre las dos ventanas.
+            if (sat._wwOppHost) {
+                var host = sat._wwOppHost;
+                var hostOK = isVisible(host) &&
+                             host.classList.contains('ww-windowed') &&
+                             !host.classList.contains('ww-minimized');
+                if (hostOK) {
+                    // Host sigue vivo → solo reposicionar al rect actual.
+                    var oppCard = getCard(host);
+                    if (oppCard) {
+                        var rect = oppCard.getBoundingClientRect();
+                        var satCard = getSatelliteCard(sat);
+                        if (satCard) {
+                            satCard.style.left = rect.left + 'px';
+                            satCard.style.top = rect.top + 'px';
+                            satCard.style.width = rect.width + 'px';
+                            satCard.style.height = rect.height + 'px';
+                        }
+                    }
+                } else {
+                    // Host se cerró o salió de modo ventana → liberar
+                    // el satélite (queda visible como widget independiente
+                    // sobre lo que sea esté abajo).
+                    unembedSatellite(sat);
+                }
+                return;
             }
+            // El satélite NO tiene host aún (recién se abrió). Embebter
+            // SOLO si hay una opp activa en modo ventana.
+            var opp = getActiveOppOverlay();
+            if (opp) embedSatelliteToOpp(sat, opp);
+            else ensureSatelliteIsClean(sat);
         });
     }
 
