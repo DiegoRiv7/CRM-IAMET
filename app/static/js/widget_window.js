@@ -586,21 +586,19 @@
         if (!btn) return;
         var satId = SATELLITE_ACTION_MAP[btn.getAttribute('data-action')];
         if (!satId) return;
-        // Dejamos que el handler legacy del v2 corra normal. En el
-        // siguiente tick, evaluamos si necesita mudarse de host.
+        // Dejamos que el handler legacy del v2 corra normal y abra el
+        // widget (display:flex). En el siguiente tick, evaluamos si
+        // necesita embeber/mudar host. SOLO actuamos si hay opp en
+        // ventana — sin opp ventana, no tocamos nada (el widget se ve
+        // como modal normal con su comportamiento original).
         setTimeout(function () {
             try {
+                var currentOpp = getActiveOppOverlay();
+                if (!currentOpp) return;  // sin opp ventana → no-op total
                 var sat = document.getElementById(satId);
                 if (!sat || !isVisible(sat)) return;
-                var currentOpp = getActiveOppOverlay();
-                if (!currentOpp) {
-                    // No hay opp en ventana → debe verse modal normal.
-                    if (sat.classList.contains('ww-embedded-opp')) unembedSatellite(sat);
-                    return;
-                }
                 if (sat._wwOppHost === currentOpp) {
-                    // Ya embebido en la opp correcta → solo reposicionar
-                    // (la opp pudo haberse movido entre clicks).
+                    // Ya embebido en la opp correcta → solo reposicionar.
                     var oppCard = getCard(currentOpp);
                     if (oppCard) {
                         var r = oppCard.getBoundingClientRect();
@@ -615,15 +613,11 @@
                     return;
                 }
                 // Cambio de host O primera vez con opp activa.
-                // embedSatelliteToOpp ya hace el unembed previo si hay
-                // host distinto (guard interno), así que es seguro
-                // llamarlo directamente.
                 embedSatelliteToOpp(sat, currentOpp);
             } catch (e) {
-                // Cualquier error aquí NO debe tumbar la página.
                 console.error('[wwSatellite] onSatelliteActionClick:', e);
             }
-        }, 40);
+        }, 80);
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -1469,7 +1463,8 @@
         document.addEventListener('click', function () { refreshFocusState(); }, true);
         // Click en botones [data-action="abrir-drive"/"abrir-conversacion"]
         // → evaluar si el satélite debe mudarse de host (cambio de opp).
-        document.addEventListener('click', onSatelliteActionClick, true);
+        // Bubble phase (no capture) para correr DESPUÉS del handler v2.
+        document.addEventListener('click', onSatelliteActionClick);
         // Red de seguridad: poll ligero cada 800ms para sincronizar
         // body.ww-has-windows si algún cierre escapó a nuestros
         // observers (cierre con X de widgets que no llaman hooks
