@@ -162,9 +162,27 @@
         overlay.style.setProperty('--ww-w', r.w + 'px');
         overlay.style.setProperty('--ww-h', r.h + 'px');
         st(overlay).rect = r;
-        // Si esta opp tiene satélites abiertos, re-encuadrarlos al
-        // nuevo rect (debounced via RAF para no saturar durante drag).
-        scheduleSatelliteRefresh();
+        // Si esta opp tiene satélites EMBEBIDOS, reposicionarlos al
+        // nuevo rect — solo eso (no cambia hosts, no re-embebe).
+        repositionSatellitesOf(overlay);
+    }
+
+    function repositionSatellitesOf(opp) {
+        var oppCard = getCard(opp);
+        if (!oppCard) return;
+        var rect = oppCard.getBoundingClientRect();
+        OPP_SATELLITE_IDS.forEach(function (id) {
+            var sat = document.getElementById(id);
+            if (!sat) return;
+            if (sat._wwOppHost !== opp) return;
+            if (!isVisible(sat)) return;
+            var satCard = getSatelliteCard(sat);
+            if (!satCard) return;
+            satCard.style.left = rect.left + 'px';
+            satCard.style.top = rect.top + 'px';
+            satCard.style.width = rect.width + 'px';
+            satCard.style.height = rect.height + 'px';
+        });
     }
 
     function snapToEdges(r) {
@@ -302,9 +320,11 @@
         // que el tracking JS es la garantía de que el velo oscuro del
         // fondo aparece/desaparece correctamente.
         document.body.classList.toggle('ww-has-windows', candidates.length > 0);
-        // Si la opp focused cambió, los satélites abiertos se mueven
-        // con ella (o se desembebter si ya no hay ninguna opp activa).
-        scheduleSatelliteRefresh();
+        // NO llamar scheduleSatelliteRefresh aquí — eso disparaba
+        // reembeds en cascada al cambiar de foco entre opps cuando
+        // había un satélite abierto, rompiendo el layout. Si el host
+        // de un satélite se cierra/des-windowiza, lo maneja
+        // watchVisibility con closeSatellitesOfOpp.
     }
 
     /* ── Widgets satélite "embebidos" en la opp activa ────────────
@@ -515,8 +535,9 @@
         });
     }
 
-    // MutationObserver por satélite: cuando se vuelve visible, embeber
-    // si hay opp activa. Solo se setea una vez por elemento.
+    // MutationObserver por satélite — SOLO maneja el cierre (limpia
+    // residuos del embed). La apertura/embed la maneja
+    // onSatelliteActionClick para evitar reembeds en cascada.
     function watchSatellite(id) {
         var el = document.getElementById(id);
         if (!el || el._wwSatWatched) return;
@@ -526,21 +547,8 @@
             var visible = isVisible(el);
             if (visible === lastVisible) return;
             lastVisible = visible;
-            if (visible) {
-                var opp = getActiveOppOverlay();
-                if (opp) embedSatelliteToOpp(el, opp);
-                // Si NO hay opp en ventana, limpiar residuos de un
-                // embed anterior — el drive abierto sin opp en
-                // ventana se mostraba en posición fantasma de la
-                // última embed (handles + position:fixed pegados).
-                else ensureSatelliteIsClean(el);
-            } else {
-                // SIEMPRE limpiar al cerrarse (no solo si tenía
-                // ww-embedded-opp). Garantiza que la próxima apertura
-                // arranque sin residuos sin importar por qué camino
-                // se cerró.
+            if (!visible) {
                 if (el.classList.contains('ww-embedded-opp')) unembedSatellite(el);
-                else ensureSatelliteIsClean(el);
             }
         });
         obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
