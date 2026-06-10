@@ -17578,8 +17578,10 @@ body[data-theme="mundial"] .vendor-card {
 }
 
 /* ── Kanban board: columnas casi invisibles, solo borde — la cancha se ve ── */
+/* Degradado sutil de transparente (arriba) a velo oscuro leve (abajo) para
+   que las columnas vacías no se sientan huecas y den sensación de profundidad. */
 body[data-theme="mundial"] .crm-kanban-col {
-    background: transparent !important;
+    background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(0, 20, 10, 0.14) 100%) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.22) !important;
@@ -17595,9 +17597,9 @@ body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
 }
 /* Solo el encabezado lleva un velo oscuro para legibilidad del texto */
 body[data-theme="mundial"] .crm-kanban-head {
-    background: rgba(0, 22, 11, 0.40) !important;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(0, 22, 11, 0.44) !important;
+    backdrop-filter: blur(11px);
+    -webkit-backdrop-filter: blur(11px);
     border-bottom-color: rgba(255, 255, 255, 0.12) !important;
 }
 body[data-theme="mundial"] .crm-kanban-stage-name {
@@ -17623,11 +17625,11 @@ body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
 
 /* ── Cards de oportunidades: glass esmerilado translúcido ── */
 body[data-theme="mundial"] .crm-kanban-card.crm-postit {
-    background: rgba(255, 255, 255, 0.80) !important;
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.55) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255,255,255,0.5) !important;
+    background: rgba(255, 255, 255, 0.87) !important;
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
 }
 body[data-theme="mundial"] .crm-kanban-card.crm-postit:hover {
     background: rgba(255, 255, 255, 0.92) !important;
