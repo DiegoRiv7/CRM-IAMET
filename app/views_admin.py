@@ -1544,6 +1544,55 @@ def actualizar_avatar(request):
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
+def fondo_mundial_admin(request):
+    """
+    Página oculta (sin link en el menú) para administrar el fondo del tema
+    Mundial. El archivo se guarda en media/fondos/mundial.jpg — ubicación
+    fija y global: todos los usuarios con el tema Mundial activo lo ven.
+    Vivir en media/ (no static/) evita tener que correr collectstatic al
+    cambiar la imagen. Solo superusuarios.
+    """
+    fondos_dir = os.path.join(settings.MEDIA_ROOT, 'fondos')
+    destino = os.path.join(fondos_dir, 'mundial.jpg')
+    rel_url = settings.MEDIA_URL + 'fondos/mundial.jpg'
+
+    mensaje = None
+    error = None
+
+    if request.method == 'POST':
+        archivo = request.FILES.get('fondo')
+        if not archivo:
+            error = 'No seleccionaste ningún archivo.'
+        else:
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+            if archivo.content_type not in allowed_types:
+                error = 'Formato no permitido. Usa JPG, PNG o WebP.'
+            elif archivo.size > 15 * 1024 * 1024:
+                error = 'El archivo es muy grande. Máximo 15MB.'
+            else:
+                try:
+                    os.makedirs(fondos_dir, exist_ok=True)
+                    with open(destino, 'wb') as f:
+                        for chunk in archivo.chunks():
+                            f.write(chunk)
+                    mensaje = 'Fondo del tema Mundial actualizado correctamente.'
+                except Exception as e:
+                    error = f'Error al guardar el archivo: {e}'
+
+    existe = os.path.exists(destino)
+    # Cache-bust: timestamp del archivo para forzar recarga en el navegador.
+    version = int(os.path.getmtime(destino)) if existe else 0
+
+    return render(request, 'fondo_mundial_admin.html', {
+        'mensaje': mensaje,
+        'error': error,
+        'existe': existe,
+        'fondo_url': rel_url + ('?v=%d' % version if version else ''),
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
 def bitrix_sync_admin(request):
     """
     Vista de administración para sincronización con Bitrix24

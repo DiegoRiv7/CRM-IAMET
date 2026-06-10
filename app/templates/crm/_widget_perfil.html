@@ -581,7 +581,9 @@
             applyThemeToBody(theme);
         };
 
-        var _mundialBgUrl = '/static/images/estadio_mundial.jpg';
+        // Fondo del tema Mundial — administrado desde /app/config/fondo-mundial/
+        // y guardado en media/ (no static), para cambiarlo sin redeploy.
+        var _mundialBgUrl = '/media/fondos/mundial.jpg';
         // Scrim verde oscuro sobre la cancha: centro semi-visible (cancha+bandera),
         // bordes oscuros para que el glass blanco y el texto resalten.
         var _mundialScrim = 'radial-gradient(ellipse 120% 90% at center, rgba(4,38,18,0.55) 0%, rgba(2,24,11,0.82) 55%, rgba(1,15,7,0.93) 100%)';

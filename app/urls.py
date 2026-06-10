@@ -346,6 +346,8 @@ urlpatterns = [
 
     # ── Perfil de usuario ─────────────────────────────────────────────────────
     path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
+    # Página oculta (sin link en el menú) para administrar el fondo del tema Mundial.
+    path('config/fondo-mundial/', views.fondo_mundial_admin, name='fondo_mundial_admin'),
     path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
     path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 
