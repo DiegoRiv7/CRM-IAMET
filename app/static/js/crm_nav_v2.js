@@ -174,19 +174,23 @@
         return true;
     };
 
-    /* ── Calendario como vista client-side ─────────────────────────────
-       El widget #widgetCalendarioMaster vive SIEMPRE en el DOM del CRM;
-       la página ?tab=calendario solo lo pone en "modo página" desde el
-       server. Aquí hacemos lo mismo sin navegar: si la página actual es
-       el CRM (tab=crm, con kanban y barras completas), el botón
-       Calendario alterna el modo página en el cliente — y VOLVER al CRM
-       es instantáneo (el kanban sigue vivo, las ventanas sobreviven).
-       Aterrizajes directos en ?tab=calendario conservan la navegación
-       Turbo de siempre (esa página no trae el chrome del CRM).         */
+    /* ── Calendario sin navegación ──────────────────────────────────────
+       El calendario ya existe COMPLETO como widget modal en toda página
+       CRM (#widgetCalendarioMaster, 98vw×97vh, con su header y subnav).
+       En vez de navegar a ?tab=calendario (re-render del server, barra
+       azul, se pierden las ventanas), el botón del sidebar lo abre como
+       overlay encima del CRM: abrir es inmediato y CERRAR es instantáneo
+       porque el CRM nunca dejó de estar ahí. La URL se sincroniza con
+       replaceState para que F5/compartir caigan en la página real del
+       calendario. Aterrizajes directos en ?tab=calendario conservan el
+       modo página del server (markup propio, no se toca).
+
+       NOTA: NO se puede replicar el modo página en el cliente — los dos
+       headers del template son ramas {% if %}/{% else %} con ids
+       duplicados entre sí (calUserPickerBtn, calUserFilter…); renderizar
+       ambos rompería los scripts del calendario.                        */
 
     var calInline = false;
-    var SECTION_IDS = ['crmContentSection', 'tareasSection', 'proyectosSection', 'widgetCompras'];
-    var SIDEBAR_BTNS = ['btnCRM', 'btnTareas', 'btnProyectos', 'btnCompras'];
 
     function replaceUrl(qs) {
         try { window.history.replaceState({}, '', window.location.pathname + '?' + qs); } catch (e) { }
@@ -203,80 +207,56 @@
     }
 
     function calOpenInline() {
-        var ov = document.getElementById('widgetCalendarioMaster');
-        if (!ov || typeof window.calendarioAbrir !== 'function') return false;
-        SECTION_IDS.forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-        });
-        ov.classList.add('is-page-mode');
-        // El branch page-mode de calendarioAbrir NO setea display (en el
-        // server lo hace el template); aquí nos toca a nosotros.
-        ov.style.display = 'flex';
-        ov.style.alignItems = 'stretch';
-        ov.style.justifyContent = 'stretch';
+        if (!document.getElementById('widgetCalendarioMaster')) return false;
+        if (typeof window.calendarioAbrir !== 'function') return false;
         try { window.calendarioAbrir(); } catch (e) {
             console.error('[crmNavV2] calendarioAbrir:', e);
+            return false;
         }
         calInline = true;
         replaceUrl('tab=calendario');
-        window.scrollTo(0, 0);
-        SIDEBAR_BTNS.forEach(function (id) {
-            var b = document.getElementById(id);
-            if (b) b.classList.remove('active');
-        });
         var bc = document.getElementById('btnCalendario');
         if (bc) bc.classList.add('active');
         return true;
     }
 
-    function calCloseInline() {
-        var ov = document.getElementById('widgetCalendarioMaster');
-        if (ov) {
-            ov.classList.remove('is-page-mode');
-            ov.style.alignItems = '';
-            ov.style.justifyContent = '';
-        }
-        if (typeof window.calendarioCerrar === 'function') {
-            try { window.calendarioCerrar(); } catch (e) { }
-        }
-        calInline = false;
-    }
+    // Cualquier cierre del calendario (X, Esc vía stack, o nuestros botones)
+    // pasa por calendarioCerrar — el wrap restaura la URL del CRM cuando el
+    // calendario lo abrimos nosotros. calendarioCerrar ya limpia el .active.
+    window.crmReady(function () {
+        if (window._crmNavCalWrapped) return;
+        if (typeof window.calendarioCerrar !== 'function') return;
+        window._crmNavCalWrapped = true;
+        var origCerrar = window.calendarioCerrar;
+        window.calendarioCerrar = function () {
+            var r = origCerrar.apply(this, arguments);
+            if (calInline) {
+                calInline = false;
+                urlToCrm();
+            }
+            return r;
+        };
+    });
 
     // Captura a nivel document: corre ANTES que los onclick inline y los
-    // listeners de crm_main, así podemos tomar la navegación sin tocarlos.
+    // listeners de crm_main, así tomamos la navegación sin tocar el legacy.
     document.addEventListener('click', function (ev) {
         var t = ev.target.closest && ev.target.closest('#btnCalendario, #btnCRM, #btnTareas, #btnProyectos, #btnCompras');
         if (!t) return;
         var cfg = window._CRM_CONFIG || {};
 
         if (t.id === 'btnCalendario') {
-            if (cfg.tabActivo !== 'crm') return;   // landing ≠ crm → Turbo normal
+            if (cfg.tabActivo !== 'crm') return;   // landing ≠ crm → navegación normal
             ev.preventDefault();
             ev.stopPropagation();
             if (!calInline) calOpenInline();
             return;
         }
 
-        // Los demás botones solo nos interesan para SALIR del calendario inline.
-        if (!calInline) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        calCloseInline();
-        if (typeof window.switchCrmView !== 'function') { hardReload('/app/home/?tab=crm'); return; }
-
-        if (t.id === 'btnCRM') {
-            window.switchCrmView('crm');
-        } else if (t.id === 'btnTareas') {
-            window.switchCrmView('tareas');
-            if (typeof window.recargarTareasCRM === 'function') window.recargarTareasCRM();
-        } else if (t.id === 'btnProyectos') {
-            if (typeof window.proyectosAbrir === 'function') window.proyectosAbrir();
-            else window.switchCrmView('proyectos');
-        } else if (t.id === 'btnCompras') {
-            window.switchCrmView('compras');
-            if (typeof window.comprasInit === 'function') window.comprasInit();
+        // Los demás botones del sidebar: si el calendario está abierto como
+        // overlay, cerrarlo primero y dejar que el handler normal siga.
+        if (calInline && typeof window.calendarioCerrar === 'function') {
+            window.calendarioCerrar();
         }
-        urlToCrm();
     }, true);
 })();
