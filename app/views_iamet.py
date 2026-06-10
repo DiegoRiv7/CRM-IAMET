@@ -3145,6 +3145,10 @@ def _user_es_solo_lectura_levantamiento(user):
     pueden ver fases completadas y descargar PDFs, pero no editar ni borrar.
     Los ingenieros, supervisores, administradores y superusers tienen
     acceso completo.
+
+    EXCEPCIÓN: un vendedor con el permiso `puede_levantamiento` activado
+    desde el panel de Permisos del admin recibe acceso completo (puede
+    editar y llenar las 5 fases como un ingeniero).
     """
     if not user or not user.is_authenticated:
         return True
@@ -3154,7 +3158,9 @@ def _user_es_solo_lectura_levantamiento(user):
         return False
     try:
         if hasattr(user, 'userprofile') and user.userprofile and getattr(user.userprofile, 'rol', None):
-            return user.userprofile.rol == 'vendedor'
+            if user.userprofile.rol == 'vendedor':
+                # Vendedor con permiso especial → acceso completo.
+                return not getattr(user.userprofile, 'puede_levantamiento', False)
     except Exception:
         pass
     return False
