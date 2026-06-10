@@ -220,7 +220,7 @@
         s.rect = null;
         updateWinBtn(overlay);
         flipAnimate(card, fromRect);
-        updateFocusedWindow();
+        refreshFocusState();
     }
 
     function bringToFront(overlay) {
@@ -230,54 +230,51 @@
         if (top.length && top[top.length - 1] === overlay) return;  // ya está al frente
         ws.remove(overlay);
         ws.push(overlay);
-        updateFocusedWindow();
+        refreshFocusState();
     }
 
-    /* ── Foco visual (ventana al frente vs. detrás) ───────────────── */
+    /* ── Foco visual minimal: solo clases, CSS hace el resto ──────
+       En lugar de halos/zooms, el énfasis se da por CONTRASTE:
+         · body.ww-has-windows → overlay oscuro sobre el CRM (CSS)
+         · .ww-windowed:not(.ww-focused) → brillo reducido (CSS)
+       Aquí en JS solo mantenemos esas dos clases sincronizadas con
+       el estado del stack. Llamado en los puntos clave + RAF debounce
+       para que múltiples invocaciones en el mismo tick se colapsen. */
 
-    // updateFocusedWindow se invoca desde múltiples lugares —
-    // bringToFront, unwindowize/minimize, y el MutationObserver de
-    // watchVisibility. Sin debounce, el observer puede dispararla
-    // CIENTOS de veces durante el render inicial del widget v2 de
-    // oportunidad (que cambia class/style del overlay muchas veces
-    // al hidratarse). Con requestAnimationFrame queda capada a 1
-    // ejecución por frame del browser, suficiente para foco visual.
-    var _focusedScheduled = false;
+    var _focusScheduled = false;
 
-    function updateFocusedWindow() {
-        if (_focusedScheduled) return;
-        _focusedScheduled = true;
+    function refreshFocusState() {
+        if (_focusScheduled) return;
+        _focusScheduled = true;
         requestAnimationFrame(function () {
-            _focusedScheduled = false;
-            _doUpdateFocused();
+            _focusScheduled = false;
+            _doRefreshFocus();
         });
     }
 
-    function _doUpdateFocused() {
+    function _doRefreshFocus() {
         var ws = window.crmWidgetStack;
         if (!ws) return;
         var stack = ws.get();
         var focused = null;
+        var anyWindowed = false;
         for (var i = stack.length - 1; i >= 0; i--) {
             var el = stack[i];
-            if (el && el.classList &&
-                el.classList.contains('widget-overlay') &&
-                el.classList.contains('ww-windowed') &&
-                !el.classList.contains('ww-minimized') &&
-                isVisible(el)) {
-                focused = el;
-                break;
-            }
+            if (!el || !el.classList) continue;
+            if (!el.classList.contains('widget-overlay')) continue;
+            if (!el.classList.contains('ww-windowed')) continue;
+            if (el.classList.contains('ww-minimized')) continue;
+            if (!isVisible(el)) continue;
+            anyWindowed = true;
+            if (!focused) focused = el;  // el de mayor z (top del stack)
         }
-        // Quitar la clase SOLO de quien la tenga y ya no es el foco
-        // (idempotente: classList.remove sobre clase ausente no muta
-        // — sí lo es classList.add sobre presente, pero no muta tampoco).
         document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
             if (el !== focused) el.classList.remove('ww-focused');
         });
         if (focused && !focused.classList.contains('ww-focused')) {
             focused.classList.add('ww-focused');
         }
+        document.body.classList.toggle('ww-has-windows', anyWindowed);
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
@@ -348,7 +345,7 @@
             chip.style.opacity = '';
             chip.style.pointerEvents = '';
             chip.classList.add('ww-dock-chip-enter');
-            updateFocusedWindow();
+            refreshFocusState();
         };
 
         if (!card || !cardRect || !chipRect.width) {
@@ -837,19 +834,28 @@
     /* ── Sincronía con aperturas/cierres externos ─────────────────── */
 
     function watchVisibility(overlay) {
+        // Snapshot del estado de visibilidad — si la nueva mutación no
+        // cambia visibility, el callback termina sin trabajo. Sin este
+        // gate, el widget v2 de Oportunidad (que muta class/style
+        // muchas veces al hidratarse) disparaba refreshFocusState
+        // cientos de veces por apertura → congelamiento de la UI.
+        var lastVisible = isVisible(overlay);
         var obs = new MutationObserver(function () {
             var s = st(overlay);
             var visible = isVisible(overlay);
+            if (visible === lastVisible) return;  // sin cambio relevante
+            lastVisible = visible;
             if (visible && s.minimized) {
-                // Alguien lo reabrió desde fuera: ya no está minimizado.
                 s.minimized = false;
                 removeChip(overlay);
+                refreshFocusState();
             } else if (!visible && !s.minimized && s.windowed) {
-                // Cerrado en modo ventana → la próxima apertura regresa como modal.
+                // Cerrado en modo ventana → unwindowize ya llama
+                // refreshFocusState internamente.
                 unwindowize(overlay);
+            } else {
+                refreshFocusState();
             }
-            // Apertura/cierre puede cambiar quién es la ventana al frente.
-            updateFocusedWindow();
         });
         obs.observe(overlay, { attributes: true, attributeFilter: ['style', 'class'] });
     }
