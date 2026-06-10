@@ -185,7 +185,11 @@
     function windowize(overlay, rect) {
         if (overlay.classList.contains('ww-windowed')) return true;
         if (countWindows() >= MAX_WINDOWS) {
-            notify('Máximo ' + MAX_WINDOWS + ' ventanas abiertas a la vez');
+            // En lugar de un toast huérfano, abrir el selector visual
+            // estilo Mission Control: el usuario elige cuál cerrar
+            // para que la nueva tome su lugar. Si cancela, la ventana
+            // pendiente queda como modal (no se windowiza).
+            showWindowPicker(overlay, rect);
             return false;
         }
         var card = getCard(overlay);
@@ -642,6 +646,127 @@
         missionControlActive = false;
     }
 
+    /* ── Window Picker: cuál cerrar al exceder MAX_WINDOWS ──────────
+       Estilo Mission Control en miniatura. Cuando se intenta abrir
+       una 5ª ventana, mostramos un overlay con las 4 actuales como
+       tarjetas grandes clickables. Click en una → se cierra (con su
+       handler propio para no bypassar lógica del widget) y la pendiente
+       se windowiza en el siguiente tick. Cancelar/Esc → no se abre. */
+
+    var pickerEl = null;            // overlay del picker
+    var pickerPending = null;       // { overlay, rect } a abrir al elegir
+
+    // Íconos por tipo de widget conocido (svg inline, 24×24).
+    function pickerIconFor(overlay) {
+        var id = (overlay.id || '').toLowerCase();
+        // Opp/detalle (legacy + v2)
+        if (id.indexOf('detalle') !== -1 || id.indexOf('opp') !== -1) {
+            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L2 7 L12 12 L22 7 L12 2 Z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
+        }
+        if (id.indexOf('cotizad') !== -1 || id.indexOf('cot') !== -1) {
+            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+        }
+        if (id.indexOf('cliente') !== -1) {
+            return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+        }
+        // Genérico: ventana
+        return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>';
+    }
+
+    function pickerSubtitleFor(overlay) {
+        // Si el card tiene un .wo-cliente o similar, úsalo; sino, el id "limpio".
+        var sub = overlay.querySelector('[data-widget-subtitle]');
+        if (sub) return sub.textContent.trim().substring(0, 60);
+        var cliente = overlay.querySelector('.wo-cliente, .wo-subtitle, .wco-subtitle');
+        if (cliente && cliente.textContent.trim()) return cliente.textContent.trim().substring(0, 60);
+        return '';
+    }
+
+    function showWindowPicker(pendingOverlay, pendingRect) {
+        if (pickerEl) return;  // ya hay uno abierto
+        pickerPending = { overlay: pendingOverlay, rect: pendingRect };
+        var wins = activeWindows();
+
+        pickerEl = document.createElement('div');
+        pickerEl.className = 'ww-picker';
+        pickerEl.innerHTML =
+            '<div class="ww-picker-card" role="dialog" aria-modal="true">' +
+            '  <div class="ww-picker-head">' +
+            '    <h2 class="ww-picker-title">Tienes ' + wins.length + ' ventanas abiertas</h2>' +
+            '    <p class="ww-picker-sub">Cierra una para abrir esta nueva</p>' +
+            '  </div>' +
+            '  <div class="ww-picker-grid"></div>' +
+            '  <div class="ww-picker-foot">' +
+            '    <button type="button" class="ww-picker-cancel">Cancelar</button>' +
+            '  </div>' +
+            '</div>';
+        var grid = pickerEl.querySelector('.ww-picker-grid');
+        wins.forEach(function (overlay) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'ww-picker-item';
+            item.innerHTML =
+                '<div class="ww-picker-item-icon">' + pickerIconFor(overlay) + '</div>' +
+                '<div class="ww-picker-item-body">' +
+                '  <div class="ww-picker-item-title">' +
+                     esc(widgetTitle(overlay)) +
+                '  </div>' +
+                '  <div class="ww-picker-item-sub">' + esc(pickerSubtitleFor(overlay)) + '</div>' +
+                '</div>' +
+                '<div class="ww-picker-item-x" aria-hidden="true">×</div>';
+            item.addEventListener('click', function () {
+                onPickerSelect(overlay);
+            });
+            grid.appendChild(item);
+        });
+        pickerEl.querySelector('.ww-picker-cancel').addEventListener('click', closeWindowPicker);
+        // Click en backdrop (fuera del card) = cancelar
+        pickerEl.addEventListener('click', function (ev) {
+            if (ev.target === pickerEl) closeWindowPicker();
+        });
+        document.body.appendChild(pickerEl);
+        // Forzar reflow para que la transition entrante funcione.
+        void pickerEl.offsetHeight;
+        pickerEl.classList.add('ww-picker-visible');
+    }
+
+    // Mini esc() para escapar texto que viene de widgetTitle/subtitle.
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function closeWindowPicker() {
+        if (!pickerEl) return;
+        pickerEl.classList.remove('ww-picker-visible');
+        var el = pickerEl;
+        pickerEl = null;
+        pickerPending = null;
+        setTimeout(function () { if (el && el.parentNode) el.remove(); }, 220);
+    }
+
+    function onPickerSelect(overlayToClose) {
+        var pending = pickerPending;
+        // Cerrar la elegida usando su propio handler (preserva lógica
+        // del widget: limpiar estado, emitir eventos, etc.).
+        var btn = overlayToClose.querySelector(CLOSE_SEL);
+        if (btn) btn.click();
+        else {
+            // Sin botón close: fallback razonable.
+            overlayToClose.classList.remove('active');
+            overlayToClose.style.display = 'none';
+        }
+        closeWindowPicker();
+        // Reintentar la apertura pendiente en el siguiente tick para
+        // que el cierre alcance a propagarse (animaciones + observers).
+        if (pending) {
+            setTimeout(function () {
+                if (pending.overlay) windowize(pending.overlay, pending.rect);
+            }, 300);
+        }
+    }
+
     /* ── Drag + resize ────────────────────────────────────────────── */
 
     var dragState = null;  // { overlay, mode:'move'|dir, startX, startY, startRect }
@@ -961,9 +1086,15 @@
                 activateMissionControl();
             }
         });
-        // Esc cierra Mission Control si está activo.
+        // Esc cierra Mission Control o el window picker si están abiertos.
         document.addEventListener('keydown', function (ev) {
-            if (ev.key === 'Escape' && missionControlActive) {
+            if (ev.key !== 'Escape') return;
+            if (pickerEl) {
+                closeWindowPicker();
+                ev.preventDefault();
+                return;
+            }
+            if (missionControlActive) {
                 deactivateMissionControl();
                 ev.preventDefault();
             }

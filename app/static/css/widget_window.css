@@ -258,6 +258,190 @@ body.ww-mission-control [data-action] {
     cursor: pointer;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Window Picker — selector visual al exceder 4 ventanas
+   Estilo macOS: backdrop con blur fuerte, card central, tarjetas
+   clickables con hover rojo iOS (color de "delete/close"). El usuario
+   elige cuál ventana cerrar para liberar espacio.
+   ═══════════════════════════════════════════════════════════════════ */
+.ww-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.ww-picker.ww-picker-visible {
+    opacity: 1;
+}
+
+.ww-picker-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 28px 22px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+    transform: scale(0.94);
+    transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ww-picker-visible .ww-picker-card {
+    transform: scale(1);
+}
+
+.ww-picker-head {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.ww-picker-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1D1D1F;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+}
+
+.ww-picker-sub {
+    font-size: 0.92rem;
+    color: #86868B;
+    margin: 0;
+}
+
+.ww-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .ww-picker-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ww-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: #F5F5F7;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: left;
+    color: #1D1D1F;
+    font-family: inherit;
+    transition: all 0.18s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.ww-picker-item:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: rgba(255, 59, 48, 0.5);
+    transform: scale(1.02);
+}
+
+.ww-picker-item-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: color 0.18s ease;
+}
+
+.ww-picker-item:hover .ww-picker-item-icon {
+    color: #FF3B30;
+}
+
+.ww-picker-item-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.ww-picker-item-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ww-picker-item-sub {
+    font-size: 0.82rem;
+    color: #86868B;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ww-picker-item-sub:empty {
+    display: none;
+}
+
+.ww-picker-item-x {
+    font-size: 1.6rem;
+    line-height: 1;
+    color: transparent;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s ease;
+}
+
+.ww-picker-item:hover .ww-picker-item-x {
+    color: #fff;
+    background: #FF3B30;
+}
+
+.ww-picker-foot {
+    display: flex;
+    justify-content: center;
+}
+
+.ww-picker-cancel {
+    padding: 10px 24px;
+    background: #F5F5F7;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease;
+}
+
+.ww-picker-cancel:hover {
+    background: #E8E8ED;
+}
+
 /* En modo ventana la franja superior funciona como barra de título */
 .widget-overlay.ww-windowed .ww-card .wo-header {
     cursor: grab;
