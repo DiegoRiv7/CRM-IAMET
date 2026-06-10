@@ -17480,3 +17480,158 @@ body.rep-embedded .rep-header { display: none !important; }
     display: inline-block; margin-left: 2px;
 }
 .rep-spa-filter-dot[hidden] { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   TEMA MUNDIAL — Edición Copa del Mundo 2026
+   Cancha fija de fondo, CRM en glass sobre el estadio.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Page container y layout — transparentes para dejar ver la cancha */
+body[data-theme="mundial"] .crm-page,
+body[data-theme="mundial"] .crm-page-sidebar {
+    background: transparent !important;
+}
+
+/* ── Sidebar: glass verde oscuro ── */
+body[data-theme="mundial"] .crm-sidebar {
+    background: rgba(0, 40, 5, 0.72) !important;
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="mundial"] .crm-sb-logo {
+    background: linear-gradient(135deg, #006847 0%, #004d35 100%) !important;
+    box-shadow: 0 4px 14px rgba(0, 104, 71, 0.45), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+}
+body[data-theme="mundial"] .crm-sb-btn,
+body[data-theme="mundial"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.82); }
+body[data-theme="mundial"] .crm-sb-btn:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff;
+}
+body[data-theme="mundial"] .crm-sb-btn.active {
+    background: rgba(0, 104, 71, 0.55) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-sb-btn.active::before {
+    background: #00d46b !important;
+}
+body[data-theme="mundial"] .crm-sb-divider { background: rgba(255, 255, 255, 0.14) !important; }
+body[data-theme="mundial"] .crm-sb-label { color: rgba(255, 255, 255, 0.75); }
+body[data-theme="mundial"] .crm-sb-dot { background: #CE1126 !important; }
+
+/* ── Topbar / Dynamic Island ── */
+body[data-theme="mundial"] .crm-unified-header { background: transparent !important; }
+body[data-theme="mundial"] .crm-island {
+    background: rgba(255, 255, 255, 0.18) !important;
+    backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+    border-color: rgba(255, 255, 255, 0.32) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22), inset 0 1.5px 0 rgba(255,255,255,0.55) !important;
+}
+body[data-theme="mundial"] .crm-island:hover,
+body[data-theme="mundial"] .crm-island.is-expanded {
+    background: rgba(255, 255, 255, 0.28) !important;
+}
+body[data-theme="mundial"] .island-sep { background: rgba(255, 255, 255, 0.25) !important; }
+
+/* ── Main y contenido ── */
+body[data-theme="mundial"] .crm-main,
+body[data-theme="mundial"] .crm-content { background: transparent !important; }
+
+/* Workspace title */
+body[data-theme="mundial"] .crm-workspace-title-text {
+    color: #ffffff !important;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+body[data-theme="mundial"] .crm-workspace-count {
+    background: rgba(255,255,255,0.2) !important;
+    color: #ffffff !important;
+}
+
+/* Tabs */
+body[data-theme="mundial"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+body[data-theme="mundial"] .crm-tab { color: rgba(255,255,255,0.72) !important; }
+body[data-theme="mundial"] .crm-tab.active {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+body[data-theme="mundial"] .crm-tab:hover:not(.active) {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+}
+
+/* Vendor hero card */
+body[data-theme="mundial"] .vendor-card {
+    background: linear-gradient(135deg, rgba(0, 104, 71, 0.72) 0%, rgba(0, 160, 107, 0.58) 100%) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ── Kanban board ── */
+body[data-theme="mundial"] .crm-kanban-col {
+    background: rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+body[data-theme="mundial"] .crm-kanban-col.collapsed {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+}
+body[data-theme="mundial"] .crm-kanban-head {
+    background: rgba(255, 255, 255, 0.13) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom-color: rgba(255, 255, 255, 0.14) !important;
+}
+body[data-theme="mundial"] .crm-kanban-stage-name { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-kanban-total-label { color: rgba(255,255,255,0.62) !important; }
+body[data-theme="mundial"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
+body[data-theme="mundial"] .crm-kanban-count {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-kanban-vertical-name { color: rgba(255,255,255,0.68) !important; }
+body[data-theme="mundial"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-kanban-col-btn { color: rgba(255,255,255,0.65) !important; }
+body[data-theme="mundial"] .crm-kanban-col-btn:hover {
+    background: rgba(255,255,255,0.18) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.25) !important;
+}
+
+/* ── Cards de oportunidades: glass blanco ── */
+body[data-theme="mundial"] .crm-kanban-card.crm-postit {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10) !important;
+}
+body[data-theme="mundial"] .crm-kanban-card.crm-postit:hover {
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* ── glass-card general ── */
+body[data-theme="mundial"] .glass-card {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff;
+}
+body[data-theme="mundial"] .glass-card:hover {
+    background: rgba(255, 255, 255, 0.20) !important;
+}

@@ -120,6 +120,14 @@
                             </div>
                             <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Espacial</span>
                         </div>
+                        <div onclick="setThemeSelection('mundial')"
+                            style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:6px;">
+                            <div id="swatch-mundial"
+                                class="theme-swatch {% if request.user.userprofile.theme == 'mundial' %}active{% endif %}"
+                                style="width:42px; height:42px; border-radius:50%; background: linear-gradient(135deg, #006847 0%, #ffffff 50%, #CE1126 100%); border:1px solid rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                            </div>
+                            <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Mundial</span>
+                        </div>
                     </div>
                     <input type="hidden" name="theme" id="themeInput"
                         value="{{ request.user.userprofile.theme|default:'perla' }}">
@@ -330,6 +338,24 @@
         --island-bg: rgba(28, 28, 30, 0.7);
         --island-border: rgba(255, 255, 255, 0.1);
         --accent-crm: #0a84ff;
+    }
+
+    /* ── TEMA MUNDIAL — Edición Copa del Mundo 2026 ── */
+    body[data-theme="mundial"] {
+        --bg-crm: transparent;
+        --text-crm: #ffffff;
+        --card-bg: rgba(255, 255, 255, 0.88);
+        --border-crm: rgba(255, 255, 255, 0.25);
+        --table-header-bg: rgba(255, 255, 255, 0.12);
+        --table-row-hover: rgba(255, 255, 255, 0.18);
+        --accent-crm: #006847;
+        --island-bg: rgba(255, 255, 255, 0.18);
+        --island-border: rgba(255, 255, 255, 0.32);
+        background-image: url('{% static "images/estadio_mundial.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-color: #1a4c1a;
     }
 
     /* Si el body tiene el data-theme, cambiamos su fondo y el de crm-page */
