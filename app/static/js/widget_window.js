@@ -548,6 +548,42 @@
                 ensureSatelliteIsClean(el);
             }
         });
+        // Wrappear funciones de apertura conocidas: cuando el user
+        // click drive/conversación desde otra opp con el widget ya
+        // abierto en una primera opp, re-embebter al nuevo host
+        // (sino el contenido cambia pero el widget sigue posicionado
+        // sobre la primera opp).
+        wrapSatelliteOpener('woAbrirGestorDrive', 'widgetOppDrive');
+        wrapSatelliteOpener('woAbrirGestorConversacion', 'widgetOppConversacion');
+    }
+
+    function wrapSatelliteOpener(funcName, satId) {
+        var orig = window[funcName];
+        if (!orig || orig._wwWrapped) return;
+        var wrapped = function () {
+            var result;
+            try { result = orig.apply(this, arguments); } catch (e) {
+                console.error('[wwSatellite]', funcName, 'lanzó:', e);
+            }
+            // Fallback: si la función legacy falló o no abrió el widget
+            // por algún error silencioso, forzar display:flex para que
+            // al menos sea visible.
+            var sat = document.getElementById(satId);
+            if (sat && !isVisible(sat)) {
+                sat.style.display = 'flex';
+            }
+            // Re-embeber al nuevo host si cambió de opp focused.
+            if (sat && sat._wwOppHost) {
+                var currentOpp = getActiveOppOverlay();
+                if (currentOpp && currentOpp !== sat._wwOppHost) {
+                    unembedSatellite(sat);
+                    embedSatelliteToOpp(sat, currentOpp);
+                }
+            }
+            return result;
+        };
+        wrapped._wwWrapped = true;
+        window[funcName] = wrapped;
     }
 
     /* ── Minimizar / dock ─────────────────────────────────────────── */
