@@ -6491,6 +6491,16 @@
             if (document.body) document.body.classList.remove('adm-initial-hide');
             localStorage.setItem('crmView', view);
             window._crmTareasMode = (view === 'tareas');
+            // (2026-06-11 fix) Al salir de Tareas, cerrar el detalle de tarea
+            // si quedó ABIERTO — quedaba flotando invisible y dejaba
+            // body.overflow bloqueado (no se podía scrollear en el CRM).
+            // Solo si está activo: cerrarMo­dal en frío dispara refetches.
+            if (view !== 'tareas' && typeof window.crmTaskCerrarModal === 'function') {
+                var _tm = document.getElementById('crmTaskDetailModal');
+                if (_tm && _tm.classList.contains('active')) {
+                    try { window.crmTaskCerrarModal(); } catch (e) { /* noop */ }
+                }
+            }
             var widgetCompras = document.getElementById('widgetCompras');
             if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
@@ -7517,14 +7527,22 @@
         }
 
         // Toggle sección collapse/expand
-        document.addEventListener('click', function(e) {
+        // (2026-06-11 fix) Remover-y-reagregar: este wireup corre en cada
+        // turbo:load y document persiste — sin esto se apilaba un listener
+        // por navegación. Se conserva siempre el de la generación vigente
+        // (su closure _tcpCollapsedSections es el vivo).
+        if (window._tcpSecHeadHandler) {
+            document.removeEventListener('click', window._tcpSecHeadHandler);
+        }
+        window._tcpSecHeadHandler = function(e) {
             var head = e.target.closest && e.target.closest('.tcp-section-head');
             if (!head) return;
             var key = head.dataset.tcpSec;
             if (!key) return;
             var isCol = head.classList.toggle('collapsed');
             _tcpCollapsedSections[key] = isCol;
-        });
+        };
+        document.addEventListener('click', window._tcpSecHeadHandler);
 
         // Selección de fila → poblar panel derecho
         window.tcpSelectTask = function(tid) {
@@ -8076,12 +8094,23 @@
                         filterBtn.classList.toggle('active', isOpen);
                     });
                     // Cerrar al clickear fuera
-                    document.addEventListener('click', function(e){
-                        if (!filterPanel.contains(e.target) && e.target !== filterBtn && !filterBtn.contains(e.target)) {
-                            filterPanel.classList.remove('open');
-                            filterBtn.classList.remove('active');
-                        }
-                    });
+                    // (2026-06-11 fix) Guard anti-acumulación: este wireup
+                    // corre en cada turbo:load y document persiste — sin
+                    // guard se apilaba un listener por navegación. Los
+                    // elementos se resuelven al momento del click para que
+                    // el listener único siempre apunte al DOM vigente.
+                    if (!window._tareasFilterDocWired) {
+                        window._tareasFilterDocWired = true;
+                        document.addEventListener('click', function(e){
+                            var fp = document.getElementById('tareasFilterPanel');
+                            var fb = document.getElementById('tareasFilterBtn');
+                            if (!fp || !fb) return;
+                            if (!fp.contains(e.target) && e.target !== fb && !fb.contains(e.target)) {
+                                fp.classList.remove('open');
+                                fb.classList.remove('active');
+                            }
+                        });
+                    }
                 }
                 // Checkbox "Todos" — desmarca todos los individuales
                 var allCb = document.getElementById('tareasRespAll');
@@ -9978,6 +10007,15 @@
                                 '</div></div>';
                         }).join('');
                         // Close menus on outside click
+                        // (2026-06-11 fix leak) Cada carga de comentarios
+                        // registraba OTRO listener en document sin remover el
+                        // anterior — tras N tareas abiertas, N listeners
+                        // corriendo en cada click de la página. Remover el
+                        // previo antes de registrar (feed persiste entre
+                        // renders, la referencia sobrevive).
+                        if (feed._menuClose) {
+                            document.removeEventListener('click', feed._menuClose);
+                        }
                         feed._menuClose = function (e) {
                             if (!e.target.closest('.crm-comment-menu-wrap')) {
                                 feed.querySelectorAll('.crm-comment-dropdown').forEach(function (d) { d.style.display = 'none'; });
