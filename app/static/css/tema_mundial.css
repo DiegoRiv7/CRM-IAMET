@@ -290,24 +290,34 @@ body[data-theme="mundial"] .glass-card:hover {
    queda claro para que el texto oscuro se lea perfecto.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Panel principal — sólido claro verde-crema (sin blur ni transparencia) */
+/* Panel principal — sólido blanco neutro (sin tinte verde, sin transparencia) */
 body[data-theme="mundial"] .widget-card,
 body[data-theme="mundial"] .widget-card-lg,
 body[data-theme="mundial"] .wn-overlay .wn-card.wn-composer {
-    background: #eef6f0 !important;
+    background: #f5f5f3 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(0, 80, 45, 0.35) !important;
     box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
 }
 
-/* ── DETALLE DE OPORTUNIDAD ── */
-/* Header: barra verde oscuro sólida con destello rojo azteca en la esquina */
-body[data-theme="mundial"] .wo-header {
-    background:
-        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.45) 0%, transparent 48%),
-        linear-gradient(135deg, #064e2b 0%, #032615 100%) !important;
+/* Header tricolor con grecas aztecas — compartido por detalle y nueva-opp.
+   Verde oscuro → rojo mexicano + patrón de grecas escalonadas (tipo jersey
+   de México) + destello rojo. Texto blanco encima. */
+body[data-theme="mundial"] .wo-header,
+body[data-theme="mundial"] .wn-ctw-header {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M-6 38 L6 38 L6 16 L17 16 L17 38 L28 38 L28 6 L39 6 L39 38 L50 38' fill='none' stroke='%23ffffff' stroke-opacity='0.14' stroke-width='2.5'/%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 44px 44px, auto, auto !important;
     border-bottom: 2px solid #CE1126 !important;
+}
+
+/* ── DETALLE DE OPORTUNIDAD ── */
+body[data-theme="mundial"] .wo-header {
     border-radius: 24px 24px 0 0 !important;
 }
 body[data-theme="mundial"] .wo-title { color: #ffffff !important; }
@@ -337,13 +347,8 @@ body[data-theme="mundial"] .wo-card-accent {
     border: 1px solid rgba(0, 168, 107, 0.30) !important;
 }
 
-/* ── NUEVA OPORTUNIDAD ── */
-/* Header: verde oscuro sólido con destello rojo + texto claro */
+/* ── NUEVA OPORTUNIDAD ── (el fondo del header lo da la regla compartida) */
 body[data-theme="mundial"] .wn-ctw-header {
-    background:
-        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.40) 0%, transparent 52%),
-        linear-gradient(135deg, #064e2b 0%, #032615 100%) !important;
-    border-bottom: 2px solid #CE1126 !important;
     border-radius: 16px 16px 0 0 !important;
 }
 body[data-theme="mundial"] .wn-ctw-breadcrumb,
@@ -368,7 +373,7 @@ body[data-theme="mundial"] .wn-ctw-toolbar {
    vive en bordes y el rojo natural de "ATRASADAS"/vencidas se conserva.
    ═══════════════════════════════════════════════════════════════════════ */
 body[data-theme="mundial"] .tcp-shell {
-    background: #eef6f0 !important;
+    background: #f5f5f3 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(0, 80, 45, 0.30) !important;
@@ -382,3 +387,40 @@ body[data-theme="mundial"] .tcp-detail {
 body[data-theme="mundial"] .tcp-row:hover { background: #f1faf4 !important; }
 body[data-theme="mundial"] .tcp-row.active { background: #e1f4e9 !important; }
 body[data-theme="mundial"] .tcp-col-head { background: #e7f3ec !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CONTROLES DE VENTANA (— □ ×) — sólidos blancos sobre el header oscuro
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .ww-ctrls button,
+body[data-theme="mundial"] .ww-btn,
+body[data-theme="mundial"] .widget-overlay.ww-windowed .ww-btn-win {
+    background: #ffffff !important;
+    color: #053a1f !important;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.38) !important;
+}
+body[data-theme="mundial"] .ww-ctrls button:hover,
+body[data-theme="mundial"] .ww-btn:hover {
+    background: #eef0ec !important;
+    color: #032615 !important;
+}
+/* La × (último control) en rojo mexicano al hover */
+body[data-theme="mundial"] .ww-ctrls button:last-child:hover {
+    background: #CE1126 !important;
+    color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   IDEAS — cards en glass esmerilado (las columnas ya heredan crm-kanban-col).
+   Prospección ya está temada porque reutiliza .crm-kanban-col / .crm-postit.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .idea-card {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(16px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+body[data-theme="mundial"] .idea-card:hover {
+    background: rgba(255, 255, 255, 0.94) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.30) !important;
+}
