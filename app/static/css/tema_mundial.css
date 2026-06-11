@@ -305,7 +305,8 @@ body[data-theme="mundial"] .wn-overlay .wn-card.wn-composer {
    Verde oscuro → rojo mexicano + patrón de grecas escalonadas (tipo jersey
    de México) + destello rojo. Texto blanco encima. */
 body[data-theme="mundial"] .wo-header,
-body[data-theme="mundial"] .wn-ctw-header {
+body[data-theme="mundial"] .wn-ctw-header,
+body[data-theme="mundial"] .muro-card-header {
     background-color: #5c0f17 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.17' stroke-width='2.4'%3E%3Cpath d='M4 44 V10 H38 V44 M12 44 V18 H30 V36 H22'/%3E%3C/g%3E%3C/svg%3E"),
@@ -423,4 +424,42 @@ body[data-theme="mundial"] .idea-card {
 body[data-theme="mundial"] .idea-card:hover {
     background: rgba(255, 255, 255, 0.94) !important;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.30) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MURO — misma fórmula: cuerpo blanco sólido + header greca verde→rojo.
+   (El header ya recibe el fondo por la regla compartida de arriba.)
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .muro-card {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+}
+body[data-theme="mundial"] .muro-card-header {
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: 2px solid #CE1126 !important;
+}
+/* Título (usa color inline; lo vencemos con !important) */
+body[data-theme="mundial"] .muro-card-header > div > span { color: #ffffff !important; }
+/* Botones de filtro: claros sobre el header oscuro; activo en verde */
+body[data-theme="mundial"] .muro-filter-btn {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.30) !important;
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .muro-filter-btn:hover {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .muro-filter-btn.active {
+    background: #00a86b !important;
+    border-color: #00a86b !important;
+    color: #ffffff !important;
+}
+/* Close (X) clara, hover rojo */
+body[data-theme="mundial"] .muro-close-btn { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="mundial"] .muro-close-btn:hover {
+    background: rgba(206,17,38,0.45) !important;
+    color: #ffffff !important;
 }
