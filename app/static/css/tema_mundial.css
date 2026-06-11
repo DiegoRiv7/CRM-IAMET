@@ -900,55 +900,99 @@ body[data-theme="mundial"] .proy-fin-head {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   CALENDARIO (página completa) — panel frosted + navegación glass oscura
-   + cards de eventos esmerilados. La cancha se ve detrás del grid.
+   CALENDARIO — panel SÓLIDO claro (como Tareas) con header greca.
+   Legibilidad es prioridad; la cancha se asoma por los bordes.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* --- Container principal del calendario (page mode): transparente --- */
+/* --- Container: frosted shell (como tareas) --- */
+body[data-theme="mundial"] .cal-card,
+body[data-theme="mundial"] .cal-card--page {
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+    border: 1px solid rgba(0, 80, 45, 0.30) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
+}
 body[data-theme="mundial"] .widget-overlay.is-page-mode {
     background: transparent !important;
 }
-body[data-theme="mundial"] .cal-card--page {
-    background: transparent !important;
-}
 
-/* --- Calendar como modal (overlay mode): frosted glass --- */
-body[data-theme="mundial"] .cal-card:not(.cal-card--page) {
-    background: rgba(245, 246, 243, 0.55) !important;
-    backdrop-filter: blur(32px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
-    border: 1px solid rgba(0, 80, 45, 0.30) !important;
-    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.50) !important;
-}
-
-/* --- Topbar del calendario (page mode) --- */
+/* --- Topbar del calendario: greca azteca verde→rojo --- */
 body[data-theme="mundial"] .cal-page-bar {
-    background: transparent !important;
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
     border-color: transparent !important;
+    border-bottom-color: #CE1126 !important;
+}
+/* Topbar facet buttons / tabs / pills all white text on the greca */
+body[data-theme="mundial"] .cal-page-bar .crm-facet-btn,
+body[data-theme="mundial"] .cal-page-bar .crm-facet-add {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+    color: rgba(255,255,255,0.90) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-facet-btn:hover {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-period-pill {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-period-pill:hover {
+    background: rgba(255,255,255,0.14) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tabs--dashboard {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tab {
+    color: rgba(255,255,255,0.72) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tab:hover {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tab.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
+}
+/* +Nueva actividad in greca bar */
+body[data-theme="mundial"] .cal-page-bar .crm-facet-new {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    border-color: #007a4d !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
 }
 
 /* --- Navegación de fecha (← → Hoy · Junio 2026) --- */
 body[data-theme="mundial"] .cal-topnav-arrow {
-    background: rgba(255, 255, 255, 0.10) !important;
-    border-color: rgba(255, 255, 255, 0.22) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
     color: #ffffff !important;
 }
 body[data-theme="mundial"] .cal-topnav-arrow:hover {
-    background: rgba(255, 255, 255, 0.20) !important;
+    background: rgba(255, 255, 255, 0.22) !important;
     border-color: rgba(255, 255, 255, 0.40) !important;
 }
 body[data-theme="mundial"] .cal-topnav-today {
-    background: rgba(255, 255, 255, 0.10) !important;
-    border-color: rgba(255, 255, 255, 0.22) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
     color: #ffffff !important;
 }
 body[data-theme="mundial"] .cal-topnav-today:hover {
-    background: rgba(255, 255, 255, 0.20) !important;
+    background: rgba(255, 255, 255, 0.22) !important;
     border-color: rgba(255, 255, 255, 0.40) !important;
 }
 body[data-theme="mundial"] .cal-topnav-title {
     color: #ffffff !important;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 /* --- Source toggle (Actividades / Instalaciones) --- */
@@ -969,12 +1013,12 @@ body[data-theme="mundial"] .cal-source-btn-active {
 
 /* --- User picker --- */
 body[data-theme="mundial"] .cal-userpick-btn {
-    background: rgba(255, 255, 255, 0.10) !important;
-    border-color: rgba(255, 255, 255, 0.22) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
     color: #ffffff !important;
 }
 body[data-theme="mundial"] .cal-userpick-btn:hover {
-    background: rgba(255, 255, 255, 0.18) !important;
+    background: rgba(255, 255, 255, 0.20) !important;
 }
 body[data-theme="mundial"] .cal-userpick-btn.has-value {
     background: rgba(0, 168, 107, 0.25) !important;
@@ -984,12 +1028,12 @@ body[data-theme="mundial"] .cal-userpick-btn.has-value {
 
 /* --- AI button --- */
 body[data-theme="mundial"] .cal-ai-btn {
-    background: linear-gradient(135deg, rgba(0,168,107,0.15) 0%, rgba(206,17,38,0.12) 100%) !important;
+    background: linear-gradient(135deg, rgba(0,168,107,0.18) 0%, rgba(206,17,38,0.14) 100%) !important;
     border-color: rgba(0,168,107,0.30) !important;
     color: rgba(255, 255, 255, 0.90) !important;
 }
 body[data-theme="mundial"] .cal-ai-btn:hover {
-    background: linear-gradient(135deg, rgba(0,168,107,0.25) 0%, rgba(206,17,38,0.20) 100%) !important;
+    background: linear-gradient(135deg, rgba(0,168,107,0.28) 0%, rgba(206,17,38,0.22) 100%) !important;
     border-color: rgba(0,168,107,0.50) !important;
     color: #ffffff !important;
     box-shadow: 0 2px 8px rgba(0,168,107,0.25) !important;
@@ -1000,7 +1044,7 @@ body[data-theme="mundial"] .cal-ai-btn svg {
 
 /* --- Filter popup --- */
 body[data-theme="mundial"] .cal-filter-pop {
-    background: rgba(20, 40, 28, 0.92) !important;
+    background: rgba(20, 40, 28, 0.94) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     backdrop-filter: blur(22px) !important;
     -webkit-backdrop-filter: blur(22px) !important;
@@ -1017,33 +1061,25 @@ body[data-theme="mundial"] .cal-filter-pop-item:hover {
     background: rgba(255, 255, 255, 0.10) !important;
 }
 
-/* --- FullCalendar: month grid frosted --- */
+/* --- FullCalendar grid: sobre el frosted shell (texto oscuro legible) --- */
 body[data-theme="mundial"] #fullCalendarRoot {
-    --fc-border-color: rgba(255, 255, 255, 0.14) !important;
+    --fc-border-color: rgba(0, 60, 32, 0.15) !important;
     --fc-page-bg-color: transparent !important;
-    --fc-neutral-bg-color: rgba(255,255,255,0.06) !important;
-    --fc-today-bg-color: rgba(0, 168, 107, 0.12) !important;
+    --fc-neutral-bg-color: rgba(0,80,45,0.04) !important;
+    --fc-today-bg-color: rgba(0, 168, 107, 0.10) !important;
 }
 body[data-theme="mundial"] #fullCalendarRoot .fc-col-header-cell-cushion {
-    color: rgba(255, 255, 255, 0.65) !important;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    color: #3a5a46 !important;
 }
 body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day-number {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: #1a1a1a !important;
 }
 body[data-theme="mundial"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
     background-color: #00a86b !important;
     color: #ffffff !important;
 }
-body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day-frame {
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-radius: 6px;
-}
-body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day:hover .fc-daygrid-day-frame {
-    background: rgba(255, 255, 255, 0.10) !important;
-}
 body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-more-link {
-    color: #00a86b !important;
+    color: #006847 !important;
     font-weight: 700 !important;
 }
 body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid {
@@ -1051,73 +1087,49 @@ body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid {
 }
 body[data-theme="mundial"] #fullCalendarRoot td,
 body[data-theme="mundial"] #fullCalendarRoot th {
-    border-color: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(0, 60, 32, 0.12) !important;
 }
 
 /* --- FullCalendar popover ("+3 más") --- */
 body[data-theme="mundial"] #fullCalendarRoot .fc-popover {
-    background: rgba(20, 40, 28, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    backdrop-filter: blur(22px) !important;
-    -webkit-backdrop-filter: blur(22px) !important;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    box-shadow: 0 12px 40px rgba(0, 15, 8, 0.30) !important;
 }
 body[data-theme="mundial"] #fullCalendarRoot .fc-popover-header {
-    background: rgba(0, 60, 32, 0.40) !important;
-    color: #ffffff !important;
+    background: rgba(0, 60, 32, 0.10) !important;
+    color: #1a1a1a !important;
 }
 
-/* --- Week view --- */
-body[data-theme="mundial"] .cal-week-evt,
-body[data-theme="mundial"] .cal-week-task {
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-}
-
-/* --- Day view: hour grid --- */
+/* --- Day view: hour grid (sobre frosted, texto oscuro) --- */
 body[data-theme="mundial"] .cal-hour-row {
-    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    border-bottom-color: rgba(0, 60, 32, 0.10) !important;
 }
 body[data-theme="mundial"] .cal-hour-label {
-    color: rgba(255, 255, 255, 0.50) !important;
+    color: #6b8a74 !important;
 }
 
-/* --- Day view: agenda cards --- */
+/* --- Day view: agenda cards (sólidos blancos, legibles) --- */
 body[data-theme="mundial"] .cal-day-agenda-card {
-    background: rgba(255, 255, 255, 0.88) !important;
-    backdrop-filter: blur(14px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.70) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22) !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 80, 45, 0.18) !important;
+    box-shadow: 0 2px 8px rgba(0, 15, 8, 0.10) !important;
 }
 body[data-theme="mundial"] .cal-day-agenda-card:hover {
-    background: rgba(255, 255, 255, 0.94) !important;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.26) !important;
-}
-body[data-theme="mundial"] .cal-day-agenda-time-start {
-    color: #ffffff !important;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-}
-body[data-theme="mundial"] .cal-day-agenda-time-end {
-    color: rgba(255, 255, 255, 0.55) !important;
-}
-body[data-theme="mundial"] .cal-day-agenda-time-ampm {
-    color: rgba(255, 255, 255, 0.55) !important;
+    box-shadow: 0 6px 18px rgba(0, 15, 8, 0.16) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* --- Day view empty state --- */
-body[data-theme="mundial"] .cal-day-list-empty {
-    color: rgba(255, 255, 255, 0.60) !important;
-}
+/* --- Day view empty state (sobre frosted → oscuro) --- */
 body[data-theme="mundial"] .cal-day-list-empty-t {
-    color: #ffffff !important;
+    color: #1a1a1a !important;
 }
 body[data-theme="mundial"] .cal-day-list-empty-s {
-    color: rgba(255, 255, 255, 0.60) !important;
+    color: #6b7280 !important;
 }
 body[data-theme="mundial"] .cal-day-list-empty-ic {
-    background: rgba(255, 255, 255, 0.12) !important;
-    color: rgba(255, 255, 255, 0.50) !important;
+    background: rgba(0, 80, 45, 0.08) !important;
+    color: #6b8a74 !important;
 }
 body[data-theme="mundial"] .cal-day-list-empty-btn {
     background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
@@ -1127,21 +1139,19 @@ body[data-theme="mundial"] .cal-day-list-empty-btn {
 /* --- Hover popover (tooltip de evento) --- */
 body[data-theme="mundial"] .cal-hover-popover {
     background: #f5f5f3 !important;
-    border: 1px solid rgba(0, 80, 45, 0.30) !important;
-    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.45) !important;
+    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.30) !important;
 }
 
-/* --- View buttons (Mes / Semana / Día) — heredan de .crm-tabs que ya
-       están temados arriba en la sección Dynamic Island. Cuando el
-       calendario NO es page-mode se usan .cal-view-btn standalone. --- */
+/* --- View buttons (Mes / Semana / Día) standalone (non-page mode) --- */
 body[data-theme="mundial"] .cal-view-btn {
-    color: rgba(255, 255, 255, 0.65) !important;
+    color: #5a7a64 !important;
 }
 body[data-theme="mundial"] .cal-view-btn:hover {
-    color: #ffffff !important;
+    color: #1a1a1a !important;
 }
 body[data-theme="mundial"] .cal-view-btn.active {
-    background: rgba(255, 255, 255, 0.18) !important;
-    color: #ffffff !important;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.20) !important;
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.12) !important;
 }

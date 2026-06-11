@@ -130,7 +130,7 @@
                         </div>
                     </div>
                     <input type="hidden" name="theme" id="themeInput"
-                        value="{{ request.user.userprofile.theme|default:'perla' }}">
+                        value="{{ request.user.userprofile.theme|default:'mundial' }}">
                 </div>
 
                 {% if not request.user.is_superuser %}
@@ -862,7 +862,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             attendanceSyncState();
             // Aplicar tema inicial
-            const currentTheme = "{{ request.user.userprofile.theme|default:'perla' }}";
+            const currentTheme = "{{ request.user.userprofile.theme|default:'mundial' }}";
             applyThemeToBody(currentTheme);
 
             // Verificar empleado del mes silenciosamente

@@ -6,17 +6,17 @@
     <title>CRM IAMET - Iniciar Sesión</title>
     <style>
         :root {
-            --bg-white: #ffffff;
+            --bg-white: #f5f5f3;
             --text-main: #1d1d1f;
-            --text-muted: #86868b;
-            --accent-blue: #0066cc;
-            --accent-hover: #005bb5;
-            --input-bg: #f5f5f7;
+            --text-muted: #6b7280;
+            --accent-green: #006847;
+            --accent-green-light: #00a86b;
+            --accent-red: #CE1126;
+            --accent-hover: #005538;
+            --input-bg: #ffffff;
             --input-border: #d2d2d7;
-            --brand-bg-start: #0f172a;
-            --brand-bg-end: #1e3a8a;
             --brand-text: #ffffff;
-            --brand-text-muted: #cbd5e1;
+            --brand-text-muted: rgba(255,255,255,0.75);
             --error-color: #c0392b;
         }
 
@@ -25,6 +25,7 @@
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
         .anim-stagger-1 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.1s; }
         .anim-stagger-2 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.2s; }
@@ -32,50 +33,101 @@
         .anim-stagger-4 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.4s; }
         .anim-stagger-5 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.5s; }
 
-        .branding-section { flex: 1.2; background: linear-gradient(135deg, var(--brand-bg-start) 0%, var(--brand-bg-end) 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; position: relative; overflow: hidden; color: var(--brand-text); }
-        .branding-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px); background-size: 30px 30px; opacity: 0.3; z-index: 1; animation: fadeIn 2s ease forwards; }
+        .branding-section {
+            flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 60px; position: relative; overflow: hidden; color: var(--brand-text);
+            background-color: #5c0f17;
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.12' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+                radial-gradient(ellipse at 20% 80%, rgba(0,168,107,0.35) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(206,17,38,0.40) 0%, transparent 50%),
+                linear-gradient(135deg, #032615 0%, #064e2b 25%, #0a3a22 50%, #5c0f17 75%, #8b1020 100%);
+            background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+            background-size: 96px 96px, auto, auto, auto;
+        }
+        .branding-section::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, transparent 0%, transparent 60%, rgba(0,0,0,0.30) 100%);
+            z-index: 1;
+        }
         .branding-content { position: relative; z-index: 2; width: 100%; max-width: 480px; }
-        .branding-content h1 { font-size: 3.5rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 20px; line-height: 1.1; }
+        .branding-content h1 { font-size: 3.5rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 20px; line-height: 1.1; text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
         .branding-content p { font-size: 1.2rem; color: var(--brand-text-muted); line-height: 1.6; margin-bottom: 40px; }
         .feature-list { display: flex; flex-direction: column; gap: 15px; }
-        .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
-        .feature-icon { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; background: var(--accent-blue); border-radius: 8px; font-weight: bold; flex-shrink: 0; }
+        .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.08); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px); transition: background 0.2s; }
+        .feature-item:hover { background: rgba(255, 255, 255, 0.14); }
+        .feature-icon { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; border-radius: 8px; font-weight: bold; flex-shrink: 0; }
+        .feature-icon.verde { background: linear-gradient(135deg, #00a86b, #006847); }
+        .feature-icon.rojo { background: linear-gradient(135deg, #CE1126, #8b1020); }
+        .feature-icon.tricolor { background: linear-gradient(135deg, #006847, #CE1126); }
 
-        .login-section { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; background-color: var(--bg-white); }
+        .login-section {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px; background: var(--bg-white); position: relative;
+        }
+        .login-section::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, #006847 0%, #006847 33%, #ffffff 33%, #ffffff 66%, #CE1126 66%, #CE1126 100%);
+        }
         .login-box { width: 100%; max-width: 380px; }
-        .logo { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 10px; color: var(--accent-blue); }
+        .logo {
+            font-size: 2.5rem; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 10px;
+            background: linear-gradient(135deg, #006847 0%, #00a86b 40%, #CE1126 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
         .subtitle { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 40px; }
         .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
+        .input-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
         .input-group input[type="text"],
-        .input-group input[type="password"] { width: 100%; padding: 14px 16px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid transparent; border-radius: 12px; outline: none; transition: all 0.3s ease; color: var(--text-main); }
+        .input-group input[type="password"] { width: 100%; padding: 14px 16px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid #e0e0dd; border-radius: 12px; outline: none; transition: all 0.3s ease; color: var(--text-main); }
         .input-group input[type="text"]:focus,
-        .input-group input[type="password"]:focus { background-color: var(--bg-white); border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.15); }
+        .input-group input[type="password"]:focus { background-color: #ffffff; border-color: var(--accent-green); box-shadow: 0 0 0 4px rgba(0, 104, 71, 0.12); }
         .input-group input.input-error { border-color: var(--error-color) !important; background-color: #fff5f5 !important; }
 
         .error-banner { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 0.875rem; color: var(--error-color); }
 
         .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; font-size: 0.9rem; }
-        .forgot-password { color: var(--accent-blue); text-decoration: none; font-weight: 500; cursor: pointer; background: none; border: none; font-size: 0.9rem; padding: 0; }
-        .forgot-password:hover { text-decoration: underline; }
-        .btn-submit { width: 100%; padding: 16px; background-color: var(--accent-blue); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease, transform 0.1s ease; }
-        .btn-submit:hover { background-color: var(--accent-hover); }
-        .btn-submit:active { transform: scale(0.98); }
+        .forgot-password { color: var(--accent-green); text-decoration: none; font-weight: 500; cursor: pointer; background: none; border: none; font-size: 0.9rem; padding: 0; }
+        .forgot-password:hover { text-decoration: underline; color: var(--accent-red); }
+        .btn-submit {
+            width: 100%; padding: 16px; color: white; border: none; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; position: relative; overflow: hidden;
+            background-color: #5c0f17;
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.10' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3C/g%3E%3C/svg%3E"),
+                linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%);
+            background-repeat: repeat, no-repeat;
+            background-size: 96px 96px, auto;
+            box-shadow: 0 4px 16px rgba(0, 80, 45, 0.30), 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .btn-submit:hover {
+            background-color: #4a0c13;
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.14' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3C/g%3E%3C/svg%3E"),
+                linear-gradient(120deg, #085e33 0%, #0c4428 40%, #8b1525 100%);
+            background-repeat: repeat, no-repeat;
+            background-size: 96px 96px, auto;
+            box-shadow: 0 6px 24px rgba(0, 80, 45, 0.40), 0 2px 6px rgba(0,0,0,0.20);
+            transform: translateY(-1px);
+        }
+        .btn-submit:active { transform: scale(0.98) translateY(0); }
 
         /* Modal "Olvidé mi contraseña" */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(3,20,10,0.55); z-index: 100; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .modal-box h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,15,8,0.30); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; border-top: 3px solid; border-image: linear-gradient(90deg, #006847, #CE1126) 1; }
+        .modal-box h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: var(--accent-green); }
         .modal-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
-        .modal-box input { width: 100%; padding: 12px 14px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid transparent; border-radius: 10px; outline: none; transition: all 0.3s ease; color: var(--text-main); margin-bottom: 12px; }
-        .modal-box input:focus { background-color: var(--bg-white); border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
+        .modal-box input { width: 100%; padding: 12px 14px; font-size: 1rem; background-color: #ffffff; border: 1px solid #e0e0dd; border-radius: 10px; outline: none; transition: all 0.3s ease; color: var(--text-main); margin-bottom: 12px; }
+        .modal-box input:focus { background-color: #ffffff; border-color: var(--accent-green); box-shadow: 0 0 0 4px rgba(0,104,71,0.12); }
         .modal-actions { display: flex; gap: 10px; }
         .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease; }
-        .btn-modal-cancel { background: var(--input-bg); color: var(--text-muted); }
-        .btn-modal-cancel:hover { background: var(--input-border); }
-        .btn-modal-send { background: var(--accent-blue); color: white; }
-        .btn-modal-send:hover { background: var(--accent-hover); }
+        .btn-modal-cancel { background: #e8e8e5; color: var(--text-muted); }
+        .btn-modal-cancel:hover { background: #ddddd9; }
+        .btn-modal-send { background: linear-gradient(135deg, #00a86b, #006847); color: white; }
+        .btn-modal-send:hover { background: linear-gradient(135deg, #00bd78, #007a4d); }
         .modal-msg { font-size: 0.85rem; margin-top: 10px; text-align: center; min-height: 1.2em; }
         .modal-msg.success { color: #16a34a; }
         .modal-msg.error { color: var(--error-color); }
@@ -89,9 +141,9 @@
             <h1 class="anim-stagger-1">Bienvenido a tu CRM.</h1>
             <p class="anim-stagger-2">El núcleo operativo central para optimizar tus procesos empresariales, desde la prospección hasta la ingeniería y facturación.</p>
             <div class="feature-list">
-                <div class="feature-item anim-stagger-3"><div class="feature-icon">&#10003;</div><div><strong style="display: block; font-size: 1.05rem;">CRM y Oportunidades</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Gestión integral de ventas y cotizaciones.</span></div></div>
-                <div class="feature-item anim-stagger-4"><div class="feature-icon">&#9889;</div><div><strong style="display: block; font-size: 1.05rem;">Proyectos e Ingeniería</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Seguimiento de tareas, tiempos y volumetría.</span></div></div>
-                <div class="feature-item anim-stagger-5"><div class="feature-icon">&#128202;</div><div><strong style="display: block; font-size: 1.05rem;">Control Operativo</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Nómina, eficiencia y reportes en tiempo real.</span></div></div>
+                <div class="feature-item anim-stagger-3"><div class="feature-icon verde">&#10003;</div><div><strong style="display: block; font-size: 1.05rem;">CRM y Oportunidades</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Gestión integral de ventas y cotizaciones.</span></div></div>
+                <div class="feature-item anim-stagger-4"><div class="feature-icon rojo">&#9889;</div><div><strong style="display: block; font-size: 1.05rem;">Proyectos e Ingeniería</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Seguimiento de tareas, tiempos y volumetría.</span></div></div>
+                <div class="feature-item anim-stagger-5"><div class="feature-icon tricolor">&#128202;</div><div><strong style="display: block; font-size: 1.05rem;">Control Operativo</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Nómina, eficiencia y reportes en tiempo real.</span></div></div>
             </div>
         </div>
     </div>
@@ -129,7 +181,7 @@
 
                 <div class="options anim-stagger-4">
                     <label style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); cursor: pointer;">
-                        <input type="checkbox" name="remember" style="width: 16px; height: 16px; accent-color: var(--accent-blue);"> Recordarme
+                        <input type="checkbox" name="remember" style="width: 16px; height: 16px; accent-color: var(--accent-green);"> Recordarme
                     </label>
                     <button type="button" id="btn-forgot-pwd" class="forgot-password">¿Olvidaste tu contraseña?</button>
                 </div>
