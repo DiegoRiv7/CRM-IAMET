@@ -308,11 +308,11 @@ body[data-theme="mundial"] .wo-header,
 body[data-theme="mundial"] .wn-ctw-header {
     background-color: #5c0f17 !important;
     background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M-6 38 L6 38 L6 16 L17 16 L17 38 L28 38 L28 6 L39 6 L39 38 L50 38' fill='none' stroke='%23ffffff' stroke-opacity='0.14' stroke-width='2.5'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.17' stroke-width='2.4'%3E%3Cpath d='M4 44 V10 H38 V44 M12 44 V18 H30 V36 H22'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
         linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
-    background-size: 44px 44px, auto, auto !important;
+    background-size: 48px 48px, auto, auto !important;
     border-bottom: 2px solid #CE1126 !important;
 }
 
