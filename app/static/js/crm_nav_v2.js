@@ -340,6 +340,16 @@
         if (typeof window._crmSetPeriodo !== 'function' ||
             typeof window.refreshCrmTable !== 'function') return false;
 
+        // (2026-06-11 fix) #ckDashRoot vive DENTRO de #crmContentSection.
+        // Si el usuario está en la vista Tareas/Proyectos/Compras, esa
+        // sección está oculta y el dashboard se "mostraba" dentro de un
+        // contenedor invisible (pantalla trabada: URL y botón cambiaban
+        // pero seguías viendo Tareas). Cambiar primero a la vista CRM —
+        // switchCrmView además normaliza las demás secciones y actives.
+        if (typeof window.switchCrmView === 'function') {
+            try { window.switchCrmView('crm'); } catch (e) { }
+        }
+
         document.body.classList.add('ck-dash-inline');
         root.style.display = '';
         // display:contents → los hijos participan del flex de la barra
