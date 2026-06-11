@@ -42,6 +42,23 @@ services:
 
 volumes:
   db_data: # Define el volumen nombrado para la persistencia de la base de datos
+  # ════════════════════════════════════════════════════════════════════
+  # ⚠️ HANDOFF CRÍTICO — NO TOCAR este volumen sin entender:
+  #
+  # media_files apunta a un volumen Docker EXISTENTE en el servidor
+  # (crm-iamet_media_files, ~9.9GB con miles de archivos del Drive de
+  # oportunidades descargados de Bitrix24).
+  #
+  # Si quitas `external: true` o cambias el `name:`, docker-compose
+  # crea un volumen NUEVO vacío con otro nombre (ej.
+  # gesti-n-de-ventas_media_files) y el contenedor monta ESE volumen
+  # vacío. Los archivos reales NO se pierden (siguen en
+  # crm-iamet_media_files), pero el contenedor deja de verlos →
+  # avatares rotos, archivos del Drive 404, PDFs perdidos.
+  #
+  # Recuperación si pasa: poner external: true + name: crm-iamet_media_files
+  # de vuelta y reiniciar el contenedor.
+  # ════════════════════════════════════════════════════════════════════
   media_files:
     external: true
     name: crm-iamet_media_files  # Volumen REAL con todo el Drive de oportunidades (~9.9GB)

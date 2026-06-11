@@ -1,3 +1,24 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * crm_main.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+ *
+ * Este archivo tiene ~11,500 líneas y mezcla múltiples responsabilidades
+ * (kanban opp, dashboard clientes, tareas, admin, etc.). Está marcado
+ * como LEGACY por la política Boy Scout Rule.
+ *
+ * NO agregar más código aquí. Para nuevas features, ir al *_v2.js que
+ * corresponda según dominio:
+ *   - Kanban / filtros / pin  → app/static/js/crm_kanban_v2.js
+ *   - Tareas / comentarios    → app/static/js/crm_tareas_v2.js
+ *   - Dashboard clientes (ck*) → app/static/js/crm_clientes_v2.js
+ *   - Features sueltos        → app/static/js/crm_features_misc.js
+ *
+ * Modificar SOLO para:
+ *   - Bug crítico en producción que afecta usuarios
+ *   - Cambio mínimo (1-3 líneas) que NO amerita módulo nuevo
+ *
+ * Ver: app/static/js/README.md y ESTRUCTURA.md
+ * ═══════════════════════════════════════════════════════════════════════ */
+
 /* ── Utilidad CSRF global (disponible para todos los scripts) ── */
     if (typeof window.getCsrf === 'undefined') {
         window.getCsrf = function () {
@@ -20,8 +41,12 @@
         }
     })();
 
-    /* ── Filtros mes/año/vendedor (script independiente) ── */
-    document.addEventListener('DOMContentLoaded', function () {
+    /* ── Filtros mes/año/vendedor (script independiente) ──
+       Usa window.crmReady (definido en crm_ready.js) para que en el
+       futuro con Turbo Drive activo, este wireup también se re-dispare
+       en cada turbo:load. Sin Turbo se comporta igual que un
+       DOMContentLoaded normal. */
+    window.crmReady(function () {
         var mesFilter = document.getElementById('mesFilter');
         var anioFilter = document.getElementById('anioFilter');
 
@@ -65,11 +90,19 @@
                 e.stopPropagation();
                 vfDrop.classList.toggle('show');
             });
-            document.addEventListener('click', function (e) {
-                if (!vfDrop.contains(e.target) && e.target !== vfBtn) {
-                    vfDrop.classList.remove('show');
-                }
-            });
+            // Guard: el listener al document NO debe duplicarse en cada
+            // turbo:load. Una sola instalación por sesión basta.
+            if (!window._crmVfDropdownWired) {
+                window._crmVfDropdownWired = true;
+                document.addEventListener('click', function (e) {
+                    var drop = document.getElementById('vendorFilterDropdown');
+                    var btn = document.getElementById('vendorFilterBtn');
+                    if (!drop) return;
+                    if (!drop.contains(e.target) && e.target !== btn) {
+                        drop.classList.remove('show');
+                    }
+                });
+            }
         }
 
         function updateVendorFilterLabel() {
@@ -99,6 +132,13 @@
 
         // Toggle pin oportunidad — delegación en document (capture phase)
         // Funciona en cards, list rows, y cards clonadas dentro del kanban.
+        // Guard: el listener al document SE INSTALARÍA OTRA VEZ en cada
+        // turbo:load. Como document persiste entre navegaciones, basta
+        // con una sola instalación por sesión.
+        if (window._crmPinHandlerWired) {
+            // Skip — ya registrado en sesión actual
+        } else {
+            window._crmPinHandlerWired = true;
         document.addEventListener('click', function(e) {
             var pin = e.target.closest && e.target.closest('.crm-pin');
             if (!pin) return;
@@ -117,7 +157,6 @@
                 // de Django puede renderizar "1,198" para IDs >= 1000).
                 oppId = oppId.replace(/,/g, '');
                 if (!oppId) return;
-                console.log('[PIN] Toggle pin para opp:', oppId);
                 var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
                 fetch('/app/api/oportunidad/' + oppId + '/toggle-pin/', {
                     method: 'POST',
@@ -125,28 +164,18 @@
                 }).then(function(r) { return r.json(); }).then(function(data) {
                     if (!data.success) { console.warn('[PIN] API sin success:', data); return; }
                     var anclada = !!data.anclada;
-                    console.log('[PIN] API →', anclada ? 'ANCLADA' : 'DESANCLADA', 'para opp', oppId);
 
                     var newFill   = anclada ? '#EF4444' : '#B0B8C4';
-
-                    // DIAG: dump de qué hay realmente en el DOM para el oppId buscado
-                    var _allPins = document.querySelectorAll('.crm-pin[data-pin-id]');
-                    var _sample = [];
-                    for (var _i = 0; _i < Math.min(4, _allPins.length); _i++) {
-                        var _a = _allPins[_i].getAttribute('data-pin-id');
-                        _sample.push(_a + '(len=' + _a.length + ')');
-                    }
-                    console.log('[PIN] total pins DOM:', _allPins.length, 'muestras:', _sample, 'buscando:', JSON.stringify(oppId), 'len=', oppId.length);
 
                     // Comparación robusta: usamos dataset.pinId en lugar de querySelectorAll con
                     // attribute equality — evita problemas si el attr tiene whitespace u otros
                     // caracteres raros que el selector CSS no tolera.
+                    var _allPins = document.querySelectorAll('.crm-pin[data-pin-id]');
                     var pinsFound = [];
                     _allPins.forEach(function(p){
                         var raw = (p.dataset.pinId || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
                         if (raw === oppId) pinsFound.push(p);
                     });
-                    console.log('[PIN] pins encontrados (match robusto):', pinsFound.length);
                     if (pinsFound.length === 0) {
                         // Fallback: solo el pin clickeado
                         clickedPin.classList.toggle('pinned', anclada);
@@ -170,7 +199,6 @@
                         var raw = (n.dataset.oppId || '').replace(/\s/g, '').replace(/\u00A0/g, '').replace(/,/g, '');
                         if (raw === oppId) allNodes.push(n);
                     });
-                    console.log('[PIN] cards/rows encontradas (match robusto):', allNodes.length);
                     allNodes.forEach(function(node){
                         node.dataset.anclada = anclada ? '1' : '0';
                         node.classList.toggle('pinned-row', anclada);
@@ -244,7 +272,6 @@
                         if (typeof window._crmRenderKanban !== 'function') return;
                         var kv = document.getElementById('crmViewKanban');
                         if (kv && kv.style.display !== 'none') {
-                            console.log('[PIN] re-render kanban');
                             window._crmRenderKanban();
                         }
                     }
@@ -258,6 +285,8 @@
 
         // Delegated capture-phase handler: botón de cotizar en la vista lista
         // Capture phase + stopImmediatePropagation para ganar contra el onclick del row.
+        // Guard: dentro del mismo bloque _crmPinHandlerWired (este listener
+        // tampoco debe duplicarse en cada turbo:load).
         document.addEventListener('click', function(e){
             var qbtn = e.target.closest && e.target.closest('.crm-list-quote');
             if (qbtn) {
@@ -269,6 +298,7 @@
                 return false;
             }
         }, true);
+        }  // fin guard _crmPinHandlerWired
 
         // Helpers orden: ancladas → vencidas (más días arriba) → resto
         function isOverdueNode(n) { return n && n.dataset && n.dataset.vencida === '1'; }
@@ -390,14 +420,14 @@
 
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
+    /* Dynamic Island + botones del topbar.
+       Migrado a window.crmReady para compatibilidad futura con Turbo. */
+    window.crmReady(function () {
         const island = document.getElementById('mainIsland');
         const expandedContent = document.getElementById('islandExpandedContent');
         const btnUploadTrigger = document.getElementById('btnUploadXlsTrigger');
         const realUploadBtn = document.getElementById('btnUploadXls');
         let isIslandExpanded = false;
-
-        console.log('[CRM] Island:', island, 'ExpandedContent:', expandedContent);
 
         // Island Expansion Logic - DISABLED per user request (no hover expansion)
         /*
@@ -454,8 +484,6 @@
             var form = document.getElementById('formNegociacion');
             var toast = document.getElementById('widgetToast');
 
-            console.log('[CRM] btnNegociacion:', btnOpen, 'overlay:', overlay, 'btnClose:', btnClose, 'btnCancel:', btnCancel);
-
             function openWidget() {
                 if (!overlay) { console.error('[CRM] widgetNegociacion overlay not found!'); return; }
                 overlay.classList.add('active');
@@ -488,6 +516,12 @@
                 }, 200);
             }
             function showToast(msg, type) {
+                // Delega al helper global window.toast() (widget_toast.js).
+                // Fallback al comportamiento local si el global no cargó.
+                if (typeof window.toast === 'function') {
+                    window.toast(msg, type);
+                    return;
+                }
                 if (!toast) return;
                 toast.textContent = msg;
                 toast.className = 'widget-toast ' + type;
@@ -496,7 +530,6 @@
 
             if (btnOpen) {
                 btnOpen.addEventListener('click', function () {
-                    console.log('[CRM] Negociacion clicked! _crmTareasMode:', window._crmTareasMode);
                     if (window._crmTareasMode) {
                         crmTaskAbrirCrear();
                     } else {
@@ -556,6 +589,10 @@
                                 } else {
                                     clienteAC.classList.remove('open');
                                 }
+                            })
+                            .catch(function (err) {
+                                console.error('[AC] seleccionables fetch:', err);
+                                if (clienteAC) clienteAC.classList.remove('open');
                             });
                     }, 250);
                 });
@@ -601,6 +638,10 @@
                                 } else {
                                     contactoAC.classList.remove('open');
                                 }
+                            })
+                            .catch(function (err) {
+                                console.error('[AC] buscar-contactos fetch:', err);
+                                if (contactoAC) contactoAC.classList.remove('open');
                             });
                     }, 250);
                 });
@@ -731,6 +772,11 @@
             }
 
             function openDetalle(oppId) {
+                // V2 takeover (oportunidad_widget_v2.js, Refactor Etapa 1): los
+                // callers internos (kanban/lista/restore) llaman esta función
+                // local por closure; esta guard los enruta al componente
+                // instanciable. Rollback: localStorage.setItem('opp_v2_off','1').
+                if (window.OppWidgetV2 && window.OppWidgetV2.takeover) { return window.OppWidgetV2.open(oppId); }
                 // Sanitize: strip any non-digit characters (e.g. locale thousands separators)
                 var cleanId = parseInt(String(oppId).replace(/[^\d]/g, ''), 10);
                 if (!cleanId || isNaN(cleanId)) return;
@@ -739,6 +785,8 @@
                 if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(oppId);
                 detalleOverlay.classList.add('active');
                 detalleOverlay.classList.remove('closing');
+                // URL sync: ?open_opp=<id>. Permite share-links y reopen al recargar.
+                if (window.crmWidgetUrl) window.crmWidgetUrl.set('opp', oppId);
                 // Elevar z-index si hay otro widget abierto debajo
                 var _needsElevation = false;
                 ['widgetCalendarioMaster','widgetClienteOportunidades','widgetProyectoDetalle'].forEach(function(wid){
@@ -813,7 +861,6 @@
                         // disparamos recargarTareasCRM() para que el listado
                         // se pinte (si no, queda vacío hasta que el usuario
                         // navega manualmente).
-                        console.log('[deep-link] tarea id =', _openTaskClean, 'desde URL:', _openTaskId);
                         setTimeout(function () {
                             if (typeof switchCrmView === 'function') switchCrmView('tareas');
                             if (typeof recargarTareasCRM === 'function') recargarTareasCRM();
@@ -918,7 +965,6 @@
                     badge.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("[DEBUG] Badge clicked by addEventListener!");
                         var newTipo = tipo === 'proyecto' ? 'runrate' : 'proyecto';
                         var targetName = newTipo === 'proyecto' ? 'Ventas de Proyectos' : 'Ventas Runrate';
 
@@ -927,7 +973,6 @@
 
                         var overlay = document.getElementById('widgetConfirmTipo');
                         if (!overlay) {
-                            console.error("[DEBUG] No se encontró widgetConfirmTipo!");
                             showToast("Error: widgetConfirmTipo no encontrado", "error");
                             return;
                         }
@@ -1552,6 +1597,8 @@
                     document.body.style.overflow = '';
                 }, 200);
                 try { sessionStorage.removeItem('_crm_open_opp_id'); } catch (e) { }
+                // URL sync: quitar el ?open_opp= al cerrar.
+                if (window.crmWidgetUrl) window.crmWidgetUrl.clear('opp');
                 // Restaurar z-index del overlay
                 detalleOverlay.classList.remove('z-elevated', 'z-elevated-top');
                 _crmTableDirty = false;
@@ -1623,9 +1670,14 @@
             var cotizadorOppId = null;
 
             function openCotizador(oppId) {
+                // V2 takeover: cotizador instanciado (una ventana por opp).
+                if (window.OppWidgetV2 && window.OppWidgetV2.takeover) { return window.OppWidgetV2.openCotizador(oppId); }
                 cotizadorOppId = oppId;
                 cotizadorOverlay.classList.add('active');
                 cotizadorOverlay.classList.remove('closing');
+                // body.cotizador-open habilita el CSS que oculta breadcrumbs
+                // de widgets de oportunidad detrás del cotizador.
+                if (document.body) document.body.classList.add('cotizador-open');
                 cotizadorIframe.src = '/app/crear-cotizacion/oportunidad/' + oppId + '/?widget_mode=1';
             }
             window.openCotizador = openCotizador;
@@ -1637,6 +1689,7 @@
                 }
                 cotizadorOverlay.classList.add('active');
                 cotizadorOverlay.classList.remove('closing');
+                if (document.body) document.body.classList.add('cotizador-open');
                 cotizadorIframe.src = '/app/cotizacion/' + cotId + '/editar/?widget_mode=1';
             };
 
@@ -1644,6 +1697,7 @@
                 cotizadorOverlay.classList.add('closing');
                 setTimeout(function () {
                     cotizadorOverlay.classList.remove('active', 'closing');
+                    if (document.body) document.body.classList.remove('cotizador-open');
                     cotizadorIframe.src = 'about:blank';
                 }, 200);
                 if (cotizacionCreated) {
@@ -3347,14 +3401,38 @@
         var _ckChartInstances = {};
 
         function ckDestroyChart(id) {
+            // 1) Destruir referencia local si existe
             if (_ckChartInstances[id]) {
-                _ckChartInstances[id].destroy();
+                try { _ckChartInstances[id].destroy(); } catch (e) { /* noop */ }
                 delete _ckChartInstances[id];
+            }
+            // 2) Bajo Turbo Drive el body se reemplaza al navegar y el
+            //    canvas <canvas id="ckChart..."> es un elemento NUEVO. Chart.js
+            //    puede tener registrado un chart "huérfano" asociado al canvas
+            //    viejo o al nuevo. Chart.getChart() detecta cualquier chart
+            //    asociado al canvas con ese id y lo destruye antes de crear
+            //    uno nuevo. Sin esto: "Canvas is already in use. Chart with
+            //    ID '0' must be destroyed before the canvas can be reused".
+            var canvas = document.getElementById(id);
+            if (canvas && typeof Chart !== 'undefined' && Chart.getChart) {
+                var existing = Chart.getChart(canvas);
+                if (existing) {
+                    try { existing.destroy(); } catch (e) { /* noop */ }
+                }
             }
         }
 
         function ckRenderCharts(merged, totFact, totCob, totOpp, totCot, prevFact, prevCob, prevOpp, prevCot) {
             if (typeof Chart === 'undefined') return;
+            // (2026-06-10, fix SPA) Destruir las instancias previas ANTES de
+            // recrear. Sin esto, la 2ª llamada (cambio de modo, refresh del
+            // data bus, navegación Turbo) lanza "Canvas is already in use"
+            // y fuga listeners de resize. _renderProspCharts ya lo hacía
+            // bien; este era el bloqueador documentado para SPA en Reportes.
+            Object.keys(_ckChartInstances).forEach(function (k) {
+                try { _ckChartInstances[k].destroy(); } catch (e) { }
+                delete _ckChartInstances[k];
+            });
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
             var fmtCurrency = function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; };
 
@@ -3470,7 +3548,16 @@
                 fetch('/app/api/tendencia-mensual/?vendedores=' + encodeURIComponent(vendParam))
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
-                        var ctx2_2d = ctx2.getContext('2d');
+                        // Re-destruir RIGHT antes de crear: el fetch es async,
+                        // entre el ckDestroyChart inicial y este .then() el
+                        // usuario pudo haber navegado y vuelto, dejando un
+                        // chart huérfano en el canvas nuevo.
+                        ckDestroyChart('ckChartTendencia');
+                        // Verificar que el canvas SIGA en el DOM (si navegó y
+                        // todavía no volvió, no rendear).
+                        var liveCtx = document.getElementById('ckChartTendencia');
+                        if (!liveCtx) return;
+                        var ctx2_2d = liveCtx.getContext('2d');
 
                         var makeDataset = function(label, values, color) {
                             return {
@@ -4173,6 +4260,15 @@
                 });
         }
 
+        // Setter para la navegación in-place (crm_nav_v2.js): el periodo vive
+        // en closures de este archivo; sin esto, refreshCrmTable consultaría
+        // el periodo viejo tras un cambio de filtros sin recarga.
+        window._crmSetPeriodo = function (mes, anio, tab) {
+            if (mes != null) currentMes = String(mes);
+            if (anio != null) currentAnio = String(anio);
+            if (tab != null) currentTab = String(tab);
+        };
+
         function refreshCrmTable() {
             if (currentTab === 'clientes') {
                 loadAllClientesPanels();
@@ -4440,6 +4536,10 @@
                             if (fl) fl.textContent = data.footer.left;
                             if (fr) fr.textContent = data.footer.right;
                         }
+                    }).catch(function (err) {
+                        console.error('[CRM] búsqueda tabla:', err);
+                        var tbody = document.getElementById('crmTbody');
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:2rem;color:#DC2626;">Error al buscar. Revisa tu conexión e inténtalo de nuevo.</td></tr>';
                     });
                 }, 350);
             });
@@ -6561,6 +6661,15 @@
         // se acerca a vencer — el usuario ve el color moverse sin recargar.
         // Pausa cuando el tab no es visible (evita polling fantasma que satura
         // browser y servidor cuando el usuario deja la pestaña abierta horas).
+        //
+        // GUARD GLOBAL: este callback se re-dispara en cada turbo:load (al
+        // navegar entre tabs). Sin el guard, cada navegación crearía OTRO
+        // setInterval encima de los anteriores → N timers en paralelo
+        // golpeando el server cada minuto. El guard se chequea para los
+        // DOS intervals (gradient + tareas poll).
+        if (!window._crmGlobalIntervalsWired) {
+            window._crmGlobalIntervalsWired = true;
+
         setInterval(function() {
             if (document.hidden) return;
             if (window._crmTareasMode) return; // solo en vista CRM
@@ -6600,14 +6709,23 @@
                 }).catch(function(){});
         }, 15000);
 
+        }  // fin guard _crmGlobalIntervalsWired
+
         // Al volver a la pestaña, refresca de inmediato (sin esperar el próximo
         // tick del interval) para que el usuario no vea datos viejos.
+        // Este listener al document NO está dentro del guard porque podría
+        // ser útil re-engancharlo si el body fue reemplazado; pero document
+        // es el mismo elemento entre navs — listener se duplicaría. Lo
+        // movemos al mismo guard para que solo se instale una vez.
+        if (!window._crmVisibilityWired) {
+            window._crmVisibilityWired = true;
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) return;
             if (window._crmTareasMode && typeof renderTareasCRM === 'function') {
                 _tareasPollHash = null; // forzar repintado al siguiente poll
             }
         });
+        }  // fin guard _crmVisibilityWired
 
         function _actualizarDropdownResponsables(tareas) {
             var list = document.getElementById('tareasFilterResponsableList');
@@ -8024,11 +8142,9 @@
                     requestAnimationFrame(function(){ sb.style.transition = ''; });
                 }
             }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', bind);
-            } else {
-                bind();
-            }
+            // Migrado a crmReady: corre en DOMContentLoaded y en cada
+            // turbo:load (cuando Turbo se active en Fase 3.C).
+            window.crmReady(bind);
         })();
 
         // ══════════════════════════════════════════════════════════════
@@ -8362,8 +8478,8 @@
 
                 setTimeout(renderChips, 300);
             }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-            else init();
+            // Migrado a crmReady (Turbo-friendly).
+            window.crmReady(init);
         })();
 
         // ── Dropdown para asignar oportunidad a tarea ──
@@ -9800,6 +9916,15 @@
             }
         })();
 
+        // Hook para el sync entre usuarios (crm_sync.js): recargar los
+        // comentarios del detalle de tarea ABIERTO cuando otro usuario
+        // comenta. La función y _crmCurrentTaskId viven en este closure.
+        window._crmTaskRecargarComentarios = function (tareaId) {
+            if (!_crmCurrentTaskId) return;
+            if (tareaId && String(tareaId) !== String(_crmCurrentTaskId)) return;
+            crmTaskCargarComentarios(_crmCurrentTaskId);
+        };
+
         function crmTaskCargarComentarios(tareaId) {
             var feed = document.getElementById('crm-task-activity-feed');
             if (!feed) return;
@@ -10213,9 +10338,8 @@
         }
 
         // ── Editable fields (placeholder) ──
-        function crmTaskMakeEditable(field) {
+        function crmTaskMakeEditable(_field) {
             // Placeholder for inline editing - can be expanded
-            console.log('Edit field:', field, 'Task:', _crmCurrentTaskId);
         }
 
         // ══════════════════════════════════
@@ -10836,9 +10960,8 @@
     });
 
 
-    document.addEventListener('DOMContentLoaded', function () {
-        initDynamicIslandFilters();
-    });
+    // Migrado a crmReady (Turbo-friendly).
+    window.crmReady(initDynamicIslandFilters);
 
     function initDynamicIslandFilters() {
         // Identify active table body

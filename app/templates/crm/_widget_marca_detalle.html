@@ -1,0 +1,15 @@
+{% comment %}
+_widget_marca_detalle.html — Overlay widget que muestra el detalle de una
+marca cuando el usuario hace click en una fila de la tabla / timeline.
+
+El contenido lo renderiza dinámicamente crm_marcas_v2.js dentro de
+#marcaWidgetInner. Aquí solo el shell del overlay.
+{% endcomment %}
+
+<div id="marcaWidgetOverlay" class="marca-widget-overlay" aria-hidden="true">
+    <div class="marca-widget" role="dialog" aria-modal="true" aria-label="Detalle de marca">
+        <div class="marca-widget-inner" id="marcaWidgetInner">
+            <!-- Contenido renderizado por JS -->
+        </div>
+    </div>
+</div>

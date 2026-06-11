@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 7 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 7 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy, enfocadas en la reestructura completa del widget de detalle de proyectos con KPIs inteligentes, integracion del Programa de Obra semanal, y la correccion del selector de tabs del CRM.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">12</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">KPIs Nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Algoritmos Creados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">6</div>
+            <div class="stat-label">Tabs Reestructurados</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Reestructura Completa del Widget de Detalle de Proyectos
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se reestructuro por completo el widget de detalle de proyectos, transformandolo de una vista basica a un <strong>centro de control integral</strong> del proyecto. Se implementaron <strong>KPIs dinamicos que cambian segun el tab activo</strong>: en Partidas muestra indicadores operativos (Gastado, Cobrado, % Avance, Efectividad) y en Financiero muestra indicadores economicos (Utilidad Presupuestada, Costo Presupuestado, Utilidad Real, Margen Real). Se crearon <strong>2 algoritmos inteligentes</strong> en el backend: el calculo de Avance que pondera partidas completadas (40%), etapa de la oportunidad (30%) y programa de obra (30%), y el calculo de Efectividad que inicia en 100% y aplica penalizaciones por tareas vencidas, sobrecostos, compras por encima del presupuesto y atrasos en el programa. Ademas se integro el <strong>Programa de Obra semanal</strong> directamente dentro del proyecto, se fusiono la seccion de Ordenes de Compra con Financiero, y se implemento el badge dinamico que refleja la etapa de la oportunidad vinculada.</p>
+    </div>
+
+    <h2>1. KPIs Inteligentes por Contexto</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">KPIs Operativos en Tab Partidas</span>
+        <div class="update-desc">Al estar en el tab de Partidas, los KPIs muestran 4 indicadores operativos: <strong>Gastado</strong> (suma de montos de OCs no canceladas), <strong>Cobrado</strong> (suma de facturas de ingreso), <strong>% Avance</strong> (algoritmo ponderado) y <strong>Efectividad</strong> (algoritmo de penalizaciones). Los colores cambian dinamicamente: verde para valores saludables, amarillo para precaucion y rojo para alerta.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">KPIs Financieros en Tab Financiero</span>
+        <div class="update-desc">Al cambiar al tab Financiero, los KPIs se reemplazan por 4 indicadores economicos: <strong>Utilidad Presupuestada</strong> y <strong>Costo Presupuestado</strong> (extraidos de la volumetria/partidas al iniciar el proyecto) y <strong>Utilidad Real</strong> y <strong>Margen Real</strong> (calculados dinamicamente desde las facturas cobradas menos los costos y gastos reales). Esto permite comparar lo planeado vs lo real conforme avanza el proyecto.</div>
+    </div>
+
+    <h2>2. Algoritmos de Avance y Efectividad</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Algoritmo de % Avance del Proyecto</span>
+        <div class="update-desc">Calculo ponderado con 3 componentes: <strong>40%</strong> basado en partidas completadas (status cerrado o recibido), <strong>30%</strong> basado en la etapa de la oportunidad vinculada (mapeada de 5% a 100% segun la etapa del pipeline), y <strong>30%</strong> basado en las actividades del programa de obra que ya pasaron. Regla critica: si la oportunidad no esta en etapa "Pagado", el avance no puede superar el 95%.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Algoritmo de Efectividad del Proyecto</span>
+        <div class="update-desc">Inicia en <strong>100%</strong> y aplica penalizaciones: <strong>-5%</strong> por cada tarea vencida no completada, <strong>-5%</strong> si el gasto total supera el costo presupuestado, <strong>-3%</strong> por cada OC donde el precio unitario excede lo presupuestado en la partida, <strong>-10%</strong> si la fecha actual supero la fecha fin del proyecto y la oportunidad no esta como "Pagado", y <strong>-5%</strong> si el programa de obra tiene actividades atrasadas sin futuras programadas.</div>
+    </div>
+
+    <h2>3. Programa de Obra Integrado</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista Semanal Navegable</span>
+        <div class="update-desc">Nuevo tab <strong>"Programa de Obra"</strong> dentro del detalle de cada proyecto. Muestra un calendario semanal con columnas de Lunes a Viernes (expandible a Sabado-Domingo). Las semanas se calculan automaticamente desde la fecha de inicio hasta la fecha fin del proyecto, con navegacion por flechas <strong>&larr; Semana 1 &rarr;</strong>. El dia actual se resalta con borde azul.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Actividades con Horarios y Responsables</span>
+        <div class="update-desc">Las actividades programadas se cargan desde la base de datos y se muestran como <strong>cards azules</strong> en el dia correspondiente, mostrando titulo, horario (ej: "07:00 - 16:00") y avatares circulares con iniciales de los responsables asignados. Cada dia tiene un boton <strong>"+ Anadir"</strong> para crear nuevas actividades.</div>
+    </div>
+
+    <h2>4. Reestructura de Tabs y Badges</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Fusion de OC con Financiero</span>
+        <div class="update-desc">El tab de <strong>"Ordenes de Compra"</strong> fue eliminado como tab independiente y su contenido se fusiono dentro del tab <strong>Financiero</strong>. Ahora Financiero contiene 4 secciones en orden: Ordenes de Compra, Facturas Proveedor, Facturas de Ingreso y Gastos Operativos. Esto centraliza todo lo financiero en un solo lugar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Badge Dinamico con Etapa de la Oportunidad</span>
+        <div class="update-desc">Tanto en el header del widget de detalle como en las tarjetas de la lista de proyectos, el badge ahora muestra la <strong>etapa de la oportunidad vinculada</strong> (ej: "Facturado", "En Transito", "Vendido c/PO") con su color correspondiente, en vez del status generico del proyecto ("Activo"). El badge se actualiza automaticamente cuando la oportunidad cambia de etapa.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Utilidad Real Calculada en Tarjetas</span>
+        <div class="update-desc">Las tarjetas de proyecto en la lista ahora muestran la <strong>utilidad real calculada</strong> (cobrado - facturas proveedor - gastos aprobados) en vez del campo estatico del modelo. La barra de progreso refleja la utilidad real vs la presupuestada, actualizandose conforme se registren facturas y pagos.</div>
+    </div>
+
+    <h2>5. Correccion del Selector de Tabs CRM</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Eliminar Pantalla "Proximamente"</span>
+        <div class="update-desc">Se elimino el bloque de fallback <strong>"Proximamente"</strong> que aparecia cuando los usuarios cambiaban el filtro de mes o seleccionaban un vendedor. El problema era que el selector de tab activo en el JS buscaba una clase CSS incorrecta (<code>.crm-tab-btn</code> en vez de <code>.crm-tab</code>), causando que el parametro <code>tab</code> se perdiera al recargar. Ahora el selector extrae correctamente el tab del <code>href</code> del link activo.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

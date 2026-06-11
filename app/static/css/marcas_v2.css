@@ -1,0 +1,634 @@
+/*
+  marcas_v2.css — Sección "Marcas" del Dashboard CRM.
+
+  Diseño portado del handoff de Claude Design (Modulo Marcas.html).
+  Adaptado: sin sidebar (navegación viene del tab del CRM), detail panel
+  reemplazado por widget overlay. Prefijo .marcas- / .mk- para no colisionar.
+
+  Tokens locales (no globales — viven dentro de la sección).
+*/
+
+/* Footer global del CRM oculto cuando estamos en Marcas — el JS pone
+   .crm-marcas-active en <body> al activar la tab (mismo patrón que
+   Materiales con .crm-control-active). */
+body.crm-marcas-active .crm-footer { display: none !important; }
+
+/* SCROLL LOCK GLOBAL cuando Marcas está activo. Forzamos overflow:
+   hidden en todos los wrappers padres para que NUNCA exista scroll de
+   página. La sección Marcas (con altura medida en JS) y su card interna
+   (overflow-y:scroll) son los únicos responsables del scroll. */
+body.crm-marcas-active,
+body.crm-marcas-active html,
+body.crm-marcas-active .crm-page,
+body.crm-marcas-active .crm-main,
+body.crm-marcas-active #crmContentSection,
+body.crm-marcas-active #crmTableWrap {
+    overflow: hidden !important;
+    max-height: 100vh !important;
+}
+
+/* Cuando un overlay de marca está abierto (detalle o editor) bloqueamos
+   el scroll de la página de fondo — el JS pone .marca-modal-open en
+   <body>. El overlay maneja su propio scroll interno. */
+body.marca-modal-open {
+    overflow: hidden !important;
+}
+
+.marcas-section {
+    --mk-accent: #5e5ce6;
+    --mk-bg: #f2f2f7;
+    --mk-surface: #ffffff;
+    --mk-surface-2: #fbfbfd;
+    --mk-text: #1c1c1e;
+    --mk-text-2: rgba(60, 60, 67, 0.62);
+    --mk-text-3: rgba(60, 60, 67, 0.40);
+    --mk-hairline: rgba(60, 60, 67, 0.12);
+    --mk-hairline-2: rgba(60, 60, 67, 0.07);
+    --mk-fill: rgba(120, 120, 128, 0.12);
+    --mk-fill-2: rgba(120, 120, 128, 0.07);
+    --mk-green: #34c759;
+    --mk-orange: #ff9f0a;
+    --mk-red: #ff3b30;
+    --mk-blue: #0a84ff;
+    --mk-shadow-card: 0 1px 2px rgba(16,18,40,0.04), 0 10px 30px rgba(16,18,40,0.05);
+    --mk-radius: 18px;
+    --mk-rowH: 60px;
+    --mk-rowpad: 14px;
+
+    /* Altura limitada al viewport. La altura exacta la setea el JS
+       midiendo `window.innerHeight - section.top - margen` para no
+       depender de constantes mágicas. El JS también esconde la tabla
+       principal de opps (#crmTableWrap) que de otro modo agrega
+       altura al body y dispara scroll de página. */
+    padding: 0 26px 14px;
+    background: var(--mk-bg);
+    min-height: 540px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', system-ui, sans-serif;
+    color: var(--mk-text);
+}
+
+.marcas-section .num,
+.marcas-section [class*="num"] { font-variant-numeric: tabular-nums; }
+
+/* ─────────────── Topbar ─────────────── */
+.marcas-topbar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    padding: 18px 0 14px;
+    margin-bottom: 4px;
+    background: color-mix(in srgb, var(--mk-bg) 86%, transparent);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+}
+.marcas-actions {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.marcas-actions--left  { flex: 1 1 auto; min-width: 0; flex-wrap: wrap; }
+.marcas-actions--right { flex: 0 0 auto; margin-left: auto; }
+
+/* Chips de filtros activos (al lado de los botones Filtro/Ordenar) */
+.mk-facet-chips {
+    display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.mk-facet-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 4px 4px 10px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    border-radius: 7px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mk-facet-chip-x {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: #1D4ED8;
+    cursor: pointer;
+    transition: background 0.12s;
+    flex-shrink: 0;
+}
+.mk-facet-chip-x:hover { background: rgba(29, 78, 216, 0.12); }
+.mk-facet-clear-all {
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px dashed #FCA5A5;
+    border-radius: 7px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #DC2626;
+    cursor: pointer;
+    transition: background 0.12s, border-style 0.12s;
+}
+.mk-facet-clear-all:hover { background: #FEF2F2; border-style: solid; }
+
+.marcas-searchbox {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--mk-fill); border-radius: 10px;
+    padding: 0 11px; height: 38px; width: 210px;
+    color: var(--mk-text-2);
+    transition: box-shadow 0.15s, background 0.15s;
+}
+.marcas-searchbox:focus-within {
+    background: var(--mk-surface);
+    box-shadow: 0 0 0 2px var(--mk-accent), var(--mk-shadow-card);
+}
+.marcas-searchbox input {
+    flex: 1; min-width: 0; border: none; background: none; outline: none;
+    font: inherit; font-size: 14px; color: var(--mk-text);
+}
+.marcas-searchbox input::placeholder { color: var(--mk-text-3); }
+.marcas-search-clear {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--mk-text-3); padding: 2px;
+    background: none; border: none; cursor: pointer;
+}
+.marcas-search-clear:hover { color: var(--mk-text); }
+
+.marcas-segmented {
+    display: flex; background: var(--mk-fill);
+    border-radius: 10px; padding: 2px; gap: 2px;
+}
+.marcas-seg {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 13px; border-radius: 8px;
+    font-size: 13.5px; font-weight: 500; color: var(--mk-text-2);
+    background: none; border: none; cursor: pointer;
+    transition: 0.15s;
+}
+.marcas-seg.is-on {
+    background: var(--mk-surface); color: var(--mk-text); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+.marcas-iconbtn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--mk-fill); color: var(--mk-text-2);
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; transition: 0.15s;
+}
+.marcas-iconbtn:hover { color: var(--mk-text); }
+.marcas-iconbtn.is-on {
+    background: color-mix(in srgb, var(--mk-accent) 16%, transparent);
+    color: var(--mk-accent);
+}
+.marcas-primarybtn {
+    display: flex; align-items: center; gap: 6px;
+    height: 38px; padding: 0 16px;
+    border-radius: 10px;
+    background: var(--mk-accent); color: #fff;
+    font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer; transition: 0.15s;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--mk-accent) 38%, transparent);
+}
+.marcas-primarybtn:hover { filter: brightness(1.06); }
+.marcas-textbtn {
+    color: var(--mk-accent); font-size: 13.5px; font-weight: 600;
+    padding: 4px 6px; border-radius: 6px;
+    background: none; border: none; cursor: pointer;
+}
+.marcas-textbtn:hover { background: color-mix(in srgb, var(--mk-accent) 10%, transparent); }
+
+/* ─────────────── KPIs (compactos, tamaño Materiales) ─────────────── */
+.marcas-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 2px 0 12px;
+}
+.marcas-kpi {
+    background: var(--mk-surface);
+    border-radius: 14px;
+    padding: 11px 14px;
+    box-shadow: var(--mk-shadow-card);
+    border: 1px solid var(--mk-hairline-2);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.marcas-kpi-ico {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+}
+.marcas-kpi-ico svg { width: 15px; height: 15px; }
+.marcas-tone-indigo { background: color-mix(in srgb, #5e5ce6 16%, transparent); color: #5e5ce6; }
+.marcas-tone-teal   { background: color-mix(in srgb, #30b0c7 16%, transparent); color: #30b0c7; }
+.marcas-tone-blue   { background: color-mix(in srgb, #0a84ff 16%, transparent); color: #0a84ff; }
+.marcas-tone-orange { background: color-mix(in srgb, #ff9f0a 18%, transparent); color: #f59300; }
+.marcas-tone-green  { background: color-mix(in srgb, #34c759 18%, transparent); color: #2faa4d; }
+.marcas-kpi-label {
+    font-size: 11px; font-weight: 700; color: var(--mk-text-2);
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.marcas-kpi-value {
+    font-size: 19px; font-weight: 800; letter-spacing: -0.025em; margin-top: 0;
+    line-height: 1.15;
+}
+.marcas-kpi-sub {
+    font-size: 10.5px; color: var(--mk-text-3); margin-top: 1px;
+}
+.marcas-kpi-meta { position: relative; display: flex; flex-direction: column; }
+.marcas-kpi-meta-head { display: flex; align-items: center; gap: 10px; margin-bottom: 0; }
+.marcas-kpi-meta-head .marcas-kpi-ico { margin-bottom: 0; }
+.marcas-kpi-meta-head .marcas-kpi-value { font-size: 17px; }
+.marcas-ring {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    width: 50px; height: 50px;
+}
+.marcas-ring-bg { stroke: var(--mk-fill); }
+.marcas-ring-fg { stroke: var(--mk-green); transition: stroke-dashoffset 0.6s cubic-bezier(.4,1.3,.4,1); }
+.marcas-kpi-meta-foot {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-top: auto; padding-top: 8px;
+}
+.marcas-kpi-meta-pct { font-size: 14px; font-weight: 800; }
+.marcas-kpi-meta-gap { font-size: 11px; font-weight: 700; }
+.marcas-kpi-meta-gap.pos { color: var(--mk-green); }
+.marcas-kpi-meta-gap.neg { color: var(--mk-red); }
+.marcas-kpi-meta-gap.neutral { color: var(--mk-text-3); }
+
+/* ─────────────── Filterbar ─────────────── */
+.marcas-filterbar {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--mk-surface); border: 1px solid var(--mk-hairline-2);
+    border-radius: 14px; padding: 12px 16px;
+    margin-bottom: 16px; box-shadow: var(--mk-shadow-card);
+    animation: mkSlidein 0.18s ease;
+}
+@keyframes mkSlidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.marcas-filter-grp { display: flex; align-items: center; gap: 9px; }
+.marcas-filter-lab {
+    font-size: 12px; font-weight: 700; color: var(--mk-text-2);
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.marcas-filterbar-div { width: 1px; height: 22px; background: var(--mk-hairline); }
+.marcas-filterbar-spacer { flex: 1; }
+.marcas-filter-count {
+    font-size: 12.5px; color: var(--mk-text-3); font-variant-numeric: tabular-nums;
+}
+.marcas-chips { display: flex; gap: 5px; }
+.marcas-chip {
+    padding: 5px 12px; border-radius: 8px;
+    background: var(--mk-fill); font-size: 12.5px; font-weight: 600;
+    color: var(--mk-text-2);
+    border: none; cursor: pointer; transition: 0.13s;
+}
+.marcas-chip:hover { color: var(--mk-text); }
+.marcas-chip.is-on { background: var(--mk-accent); color: #fff; }
+.marcas-filter-select {
+    appearance: none;
+    background: var(--mk-fill); border: none; border-radius: 8px;
+    padding: 6px 28px 6px 11px;
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--mk-text);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5L6 7.5 9 4.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+/* ─────────────── Card / Table ─────────────── */
+.marcas-card {
+    background: var(--mk-surface);
+    border-radius: var(--mk-radius);
+    box-shadow: var(--mk-shadow-card);
+    border: 1px solid var(--mk-hairline-2);
+    /* La altura la dicta el JS via style.height (matemática exacta:
+       sectionH - topbarH - kpisH). NO usar flex aquí — peleaba con el
+       style inline y el navegador escogía el max. Box-sizing border-box
+       para que el border+padding queden DENTRO de la altura asignada. */
+    box-sizing: border-box;
+    /* `scroll` (no `auto`) garantiza scrollbar SIEMPRE visible —
+       en macOS las auto se ocultan. */
+    overflow-y: scroll;
+    overflow-x: auto;
+    /* Firefox: scrollbar fina con color customizado */
+    scrollbar-width: thin;
+    scrollbar-color: #B0B0B5 transparent;
+}
+.marcas-card::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.marcas-card::-webkit-scrollbar-track {
+    background: #F5F5F7;
+    border-radius: 0 var(--mk-radius) var(--mk-radius) 0;
+}
+.marcas-card::-webkit-scrollbar-thumb {
+    background: #C7C7CC;
+    border-radius: 5px;
+    border: 2px solid #F5F5F7;
+}
+.marcas-card::-webkit-scrollbar-thumb:hover { background: #8E8E93; }
+.marcas-card::-webkit-scrollbar-corner { background: transparent; }
+.marcas-dtable { width: 100%; border-collapse: collapse; }
+.marcas-dtable thead th {
+    font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--mk-text-3); text-align: left;
+    padding: 14px var(--mk-rowpad);
+    border-bottom: 1px solid var(--mk-hairline);
+    white-space: nowrap;
+}
+.marcas-dtable th.marcas-num,
+.marcas-dtable td.marcas-num { text-align: right; }
+.marcas-dtable th.marcas-c-name { padding-left: 24px; }
+.marcas-dtable th.marcas-c-chev,
+.marcas-dtable td.marcas-c-chev { width: 44px; padding-right: 18px; }
+
+.marcas-drow { cursor: pointer; transition: background 0.12s; }
+.marcas-drow td {
+    padding: var(--mk-rowpad);
+    border-bottom: 1px solid var(--mk-hairline-2);
+    height: var(--mk-rowH); vertical-align: middle;
+}
+.marcas-drow:last-child td { border-bottom: none; }
+.marcas-drow:hover { background: var(--mk-fill-2); }
+.marcas-drow.is-sel { background: color-mix(in srgb, var(--mk-accent) 8%, transparent); }
+.marcas-drow td.marcas-c-name { padding-left: 24px; }
+
+.marcas-namecell { display: flex; align-items: center; gap: 13px; }
+.marcas-namecell-t { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+.marcas-namecell-s { font-size: 12px; color: var(--mk-text-2); margin-top: 1px; }
+.marcas-logo {
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; flex-shrink: 0; letter-spacing: -0.02em;
+    background: oklch(0.9 0.055 var(--mk-h, 240));
+    color: oklch(0.46 0.14 var(--mk-h, 240));
+}
+
+.marcas-dtable td.marcas-num { font-size: 14px; color: var(--mk-text-2); }
+.marcas-dtable td.marcas-num.strong { color: var(--mk-text); font-weight: 700; font-size: 14.5px; }
+.marcas-cell-sub { display: block; font-size: 11.5px; color: var(--mk-text-3); margin-top: 1px; }
+
+.marcas-c-avance { width: 200px; }
+.marcas-avance { display: flex; align-items: center; gap: 10px; }
+.marcas-avance-bar {
+    flex: 1; height: 6px; border-radius: 4px;
+    background: var(--mk-fill); overflow: hidden;
+}
+.marcas-avance-bar span {
+    display: block; height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--mk-accent), color-mix(in srgb, var(--mk-accent) 70%, #fff));
+}
+.marcas-avance-bar.lg { height: 8px; }
+.marcas-avance-pct {
+    font-size: 12.5px; font-weight: 700; color: var(--mk-text-2);
+    min-width: 34px; text-align: right;
+}
+.marcas-avance-na { font-size: 12px; color: var(--mk-text-3); font-style: italic; }
+.marcas-c-chev { color: var(--mk-text-3); text-align: right; }
+
+.marcas-empty-cell {
+    text-align: center; padding: 40px; color: var(--mk-text-3); font-style: italic;
+}
+
+/* ─────────────── Timeline ─────────────── */
+/* La vista timeline hereda overflow-y:auto de .marcas-card, pero forzamos
+   overflow-x:auto local para que solo el timeline scrollee horizontalmente
+   (no la sección completa). */
+.marcas-tlwrap { padding: 0; overflow-x: auto; overflow-y: auto; }
+.marcas-tl { min-width: 920px; }
+.marcas-tl-left {
+    width: 300px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 16px 0 24px;
+}
+.marcas-tl-grid {
+    flex: 1; display: grid; grid-template-columns: repeat(12, 1fr);
+}
+.marcas-tl-head { display: flex; align-items: stretch; border-bottom: 1px solid var(--mk-hairline); }
+.marcas-tl-head-left { align-items: flex-end; padding-bottom: 8px; padding-top: 14px; }
+.marcas-tlh {
+    font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--mk-text-3);
+}
+.marcas-tl-qrow { align-items: end; }
+.marcas-tl-qcell {
+    text-align: center; font-size: 11.5px; font-weight: 800;
+    color: var(--mk-text-2); padding: 14px 0 7px;
+    border-left: 1px solid var(--mk-hairline-2);
+    grid-column: span 3;
+}
+.marcas-tl-subhead { border-bottom: 1px solid var(--mk-hairline); }
+.marcas-tl-mcell {
+    text-align: center; font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.02em; color: var(--mk-text-3); padding: 7px 0;
+}
+.marcas-tl-row {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid var(--mk-hairline-2);
+    cursor: pointer; transition: background 0.12s;
+    min-height: var(--mk-rowH);
+}
+.marcas-tl-row:last-child { border-bottom: none; }
+.marcas-tl-row:hover { background: var(--mk-fill-2); }
+.marcas-tl-op { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
+.marcas-tl-op-txt { min-width: 0; }
+.marcas-tl-op-cli {
+    font-size: 13.5px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.marcas-tl-op-sub {
+    font-size: 11.5px; color: var(--mk-text-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.marcas-tl-monto {
+    font-size: 13px; font-weight: 700; color: var(--mk-text-2);
+    flex-shrink: 0;
+}
+.marcas-tl-cell {
+    display: flex; align-items: center; justify-content: center;
+    border-left: 1px solid var(--mk-hairline-2);
+}
+.marcas-t-q1 { background: color-mix(in srgb, var(--mk-text) 1.5%, transparent); }
+.marcas-t-q2 { background: color-mix(in srgb, var(--mk-text) 4%, transparent); }
+.marcas-t-q3 { background: color-mix(in srgb, var(--mk-text) 6.5%, transparent); }
+.marcas-t-q4 { background: color-mix(in srgb, #0a84ff 9%, transparent); }
+.marcas-tl-mcell.marcas-t-q4 { color: var(--mk-blue); }
+
+.marcas-tl-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 38px; height: 24px; padding: 0 7px; border-radius: 7px;
+    font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.marcas-tl-chip.p-high { background: color-mix(in srgb, var(--mk-green) 18%, transparent); color: #2a9d49; }
+.marcas-tl-chip.p-mid  { background: color-mix(in srgb, var(--mk-orange) 20%, transparent); color: #e08600; }
+.marcas-tl-chip.p-low  { background: var(--mk-fill); color: var(--mk-text-2); }
+
+/* ─────────────── Empty ─────────────── */
+.marcas-empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 60px 0; color: var(--mk-text-3);
+}
+.marcas-empty-state p { font-size: 14px; margin: 0; }
+
+/* ─────────────── Widget overlay (detail) ─────────────── */
+.marca-widget-overlay {
+    position: fixed; inset: 0; z-index: 11000;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s;
+}
+.marca-widget-overlay.is-open { opacity: 1; pointer-events: auto; }
+
+.marca-widget {
+    background: var(--mk-surface, #fff);
+    color: var(--mk-text, #1c1c1e);
+    /* Ancho similar al widget de oportunidad (850px) — un poco más para
+       acomodar los stats en grid 4-col cuando hay espacio. */
+    width: 880px; max-width: 95vw; max-height: 88vh;
+    border-radius: 20px;
+    box-shadow: 0 24px 80px rgba(16,18,40,0.28), 0 4px 12px rgba(16,18,40,0.10);
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateY(20px) scale(0.96);
+    transition: transform 0.28s cubic-bezier(.32,.72,0,1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', system-ui, sans-serif;
+    --mk-text: #1c1c1e;
+    --mk-text-2: rgba(60, 60, 67, 0.62);
+    --mk-text-3: rgba(60, 60, 67, 0.40);
+    --mk-fill: rgba(120, 120, 128, 0.12);
+    --mk-fill-2: rgba(120, 120, 128, 0.07);
+    --mk-green: #34c759;
+    --mk-red: #ff3b30;
+    --mk-accent: #5e5ce6;
+}
+.marca-widget-overlay.is-open .marca-widget { transform: none; }
+
+.marca-widget-inner {
+    overflow-y: auto;
+    padding: 18px 24px 24px;
+}
+.marca-widget-top {
+    display: flex; justify-content: space-between; margin-bottom: 6px;
+    position: sticky; top: -18px; padding-top: 0;
+}
+.marca-widget-iconbtn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: transparent; color: var(--mk-text-2);
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer;
+}
+.marca-widget-iconbtn:hover { background: var(--mk-fill); color: var(--mk-text); }
+
+.marca-widget-hero {
+    display: flex; align-items: center; gap: 15px; margin: 8px 0 22px;
+}
+.marca-widget-name { font-size: 24px; font-weight: 800; letter-spacing: -0.025em; margin: 0; }
+.marca-widget-cat { font-size: 13.5px; color: var(--mk-text-2); margin-top: 2px; }
+
+.marca-widget-meta {
+    background: var(--mk-fill-2); border-radius: 14px;
+    padding: 15px 16px; margin-bottom: 16px;
+}
+.marca-widget-meta-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: var(--mk-text-2); margin-bottom: 10px;
+}
+.marca-widget-meta-row .strong { color: var(--mk-text); font-weight: 700; }
+.marca-widget-gap { font-size: 12.5px; font-weight: 700; margin-top: 9px; }
+.marca-widget-gap.pos { color: var(--mk-green); }
+.marca-widget-gap.neg { color: var(--mk-red); }
+.marca-widget-gap.neutral { color: var(--mk-text-3); font-style: italic; }
+
+.marca-widget-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 24px;
+}
+@media (max-width: 720px) {
+    .marca-widget-stats { grid-template-columns: repeat(2, 1fr); }
+}
+.marca-widget-stat { background: var(--mk-fill-2); border-radius: 12px; padding: 13px 14px; }
+.marca-widget-stat-v { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+.marca-widget-stat-l { font-size: 12px; color: var(--mk-text-2); margin-top: 2px; }
+
+.marca-widget-sec-h {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 10px;
+}
+.marca-widget-sec-count {
+    background: var(--mk-fill); color: var(--mk-text-2);
+    font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px;
+}
+.marca-widget-ops {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    margin-bottom: 22px;
+    max-height: 360px; overflow-y: auto;
+    padding-right: 4px;
+}
+.marca-widget-ops::-webkit-scrollbar { width: 6px; }
+.marca-widget-ops::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+@media (max-width: 720px) {
+    .marca-widget-ops { grid-template-columns: 1fr; }
+}
+
+.marca-widget-op {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 8px;
+    border-bottom: 1px solid rgba(60,60,67,0.07);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.14s;
+}
+.marca-widget-op:hover {
+    background: rgba(120,120,128,0.07);
+}
+.marca-widget-op:last-child { border-bottom: none; }
+.marca-widget-op-cli { font-size: 14px; font-weight: 700; }
+.marca-widget-op-desc { font-size: 12.5px; color: var(--mk-text-2); margin-top: 1px; }
+.marca-widget-op-right { text-align: right; flex-shrink: 0; }
+.marca-widget-op-monto { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.marca-widget-op-tags {
+    display: flex; align-items: center; gap: 6px;
+    justify-content: flex-end; margin-top: 4px;
+}
+.marca-widget-op-mes {
+    font-size: 11px; font-weight: 700; color: var(--mk-text-3);
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+.marca-widget-actions {
+    display: flex; flex-direction: column; gap: 10px;
+}
+.marca-widget-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; height: 44px;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+    border: none; cursor: pointer; transition: 0.15s;
+}
+.marca-widget-btn--primary {
+    background: var(--mk-accent); color: #fff;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--mk-accent) 38%, transparent);
+}
+.marca-widget-btn--primary:hover { filter: brightness(1.06); }
+.marca-widget-btn--ghost {
+    background: var(--mk-fill); color: var(--mk-text);
+}
+.marca-widget-btn--ghost:hover { background: rgba(120,120,128,0.20); }
+
+/* ─────────────── Responsive ─────────────── */
+@media (max-width: 1180px) {
+    .marcas-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 860px) {
+    .marcas-section { padding: 0 16px 40px; }
+    .marcas-topbar { flex-direction: column; align-items: flex-start; gap: 14px; }
+}

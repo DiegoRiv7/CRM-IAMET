@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 16 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 16 de Abril, 2026</p>
+            <p>Periodo: 14 &ndash; 16 Abril</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe cubre el trabajo realizado entre el 14 y 16 de Abril: la <strong>vista Kanban de oportunidades</strong>, el <strong>calendario semanal de tareas</strong>, la <strong>barra unificada del CRM</strong>, correcciones criticas al flujo de <strong>cobrado/facturacion</strong>, mejoras de <strong>permisos en tareas</strong>, y el <strong>deploy completo a produccion</strong> con resolucion de incidentes de infraestructura.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">48</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Vistas Nuevas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Deploy Produccion</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">19</div>
+            <div class="stat-label">Archivos Modificados</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Vista Kanban de Oportunidades + Calendario Semanal de Tareas
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se construyeron dos vistas complejas desde cero: (1) un <strong>tablero Kanban por etapa</strong> en Oportunidades con columnas colapsables, scroll independiente por columna, flechas de navegacion, heat-map de vencidas, pin reactivo y filtro "Solo vencidas" por etapa; y (2) un <strong>calendario semanal tipo Sunsama/Akiflow</strong> en Tareas con columna "Atrasadas" + Lun-Vie, warm gradients, cards completadas en verde, y scroll interno. Ambas vistas se integran al toggle existente y persisten la seleccion en localStorage. Adicionalmente se unificaron todas las barras del CRM (tabs + filtros + periodo) en <strong>una sola fila</strong>, ganando ~50px de espacio vertical critico para el kanban.</p>
+    </div>
+
+    <h2>1. Vista Kanban de Oportunidades</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tablero Kanban por Etapa del Pipeline</span>
+        <div class="update-desc">Nueva vista <code>#crmViewKanban</code> con columnas por etapa (Oportunidad, Levantamiento, Cotizando, etc.). Cada columna muestra nombre de etapa, contador de oportunidades y total en MXN. Las cards son clones de los post-its existentes con el heat-map de vencidas intacto. Scroll independiente por columna, ancho fijo de 300px con scroll horizontal del board completo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Columnas Colapsables + Flechas de Navegacion</span>
+        <div class="update-desc">Cada columna del kanban se puede <strong>colapsar</strong> a 42px de ancho con nombre vertical rotado y contador. Click para expandir. Flechas flotantes estilo timeline en las esquinas izquierda/derecha del board para navegar entre etapas sin mouse/trackpad horizontal. Board ocupa <strong>100% del viewport</strong> (edge-to-edge) con body scroll bloqueado para evitar conflictos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtro "Solo Vencidas" en Ordenar</span>
+        <div class="update-desc">Nueva opcion en el popover de Ordenar que filtra las oportunidades para mostrar <strong>unicamente las que tienen tareas vencidas</strong> (data-vencida="1"). En kanban, cada columna solo muestra las vencidas de esa etapa, permitiendo ver de un vistazo cuantas hay que atender por fase del pipeline. El boton Ordenar actualiza su label a "Solo vencidas" cuando esta activo.</div>
+    </div>
+
+    <h2>2. Calendario Semanal de Tareas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista Calendario tipo Sunsama/Akiflow</span>
+        <div class="update-desc">Reemplaza la vista de tarjetas en grid por un <strong>calendario semanal</strong> con columna "Atrasadas" (rojo, con triangulo warning) + Lun a Vie (Sab/Dom condicionales). Cada columna muestra nombre de dia, numero y contador de tareas. Navegacion por semana con botones &larr; / &rarr; y boton "Hoy" para volver a la semana actual. Toggle Lista &harr; Calendario persiste en localStorage.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Warm Gradients + Completadas Verdes</span>
+        <div class="update-desc">Las tarjetas del calendario usan <strong>warm gradients</strong> para proximidad a deadline: warm-3 (&le;1 dia), warm-2 (&le;7), warm-1 (&le;14). Tareas completadas quedan visibles pero con <strong>fondo verde claro + opacity 0.75 + titulo tachado</strong>, tanto en el calendario como en la vista lista (misma estetica).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Urgency via Ordenar (Reemplaza Dynamic Island)</span>
+        <div class="update-desc">Se elimino la barra de tabs "Todas / Atrasadas / Para hoy" (dynamic island). Esa funcionalidad ahora vive en el boton <strong>Ordenar</strong> del facet bar con 3 opciones: Todas (default), Atrasadas y Hoy. El label del boton refleja la seleccion activa.</div>
+    </div>
+
+    <h2>3. Barra Unificada del CRM</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Facet Bar Fusionada con la Fila de Tabs</span>
+        <div class="update-desc">Se fusionaron las dos filas del CRM (tabs + facet bar) en <strong>una sola fila</strong>: <code>[Filtro &middot; Ordenar &middot; Excel &middot; Vista]</code> a la izquierda, <code>[Oportunidades &middot; Prospeccion &middot; Clientes]</code> al centro, y <code>[Periodo &middot; Vendedor &middot; + Nuevo]</code> a la derecha. Gana ~50px de espacio vertical, critico para el kanban. Los chips activos aparecen en una fila propia debajo (se oculta automaticamente con CSS <code>:has()</code> cuando no hay filtros). Solo aplica al tab CRM; Prospeccion y Clientes mantienen su layout minimal.</div>
+    </div>
+
+    <h2>4. Correcciones de Cobrado, Facturacion y CSV</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">CSV de Cobrado: Soporte de 10 Formatos de Fecha</span>
+        <div class="update-desc"><code>api_subir_cobrado</code> solo aceptaba 2 formatos de fecha. El CSV del usuario tenia <code>02/01/26 10:39</code> (ano de 2 digitos, sin segundos) y todas las filas fallaban silenciosamente. Se anadieron <strong>10 formatos</strong> incluyendo variantes de ano corto, AM/PM y sin hora.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">API CRM Table Data: Soporte Multi-Valor mes/anio</span>
+        <div class="update-desc"><code>api_crm_table_data</code> crasheaba con <code>int(mes_filter)</code> cuando el filtro venia como <code>mes=04,03</code> (seleccion multiple). Se refactorizo con <code>_parse_ints()</code> + <code>__in=</code> en todos los filtros: base_qs, prospectos, envios, cotizaciones sueltas. Lo mismo en <code>api_desglose_cobrado</code>, <code>api_desglose_facturacion</code>, <code>api_cliente_oportunidades</code> y <code>_calcular_total_desglose</code>.</div>
+    </div>
+
+    <h2>5. Permisos en Tareas y Vencidas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Creador y Responsable con Permisos Completos</span>
+        <div class="update-desc">Antes el responsable (<code>asignado_a</code>) de una tarea solo podia cambiar la fecha limite (con razon obligatoria). Ahora tanto creador como responsable pueden <strong>editar todo</strong>: titulo, descripcion, prioridad, fecha, participantes y observadores. Aplica a tareas normales Y automaticas. En tareas automaticas, el <code>creado_por</code> ya era correctamente el responsable de la oportunidad ligada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Indicador de Vencida: Solo TareaOportunidad</span>
+        <div class="update-desc">Se intento incluir las <code>Actividad</code> del calendario en el chequeo de vencidas, pero causaba falsos positivos masivos (actividades viejas de la conversacion nunca cerradas). Se revirtio: el indicador rojo solo considera <strong>TareaOportunidad</strong> y <strong>Tarea</strong> (lo que muestra el widget "Actividad Programada").</div>
+    </div>
+
+    <h2>6. Calendario Global: Consistencia de Vistas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Semana/Dia: Click Abre Panel Lateral (como Mes)</span>
+        <div class="update-desc">En las vistas Semana y Dia del calendario global, el titulo del evento tenia un <code>onclick</code> interno que abria directamente el widget de oportunidad (<code>openDetalle</code>), bypaseando el panel lateral derecho. Se removio ese handler; ahora el click <strong>siempre abre el panel lateral</strong> con detalles, hora, estado y botones de accion, igual que en la vista Mes.</div>
+    </div>
+
+    <h2>7. Deploy a Produccion e Infraestructura</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Infra</span>
+        <span class="update-title">Merge a Produccion + Rebuild de Imagen Docker</span>
+        <div class="update-desc">Se mergeo la rama <code>pruebas</code> a <code>principal</code> (63 commits, 19 archivos, +6,540 lineas). Se reconstruyo la imagen Docker para instalar la nueva dependencia <code>qrcode==7.4.2</code>. Se descubrio que el compose project name de produccion es <code>gesti-n-de-ventas</code> (legado) &mdash; todos los comandos compose requieren <code>-p gesti-n-de-ventas</code>. Se documento en WORKFLOW.md y ESTRUCTURA.md.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Infra</span>
+        <span class="update-title">Fix nginx: Puerto 8007 &rarr; 8000 + Media Volume</span>
+        <div class="update-desc">Produccion mostraba 502 Bad Gateway porque nginx apuntaba a <code>proxy_pass 127.0.0.1:8007</code> pero el contenedor corre en <code>8000</code>. Se corrigio. Ademas, los archivos del Drive (9.9GB: avatares, PDFs, facturas) estaban en el Docker volume <code>crm-iamet_media_files</code>, pero nginx buscaba en <code>~/crm-iamet/media/</code> (host path vacio). Se actualizo nginx para servir desde el volume y se declaro el volume como <code>external</code> en docker-compose.yml para evitar que futuros deploys creen un volume vacio.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Infra</span>
+        <span class="update-title">Documentacion Operativa Actualizada</span>
+        <div class="update-desc">Se actualizaron <code>WORKFLOW.md</code> y <code>ESTRUCTURA.md</code> con los valores reales de produccion: puerto 8000, compose project name <code>gesti-n-de-ventas</code>, nombre real de contenedores, comandos diferenciados para cambios Python-only vs requirements vs static, y nota sobre el volume externo <code>crm-iamet_media_files</code>. Se actualizo la memoria persistente del asistente de desarrollo para evitar repetir errores.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

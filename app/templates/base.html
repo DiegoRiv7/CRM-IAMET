@@ -60,7 +60,7 @@
     <script>
         (function () {
             try {
-                const theme = localStorage.getItem('theme') || 'dark';
+                const theme = localStorage.getItem('theme') || 'mundial';
                 const html = document.documentElement;
 
                 html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
@@ -86,6 +86,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestión Ventas">
 
+    {% comment %}
+    crm_ready.js DEBE cargarse antes que CUALQUIER otro script (incluso
+    inline scripts dentro de includes). Está en el <head> para garantizar
+    el orden: define window.crmReady() que todos los demás scripts usan.
+    Es un archivo chico (~3 KB), no impacta el first paint.
+
+    Turbo Drive + bootstrap se cargan inmediatamente después. Turbo
+    está en modo opt-in (Turbo.session.drive = false), solo intercepta
+    los <a data-turbo="true"> del sidebar/topbar. Ver turbo_bootstrap.js.
+    {% endcomment %}
+    <script src="{% static 'js/crm_ready.js' %}?v=20260604-fase6c"></script>
+    <script src="{% static 'vendor/turbo/turbo.es2017-umd.js' %}?v=8.0.13"></script>
+    <script src="{% static 'js/turbo_bootstrap.js' %}?v=20260610-chart-cleanup"></script>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -95,8 +109,17 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/personalizacion.css' %}">
     <link rel="stylesheet" href="{% static 'css/oportunidad_detail.css' %}">
+    <link rel="stylesheet" href="{% static 'css/widget_window.css' %}?v=20260610-ww-v8-clean">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% comment %}
+    Tema Mundial — archivo único y autocontenido. Todas sus reglas están
+    scopeadas a body[data-theme="mundial"], así que solo pinta cuando ese
+    tema está activo; en cualquier otro tema es inerte. Quitar el tema =
+    borrar esta línea y el archivo.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260610-mundial-proy-cal">
+
 
     <!-- Intro.js for Tutorial -->
     <script src="https://unpkg.com/intro.js/intro.js"></script>
@@ -107,6 +130,7 @@
 
 <body class="min-h-screen flex flex-col"
     {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}
+    data-theme="{{ request.user.userprofile.theme|default:'mundial' }}"
     data-user-role="{% if user_profile and user_profile.rol %}{{ user_profile.rol }}{% else %}vendedor{% endif %}">
     <!-- Contenido Principal -->
     <div class="flex-grow container mx-auto px-4 py-8 main-content">
@@ -115,7 +139,12 @@
     </div>
 
     <!-- ═══ SPOTLIGHT SEARCH v2 (doble espacio / ⌘K) ═══ -->
-    <div id="spotlight-modal" class="spotlight-modal spotlight-v2">
+    {% comment %}
+    Spotlight y Ayuda modales viven en base.html (todas las páginas).
+    data-turbo-permanent: Turbo NO los reemplaza al navegar — preservan
+    estado (input del usuario, listeners) entre navegaciones SPA.
+    {% endcomment %}
+    <div id="spotlight-modal" class="spotlight-modal spotlight-v2" data-turbo-permanent>
         <div class="spotlight-backdrop" onclick="closeSpotlight()"></div>
         <div class="spotlight-container">
             <div class="spotlight-search-box">
@@ -142,11 +171,18 @@
                 <button type="button" class="sp-chip" data-scope="proyecto">Proyectos</button>
             </div>
             <div class="spotlight-results" id="spotlight-results"></div>
+            <div class="sp-footer" id="sp-footer" aria-hidden="true">
+                <span class="sp-kbd-hint"><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+                <span class="sp-kbd-hint"><kbd>↵</kbd> abrir</span>
+                <span class="sp-kbd-hint"><kbd>⌘</kbd><kbd>↵</kbd> nueva pestaña</span>
+                <span class="sp-kbd-hint"><kbd>Tab</kbd> cambiar scope</span>
+                <span class="sp-kbd-hint"><kbd>Esc</kbd> cerrar</span>
+            </div>
         </div>
     </div>
 
     <!-- ═══ ASISTENTE IA DE AYUDA (botón AYUDA en Dynamic Island) ═══ -->
-    <div id="ayuda-modal" class="spotlight-modal">
+    <div id="ayuda-modal" class="spotlight-modal" data-turbo-permanent>
         <div class="spotlight-backdrop" onclick="closeAyudaChat()"></div>
         <div class="spotlight-container" style="max-width:520px;display:flex;flex-direction:column;max-height:75vh;">
             <div
@@ -197,7 +233,17 @@
         </div>
     </div>
 
-    <script src="{% static 'js/base.js' %}?v=20260522-eng-proy-fix"></script>
+    {% comment %}
+    crm_ready.js se carga en el <head> (ver arriba) para garantizar
+    que window.crmReady() está disponible para TODO el resto del JS.
+    {% endcomment %}
+    {% comment %}
+    base.js es idempotente (PART 1 en IIFE con guard) y registra globals
+    (window.ResponsiveUtils, window.openSpotlight, etc.) que viven entre
+    navegaciones. data-turbo-eval="false" evita re-evaluación bajo Turbo —
+    sus listeners ya están instalados desde la primera carga.
+    {% endcomment %}
+    <script src="{% static 'js/base.js' %}?v=20260604-iife" data-turbo-eval="false"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

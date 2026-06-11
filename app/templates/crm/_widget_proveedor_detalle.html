@@ -1,0 +1,15 @@
+{% comment %}
+_widget_proveedor_detalle.html — Overlay widget que muestra el detalle de
+un proveedor cuando el usuario hace click en una fila de la tabla / timeline.
+
+El contenido lo renderiza dinámicamente crm_proveedores_v2.js dentro de
+#proveedorWidgetInner. Aquí solo el shell del overlay.
+{% endcomment %}
+
+<div id="proveedorWidgetOverlay" class="proveedor-widget-overlay" aria-hidden="true">
+    <div class="proveedor-widget" role="dialog" aria-modal="true" aria-label="Detalle de proveedor">
+        <div class="proveedor-widget-inner" id="proveedorWidgetInner">
+            <!-- Contenido renderizado por JS -->
+        </div>
+    </div>
+</div>

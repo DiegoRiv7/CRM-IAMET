@@ -1,0 +1,93 @@
+{% comment %}
+_widget_control_material_form.html — Sección "Control" del dashboard.
+
+Composer para agregar un MaterialEsperado a un ProyectoIAMET. Estilo
+iPadOS: card 18px radius, shadows en 2 capas, Plus Jakarta Sans. La
+lógica vive en crm_control_material_v2.js (función openMaterialForm).
+
+Si el JS abre el form con un proyectoId preseleccionado, el campo de
+búsqueda queda deshabilitado con un botón "cambiar" para liberarlo.
+
+Toda la API del form la expone window.crmMaterialForm (open/close).
+{% endcomment %}
+
+<div class="widget-overlay crm-cm-overlay" id="widgetMaterialForm"
+     style="z-index:var(--z-widget-sub);display:none;"
+     onclick="if(event.target===this){window.crmMaterialForm && window.crmMaterialForm.close();}">
+
+    <div class="crm-cm-card" role="dialog" aria-labelledby="cmFormTitle">
+        <form id="cmFormForm" autocomplete="off" novalidate>
+            {% csrf_token %}
+
+            {# Header #}
+            <header class="crm-cm-header">
+                <div class="crm-cm-eyebrow">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <span>Control · Materiales</span>
+                </div>
+                <h2 class="crm-cm-title" id="cmFormTitle">Agregar material esperado</h2>
+                <button type="button" class="crm-cm-close" id="cmFormClose" title="Cerrar (Esc)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </header>
+
+            <main class="crm-cm-body">
+
+                {# ── Proyecto (autocomplete o preseleccionado) ── #}
+                <div class="crm-cm-field">
+                    <label class="crm-cm-label">Proyecto</label>
+                    <div class="crm-cm-proyecto-wrap">
+                        <input type="text" class="crm-cm-input" id="cmFormProyectoQ"
+                               placeholder="Buscar por cliente, oportunidad o PO…" autocomplete="off">
+                        <button type="button" class="crm-cm-proyecto-change" id="cmFormProyectoChange" style="display:none;">
+                            Cambiar
+                        </button>
+                    </div>
+                    <input type="hidden" id="cmFormProyectoId" value="">
+                    <div class="crm-cm-ac" id="cmFormProyectoAC" style="display:none;"></div>
+                </div>
+
+                {# ── Título ── #}
+                <div class="crm-cm-field">
+                    <label class="crm-cm-label" for="cmFormTitulo">Material esperado</label>
+                    <input type="text" class="crm-cm-input" id="cmFormTitulo"
+                           placeholder="Ej. Switch Cisco Catalyst 9200L 24 puertos"
+                           maxlength="200" autocomplete="off">
+                </div>
+
+                {# ── Fechas ── #}
+                <div class="crm-cm-row-2">
+                    <div class="crm-cm-field">
+                        <label class="crm-cm-label" for="cmFormFechaIni">Inicio (esperado)</label>
+                        <input type="date" class="crm-cm-input" id="cmFormFechaIni">
+                    </div>
+                    <div class="crm-cm-field">
+                        <label class="crm-cm-label" for="cmFormFechaFin">Fin (llegada)</label>
+                        <input type="date" class="crm-cm-input" id="cmFormFechaFin">
+                    </div>
+                </div>
+
+                {# ── Estado ── #}
+                <div class="crm-cm-field">
+                    <label class="crm-cm-label" for="cmFormEstado">Estado</label>
+                    <select class="crm-cm-input" id="cmFormEstado">
+                        <option value="pendiente_compra">Pendiente de compra</option>
+                        <option value="en_transito">En tránsito</option>
+                        <option value="material_listo">Material listo</option>
+                        <option value="en_espera_cliente">En espera del cliente</option>
+                        <option value="recibido">Recibido</option>
+                    </select>
+                </div>
+
+                <div class="crm-cm-error" id="cmFormError" style="display:none;"></div>
+            </main>
+
+            <footer class="crm-cm-footer">
+                <button type="button" class="crm-cm-btn crm-cm-btn--ghost" id="cmFormCancel">Cancelar</button>
+                <button type="button" class="crm-cm-btn crm-cm-btn--primary" id="cmFormSave" disabled>
+                    Guardar material
+                </button>
+            </footer>
+        </form>
+    </div>
+</div>

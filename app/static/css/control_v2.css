@@ -1,0 +1,568 @@
+/*
+  control_v2.css — Sección "Control" del Dashboard CRM.
+  Layout SPLIT: lista de proyectos (izq) + timeline maestro (der).
+  Filas alineadas row-by-row entre ambos paneles.
+
+  Variables del row: --row-h (60px). Si cambian, ambos paneles se mantienen
+  sincronizados. Lista y timeline usan el mismo height por item.
+*/
+
+/* Cuando Control está activo, el JS pone .crm-control-active en <body>.
+   Esto oculta el footer global del CRM para dar más espacio a la sección. */
+body.crm-control-active .crm-footer { display: none !important; }
+
+.crm-control-section {
+    /* Mínimo = viewport - topbar para que llene la pantalla en estado
+       vacío. PERO sin techo: si hay muchos proyectos la sección puede
+       crecer y el scroll de página entra naturalmente. */
+    padding: 22px 26px 14px;
+    background: #F5F5F7;
+    min-height: calc(100vh - 64px); /* topbar global del CRM ≈ 64px */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #1D1D1F;
+    --row-h: 60px;
+    --left-w: 380px;
+}
+
+/* ─────────────── Header (sin caja) ─────────────── */
+.crm-control-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding: 4px 4px 0;
+}
+.crm-control-header-left { display: flex; flex-direction: column; gap: 4px; }
+.crm-control-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1D1D1F;
+    margin: 0;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+}
+.crm-control-subtitle {
+    font-size: 0.78rem;
+    color: #86868B;
+    font-weight: 500;
+}
+.crm-control-header-right { display: flex; gap: 8px; }
+
+.crm-control-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(.16,1,.3,1);
+    white-space: nowrap;
+}
+.crm-control-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.crm-control-btn--secondary {
+    background: #FFFFFF;
+    border-color: rgba(0,0,0,0.06);
+    color: #1D1D1F;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 12px rgba(0,0,0,0.04);
+}
+.crm-control-btn--secondary:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.05),
+        0 8px 20px rgba(0,0,0,0.06);
+}
+.crm-control-btn--primary {
+    background: #1D1D1F;
+    color: #fff;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.12),
+        0 8px 18px rgba(0,0,0,0.18);
+}
+
+/* ─────────────── Stats (4 tarjetas) ─────────────── */
+.crm-control-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+    position: relative;
+}
+/* Modo "proyecto seleccionado": tint sutil para indicar que los KPIs
+   muestran datos de un proyecto, no globales. */
+.crm-control-stats.is-context .crm-control-stat {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0F7FF 100%);
+    box-shadow:
+        0 1px 2px rgba(37,99,235,0.06),
+        0 6px 18px rgba(37,99,235,0.08);
+}
+
+.crm-control-stat {
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 16px 20px;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 16px rgba(0,0,0,0.04);
+    transition: transform 0.2s cubic-bezier(.16,1,.3,1),
+                box-shadow 0.2s cubic-bezier(.16,1,.3,1);
+}
+.crm-control-stat:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.05),
+        0 12px 28px rgba(0,0,0,0.07);
+}
+.crm-control-stat-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #86868B;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+}
+.crm-control-stat-value {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #1D1D1F;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+.crm-control-stat-value--small { font-size: 1.05rem; letter-spacing: -0.015em; }
+.crm-control-stat-value--green { color: #16A34A; }
+.crm-control-stat-value--blue  { color: #2563EB; }
+
+/* ════════════════════════════════════════════════════════════════════
+   SPLIT layout
+   ════════════════════════════════════════════════════════════════════ */
+.crm-control-split {
+    display: grid;
+    grid-template-columns: var(--left-w) 1fr;
+    gap: 14px;
+    align-items: stretch;
+    /* min-height generoso para que se vea "amplio" en estado vacío. El
+       flex:1 hace que crezca dentro del viewport disponible cuando la
+       sección tiene min-height: 100vh-64px. */
+    flex: 1 1 auto;
+    min-height: 560px;
+}
+
+/* ─────────────── LEFT: lista de proyectos ─────────────── */
+.crm-control-left {
+    background: #FFFFFF;
+    border-radius: 18px;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 16px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.crm-ctrl-list-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #F2F2F4;
+}
+.crm-ctrl-list-title {
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #1D1D1F;
+    letter-spacing: -0.01em;
+}
+.crm-ctrl-list-count {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #6B7280;
+    background: #F2F2F7;
+    padding: 3px 10px;
+    border-radius: 10px;
+}
+
+.crm-ctrl-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+.crm-ctrl-list::-webkit-scrollbar { width: 6px; }
+.crm-ctrl-list::-webkit-scrollbar-thumb { background: #D1D1D6; border-radius: 3px; }
+.crm-ctrl-list::-webkit-scrollbar-thumb:hover { background: #B0B0B5; }
+
+.crm-ctrl-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: var(--row-h);
+    padding: 8px 18px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background 0.14s, border-color 0.14s;
+    position: relative;
+    justify-content: center;
+}
+.crm-ctrl-item:hover { background: #FAFAFB; }
+.crm-ctrl-item.is-selected {
+    background: #EFF6FF;
+    border-left-color: #2563EB;
+}
+
+.crm-ctrl-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+.crm-ctrl-item-cliente {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: #FEF3C7;
+    color: #92400E;
+    flex-shrink: 0;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.crm-ctrl-item-po {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', monospace;
+    font-size: 0.7rem;
+    color: #6B7280;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.crm-ctrl-item-po--empty { color: #C7C7CC; font-style: italic; font-family: inherit; font-size: 0.66rem; }
+
+.crm-ctrl-item-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+.crm-ctrl-item-opp {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    letter-spacing: -0.005em;
+}
+.crm-ctrl-item-jornadas {
+    flex-shrink: 0;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #F1F5F9;
+    color: #334155;
+}
+.crm-ctrl-item-jornadas--empty {
+    color: #C7C7CC;
+    background: transparent;
+    font-style: italic;
+    font-weight: 600;
+}
+
+/* ─────────────── RIGHT: timeline maestro ─────────────── */
+.crm-control-right {
+    background: #FFFFFF;
+    border-radius: 18px;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 16px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.crm-ctrl-timeline-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 22px;
+    border-bottom: 1px solid #F2F2F4;
+    height: 57px; /* matches list-header */
+    box-sizing: border-box;
+}
+.crm-ctrl-timeline-months {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 10px;
+}
+.crm-ctrl-month-chip {
+    flex: 0 0 auto;
+    padding: 5px 14px;
+    background: #F2F2F7;
+    border-radius: 14px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #1D1D1F;
+    letter-spacing: 0.06em;
+}
+.crm-ctrl-month-line {
+    flex: 1 1 auto;
+    height: 2px;
+    background: linear-gradient(90deg, #E5E5EA 0%, #C7C7CC 50%, #E5E5EA 100%);
+    border-radius: 2px;
+}
+.crm-ctrl-timeline-hint {
+    /* Removido — reemplazado por flechas de navegación de mes */
+    display: none;
+}
+
+/* Flechas para cambiar el par de meses visibles del timeline. */
+.crm-ctrl-month-nav {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.06);
+    background: #FFFFFF;
+    color: #4B5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s, transform 0.14s, box-shadow 0.14s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.crm-ctrl-month-nav:hover {
+    background: #F8F8FA;
+    color: #1D1D1F;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.crm-ctrl-month-nav:active { transform: translateY(0); }
+
+.crm-ctrl-timeline-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 0;
+    position: relative;
+}
+.crm-ctrl-timeline-body::-webkit-scrollbar { width: 6px; }
+.crm-ctrl-timeline-body::-webkit-scrollbar-thumb { background: #D1D1D6; border-radius: 3px; }
+
+.crm-ctrl-timeline-row {
+    position: relative;
+    height: var(--row-h);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.14s;
+}
+.crm-ctrl-timeline-row:hover { background: #FAFAFB; }
+.crm-ctrl-timeline-row.is-selected { background: #EFF6FF; }
+
+/* Línea de tiempo de fondo (punteada) por row */
+.crm-ctrl-timeline-row::before {
+    content: '';
+    position: absolute;
+    left: 24px; right: 24px;
+    top: 50%;
+    height: 1px;
+    background: repeating-linear-gradient(
+        to right,
+        #E5E5EA 0, #E5E5EA 4px,
+        transparent 4px, transparent 8px
+    );
+    transform: translateY(-0.5px);
+}
+/* Separador vertical de meses */
+.crm-ctrl-timeline-row::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 14px;
+    bottom: 14px;
+    width: 1px;
+    background: #E5E5EA;
+    transform: translateX(-0.5px);
+}
+
+/* Barra del proyecto */
+.crm-ctrl-bar {
+    position: absolute;
+    top: 50%;
+    height: 16px;
+    border-radius: 8px;
+    transform: translateY(-50%);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.10);
+    min-width: 32px;
+    transition: transform 0.16s, box-shadow 0.16s, filter 0.16s;
+    z-index: 1;
+}
+.crm-ctrl-bar:hover {
+    transform: translateY(-50%) scale(1.03);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+}
+.crm-ctrl-timeline-row.is-selected .crm-ctrl-bar {
+    transform: translateY(-50%) scale(1.04);
+    box-shadow:
+        0 0 0 3px rgba(37,99,235,0.25),
+        0 3px 10px rgba(0,0,0,0.18);
+}
+
+.crm-ctrl-bar-marker {
+    position: absolute;
+    top: 50%;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid currentColor;
+    transform: translateY(-50%);
+    color: inherit;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.crm-ctrl-bar-marker--start { left: -5.5px; }
+.crm-ctrl-bar-marker--end   { right: -5.5px; }
+
+.crm-ctrl-bar-date {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #4B5563;
+    background: #fff;
+    padding: 2px 6px;
+    border-radius: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.crm-ctrl-bar-marker--end .crm-ctrl-bar-date { top: auto; bottom: -20px; }
+
+/* Hint solo en la row seleccionada vacía: invita a usar "Agregar material". */
+.crm-ctrl-timeline-row--empty.is-selected::before {
+    background: none;
+}
+.crm-ctrl-timeline-row--empty.is-selected::after {
+    /* Ocultamos el separador vertical de meses para que el hint respire */
+    opacity: 0.3;
+}
+.crm-ctrl-timeline-row--empty.is-selected .crm-ctrl-bar { display: none; }
+.crm-ctrl-timeline-row--empty.is-selected {
+    position: relative;
+}
+.crm-ctrl-timeline-row--empty.is-selected::before {
+    content: '+ Agregar material para colocar barra en el timeline';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+    font-size: 0.7rem;
+    color: #2563EB;
+    font-weight: 700;
+    font-style: normal;
+    background: none;
+    height: auto;
+    pointer-events: none;
+    letter-spacing: -0.005em;
+}
+
+/* ─────────────── States ─────────────── */
+.crm-ctrl-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 80px 24px;
+    color: #6B7280;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+.crm-ctrl-state--empty       { color: #9CA3AF; font-style: italic; }
+.crm-ctrl-state--error       { color: #B91C1C; }
+.crm-ctrl-state--placeholder { color: #B8B8BD; font-style: italic; }
+
+.crm-ctrl-spinner {
+    width: 20px; height: 20px;
+    border: 2.5px solid #E5E5EA;
+    border-top-color: #1D1D1F;
+    border-radius: 50%;
+    animation: crmCtrlSpin 0.8s linear infinite;
+}
+@keyframes crmCtrlSpin { to { transform: rotate(360deg); } }
+
+/* ─────────────── Leyenda ─────────────── */
+.crm-control-legend {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    /* margin-top:auto empuja la leyenda al fondo del flex column. Con
+       min-height de la sección = 100vh-64px, queda alineada con el final
+       de la sidebar en estado vacío. Si hay scroll de página por más
+       contenido, viaja con el flujo. */
+    margin-top: auto;
+    margin-bottom: 0;
+    padding: 12px 18px;
+    background: #FFFFFF;
+    border-radius: 14px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.03),
+        0 2px 8px rgba(0,0,0,0.025);
+}
+.crm-control-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.74rem;
+    color: #4B5563;
+    font-weight: 600;
+}
+.crm-control-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.crm-control-legend-info {
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: #9CA3AF;
+    font-style: italic;
+}
+
+/* ─────────────── Responsive ─────────────── */
+@media (max-width: 1280px) {
+    .crm-control-section { --left-w: 340px; }
+    .crm-control-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 980px) {
+    .crm-control-split {
+        grid-template-columns: 1fr;
+    }
+    .crm-control-right { min-height: 340px; }
+}
+@media (max-width: 760px) {
+    .crm-control-section { padding: 16px; }
+    .crm-control-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .crm-control-title { font-size: 1.25rem; }
+}

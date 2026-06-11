@@ -335,9 +335,25 @@
         });
     }
 
-    // Recarga externa (ej. después de crear un prospecto): reload server-side
+    // Re-hidratar tras un swap in-place del board (cambio de periodo sin
+    // recarga — crm_nav_v2.js): re-aplica filtros/orden/colapsadas
+    // guardados sobre las cards nuevas. El nodo #pkKanbanBoard es el
+    // mismo (solo se trasplanta su innerHTML), así que las referencias
+    // de este módulo siguen vivas.
+    window.pkKanbanRehydrate = function () {
+        applyFilters();
+        applyCollapsed();
+        updateClearVisibility();
+    };
+
+    // Recarga externa (ej. después de crear un prospecto): in-place si el
+    // SPA está disponible (trae el board fresco del server y lo trasplanta
+    // sin recargar la página); fallback al reload clásico.
     window.recargarProspectosKanban = function() {
-        // Forzar reload completo para refrescar el markup server-side
+        try {
+            if (window.crmApplyPeriod &&
+                window.crmApplyPeriod(new URLSearchParams(window.location.search))) return;
+        } catch (e) { }
         window.location.reload();
     };
 

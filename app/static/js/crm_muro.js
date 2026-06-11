@@ -13,9 +13,17 @@
     window.muroAbrir = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('active'); ov.classList.remove('closing'); muroCargar(); };
     window.muroCerrar = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('closing'); setTimeout(function () { ov.classList.remove('active', 'closing', 'z-elevated'); }, 220); var btn = $m('btnMuro'); if (btn) btn.classList.remove('active'); };
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // Migrado a crmReady (Turbo-friendly).
+    // Guard `_muroWired` evita duplicar el click listener del overlay
+    // en cada turbo:load. El overlay #widgetMuro vive en TODAS las
+    // páginas (es turbo-permanent en práctica), así que un solo wire
+    // basta por sesión.
+    window.crmReady(function () {
+        if (window._muroWired) return;
         var ov = $m('widgetMuro');
-        if (ov) { ov.addEventListener('click', function (e) { if (e.target === ov) muroCerrar(); }); }
+        if (!ov) return;
+        window._muroWired = true;
+        ov.addEventListener('click', function (e) { if (e.target === ov) muroCerrar(); });
     });
 
     window.muroSetFilter = function (filtro, btn) {

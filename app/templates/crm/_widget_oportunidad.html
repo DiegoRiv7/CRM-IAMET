@@ -1,298 +1,56 @@
-<!-- ═══ WIDGET: DETALLE DE OPORTUNIDAD ═══ -->
-<div class="widget-overlay" id="widgetDetalle" style="z-index:10100;"><!-- CAPA 1 -->
-    <div class="widget-card widget-card-lg">
-        <!-- Loading -->
-        <div id="detalleLoading" style="text-align:center;padding:4rem;color:#86868B;">
-            <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;"
-                viewBox="0 0 24 24" fill="none" stroke="#0052D4" stroke-width="2">
-                <path
-                    d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
-            </svg>
-            Cargando oportunidad...
+{% comment %}
+═══ STUB del WIDGET DETALLE legacy ═══
+El widget real ahora es el componente instanciable (oportunidad_widget_v2.js
++ _widget_oportunidad_v2.html). Este stub OCULTO conserva los ids que el
+código congelado de crm_main.js (~751-2041) y los scripts de este archivo
+referencian — sin él, los addEventListener del init legacy tronarían y
+matarían los bindings posteriores del mismo try-block. El markup original
+(292 líneas) vive en git (hasta commit c5184d24) por si se necesita.
+{% endcomment %}
+<div class="widget-overlay" id="widgetDetalle" style="display:none !important;" aria-hidden="true">
+    <div id="detalleLoading" style="display:none;"></div>
+    <div id="detalleContent" style="display:none;">
+        <span id="woTypeBadge"><span id="woTypeBadgeText"></span></span>
+        <h1 id="woTitle" style="display:none;"></h1>
+        <button type="button" id="woBtnAsistente" style="display:none;"></button>
+        <button type="button" class="widget-close" id="detalleClose" style="display:none;"></button>
+        <div id="woPipelineScroll"><div id="woPipelineStages"></div></div>
+        <span id="woMonto"></span>
+        <span id="woFechaCierre"></span>
+        <span id="woProbValue"></span>
+        <div><div id="woProbFill"></div></div>
+        <span id="woProducto"></span>
+        <span id="woArea"></span>
+        <input type="hidden" id="woPoNumber" />
+        <input type="hidden" id="woFacturaNumero" />
+        <button type="button" id="detNuevaCot" style="display:none;"></button>
+        <button type="button" id="woNuevaCotBtn" style="display:none;"></button>
+        <div id="woQuoteList"></div>
+        <div id="woTareasInlineList"></div>
+        <div id="woTareasContainer"></div>
+        <div id="woVendedorAvatar"></div>
+        <div id="woVendedorName"></div>
+        <div id="woClienteAvatar"></div>
+        <div id="woClienteName"></div>
+        <div id="woContactoName"></div>
+        <div id="woActividadRecienteCard">
+            <button type="button" id="woBtnNuevaActividad" style="display:none;"></button>
+            <div id="woActividadRecienteChevron"></div>
+            <div id="woActividadRecienteBody"></div>
         </div>
-        <!-- Content (hidden until loaded) -->
-        <div id="detalleContent" style="display:none;flex-direction:column;height:100%;">
-            <!-- Header -->
-            <div class="wo-header">
-                <div class="wo-header-top">
-                    {% comment %}Bloque badge + título a la izquierda; el orb del asistente vive al lado del título (no del badge), centrado verticalmente con la línea del título. Close X a la derecha.{% endcomment %}
-                    <div style="flex:1;min-width:0;">
-                        <div class="wo-type-badge runrate" id="woTypeBadge">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path
-                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                            </svg>
-                            <span id="woTypeBadgeText">VENTA RUNRATE</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
-                            <h1 class="wo-title" id="woTitle" style="margin:0;min-width:0;"></h1>
-                            <button type="button" id="woBtnAsistente" class="wo-asist-btn-title"
-                                title="Asistente AI de esta oportunidad"
-                                style="background:transparent;border:none;cursor:pointer;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform 0.15s ease;"
-                                onmouseover="this.style.transform='translateY(-1px)'"
-                                onmouseout="this.style.transform='translateY(0)'">
-                                <span class="asist-orb asist-orb--static" aria-hidden="true" style="width:34px;height:34px;">
-                                    <span class="asist-orb-core"></span>
-                                    <span class="asist-orb-ring asist-orb-ring--horiz"></span>
-                                    <span class="asist-orb-ring asist-orb-ring--vert"></span>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="button" class="widget-close" id="detalleClose">&times;</button>
-                </div>
-            </div>
-
-            <!-- ═══ DETALLE TABS REMOVED ═══ -->
-            <div class="wo-tab-panel active" id="woTabDetalle" style="padding-top:1rem;">
-                <!-- Pipeline -->
-                <div class="wo-pipeline">
-                    <div class="wo-pipeline-container">
-                        <!-- Left Arrow -->
-                        <div class="wo-scroll-btn"
-                            onclick="document.getElementById('woPipelineScroll').scrollBy({left:-150, behavior:'smooth'})">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M15 18l-6-6 6-6" />
-                            </svg>
-                        </div>
-
-                        <div class="wo-pipeline-scroll" id="woPipelineScroll">
-                            <div class="wo-pipeline-stages" id="woPipelineStages"></div>
-                        </div>
-
-                        <!-- Right Arrow -->
-                        <div class="wo-scroll-btn"
-                            onclick="document.getElementById('woPipelineScroll').scrollBy({left:150, behavior:'smooth'})">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M9 18l6-6-6-6" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Content Grid -->
-                <div class="wo-content">
-                    <div class="wo-grid">
-                        <!-- DOM ITEM 1: Info card (Row 1, Col 1) -->
-                        <div class="wo-card" style="display:flex;flex-direction:column;">
-                            <div class="wo-info-grid"
-                                style="grid-template-columns:1fr 1fr 1fr;gap:0.75rem 1.5rem;flex:1;">
-                                <div class="wo-info-item">
-                                    <span class="wo-info-label">Monto de Oportunidad</span>
-                                    <span class="wo-info-value" id="woMonto">$0</span>
-                                </div>
-                                <div class="wo-info-item">
-                                    <span class="wo-info-label">Fecha de Cierre</span>
-                                    <span class="wo-info-value medium" id="woFechaCierre">-</span>
-                                </div>
-                                <div class="wo-info-item">
-                                    <span class="wo-info-label">Probabilidad de Cierre</span>
-                                    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
-                                        <span class="wo-prob-value" id="woProbValue"
-                                            style="font-size:1.1rem;margin:0;">0%</span>
-                                        <div class="wo-prob-bar" style="flex:1;margin:0;">
-                                            <div class="wo-prob-fill" id="woProbFill" style="width:0%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="wo-info-item">
-                                    <span class="wo-info-label">Producto</span>
-                                    <span class="wo-info-value medium" id="woProducto">-</span>
-                                </div>
-                                <div class="wo-info-item">
-                                    <span class="wo-info-label">Area</span>
-                                    <span class="wo-info-value medium" id="woArea">-</span>
-                                </div>
-                                <div style="display:flex;gap:0;">
-                                    <div class="wo-info-item" style="flex:1;min-width:0;">
-                                        <span class="wo-info-label">PO</span>
-                                        <input type="text" id="woPoNumber" maxlength="15"
-                                            placeholder="—"
-                                            style="background:none;border:none;border-bottom:1px solid transparent;
-                                                   font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
-                                                   width:100%;padding:0.1rem 0;cursor:pointer;outline:none;"
-                                            onfocus="this.style.borderBottomColor='#0052D4'"
-                                            onblur="woGuardarPO(this)"
-                                            onkeydown="if(event.key==='Enter'){this.blur()}" />
-                                    </div>
-                                    <div class="wo-info-item" style="flex:1;min-width:0;border-left:1px solid #E5E5EA;padding-left:12px;">
-                                        <span class="wo-info-label">Factura</span>
-                                        <input type="text" id="woFacturaNumero" maxlength="7"
-                                            placeholder="—"
-                                            style="background:none;border:none;border-bottom:1px solid transparent;
-                                                   font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
-                                                   width:100%;padding:0.1rem 0;cursor:pointer;outline:none;"
-                                            onfocus="this.style.borderBottomColor='#0052D4'"
-                                            onblur="woGuardarFactura(this)"
-                                            onkeydown="if(event.key==='Enter'){this.blur()}" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- DOM ITEM 2: Tareas card (Row 1, Col 2) -->
-                        <div class="wo-card" style="display:flex;flex-direction:column;">
-                            <div class="wo-section-header">
-                                <h3 class="wo-section-title">Tareas</h3>
-                                <button class="wo-btn-new" onclick="woCrearTareaOpp()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19" />
-                                        <line x1="5" y1="12" x2="19" y2="12" />
-                                    </svg>
-                                    Nueva
-                                </button>
-                            </div>
-                            <div class="wo-tareas-inline-list" id="woTareasInlineList" style="flex:1;max-height:none;">
-                                <div class="wo-empty"
-                                    style="padding:1rem;font-size:0.8rem;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                                    <svg width="20" height="20" fill="none" stroke="#C7C7CC" stroke-width="1.5"
-                                        viewBox="0 0 24 24" style="display:block;margin:0 auto 0.4rem;">
-                                        <path d="M9 11l3 3L22 4" />
-                                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                                    </svg>
-                                    Sin tareas aún
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- DOM ITEM 3: Cotizaciones card (Row 2, Col 1) -->
-                        <div class="wo-card">
-                            <div class="wo-section-header">
-                                <h3 class="wo-section-title">Cotizaciones</h3>
-                                <button class="wo-btn-new" id="detNuevaCot">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19" />
-                                        <line x1="5" y1="12" x2="19" y2="12" />
-                                    </svg>
-                                    Nueva
-                                </button>
-                            </div>
-                            <div class="wo-quote-list" id="woQuoteList">
-                                <div class="wo-empty">Sin cotizaciones aun</div>
-                            </div>
-                        </div>
-
-                        <!-- DOM ITEM 4: Stakeholders & Drive block (Row 2, Col 2) -->
-                        <div style="display:flex;flex-direction:column;gap:1.5rem;">
-                            <!-- Stakeholders card -->
-                            <div class="wo-card">
-                                <div class="wo-stakeholder">
-                                    <div class="wo-stakeholder-label">Vendedor</div>
-                                    <div class="wo-stakeholder-info">
-                                        <div class="wo-avatar blue" id="woVendedorAvatar"></div>
-                                        <div>
-                                            <div class="wo-stakeholder-name" id="woVendedorName"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="wo-divider"></div>
-                                <div class="wo-stakeholder">
-                                    <div class="wo-stakeholder-label">Cliente</div>
-                                    <div class="wo-stakeholder-info">
-                                        <div class="wo-avatar purple" id="woClienteAvatar"></div>
-                                        <div>
-                                            <div class="wo-stakeholder-name" id="woClienteName"></div>
-                                            <div class="wo-stakeholder-company" id="woContactoName"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Actividad más reciente -->
-                            <div class="wo-card" id="woActividadRecienteCard" style="padding:0.85rem 1rem;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
-                                    <span style="font-size:0.78rem;font-weight:600;color:#3C3C43;letter-spacing:0.02em;">ACTIVIDAD PROGRAMADA</span>
-                                    <div style="display:flex;align-items:center;gap:6px;">
-                                        <button id="woBtnNuevaActividad" onclick="event.stopPropagation();woAbrirWidgetCrearActividad()" style="display:none;width:20px;height:20px;border-radius:50%;background:#0052D4;border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;" title="Nueva actividad">+</button>
-                                        <div id="woActividadRecienteChevron" style="cursor:pointer;" onclick="woAbrirActividadReciente()">
-                                            <svg width="14" height="14" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;display:block;"><path d="M9 18l6-6-6-6"/></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="woActividadRecienteBody" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;" onclick="woAbrirActividadReciente()">
-                                    <div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>
-                                </div>
-                            </div>
-
-                            <!-- Drive + Conversación side-by-side -->
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-                                <!-- Drive mini-card -->
-                                <div class="wo-card wo-quick-card" onclick="woAbrirGestorDrive()"
-                                    style="cursor:pointer;">
-                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
-                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-                                        </svg>
-                                    </div>
-                                    <span class="wo-quick-label">Drive</span>
-                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2"
-                                        viewBox="0 0 24 24" style="margin-left:auto;">
-                                        <path d="M9 18l6-6-6-6" />
-                                    </svg>
-                                </div>
-                                <!-- Conversación mini-card -->
-                                <div class="wo-card wo-quick-card" onclick="woAbrirGestorConversacion()"
-                                    style="cursor:pointer;">
-                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
-                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"
-                                            viewBox="0 0 24 24">
-                                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                                        </svg>
-                                    </div>
-                                    <span class="wo-quick-label">Conversación</span>
-                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2"
-                                        viewBox="0 0 24 24" style="margin-left:auto;">
-                                        <path d="M9 18l6-6-6-6" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% comment %}
-                        Fila inferior — SOLO visible cuando tipo_negociacion ∈
-                        {proyecto, bitrix_proyecto}. JS de renderDetalle()
-                        cambia display:none → grid según d.tipo_negociacion.
-
-                        Bloque Proyecto vinculado (M2M Proyecto.oportunidades_ligadas).
-                        El Programa de Obra (Instalaciones) ya NO vive aquí —
-                        se gestiona desde el tab "Programa de Obra" del widget
-                        de Proyecto. Las instalaciones son del proyecto, no
-                        de la opp.
-                        {% endcomment %}
-                        <div class="wo-card" id="woProyectoCard" style="display:none;grid-column:1 / -1;">
-                            <div class="wo-section-header">
-                                <h3 class="wo-section-title">Proyecto</h3>
-                                <button class="wo-btn-new" id="woBtnVincularProyecto" type="button">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                    </svg>
-                                    Vincular
-                                </button>
-                            </div>
-                            <div id="woProyectoList">
-                                <div class="wo-empty">Sin proyecto vinculado aún</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Save bar for inline editing -->
-            <div class="wo-save-bar" id="woSaveBar" style="display:none;">
-                <button class="wo-save-cancel" id="woSaveCancel">Cancelar</button>
-                <button class="wo-save-confirm" id="woSaveConfirm">Guardar</button>
-            </div>
+        <div id="woProyectoCard" style="display:none;">
+            <button type="button" id="woBtnVincularProyecto" style="display:none;"></button>
+            <div id="woProyectoList"></div>
+        </div>
+        <div id="woSaveBar" style="display:none;">
+            <button type="button" id="woSaveCancel"></button>
+            <button type="button" id="woSaveConfirm"></button>
         </div>
     </div>
 </div>
 
 <!-- ═══ WIDGET: DRIVE GESTOR DE ARCHIVOS ═══ -->
-<div class="widget-overlay" id="widgetOppDrive" style="z-index:10800;display:none;"><!-- CAPA TOP: siempre encima -->
+<div class="widget-overlay" id="widgetOppDrive" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="widget-card widget-card-md"
         style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;"
         ondragenter="woDriveDragEnter(event)" ondragover="woDriveDragOver(event)" ondragleave="woDriveDragLeave(event)" ondrop="woDriveDrop(event)">
@@ -431,7 +189,7 @@
 </div>
 
 <!-- ═══ WIDGET: CONVERSACION ═══ -->
-<div class="widget-overlay" id="widgetOppConversacion" style="z-index:10800;display:none;"><!-- CAPA TOP: siempre encima -->
+<div class="widget-overlay" id="widgetOppConversacion" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="widget-card widget-card-md"
         style="width:850px;max-width:95vw;height:80vh;display:flex;flex-direction:column;background:#F9FAFB;position:relative;">
         <!-- Drop overlay -->
@@ -530,7 +288,7 @@
 </div>
 
 <!-- ═══ WIDGET: TODAS LAS TAREAS ═══ -->
-<div class="widget-overlay" id="widgetTodasTareas" style="z-index:10200;display:none;" onclick="if(event.target===this)woCerrarTodasTareas()">
+<div class="widget-overlay" id="widgetTodasTareas" style="z-index:var(--z-widget);display:none;" onclick="if(event.target===this)woCerrarTodasTareas()"><!-- Nivel 1: lista global de tareas -->
     <div id="widgetTodasTareasCard" style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.18);width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;transform:scale(0.92) translateY(40px);opacity:0;transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),opacity 0.22s ease;">
         <div style="padding:1.2rem 1.5rem;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
             <div style="font-weight:700;font-size:1rem;color:#1D1D1F;">Tareas de la oportunidad</div>
@@ -543,7 +301,7 @@
 </div>
 
 <!-- ═══ WIDGET: CREAR ACTIVIDAD (composer canvas) ═══ -->
-<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:99990;display:none;" data-wact-prefix="wo">
+<div class="widget-overlay" id="widgetOppCrearActividad" style="z-index:var(--z-widget-sub);display:none;" data-wact-prefix="wo"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="wact-shell">
         <header class="wact-header">
             <div class="wact-breadcrumb">
@@ -645,7 +403,7 @@
 </div>
 
 <!-- ═══ WIDGET: VER DETALLES DE ACTIVIDAD ═══ -->
-<div class="widget-overlay" id="widgetOppVerActividad" style="z-index:10200;display:none;"><!-- CAPA 2 -->
+<div class="widget-overlay" id="widgetOppVerActividad" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetDetalle -->
     <div class="widget-card widget-card-md"
         style="width:550px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
         <div style="height:60px;background:#0052D4;border-radius:12px 12px 0 0;position:relative;">
@@ -765,7 +523,7 @@
 
 <!-- ═══ WIDGET: MODAL DIALOGS (Custom prompts/confirms) ═══ -->
 <div class="widget-overlay" id="widgetOppDialog"
-    style="z-index:10900;display:none;align-items:center;justify-content:center;"><!-- CAPA: encima de Drive (10800) -->
+    style="z-index:var(--z-widget-3);display:none;align-items:center;justify-content:center;"><!-- Nivel 3: prompts/confirms desde widgetDetalle -->
     <div
         style="background:#fff;border-radius:12px;width:340px;box-shadow:0 10px 40px rgba(0,0,0,0.2);overflow:hidden;animation: scaleIn 0.2s ease forwards;">
         <div style="padding:1.5rem;text-align:center;">
@@ -1630,6 +1388,42 @@
                 '<div class="drive-row-actions">' + accionesList + '</div>' +
                 '</div>';
         }
+
+        // ── Sync entre usuarios: si OTRO usuario sube/borra algo en el drive
+        // de la opp que tengo abierta, recargar la lista al instante (el
+        // evento 'drive' llega vía crm_sync.js → crmDataBus). El extra trae
+        // la opp para no recargar drives ajenos.
+        // OJO: este script inline corre ANTES de que cargue
+        // widget_data_bus.js (los <script> van al final del body) — la
+        // suscripción DEBE diferirse a crmReady o nunca se registra.
+        // Guard de idempotencia: los listeners van a document (persiste
+        // entre navegaciones Turbo) pero este inline se re-ejecuta.
+        window.crmReady(function () {
+            if (window._woDriveSyncWired || !window.crmDataBus) return;
+            window._woDriveSyncWired = true;
+            window.crmDataBus.on('drive', function (d) {
+                var w = document.getElementById('widgetOppDrive');
+                if (!w || window.getComputedStyle(w).display === 'none') return;
+                var oid = d && d.extra && d.extra.oportunidad_id;
+                if (oid && String(oid) !== String(window._woCurrentOppId)) return;
+                if (typeof window.woDriveRecargar === 'function') {
+                    try { window.woDriveRecargar(); } catch (e) { }
+                }
+            });
+            window.crmDataBus.on('comentario', function (d) {
+                var w = document.getElementById('widgetOppConversacion');
+                if (!w || window.getComputedStyle(w).display === 'none') return;
+                var oid = d && d.extra && d.extra.oportunidad_id;
+                if (oid && String(oid) !== String(window._woCurrentOppId)) return;
+                if (typeof window.woCargarNotas === 'function' && window._woCurrentOppId) {
+                    try { window.woCargarNotas(window._woCurrentOppId); } catch (e) { }
+                }
+            });
+        });
+        // Expuesta para el sync (la función vive en este closure; el callback
+        // de crmReady corre en otro tick y el guard multi-ejecución hace que
+        // la referencia directa no sea confiable entre re-ejecuciones).
+        window.woDriveRecargar = function () { woDriveCargarDirectorio(); };
 
         function woDriveCargarDirectorio() {
             document.getElementById('woDriveLoading').style.display = 'block';

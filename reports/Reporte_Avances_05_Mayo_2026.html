@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Actividades - 05 Mayo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* CONFIGURACIÓN A4 ESTRICTA */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        @media print {
+            body { 
+                background-color: white !important; 
+                margin: 0;
+                padding: 0;
+            }
+            .print-hidden { display: none !important; }
+            
+            /* Contenedor de página individual */
+            .page {
+                width: 210mm;
+                height: 297mm;
+                padding: 15mm 20mm;
+                page-break-after: always;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .main-container {
+                max-width: 100% !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+
+        /* Estilos Web */
+        .page {
+            background: white;
+            max-width: 1000px;
+            margin: 0 auto 20px auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 40px;
+        }
+
+        @media (min-width: 1024px) {
+            .page {
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased py-8">
+
+    <div class="max-w-[1000px] mx-auto mb-6 flex justify-end print-hidden">
+        <button onclick="window.print()" class="flex items-center gap-2 bg-brand-900 hover:bg-brand-800 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
+            <i data-lucide="printer" class="w-5 h-5"></i>
+            Descargar en Formato A4 (2 Hojas)
+        </button>
+    </div>
+
+    <!-- PÁGINA 1 -->
+    <div class="page main-container">
+        <!-- Encabezado -->
+        <header class="bg-brand-900 text-white p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
+            <div class="flex items-center gap-6">
+                <img src="image.png" alt="Logo" class="h-14 w-auto brightness-0 invert">
+                <div class="h-10 w-px bg-brand-500/30 hidden md:block"></div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight uppercase">Reporte de Avances</h1>
+                    <p class="text-brand-100 flex items-center gap-2 text-xs font-semibold opacity-80">
+                        <i data-lucide="user" class="w-3 h-3"></i> Diego Jafet Rivera Cordova
+                    </p>
+                </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/10 text-center">
+                <p class="text-[10px] text-brand-100 uppercase tracking-widest font-black mb-1">Fecha Jornada</p>
+                <p class="text-sm font-bold" id="fecha-actual">Cargando...</p>
+            </div>
+        </header>
+
+        <!-- Situación General -->
+        <section class="mb-10">
+            <div class="bg-slate-50 border-l-4 border-brand-600 p-6 rounded-r-2xl">
+                <p class="text-slate-700 text-lg leading-relaxed">
+                    Informamos la <span class="font-bold text-brand-900">actualización satisfactoria del Módulo de Proyectos</span>. La plataforma es ahora más eficiente y robusta para las etapas financieras.
+                </p>
+            </div>
+        </section>
+
+        <!-- KPIs Cuadrados -->
+        <section class="grid grid-cols-4 gap-4 mb-12">
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
+                <div class="p-2 bg-green-50 rounded-lg w-fit mx-auto mb-3"><i data-lucide="plus-circle" class="w-5 h-5 text-green-600"></i></div>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-1">Mejoras</h3>
+                <p class="text-2xl font-black text-slate-800">5</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
+                <div class="p-2 bg-blue-50 rounded-lg w-fit mx-auto mb-3"><i data-lucide="clock" class="w-5 h-5 text-blue-600"></i></div>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-1">En Desarrollo</h3>
+                <p class="text-2xl font-black text-slate-800">4</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
+                <div class="p-2 bg-amber-50 rounded-lg w-fit mx-auto mb-3"><i data-lucide="wrench" class="w-5 h-5 text-amber-600"></i></div>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-1">Arreglos</h3>
+                <p class="text-2xl font-black text-slate-800">4</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
+                <div class="p-2 bg-brand-50 rounded-lg w-fit mx-auto mb-3"><i data-lucide="shield-check" class="w-5 h-5 text-brand-600"></i></div>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-1">Estado</h3>
+                <p class="text-lg font-black text-green-600">ESTABLE</p>
+            </div>
+        </section>
+
+        <!-- Cambios Solicitados -->
+        <section>
+            <h2 class="text-lg font-black text-slate-800 flex items-center gap-3 mb-6 border-b pb-4">
+                <i data-lucide="message-square" class="w-6 h-6 text-brand-600"></i>
+                Cambios Solicitados por Dirección
+            </h2>
+            <div class="grid grid-cols-1 gap-6">
+                <div class="flex gap-4 p-5 bg-slate-50/50 border border-slate-100 rounded-2xl">
+                    <i data-lucide="user-plus" class="w-10 h-10 text-brand-600 p-2 bg-white rounded-xl shadow-sm"></i>
+                    <div>
+                        <p class="font-bold text-slate-900">Gestión de Prospectos</p>
+                        <p class="text-sm text-slate-600 leading-relaxed">Implementada la creación rápida y asignación directa a personal. Control total sobre el flujo de entrada de clientes.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-5 bg-slate-50/50 border border-slate-100 rounded-2xl">
+                    <i data-lucide="calendar" class="w-10 h-10 text-brand-600 p-2 bg-white rounded-xl shadow-sm"></i>
+                    <div>
+                        <p class="font-bold text-slate-900">Delegación de Actividades</p>
+                        <p class="text-sm text-slate-600 leading-relaxed">Habilitada la delegación de actividades por parte de los jefes y la función de actividades recurrentes en el mismo horario.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- PÁGINA 2 -->
+    <div class="page main-container">
+        <!-- Otros Logros -->
+        <section class="mb-12">
+            <h2 class="text-lg font-black text-slate-800 flex items-center gap-3 mb-6 border-b pb-4">
+                <i data-lucide="award" class="w-6 h-6 text-yellow-500"></i>
+                Otros Logros de la Jornada
+            </h2>
+            <div class="grid grid-cols-1 gap-6">
+                <div class="group p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-brand-500 transition-all">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i data-lucide="monitor" class="w-5 h-5 text-brand-500"></i>
+                        <p class="font-bold text-slate-900 text-base">Rediseño del sistema de Proyectos</p>
+                    </div>
+                    <p class="text-sm text-slate-600 ml-9">Nuevo diseño funcional, automático y optimizado para la captura técnica de datos.</p>
+                </div>
+                <div class="group p-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i data-lucide="file-down" class="w-5 h-5 text-green-500"></i>
+                        <p class="font-bold text-slate-900 text-base">Soporte Integral para Excel</p>
+                    </div>
+                    <p class="text-sm text-slate-600 ml-9">Carga directa de volumetrías desde archivos Excel, eliminando horas de transcripción manual.</p>
+                </div>
+                <div class="group p-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-500"></i>
+                        <p class="font-bold text-slate-900 text-base">Tableros de Resultados (KPIs)</p>
+                    </div>
+                    <p class="text-sm text-slate-600 ml-9">Visualización ejecutiva de avances y productividad por área para toma de decisiones.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Estado y Próximos pasos en horizontal -->
+        <div class="grid grid-cols-2 gap-8 mb-12">
+            <section class="bg-brand-900 text-white p-8 rounded-3xl relative overflow-hidden">
+                <h3 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> Estado del Sistema
+                </h3>
+                <p class="text-sm text-brand-100 leading-relaxed mb-6">Infraestructura operando con total normalidad tras actualizaciones satisfactorias.</p>
+                <div class="bg-white/10 p-3 rounded-xl border border-white/10 text-center font-bold text-xs">SISTEMAS 100% OPERATIVOS</div>
+            </section>
+
+            <section class="bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <i data-lucide="rocket" class="w-4 h-4 text-brand-600"></i> Mañana 06 de Mayo
+                </h3>
+                <ul class="text-sm text-slate-600 space-y-4">
+                    <li class="flex items-start gap-2 italic">Continuaré con Proyectos y Obra.</li>
+                    <li class="flex items-start gap-2 italic">Finanzas y Dashboard de Proyecto.</li>
+                    <li class="flex items-start gap-2 italic">App de Levantamientos en Campo.</li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- Footer fijo al final de la página cuando sea posible -->
+        <footer class="absolute bottom-10 left-10 right-10 flex justify-between items-center border-t pt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+            <span>IAMET Evolución Tecnológica</span>
+            <span>Página 2 de 2</span>
+        </footer>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const fechaHoy = new Date().toLocaleDateString('es-ES', opcionesFecha);
+        document.getElementById('fecha-actual').textContent = fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1);
+    </script>
+</body>
+</html>

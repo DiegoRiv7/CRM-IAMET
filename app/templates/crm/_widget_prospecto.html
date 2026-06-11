@@ -1,5 +1,5 @@
 <!-- ═══ WIDGET: DETALLE DE PROSPECTO ═══ -->
-<div class="widget-overlay" id="widgetProspecto" style="z-index:10200;">
+<div class="widget-overlay" id="widgetProspecto" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde kanban prospectos -->
     <div class="widget-card widget-card-lg">
         <!-- Loading -->
         <div id="prospectoLoading" style="text-align:center;padding:4rem;color:#86868B;">
@@ -215,7 +215,7 @@
 </div>
 
 <!-- ═══ PANEL: ACTIVIDADES DEL PROSPECTO (composer canvas) ═══ -->
-<div class="widget-overlay" id="widgetProspectoActividades" style="z-index:10300;display:none;" data-wact-prefix="wp">
+<div class="widget-overlay" id="widgetProspectoActividades" style="z-index:var(--z-widget-sub);display:none;" data-wact-prefix="wp"><!-- Nivel 2: abierto desde widgetProspecto -->
     <div class="wact-shell">
         <header class="wact-header">
             <div class="wact-breadcrumb">
@@ -314,7 +314,7 @@
 Modal en serie: el usuario puede crear varias opps para el mismo prospecto.
 Al cerrar el modal, si se creó al menos una, el prospecto pasa a cerrado_ganado.
 {% endcomment %}
-<div class="widget-overlay" id="widgetCrearOppDesdeProspecto" style="z-index:10500;display:none;">
+<div class="widget-overlay" id="widgetCrearOppDesdeProspecto" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetProspecto -->
     <div style="background:#fff;border-radius:18px;width:560px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.22);overflow:hidden;">
         <header style="padding:18px 22px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#F7FDF9 0%,#FFFFFF 100%);">
             <div>
@@ -429,7 +429,7 @@ Al cerrar el modal, si se creó al menos una, el prospecto pasa a cerrado_ganado
 </div>
 
 <!-- ═══ WIDGET: PROSPECTOS DE CLIENTE ═══ -->
-<div class="widget-overlay" id="widgetClienteProspectos" style="z-index:10100;">
+<div class="widget-overlay" id="widgetClienteProspectos" style="z-index:var(--z-widget);"><!-- Nivel 1: vista de cliente prospectos -->
     <div class="widget-card widget-card-lg">
         <div id="clienteProspectosContent" style="display:flex;flex-direction:column;height:100%;">
             <!-- Header -->

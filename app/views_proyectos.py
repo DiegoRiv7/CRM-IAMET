@@ -1,3 +1,20 @@
+# ══════════════════════════════════════════════════════════════════════
+# views_proyectos.py — ARCHIVO LEGACY (congelado desde 2026-06-04)
+#
+# ~6,861 líneas mezclando calendario, instalaciones, Gantt, tareas,
+# proyectos CRM, ingeniero dashboard. Marcado como LEGACY por Boy Scout
+# Rule.
+#
+# NO agregar endpoints nuevos aquí. Para vistas nuevas:
+#   → app/views_v2/proyectos_v2.py
+#
+# IMPORTANTE: este archivo usa el modelo `Proyecto` legacy. Para código
+# nuevo usar `ProyectoIAMET` (moderno, con estructura financiera). Ver
+# DECISIONES.md cuando se cree.
+#
+# Modificar SOLO para bugs críticos. Ver app/views_v2/README.md.
+# ══════════════════════════════════════════════════════════════════════
+
 # ----------------------------------------------------------------------
 # views_proyectos.py — Proyectos, tareas, actividades, e ingeniería.
 # ----------------------------------------------------------------------
@@ -652,8 +669,11 @@ def api_programacion_actividades(request):
                     usuario_remitente=request.user,
                     proyecto_nombre=proyecto_titulo,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                import logging as _lg
+                _lg.getLogger(__name__).exception(
+                    '[notif] error en programacion_proyecto user=%s: %s',
+                    getattr(u, 'username', '?'), str(e))
 
         return JsonResponse({'success': True, 'id': act.id})
 

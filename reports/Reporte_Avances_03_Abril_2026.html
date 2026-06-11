@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 03 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 03 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy, enfocadas en la reestructura del modulo de Proyectos con vista tipo dashboard, previsualizacion de documentos Word/DOCX, mejoras en tareas automaticas y gestion de roles de usuario.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Tabs Nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Endpoints Nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Archivos Modificados</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Reestructura Completa del Modulo de Proyectos
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se reestructuro completamente la seccion de Proyectos, pasando de una lista plana de tarjetas a un sistema con <strong>3 tabs profesionales</strong>: <strong>Dashboard</strong> (KPIs globales con indicadores clave como proyectos en ejecucion y utilidad total, mas lista de proyectos activos con barras de avance y datos de presupuesto), <strong>Programa de Obra</strong> (la vista actual de tarjetas con filtros y busqueda, reubicada) y <strong>Financiero</strong> (vista financiera con sub-filtros por estado mostrando utilidad presupuestada, costo total, venta total y margen por proyecto). Se crearon 2 nuevos endpoints API (<code>/dashboard/</code> y <code>/financiero/</code>) que calculan KPIs agregados y datos financieros desde las partidas de cada proyecto.</p>
+    </div>
+
+    <h2>1. Reestructura del Modulo de Proyectos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab Dashboard con KPIs Globales</span>
+        <div class="update-desc">Nuevo tab principal que muestra <strong>4 indicadores clave</strong>: Proyectos en Ejecucion (conteo real), Avance Promedio, Personal Activo y Utilidad Total (suma de utilidades presupuestadas de proyectos activos). Debajo, una lista de proyectos activos con tarjetas que muestran nombre, cliente, badge de estado, barra de avance visual, y un grid con equipo, presupuesto, gastado y fechas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tab Programa de Obra</span>
+        <div class="update-desc">La vista actual de proyectos (tarjetas con filtros Todos/Activos/Completados/Planificacion, busqueda y boton "Nuevo Proyecto") fue reubicada dentro de su propio tab. Funcionalidad intacta, ahora organizada dentro de la estructura de 3 tabs.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab Financiero con Vista por Estado</span>
+        <div class="update-desc">Nueva vista financiera con sub-tabs de filtro: <strong>En Ejecucion, Programados y Cerrados</strong>. Cada proyecto muestra utilidad presupuestada, costo total (rojo), venta total (azul) y margen porcentual (verde/amarillo/rojo segun umbral). Click en cualquier proyecto abre el widget de detalle existente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Endpoints API para Dashboard y Financiero</span>
+        <div class="update-desc">Dos nuevos endpoints: <code>/api/iamet/proyectos/dashboard/</code> retorna KPIs agregados (conteos por estado, utilidad total, costo y venta totales desde partidas), y <code>/api/iamet/proyectos/financiero/</code> retorna proyectos con datos financieros calculados (utilidad, costo, venta, margen) con filtro opcional por estado.</div>
+    </div>
+
+    <h2>2. Previsualizacion de Documentos Word</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Preview de DOCX en el Navegador</span>
+        <div class="update-desc">Los archivos <strong>.docx</strong> ahora se previsualizan directamente en el visor de archivos del Drive, usando la libreria <code>docx-preview</code> con <code>JSZip</code>. El documento se renderiza dentro de un <strong>iframe aislado</strong> para evitar que Tailwind CSS distorsione las tablas y el formato. Las librerias se cargan bajo demanda (lazy load) solo al abrir un Word.</div>
+    </div>
+
+    <h2>3. Tareas Automaticas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Dueno de Oportunidad como Participante/Observador</span>
+        <div class="update-desc">Nuevo checkbox <strong>"Dueno de la oportunidad"</strong> en las listas de participantes y observadores del formulario de tareas automaticas. Al marcarlo, cuando la regla se ejecute, el dueno de la oportunidad se agrega automaticamente como participante y/o observador de la tarea creada, junto con los demas usuarios seleccionados.</div>
+    </div>
+
+    <h2>4. Panel de Administracion</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cambio de Rol de Usuario (Vendedor/Ingeniero/Admin)</span>
+        <div class="update-desc">El badge de rol en la tabla de usuarios ahora es <strong>clickeable para todos los roles</strong>, incluyendo Admin. Al hacer clic, cicla entre: Vendedor &rarr; Ingeniero &rarr; Admin &rarr; Vendedor. Tambien se agrego un <strong>selector de rol</strong> en el formulario de edicion del usuario con las 3 opciones. Al seleccionar Admin, se actualizan automaticamente los permisos de supervisor.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

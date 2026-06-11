@@ -2674,6 +2674,15 @@ window._mkthubCanEditInitial = {% if marketing_can_edit %}true{% else %}false{% 
         var asunto = '[' + b.name + '] ' + res.title;
         var fallbackHTML = buildEmailFallback(res, b, t);
 
+        // Contexto leído por crm_mail.js al enviar: dispara la creación
+        // de un Campana(producto=KEY) en el backend para que el envío
+        // cuente en el KPI "Campañas" de la sección Marcas.
+        window._marketingShareCtx = {
+            brand: res.brand || '',
+            recurso_id: res.id || null,
+            titulo: res.title || ''
+        };
+
         function openWithBody(cuerpoHTML) {
             if (typeof window.mailAbrir === 'function' && typeof window.mailRedactar === 'function') {
                 window.mailAbrir();

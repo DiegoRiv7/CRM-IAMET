@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 22 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 22 de Mayo, 2026</p>
+            <p>Periodo: 22 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Despues de meses sin un cambio fuerte en el modulo de Ingenieria, hoy se atacaron <strong>los dolores que mas pesaban</strong> en su dia a dia: entrar directo a sus tareas, buscar de verdad lo que necesitan, controlar a su propio equipo de cada tarea, y abrir lo que viene desde la barra de busqueda sin que la pagina se rompa.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito: Perfil Ingeniero</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Mejoras al CRM</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Bugs corregidos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">12</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: el Perfil del Ingeniero por Fin Trabaja como Trabajan Ellos
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El ingeniero llegaba al CRM y aterrizaba en un dashboard de numeros que no usaba. La barra de busqueda solo veia titulos. Y cuando intentaba ajustar quien estaba metido en una tarea (agregar a alguien, quitarse el mismo), el sistema le decia que <em>no tenia permisos</em> porque no era el creador. Hoy todo eso se arregla: <strong>entra directo a sus tareas, busca por archivos y comentarios, y tiene control real sobre las tareas en las que participa</strong>.</p>
+    </div>
+
+    <h2>1. Entrar Directo a Trabajar</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Adios al Dashboard de Aterrizaje</span>
+        <div class="update-desc">El ingeniero ya <strong>no aterriza en el tablero de KPIs</strong> que no usa. Al entrar al CRM cae directamente en <strong>su lista de tareas</strong>. Un click menos, y arranca trabajando desde el segundo cero.</div>
+    </div>
+
+    <h2>2. Buscador de Tareas que de Verdad Busca</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Busca Adentro de la Tarea, no Solo en el Titulo</span>
+        <div class="update-desc">Si el ingeniero escribe el <strong>nombre de un archivo</strong> que esta adjunto en alguna tarea, la tarea aparece en la lista. Lo mismo con el <strong>texto de los comentarios</strong>, el cliente, el proyecto, el nombre del responsable o lo que sea que tenga que ver con esa tarea. Antes solo matcheaba contra el titulo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Placeholder que Explica</span>
+        <div class="update-desc">El recuadro de busqueda ahora dice claramente: <em>"Buscar titulo, comentario, archivo, proyecto..."</em>. El usuario sabe de entrada que la busqueda es amplia.</div>
+    </div>
+
+    <h2>3. El Ingeniero ya Controla su Equipo de Cada Tarea</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Puede Agregar a Cualquier Persona</span>
+        <div class="update-desc">El ingeniero ya puede <strong>agregar como participante u observador a quien quiera</strong> en cualquier tarea que vea. Antes el sistema le decia "sin permisos" si no era el creador. Ahora el flujo es directo: abrir tarea, boton mas, buscar al compañero, listo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Puede Quitarse el Mismo</span>
+        <div class="update-desc">Si lo metieron en una tarea que ya no le toca, ahora puede <strong>quitarse el solo</strong> (como participante, observador o responsable) sin tener que pedirle al creador que lo saque.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Si es el Responsable, Puede Transferirla</span>
+        <div class="update-desc">El responsable de una tarea ahora puede <strong>cambiar el responsable</strong> (o quitarse y dejarla sin asignar) con un click sobre el avatar. Util cuando el trabajo lo va a tomar otro compañero.</div>
+    </div>
+
+    <h2>4. Busqueda Global (Spotlight) Ahora Funciona en Ingenieria</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Abrir un Proyecto desde la Lupa, sin Romper la Pagina</span>
+        <div class="update-desc">Antes, cuando el ingeniero buscaba un proyecto en la lupa y le daba click, la <strong>pagina se recargaba y dejaba el detalle del proyecto colgado en una franja al fondo</strong> mientras el dashboard quedaba arriba. Ahora se abre limpio: dashboard se oculta, detalle se muestra.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Lista de Resultados Coincide con la Seccion de Proyectos</span>
+        <div class="update-desc">El buscador estaba viendo una base de datos vieja (proyectos importados de Bitrix) y devolvia decenas de proyectos que <strong>no aparecian en la seccion Proyectos del CRM</strong>. Ahora busca exactamente en los mismos proyectos que el ingeniero ve en su modulo. Cero confusion.</div>
+    </div>
+
+    <h2>5. Tareas Automaticas con Verificacion Opcional</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Activar la Verificacion Solo Donde se Necesita</span>
+        <div class="update-desc">En el panel de admin → Tareas Automaticas, cada regla tiene una nueva opcion: <strong>"Requiere verificacion al avanzar"</strong>. Cuando esta activa, al completarse la tarea de esa regla <strong>se le muestra un widget al responsable de la oportunidad</strong> para revisar/editar las proximas tareas antes de confirmar. Cuando esta apagada, la cadena reactiva corre automatica como siempre. Util cuando la siguiente etapa requiere decision; no aplica para flujos rutinarios.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Abrir la Oportunidad Sin Cerrar el Widget</span>
+        <div class="update-desc">Dentro de ese widget de verificacion, el <strong>nombre de la oportunidad ahora es clickeable</strong>. El detalle de la oportunidad se abre <strong>encima</strong> del widget, no detras. Asi el responsable puede revisar todo el contexto antes de decidir y regresar a llenar las tareas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cambiar al Responsable de las Proximas Tareas</span>
+        <div class="update-desc">Cada proxima tarea en el widget ya trae un <strong>selector de responsable</strong> (con todos los usuarios activos). Por defecto trae al responsable predeterminado de la regla, pero el responsable de la opp puede asignarla a alguien mas con un click antes de confirmar.</div>
+    </div>
+
+    <h2>6. Detalles que Tambien se Pulieron</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Tareas y Sub-widgets ya no Quedan Detras de la Oportunidad</span>
+        <div class="update-desc">Cuando el ingeniero abria una tarea → la oportunidad → y desde ahi queria ver "todas las tareas" o entrar a una tarea del historial, el nuevo widget se abria <strong>oculto detras</strong>. Ya queda visible por encima en todo momento.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Permiso de Levantamientos por Vendedor</span>
+        <div class="update-desc">En el panel de admin → Permisos hay una nueva columna <strong>"Levantamiento"</strong>. Habilita la app movil de levantamientos para vendedores especificos (algunos hacen campo, otros no) sin cambiarles su rol ni su vista de oportunidades. Los ingenieros entran siempre por su rol; el flag es para vendedores.</div>
+    </div>
+
+    <h2>7. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Menos Tiempo Pidiendo Permisos por Chat</span>
+        <div class="update-desc">El ingeniero que necesitaba que un creador lo sacara de una tarea, o que metiera a un compañero, ahora lo hace solo. Cero pings, cero esperas. <strong>El equipo se gestiona a si mismo</strong> dentro de la tarea.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Encontrar lo que se Necesita en Segundos</span>
+        <div class="update-desc">Si un PDF importante esta enterrado en un comentario de una tarea de hace meses, ya se encuentra escribiendo el nombre del archivo. Antes habia que ir tarea por tarea. <strong>Menos tiempo cazando, mas tiempo ejecutando</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Vendedor Decide Donde Mete Decision Humana</span>
+        <div class="update-desc">No todas las etapas necesitan que alguien revise antes de avanzar. Con el nuevo toggle, el supervisor decide <strong>en cuales etapas si y en cuales no</strong>. El CRM se adapta al proceso real, no al reves.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 22 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1222 @@
+/* ════════════════════════════════════════════════════════════════════════
+   TEMA MUNDIAL — Edición Copa del Mundo 2026
+   ────────────────────────────────────────────────────────────────────────
+   ARCHIVO ÚNICO Y AUTOCONTENIDO del tema. TODO lo visual del modo Mundial
+   vive aquí. Reglas:
+
+     · Cada selector empieza con body[data-theme="mundial"] — SOLO aplica
+       cuando el tema Mundial está activo. Los demás temas no se enteran.
+     · Es PURO DISEÑO. No hay lógica. Quitar el tema = borrar el <link> de
+       este archivo en base.html (y este archivo). Cero efectos colaterales.
+     · El fondo se administra desde /app/config/fondo-mundial/ y se guarda
+       en media/fondos/mundial.jpg. El JS de _widget_perfil.html aplica el
+       data-theme al body y la variable --mundial-img (cache-bust).
+
+   Protagonistas: verde (#006847 / #00a86b), blanco y rojo (#CE1126).
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ Variables del tema + color de respaldo ═══ */
+body[data-theme="mundial"] {
+    --bg-crm: #04210f;
+    --text-crm: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.94);
+    --border-crm: rgba(255, 255, 255, 0.22);
+    --table-header-bg: rgba(255, 255, 255, 0.10);
+    --table-row-hover: rgba(255, 255, 255, 0.16);
+    --accent-crm: #00a86b;
+    --island-bg: rgba(255, 255, 255, 0.14);
+    --island-border: rgba(255, 255, 255, 0.28);
+    background-color: #04210f;
+}
+
+/* ═══ Capa de fondo FIJA (técnica a prueba de balas) ═══
+   Se pinta detrás de todo el contenido (z-index:-1) y cubre el viewport.
+   No compite con el background-color del body ni con estilos inline.
+   Scrim casi transparente para que la cancha sea protagonista. */
+body[data-theme="mundial"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%),
+        var(--mundial-img, url('/media/fondos/mundial.jpg'));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* ═══ Layout: transparente para dejar ver la cancha ═══ */
+body[data-theme="mundial"] .crm-page,
+body[data-theme="mundial"] .crm-page-sidebar {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .crm-main,
+body[data-theme="mundial"] .crm-content { background: transparent !important; }
+
+/* ═══ Sidebar: degradado verde oscuro tipo estadio nocturno ═══ */
+body[data-theme="mundial"] .crm-sidebar {
+    background: linear-gradient(180deg, rgba(0, 58, 32, 0.94) 0%, rgba(0, 32, 17, 0.96) 60%, rgba(1, 18, 9, 0.97) 100%) !important;
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="mundial"] .crm-sb-logo {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    box-shadow: 0 4px 16px rgba(0, 168, 107, 0.40), inset 0 1px 0 rgba(255,255,255,0.20) !important;
+}
+body[data-theme="mundial"] .crm-sb-btn,
+body[data-theme="mundial"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.78); }
+body[data-theme="mundial"] .crm-sb-btn:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff;
+}
+body[data-theme="mundial"] .crm-sb-btn.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(0, 168, 107, 0.35) !important;
+}
+body[data-theme="mundial"] .crm-sb-btn.active::before {
+    background: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-sb-divider { background: rgba(255, 255, 255, 0.10) !important; }
+body[data-theme="mundial"] .crm-sb-label { color: rgba(255, 255, 255, 0.70); }
+body[data-theme="mundial"] .crm-sb-dot { background: #CE1126 !important; }
+
+/* ═══ Topbar / Dynamic Island ═══ */
+body[data-theme="mundial"] .crm-unified-header { background: transparent !important; }
+body[data-theme="mundial"] .crm-island {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.35) !important;
+}
+body[data-theme="mundial"] .crm-island:hover,
+body[data-theme="mundial"] .crm-island.is-expanded {
+    background: rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="mundial"] .island-sep { background: rgba(255, 255, 255, 0.20) !important; }
+body[data-theme="mundial"] .island-select,
+body[data-theme="mundial"] .island-nav-btn {
+    color: #ffffff !important;
+}
+
+/* ═══ Workspace title ═══ */
+body[data-theme="mundial"] .crm-workspace-title-text {
+    color: #ffffff !important;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+}
+body[data-theme="mundial"] .crm-workspace-count {
+    background: rgba(255,255,255,0.18) !important;
+    color: #ffffff !important;
+}
+
+/* ═══ Barra superior: facet-bar + tabs + periodo + CTA ═══ */
+body[data-theme="mundial"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+
+/* Contenedor de tabs: glass oscuro en vez de pill blanco */
+body[data-theme="mundial"] .crm-page-sidebar .crm-tabs {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+body[data-theme="mundial"] .crm-page-sidebar .crm-tab {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+body[data-theme="mundial"] .crm-page-sidebar .crm-tab:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-page-sidebar .crm-tab.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
+}
+
+/* Botones facet (Filtro, Ordenar, Excel, vista, Cotizar) */
+body[data-theme="mundial"] .crm-facet-btn {
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .crm-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-facet-sort,
+body[data-theme="mundial"] .crm-facet-export {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.24) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .crm-facet-export:hover {
+    background: rgba(0, 168, 107, 0.28) !important;
+    border-color: rgba(0, 168, 107, 0.6) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-facet-btn.active {
+    background: rgba(0, 168, 107, 0.30) !important;
+    border-color: rgba(0, 168, 107, 0.70) !important;
+    color: #ffffff !important;
+}
+
+/* +Nuevo — CTA principal en verde mexicano */
+body[data-theme="mundial"] .crm-facet-new {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    border-color: #007a4d !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+}
+body[data-theme="mundial"] .crm-facet-new:hover {
+    background: linear-gradient(135deg, #00bd78 0%, #007a4d 100%) !important;
+    border-color: #00a86b !important;
+    box-shadow: 0 4px 14px rgba(0, 168, 107, 0.45) !important;
+}
+
+/* Pills de periodo / vendedores (der) */
+body[data-theme="mundial"] .crm-period-pills {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="mundial"] .crm-period-pill {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .crm-period-pill.is-default { color: rgba(255,255,255,0.62) !important; }
+body[data-theme="mundial"] .crm-period-pill:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.30) !important;
+    color: #ffffff !important;
+}
+
+/* Barra de búsqueda / spotlight pill en el header */
+body[data-theme="mundial"] .crm-search-pill,
+body[data-theme="mundial"] #crmSearchInput,
+body[data-theme="mundial"] .crm-search-wrap {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-search-pill::placeholder,
+body[data-theme="mundial"] #crmSearchInput::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* ═══ Vendor hero card — verde mexicano translúcido ═══ */
+body[data-theme="mundial"] .vendor-card {
+    background: linear-gradient(135deg, rgba(0, 104, 71, 0.78) 0%, rgba(0, 168, 107, 0.60) 100%) !important;
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    box-shadow: 0 8px 34px rgba(0, 0, 0, 0.32) !important;
+}
+
+/* ═══ Kanban: columnas casi invisibles, solo borde — la cancha se ve ═══ */
+/* Degradado sutil transparente→velo oscuro leve para que las columnas
+   vacías no se sientan huecas (sensación de profundidad). */
+body[data-theme="mundial"] .crm-kanban-col {
+    background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(0, 20, 10, 0.14) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: none !important;
+}
+body[data-theme="mundial"] .crm-kanban-col.collapsed {
+    background: rgba(0, 0, 0, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.30) !important;
+}
+/* Solo el encabezado lleva un velo oscuro para legibilidad del texto */
+body[data-theme="mundial"] .crm-kanban-head {
+    background: rgba(0, 22, 11, 0.44) !important;
+    backdrop-filter: blur(11px);
+    -webkit-backdrop-filter: blur(11px);
+    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="mundial"] .crm-kanban-stage-name {
+    color: #ffffff !important;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.85);
+}
+body[data-theme="mundial"] .crm-kanban-total-label { color: rgba(255,255,255,0.58) !important; }
+body[data-theme="mundial"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
+body[data-theme="mundial"] .crm-kanban-count {
+    background: rgba(255,255,255,0.18) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-kanban-vertical-name { color: rgba(255,255,255,0.62) !important; }
+body[data-theme="mundial"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-kanban-col-btn { color: rgba(255,255,255,0.60) !important; }
+body[data-theme="mundial"] .crm-kanban-col-btn:hover {
+    background: rgba(255,255,255,0.16) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.22) !important;
+}
+
+/* ═══ Cards de oportunidades (kanban): glass esmerilado translúcido ═══ */
+body[data-theme="mundial"] .crm-kanban-card.crm-postit {
+    background: rgba(255, 255, 255, 0.87) !important;
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+body[data-theme="mundial"] .crm-kanban-card.crm-postit:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* ═══ glass-card general ═══ */
+body[data-theme="mundial"] .glass-card {
+    background: rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff;
+}
+body[data-theme="mundial"] .glass-card:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MODALES Y TABLAS — SÓLIDOS (no transparentes). La info se trabaja aquí,
+   así que prioridad a la legibilidad. Identidad mundial vía MARCO:
+   header/footer en VERDE OSCURO sólido con destello rojo azteca; el cuerpo
+   queda claro para que el texto oscuro se lea perfecto.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Panel principal — sólido blanco neutro (sin tinte verde, sin transparencia) */
+body[data-theme="mundial"] .widget-card,
+body[data-theme="mundial"] .widget-card-lg,
+body[data-theme="mundial"] .wn-overlay .wn-card.wn-composer {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+
+/* Header tricolor con grecas aztecas — compartido por detalle y nueva-opp.
+   Verde oscuro → rojo mexicano + patrón de grecas escalonadas (tipo jersey
+   de México) + destello rojo. Texto blanco encima. */
+body[data-theme="mundial"] .wo-header,
+body[data-theme="mundial"] .wn-ctw-header,
+body[data-theme="mundial"] .muro-card-header,
+body[data-theme="mundial"] .tcp-col-head,
+body[data-theme="mundial"] .crm-tw-header,
+body[data-theme="mundial"] .crm-ctw-header {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+}
+
+/* ── DETALLE DE OPORTUNIDAD ── */
+body[data-theme="mundial"] .wo-header {
+    border-radius: 24px 24px 0 0 !important;
+}
+body[data-theme="mundial"] .wo-title { color: #ffffff !important; }
+/* Badge de tipo (VENTA PROYECTO…) → rojo sólido */
+body[data-theme="mundial"] .wo-type-badge {
+    background: #CE1126 !important;
+    color: #ffffff !important;
+}
+/* Botones del header (asistente, controles de ventana) → claros */
+body[data-theme="mundial"] .wo-asist-btn-title,
+body[data-theme="mundial"] .ww-btn-win {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .ww-btn-win:hover {
+    background: rgba(255,255,255,0.16) !important;
+    color: #ffffff !important;
+}
+
+/* Cuerpo claro; sub-tarjetas blancas sólidas → texto oscuro legible */
+body[data-theme="mundial"] .wo-content { background: transparent !important; }
+body[data-theme="mundial"] .wo-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 80, 45, 0.18) !important;
+}
+body[data-theme="mundial"] .wo-card-accent {
+    background: linear-gradient(135deg, #eafaf1, #ffffff) !important;
+    border: 1px solid rgba(0, 168, 107, 0.30) !important;
+}
+
+/* ── NUEVA OPORTUNIDAD ── (el fondo del header lo da la regla compartida) */
+body[data-theme="mundial"] .wn-ctw-header {
+    border-radius: 16px 16px 0 0 !important;
+}
+body[data-theme="mundial"] .wn-ctw-breadcrumb,
+body[data-theme="mundial"] .wn-ctw-crumb-muted,
+body[data-theme="mundial"] .wn-ctw-crumb-current { color: #ffffff !important; }
+body[data-theme="mundial"] .wn-ctw-breadcrumb svg { color: rgba(255,255,255,0.70) !important; }
+body[data-theme="mundial"] .wn-ctw-close { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="mundial"] .wn-ctw-close:hover {
+    background: rgba(206,17,38,0.45) !important;
+    color: #ffffff !important;
+}
+/* Cuerpo claro → título, inputs y labels legibles (texto oscuro original) */
+body[data-theme="mundial"] .wn-ctw-canvas { background: transparent !important; }
+/* Footer: barra verde-crema clara sólida con borde rojo superior */
+body[data-theme="mundial"] .wn-ctw-toolbar {
+    background: #e3f2e8 !important;
+    border-top: 2px solid #CE1126 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECCIÓN TAREAS — panel sólido claro (legible) sobre la cancha; el verde
+   vive en bordes y el rojo natural de "ATRASADAS"/vencidas se conserva.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Shell frosted: vidrio esmerilado claro → la cancha se asoma por detrás
+   pero el texto (oscuro) se mantiene legible gracias al blur + tinte. */
+body[data-theme="mundial"] .tcp-shell {
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+    border: 1px solid rgba(0, 80, 45, 0.30) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
+}
+/* Panel derecho "TU DÍA" — frosted también */
+body[data-theme="mundial"] .tcp-detail {
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(22px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+    border-left-color: rgba(0, 80, 45, 0.22) !important;
+}
+/* Header de columnas (TAREA · ESTADO · …) como barra greca verde→rojo */
+body[data-theme="mundial"] .tcp-col-head {
+    color: #ffffff !important;
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+body[data-theme="mundial"] .tcp-col-head > span { color: #ffffff !important; }
+/* Filas: el texto se asienta sobre el frosted; hover/active claros */
+body[data-theme="mundial"] .tcp-row:hover { background: rgba(255, 255, 255, 0.45) !important; }
+body[data-theme="mundial"] .tcp-row.active { background: rgba(0, 168, 107, 0.18) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CONTROLES DE VENTANA (— □ ×) — sólidos blancos sobre el header oscuro
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .ww-ctrls button,
+body[data-theme="mundial"] .ww-btn,
+body[data-theme="mundial"] .widget-overlay.ww-windowed .ww-btn-win {
+    background: #ffffff !important;
+    color: #053a1f !important;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.38) !important;
+}
+body[data-theme="mundial"] .ww-ctrls button:hover,
+body[data-theme="mundial"] .ww-btn:hover {
+    background: #eef0ec !important;
+    color: #032615 !important;
+}
+/* La × (último control) en rojo mexicano al hover */
+body[data-theme="mundial"] .ww-ctrls button:last-child:hover {
+    background: #CE1126 !important;
+    color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   IDEAS — cards en glass esmerilado (las columnas ya heredan crm-kanban-col).
+   Prospección ya está temada porque reutiliza .crm-kanban-col / .crm-postit.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .idea-card {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(16px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+body[data-theme="mundial"] .idea-card:hover {
+    background: rgba(255, 255, 255, 0.94) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.30) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MURO — misma fórmula: cuerpo blanco sólido + header greca verde→rojo.
+   (El header ya recibe el fondo por la regla compartida de arriba.)
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .muro-card {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+}
+body[data-theme="mundial"] .muro-card-header {
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: 2px solid #CE1126 !important;
+}
+/* Título (usa color inline; lo vencemos con !important) */
+body[data-theme="mundial"] .muro-card-header > div > span { color: #ffffff !important; }
+/* Botones de filtro: claros sobre el header oscuro; activo en verde */
+body[data-theme="mundial"] .muro-filter-btn {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.30) !important;
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .muro-filter-btn:hover {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .muro-filter-btn.active {
+    background: #00a86b !important;
+    border-color: #00a86b !important;
+    color: #ffffff !important;
+}
+/* Close (X) clara, hover rojo */
+body[data-theme="mundial"] .muro-close-btn { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="mundial"] .muro-close-btn:hover {
+    background: rgba(206,17,38,0.45) !important;
+    color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   WIDGET DETALLE DE TAREA — misma fórmula (cuerpo claro + header greca).
+   El header (.crm-tw-header) ya recibe el fondo greca por la regla
+   compartida; aquí cuerpo claro + textos/iconos del header en blanco.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .crm-task-modal {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+body[data-theme="mundial"] .crm-tw-header {
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Breadcrumb, iconos y close del header en claro */
+body[data-theme="mundial"] .crm-tw-header,
+body[data-theme="mundial"] .crm-tw-header a,
+body[data-theme="mundial"] .crm-tw-header button,
+body[data-theme="mundial"] .crm-tw-header svg { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-tw-header button:hover { background: rgba(255,255,255,0.16) !important; }
+body[data-theme="mundial"] .crm-tw-header-divider { background: rgba(255,255,255,0.25) !important; }
+/* Cuerpo y panel lateral: claros (texto oscuro original legible) */
+body[data-theme="mundial"] .crm-tw-main { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FORM CREAR TAREA — cuerpo claro + header greca + footer claro.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .crm-create-task-container {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+body[data-theme="mundial"] .crm-ctw-header {
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Botón de oportunidad vinculada y close en claro */
+body[data-theme="mundial"] .crm-ctw-project { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-ctw-project:hover { background: rgba(255,255,255,0.16) !important; color:#ffffff !important; }
+body[data-theme="mundial"] .crm-ctw-project-ico { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-ctw-chev { color: rgba(255,255,255,0.7) !important; }
+body[data-theme="mundial"] .crm-ctw-close { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="mundial"] .crm-ctw-close:hover { background: rgba(206,17,38,0.45) !important; color:#ffffff !important; }
+/* Cuerpo claro (título/inputs legibles) + footer claro con borde rojo */
+body[data-theme="mundial"] .crm-ctw-canvas { background: transparent !important; }
+body[data-theme="mundial"] .crm-ctw-toolbar {
+    background: #e3f2e8 !important;
+    border-top: 2px solid #CE1126 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VISTA CALENDARIO DE TAREAS — columnas por día transparentes (como el
+   kanban del CRM); cards en glass esmerilado. La cancha se ve detrás.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .tareas-cal-col {
+    background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(0, 20, 10, 0.14) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+body[data-theme="mundial"] .tareas-cal-col.col-atrasadas {
+    background: linear-gradient(180deg, rgba(206,17,38,0.10) 0%, rgba(120,10,18,0.18) 100%) !important;
+    border-color: rgba(206,17,38,0.45) !important;
+}
+body[data-theme="mundial"] .tareas-cal-col.col-hoy {
+    background: linear-gradient(180deg, rgba(0,168,107,0.12) 0%, rgba(0,80,45,0.16) 100%) !important;
+    border-color: rgba(0,168,107,0.5) !important;
+}
+body[data-theme="mundial"] .tareas-cal-col-head {
+    background: rgba(0, 22, 11, 0.40) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-bottom-color: rgba(255,255,255,0.14) !important;
+}
+body[data-theme="mundial"] .tareas-cal-day-name,
+body[data-theme="mundial"] .tareas-cal-day-num,
+body[data-theme="mundial"] .tareas-cal-count {
+    color: #ffffff !important;
+}
+/* Cards de la vista calendario: glass esmerilado blanco */
+body[data-theme="mundial"] .tareas-card {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(14px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.70) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PROYECTOS — listado frosted (la cancha se asoma) + detalle con
+   topbar/tabs glass oscuro. Misma fórmula: fondo translúcido + headers
+   legibles + texto oscuro sobre surfaces claras.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* --- Sección principal: transparente para dejar ver la cancha --- */
+body[data-theme="mundial"] #proyectosSection {
+    background: transparent !important;
+}
+
+/* --- Topbar (Filtro / Ordenar / Proyectos pill / Buscar / + Nuevo) --- */
+body[data-theme="mundial"] .proy-tabs-wrap {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .proy-tabs {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+}
+body[data-theme="mundial"] .proy-tab {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+body[data-theme="mundial"] .proy-tab:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-tab.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
+}
+body[data-theme="mundial"] .proy-facet-btn {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .proy-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-facet-btn.active {
+    background: rgba(0, 168, 107, 0.30) !important;
+    border-color: rgba(0, 168, 107, 0.70) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-facet-menu {
+    background: rgba(20, 40, 28, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.50) !important;
+}
+body[data-theme="mundial"] .proy-facet-item {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .proy-facet-item:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-search-wrap .proy-search-icon {
+    color: rgba(255, 255, 255, 0.55) !important;
+    stroke: rgba(255, 255, 255, 0.55) !important;
+}
+body[data-theme="mundial"] .proy-search {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-search::placeholder {
+    color: rgba(255, 255, 255, 0.50) !important;
+}
+body[data-theme="mundial"] .proy-search:focus {
+    border-color: rgba(0, 168, 107, 0.60) !important;
+    box-shadow: 0 0 0 3px rgba(0, 168, 107, 0.20) !important;
+}
+body[data-theme="mundial"] .proy-btn-new {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    border-color: #007a4d !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-btn-new:hover {
+    background: linear-gradient(135deg, #00bd78 0%, #007a4d 100%) !important;
+    box-shadow: 0 4px 14px rgba(0, 168, 107, 0.45) !important;
+}
+
+/* --- Header de la tabla (PROYECTO/CLIENTE, MONTO, SERVICIO...) --- */
+body[data-theme="mundial"] #proyListView .crm-list-head {
+    color: rgba(255, 255, 255, 0.65) !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+body[data-theme="mundial"] #proyListView .crm-list-hcell {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* --- Filas de proyectos: glass esmerilado (como cards kanban) --- */
+body[data-theme="mundial"] #proyListView .crm-list-row {
+    background: rgba(255, 255, 255, 0.87) !important;
+    backdrop-filter: blur(16px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+body[data-theme="mundial"] #proyListView .crm-list-row:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* --- Empty state --- */
+body[data-theme="mundial"] .proy-empty {
+    color: rgba(255, 255, 255, 0.70) !important;
+}
+body[data-theme="mundial"] .proy-empty p {
+    color: rgba(255, 255, 255, 0.70) !important;
+}
+body[data-theme="mundial"] .proy-empty svg {
+    stroke: rgba(255, 255, 255, 0.40) !important;
+}
+
+/* --- Detalle de proyecto: card transparente --- */
+body[data-theme="mundial"] .proy-detail-page {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .proy-detail-card {
+    background: transparent !important;
+}
+
+/* --- Topbar v3 del detalle (back + tabs + avatares) --- */
+body[data-theme="mundial"] .proy-v3-topbar {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .proy-v3-back {
+    color: rgba(255, 255, 255, 0.80) !important;
+}
+body[data-theme="mundial"] .proy-v3-back:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="mundial"] .proy-v3-crumb-name {
+    color: rgba(255, 255, 255, 0.90) !important;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+}
+body[data-theme="mundial"] .proy-v3-topbar-sep {
+    color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="mundial"] .proy-v3-opp-link {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+body[data-theme="mundial"] .proy-v3-opp-link:hover {
+    color: #ffffff !important;
+}
+
+/* --- Tabs del detalle (Resumen / Tareas / Programa de Obra / ...) --- */
+body[data-theme="mundial"] .proy-v3-topbar-tabs {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+}
+body[data-theme="mundial"] .proy-v3-topbar-tab,
+body[data-theme="mundial"] .proy-v3-topbar-tabs .proy-tab-btn {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+body[data-theme="mundial"] .proy-v3-topbar-tab:hover,
+body[data-theme="mundial"] .proy-v3-topbar-tabs .proy-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-v3-topbar-tab.active,
+body[data-theme="mundial"] .proy-v3-topbar-tabs .proy-tab-btn.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
+}
+body[data-theme="mundial"] .proy-v3-topbar-tab.active:hover,
+body[data-theme="mundial"] .proy-v3-topbar-tabs .proy-tab-btn.active:hover {
+    background: linear-gradient(135deg, #00bd78 0%, #008a55 100%) !important;
+}
+body[data-theme="mundial"] .proy-v3-topbar-tabs svg {
+    color: inherit !important;
+}
+
+/* --- Avatares y agregar miembro --- */
+body[data-theme="mundial"] .proy-v3-add-member {
+    color: rgba(255, 255, 255, 0.70) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+body[data-theme="mundial"] .proy-v3-add-member:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+}
+
+/* --- Header del proyecto (nombre + meta line) --- */
+body[data-theme="mundial"] .proy-v3-header {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .proy-v3-name {
+    color: #ffffff !important;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+}
+body[data-theme="mundial"] .proy-v3-meta-line {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+body[data-theme="mundial"] .proy-v3-meta-sep {
+    color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="mundial"] .proy-v3-meta-cliente,
+body[data-theme="mundial"] .proy-v3-meta-fechas {
+    color: rgba(255, 255, 255, 0.80) !important;
+}
+body[data-theme="mundial"] .proy-v3-rag-text {
+    color: #ffffff !important;
+}
+
+/* --- KPI strip: frosted glass --- */
+body[data-theme="mundial"] .proy-v3-kpi-strip {
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+    border: 1px solid rgba(0, 80, 45, 0.30) !important;
+    box-shadow: 0 8px 28px rgba(0, 15, 8, 0.30) !important;
+}
+body[data-theme="mundial"] .proy-v3-kpi-cell + .proy-v3-kpi-cell {
+    border-left-color: rgba(0, 80, 45, 0.18) !important;
+}
+
+/* --- Dashboard cards (Resumen tab): frosted glass --- */
+body[data-theme="mundial"] .proy-v3-dash-card {
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(22px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    box-shadow: 0 4px 18px rgba(0, 15, 8, 0.25) !important;
+}
+body[data-theme="mundial"] .proy-v3-dash-card-head {
+    border-bottom-color: rgba(0, 80, 45, 0.15) !important;
+}
+
+/* --- Tab panes: frosted panels --- */
+body[data-theme="mundial"] .proy-tab-pane {
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(22px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 28px rgba(0, 15, 8, 0.25) !important;
+}
+
+/* --- Tab header (dentro de panes) con greca --- */
+body[data-theme="mundial"] .proy-tab-header {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 14px 14px 0 0 !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-tab-header * {
+    color: #ffffff !important;
+}
+
+/* --- Diálogos de proyecto (Crear, Editar, etc.) --- */
+body[data-theme="mundial"] .proy-dialog-overlay {
+    background: rgba(1, 12, 6, 0.70) !important;
+}
+body[data-theme="mundial"] .proy-dialog-card {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+body[data-theme="mundial"] .proy-dialog-header {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+}
+body[data-theme="mundial"] .proy-dialog-header h3,
+body[data-theme="mundial"] .proy-dialog-header .proy-dialog-title {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-btn-close {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .proy-btn-close:hover {
+    background: rgba(206,17,38,0.45) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-dialog-footer {
+    background: #e3f2e8 !important;
+    border-top: 2px solid #CE1126 !important;
+}
+body[data-theme="mundial"] .proy-dialog-footer .proy-btn-primary {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    color: #ffffff !important;
+}
+
+/* --- Tablas internas de proyecto (partidas, finanzas, levantamientos) --- */
+body[data-theme="mundial"] .proy-table th,
+body[data-theme="mundial"] .proy-fin-table th,
+body[data-theme="mundial"] .lev-list-table thead th,
+body[data-theme="mundial"] .proy-partidas-table thead th {
+    background: rgba(0, 60, 32, 0.12) !important;
+    color: #1a1a1a !important;
+}
+
+/* --- Finance sub-tabs --- */
+body[data-theme="mundial"] .proy-fin-subtab {
+    color: rgba(0, 0, 0, 0.60) !important;
+}
+body[data-theme="mundial"] .proy-fin-subtab.is-active {
+    color: #006847 !important;
+    border-bottom-color: #006847 !important;
+}
+
+/* --- Finance head (banner) --- */
+body[data-theme="mundial"] .proy-fin-head {
+    background: linear-gradient(135deg, rgba(0, 104, 71, 0.08), rgba(206, 17, 38, 0.05)) !important;
+    border: 1px solid rgba(0, 80, 45, 0.18) !important;
+    border-radius: 14px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CALENDARIO — panel SÓLIDO claro (como Tareas) con header greca.
+   Legibilidad es prioridad; fondo opaco, texto oscuro legible.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* --- Container: SÓLIDO blanco (override inline rgba) --- */
+body[data-theme="mundial"] .cal-card {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.30) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
+}
+body[data-theme="mundial"] .cal-card--page {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode {
+    background: transparent !important;
+}
+
+/* --- Header principal del overlay (div sin clase, primer hijo de .cal-card)
+       y subnav: barra greca azteca verde→rojo --- */
+body[data-theme="mundial"] .cal-card > div:first-child {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child * {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child button {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child button:hover {
+    background: rgba(255,255,255,0.22) !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child .cal-userpick-btn {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+/* +Nueva Actividad button in header */
+body[data-theme="mundial"] .cal-card > div:first-child button[onclick*="CrearActividad"] {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+}
+/* Close button × */
+body[data-theme="mundial"] .cal-card > div:first-child button[onclick*="Cerrar"] {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child button[onclick*="Cerrar"]:hover {
+    background: rgba(206,17,38,0.30) !important;
+}
+
+/* --- Subnav (arrows + Hoy + título + Mes/Semana/Día) --- */
+body[data-theme="mundial"] .cal-subnav-default {
+    background: rgba(0, 60, 32, 0.06) !important;
+    border-bottom-color: rgba(0, 80, 45, 0.12) !important;
+}
+
+/* --- Topbar del calendario: greca azteca verde→rojo --- */
+body[data-theme="mundial"] .cal-page-bar {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+    border-color: transparent !important;
+    border-bottom-color: #CE1126 !important;
+}
+/* Topbar facet buttons / tabs / pills all white text on the greca */
+body[data-theme="mundial"] .cal-page-bar .crm-facet-btn,
+body[data-theme="mundial"] .cal-page-bar .crm-facet-add {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+    color: rgba(255,255,255,0.90) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-facet-btn:hover {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-period-pill {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-period-pill:hover {
+    background: rgba(255,255,255,0.14) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tabs--dashboard {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tab {
+    color: rgba(255,255,255,0.72) !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tab:hover {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-page-bar .crm-tab.active {
+    background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
+}
+/* +Nueva actividad in greca bar */
+body[data-theme="mundial"] .cal-page-bar .crm-facet-new {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    border-color: #007a4d !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+}
+
+/* --- Navegación de fecha (← → Hoy · Junio 2026) --- */
+body[data-theme="mundial"] .cal-topnav-arrow {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-topnav-arrow:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="mundial"] .cal-topnav-today {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-topnav-today:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="mundial"] .cal-topnav-title {
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+/* --- Source toggle (Actividades / Instalaciones) --- */
+body[data-theme="mundial"] .cal-source-toggle {
+    background: rgba(0, 0, 0, 0.22) !important;
+}
+body[data-theme="mundial"] .cal-source-btn {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+body[data-theme="mundial"] .cal-source-btn:hover {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-source-btn-active {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.25) !important;
+}
+
+/* --- User picker --- */
+body[data-theme="mundial"] .cal-userpick-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-userpick-btn:hover {
+    background: rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="mundial"] .cal-userpick-btn.has-value {
+    background: rgba(0, 168, 107, 0.25) !important;
+    border-color: rgba(0, 168, 107, 0.50) !important;
+    color: #ffffff !important;
+}
+
+/* --- AI button --- */
+body[data-theme="mundial"] .cal-ai-btn {
+    background: linear-gradient(135deg, rgba(0,168,107,0.18) 0%, rgba(206,17,38,0.14) 100%) !important;
+    border-color: rgba(0,168,107,0.30) !important;
+    color: rgba(255, 255, 255, 0.90) !important;
+}
+body[data-theme="mundial"] .cal-ai-btn:hover {
+    background: linear-gradient(135deg, rgba(0,168,107,0.28) 0%, rgba(206,17,38,0.22) 100%) !important;
+    border-color: rgba(0,168,107,0.50) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0,168,107,0.25) !important;
+}
+body[data-theme="mundial"] .cal-ai-btn svg {
+    color: #00a86b !important;
+}
+
+/* --- Filter popup --- */
+body[data-theme="mundial"] .cal-filter-pop {
+    background: rgba(20, 40, 28, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.50) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-filter-pop-lbl {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+body[data-theme="mundial"] .cal-filter-pop-item {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="mundial"] .cal-filter-pop-item:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* --- FullCalendar grid: sobre el frosted shell (texto oscuro legible) --- */
+body[data-theme="mundial"] #fullCalendarRoot {
+    --fc-border-color: rgba(0, 60, 32, 0.15) !important;
+    --fc-page-bg-color: transparent !important;
+    --fc-neutral-bg-color: rgba(0,80,45,0.04) !important;
+    --fc-today-bg-color: rgba(0, 168, 107, 0.10) !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-col-header-cell-cushion {
+    color: #3a5a46 !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day-number {
+    color: #1a1a1a !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
+    background-color: #00a86b !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-more-link {
+    color: #006847 !important;
+    font-weight: 700 !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid {
+    border: none !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot td,
+body[data-theme="mundial"] #fullCalendarRoot th {
+    border-color: rgba(0, 60, 32, 0.12) !important;
+}
+
+/* --- FullCalendar popover ("+3 más") --- */
+body[data-theme="mundial"] #fullCalendarRoot .fc-popover {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    box-shadow: 0 12px 40px rgba(0, 15, 8, 0.30) !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-popover-header {
+    background: rgba(0, 60, 32, 0.10) !important;
+    color: #1a1a1a !important;
+}
+
+/* --- Day view: hour grid (sobre frosted, texto oscuro) --- */
+body[data-theme="mundial"] .cal-hour-row {
+    border-bottom-color: rgba(0, 60, 32, 0.10) !important;
+}
+body[data-theme="mundial"] .cal-hour-label {
+    color: #6b8a74 !important;
+}
+
+/* --- Day view: agenda cards (sólidos blancos, legibles) --- */
+body[data-theme="mundial"] .cal-day-agenda-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 80, 45, 0.18) !important;
+    box-shadow: 0 2px 8px rgba(0, 15, 8, 0.10) !important;
+}
+body[data-theme="mundial"] .cal-day-agenda-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 15, 8, 0.16) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* --- Day view empty state (sobre frosted → oscuro) --- */
+body[data-theme="mundial"] .cal-day-list-empty-t {
+    color: #1a1a1a !important;
+}
+body[data-theme="mundial"] .cal-day-list-empty-s {
+    color: #6b7280 !important;
+}
+body[data-theme="mundial"] .cal-day-list-empty-ic {
+    background: rgba(0, 80, 45, 0.08) !important;
+    color: #6b8a74 !important;
+}
+body[data-theme="mundial"] .cal-day-list-empty-btn {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+}
+
+/* --- Hover popover (tooltip de evento) --- */
+body[data-theme="mundial"] .cal-hover-popover {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.30) !important;
+}
+
+/* --- View buttons (Mes / Semana / Día) — both modes --- */
+body[data-theme="mundial"] .cal-view-btn {
+    color: #5a7a64 !important;
+}
+body[data-theme="mundial"] .cal-view-btn:hover {
+    color: #1a1a1a !important;
+    background: rgba(0, 80, 45, 0.08) !important;
+}
+body[data-theme="mundial"] .cal-view-btn.active {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 168, 107, 0.30) !important;
+}
+
+/* --- Subnav buttons (overlay mode): dark on light --- */
+body[data-theme="mundial"] .cal-subnav-default button[onclick*="Nav"] {
+    background: rgba(0, 80, 45, 0.08) !important;
+}
+body[data-theme="mundial"] .cal-subnav-default button[onclick*="Nav"]:hover {
+    background: rgba(0, 80, 45, 0.16) !important;
+}
+body[data-theme="mundial"] .cal-subnav-default span[id="calNavTitle"] {
+    color: #1a1a1a !important;
+}
+/* View buttons container in subnav */
+body[data-theme="mundial"] .cal-subnav-default > div:last-child {
+    background: rgba(0, 80, 45, 0.06) !important;
+}

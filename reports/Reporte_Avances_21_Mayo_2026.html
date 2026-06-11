@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 21 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 21 de Mayo, 2026</p>
+            <p>Periodo: 21 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">El Asistente AI del Calendario deja de ser un par de botones y se convierte en una <strong>conversacion real</strong>: el vendedor le platica que necesita y el asistente le responde, le propone un plan y lo aplica solo si recibe el visto bueno. Ademas, &ldquo;Reagendar mis vencidas&rdquo; ahora limpia <strong>todas</strong> las pendientes atrasadas de un jalon.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito: Calendario conversacional</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Vencidas reagendadas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">8-18</div>
+            <div class="stat-label">Horario laboral respetado</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: el Asistente del Calendario ahora se Conversa
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Antes el asistente del calendario solo ofrecia dos botones (&ldquo;Reagendar mis vencidas&rdquo; y &ldquo;Rellenar mi calendario&rdquo;). Hoy se convierte en un <strong>chat libre</strong>: el vendedor puede preguntar <em>&ldquo;que tengo manana&rdquo;</em>, <em>&ldquo;que oportunidades no he tocado&rdquo;</em> o <em>&ldquo;reagenda solo lo de esta semana&rdquo;</em>. Cuando el asistente decide hacer algo, lo <strong>muestra como plan</strong> con boton Aplicar / Cancelar. Nada se mueve sin que el usuario lo apruebe.</p>
+    </div>
+
+    <h2>1. Chat Libre con el Asistente del Calendario</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Conversacion en Lugar de Solo Botones</span>
+        <div class="update-desc">El asistente del calendario ya <strong>entiende preguntas en lenguaje natural</strong>. Recuerda el hilo de la conversacion durante la sesion, asi que se puede ir refinando: &ldquo;reagenda mis vencidas&rdquo; &rarr; &ldquo;mejor solo las de esta semana&rdquo; &rarr; &ldquo;y dejalas en la tarde&rdquo;.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Consulta tu Agenda Sin Salir del Chat</span>
+        <div class="update-desc">El asistente puede <strong>revisar la agenda</strong> del usuario para responder: que tiene hoy, manana, esta semana, que oportunidades llevan tiempo sin actividad agendada. Da la respuesta directa, sin tener que ir a abrir el calendario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Planes con Boton de Aplicar / Cancelar</span>
+        <div class="update-desc">Cuando el asistente propone cambios (reagendar o rellenar), aparecen <strong>dentro del mismo chat</strong> como una tarjeta con resumen y opciones. El cambio solo ocurre cuando el usuario presiona <strong>Aplicar</strong>. Si no le convence, lo cancela y sigue platicando.</div>
+    </div>
+
+    <h2>2. Reagendar Vencidas: Ahora Sin Limite</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Reagenda TODAS las Pendientes Atrasadas</span>
+        <div class="update-desc">Antes el reagendamiento tomaba un maximo de 15 actividades. Hoy el asistente <strong>limpia el pendiente completo</strong>: no importa si son 5, 50 o 200, las distribuye todas. El vendedor regresa a tener el calendario al corriente con una sola accion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Respeta Horario Laboral, Comida y Fin de Semana</span>
+        <div class="update-desc">Las actividades se distribuyen <strong>entre 8 am y 6 pm, de lunes a viernes</strong>, evitando la hora de comida (1-2 pm) y dejando espacio entre eventos que ya estaban agendados. Nunca se encima con algo del calendario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Resultado Resumido, No una Lista Larga</span>
+        <div class="update-desc">Despues de aplicar, el asistente <strong>muestra solo el resumen</strong> (&ldquo;Reagende 23 actividades&rdquo;) en lugar de aventar la lista completa en el chat. Mas claro y menos ruido visual.</div>
+    </div>
+
+    <h2>3. Detalles que Pulen la Experiencia</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Bienvenida Igual a la del Asistente General</span>
+        <div class="update-desc">La pantalla de inicio del asistente del calendario ahora tiene la <strong>misma estetica</strong> que la del asistente general de la pagina principal. Mismas tarjetas, mismo orden visual. Un solo lenguaje en todo el CRM.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Colores Consistentes en las Actividades Creadas por AI</span>
+        <div class="update-desc">Las actividades que el asistente agenda con &ldquo;Rellenar mi calendario&rdquo; ahora respetan el codigo de color del CRM: <strong>azul para oportunidades</strong>, <strong>naranja para prospectos</strong>. Antes salian todas en verde, lo que confundia con las actividades de ingenieria.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Error al Reagendar, Corregido</span>
+        <div class="update-desc">Se elimino un error que aparecia ocasionalmente al reagendar (&ldquo;Error interno&rdquo; al confirmar el plan). Ahora el reagendamiento corre <strong>limpio en todos los casos</strong>.</div>
+    </div>
+
+    <h2>4. &iquest;Que Gana el Vendedor con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Un Asistente que Entiende, no un Menu</span>
+        <div class="update-desc">El asistente deja de ser una pareja de botones rigidos y se convierte en alguien al que se le puede <strong>pedir las cosas como uno las diria en voz alta</strong>. Reduce la curva de aprendizaje y abre la puerta a usos que antes no estaban contemplados.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Calendario al Corriente en un Click</span>
+        <div class="update-desc">El vendedor que acumulo decenas de vencidas (por viaje, vacaciones o saturacion) puede <strong>volver a empezar limpio</strong>. Una sola accion, todas las pendientes redistribuidas en horario util.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cero Sorpresas: Nada se Mueve sin Aprobacion</span>
+        <div class="update-desc">El esquema de <strong>mostrar el plan primero y aplicar solo con confirmacion</strong> mantiene al vendedor en control. El asistente sugiere, el humano decide. Esa es la regla del CRM y aqui se conserva.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 21 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

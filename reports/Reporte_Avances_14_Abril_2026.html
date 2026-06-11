@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 14 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 14 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla el rediseno visual y funcional completo de las secciones de <strong>CRM (Oportunidades / Prospeccion / Clientes)</strong> y <strong>Tareas</strong>, adoptando un patron moderno tipo HubSpot / Linear / Pipedrive. Tambien se incluyen mejoras del mismo dia en el modulo financiero de Proyectos y en el flujo de CFDI.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">24</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Vistas Lista Nuevas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito Mayor</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Archivos Principales</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Rediseno Completo del CRM y Tareas
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se rediseno de raiz la interfaz del CRM y del modulo de Tareas siguiendo patrones modernos de SaaS B2B (HubSpot, Linear, Pipedrive). Se elimino el topbar horizontal tipo "dynamic island" y se introdujo un <strong>sidebar vertical izquierdo</strong> con iconos + labels y logo IAMET real. Se agrego una <strong>nueva vista tipo lista</strong> como default en Oportunidades y Tareas (y se adapto Prospeccion) con filas sueltas, franja lateral de color por tipo, <strong>heat-map de vencidas</strong> (rojo progresivo por dias y alerta con icono a partir de 30 dias), boton de cotizador rapido y pin de anclaje. Se reemplazaron los filtros viejos por un <strong>facet bar estilo HubSpot</strong> con chips activos, popovers por campo, separador entre filtros y ordenamiento, y un <strong>selector de periodo unificado</strong> (Mes + Ano + Vendedor) con multi-seleccion y rango de fechas que sobrescribe el periodo. El mismo patron se aplico a Prospeccion, Clientes y al rediseno total de Tareas.</p>
+    </div>
+
+    <h2>1. Sidebar Vertical Izquierdo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Navegacion Vertical con Logo IAMET Real</span>
+        <div class="update-desc">Se creo <code>_sidebar.html</code> reemplazando al topbar horizontal "dynamic island". Incluye logo IAMET recortado del PNG oficial (chip con flecha, fondo transparente sobre gradient navy) y la palabra "IAMET" debajo. Cada icono muestra su <strong>nombre debajo</strong>. Orden: Buscar, Alertas (arriba), CRM, Tareas, Proyectos, Calendario, Correo, Muro, Grupo, y abajo Novedades, Admin y el avatar del usuario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Spotlight Global Integrado</span>
+        <div class="update-desc">La lupa del sidebar invoca el Spotlight (<code>openSpotlight()</code>) existente. El atajo <strong>doble-espacio</strong> queda disponible en todas las vistas del CRM. Se reemplazo la busqueda interna "Buscar oportunidad" por este buscador global.</div>
+    </div>
+
+    <h2>2. Vista Lista Moderna en Oportunidades</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista Lista como Default</span>
+        <div class="update-desc">Nueva vista <code>#crmViewList</code> con <strong>filas sueltas</strong> (rounded card, hover elevado, shadow). Columnas: Oportunidad / Cliente, Valor, Marca, Estado de la Oportunidad (con circular progress + etapa), Proxima Actividad (pill) y Acciones (cotizar rapido + pin). Toggle de 3 estados: Lista (default) &rarr; Tarjetas &rarr; Tabla, persiste en localStorage.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Franja Lateral con Heat-Map de Vencidas</span>
+        <div class="update-desc">Cada fila tiene una franja vertical de color a la izquierda que indica el tipo y urgencia:<br>&bull; <strong>Azul</strong> = runrate, <strong>Morado</strong> = proyecto.<br>&bull; Vencidas en <strong>rojo progresivo por dias</strong>: heat-1 (rosa claro, 1-2 dias) &rarr; heat-max (vino con pulso, 30+ dias).<br>&bull; A partir de 30 dias vencida aparece un <strong>icono de alerta animado</strong> al lado del nombre de la oportunidad.<br>El orden default pone ancladas arriba, luego rojas (mas dias vencida arriba), luego el resto.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Botones de Accion: Cotizador Rapido y Pin</span>
+        <div class="update-desc">La flecha fue reemplazada por un <strong>icono de cotizador</strong> que al clic abre directamente el formulario de creacion de cotizacion pre-llenado con los datos de esa oportunidad (widget iframe bloqueado: solo cierra con la X). El kebab fue reemplazado por un <strong>pin de anclaje</strong> con la misma logica que las tarjetas; al desanclar, la fila baja inmediatamente debajo de las vencidas sin recargar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tarjetas Sueltas Sin Frame</span>
+        <div class="update-desc">Se elimino el fondo punteado tipo tablero y las rotaciones estilo post-it de las tarjetas. Ahora flotan sobre un fondo gris claro con sombra sutil. El grid es mas denso (minmax 260px, 5 columnas en desktop) para aprovechar mejor el espacio.</div>
+    </div>
+
+    <h2>3. Filtros Modernos (Facet Bar estilo HubSpot)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Facet Bar con Chips Activos</span>
+        <div class="update-desc">Reemplaza el dropdown monolitico de 11 campos por una <strong>barra horizontal de chips</strong> siempre visible ("Cliente = Autoliv &times;", "Etapa = Seguimiento &times;", etc.). Boton <strong>+ Filtro</strong> abre un menu con los campos disponibles (Cliente, Area, Contacto, Marca, Tipo, Etapa, Fechas), y cada campo tiene su propio popover con autocomplete, select o date-range. Click en chip reabre el picker para editar; la X lo quita.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Ordenamiento Separado de Filtros</span>
+        <div class="update-desc">Boton <strong>Ordenar</strong> aparte con opciones claras: Recientes primero, Antiguos primero, Monto mayor/menor. Antes el sort se disfrazaba como "filtro Monto: sin orden", lo que era confuso.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Arquitectura sin Rompimiento</span>
+        <div class="update-desc">El panel de filtros legado queda oculto pero sus inputs se preservan como fuente de verdad. El facet bar solo setea <code>input.value</code> + dispatchEvent('change') para reusar la logica existente en <code>crm_main.js</code> sin refactorizarla. Toda la interpolacion Django se saco del JS ejecutable y se pasa por bloques <code>&lt;script type="application/json"&gt;</code> via <code>json_script</code> de Django, eliminando riesgos de SyntaxError por caracteres especiales.</div>
+    </div>
+
+    <h2>4. Periodo Unificado y Rango de Fechas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Pill Unificado Mes + Ano con Multi-Seleccion</span>
+        <div class="update-desc">Se fusionaron los pills de Mes y Ano en <strong>uno solo</strong> que muestra "Abril &middot; 2026" (o "3 meses &middot; 2 anos", "Todos &middot; 2026", etc.). Click abre un popover con <strong>dos columnas</strong> (Meses | Anos) con lista multi-seleccionable + opcion "Todos" en cada columna. Backend soporta listas comma-separated en <code>?mes=</code> y <code>?anio=</code> con filtro <code>__in=</code>. Permite combinaciones como "todas las oportunidades de abril de cualquier ano" (mes=04, anio=todos).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Rango de Fechas Sobrescribe el Periodo</span>
+        <div class="update-desc">Al aplicar un rango de fechas desde el facet bar, el backend <strong>ignora el periodo (mes/ano)</strong> y filtra por <code>fecha_creacion__date__gte/lte</code>. El pill de Periodo se muestra en gris con <strong>tachado sutil</strong> y tooltip explicando que esta ignorado mientras el rango este activo. Quitar el chip de Fechas regresa al filtrado normal por periodo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Periodo Separado de los Filtros Generales</span>
+        <div class="update-desc">Los pills de periodo (Mes/Ano/Vendedor) son <strong>contexto de la pagina</strong>, no filtros ad-hoc. Se colocaron junto al boton "+ Nuevo" con un fondo distintivo para marcar la separacion semantica. "Limpiar todo" solo aplica a los filtros in-memory; para resetear el periodo se usa la X de cada pill.</div>
+    </div>
+
+    <h2>5. Prospeccion y Clientes Adaptados</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Prospeccion con Filas Sueltas</span>
+        <div class="update-desc">La tabla de Prospeccion ahora usa la misma clase <code>.crm-list-row</code> que Oportunidades (filas sueltas blancas, rounded, hover elevado) pero <strong>sin franja de color</strong>. 11 columnas alineadas con header: Cliente + 10 productos (Zebra, Panduit, APC, Avigilon, Genetec, Axis, Software, RR, Poliza, Otros). El JS que popula los datos desde la API no se toco.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tabs Centrados como Dynamic Island Reducida</span>
+        <div class="update-desc">Los 3 tabs (Oportunidades / Prospeccion / Clientes) se centraron como una <strong>pill-island</strong> con backdrop-filter blur, borde suave y sombra. El contador ("Oportunidades &middot; 414") se movio dentro del tab activo como pill blanco, liberando la fila del workspace-head viejo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Clientes con Toggle + Period Pills Alineados</span>
+        <div class="update-desc">En el tab Clientes, el toggle "Oportunidades / Prospectos" se movio al mismo row que los pills de Periodo y Vendedores (izquierda), usando un <strong>segmented switch</strong> moderno (blanco sobre gris con variante morada para Prospectos). Vendedores ahora se filtran server-side a solo los que tienen <strong>al menos una oportunidad</strong> en el periodo, y el chip muestra el nombre real en vez del ID.</div>
+    </div>
+
+    <h2>6. Rediseno Total del Modulo de Tareas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabs Dinamicos + Facet Bar + Vista Lista</span>
+        <div class="update-desc">Se aplico el patron del CRM a Tareas. Se elimino el focus-sidebar de etapas (las 3 rayas) y la toolbar legacy. Arriba, <strong>3 tabs centrados</strong>: Todas, Atrasadas y Para hoy, con contador en cada uno. Debajo, un <strong>facet bar</strong> con filtros de Tipo (Proyecto/Runrate/Bitrix), Etapa, Responsable, Creador y Rango de fechas; boton de Ordenar; toggle Lista &rarr; Tarjetas; buscador y boton azul "+ Nueva Tarea".</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista Lista de Tareas con Mismo Heat-Map</span>
+        <div class="update-desc">Nueva vista <code>#tareasViewList</code> con la misma logica de colores que Oportunidades: azul=runrate, morado=proyecto, rojo progresivo para vencidas (heat-1 a heat-max por dias). Icono de alerta al lado del nombre si lleva &ge; 30 dias vencida. <strong>Columnas</strong>: Nombre, Responsable (avatar+nombre), Creador (avatar), Fecha Limite (pill color-coded), Oportunidad (con etapa) y Acciones (check completar + pin). Sort default: ancladas &rarr; rojas (mas dias arriba) &rarr; resto por fecha.</div>
+    </div>
+
+    <h2>7. Finanzas de Proyectos y CFDI</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Subir Factura del Proveedor + Gastos Operativos</span>
+        <div class="update-desc">Nuevo flujo en el widget Financiero de Proyectos para <strong>subir factura del proveedor</strong> (PDF/XML), asi como registrar <strong>gastos operativos</strong> que se suman al total Gastado del proyecto. Confirmacion via widget dedicado antes de aplicar cambios.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modulo CFDI XML &rarr; PDF Independiente</span>
+        <div class="update-desc">Modulo dedicado para convertir CFDI (facturas electronicas mexicanas) de XML a PDF. Los gastos capturados desde aqui <strong>suman automaticamente al total Gastado</strong> del proyecto asociado, con flujo de <strong>aprobacion del supervisor</strong> antes de aplicar.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

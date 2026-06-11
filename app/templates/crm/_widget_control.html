@@ -1,0 +1,114 @@
+{% comment %}
+_widget_control.html — Sección de logística de compra de materiales.
+
+Layout SPLIT (Junio 2026):
+    LEFT  panel (lista compacta de proyectos: cliente, opp, PO, jornadas)
+    RIGHT panel (timeline maestro multi-proyecto, una barra por proyecto)
+Filas alineadas row-by-row entre ambos paneles. Click en un proyecto de la
+izquierda → highlight de su barra a la derecha.
+
+Lado IZQUIERDO conectado a datos reales (cliente, PO, opp, jornadas).
+Lado DERECHO (timeline) muestra barras "ghost" mientras no haya fechas de
+OCs/instalación — se rellenan cuando conectemos esa data.
+
+Toda la lógica está en crm_control_v2.js.
+{% endcomment %}
+
+<div id="ckControlSection" class="crm-control-section" style="display:none;">
+
+    <!-- Header -->
+    <div class="crm-control-header">
+        <div class="crm-control-header-left">
+            <h2 class="crm-control-title">Logística de Compra de Material</h2>
+            <span class="crm-control-subtitle">Control y trazabilidad de compra → entrega → instalación</span>
+        </div>
+        <div class="crm-control-header-right">
+            {# Aparece solo cuando hay proyecto seleccionado #}
+            <button type="button" id="crmControlGoToProject" class="crm-control-btn crm-control-btn--secondary" hidden title="Abrir este proyecto en la sección Proyectos">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                Ir al proyecto
+            </button>
+            <button type="button" id="crmControlAddMaterial" class="crm-control-btn crm-control-btn--primary" title="Agregar material que esperamos para un proyecto">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar material
+            </button>
+        </div>
+    </div>
+
+    {% comment %}
+    Stats DINÁMICOS: por default muestran KPIs globales del periodo. Al click
+    en un proyecto se reemplazan por sus métricas (Monto PO, Utilidad,
+    Días ejecución, Técnicos). Click otra vez en el mismo = vuelve a globales.
+    El crm_control_v2.js intercambia labels y values; el indicador
+    #ctrlStatsContextoBtn aparece cuando hay selección para limpiarla.
+    {% endcomment %}
+    <div class="crm-control-stats" id="ctrlStatsRow">
+        <div class="crm-control-stat" data-slot="1">
+            <div class="crm-control-stat-label" data-slot-label>Proyectos</div>
+            <div class="crm-control-stat-value" data-slot-value>—</div>
+        </div>
+        <div class="crm-control-stat" data-slot="2">
+            <div class="crm-control-stat-label" data-slot-label>Con PO</div>
+            <div class="crm-control-stat-value crm-control-stat-value--blue" data-slot-value>—</div>
+        </div>
+        <div class="crm-control-stat" data-slot="3">
+            <div class="crm-control-stat-label" data-slot-label>Con levantamiento</div>
+            <div class="crm-control-stat-value crm-control-stat-value--green" data-slot-value>—</div>
+        </div>
+        <div class="crm-control-stat" data-slot="4">
+            <div class="crm-control-stat-label" data-slot-label>Periodo</div>
+            <div class="crm-control-stat-value crm-control-stat-value--small" data-slot-value>—</div>
+        </div>
+    </div>
+
+    <!-- Split: lista izq + timeline der -->
+    <div class="crm-control-split">
+
+        <!-- LEFT: lista compacta de proyectos -->
+        <div class="crm-control-left">
+            <div class="crm-ctrl-list-header">
+                <span class="crm-ctrl-list-title">Proyectos</span>
+                <span class="crm-ctrl-list-count" id="ctrlListCount">—</span>
+            </div>
+            <div class="crm-ctrl-list" id="crmControlList">
+                <div class="crm-ctrl-state crm-ctrl-state--loading">
+                    <div class="crm-ctrl-spinner" aria-hidden="true"></div>
+                    <span>Cargando proyectos…</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: timeline maestro -->
+        <div class="crm-control-right">
+            <div class="crm-ctrl-timeline-header">
+                <button type="button" class="crm-ctrl-month-nav" id="ctrlMonthPrev" title="Mes anterior" aria-label="Mes anterior">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
+                </button>
+                <div class="crm-ctrl-timeline-months" id="ctrlTimelineMonths">
+                    <span class="crm-ctrl-month-chip">JUNIO</span>
+                    <span class="crm-ctrl-month-line" aria-hidden="true"></span>
+                    <span class="crm-ctrl-month-chip">JULIO</span>
+                </div>
+                <button type="button" class="crm-ctrl-month-nav" id="ctrlMonthNext" title="Mes siguiente" aria-label="Mes siguiente">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                </button>
+            </div>
+            <div class="crm-ctrl-timeline-body" id="crmControlTimeline">
+                <div class="crm-ctrl-state crm-ctrl-state--placeholder">
+                    <span>Esperando datos…</span>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /.crm-control-split -->
+
+    <!-- Leyenda -->
+    <div class="crm-control-legend">
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#22C55E;"></span>Material listo</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#7DD3FC;"></span>En tránsito</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#FB923C;"></span>Pendiente compra</span>
+        <span class="crm-control-legend-item"><span class="crm-control-legend-dot" style="background:#F9A8D4;"></span>En espera cliente</span>
+        <span class="crm-control-legend-info">Usa "Agregar material" para colocar barras en la línea de tiempo de cada proyecto.</span>
+    </div>
+
+</div>

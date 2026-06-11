@@ -1,3 +1,20 @@
+# ══════════════════════════════════════════════════════════════════════
+# views_iamet.py — ARCHIVO LEGACY (congelado desde 2026-06-04)
+#
+# ~6,568 líneas con las APIs del módulo de Proyectos IAMET (proyectos,
+# partidas, OCs, facturas, volumetrías). Marcado como LEGACY por Boy
+# Scout Rule.
+#
+# NO agregar endpoints nuevos aquí. Para vistas nuevas:
+#   → app/views_v2/proyectos_v2.py
+#
+# Este archivo usa `ProyectoIAMET as Proyecto` (alias). Cuando migremos
+# todo el código nuevo a `views_v2/proyectos_v2.py`, importar
+# directamente `ProyectoIAMET` sin alias (más claro).
+#
+# Modificar SOLO para bugs críticos. Ver app/views_v2/README.md.
+# ══════════════════════════════════════════════════════════════════════
+
 # ═══════════════════════════════════════════════════════════════
 #  views_iamet.py — APIs del modulo de Proyectos IAMET
 #  Gestion de proyectos de telecomunicaciones
@@ -3128,6 +3145,10 @@ def _user_es_solo_lectura_levantamiento(user):
     pueden ver fases completadas y descargar PDFs, pero no editar ni borrar.
     Los ingenieros, supervisores, administradores y superusers tienen
     acceso completo.
+
+    EXCEPCIÓN: un vendedor con el permiso `puede_levantamiento` activado
+    desde el panel de Permisos del admin recibe acceso completo (puede
+    editar y llenar las 5 fases como un ingeniero).
     """
     if not user or not user.is_authenticated:
         return True
@@ -3137,7 +3158,9 @@ def _user_es_solo_lectura_levantamiento(user):
         return False
     try:
         if hasattr(user, 'userprofile') and user.userprofile and getattr(user.userprofile, 'rol', None):
-            return user.userprofile.rol == 'vendedor'
+            if user.userprofile.rol == 'vendedor':
+                # Vendedor con permiso especial → acceso completo.
+                return not getattr(user.userprofile, 'puede_levantamiento', False)
     except Exception:
         pass
     return False

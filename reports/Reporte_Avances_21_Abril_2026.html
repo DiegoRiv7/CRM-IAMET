@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 21 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 21 de Abril, 2026</p>
+            <p>Periodo: 21 Abril (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se <strong>cerro por completo el modulo de Levantamientos</strong>, la herramienta con la que los ingenieros documentan un proyecto desde que se hace la visita al cliente hasta que se entrega el reporte final. El modulo tiene 5 etapas: (1) visita al sitio, (2) propuesta tecnica, (3) cotizacion, (4) programa de obra y (5) reporte final. Ayer quedaron listas las dos primeras; <strong>hoy se terminaron las tres restantes</strong>. Esto significa que a partir de este momento todo el proceso de un proyecto puede vivir dentro del CRM, sin Excel sueltos ni PDFs armados a mano en Word.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">31</div>
+            <div class="stat-label">Mejoras del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Etapas Completadas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Documentos Nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Formatos Manuales</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Reporte Tecnico que se Arma Solo con un Click
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">La etapa 5 ahora es un <strong>editor de texto al estilo Google Docs</strong> sobre una hoja oficial con el logo de Bajanet arriba. El ingeniero puede redactar libremente, pero lo importante es el boton <strong>&ldquo;Insertar&rdquo;</strong>: con un click agrega al reporte el contenido de cualquier etapa anterior &mdash; el levantamiento en sitio, la propuesta tecnica, la volumetria o el programa de obra &mdash; y se ve identico al PDF oficial de esa etapa, con los mismos colores, tablas y logo. <strong>En resumen: el reporte final se arma en minutos, no en horas.</strong> El ingeniero decide que llevar al cliente, el sistema lo ensambla y genera el PDF profesional listo para enviar.</p>
+    </div>
+
+    <h2>1. Cotizacion (Volumetria) &mdash; Ahora en Dolares con Tipo de Cambio</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Ahora Se Puede Escribir sin Trabas</span>
+        <div class="update-desc">Antes de capturar una descripcion o cantidad, la tabla se &ldquo;refrescaba&rdquo; cada vez que el ingeniero tecleaba una letra &mdash; resultado: solo podia escribir <strong>un caracter por celda</strong> y el cursor saltaba afuera. Se corrigio. Ahora la captura es fluida como una hoja de Excel: Enter en la ultima fila crea una nueva, Enter en otra salta a la siguiente fila del mismo campo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tres Tipos de Exportacion: Con Costos, Sin Costos y Excel</span>
+        <div class="update-desc">La volumetria ahora se descarga en tres formatos segun a quien va dirigida: <strong>con costos</strong> (uso interno, incluye utilidad y margen), <strong>sin costos</strong> (para el cliente, solo cantidades y descripciones) y <strong>Excel</strong> con el mismo layout tradicional que se usaba antes. El jefe de obra, el comprador y el cliente reciben cada uno el documento adecuado, sin que nadie tenga que armarlo a mano.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Precios en USD con Conversion Automatica a MXN</span>
+        <div class="update-desc">Se establecio que <strong>todos los precios y costos se capturan en dolares</strong> (como realmente se cotizan los equipos). En el resumen lateral hay un campo de <strong>tipo de cambio</strong> editable (19.50 por defecto) y el sistema muestra automaticamente los totales convertidos a pesos. El PDF tambien sale con ambas columnas &mdash; USD y MXN con el TC visible &mdash; asi el cliente ve cuanto paga en la moneda que usa y se deja registro del tipo de cambio del dia de la cotizacion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Catalogo Integrado &mdash; No Mas Capturar a Mano</span>
+        <div class="update-desc">Antes el ingeniero escribia cada item de la cotizacion desde cero: descripcion, marca, modelo, costo, precio. Ahora hay un boton <strong>&ldquo;Buscar en catalogo&rdquo;</strong> al lado de la tabla &mdash; escribes parte del nombre del producto y aparece la lista con todos los datos precargados. Un click y la fila se llena sola. <strong>Ahorra al menos 1 minuto por producto</strong> y evita errores de dedo en precios.</div>
+    </div>
+
+    <h2>2. Programa de Obra &mdash; Sincronizado con el Proyecto</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Un Solo Programa de Obra, Dos Lugares para Verlo</span>
+        <div class="update-desc">El programa de obra del levantamiento y el del proyecto ahora son <strong>el mismo calendario</strong>. Lo que se agende en el wizard del levantamiento aparece en el widget del proyecto y viceversa &mdash; no hay dos listas que mantener sincronizadas. El calendario es semanal (Lun&ndash;Vie, con opcion de mostrar fin de semana), se pueden agendar actividades con responsables asignados, horarios y vehiculos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">PDF del Programa de Obra para Imprimir y Llevar a Campo</span>
+        <div class="update-desc">Se genera un PDF horizontal con el <strong>calendario completo del proyecto semana por semana</strong>, incluyendo tarjetas con la hora, los responsables (identificados por iniciales en circulitos) y el estado (pendiente/completada). Arriba sale un resumen: total de actividades, completadas, pendientes y semanas del proyecto. Util para el jefe de obra que necesita una hoja impresa en el sitio o para enviar al cliente como compromiso de tiempos.</div>
+    </div>
+
+    <h2>3. Guardado Automatico a Prueba de Todo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Infraestructura</span>
+        <span class="update-title">Si se Cae el Wi-Fi, el Trabajo Se Guarda Solo</span>
+        <div class="update-desc">Se elimino el boton &ldquo;Guardar&rdquo; porque el sistema ahora guarda solo cada vez que el ingeniero escribe. El ahorro es silencioso pero critico: si pierde la conexion, el sistema <strong>reintenta automaticamente</strong> hasta 4 veces con esperas crecientes (1s, 2s, 4s, 8s). Si el ingeniero cierra el navegador o pierde bateria, <strong>el trabajo no se pierde</strong> &mdash; el sistema dispara un guardado de emergencia justo antes de que se cierre la pagina. Si intenta cerrar con cambios pendientes, aparece un aviso claro.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">El Ingeniero Siempre Sabe en Que Estado Esta Su Trabajo</span>
+        <div class="update-desc">El indicador al lado del titulo muestra <strong>tres estados claros</strong>: &ldquo;Guardando&hellip;&rdquo; en gris mientras se procesa, &ldquo;&#x2713; Guardado&rdquo; en verde al terminar, o &ldquo;&#x26A0; Reintentando&rdquo; / &ldquo;&#x26A0; No se pudo guardar&rdquo; en rojo si hay problema de red. Se acaba la ansiedad de &ldquo;&iquest;habra guardado o no?&rdquo;.</div>
+    </div>
+
+    <h2>4. Reporte Tecnico Final &mdash; Detalle del Logro Principal</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Hoja Oficial Bajanet con Editor Completo</span>
+        <div class="update-desc">Se construyo una hoja tamano carta con el <strong>logo Bajanet arriba</strong> y debajo un editor completo con barra de herramientas: titulos H1/H2/H3, parrafos, listas con vinetas y numeradas, <strong>tablas editables</strong>, alineacion, lineas divisorias y limpiar formato. El ingeniero puede copiar texto desde Word o desde internet y al pegarlo se limpian los estilos pesados que ensucian el documento. Todo se guarda automaticamente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">El PDF Final Siempre Sale con la Imagen Corporativa</span>
+        <div class="update-desc">Al descargar el reporte, se genera el PDF con el <strong>formato oficial de Bajanet</strong>: logo arriba, banda azul con cliente / proyecto / fecha / nombre del que elaboro, y al final el pie con las marcas que manejamos (Avigilon, Cisco, Genetec, Belden, Pelco, HP, Dell, Panduit, APC) y los datos de contacto. <strong>El ingeniero no puede generar un documento feo o inconsistente</strong>. Todo lo que sale tiene la imagen de la empresa.</div>
+    </div>
+
+    <h2>5. Detalles que Mejoran el Trabajo Dia a Dia</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Panel Lateral Colapsable &mdash; Mas Espacio para Trabajar</span>
+        <div class="update-desc">El panel lateral (datos de contacto, progreso, resumen financiero) ocupaba espacio incluso cuando no se usaba. Ahora se <strong>esconde con un click</strong> en un icono del header, liberando ~340 pixeles de area util para la captura. La preferencia queda guardada por usuario, asi que no hay que cerrarlo cada vez.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Confirmaciones Bonitas en Lugar de Alertas Grises del Navegador</span>
+        <div class="update-desc">Las ventanas de confirmacion al eliminar una foto, cerrar con cambios pendientes o eliminar un levantamiento ahora usan el <strong>modal estilizado del sistema</strong> (con texto descriptivo, boton rojo de &ldquo;Eliminar&rdquo; y boton de &ldquo;Cancelar&rdquo;) en lugar de los popups grises feos del navegador. Mas claro y mas acorde a la imagen del CRM.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Checklist de Avance que Realmente Refleja el Estado</span>
+        <div class="update-desc">El checklist de la etapa 1 (&ldquo;&iquest;ya tiene titulo? &iquest;ya tiene cliente?&rdquo;) tenia un bug: si borrabas un campo, la palomita verde seguia ahi. Ahora cada vez que escribes o borras algo, el checklist se actualiza al instante. <strong>No hay forma de tener un falso positivo</strong> de avance.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fotos de Evidencia: Zona Unificada y PDF Limpio</span>
+        <div class="update-desc">Antes habia dos cajas separadas: una para arrastrar fotos y otra para verlas. Ahora es una sola zona &mdash; vacia muestra una invitacion grande, con fotos muestra las miniaturas + un boton compacto de &ldquo;+&rdquo; al final. En el PDF, las fotos <strong>salen en una hoja nueva</strong> (no mezcladas con las tablas de especificaciones) y se ven completas, sin recortes ni el nombre del archivo encima como pasaba antes.</div>
+    </div>
+
+    <h2>6. Calidad Visual de los PDFs</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Las Tablas Ya No Se Parten por la Mitad entre Paginas</span>
+        <div class="update-desc">Antes, si una tabla no cabia entera en la pagina actual, se <strong>partia por la mitad</strong> y la mitad quedaba al final de una pagina y la otra al inicio de la siguiente &mdash; se veia muy mal. Ahora el sistema mueve la tabla completa a la pagina siguiente si no cabe entera. Aplicado a los 3 PDFs del modulo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Logo Bajanet Bien Recortado</span>
+        <div class="update-desc">El logo que va arriba de los PDFs traia una franja de marcas al pie que se duplicaba con el footer del documento. Se corrigio el recorte de la imagen original &mdash; ahora solo queda el banner principal con el logo y el lema, y el footer de marcas vive aparte al final con mas tamano para que se vea bien.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Espacios en Blanco Eliminados</span>
+        <div class="update-desc">La etapa 1 tenia un bug visual que generaba <strong>un hueco vacio gigante al final del scroll</strong> (~2700 pixeles de whitespace). Ademas, en ciertos momentos el scroll no funcionaba y el contenido quedaba cortado por el footer. Los dos temas se resolvieron &mdash; ahora el layout es compacto y el scroll responde bien.</div>
+    </div>
+
+    <h2>7. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Tiempo de Elaboracion de Documentacion: Horas &rarr; Minutos</span>
+        <div class="update-desc">Un levantamiento que antes implicaba: llenar una plantilla de Word para el sitio + armar la propuesta tecnica aparte + cotizar en Excel + hacer un cronograma en Project + redactar el reporte final a mano &mdash; ahora es <strong>un solo flujo dentro del CRM</strong> donde todo queda conectado. El reporte final se ensambla con un boton. Lo que antes eran medio dia u un dia por levantamiento, ahora son minutos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cero Riesgo de Perder Trabajo</span>
+        <div class="update-desc">El guardado automatico con reintentos + guardado de emergencia al cerrar ventana elimina la pregunta &ldquo;&iquest;guarde?&rdquo;. Si el ingeniero esta en campo con mala conexion, el sistema espera y reintenta solo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Imagen Corporativa Consistente</span>
+        <div class="update-desc">Todo lo que sale del modulo lleva el formato Bajanet: logo, colores, banda azul, marcas al pie, datos de contacto. <strong>No hay forma de generar un PDF feo o inconsistente</strong> aunque el ingeniero sea nuevo y no sepa de diseno. Cada cliente recibe la misma imagen profesional.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Trazabilidad Financiera Correcta</span>
+        <div class="update-desc">Los precios en dolares con tipo de cambio fijado + la fecha del TC + los costos de proveedor + el calculo de utilidad y margen &mdash; todo queda registrado y visible tanto en pantalla como en el PDF. Si mas adelante se necesita saber &ldquo;&iquest;a cuanto estaba el dolar cuando cotizamos esto?&rdquo;, la respuesta esta guardada.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 21 de Abril, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

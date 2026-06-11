@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 27 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 27 de Abril, 2026</p>
+            <p>Periodo: 27 Abril (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy el foco fue <strong>construir desde cero un modulo nuevo de Compras</strong> y un perfil nuevo de <strong>Administrador</strong> para gestionarlo. Los administradores ya tienen su propio espacio &mdash; separado del CRM de ventas &mdash; con un menu lateral hecho a su medida, una navegacion superior tipo &ldquo;dynamic island&rdquo; al estilo Apple para moverse entre secciones, y dos catalogos completos listos para usarse: <strong>Productos / Servicios</strong> y <strong>Proveedores</strong>. Las secciones de Ordenes de Compra y Gastos quedan visibles como &ldquo;Proximamente&rdquo; hasta tener los requerimientos.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Perfil Nuevo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Secciones Compras</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">50</div>
+            <div class="stat-label">Claves SAT Cargadas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Despliegues del Dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Modulo de Compras Operativo
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se construyo un <strong>nuevo modulo independiente</strong> dentro del sistema, con su propio perfil de usuario, sidebar dedicado y cuatro secciones: <strong>Productos &middot; Proveedores &middot; Ordenes de Compra &middot; Gastos</strong>. Las primeras dos quedaron 100% funcionales: alta y edicion de productos validados contra el catalogo SAT, alta de proveedores con validacion de RFC y CLABE en tiempo real, busqueda, filtros, ordenamiento, importacion/exportacion en CSV, eliminacion logica con respaldo de historico, y vista de detalle estilo Notion. Los administradores ya pueden empezar a llenar el catalogo desde hoy.</p>
+    </div>
+
+    <h2>1. Perfil Nuevo: Administrador</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tercer Tipo de Usuario en el Sistema</span>
+        <div class="update-desc">Antes el sistema tenia <strong>vendedores, ingenieros y supervisores</strong>. Hoy se agrego un cuarto perfil: <strong>Administrador</strong>. Esta dedicado a las personas que manejan compras, catalogos y proveedores &mdash; gente de administracion que no necesita ver el pipeline de ventas ni el modulo de ingenieria.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Sidebar a la Medida del Administrador</span>
+        <div class="update-desc">Al entrar al sistema con perfil Administrador, ve un menu lateral mas limpio: <strong>Buscar &middot; Notificaciones &middot; Compras &middot; Tareas &middot; Proyectos &middot; Calendario &middot; Correo &middot; Muro &middot; Mi Grupo</strong>. No le aparecen ni el panel del CRM (oportunidades), ni Dashboard de ventas, ni el panel de Admin de supervisor &mdash; todo eso es ruido para su rol.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Buscador Limitado a lo que el Administrador Necesita</span>
+        <div class="update-desc">La lupa global, que normalmente busca en oportunidades, clientes, contactos, etc., para los administradores <strong>solo busca en Tareas y Proyectos</strong>. No tiene sentido que les aparezcan oportunidades de venta cuando lo que les importa son sus pendientes operativos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">El Supervisor Puede Asignar el Rol Desde el Panel</span>
+        <div class="update-desc">En el Panel de Administracion, en la seccion de Usuarios, ahora aparece <strong>&ldquo;Administrador&rdquo;</strong> como una opcion mas en el dropdown de rol &mdash; junto a Vendedor e Ingeniero. El supervisor solo selecciona quien sera administrador y al volver a iniciar sesion ese usuario ya tiene el menu nuevo. Tambien al crear un usuario nuevo se puede definir desde el principio.</div>
+    </div>
+
+    <h2>2. Modulo Compras &mdash; Vista General</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Navegacion Superior Tipo &ldquo;Dynamic Island&rdquo; (Apple)</span>
+        <div class="update-desc">Arriba al centro de la pantalla aparece una <strong>pastilla flotante con 4 pestañas</strong>: <strong>Productos &middot; Proveedores &middot; Ordenes de Compra &middot; Gastos</strong>. Es exactamente el mismo estilo visual que ya se usa en el CRM principal (Oportunidades / Prospectos / Campañas), asi todo el sistema se siente coherente. La pestaña activa se ve en azul solido, las demas en gris.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Ordenes de Compra y Gastos &ldquo;En Construccion&rdquo;</span>
+        <div class="update-desc">Las dos secciones que aun no tienen requerimientos definidos aparecen como <strong>tarjetas centradas con un icono y el mensaje &ldquo;Seccion en desarrollo. Disponible proximamente.&rdquo;</strong> Asi el administrador ve que existen pero no se confunde tratando de usarlas. Cuando lleguen los specs se llenan sin tocar lo demas.</div>
+    </div>
+
+    <h2>3. Productos &mdash; Catalogo Completo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabla Limpia con Producto, Costo, Tipo, IVA y Estatus</span>
+        <div class="update-desc">El listado muestra cada producto con: <strong>nombre + codigo + clave CFDI</strong>, costo grande con la moneda (MXN/USD), badge de tipo (Producto/Servicio), porcentaje de IVA y estatus (Activo/Inactivo). Las filas tienen una <strong>linea azul al pasar el mouse</strong> y al hacer clic se abre la vista de detalle. Iconos de editar/eliminar siempre visibles en la columna de Acciones.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Formulario Estilo Notion para Crear/Editar</span>
+        <div class="update-desc">Al dar &ldquo;Agregar&rdquo; se abre un modal con un titulo grande tipo <strong>&ldquo;Nombre del producto...&rdquo;</strong> y abajo filas de propiedades con chips clicables: Codigo, Costo, Moneda, IVA, Clave CFDI, Unidad CFDI, Almacenes, Descripcion. Cada chip al darle clic abre un mini-selector flotante &mdash; nada de cajas planas y feas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Buscador de Claves CFDI con Catalogo SAT Pre-Cargado</span>
+        <div class="update-desc">Al elegir clave CFDI no se escribe a mano: se abre un <strong>buscador con 50 claves del catalogo oficial del SAT pre-cargadas</strong>, agrupadas por <strong>PRODUCTOS (25)</strong> y <strong>SERVICIOS (25)</strong>. Cubre los casos mas comunes (computadoras, teclados, switches, mantenimiento, capacitacion, transporte, etc.) y se pueden agregar mas despues sin cambiar codigo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">El Tipo (Producto / Servicio) lo Determina la Clave CFDI</span>
+        <div class="update-desc">No hay que decidir manualmente si algo es Producto o Servicio &mdash; <strong>se deduce automaticamente de la clave CFDI seleccionada</strong> (asi lo pide el SAT). Si la clave es de servicio, ademas el sistema fuerza la unidad <strong>E48 (Unidad de servicio)</strong>. Una vez creado, el tipo no se puede cambiar para no romper documentos historicos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtro, Ordenamiento y Excel Como en el CRM</span>
+        <div class="update-desc">Arriba del listado hay tres botones identicos a los del CRM principal: <strong>+ Filtro</strong> (por tipo y estatus), <strong>Ordenar</strong> (mas reciente, nombre A-Z, costo mayor/menor, codigo, etc.) y <strong>Excel</strong> (para importar y exportar el catalogo en CSV). A la derecha el buscador y el boton azul de Agregar. Misma estetica en todas partes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista de Detalle Estilo Notion</span>
+        <div class="update-desc">Al hacer clic en un producto, la lista se desliza a la izquierda y aparece la <strong>pagina de detalle</strong> con su informacion completa, costo prominente con total c/IVA calculado, lista de almacenes, y un feed de actividad (creado / actualizado). Boton <strong>&ldquo;&larr; Catalogo&rdquo;</strong> arriba para regresar al listado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Importar y Exportar en CSV</span>
+        <div class="update-desc">El boton de Excel abre un menu con dos opciones: <strong>Importar</strong> (subir un CSV con los productos &mdash; arrastrar y soltar o seleccionar archivo) y <strong>Exportar</strong> (descargar todo el catalogo en CSV). En la importacion, si el codigo del producto ya existe se actualiza, si no, se crea nuevo. Si una fila tiene errores, se reportan al final con el numero de fila y el motivo &mdash; las demas se procesan sin problema.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Eliminacion Inteligente: Logica o Fisica</span>
+        <div class="update-desc">Cuando se elimina un producto, el sistema decide solo: si <strong>nunca se uso</strong> en una factura/orden/cotizacion se borra fisicamente; si <strong>tiene historial</strong> queda como inactivo (soft-delete) para no romper documentos pasados. Los productos inactivos no aparecen en formularios nuevos pero si en reportes historicos.</div>
+    </div>
+
+    <h2>4. Proveedores &mdash; Catalogo Completo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabla con Razon Social, RFC, Persona, Credito y Estatus</span>
+        <div class="update-desc">Cada proveedor se muestra con su razon social, ubicacion + banco como subtitulo, RFC en monoespaciado para que se vea como folio fiscal, badge de tipo de persona (Moral/Fisica), credito en formato &ldquo;30d $500K&rdquo; (dias y monto abreviado) y estatus. Mismo look-and-feel que la tabla de Productos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Formulario en 4 Secciones Bien Separadas</span>
+        <div class="update-desc">El modal de alta/edicion tiene <strong>4 bloques con titulo</strong>: <strong>(1) Identificacion</strong> &mdash; razon social y RFC; <strong>(2) Condiciones Comerciales</strong> &mdash; dias y monto de credito; <strong>(3) Datos Bancarios</strong> &mdash; banco, cuenta, CLABE y cuenta contable; <strong>(4) Direccion</strong> &mdash; colapsable porque casi siempre es opcional. La direccion empieza cerrada para no abrumar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Validacion de RFC en Vivo Mientras Se Escribe</span>
+        <div class="update-desc">Conforme el administrador escribe el RFC, aparece <strong>una marca verde &ldquo;Valido&rdquo; o roja &ldquo;Invalido&rdquo;</strong> al lado, validando contra el formato oficial del SAT. <strong>El sistema deduce automaticamente</strong> si es Persona Moral (12 caracteres) o Persona Fisica (13 caracteres) y lo marca solo. Si el RFC no se captura, queda opcional.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">CLABE Limitada a 18 Digitos con Contador</span>
+        <div class="update-desc">El campo de CLABE solo acepta numeros y al lado muestra un contador <strong>&ldquo;X / 18&rdquo;</strong> con icono verde cuando llega a los 18 digitos exactos. Si se queda corta o sobrada, el icono se pone rojo. Asi se previenen errores de captura que despues serian dolor de cabeza para el banco.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Banco con Autocompletado de los 14 Mas Comunes</span>
+        <div class="update-desc">El campo de banco usa un <strong>desplegable nativo del navegador</strong> que sugiere BBVA, Banamex, Santander, Banorte, HSBC, Scotiabank, Inbursa, Banregio, Azteca, BanCoppel, Mifel, Bajio, Afirme y Multiva. Si el banco no esta en la lista se puede escribir libremente. Compacto y rapido.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Por Default Persona Fisica (lo Mas Comun)</span>
+        <div class="update-desc">El selector de Persona Moral / Fisica antes era un toggle gigante de ancho completo. Se redujo a un <strong>pill compacto al estilo iOS</strong> alineado a la izquierda, y por defecto arranca en <strong>Persona Fisica</strong> &mdash; que es lo mas comun en proveedores. Si captura un RFC, el tipo se ajusta solo segun los caracteres.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista de Detalle con Pestañas</span>
+        <div class="update-desc">Al hacer clic en un proveedor se abre la vista de detalle con tres pestañas: <strong>Informacion</strong> (datos fiscales, direccion, datos bancarios), <strong>Documentos</strong> (placeholder, viene despues) e <strong>Historial</strong> (placeholder). A la derecha, una tarjeta con el credito otorgado y monto autorizado en numeros grandes. Boton de Editar y Eliminar arriba a la derecha.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Importar/Exportar y Eliminacion Inteligente</span>
+        <div class="update-desc">Mismo patron que en Productos: importar y exportar en CSV con reporte de errores fila por fila, y eliminacion logica si tiene historial o fisica si nunca se uso. El RFC funciona como identificador unico al importar.</div>
+    </div>
+
+    <h2>5. Detalles Visuales y Datos de Prueba</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tarjeta Flotante de Vista Rapida al Pasar el Mouse</span>
+        <div class="update-desc">En las dos tablas (Productos y Proveedores), al dejar el mouse encima de una fila por <strong>menos de medio segundo</strong> aparece una tarjetita flotante con los datos clave: en productos muestra costo, IVA, unidad y almacen; en proveedores muestra RFC, banco, ciudad y dias de credito. Al quitar el mouse desaparece. Permite revisar varios sin abrir el detalle.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Catalogo SAT y Datos Demo Listos para Probar</span>
+        <div class="update-desc">Se cargo el catalogo inicial: <strong>1 almacen, 10 unidades de medida, 50 claves CFDI</strong>. Adicional, para que el equipo pueda ver como se siente el modulo &ldquo;poblado&rdquo;, se cargaron <strong>18 productos y 8 proveedores de demostracion</strong> (12 productos fisicos + 6 servicios; mix de personas morales y fisicas con datos realistas de toda la republica). Todo se puede borrar con un comando cuando se quieran cargar los datos reales.</div>
+    </div>
+
+    <h2>6. Fixes Importantes</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Flash al Recargar la Pagina</span>
+        <div class="update-desc">Al recargar la pagina del modulo de Compras, por una fraccion de segundo se veian las 4 secciones encimadas con sus iconos sueltos &mdash; un &ldquo;flash&rdquo; antes de que se acomodara todo. Se aplico la misma tecnica anti-flash que ya tenian los ingenieros para su dashboard, asi <strong>al cargar la pagina ya se ve solo Productos</strong>, sin parpadeos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Formulario que &ldquo;se Cerraba y Abria&rdquo; al Cambiar IVA o Moneda</span>
+        <div class="update-desc">En el formulario de productos, cuando el administrador hacia clic en una opcion (cambiar moneda MXN&rarr;USD, IVA 8%&rarr;16%, seleccionar una clave CFDI), el modal entero hacia un efecto raro como si se cerrara y volviera a abrir. Era una animacion que se replayaba en cada cambio. <strong>Ahora la animacion solo corre la primera vez que se abre el modal</strong>; los cambios internos son instantaneos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Tarjeta de Vista Rapida que Quedaba Pegada al Abrir Detalle</span>
+        <div class="update-desc">Al hacer clic en una fila para abrir su detalle, a veces <strong>la tarjeta flotante de vista rapida quedaba flotando sobre la nueva pantalla</strong>. Se corrigio: ahora al abrir el detalle el sistema cierra inmediatamente cualquier vista rapida que estuviera abierta.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Tarjeta de Vista Rapida en el Lado Equivocado</span>
+        <div class="update-desc">En la tabla de Proveedores, la tarjetita flotante <strong>aparecia hasta el otro lado de la pantalla</strong> en vez de junto a la fila donde estaba el cursor. Ahora <strong>sigue al cursor</strong> con un pequeño desplazamiento, igual que en Productos, y se ajusta sola para no salirse de la pantalla.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Tabla Pequeña con Mucho Espacio Desperdiciado Abajo</span>
+        <div class="update-desc">La tabla mostraba solo 7 productos por pagina y dejaba <strong>medio monitor en blanco abajo</strong>. Se subio a 14 productos por pagina y se redujo el padding del contenedor &mdash; ahora la tabla aprovecha bien el alto de la pantalla y solo se pagina cuando hay mas de 14.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: &ldquo;Recarga&rdquo; Visual de la Tabla al Abrir Filtro o Excel</span>
+        <div class="update-desc">Al darle clic al boton de Filtro o Excel <strong>sin haber seleccionado nada</strong>, la tabla parpadeaba como si se recargara entera. Era la animacion de entrada de las filas que se replayaba. Se corrigio: si los datos no cambian, la animacion no corre.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Fix: Buscador de Clave CFDI Vacio Aunque Tuviera 50 Claves</span>
+        <div class="update-desc">Al abrir el buscador de clave CFDI no aparecia nada, aunque el catalogo si estuviera cargado. Era un detalle tecnico de mayusculas/minusculas que filtraba todo. <strong>Ahora al abrirlo sin escribir nada se ven todas las recomendaciones agrupadas en PRODUCTOS y SERVICIOS</strong>, y el buscador filtra de manera tolerante. Tambien si el catalogo esta vacio, ahora <strong>avisa</strong> en vez de quedarse mudo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Botones del Toolbar Mas Limpios y Alineados</span>
+        <div class="update-desc">Los botones de Filtro, Ordenar y Excel se rediseñaron para tener <strong>la misma altura que el buscador y el boton azul de Agregar</strong>, con bordes mas finos y colores mas sobrios. Ya no se sentia mezcla de estilos.</div>
+    </div>
+
+    <h2>7. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Equipo de Compras Tiene Su Propio Sistema</span>
+        <div class="update-desc">Antes <strong>no existia un modulo formal de compras</strong> en el CRM &mdash; la informacion estaba en archivos sueltos, hojas de calculo o memoria de quien la maneja. Hoy queda dentro del sistema, con accesos por perfil, validaciones contra el SAT y un catalogo centralizado que pueden usar cotizaciones, ordenes y facturas en el futuro.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Validaciones del SAT que Evitan Errores Caros</span>
+        <div class="update-desc">El sistema obliga a usar <strong>claves CFDI y unidades del catalogo oficial del SAT</strong>, valida el formato del RFC, asegura que la CLABE tenga 18 digitos, y deduce el tipo de producto/persona automaticamente. Esto reduce la posibilidad de capturar mal un dato fiscal que despues haga que una factura sea rechazada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Historial Protegido contra Cambios</span>
+        <div class="update-desc">Cuando se generen facturas u ordenes en el futuro, el sistema <strong>guarda una foto del producto y del proveedor en ese momento</strong>. Si despues cambia el costo o el RFC, los documentos historicos no se ven afectados. Es como sellar la informacion de cada operacion contra modificaciones posteriores.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Importar/Exportar para Migrar Catalogos Existentes</span>
+        <div class="update-desc">Si el equipo de compras ya tiene un Excel con productos o proveedores, lo puede <strong>importar de un solo golpe</strong> via CSV en vez de capturar uno por uno. Y para auditoria o respaldo, exportar todo a Excel toma un click.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Estetica Consistente en Todo el Sistema</span>
+        <div class="update-desc">El modulo nuevo no se ve como un &ldquo;parche&rdquo; pegado: la <strong>navegacion superior, los botones, la tipografia y el sidebar</strong> son los mismos que el resto del CRM. Cuando un vendedor o supervisor abra el modulo en el futuro, no necesita aprender una interfaz nueva &mdash; ya conoce los patrones.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 27 de Abril, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

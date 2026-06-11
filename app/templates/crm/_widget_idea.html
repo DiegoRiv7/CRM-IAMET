@@ -6,7 +6,7 @@ Detalle de Idea — layout estilo widget de Prospección:
 - Sin botón "Editar": cada campo se edita haciendo click.
 - Sin botón "Convertir": al pasar la idea a "Convertida" se dispara el modal.
 {% endcomment %}
-<div class="widget-overlay" id="widgetIdea" style="z-index:10200;">
+<div class="widget-overlay" id="widgetIdea" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde kanban ideas -->
     <div class="widget-card widget-card-lg">
         <div id="ideaLoading" style="text-align:center;padding:4rem;color:#86868B;">
             <svg style="animation:spin 1s linear infinite;width:24px;height:24px;margin:0 auto 1rem;"
@@ -466,7 +466,7 @@ textarea.idea-edit-input { resize: vertical; min-height: 80px; }
 </style>
 
 {# Modal pequeño para "Convertir a prospección" — pide cliente #}
-<div class="widget-overlay" id="widgetIdeaConvertir" style="z-index:10350;display:none;">
+<div class="widget-overlay" id="widgetIdeaConvertir" style="z-index:var(--z-widget-sub);display:none;"><!-- Nivel 2: abierto desde widgetIdea -->
     <div style="background:#fff;border-radius:16px;padding:1.5rem;width:480px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.18);">
         <h3 style="margin:0 0 6px;font-size:1.05rem;font-weight:700;color:#1D1D1F;">Convertir idea a prospección</h3>
         <p style="margin:0 0 14px;font-size:0.84rem;color:#6B7280;">Se creará un prospecto con el título y la descripción de la idea. Confirma o cambia el cliente.</p>

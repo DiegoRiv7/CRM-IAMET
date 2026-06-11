@@ -1,5 +1,5 @@
 <!-- ═══ WIDGET: PERFIL Y JORNADA LABORAL (COMPACTO) ═══ -->
-<div class="widget-overlay" id="widgetPerfil" style="z-index:10500;">
+<div class="widget-overlay" id="widgetPerfil" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde avatar del header -->
     <div
         style="width:600px; min-height: 480px; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(30px); border-radius: 28px; overflow:hidden; box-shadow: 0 40px 120px rgba(0,0,0,0.3); display:flex; flex-direction:column; position:relative; border: 1px solid rgba(255,255,255,0.5); animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
 
@@ -120,9 +120,17 @@
                             </div>
                             <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Espacial</span>
                         </div>
+                        <div onclick="setThemeSelection('mundial')"
+                            style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:6px;">
+                            <div id="swatch-mundial"
+                                class="theme-swatch {% if request.user.userprofile.theme == 'mundial' %}active{% endif %}"
+                                style="width:42px; height:42px; border-radius:50%; background: linear-gradient(135deg, #006847 0%, #ffffff 50%, #CE1126 100%); border:1px solid rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                            </div>
+                            <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Mundial</span>
+                        </div>
                     </div>
                     <input type="hidden" name="theme" id="themeInput"
-                        value="{{ request.user.userprofile.theme|default:'perla' }}">
+                        value="{{ request.user.userprofile.theme|default:'mundial' }}">
                 </div>
 
                 {% if not request.user.is_superuser %}
@@ -245,7 +253,7 @@
                 </svg>
                 Configurar cuenta
             </button>
-            <a href="/app/logout/"
+            <a href="/app/logout/" data-turbo="false"
                 style="background:none; border:none; color:#FF3B30; font-size:0.85rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; text-decoration:none;">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -331,6 +339,12 @@
         --island-border: rgba(255, 255, 255, 0.1);
         --accent-crm: #0a84ff;
     }
+
+    {% comment %}
+    El tema Mundial (variables, fondo y todos los overrides visuales) vive
+    en app/static/css/tema_mundial.css — un archivo único y autocontenido.
+    Aquí solo queda el JS que aplica data-theme y la variable --mundial-img.
+    {% endcomment %}
 
     /* Si el body tiene el data-theme, cambiamos su fondo y el de crm-page */
     body[data-theme],
@@ -556,8 +570,19 @@
             applyThemeToBody(theme);
         };
 
+        // Fondo del tema Mundial — administrado desde /app/config/fondo-mundial/
+        // y guardado en media/ (no static), para cambiarlo sin redeploy.
+        var _mundialBgUrl = '/media/fondos/mundial.jpg';
         function applyThemeToBody(theme) {
             document.body.setAttribute('data-theme', theme);
+            if (theme === 'mundial') {
+                // El fondo lo pinta body[data-theme="mundial"]::before vía la
+                // variable --mundial-img. Aquí solo le ponemos cache-bust para
+                // tomar la imagen recién subida sin quedarnos con la cacheada.
+                document.body.style.setProperty('--mundial-img', 'url("' + _mundialBgUrl + '?t=' + Date.now() + '")');
+            } else {
+                document.body.style.removeProperty('--mundial-img');
+            }
         }
 
         // Variables para el crop
@@ -837,7 +862,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             attendanceSyncState();
             // Aplicar tema inicial
-            const currentTheme = "{{ request.user.userprofile.theme|default:'perla' }}";
+            const currentTheme = "{{ request.user.userprofile.theme|default:'mundial' }}";
             applyThemeToBody(currentTheme);
 
             // Verificar empleado del mes silenciosamente

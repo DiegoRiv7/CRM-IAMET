@@ -7,6 +7,8 @@ import logging
 import requests
 import mimetypes
 import os
+
+logger = logging.getLogger(__name__)
 from django.conf import settings
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
@@ -641,12 +643,20 @@ def limpiar_actividades_huerfanas(oportunidad):
 
 
 def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None, tarea_opp=None, solicitud_perfil=None, tarea_id=None, tarea_titulo=None):
-    """
-    Función auxiliar para crear notificaciones
+    """Crea una notificación con logging estructurado.
+
+    Hardening Fase 2.C — antes los fallos eran print() y se perdían en
+    stdout. Ahora cada creación/fallo deja rastro en logs con contexto
+    suficiente para debugging.
     """
     try:
+        if not usuario_destinatario:
+            logger.warning('[notif] sin destinatario, tipo=%s titulo=%s', tipo, titulo)
+            return None
         # No crear notificación si el remitente y destinatario son el mismo
         if usuario_remitente and usuario_destinatario == usuario_remitente:
+            logger.debug('[notif] saltada (remitente=destinatario) user=%s tipo=%s',
+                         usuario_destinatario.username, tipo)
             return None
 
         notificacion = Notificacion.objects.create(
@@ -664,12 +674,18 @@ def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=
             tarea_id=tarea_id,
             tarea_titulo=tarea_titulo,
         )
-        
-        print(f"✅ Notificación creada: {titulo} para {usuario_destinatario.username}")
+
+        logger.info('[notif] creada id=%s tipo=%s user=%s remitente=%s',
+                    notificacion.id, tipo, usuario_destinatario.username,
+                    usuario_remitente.username if usuario_remitente else '-')
         return notificacion
-        
+
     except Exception as e:
-        print(f"❌ Error creando notificación: {e}")
+        # logger.exception incluye el stack trace completo automáticamente.
+        logger.exception('[notif] error al crear tipo=%s user=%s: %s',
+                         tipo,
+                         getattr(usuario_destinatario, 'username', '?'),
+                         str(e))
         return None
 
 

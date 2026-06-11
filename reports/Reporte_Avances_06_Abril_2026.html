@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 6 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 6 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy, enfocadas en el sistema completo de subtareas dentro del modulo de tareas y mejoras al dashboard del modulo de proyectos con KPIs dinamicos y filtro temporal.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Commits</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Migracion de BD</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">6</div>
+            <div class="stat-label">Archivos Modificados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Features Nuevas</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Sistema Completo de Subtareas
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se implemento un sistema completo de subtareas dentro del modulo de tareas existente, requiriendo cambios en <strong>modelo de datos, API, frontend y logica de negocio</strong>. Se agrego un campo <code>tarea_padre</code> (FK recursiva) al modelo Tarea, se modificaron los endpoints de creacion y detalle para soportar la relacion padre-hijo, y se construyo la interfaz completa: boton para crear subtareas desde el detalle de una tarea, lista visual de subtareas con estados, card de navegacion "Tarea Principal" que reemplaza la seccion de subtareas cuando se esta viendo una subtarea (evitando sub-subtareas), y una regla de negocio que <strong>impide completar tareas que tienen subtareas pendientes</strong>. El sistema involucro 5 commits iterativos incluyendo correcciones de z-index, migracion de BD y renderizado dinamico condicional.</p>
+    </div>
+
+    <h2>1. Sistema de Subtareas</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modelo de Datos: Campo tarea_padre</span>
+        <div class="update-desc">Se agrego un <strong>ForeignKey recursivo</strong> (<code>tarea_padre</code>) al modelo Tarea que permite vincular una tarea como subtarea de otra. Usa <code>CASCADE</code> en eliminacion (borrar la tarea padre elimina sus subtareas). Incluye migracion <code>0114_tarea_subtareas.py</code> aplicada en la base de datos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Creacion de Subtareas desde el Widget</span>
+        <div class="update-desc">Se agrego un boton <strong>"+ Subtarea"</strong> en la barra lateral del detalle de cada tarea. Al hacer clic, se abre el formulario de creacion de tarea con el campo <code>tarea_padre_id</code> pre-llenado. La subtarea hereda automaticamente el <strong>proyecto y la oportunidad</strong> de la tarea padre si no se especifican. El formulario se abre correctamente encima del widget de detalle (z-index corregido de 10300 a 10450).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Visualizacion de Subtareas como Cards</span>
+        <div class="update-desc">Las subtareas se muestran como <strong>cards compactas</strong> debajo de la seccion de Drive en el detalle de la tarea. Cada card muestra: icono de completado (circulo verde con check si completada, circulo gris si pendiente), titulo (tachado si completada), nombre del responsable asignado, y badge de estado con color. Al hacer clic en una subtarea se abre su detalle completo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Navegacion Bidireccional: Card "Tarea Principal"</span>
+        <div class="update-desc">Cuando se abre una subtarea, en lugar de mostrar la seccion de subtareas (que no aplica), se muestra un <strong>card azul "Tarea Principal"</strong> con el titulo de la tarea padre. Al hacer clic en el card se navega de regreso a la tarea padre. Esta logica es mutuamente excluyente: las tareas normales ven subtareas, las subtareas ven su tarea padre. No se permiten sub-subtareas.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Regla de Negocio: Bloqueo de Completado</span>
+        <div class="update-desc">Se implemento una validacion en <strong>ambos endpoints</strong> donde se puede completar una tarea (boton "Completar tarea" y cambio de estado via API). Si la tarea tiene subtareas que no estan completadas ni canceladas, el sistema retorna error 400 con el mensaje <em>"No se puede completar: tiene X subtarea(s) pendiente(s)"</em>. Esto garantiza que no se cierren tareas con trabajo pendiente.</div>
+    </div>
+
+    <h2>2. Dashboard de Proyectos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">KPIs Dinamicos con Filtro de Mes/Anio</span>
+        <div class="update-desc">El dashboard de proyectos ahora respeta el <strong>filtro de mes y anio</strong> de la barra superior. Los KPIs se recalculan segun el periodo seleccionado, mostrando solo los proyectos creados en ese rango. El endpoint <code>/api/iamet/proyectos/dashboard/</code> acepta parametros <code>?mes=</code> y <code>?anio=</code> para filtrar por fecha de creacion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">KPIs Mejorados con Datos Reales</span>
+        <div class="update-desc">Los 4 KPIs del dashboard ahora muestran datos reales con subtitulos complementarios: <strong>Proyectos en Ejecucion</strong> (con "X programados"), <strong>Total Proyectos</strong> (con "X completados"), <strong>Venta Total</strong> (con "Costo: $X") y <strong>Utilidad Total</strong> (con "X% margen"). Todos calculados desde las partidas reales de cada proyecto.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Lista Muestra Todos los Proyectos</span>
+        <div class="update-desc">La lista del dashboard ahora muestra <strong>todos los proyectos</strong> del periodo (no solo los activos). Cada card incluye nombre del responsable en "Equipo", fecha de inicio con <strong>dias activos calculados</strong> (ej: "15 mar 2026 &middot; 22 dias"), y badges de estado en espanol para todos los estados (Planificacion, En Ejecucion, Completado, Pausado, Archivado).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tab "Programa de Obra" como Vista Principal</span>
+        <div class="update-desc">Se reordeno la barra de tabs para que <strong>"Programa de Obra"</strong> sea el primer tab y la vista por defecto al abrir la seccion de proyectos. El orden ahora es: Programa de Obra | Dashboard | Financiero. Esto prioriza la vista operativa del dia a dia.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

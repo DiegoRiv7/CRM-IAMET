@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 26 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 26 de Mayo, 2026</p>
+            <p>Periodo: 26 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Toda la jornada se enfocó en armar de raíz la nueva <strong>sección de Reportes</strong> del CRM. Pasamos del esqueleto inicial a un módulo profesional, alineado al lenguaje visual de las grandes plataformas (Salesforce / HubSpot / Pipedrive) pero adaptado al ADN de IAMET. El primer reporte (Oportunidades Abiertas) ya está completo y listo para usarse; los otros dos (Cerradas y Por Cliente) quedan armados a nivel de estructura, faltando solo el llenado de contenido.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito: Módulo Reportes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Reporte 100% listo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Plantillas predefinidas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm9-1a1 1 0 00-1 1v6a1 1 0 001 1h4a1 1 0 001-1v-6a1 1 0 00-1-1h-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Nueva Sección de Reportes Profesional
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Hasta hoy, cuando los jefes querían entender el estado del pipeline tenían que <em>pedirle al vendedor</em> que les exportara algo de Excel o navegar manualmente por el CRM filtrando uno por uno. Eso se acabó. La nueva <strong>sección de Reportes</strong> centraliza todo el análisis de negocio en un solo lugar, con vista limpia, filtros potentes, exportación a Excel y la posibilidad de armar reportes a la medida. Primer reporte ya disponible: <strong>Oportunidades Abiertas (Vendidas, sin cerrar)</strong> — el más pedido para responder &ldquo;¿qué falta para facturar / cobrar?&rdquo;.</p>
+    </div>
+
+    <h2>1. Cómo Está Armada la Sección de Reportes</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Diseño tipo "centro de inteligencia comercial": consistente con el resto del CRM, pero con la densidad de información que necesitan los líderes. Estructura clara de tres niveles:</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cápsula "Dynamic Island" con los Reportes Disponibles</span>
+        <div class="update-desc">Arriba, en la misma fila que la búsqueda, vive una <strong>cápsula con los 3 tipos de reporte</strong>: Oportunidades Abiertas, Oportunidades Cerradas y Por Cliente. El activo en azul, los demás como labels. Click en cualquiera cambia el reporte sin recargar la página entera. Mismo lenguaje visual que las tabs Mes/Semana/Día del calendario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Plantillas (Atajos a Filtros Predefinidos)</span>
+        <div class="update-desc">Debajo del header, una fila de <strong>plantillas chips</strong> con 4 opciones: <em>Todas</em> · <em>Alta probabilidad (≥70%)</em> · <em>Estancadas (>45 días)</em> · <em>⚙ Configurar reporte</em>. Las 3 primeras son atajos a filtros frecuentes — un click y la tabla se refiltra. La 4ta abre el constructor de filtros personalizados.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Búsqueda Global + Filtros Detallados + Exportar CSV</span>
+        <div class="update-desc">En el header siempre disponibles: <strong>búsqueda libre</strong> (por título de la oportunidad o nombre de cliente, con debounce de 280ms), botón <strong>Filtros</strong> (con dot azul cuando hay alguno activo) que abre un panel lateral, y botón <strong>Exportar CSV</strong> en azul corporativo. El CSV sale con BOM UTF-8 para que Excel mexicano lo abra sin caracteres rotos.</div>
+    </div>
+
+    <h2>2. Primer Reporte Listo: Oportunidades Abiertas (Vendidas, sin cerrar)</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Es el reporte más pedido por los jefes — qué oportunidades están "atoradas" en el pipeline entre que se venden y que se cierran. La regla de etapas es dinámica: el sistema lee la configuración del panel admin y toma automáticamente todas las etapas <strong>desde "Vendido" hasta antes de "Ganada/Pagada/Perdida/Cerrada"</strong>. Si modificas las etapas en el panel, el reporte se ajusta solo.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">4 KPI Cards con Indicador de Acento</span>
+        <div class="update-desc">Arriba del reporte, cuatro métricas clave de un vistazo: <strong>Pipeline Total</strong> (monto en MXN), <strong>Deals Activos</strong> (cantidad), <strong>Monto Ponderado</strong> (ajustado por probabilidad de cierre) y <strong>Probabilidad Promedio</strong>. Cada card tiene una franja de color a la izquierda para diferenciarlas visualmente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tabla Rica con 8 Columnas Visualmente Aceleradas</span>
+        <div class="update-desc">La tabla central tiene los datos que importan, todos con tratamiento visual para leer de un vistazo:</div>
+        <div class="feature-list" style="padding-left: 5px;">
+            <div><strong>Oportunidad</strong> — título + cliente</div>
+            <div><strong>Etapa</strong> — pill coloreado según el estado</div>
+            <div><strong>Monto</strong> — en azul corporativo, tabular</div>
+            <div><strong>Probabilidad</strong> — barra horizontal con color por umbral</div>
+            <div><strong>Cierre estimado</strong> — fecha legible</div>
+            <div><strong>Proveedor</strong> — chip con dot de color por marca</div>
+            <div><strong>Vendedor</strong> — nombre completo</div>
+            <div><strong>Días abiertos</strong> — badge verde / ámbar / rojo según rangos</div>
+        </div>
+        <div class="update-desc" style="margin-top:8px;">Click en cualquier fila abre la oportunidad en el CRM. Click en encabezado ordena. Hover con tinte azul claro.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Footer con Total Acumulado</span>
+        <div class="update-desc">Al pie de la tabla, conteo de registros visibles y <strong>total acumulado del monto</strong>. Si filtras por vendedor o por etapa, el total refleja solo lo filtrado — útil para responder al vuelo &ldquo;¿cuánto trae Juan en pipeline activo?&rdquo;.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Panel Lateral de Filtros (Drawer)</span>
+        <div class="update-desc">Click en "Filtros" abre un panel desde la derecha con 5 controles: <strong>Pipeline</strong> (Ambos / Runrate / Proyecto), <strong>Vendedor</strong>, <strong>Etapa</strong> (agrupada por pipeline), <strong>Proveedor</strong> (marca) y <strong>Monto mínimo</strong>. Botón "Limpiar" abajo. ESC, click-fuera o el "×" cierran sin aplicar. Botón "Aplicar" trae los nuevos datos.</div>
+    </div>
+
+    <h2>3. Decisiones de Diseño y Arquitectura</h2>
+
+    <div class="callout">
+        <strong>¿Por qué reportes nativos y no AI?</strong> Hubo un primer intento de hacer esto con el asistente AI del CRM. Lo descartamos: cada consulta consumía 30k-50k tokens (~$0.30 USD), y para un reporte que es siempre la misma query con datos diferentes, el AI no aporta valor — solo costo. Ahora el módulo es <strong>cero costo por consulta</strong>: una sola query a la base de datos, render nativo en HTML.
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Decisión</span>
+        <span class="update-title">Visualmente Alineado al CRM</span>
+        <div class="update-desc">La primera versión del diseño se sentía "Salesforce/Tailwind" — no encajaba con el resto del producto. Reescribimos los estilos completos para usar la <strong>paleta corporativa de IAMET</strong> (azul #0052D4, grises #1D1D1F / #F2F2F7) y el mismo lenguaje de pills / cards / shadows que el resto del CRM. Hoy se ve como una sección "del mismo producto", no como un anexo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Decisión</span>
+        <span class="update-title">Plantillas Hardcoded como Punto de Partida</span>
+        <div class="update-desc">El sistema podría tener un <em>builder</em> tipo Salesforce donde el usuario guarda sus propias plantillas en la base de datos. <strong>Pospusimos esa fase</strong>. Primero validamos qué reportes y filtros usan realmente los jefes con las 3-4 plantillas predefinidas. Si después el patrón de uso justifica el builder personalizable, lo construimos. Es mucho menos riesgo y entrega valor antes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Decisión</span>
+        <span class="update-title">Etapas Dinámicas desde el Panel Admin</span>
+        <div class="update-desc">La regla de "Vendido en adelante" no está hardcoded — lee la configuración real de etapas del CRM. Si mañana el equipo agrega/elimina una etapa entre "Vendido" y "Ganada", el reporte la incluye o excluye solo. Mismo principio para los dos pipelines (Runrate y Proyecto): cada uno tiene sus propias etapas y el reporte respeta la configuración de cada uno.</div>
+    </div>
+
+    <h2>4. Detalles del Día (Hoy se Trabajó en Esto)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Live</span>
+        <span class="update-title">Reportes Visible Siempre, sin Feature Flag</span>
+        <div class="update-desc">El módulo ya quedó <strong>visible en el sidebar</strong> sin necesidad de configurar variables de entorno. Se quitó el flag temporal que lo escondía. En el próximo deploy a producción aparece automáticamente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Landing Directo al Reporte (Sin Paso Intermedio)</span>
+        <div class="update-desc">Antes la sección abría una grilla de 3 cards (Abiertas / Cerradas / Por Cliente) y tenías que clickear una. Ahora <strong>al entrar a Reportes caes directo en Oportunidades Abiertas</strong> con la cápsula superior visible para alternar entre los 3 reportes sin pasos extra.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Error de Conexión al Cargar el Reporte (Corregido)</span>
+        <div class="update-desc">Durante el desarrollo apareció un error en el frontend: el endpoint devolvía HTML en lugar de JSON. Era una referencia a un campo inexistente del modelo (<em>marca</em> en lugar de <em>producto</em>). Corregido inmediatamente; el reporte carga limpio.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cápsula Dynamic Island en el Header</span>
+        <div class="update-desc">El selector de los 3 reportes pasó por tres iteraciones hoy: primero como sub-tabs separadas debajo del título, después como cápsula tipo Proyectos en su propia fila, y finalmente como <strong>dynamic island integrado en el header</strong> — la misma fila que la búsqueda y los botones de acción. Es el patrón que sigue el resto del CRM y se ve más compacto.</div>
+    </div>
+
+    <h2>5. Lo que Sigue</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Reporte 2 — Oportunidades Cerradas (Ganadas / Perdidas)</span>
+        <div class="update-desc">Mismo lenguaje visual, pero filtrado a opps cerradas en un periodo. KPIs: total ganado, total perdido, % de cierre, ticket promedio. Útil para ver el cierre del mes / trimestre.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Reporte 3 — Por Cliente</span>
+        <div class="update-desc">Una fila por cliente: # de opps activas / ganadas / perdidas, monto total ganado, último contacto, próxima actividad agendada. Para responder &ldquo;¿con qué clientes estamos descuidando?&rdquo; o &ldquo;¿quién es mi cliente más rentable?&rdquo;.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Export a Excel Server-Side (XLSX)</span>
+        <div class="update-desc">El export actual es CSV cliente-side (ligero, suficiente para 99% de los casos). Para reportes más grandes / con formato de columnas más rico, agregamos export server-side con <code>openpyxl</code>: header con color corporativo, columnas anchas, formato de moneda y porcentaje.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Futuro</span>
+        <span class="update-title">Plantillas Guardadas por Usuario</span>
+        <div class="update-desc">Fase posterior: que cada jefe pueda <strong>guardar sus filtros como una plantilla personalizada</strong> ("Mis cuentas estratégicas", "Cierre Q2 2026", etc.). Requiere modelo en BD + UI para nombrar/borrar plantillas. Decidiremos cuándo según el uso real de los reportes canned.</div>
+    </div>
+
+    <h2>6. ¿Qué Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Los Jefes ya no Dependen del Vendedor para Saber Cómo Va</span>
+        <div class="update-desc">Antes, &ldquo;dame el pipeline activo&rdquo; era un pedido a alguien que tenía que abrir Excel, copiar, filtrar y mandarlo. Ahora el jefe entra a Reportes y lo tiene en un click. <strong>El tiempo del vendedor se libera para vender</strong>, no para reportar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Decisión Más Rápida en Junta de Cierre de Mes</span>
+        <div class="update-desc">En las juntas de cierre, los líderes pueden filtrar en vivo: &ldquo;muéstrame solo las de Diego con más del 70% de probabilidad y que cierren este mes&rdquo;. La respuesta sale al momento, con monto ponderado y todo. Antes era una conversación a ciegas o una espera de minutos hasta que alguien preparara el reporte.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Detectar Oportunidades Estancadas Antes que se Pierdan</span>
+        <div class="update-desc">La plantilla <em>Estancadas (>45 días)</em> es un radar para opps que llevan demasiado tiempo sin movimiento. El badge rojo de "Días Abierto" marca visualmente las que requieren acción inmediata. <strong>Un click y el supervisor ve quiénes están abandonando sus deals</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cero Costo por Consulta (Cero Tokens, Cero AI)</span>
+        <div class="update-desc">Cada consulta al reporte es <strong>una sola query a la base de datos</strong>. No hay LLM en el medio. Si el equipo usa Reportes mil veces al mes, sigue costando lo mismo: nada extra. Esa fue una decisión consciente — el AI sirve para preguntas analíticas abiertas; para reportes recurrentes el render nativo gana siempre.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 26 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

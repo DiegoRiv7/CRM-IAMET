@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 25 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 25 de Mayo, 2026</p>
+            <p>Periodo: 25 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy llegó a producción <strong>todo el paquete que veníamos cocinando en pruebas</strong>. El golpe mayor: el perfil del ingeniero rediseñado completo, los permisos en tareas para que cada quien se autoadministre, la búsqueda potente, el calendario más maduro y el flujo de verificación opcional en tareas automáticas. Además se sentaron los cimientos del nuevo <strong>módulo de Reportes</strong>, que se construye en silencio hasta validarlo.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Deploy a producción</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Mejoras shipped</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Módulo nuevo</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">21</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M16 10a6 6 0 11-12 0 6 6 0 0112 0zm-7-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm0 4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"></path></svg>
+            Logro Principal: Deploy a Producción del Paquete del Ingeniero
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El acumulado de mejoras al rol de <strong>Ingeniero</strong> que se había estado puliendo en pruebas — el aterrizaje directo a Tareas (sin dashboard de en medio), la búsqueda que de verdad encuentra (incluso archivos adjuntos dentro de tareas), el autoservicio en participantes/observadores de tareas, los z-index corregidos en los modales en cascada, y la entrada del buscador global Spotlight funcionando bien — todo eso <strong>ya está en manos de los ingenieros en producción</strong>. Días de mejoras pequeñas que en conjunto cambian su día a día.</p>
+    </div>
+
+    <h2>1. Lo que el Ingeniero ya Tiene en sus Manos (en Vivo)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Live</span>
+        <span class="update-title">Entra Directo a Trabajar, sin Dashboard de Por Medio</span>
+        <div class="update-desc">El ingeniero al abrir el CRM cae <strong>directamente en su lista de tareas</strong>. El dashboard de KPIs que no usaba ya no le aparece. Un click menos, arranca el trabajo desde el segundo cero.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Live</span>
+        <span class="update-title">Buscador de Tareas que Encuentra Adentro</span>
+        <div class="update-desc">Si el ingeniero escribe el <strong>nombre de un archivo PDF</strong> que está adjunto en algún comentario de una tarea, la tarea aparece. Lo mismo con el texto de los comentarios, el cliente, el proyecto o el responsable. El buscador dejó de ver solo títulos y pasó a ver <strong>todo lo que vive dentro de la tarea</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Live</span>
+        <span class="update-title">Autoservicio en Equipos de Tarea</span>
+        <div class="update-desc">Cualquier ingeniero ya puede <strong>agregar a quien sea</strong> como participante u observador en cualquier tarea que vea, y <strong>quitarse el mismo</strong> si lo metieron y ya no le toca. Si es el responsable, también puede transferir la tarea con un click. Cero pings al supervisor para que lo saque.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Live</span>
+        <span class="update-title">Buscador Global del CRM (Spotlight) Corregido</span>
+        <div class="update-desc">El bug donde la búsqueda abría el proyecto y dejaba el detalle colgado al fondo del dashboard, está corregido. Además ahora <strong>busca en los proyectos correctos</strong> (la lista del CRM nuevo), no en la base de datos vieja de Bitrix que devolvía decenas de proyectos fantasma.</div>
+    </div>
+
+    <h2>2. Calendario más Maduro (también Live, con Pulidos de Hoy)</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Vista Mes Compacta con "+N más"</span>
+        <div class="update-desc">Cada celda del mes muestra hasta 4 eventos; si hay más, aparece un discreto <strong>"+N más"</strong> que abre un popover con la lista completa del día. Días llenos dejan de verse desbordados.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Vista Semana ya no se Encima</span>
+        <div class="update-desc">Antes, con 5 o más eventos en la misma franja horaria, las tarjetitas quedaban ilegibles unas sobre otras. Ahora cuando hay <strong>4 o más eventos solapados</strong> en un mismo bloque, se muestran como una <strong>lista apilada vertical</strong> dentro del rango horario — cada uno en su renglón, con hora y título visibles. Si la lista no cabe, hace scroll interno.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Navegación de Fecha Reubicada</span>
+        <div class="update-desc">Los botones de avanzar / retroceder / "Hoy" + nombre del mes ahora viven <strong>arriba a la derecha</strong>, junto al botón de "Nueva actividad", liberando espacio vertical para que el calendario se vea más grande.</div>
+    </div>
+
+    <h2>3. Cierre de Oportunidades: Verificación Opt-in</h2>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Live</span>
+        <span class="update-title">El Widget de Avance Solo Sale Donde se Necesita</span>
+        <div class="update-desc">En el panel de Tareas Automáticas, cada regla tiene una opción nueva: <strong>"Requiere verificación al avanzar"</strong>. Cuando está activa, al completarse una tarea de esa regla se muestra el widget al responsable de la oportunidad para revisar/editar las próximas tareas antes de que la etapa avance. Cuando está apagada (default), la cadena reactiva corre automática como antes. <strong>Cero widgets molestos en flujos rutinarios</strong>.</div>
+    </div>
+
+    <h2>4. Construyendo en Silencio: Módulo de Reportes</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Nueva Sección "Reportes" (Oculta en Producción Todavía)</span>
+        <div class="update-desc">Se sentaron las bases de un módulo dedicado a <strong>reportes preconstruidos</strong> para los jefes: oportunidades abiertas, ganadas/perdidas, vista por cliente. Con filtros laterales, KPI cards y export a Excel. Por ahora <strong>oculto en producción</strong> hasta terminar los 3 reportes y validarlos. Cuando estén listos, los activamos con un flag.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Primer Reporte: Oportunidades Abiertas Vendidas</span>
+        <div class="update-desc">El reporte más pedido por los jefes — <strong>todas las oportunidades en estado "Vendido en adelante" que aún no se cierran</strong>, agrupadas por pipeline y etapa. Por cada una: cliente, vendedor, monto, archivo OC del Drive y la próxima tarea o actividad asignada. Click en cualquier fila abre la oportunidad. Pensado para responder "qué falta para facturar / cerrar". Listo para validar internamente antes de exponerlo en vivo.</div>
+    </div>
+
+    <h2>5. &iquest;Qué Gana la Empresa con Este Deploy?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Ingeniero Trabaja, no Configura</span>
+        <div class="update-desc">El acumulado de cambios pequeños del perfil ingeniero suma a un mismo efecto: <strong>menos clicks, menos fricción, menos esperar a otro</strong>. Entran y trabajan. La carga operativa de los supervisores baja porque dejan de ser el cuello de botella para acciones triviales (sacar a alguien de una tarea, encontrar un archivo, abrir una oportunidad).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Calendario que Aguanta Días Densos</span>
+        <div class="update-desc">Las vistas Mes y Semana <strong>ya no colapsan</strong> con muchos eventos. Los equipos que llevan agenda apretada (ingenieros con visitas, vendedores con seguimientos) pueden seguir planeando sobre el calendario sin tener que ir a la vista Día para entender qué hay.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Reportes Llegando para los Jefes (Pronto)</span>
+        <div class="update-desc">El módulo de reportes está <strong>casi listo</strong>. Cuando termine, los jefes van a poder responder "¿qué falta facturar?", "¿qué ganamos este mes?", "¿cómo vamos con cada cliente?" sin pedirle nada a nadie — abren el reporte, aplican filtros, exportan a Excel. Reduce el ping-pong de información en juntas.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 25 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

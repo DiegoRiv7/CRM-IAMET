@@ -32,6 +32,7 @@ class UserProfile(models.Model):
     ]
     
     THEME_CHOICES = [
+        ('mundial', 'Mundial'),
         ('perla', 'Perla'),
         ('sakura', 'Sakura'),
         ('duna', 'Duna'),
@@ -44,7 +45,7 @@ class UserProfile(models.Model):
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
     avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
-    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='perla', verbose_name="Tema de color")
+    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='mundial', verbose_name="Tema de color")
     meta_mensual = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('1500000'), verbose_name="Meta Facturado")
     meta_oportunidades = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Oportunidades")
     meta_cotizado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cotizado")
@@ -215,7 +216,7 @@ class Cliente(models.Model):
         ('C', 'Categoría C - 25% utilidad'),
     ]
     
-    nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa")
+    nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa", db_index=True)
     rfc = models.CharField(max_length=20, blank=True, default='', verbose_name="RFC", db_index=True)
     contacto_principal = models.CharField(max_length=200, blank=True, null=True, verbose_name="Contacto Principal")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
@@ -350,7 +351,7 @@ class TodoItem(models.Model):
 
     # 'usuario' es el campo que vincula la oportunidad con el usuario que la creó/posee
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='oportunidades')
-    oportunidad = models.CharField(max_length=200, verbose_name="Oportunidad de Venta")
+    oportunidad = models.CharField(max_length=200, verbose_name="Oportunidad de Venta", db_index=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='oportunidades', verbose_name="Cliente")
     contacto = models.ForeignKey(
         'Contacto', 
@@ -374,8 +375,13 @@ class TodoItem(models.Model):
     bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
     bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
-    po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO")
+    po_number = models.CharField(max_length=100, blank=True, default='', verbose_name="PO", db_index=True)
     factura_numero = models.CharField(max_length=100, blank=True, default='', verbose_name="Factura")
+    # NOTA: el M2M `proveedores` fue eliminado en migración 0184. Los
+    # proveedores asociados a una opp se derivan ahora directamente de las
+    # líneas (DetalleCotizacion.proveedor) de la ÚLTIMA cotización de la
+    # opp. Esto evita la desincronización del M2M acumulador y mantiene
+    # una sola fuente de verdad: la cotización vigente.
     # FK directo al prospecto del que se generó esta oportunidad. A
     # diferencia de Prospecto.oportunidad_creada (FK al revés que solo
     # apunta a UNA opp), aquí CADA opp generada apunta al mismo
@@ -525,7 +531,7 @@ class Cotizacion(models.Model):
         ('Iamet', 'Iamet'),
     ]
     
-    titulo = models.CharField(max_length=255, default="Cotización", verbose_name="Título de la Cotización")
+    titulo = models.CharField(max_length=255, default="Cotización", verbose_name="Título de la Cotización", db_index=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='cotizaciones', verbose_name="Cliente")
     usuario_final = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Usuario Final")
     oportunidad = models.ForeignKey(TodoItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones', verbose_name="Oportunidad de Venta") # NUEVO CAMPO
@@ -535,7 +541,7 @@ class Cotizacion(models.Model):
     # Nuevo campo para la descripción general de la cotización
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción General de la Cotización")
     # Nuevo campo para un nombre específico para el PDF (opcional, si quieres que sea diferente al título)
-    nombre_cotizacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre para el PDF de la Cotización")
+    nombre_cotizacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre para el PDF de la Cotización", db_index=True)
 
     # Campos para los totales de la cotización
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Subtotal")
@@ -607,6 +613,31 @@ class DetalleCotizacion(models.Model):
         ('titulo', 'Título de Sección'),
     ]
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='producto', verbose_name="Tipo")
+
+    # Campos INTERNOS (NO aparecen en el PDF, solo para reportes/utilidad).
+    # Una opp/cotización puede llevar varias marcas y varios proveedores;
+    # se capturan por línea para precisión en el reporte.
+    # El dashboard de Marcas y Proveedores deriva pipeline/facturado de
+    # estas líneas tomando SOLO la última cotización de cada opp.
+    proveedor = models.ForeignKey(
+        'ProveedorCRM',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='detalles_cotizacion',
+        verbose_name='Proveedor de esta línea (interno, no aparece en PDF)',
+    )
+    marca_crm = models.ForeignKey(
+        'MarcaCRM',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='detalles_cotizacion',
+        verbose_name='Marca de esta línea (interno, no aparece en PDF)',
+    )
+    costo_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name='Costo unitario (interno, no aparece en PDF)',
+    )
 
     class Meta:
         """
@@ -1748,14 +1779,56 @@ class Notificacion(models.Model):
             self.save()
     
     def get_url(self):
-        """Obtiene la URL a la que debe dirigirse la notificación"""
-        if self.tipo == 'proyecto_agregado' and self.proyecto_id:
-            # Por ahora redirigir a la sección de tareas y proyectos
-            # En el futuro se podría dirigir al detalle del proyecto específico
-            return "/app/tareas-proyectos/"
-        elif self.oportunidad:
-            return f"/app/cotizaciones/oportunidad/{self.oportunidad.id}/"
-        return "/app/todos/"
+        """URL a la que debe dirigirse la notificación cuando el click
+        ocurre fuera del widget JS (ej. notificaciones push del navegador
+        o emails). El JS del widget tiene su propia tabla NOTIF_HANDLERS
+        más rica — esta función es el fallback para los casos sin JS.
+        """
+        t = self.tipo or ''
+        oid = self.oportunidad_id
+        # Tareas (modelo Tarea — sidebar Tareas)
+        if t in ('tarea_vencida', 'tarea_por_vencer', 'tarea_asignada',
+                 'tarea_reprogramada', 'tarea_participante',
+                 'tarea_observador', 'tarea_mencion', 'tarea_comentario'):
+            return '/app/home/?tab=tareas' + (f'&open_tarea={self.tarea_id}' if self.tarea_id else '')
+        # Tareas de oportunidad
+        if t in ('tarea_opp_asignada', 'tarea_opp_comentario'):
+            if oid:
+                return f'/app/home/?open_opp={oid}'
+            return '/app/home/?tab=tareas'
+        # Actividades del calendario
+        if t in ('actividad_vencida', 'actividad_por_vencer'):
+            return '/app/home/?open_calendario=1'
+        # Oportunidades
+        if t in ('mencion', 'comentario_oportunidad', 'oportunidad_mensaje') and oid:
+            return f'/app/home/?open_opp={oid}'
+        # Equipo
+        if t in ('muro_post', 'muro_mencion', 'respuesta'):
+            return '/app/home/?open_muro=1'
+        if t == 'mensaje_grupo':
+            return '/app/home/?open_grupo=1'
+        # Proyectos
+        if t in ('proyecto_agregado', 'programacion_proyecto') and self.proyecto_id:
+            return f'/app/home/?tab=proyectos&open_proyecto={self.proyecto_id}'
+        # Prospectos
+        if t == 'prospecto_asignado':
+            return '/app/home/?tab=prospectos'
+        # Certificaciones
+        if t in ('certificacion_por_vencer', 'certificacion_vencida'):
+            cert_id = self.certificacion_id if hasattr(self, 'certificacion_id') else None
+            if cert_id:
+                return f'/app/home/?tab=certificaciones&open_cert={cert_id}'
+            return '/app/home/?tab=certificaciones'
+        # Administrativas (no navegan — se expanden en el widget)
+        if t in ('rendimiento_bajo', 'solicitud_cambio_perfil'):
+            return '/app/home/?open_notificaciones=1'
+        # Sistema (info pura)
+        if t == 'sistema':
+            return '/app/home/'
+        # Fallback ultra-genérico
+        if oid:
+            return f'/app/home/?open_opp={oid}'
+        return '/app/home/'
 
 
 class Proyecto(models.Model):
@@ -2294,6 +2367,7 @@ class Tarea(models.Model):
     
     titulo = models.CharField(
         max_length=200,
+        db_index=True,
         verbose_name="Título de la Tarea"
     )
     descripcion = models.TextField(
@@ -2420,6 +2494,11 @@ class Tarea(models.Model):
         verbose_name = "Tarea"
         verbose_name_plural = "Tareas"
         ordering = ['-fecha_creacion']
+        indexes = [
+            # (2026-06-10, perf) Vencidas/próximas por oportunidad (api_crm_table_data)
+            models.Index(fields=['oportunidad', 'estado', 'fecha_limite'],
+                         name='idx_tarea_opp_est_lim'),
+        ]
     
     def __str__(self):
         return f"{self.titulo} - {self.proyecto.nombre if self.proyecto else 'Sin Proyecto'}"
@@ -2596,6 +2675,13 @@ class Actividad(models.Model):
         verbose_name = "Actividad del Calendario"
         verbose_name_plural = "Actividades del Calendario"
         ordering = ['fecha_inicio']
+        indexes = [
+            # (2026-06-10, perf) Próxima actividad por oportunidad (kanban CRM)
+            models.Index(fields=['oportunidad', 'completada', 'fecha_inicio'],
+                         name='idx_act_opp_comp_ini'),
+            models.Index(fields=['oportunidad', 'completada', 'fecha_fin'],
+                         name='idx_act_opp_comp_fin'),
+        ]
 
     def __str__(self):
         return f"{self.titulo} ({self.fecha_inicio.strftime('%d/%m/%Y %H:%M')})"
@@ -2971,7 +3057,7 @@ class TareaOportunidad(models.Model):
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.CASCADE, related_name='tareas_oportunidad'
     )
-    titulo = models.CharField(max_length=255)
+    titulo = models.CharField(max_length=255, db_index=True)
     descripcion = models.TextField(blank=True)
     prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='normal')
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
@@ -3002,6 +3088,12 @@ class TareaOportunidad(models.Model):
 
     class Meta:
         ordering = ['-prioridad', 'fecha_limite']
+        indexes = [
+            # (2026-06-10, perf) Lookups del kanban CRM: vencidas/próximas
+            # por oportunidad (crm_home + api_crm_table_data, en cada render)
+            models.Index(fields=['oportunidad', 'estado', 'fecha_limite'],
+                         name='idx_tareaopp_opp_est_lim'),
+        ]
 
     def __str__(self):
         return f'{self.titulo} → {self.oportunidad}'
@@ -4293,9 +4385,9 @@ class ProyectoIAMET(models.Model):
         help_text='Usuarios adicionales con acceso al proyecto (ingenieros, técnicos, etc).'
     )
     oportunidad = models.ForeignKey('TodoItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='proyectos_iamet_vinculados')
-    nombre = models.CharField(max_length=255)
+    nombre = models.CharField(max_length=255, db_index=True)
     descripcion = models.TextField(blank=True, default='')
-    cliente_nombre = models.CharField(max_length=255, blank=True, default='')
+    cliente_nombre = models.CharField(max_length=255, blank=True, default='', db_index=True)
     STATUS_CHOICES = [
         ('planning', 'Planificacion'),
         ('active', 'Activo'),
@@ -4330,8 +4422,10 @@ class ProyectoPartida(models.Model):
     ]
     categoria = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='equipamiento')
     descripcion = models.TextField()
-    marca = models.CharField(max_length=255, blank=True, default='')
-    numero_parte = models.CharField(max_length=255, blank=True, default='')
+    marca = models.CharField(max_length=255, blank=True, default='', db_index=True)
+    # db_index para búsquedas por número de parte en el catálogo de
+    # partidas (es uno de los campos más buscados en views_iamet.py).
+    numero_parte = models.CharField(max_length=255, blank=True, default='', db_index=True)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     cantidad_pendiente = models.DecimalField(max_digits=10, decimal_places=2)
     precio_lista = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
@@ -6100,3 +6194,205 @@ class InstalacionAsignacion(models.Model):
 
     def __str__(self):
         return f'{self.tecnico.nombre} @ {self.instalacion.cliente_nombre} ({self.fecha})'
+
+
+# ════════════════════════════════════════════════════════════════════════
+# MaterialEsperado — Junio 2026
+#
+# Producto que se está esperando para un ProyectoIAMET (logística de
+# compra de materiales). Se renderiza como una barra en el timeline de la
+# sección "Control" del dashboard. Cada barra tiene fechas de inicio/fin
+# (ventana esperada de llegada) + estado en el flujo de compra.
+#
+# Comentarios libres en TextField (separador `\n---\n`) para mantenerlo
+# simple — no se crea modelo aparte de comentarios todavía.
+# ════════════════════════════════════════════════════════════════════════
+class MaterialEsperado(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente_compra', 'Pendiente de compra'),
+        ('en_transito', 'En tránsito'),
+        ('material_listo', 'Material listo'),
+        ('en_espera_cliente', 'En espera del cliente'),
+        ('recibido', 'Recibido'),
+    ]
+
+    proyecto = models.ForeignKey(
+        'ProyectoIAMET',
+        on_delete=models.CASCADE,
+        related_name='materiales_esperados',
+    )
+    titulo = models.CharField(max_length=200)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    estado = models.CharField(
+        max_length=30,
+        choices=ESTADO_CHOICES,
+        default='pendiente_compra',
+    )
+    confirmado_recepcion = models.BooleanField(default=False)
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True)
+    confirmado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='materiales_confirmados',
+    )
+    comentarios = models.TextField(blank=True, default='')
+    creado_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='materiales_creados',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Material esperado'
+        verbose_name_plural = 'Materiales esperados'
+        ordering = ['fecha_inicio']
+        indexes = [
+            models.Index(fields=['proyecto', 'fecha_inicio']),
+            models.Index(fields=['estado']),
+        ]
+
+    def __str__(self):
+        return f'{self.titulo} ({self.proyecto_id})'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.fecha_inicio and self.fecha_fin and self.fecha_fin < self.fecha_inicio:
+            raise ValidationError({
+                'fecha_fin': 'La fecha fin no puede ser anterior a la fecha de inicio.',
+            })
+
+
+# ════════════════════════════════════════════════════════════════════════
+# MarcaCRM — Junio 2026
+#
+# Catálogo de marcas/productos del distribuidor con metadata rica:
+# logo, descripción, contactos (marca / ingeniería / mayorista), meta
+# anual de venta y estrategia documentada. La `key` mapea al CharField
+# `producto` de TodoItem.PRODUCTO_CHOICES (ZEBRA, PANDUIT, APC, etc.) y
+# se usa como identificador estable en URLs y JS. Soft-delete vía
+# `activa=False` para preservar referencias históricas.
+#
+# Reemplaza la constante hardcoded MARCAS_CATALOGO de views_v2/marcas_v2.py
+# (las 11 marcas iniciales se siembran vía migration de datos).
+# ════════════════════════════════════════════════════════════════════════
+class MarcaCRM(models.Model):
+    nombre = models.CharField(max_length=80, unique=True)
+    key = models.CharField(max_length=40, unique=True, db_index=True)
+    categoria = models.CharField(max_length=100, blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    logo = models.ImageField(upload_to='marcas/logos/', null=True, blank=True)
+
+    # Contactos planos (3 grupos × 3 campos cada uno).
+    contacto_marca_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_marca_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_marca_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_ingenieria_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_ingenieria_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_ingenieria_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_mayorista_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_mayorista_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_mayorista_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    meta_anual = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    estrategia = models.TextField(blank=True, default='')
+    activa = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Marca CRM'
+        verbose_name_plural = 'Marcas CRM'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class ProveedorCRM(models.Model):
+    """Catálogo de proveedores del distribuidor — espejo de MarcaCRM.
+
+    Mismo diseño que MarcaCRM: metadata rica (logo, descripción, 3
+    contactos planos, meta anual, estrategia). La `key` es el
+    identificador estable usado en URLs y, cuando se cree el campo
+    `TodoItem.proveedor`, en filtros de pipeline/facturación.
+
+    Mientras `TodoItem.proveedor` no exista, los endpoints de detalle
+    devuelven payloads vacíos para opps/facturado/pipeline. Esto permite
+    capturar proveedores manualmente sin esperar el campo.
+
+    Soft-delete vía `activa=False` para preservar referencias históricas.
+    """
+    nombre = models.CharField(max_length=80, unique=True)
+    key = models.CharField(max_length=40, unique=True, db_index=True)
+    categoria = models.CharField(max_length=100, blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    logo = models.ImageField(upload_to='proveedores/logos/', null=True, blank=True)
+
+    # Contactos planos (3 grupos × 3 campos cada uno).
+    # Naming "principal / ventas / soporte" — más natural para proveedores
+    # que el triplete marca/ingenieria/mayorista de MarcaCRM.
+    contacto_principal_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_principal_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_principal_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_ventas_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_ventas_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_ventas_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    contacto_soporte_nombre = models.CharField(max_length=120, blank=True, default='')
+    contacto_soporte_email = models.CharField(max_length=120, blank=True, default='')
+    contacto_soporte_telefono = models.CharField(max_length=40, blank=True, default='')
+
+    meta_anual = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    estrategia = models.TextField(blank=True, default='')
+    activa = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Proveedor CRM'
+        verbose_name_plural = 'Proveedores CRM'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class CrmCambio(models.Model):
+    """Log ligero de cambios para el sync entre usuarios (polling).
+
+    Poblado automáticamente por signals (app/signals_sync.py) en los
+    modelos que la UI muestra en vivo. El endpoint api_sync_cambios
+    (views_sync.py) lo consulta por cursor de PK (id > since) — query
+    de índice primario, microsegundos — y el cliente (crm_sync.js)
+    re-emite cada cambio al crmDataBus para que kanban/ventanas/drive
+    se refresquen solos. Las filas viejas se purgan oportunistamente
+    desde el endpoint (>48h).
+    """
+    ACCIONES = [('create', 'create'), ('update', 'update'), ('delete', 'delete')]
+
+    entidad = models.CharField(max_length=40)          # nombre canónico del crmDataBus
+    objeto_id = models.BigIntegerField(null=True, blank=True)
+    accion = models.CharField(max_length=10, choices=ACCIONES)
+    usuario = models.ForeignKey(User, null=True, blank=True,
+                                on_delete=models.SET_NULL, related_name='+')
+    extra = models.JSONField(default=dict, blank=True)  # ej. {'oportunidad_id': 123}
+    ts = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Cambio CRM (sync)'
+        verbose_name_plural = 'Cambios CRM (sync)'
+
+    def __str__(self):
+        return f'{self.entidad}#{self.objeto_id} {self.accion}'

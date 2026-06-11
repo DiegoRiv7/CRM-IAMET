@@ -7,6 +7,12 @@
 <link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}?v=20260602-topbar-grid">
 <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260506-vol-actions">
 <link rel="stylesheet" href="{% static 'css/crm_volumetria.css' %}?v=20260507-mxn-highlight">
+<link rel="stylesheet" href="{% static 'css/control_v2.css' %}?v=20260608-grow-back">
+<link rel="stylesheet" href="{% static 'css/control_material.css' %}?v=20260608-grow-back">
+<link rel="stylesheet" href="{% static 'css/marcas_v2.css' %}?v=20260609-jsheight">
+<link rel="stylesheet" href="{% static 'css/marca_editar.css' %}?v=20260609-jsheight">
+<link rel="stylesheet" href="{% static 'css/proveedores_v2.css' %}?v=20260609-mirror-marcas">
+<link rel="stylesheet" href="{% static 'css/proveedor_editar.css' %}?v=20260609-mirror-marcas">
 {% if es_ingeniero %}
 <style>
     /* Anti-FOUC: mientras body tiene .eng-initial-hide, oculta todas las
@@ -83,6 +89,7 @@
     {% include "crm/_widget_curso_detalle.html" %}
     {% endif %}
     {% include "crm/_widget_oportunidad.html" %}
+    {% include "crm/_widget_oportunidad_v2.html" %}
     {% include "crm/_widget_extras.html" %}
     {% if not es_ingeniero or es_supervisor %}
     {% include "crm/_widget_admin.html" %}
@@ -95,19 +102,26 @@
     {% include "crm/_widget_novedades.html" %}
     {% include "crm/_widget_empleado_mes.html" %}
 
+    {# Widgets de la sección Control (logística de materiales) #}
+    {% include "crm/_widget_control_material_form.html" %}
+    {% include "crm/_widget_control_material_detalle.html" %}
+
+    {# Widget overlay del detalle de Marca (renderizado por crm_marcas_v2.js) #}
+    {% include "crm/_widget_marca_detalle.html" %}
+
+    {# Widget editor (crear/editar marca) — supervisores #}
+    {% include "crm/_widget_marca_editar.html" %}
+
+    {# Widget overlay del detalle de Proveedor (renderizado por crm_proveedores_v2.js) #}
+    {% include "crm/_widget_proveedor_detalle.html" %}
+
+    {# Widget editor (crear/editar proveedor) — supervisores #}
+    {% include "crm/_widget_proveedor_editar.html" %}
+
     {% if es_administrador %}{% include "crm/_widget_compras.html" %}{% endif %}
 
     {% if es_ingeniero %}
     {% include "crm/_widget_dashboard_ingeniero.html" %}
-    {% comment %}
-    _actividades_board.html — TABLERO LEGACY: oculto hasta nuevo aviso.
-    Duplicaba el ID widgetProyectoDetalle con _widget_proyectos.html y
-    abría un modal viejo (TAREAS/DRIVE/INFORMACIÓN) al clickear proyectos
-    desde el dashboard. El template queda en el repo intacto; solo se
-    des-incluye aquí.
-
-    {% include "crm/_actividades_board.html" %}
-    {% endcomment %}
     {% endif %}
     {% include "crm/_content.html" %}
 
@@ -125,15 +139,21 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% include "crm/_scripts_main.html" %}
-<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260528-kill-verif"></script>
+{% comment %}
+data-turbo-eval="false" en TODOS los scripts JS del CRM: registran
+globals + listeners que viven entre navegaciones SPA. Sin esto, Turbo
+los re-evaluaría en cada turbo:load → listeners duplicados, fetchs
+dobles, posibles SyntaxErrors.
+{% endcomment %}
+<script src="{% static 'js/crm_avance_etapa.js' %}?v=20260528-kill-verif" data-turbo-eval="false"></script>
 {% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
-<script src="{% static 'js/crm_proyectos.js' %}?v=20260602-fix-topbar-persist"></script>
-<script src="{% static 'js/programa_obra.js' %}?v=20260602-fix-tab-refetch"></script>
-<script src="{% static 'js/gantt_programa_obra.js' %}?v=20260508-revert-gantt"></script>
-<script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss"></script>
-<script src="{% static 'js/crm_levantamiento.js' %}?v=20260507-vendor-compact"></script>
+<script src="{% static 'js/crm_proyectos.js' %}?v=20260602-fix-topbar-persist" data-turbo-eval="false"></script>
+<script src="{% static 'js/programa_obra.js' %}?v=20260602-fix-tab-refetch" data-turbo-eval="false"></script>
+<script src="{% static 'js/gantt_programa_obra.js' %}?v=20260508-revert-gantt" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_levantamiento.js' %}?v=20260507-vendor-compact" data-turbo-eval="false"></script>
 {% if es_ingeniero %}
 {% include "crm/_scripts_ingeniero.html" %}
 {% endif %}
@@ -141,11 +161,17 @@
 <script>
     var ES_INGENIERO = {{ es_ingeniero|yesno:"true,false" }};
 </script>
-<script src="{% static 'js/crm_asistente.js' %}?v=20260521-cal-chat"></script>
-<script src="{% static 'js/crm_asistente_oportunidades.js' %}?v=20260520-prosp-resp"></script>
-<script src="{% static 'js/crm_asistente_calendario.js' %}?v=20260521-cal-chat"></script>
-<script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp"></script>
-<script src="{% static 'js/crm_prospectos_kanban.js' %}"></script>
-<script src="{% static 'js/crm_campanas.js' %}"></script>
+<script src="{% static 'js/crm_asistente.js' %}?v=20260521-cal-chat" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_asistente_oportunidades.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_asistente_calendario.js' %}?v=20260521-cal-chat" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_prospectos_kanban.js' %}?v=20260610-pk-spa" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_campanas.js' %}" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_control_v2.js' %}?v=20260608-grow-back" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_control_material_v2.js' %}?v=20260608-control-material-1" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_marcas_v2.js' %}?v=20260609-tabfix" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_marca_editar_v2.js' %}?v=20260609-editor2" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_proveedores_v2.js' %}?v=20260609-tabfix" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_proveedor_editar_v2.js' %}?v=20260609-mirror-marcas" data-turbo-eval="false"></script>
 
 {% endblock %}

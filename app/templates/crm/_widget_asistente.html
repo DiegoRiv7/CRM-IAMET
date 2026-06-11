@@ -4,7 +4,7 @@ Avatar es un orb CSS animado (hue-rotate + breathing + halo) en vez de
 un icono estático. Saludo personalizado con first_name del user.
 {% endcomment %}
 
-<div class="widget-overlay" id="widgetAsistente" style="z-index:10400;display:none;">
+<div class="widget-overlay" id="widgetAsistente" style="z-index:var(--z-widget);display:none;"><!-- Nivel 1: abierto desde orbe AI -->
     {% comment %}SVG filter inline — agua real con turbulence + displacement.
     Vive aquí para estar disponible globalmente cuando el widget está montado.
     Las capas del orb lo referencian via filter:url(#asistWater).{% endcomment %}

@@ -1,3 +1,15 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * gantt_programa_obra.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+ *
+ * ~3,700 líneas del Gantt interactivo + templates de programa de obra.
+ * Marcado como LEGACY por Boy Scout Rule.
+ *
+ * NO agregar código aquí. Para nuevas features del programa de obra:
+ *   → app/static/js/proyectos_v2.js
+ *
+ * Modificar SOLO para bugs críticos. Ver app/static/js/README.md.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
 /* ============================================================
    gantt_programa_obra.js  --  Diagrama de Gantt interactivo
    Modulo autocontenido — Canvas 2D + DOM, sin dependencias

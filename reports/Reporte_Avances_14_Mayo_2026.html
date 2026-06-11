@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 14 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 14 de Mayo, 2026</p>
+            <p>Periodo: 14 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Dia de mucho avance: se lanzo el <strong>nuevo Calendario integrado al CRM</strong> con tres vistas, drag-and-drop y diseno liquid glass; se construyo la <strong>tab &ldquo;Informacion&rdquo; del Cliente</strong> con carátula, contactos y KPIs; y se pulieron varios flujos de modales y busqueda.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Modulos nuevos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Vistas de calendario</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">51</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Integrado al CRM</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Nuevo Calendario Integrado al CRM
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El calendario dejo de ser un modal flotante y ahora es una <strong>seccion propia dentro del CRM</strong>, igual que Oportunidades, Tareas o Proyectos. Ocupa toda la pantalla con su barra de controles, permite navegar entre Mes, Semana y Dia, y cada actividad muestra su <strong>color real</strong> (naranja para tareas, azul para actividades con oportunidad, etc.). Al pasar el cursor aparece un popup con el detalle completo sin necesidad de abrir ningún modal. La pagina scrollea de forma natural cuando el mes esta lleno &mdash; sin dobles barras de desplazamiento.</p>
+    </div>
+
+    <h2>1. Nuevo Calendario &mdash; Seccion de Pagina Completa</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Calendario como Seccion Propia del CRM</span>
+        <div class="update-desc">Ya no es un overlay. Ahora es una seccion con su propia entrada en la barra lateral, <strong>igual que Oportunidades o Proyectos</strong>. Ocupa todo el ancho sin panel lateral.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tres Vistas: Mes, Semana y Dia</span>
+        <div class="update-desc">Los botones en la barra superior permiten cambiar entre las tres vistas. <strong>La preferencia se guarda</strong> y se restaura al regresar al calendario.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Barra de Controles Liquid Glass</span>
+        <div class="update-desc">La barra superior tiene <strong>Filtro por tipo, selector de Usuario, tabs de vista y boton + Nueva actividad</strong> en una sola fila con vidrio esmerilado. Se queda fija al scrollear.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Hover Preview con Color Real del Evento</span>
+        <div class="update-desc">Al pasar el cursor sobre un evento aparece un popover con <strong>titulo, fecha, descripcion y oportunidad ligada</strong>. El encabezado usa el color real del evento &mdash; no uno generico.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Vista Dia con Timeline y Drag-and-Drop</span>
+        <div class="update-desc">La vista de dia muestra un horario de 06:00 a 23:00 con una <strong>linea roja en tiempo real</strong>. Las actividades se pueden <strong>arrastrar a otro horario</strong> y el cambio se guarda automaticamente. Los eventos que se solapan se acomodan en columnas lado a lado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Filtros por Tipo y por Usuario</span>
+        <div class="update-desc">El boton Filtro muestra u oculta por tipo (Tareas, Actividades, Eventos, Cursos). Los supervisores pueden <strong>cambiar al usuario</strong> para ver el calendario de cualquier vendedor del equipo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Click en Celda Crea Actividad con Fecha Pre-llenada</span>
+        <div class="update-desc">Al hacer click en cualquier dia del mes se abre el formulario de nueva actividad <strong>con la fecha ya seleccionada</strong>. Menos pasos para agendar.</div>
+    </div>
+
+    <h2>2. Tab &ldquo;Informacion&rdquo; del Cliente</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Caratula con Logo y Datos Operativos</span>
+        <div class="update-desc">La ficha del cliente ahora tiene una tab <strong>&ldquo;Informacion&rdquo;</strong> con su logo, datos de contacto, RFC, horarios de atencion, instrucciones de entrega y dias de facturacion &mdash; todo en un diseno tipo credencial profesional.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Edicion Campo por Campo (Click-to-Edit)</span>
+        <div class="update-desc">Cada dato se edita con un <strong>mini-lapiz al pasar el cursor</strong>. Se modifica solo ese campo sin abrir un formulario completo. Por default esta en modo lectura para no editar de forma accidental.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tablero de Contactos en 2 Filas</span>
+        <div class="update-desc">Los contactos del cliente se muestran en <strong>tarjetas acomodadas en una cuadricula</strong>. Los botones de guardar/cancelar aparecen flotando solo cuando hay cambios pendientes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">KPIs del Cliente con la Misma Fuente que los Dashboards</span>
+        <div class="update-desc">Los indicadores de la ficha (ventas, proyectos, prospecciones) usan <strong>la misma logica de calculo que los dashboards principales</strong>, solo filtrada por ese cliente especifico.</div>
+    </div>
+
+    <h2>3. Mejoras a Flujos y Modales</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Modales Solo Cierran con la X</span>
+        <div class="update-desc">Los modales de <strong>Nueva Oportunidad y Nuevo Prospecto</strong> ya no se cierran al hacer click fuera. Solo se cierran con el boton X, evitando perder datos al hacer click accidental.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Spotlight Abre la Tab Correcta</span>
+        <div class="update-desc">Al buscar desde el Spotlight y seleccionar un cliente, ahora <strong>abre directamente la tab Informacion</strong>. Si se selecciona un proyecto, abre el detalle real del proyecto.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Tareas: Imagenes por Paste y Drop en Descripcion</span>
+        <div class="update-desc">En el campo de descripcion de una tarea se pueden <strong>pegar o arrastrar imagenes</strong> directamente. Se insertan de forma invisible para que la descripcion no se llene de HTML raro.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Etapa: Widget de Descripcion al Cerrar Tarea</span>
+        <div class="update-desc">Al cerrar una tarea con avance, aparece un <strong>widget bloqueante</strong> que pide descripcion del progreso antes de dejar continuar. Asegura que siempre quede registro del trabajo realizado.</div>
+    </div>
+
+    <h2>4. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Agenda del Equipo en el Mismo CRM</span>
+        <div class="update-desc">Los supervisores pueden ver <strong>que tiene agendado cada vendedor</strong> sin salir del CRM. Cada evento muestra a que oportunidad pertenece con un click directo al detalle.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Expediente Completo del Cliente en un Solo Lugar</span>
+        <div class="update-desc">Con la tab Informacion, cualquier persona del equipo puede ver <strong>quien es el cliente, como contactarlo, sus horarios, sus KPIs y sus prospecciones activas</strong> desde una sola pantalla.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Menos Perdida de Datos en Modales</span>
+        <div class="update-desc">Al exigir que los modales solo cierren con la X, <strong>no se pierde informacion</strong> capturada a medias por un click accidental fuera del formulario.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 14 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

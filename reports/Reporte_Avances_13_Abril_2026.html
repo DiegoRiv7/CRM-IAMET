@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 13 de Abril</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+        .header-meta {
+            text-align: right;
+            font-size: 13px;
+            color: var(--secondary);
+        }
+        h2 {
+            font-size: 19px;
+            margin-top: 25px;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        .achievement-box {
+            background: rgba(0, 82, 212, 0.04);
+            border: 1px solid rgba(0, 82, 212, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .achievement-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 17px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .achievement-title svg {
+            margin-right: 10px;
+        }
+        .badge {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .update-item {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f8f8f8;
+        }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .btn-pdf {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,82,212,0.2);
+        }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 13 de Abril, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones desplegadas hoy a produccion, enfocadas en el <strong>Modulo Financiero de Proyectos</strong> con importacion automatica de Ordenes de Compra y Facturas desde el Drive, parser inteligente de PDFs, deteccion de duplicados y la correccion critica de subida de archivos en carpetas de proyecto.</p>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Auto-Import Inteligente de OCC y Facturas desde Drive
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se implemento un sistema completo de <strong>importacion financiera automatica</strong> para los proyectos. Cuando un usuario sube un PDF al drive cuyo nombre empieza con <code>OCC</code> o <code>Factura</code>, el sistema lo detecta, parsea el PDF con <code>pdfplumber</code>, extrae <strong>proveedor, fecha, monto total y numero de documento</strong>, verifica que no exista un duplicado y crea el registro financiero en el proyecto IAMET vinculado — todo sin intervencion manual. El mayor reto tecnico fue el parser de PDFs: el texto extraido mezcla las dos columnas del layout original, por lo que extraer el nombre real del proveedor (y no el "Elaborado por" que es quien creo la OC) requirio un algoritmo que navega linea por linea entre los marcadores "Proveedor" y "Cod", descartando RFC, telefonos, direcciones y ciudades. Ademas el sistema ahora sigue la cadena completa de vinculacion <code>Proyecto → OportunidadProyecto → TodoItem → ProyectoIAMET</code> para que la deteccion funcione tanto al subir al drive de la oportunidad como al drive del proyecto directamente.</p>
+    </div>
+
+    <h2>1. Importacion Automatica desde Drive</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Deteccion Automatica de OCC y Facturas</span>
+        <div class="update-desc">Nuevo modulo <code>services_financiero.py</code> que se ejecuta automaticamente al subir un archivo al drive. Detecta por el nombre del archivo (<code>OCC*</code> o <code>Factura*</code>) si corresponde a una Orden de Compra o Factura de Ingreso, parsea el PDF y crea el registro financiero en el proyecto IAMET vinculado a la oportunidad. No se requiere capturar datos manualmente.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Upload Manual con Parser Completo</span>
+        <div class="update-desc">Dos nuevos endpoints (<code>/financiero/upload-oc/</code> y <code>/financiero/upload-factura/</code>) permiten subir PDFs directamente al modulo financiero. Ambos usan el mismo parser que el auto-import, por lo que extraen proveedor, fecha, monto y numero sin que el usuario capture nada.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Sincronizar Drive: Escaneo Batch</span>
+        <div class="update-desc">Boton "Sincronizar Drive" en el tab Financiero que escanea todos los archivos del drive de la oportunidad y procesa los que aun no han sido importados. Util para proyectos con archivos subidos antes de que existiera la deteccion automatica.</div>
+    </div>
+
+    <h2>2. Parser Inteligente de PDFs</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Extraccion de Proveedor, Fecha, Monto y Numero</span>
+        <div class="update-desc">El parser <code>_extraer_datos_pdf()</code> recorre el PDF en una sola pasada y extrae <strong>cuatro campos</strong>: monto (SUBTOTAL/TOTAL), proveedor (nombre de la empresa, sin RFC ni telefono), fecha del documento (soporta formatos <code>DD-MM-YYYY</code>, <code>YYYY-MM-DD</code>, con guion o diagonal) y numero de OC/Factura. Si el PDF tiene un layout de 2 columnas, el algoritmo navega entre los marcadores correctos para aislar cada dato.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Proveedor Correcto en PDFs de 2 Columnas</span>
+        <div class="update-desc">En los PDFs de OCC, el texto extraido mezcla ambas columnas del layout. Antes el parser devolvia incorrectamente el nombre del "Elaborado por" (quien creo la OC en el sistema) en vez del proveedor real. El nuevo algoritmo identifica el bloque entre "Proveedor" y "Cod", salta lineas con RFC, telefonos, direcciones, codigos postales y ciudades, y devuelve el nombre correcto.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Acortamiento Automatico de Nombres de Proveedor</span>
+        <div class="update-desc">La funcion <code>_acortar_nombre()</code> limpia sufijos legales (<code>S.A. DE C.V.</code>, <code>S. DE R.L.</code>, etc.) y trunca nombres largos en la ultima palabra completa si exceden 50 caracteres. La tabla de OC se ve mas limpia sin perder informacion relevante.</div>
+    </div>
+
+    <h2>3. Deteccion de Duplicados</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Verificacion en Tres Niveles</span>
+        <div class="update-desc">El sistema valida duplicados en tres puntos: (1) por el archivo del drive ya procesado (mismo <code>ArchivoOportunidad</code>), (2) por el numero de OC/Factura dentro del mismo proyecto — si subes <code>OCC-TIJ13790.pdf</code> dos veces el sistema lo rechaza, y (3) en el auto-import del drive, mismo check antes de crear el registro. Esto evita inflar los numeros del proyecto por subidas accidentales.</div>
+    </div>
+
+    <h2>4. Correccion Critica: Subida en Carpetas de Proyecto</h2>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Subir Archivos en Carpetas de Proyecto (404 resuelto)</span>
+        <div class="update-desc">El frontend del drive siempre usaba el endpoint de oportunidad para subir archivos, causando error <strong>404 Not Found</strong> cuando el usuario estaba dentro de una carpeta perteneciente al proyecto vinculado. Se agrego logica para detectar el modo (<code>opp</code> vs <code>proyecto</code>) y dirigir la subida al endpoint correcto. Ahora se pueden subir, renombrar, eliminar archivos y crear carpetas tanto en el drive de la oportunidad como en el del proyecto.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Auto-Import Tambien desde Drive de Proyecto</span>
+        <div class="update-desc">Nueva funcion <code>analizar_archivo_proyecto()</code> que se dispara cuando se sube un OCC o Factura directamente al drive del proyecto. Sigue la cadena <code>Proyecto → OportunidadProyecto → TodoItem → ProyectoIAMET</code> para encontrar el proyecto correcto y crear el registro financiero — con la misma logica de parser y deteccion de duplicados que el flujo de oportunidad.</div>
+    </div>
+
+    <h2>5. Mejoras UX en Tab Financiero</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Eliminar OC + Abrir PDF en Nueva Pestana</span>
+        <div class="update-desc">Cada fila de OC tiene ahora un boton de eliminar (con confirmacion) para borrar OCs subidas por error. El numero de OC es un link que abre el PDF original en una pestana nueva si existe archivo vinculado. El boton "+ Nueva OC" fue removido: las OC se crean solo via upload de PDF o sincronizacion, evitando duplicados manuales sin documento de respaldo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Alineacion y Tooltips en Tabla de OC</span>
+        <div class="update-desc">Headers y celdas alineados por tipo de dato: numero y proveedor a la izquierda, cantidad y monto a la derecha (monto en bold), estado centrado. La columna de proveedor tiene <code>ellipsis</code> con tooltip para nombres largos y la fecha usa <code>nowrap</code> para evitar quiebres raros.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Quitar KPIs Duplicados del Tab Financiero</span>
+        <div class="update-desc">Los KPIs de Gastado/Cobrado/Balance que estaban dentro del tab Financiero se eliminaron porque ya existen en la barra superior del detalle de proyecto (tab Partidas). Se quita la duplicacion visual y el calculo redundante.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,602 @@
+/* ═══════════════════════════════════════════════════════════════════
+   widget_window.css — Sistema de ventanas para widgets (widget_window.js)
+
+   Un overlay con .ww-windowed deja de ser modal: pierde el fondo y los
+   clicks pasan al contenido de atrás; su card se vuelve una ventana
+   flotante posicionada con custom properties (--ww-x/y/w/h) que el JS
+   actualiza al arrastrar/redimensionar.
+
+   Los !important son necesarios: las cards grandes (.widget-card-lg,
+   .widget-card-cotizador) fijan width/height con !important en crm.css.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Minimizado (al dock) ──
+   Solo con clase: jamás display inline, porque widgets como
+   widgetDetalle se cierran quitando 'active' y un inline pegado
+   dejaría la X sin efecto. */
+.widget-overlay.ww-minimized {
+    display: none !important;
+}
+
+/* ── Overlay en modo ventana ── */
+.widget-overlay.ww-windowed {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none;
+    animation: none !important;
+}
+
+/* ── Card en modo ventana ── */
+.ww-card {
+    position: relative;  /* ancla de los handles también en modo maximizado */
+}
+
+.widget-overlay.ww-windowed .ww-card {
+    pointer-events: auto;
+    position: fixed !important;
+    left: var(--ww-x) !important;
+    top: var(--ww-y) !important;
+    width: var(--ww-w) !important;
+    height: var(--ww-h) !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.07);
+    transition: filter 0.18s ease;
+    animation: none !important;
+}
+
+/* Foco por CONTRASTE — el énfasis lo da la oscuridad del entorno,
+   no halos ni zooms. Cuando hay al menos una ventana flotante
+   visible, un velo oscuro cubre el CRM detrás; las ventanas que
+   NO están al frente reciben filter:brightness leve para perder
+   protagonismo. La ventana .ww-focused queda con brillo pleno y
+   "flota" visualmente por simple contraste con el resto.
+
+   El selector :has() es reactivo: aparece/desaparece sin que JS
+   tenga que mantener una clase en el body. Evita el bug de "se
+   queda oscuro cuando ya cerré todas las ventanas". */
+body.ww-has-windows::after,
+body:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 900;            /* sobre el CRM (≤100), debajo de widgets (≥1000) */
+    background: rgba(0, 0, 0, 0.22);
+    pointer-events: none;     /* clicks pasan al CRM (necesario para Mission Control) */
+    transition: opacity 0.22s ease;
+}
+
+/* Mission Control activo → fondo limpio (las ventanas se fueron) */
+body.ww-mission-control.ww-has-windows::after,
+body.ww-mission-control:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
+    opacity: 0;
+}
+
+/* Ventanas en SEGUNDO plano: un poco más oscuras que la activa */
+.widget-overlay.ww-windowed:not(.ww-focused) .ww-card {
+    filter: brightness(0.88);
+}
+
+/* Ocultar el pill negro de breadcrumb del widget_stack cuando hay
+   ventanas flotantes — el sistema de ventanas tiene su propio
+   sistema de identificación (foco visual + dock). El breadcrumb
+   solo aplicaba al modo modal apilado. */
+body:has(.widget-overlay.ww-windowed:not(.ww-minimized)) #crmWidgetBreadcrumb {
+    display: none !important;
+}
+
+/* ── Esquinas de resize ── */
+.ww-handle {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    z-index: 60;
+    touch-action: none;
+}
+
+/* Esquinas (cuadrados de 18×18 que toman cuadrante completo) */
+.ww-handle-nw { top: -4px; left: -4px; cursor: nwse-resize; }
+.ww-handle-ne { top: -4px; right: -4px; cursor: nesw-resize; }
+.ww-handle-sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.ww-handle-se { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
+/* Lados: tiras finas (8 px de grosor) entre las esquinas, con
+   18 px de offset a cada extremo para no solapar los handles de
+   esquina. Sobrescriben width/height de la regla base .ww-handle. */
+.ww-handle-n {
+    top: -4px; left: 18px; right: 18px; bottom: auto;
+    width: auto; height: 8px; cursor: ns-resize;
+}
+.ww-handle-s {
+    bottom: -4px; left: 18px; right: 18px; top: auto;
+    width: auto; height: 8px; cursor: ns-resize;
+}
+.ww-handle-e {
+    right: -4px; top: 18px; bottom: 18px; left: auto;
+    width: 8px; height: auto; cursor: ew-resize;
+}
+.ww-handle-w {
+    left: -4px; top: 18px; bottom: 18px; right: auto;
+    width: 8px; height: auto; cursor: ew-resize;
+}
+
+/* Indicador sutil de la esquina inferior derecha al pasar el mouse */
+.ww-handle-se::after {
+    content: '';
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #C7C7CC;
+    border-bottom: 2px solid #C7C7CC;
+    border-radius: 0 0 3px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.ww-card:hover .ww-handle-se::after {
+    opacity: 1;
+}
+
+/* ── Botones de ventana (— y □) junto a la X ── */
+.ww-ctrls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ww-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #F2F2F7;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    color: #86868B;
+    flex-shrink: 0;
+}
+
+.ww-btn:hover {
+    background: #E8E8ED;
+    color: #1D1D1F;
+}
+
+/* ── Capa de protección durante drag/resize (iframes, selección) ── */
+.ww-drag-shield {
+    position: fixed;
+    inset: 0;
+    z-index: 9400;
+    background: transparent;
+}
+
+body.ww-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* ── Ghost rectangle: previsualización del snap durante drag ──
+   Aparece cuando el puntero entra en una zona de snap (borde
+   superior → maximize, lados → mitades, esquinas → cuartos). Al
+   soltar, la ventana se "imanta" a este rect con animación FLIP. */
+.ww-snap-ghost {
+    position: fixed;
+    z-index: 9390;  /* abajo del shield, arriba de todo lo demás */
+    pointer-events: none;
+    background: rgba(0, 122, 255, 0.12);
+    border: 2px solid rgba(0, 122, 255, 0.65);
+    border-radius: 14px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+                0 0 30px rgba(0, 122, 255, 0.25);
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.16s ease-out, transform 0.16s ease-out,
+                left 0.18s cubic-bezier(0.32, 0.72, 0, 1),
+                top 0.18s cubic-bezier(0.32, 0.72, 0, 1),
+                width 0.18s cubic-bezier(0.32, 0.72, 0, 1),
+                height 0.18s cubic-bezier(0.32, 0.72, 0, 1);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.ww-snap-ghost.ww-snap-ghost-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ── Mission Control (Show Desktop): hint flotante ──
+   Texto sutil que aparece abajo del viewport cuando se activa,
+   recordando cómo restaurar las ventanas. */
+.ww-mc-hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9100;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.08);
+    pointer-events: none;  /* el click pasa al body para restaurar */
+    animation: ww-mc-hint-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) 0.2s both;
+}
+
+@keyframes ww-mc-hint-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Cursor "click para restaurar" mientras Mission Control está activo
+   — visualmente comunica que cualquier zona vacía trae de vuelta las
+   ventanas. Los elementos interactivos del CRM mantienen su cursor
+   propio para que siga funcionando normal por debajo. */
+body.ww-mission-control {
+    cursor: zoom-in;
+}
+body.ww-mission-control button,
+body.ww-mission-control a,
+body.ww-mission-control input,
+body.ww-mission-control select,
+body.ww-mission-control textarea,
+body.ww-mission-control label,
+body.ww-mission-control [role="button"],
+body.ww-mission-control [onclick],
+body.ww-mission-control [data-action] {
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Window Picker — selector visual al exceder 4 ventanas
+   Estilo macOS: backdrop con blur fuerte, card central, tarjetas
+   clickables con hover rojo iOS (color de "delete/close"). El usuario
+   elige cuál ventana cerrar para liberar espacio.
+   ═══════════════════════════════════════════════════════════════════ */
+.ww-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.ww-picker.ww-picker-visible {
+    opacity: 1;
+}
+
+.ww-picker-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 28px 22px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+    transform: scale(0.94);
+    transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ww-picker-visible .ww-picker-card {
+    transform: scale(1);
+}
+
+.ww-picker-head {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.ww-picker-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1D1D1F;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+}
+
+.ww-picker-sub {
+    font-size: 0.92rem;
+    color: #86868B;
+    margin: 0;
+}
+
+.ww-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .ww-picker-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ww-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: #F5F5F7;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: left;
+    color: #1D1D1F;
+    font-family: inherit;
+    transition: all 0.18s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.ww-picker-item:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: rgba(255, 59, 48, 0.5);
+    transform: scale(1.02);
+}
+
+.ww-picker-item-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0052D4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: color 0.18s ease;
+}
+
+.ww-picker-item:hover .ww-picker-item-icon {
+    color: #FF3B30;
+}
+
+.ww-picker-item-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.ww-picker-item-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ww-picker-item-sub {
+    font-size: 0.82rem;
+    color: #86868B;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ww-picker-item-sub:empty {
+    display: none;
+}
+
+.ww-picker-item-x {
+    font-size: 1.6rem;
+    line-height: 1;
+    color: transparent;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s ease;
+}
+
+.ww-picker-item:hover .ww-picker-item-x {
+    color: #fff;
+    background: #FF3B30;
+}
+
+.ww-picker-foot {
+    display: flex;
+    justify-content: center;
+}
+
+.ww-picker-cancel {
+    padding: 10px 24px;
+    background: #F5F5F7;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #1D1D1F;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease;
+}
+
+.ww-picker-cancel:hover {
+    background: #E8E8ED;
+}
+
+/* En modo ventana la franja superior funciona como barra de título */
+.widget-overlay.ww-windowed .ww-card .wo-header {
+    cursor: grab;
+}
+
+/* ── Dock de minimizados ── */
+#wwDock {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 8900;  /* arriba de los widgets (≤8000), abajo del toast (9000) */
+    max-width: 92vw;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ww-dock-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 10px 8px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: transform 0.15s ease, background 0.15s ease;
+    max-width: 240px;
+}
+
+.ww-dock-chip:hover {
+    transform: translateY(-2px);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+/* Fade-in del chip cuando aparece tras la animación de minimize.
+   El JS lo crea con opacity:0 (para medir su rect), anima la card
+   hacia esa posición, y al finalizar agrega .ww-dock-chip-enter
+   que dispara este keyframe. */
+@keyframes ww-dock-chip-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.85);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.ww-dock-chip.ww-dock-chip-enter {
+    animation: ww-dock-chip-in 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* El botón [□] de "modo ventana" recibe un realce sutil cuando la
+   ventana ESTÁ en modo flotante, para que se note que sigue activo. */
+.widget-overlay.ww-windowed .ww-btn-win {
+    background: #007AFF;
+    color: #fff;
+}
+
+.widget-overlay.ww-windowed .ww-btn-win:hover {
+    background: #0066D6;
+    color: #fff;
+}
+
+.ww-dock-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ww-dock-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.ww-dock-close:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Responsive por contenedor — el JS pone ww-md / ww-sm / ww-xs en la
+   card según su ancho REAL (no el viewport). Espeja y extiende el
+   @media (max-width: 900px) de crm.css para el widget de Oportunidad.
+   Los !important ganan a los grid-template-columns inline del template.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── ww-md (< 1100px) ── */
+.ww-card.ww-md .wo-content {
+    padding: 1.25rem 1.5rem 1.75rem;
+}
+
+.ww-card.ww-md .wo-header {
+    padding: 1.25rem 1.5rem 0.65rem;
+}
+
+/* ── ww-sm (< 820px) ── */
+.ww-card.ww-sm .wo-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+}
+
+.ww-card.ww-sm .wo-info-grid {
+    grid-template-columns: 1fr 1fr !important;
+}
+
+.ww-card.ww-sm .wo-title {
+    font-size: 1.25rem;
+}
+
+/* ── ww-xs (< 560px) — formato "teléfono": este es el LÍMITE de
+   compactación. La info se queda en 2 columnas y el pipeline conserva
+   sus flechas; solo se aprietan paddings y tipografía. Aunque la
+   ventana se haga aún más chica, este formato no se rompe. ── */
+.ww-card.ww-xs .wo-content {
+    padding: 0.9rem 1rem 1.25rem;
+}
+
+.ww-card.ww-xs .wo-header {
+    padding: 1rem 1.1rem 0.5rem;
+}
+
+.ww-card.ww-xs .wo-info-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem 1rem !important;
+}
+
+.ww-card.ww-xs .wo-title {
+    font-size: 1.1rem;
+}
+
+.ww-card.ww-xs .wo-card {
+    padding: 1rem;
+}
+
+.ww-card.ww-xs .wo-info-value {
+    font-size: 1.05rem;
+}

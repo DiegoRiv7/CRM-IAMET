@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 07 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 07 de Mayo, 2026</p>
+            <p>Periodo: 07 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se cerró el camino completo desde que el ingeniero captura una volumetría hasta que el área de compras manda la orden al proveedor: <strong>volumetría → cotización al cliente → partidas del proyecto → órdenes de compra</strong>. Todo conectado, sin pasos manuales en medio. Además, el sistema ya reconoce el segundo formato de Excel del cliente (Jacuzzi) y se preparó para "aprender" formatos nuevos a futuro.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">16</div>
+            <div class="stat-label">Cambios Liberados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Modulos Mejorados</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Correcciones Aplicadas</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Volumetria, Cotizacion y Compras Conectadas en un Solo Flujo
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Con un click el vendedor genera una <strong>cotizacion para el cliente</strong> en USD a partir de la volumetria del ingeniero. Esa misma volumetria llena automaticamente las <strong>partidas del proyecto</strong>, donde el area de compras puede mandar a comprar partida por partida. Cada compra se descuenta del pendiente, se puede editar o eliminar, y todo el historial queda registrado. <strong>De la propuesta tecnica a la orden de compra sin un solo paso manual en medio.</strong></p>
+    </div>
+
+    <h2>1. Cotizacion al Cliente con un Click</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Boton "Generar Cotizacion" Operativo</span>
+        <div class="update-desc">El vendedor abre una volumetria aprobada y le da <strong>"Generar cotizacion"</strong>. El sistema arma el documento en USD, abre el PDF en una pestana nueva, deja una copia en el Drive de la oportunidad y la cotizacion queda listada en la seccion de Cotizaciones del cliente — todo en menos de 5 segundos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">El Vendedor Decide el Nombre Antes de Generarla</span>
+        <div class="update-desc">Antes de crear la cotizacion aparece un dialogo con el nombre sugerido (<em>"Levantamiento - Volumetria"</em>) que el vendedor puede ajustar. Asi puede personalizarlo (<em>"ALLEGION ENSENADA - Premium"</em>, <em>"Opcion economica"</em>) sin tener que renombrarla despues.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cotizacion Cuadrada con la Volumetria al Centavo</span>
+        <div class="update-desc">Antes el total de la cotizacion no coincidia con el de la volumetria (faltaba la mano de obra y se imprimian sub-rotulos vacios). Ahora la cotizacion incluye <strong>equipamiento + mano de obra (lo que el cliente paga)</strong>, los rotulos sin productos abajo se filtran automaticamente, y los totales cuadran exactos: subtotal, IVA y total identicos a los del wizard.</div>
+    </div>
+
+    <h2>2. Sistema "Entrenable" para Distintos Formatos de Excel</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">El Sistema Reconoce un Segundo Formato (Jacuzzi)</span>
+        <div class="update-desc">Antes solo importaba bien el formato tradicional. Cada cliente tiene ligeras variaciones en su Excel y eso hacia que algunos no cargaran completos. Ahora el sistema <strong>reconoce dos formatos</strong> y al subir un archivo lo analiza, decide cual es el mas parecido y lo procesa. El ingeniero ve un mensaje del estilo <em>"Importado como formato Bajanet resumido (60% de coincidencia)"</em> para saber cual gano la deteccion.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Preparado para Aprender Formatos Nuevos sin Tocar lo Existente</span>
+        <div class="update-desc">La logica se reorganizo como un <strong>catalogo de formatos</strong>. Cuando un cliente nuevo llegue con un Excel distinto, basta con anadir su perfil al catalogo (un dia de trabajo) y el sistema lo aprendera sin romper la deteccion de los anteriores. <strong>El sistema escala con cada cliente nuevo.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Cifras del Excel Importado Coinciden al Centavo</span>
+        <div class="update-desc">El Excel del ingeniero tiene formulas que <strong>excluyen ciertos items del subtotal</strong> (productos opcionales o que el cliente no se llevo en este escenario). Antes el sistema sumaba todo y el total del wizard se desfasaba 1-2%. Ahora se leen las formulas del Excel y se respeta exactamente que items cuentan, dejando totales identicos a los del archivo original. Tambien se detecta automaticamente el porcentaje de IVA usado en el archivo.</div>
+    </div>
+
+    <h2>3. Partidas del Proyecto: la Conexion con Compras</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Tab "Partidas" en cada Proyecto</span>
+        <div class="update-desc">En cada proyecto, junto a "Levantamientos" y "Tareas", aparece un nuevo apartado <strong>"Partidas"</strong> con todas las piezas del proyecto en una sola tabla: marca, descripcion, no. parte, cantidad, costos, precio de venta, ganancia, proveedor y estado. <strong>Compras tiene aqui todo lo que tiene que pedir.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Las Partidas se Llenan Solas</span>
+        <div class="update-desc">Cuando el ingeniero importa una volumetria o la marca como completada, las partidas del proyecto <strong>se actualizan automaticamente</strong>. Si edita la volumetria despues, se puede darle al boton <em>"Sincronizar"</em> y se reflejan los cambios. El area de compras siempre trabaja con la version mas reciente sin pedirla por correo.</div>
+    </div>
+
+    <h2>4. Compras: Ordenes de Compra con Control Total</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Mandar a Comprar Partida por Partida</span>
+        <div class="update-desc">Cada partida tiene un boton <strong>"Mandar a comprar"</strong> que abre un dialogo con cantidad, proveedor y precio. El sistema <strong>no deja comprar mas unidades que las planificadas</strong>: si la volumetria pidio 16 camaras y ya se mandaron 10, solo deja comprar otras 6.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Editar y Eliminar Ordenes de Compra</span>
+        <div class="update-desc">Cada orden de compra debajo de su partida tiene un menu <strong>Editar / Eliminar</strong>. Al subir o bajar la cantidad, el pendiente se ajusta automaticamente. Al eliminar una orden, las unidades regresan al pendiente para poder volver a comprarlas o asignarlas a otro proveedor. <strong>Sin manualidades, sin olvidar actualizar contadores.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Las Ordenes de Compra Sobreviven Cambios en la Volumetria</span>
+        <div class="update-desc">Si el ingeniero modifica la volumetria despues de que ya se mandaron a comprar algunas partidas, esas <strong>compras no se borran</strong>. La partida queda en el proyecto, su pendiente se recalcula (si la nueva cantidad es mayor, faltan mas; si es menor, ya esta cubierta) y todo el historial de ordenes asociadas se mantiene intacto.</div>
+    </div>
+
+    <h2>5. Historial de Versiones</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cada Cambio en las Partidas Queda Registrado</span>
+        <div class="update-desc">Cada vez que se importa una volumetria o se marca como completada, el sistema <strong>guarda un snapshot</strong> del estado anterior (cantidades, costos, ganancias). Con un boton <em>"Historial"</em> en el tab de Partidas, dirección puede ver todas las versiones con quien las subio, cuando, cuantas partidas tenian y cual era la ganancia en ese momento.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Previsualizar Versiones Anteriores</span>
+        <div class="update-desc">Click en <strong>"Previsualizar"</strong> abre la version anterior en modo lectura, mostrando como estaban las partidas, costos y ganancia en ese momento. <strong>Se puede comparar sin restaurar nada</strong>. Si la version es la que se quiere, hay un boton <em>"Restaurar esta version"</em> arriba que regresa el proyecto a ese estado (y la version actual queda guardada como otra mas, asi todo es reversible).</div>
+    </div>
+
+    <h2>6. Detalles de Calidad y Correcciones</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Cuadro Destacado de "Ganancia en Pesos"</span>
+        <div class="update-desc">En el resumen de la volumetria, debajo del IVA, aparece un cuadro <strong>verde resaltado</strong> con la ganancia total convertida a pesos al tipo de cambio del dia. Es lo primero que se ve al cerrar el wizard, sin tener que buscar entre los demas numeros.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Vendedor: Vista Compacta + Excel Completo</span>
+        <div class="update-desc">El listado de volumetrias en la vista del vendedor ahora es compacto (titulo + resumen <em>"134 equipamiento · 24 mano de obra · 5 costos"</em>) sin desglosar las partidas, que saturaban la pantalla cuando el listado era largo. Si quiere verlas, abre el PDF. El Excel descargado del vendedor ahora trae costos completos para uso interno.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Datos Que se Perdian al Marcar Volumetria como Completada</span>
+        <div class="update-desc">Habia un problema donde al marcar una volumetria como completada despues de importar Excel, <strong>el contenido de la volumetria se borraba</strong> al volver a entrar. La causa era un guardado fantasma con datos vacios. Corregido: ahora la volumetria persiste con todos sus items intactos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Correccion</span>
+        <span class="update-title">Vendedor Veia "Sin Partidas" Aunque Habia Datos</span>
+        <div class="update-desc">El servidor no estaba enviandole al vendedor el contenido de las volumetrias, solo los nombres. Por eso decia <em>"Sin partidas"</em> aunque hubiera 134 items capturados. Corregido: el resumen ahora muestra el conteo real y el detalle del PDF lleva todos los productos.</div>
+    </div>
+
+    <h2>7. ¿Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cero Re-captura entre Tecnico, Comercial y Compras</span>
+        <div class="update-desc">El ingeniero captura UNA vez la volumetria. De ahi sale la cotizacion al cliente, las partidas del proyecto y las ordenes de compra al proveedor. Antes esos tres documentos vivian en Excels separados y cada area los volvia a teclear. <strong>La volumetria es la fuente unica de verdad de todo el proyecto.</strong></div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Auditoria Total de Cambios en el Proyecto</span>
+        <div class="update-desc">Toda modificacion deja un historial: que cambio, quien lo subio, cuando y cuanta diferencia hubo en costos y ganancia. Si hay una discusion (<em>"el cliente compro este precio, no este otro"</em>), se puede regresar a la version exacta que se le presento.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Compras No Se Pasa del Presupuesto</span>
+        <div class="update-desc">El sistema bloquea automaticamente que se compre mas de lo planificado. Si la volumetria pidio 16 camaras, no permite que el area de compras pida una mas — eliminamos el riesgo de excesos por error humano que despues hay que justificar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Mas Clientes sin Reescribir el Sistema</span>
+        <div class="update-desc">El catalogo de formatos de Excel permite <strong>incorporar nuevos clientes con sus propios layouts</strong> en cuestion de horas, no semanas. Cada nuevo formato suma sin afectar a los anteriores — el sistema crece con cada cliente.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 07 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

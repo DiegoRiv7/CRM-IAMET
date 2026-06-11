@@ -252,6 +252,14 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
           Metas
         </button>
+        <button class="admin-nav-item" id="admNav-marcas" onclick="adminNavClick(this,'marcas')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 014.5 6h6.3a2 2 0 011.4.6l8.2 8.2a1.5 1.5 0 010 2.1l-4.5 4.5a1.5 1.5 0 01-2.1 0L5.6 13.2A2 2 0 015 11.8V7.5z"/><circle cx="8" cy="11" r="1.4" fill="currentColor"/></svg>
+          Marcas
+        </button>
+        <button class="admin-nav-item" id="admNav-proveedores" onclick="adminNavClick(this,'proveedores')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg>
+          Proveedores
+        </button>
         <button class="admin-nav-item" id="admNav-tareas_auto" onclick="adminNavClick(this,'tareas_auto')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           Tareas Auto.
@@ -385,6 +393,8 @@ window.loadAdminSection = function(section){
   else if(section==='prospectos') loadProspectos();
   else if(section==='contactos') loadContactos();
   else if(section==='metas')     loadMetas();
+  else if(section==='marcas')    loadMarcasAdmin();
+  else if(section==='proveedores') loadProveedoresAdmin();
   else if(section==='tareas_auto') loadTareasAuto();
   else if(section==='grupos')    loadGrupos();
   else if(section==='oportunidades') loadOportunidades();
@@ -2150,6 +2160,239 @@ window.getAC            = getAC;
         if(res.success){ _showAdminToast(_gtEditandoId?'Grupo actualizado':'Grupo creado','ok'); window.loadGrupos(); }
         else _showAdminToast(res.error||'Error al guardar','error');
       }).catch(function(){_showAdminToast('Error de conexión','error');});
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     Marcas — Catálogo del CRM (modelo MarcaCRM).
+     Tabla con logo · nombre · categoría · meta anual · # contactos ·
+     activa · acciones (editar / eliminar). El botón Editar abre el
+     widget _widget_marca_editar.html (window._crmMarcaEditor).
+     ══════════════════════════════════════════════════════════════ */
+  function _contarContactos(c) {
+    if (!c) return 0;
+    var n = 0;
+    ['marca','ingenieria','mayorista'].forEach(function(grp){
+      var g = c[grp] || {};
+      if (g.nombre || g.email || g.telefono) n++;
+    });
+    return n;
+  }
+
+  function _initialsAdm(name) {
+    var clean = String(name||'').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/);
+    if(!clean[0]) return '?';
+    return (clean[0][0]+(clean[1]?clean[1][0]:'')).toUpperCase();
+  }
+
+  window.loadMarcasAdmin = function() {
+    var ac = getAC();
+    if (!ac) return;
+    fetch('/app/api/marcas/resumen/', { credentials:'same-origin' })
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (!data || !data.ok) {
+          ac.innerHTML = '<div style="color:#FF3B30;text-align:center;margin-top:60px;">Error: '+((data&&data.error)||'desconocido')+'</div>';
+          return;
+        }
+        var marcas = data.marcas || [];
+        window._admMarcasCache = marcas;
+
+        var h = '<div class="admin-card-inner">';
+        h += '<div class="admin-content-header">';
+        h += '<span class="admin-content-title">Catálogo de marcas ('+marcas.length+')</span>';
+        h += '<div style="display:flex;gap:8px;align-items:center;">';
+        h += '<div class="admin-search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="admMarcaSearch" placeholder="Buscar marca..."></div>';
+        h += '<button class="admin-btn admin-btn-primary" onclick="admNuevaMarca()">+ Nueva marca</button>';
+        h += '</div></div>';
+        h += '<p class="admin-help">Marcas/productos del distribuidor. La key es el identificador estable usado en oportunidades; el resto se puede editar libremente.</p>';
+
+        if (!marcas.length) {
+          h += '<div style="color:#8E8E93;text-align:center;font-size:0.82rem;padding:24px;">No hay marcas registradas.</div>';
+        } else {
+          h += '<table class="admin-table"><thead><tr>';
+          h += '<th style="width:54px;"></th><th>Marca</th><th>Categoría</th><th>Meta anual</th><th>Contactos</th><th>Estado</th><th>Acciones</th>';
+          h += '</tr></thead><tbody>';
+          marcas.forEach(function(m) {
+            var nContactos = _contarContactos(m.contactos);
+            var logoCell = m.logo_url
+              ? '<img src="'+m.logo_url+'" alt="'+m.label+'" style="width:38px;height:38px;border-radius:9px;object-fit:contain;background:#fff;border:1px solid rgba(0,0,0,0.06);">'
+              : '<div style="width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#E5E5EA,#D1D1D6);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#636366;">'+_initialsAdm(m.label)+'</div>';
+            var estadoBadge = '<span class="admin-badge admin-badge-green">Activa</span>';
+            h += '<tr id="admMRow-'+m.key+'">';
+            h += '<td>'+logoCell+'</td>';
+            h += '<td><strong>'+m.label+'</strong><div style="font-size:0.72rem;color:#8E8E93;">'+m.key+'</div></td>';
+            h += '<td style="color:#636366;">'+(m.cat||'—')+'</td>';
+            h += '<td>'+(m.meta_anual ? _fmtMXN(m.meta_anual) : '<span style="color:#C7C7CC;">Sin meta</span>')+'</td>';
+            h += '<td><span class="admin-badge '+(nContactos>0?'admin-badge-blue':'admin-badge-gray')+'">'+nContactos+'/3</span></td>';
+            h += '<td>'+estadoBadge+'</td>';
+            h += '<td style="white-space:nowrap;">';
+            h += '<button class="admin-btn-icon" onclick="admEditMarca(\''+m.key+'\')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+            h += '<button class="admin-btn-icon" style="color:#FF3B30;" onclick="admDeleteMarca(\''+m.key+'\')" title="Eliminar"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>';
+            h += '</td></tr>';
+          });
+          h += '</tbody></table>';
+        }
+        h += '</div>';
+        ac.innerHTML = h;
+
+        var s = document.getElementById('admMarcaSearch');
+        if (s) s.addEventListener('input', function() {
+          var q = this.value.toLowerCase();
+          document.querySelectorAll('[id^="admMRow-"]').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(q)!==-1 ? '' : 'none';
+          });
+        });
+      })
+      .catch(function(err) {
+        ac.innerHTML = '<div style="color:#FF3B30;text-align:center;margin-top:60px;">Error de red: '+(err&&err.message||'')+'</div>';
+      });
+  };
+
+  window.admNuevaMarca = function() {
+    if (window._crmMarcaEditor && window._crmMarcaEditor.open) {
+      window._crmMarcaEditor.open({ mode:'create' });
+    } else {
+      _showAdminToast('Editor de marcas no disponible', false);
+    }
+  };
+
+  window.admEditMarca = function(key) {
+    if (window._crmMarcaEditor && window._crmMarcaEditor.open) {
+      window._crmMarcaEditor.open({ mode:'edit', key: key });
+    } else {
+      _showAdminToast('Editor de marcas no disponible', false);
+    }
+  };
+
+  window.admDeleteMarca = function(key) {
+    var m = (window._admMarcasCache||[]).find(function(x){ return x.key===key; });
+    var label = m ? m.label : key;
+    adminConfirm('Eliminar marca',
+      '¿Eliminar la marca "'+label+'"? Se ocultará del catálogo pero los registros históricos (oportunidades, cotizaciones) se conservan.',
+      function() {
+        fetch('/app/api/marcas/'+encodeURIComponent(key)+'/eliminar/', {
+          method:'POST',
+          credentials:'same-origin',
+          headers:{'X-CSRFToken':getCsrf()}
+        }).then(function(r){ return r.json(); }).then(function(res) {
+          if (res && res.ok) { _showAdminToast('Marca eliminada'); loadMarcasAdmin(); }
+          else _showAdminToast((res&&res.error)||'Error al eliminar', false);
+        }).catch(function(){ _showAdminToast('Error de red', false); });
+      });
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     Proveedores — Catálogo del CRM (modelo ProveedorCRM).
+     Espejo de loadMarcasAdmin. Tabla con logo · nombre · categoría ·
+     meta anual · # contactos · activa · acciones (editar / eliminar).
+     El botón Editar abre el widget _widget_proveedor_editar.html
+     (window._crmProveedorEditor).
+     ══════════════════════════════════════════════════════════════ */
+  function _contarContactosProv(c) {
+    if (!c) return 0;
+    var n = 0;
+    ['principal','ventas','soporte'].forEach(function(grp){
+      var g = c[grp] || {};
+      if (g.nombre || g.email || g.telefono) n++;
+    });
+    return n;
+  }
+
+  window.loadProveedoresAdmin = function() {
+    var ac = getAC();
+    if (!ac) return;
+    fetch('/app/api/proveedores/resumen/', { credentials:'same-origin' })
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (!data || !data.ok) {
+          ac.innerHTML = '<div style="color:#FF3B30;text-align:center;margin-top:60px;">Error: '+((data&&data.error)||'desconocido')+'</div>';
+          return;
+        }
+        var proveedores = data.proveedores || [];
+        window._admProveedoresCache = proveedores;
+
+        var h = '<div class="admin-card-inner">';
+        h += '<div class="admin-content-header">';
+        h += '<span class="admin-content-title">Catálogo de proveedores ('+proveedores.length+')</span>';
+        h += '<div style="display:flex;gap:8px;align-items:center;">';
+        h += '<div class="admin-search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="admProveedorSearch" placeholder="Buscar proveedor..."></div>';
+        h += '<button class="admin-btn admin-btn-primary" onclick="admNuevoProveedor()">+ Nuevo proveedor</button>';
+        h += '</div></div>';
+        h += '<p class="admin-help">Proveedores del distribuidor. La key es el identificador estable; el resto se puede editar libremente. Mientras no exista TodoItem.proveedor, los KPIs de pipeline/facturado vendrán en cero.</p>';
+
+        if (!proveedores.length) {
+          h += '<div style="color:#8E8E93;text-align:center;font-size:0.82rem;padding:24px;">No hay proveedores registrados.</div>';
+        } else {
+          h += '<table class="admin-table"><thead><tr>';
+          h += '<th style="width:54px;"></th><th>Proveedor</th><th>Categoría</th><th>Meta anual</th><th>Contactos</th><th>Estado</th><th>Acciones</th>';
+          h += '</tr></thead><tbody>';
+          proveedores.forEach(function(p) {
+            var nContactos = _contarContactosProv(p.contactos);
+            var logoCell = p.logo_url
+              ? '<img src="'+p.logo_url+'" alt="'+p.label+'" style="width:38px;height:38px;border-radius:9px;object-fit:contain;background:#fff;border:1px solid rgba(0,0,0,0.06);">'
+              : '<div style="width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#E5E5EA,#D1D1D6);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#636366;">'+_initialsAdm(p.label)+'</div>';
+            var estadoBadge = '<span class="admin-badge admin-badge-green">Activo</span>';
+            h += '<tr id="admPRow-'+p.key+'">';
+            h += '<td>'+logoCell+'</td>';
+            h += '<td><strong>'+p.label+'</strong><div style="font-size:0.72rem;color:#8E8E93;">'+p.key+'</div></td>';
+            h += '<td style="color:#636366;">'+(p.cat||'—')+'</td>';
+            h += '<td>'+(p.meta_anual ? _fmtMXN(p.meta_anual) : '<span style="color:#C7C7CC;">Sin meta</span>')+'</td>';
+            h += '<td><span class="admin-badge '+(nContactos>0?'admin-badge-blue':'admin-badge-gray')+'">'+nContactos+'/3</span></td>';
+            h += '<td>'+estadoBadge+'</td>';
+            h += '<td style="white-space:nowrap;">';
+            h += '<button class="admin-btn-icon" onclick="admEditProveedor(\''+p.key+'\')" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+            h += '<button class="admin-btn-icon" style="color:#FF3B30;" onclick="admDeleteProveedor(\''+p.key+'\')" title="Eliminar"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>';
+            h += '</td></tr>';
+          });
+          h += '</tbody></table>';
+        }
+        h += '</div>';
+        ac.innerHTML = h;
+
+        var s = document.getElementById('admProveedorSearch');
+        if (s) s.addEventListener('input', function() {
+          var q = this.value.toLowerCase();
+          document.querySelectorAll('[id^="admPRow-"]').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(q)!==-1 ? '' : 'none';
+          });
+        });
+      })
+      .catch(function(err) {
+        ac.innerHTML = '<div style="color:#FF3B30;text-align:center;margin-top:60px;">Error de red: '+(err&&err.message||'')+'</div>';
+      });
+  };
+
+  window.admNuevoProveedor = function() {
+    if (window._crmProveedorEditor && window._crmProveedorEditor.open) {
+      window._crmProveedorEditor.open({ mode:'create' });
+    } else {
+      _showAdminToast('Editor de proveedores no disponible', false);
+    }
+  };
+
+  window.admEditProveedor = function(key) {
+    if (window._crmProveedorEditor && window._crmProveedorEditor.open) {
+      window._crmProveedorEditor.open({ mode:'edit', key: key });
+    } else {
+      _showAdminToast('Editor de proveedores no disponible', false);
+    }
+  };
+
+  window.admDeleteProveedor = function(key) {
+    var p = (window._admProveedoresCache||[]).find(function(x){ return x.key===key; });
+    var label = p ? p.label : key;
+    adminConfirm('Eliminar proveedor',
+      '¿Eliminar el proveedor "'+label+'"? Se ocultará del catálogo pero los registros históricos se conservan.',
+      function() {
+        fetch('/app/api/proveedores/'+encodeURIComponent(key)+'/eliminar/', {
+          method:'POST',
+          credentials:'same-origin',
+          headers:{'X-CSRFToken':getCsrf()}
+        }).then(function(r){ return r.json(); }).then(function(res) {
+          if (res && res.ok) { _showAdminToast('Proveedor eliminado'); loadProveedoresAdmin(); }
+          else _showAdminToast((res&&res.error)||'Error al eliminar', false);
+        }).catch(function(){ _showAdminToast('Error de red', false); });
+      });
   };
 
 })();

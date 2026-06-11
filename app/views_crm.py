@@ -1,3 +1,16 @@
+# ══════════════════════════════════════════════════════════════════════
+# views_crm.py — ARCHIVO LEGACY (congelado desde 2026-06-04)
+#
+# ~6,488 líneas mezclando oportunidades, cotizaciones, clientes,
+# dashboard, reportes, admin. Marcado como LEGACY por Boy Scout Rule.
+#
+# NO agregar endpoints nuevos aquí. Para vistas nuevas del CRM:
+#   → app/views_v2/crm_v2.py
+#
+# Modificar SOLO para bugs críticos. Ver app/views_v2/README.md y
+# ESTRUCTURA.md (sección "Boy Scout Rule").
+# ══════════════════════════════════════════════════════════════════════
+
 # ----------------------------------------------------------------------
 # views_crm.py — CRM home and oportunidades management.
 # ----------------------------------------------------------------------
@@ -24,7 +37,7 @@ from .models import TodoItem, Cliente, ClientePotencial, Cotizacion, DetalleCoti
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
-from django.db.models import Sum, Count, F, Q, Case, When, Value
+from django.db.models import Sum, Count, F, Q, Case, When, Value, Min
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date, timedelta
@@ -37,6 +50,8 @@ from django.utils.html import json_script
 # Helper function to detect lost opportunities
 from .views_utils import *
 from .views_grupos import get_usuarios_visibles_ids, get_clientes_visibles_q
+
+logger = logging.getLogger(__name__)
 
 
 def _get_etapas_pipeline_json():
@@ -57,7 +72,7 @@ def get_oportunidades_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
     oportunidad_inicial_id = request.GET.get('oportunidad_inicial_id')  # Nueva línea para oportunidad específica
     
-    print(f"DEBUG: get_oportunidades_por_cliente - cliente_id: {cliente_id}, oportunidad_inicial_id: {oportunidad_inicial_id}")
+    logger.debug(f"DEBUG: get_oportunidades_por_cliente - cliente_id: {cliente_id}, oportunidad_inicial_id: {oportunidad_inicial_id}")
 
     if is_supervisor(request.user):
         if cliente_id:
@@ -82,9 +97,9 @@ def get_oportunidades_por_cliente(request):
         try:
             # Limpiar el ID eliminando comas y espacios
             clean_id = oportunidad_inicial_id.replace(',', '').replace(' ', '').strip()
-            print(f"DEBUG: Buscando oportunidad inicial con ID: {clean_id}")
+            logger.debug(f"DEBUG: Buscando oportunidad inicial con ID: {clean_id}")
             oportunidad_inicial = TodoItem.objects.get(id=int(clean_id))
-            print(f"DEBUG: Oportunidad inicial encontrada: {oportunidad_inicial.oportunidad}")
+            logger.debug(f"DEBUG: Oportunidad inicial encontrada: {oportunidad_inicial.oportunidad}")
             
             # Convertir queryset a lista para manipulación
             oportunidades_list = list(oportunidades)
@@ -92,18 +107,18 @@ def get_oportunidades_por_cliente(request):
             
             # Verificar si ya está en la lista por ID
             if oportunidad_inicial.id not in oportunidades_ids:
-                print(f"DEBUG: Oportunidad inicial NO estaba en la lista, agregándola al principio")
+                logger.debug(f"DEBUG: Oportunidad inicial NO estaba en la lista, agregándola al principio")
                 # Agregar la oportunidad específica al principio de la lista
                 oportunidades_list.insert(0, oportunidad_inicial)
                 oportunidades = oportunidades_list
             else:
-                print(f"DEBUG: Oportunidad inicial YA estaba en la lista")
+                logger.debug(f"DEBUG: Oportunidad inicial YA estaba en la lista")
                 # Moverla al principio si ya estaba presente
                 oportunidades_list = [op for op in oportunidades_list if op.id != oportunidad_inicial.id]
                 oportunidades_list.insert(0, oportunidad_inicial)
                 oportunidades = oportunidades_list
         except (TodoItem.DoesNotExist, ValueError, TypeError) as e:
-            print(f"DEBUG: Error procesando oportunidad inicial {oportunidad_inicial_id}: {e}")
+            logger.debug(f"DEBUG: Error procesando oportunidad inicial {oportunidad_inicial_id}: {e}")
             pass  # Si no existe o hay error de conversión, continuar con la lista normal
 
     data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
@@ -351,52 +366,60 @@ def crm_home(request):
     # ── Tab CRM: Lista de oportunidades individuales ──
     if tab_activo == 'crm':
         tabla_data_qs = base_qs.select_related('cliente', 'contacto', 'usuario').order_by('-fecha_actualizacion')
-        # Anotar con tiene_actividad_vencida para el template
+        # (2026-06-10, perf) Antes esto hacía 4 queries POR oportunidad
+        # (vencida / próxima actividad / próxima fecha act / próxima fecha
+        # tarea) — con 84-250 opps eran cientos de queries y los 5-7s de
+        # render del CRM. Ahora son 4 queries batched (misma técnica que
+        # api_crm_table_data), con semántica IDÉNTICA a la anterior:
+        # sólo TareaOportunidad para vencidas (las Actividad del calendario
+        # causan falsos positivos porque muchas nunca se cierran).
         from .models import Actividad, TareaOportunidad
         ahora_tz = timezone.now()
         tabla_data_list = list(tabla_data_qs)
+        _ids = [i.id for i in tabla_data_list]
+
+        # Mapa: opp_id -> fecha_limite MÁS ANTIGUA vencida (no completada)
+        _vencida_min = dict(TareaOportunidad.objects.filter(
+            oportunidad_id__in=_ids,
+            fecha_limite__lt=ahora_tz,
+        ).exclude(estado='completada').values_list('oportunidad_id').annotate(
+            minf=Min('fecha_limite')
+        ).values_list('oportunidad_id', 'minf'))
+
+        # Mapa: opp_id -> título de la actividad no completada más próxima
+        # (orden fecha_inicio ASC; el primer registro por opp gana)
+        _act_titulo = {}
+        for _oid, _titulo in Actividad.objects.filter(
+            oportunidad_id__in=_ids, completada=False,
+        ).order_by('fecha_inicio').values_list('oportunidad_id', 'titulo'):
+            _act_titulo.setdefault(_oid, _titulo)
+
+        # Mapas: opp_id -> fecha futura más cercana (actividad y tarea)
+        _act_prox = dict(Actividad.objects.filter(
+            oportunidad_id__in=_ids, completada=False, fecha_fin__gte=ahora_tz,
+        ).values_list('oportunidad_id').annotate(
+            minf=Min('fecha_fin')
+        ).values_list('oportunidad_id', 'minf'))
+        _tar_prox = dict(TareaOportunidad.objects.filter(
+            oportunidad_id__in=_ids, fecha_limite__gte=ahora_tz,
+        ).exclude(estado='completada').values_list('oportunidad_id').annotate(
+            minf=Min('fecha_limite')
+        ).values_list('oportunidad_id', 'minf'))
+
         for item in tabla_data_list:
-            # Sólo se revisan TareaOportunidad (lo que muestra el widget "ACTIVIDAD
-            # PROGRAMADA"). Las Actividad del calendario de la conversación NO se
-            # consideran porque muchas nunca se cierran y causan falsos positivos.
-            tarea_mas_vencida = TareaOportunidad.objects.filter(
-                oportunidad=item,
-                fecha_limite__lt=ahora_tz,
-            ).exclude(estado='completada').order_by('fecha_limite').first()
-            item.tiene_actividad_vencida = bool(tarea_mas_vencida)
-            dias = 0
-            if tarea_mas_vencida and tarea_mas_vencida.fecha_limite:
-                dias = max(dias, (ahora_tz - tarea_mas_vencida.fecha_limite).days)
-            item.dias_vencida = dias
-            # Actividad próxima (la más cercana no completada)
-            proxima = Actividad.objects.filter(oportunidad=item, completada=False).order_by('fecha_inicio').first()
-            item.actividad_proxima = proxima.titulo if proxima else None
-            # Días / minutos hasta próxima actividad o tarea — para warm gradient
-            # Queremos la fecha limite más cercana FUTURA, sin incluir vencidas
-            dias_hasta = None
-            minutos_hasta = None
-            try:
-                _candidatos_fechas = []
-                prox_act = Actividad.objects.filter(
-                    oportunidad=item, completada=False, fecha_fin__gte=ahora_tz
-                ).order_by('fecha_fin').first()
-                if prox_act and prox_act.fecha_fin:
-                    _candidatos_fechas.append(prox_act.fecha_fin)
-                prox_tar = TareaOportunidad.objects.filter(
-                    oportunidad=item, fecha_limite__gte=ahora_tz
-                ).exclude(estado='completada').order_by('fecha_limite').first()
-                if prox_tar and prox_tar.fecha_limite:
-                    _candidatos_fechas.append(prox_tar.fecha_limite)
-                if _candidatos_fechas:
-                    _min_fecha = min(_candidatos_fechas)
-                    _delta = _min_fecha - ahora_tz
-                    dias_hasta = max(0, _delta.days)
-                    minutos_hasta = max(0, int(_delta.total_seconds() / 60))
-            except Exception:
-                dias_hasta = None
-                minutos_hasta = None
-            item.dias_hasta_proxima = dias_hasta            # None = sin actividad futura
-            item.minutos_hasta_proxima = minutos_hasta      # granularidad fina
+            _venc = _vencida_min.get(item.id)
+            item.tiene_actividad_vencida = bool(_venc)
+            item.dias_vencida = max(0, (ahora_tz - _venc).days) if _venc else 0
+            item.actividad_proxima = _act_titulo.get(item.id)
+            # Días / minutos hasta la fecha futura más cercana (act o tarea)
+            _candidatos = [f for f in (_act_prox.get(item.id), _tar_prox.get(item.id)) if f]
+            if _candidatos:
+                _delta = min(_candidatos) - ahora_tz
+                item.dias_hasta_proxima = max(0, _delta.days)
+                item.minutos_hasta_proxima = max(0, int(_delta.total_seconds() / 60))
+            else:
+                item.dias_hasta_proxima = None
+                item.minutos_hasta_proxima = None
         # Obtener IDs ancladas del usuario
         ancladas_ids = set(profile.oportunidades_ancladas or [])
         for item in tabla_data_list:
@@ -2011,6 +2034,10 @@ def api_crm_table_data(request):
             # Match entries → Cliente: primero por RFC, luego por nombre
             _all_clientes_api = list(clientes_qs)
             _rfc_map = {c.rfc.upper().strip(): c for c in _all_clientes_api if c.rfc}
+            # (2026-06-10, perf) Match exacto por dict O(1) — el scan lineal
+            # solo queda para los fallbacks de substring/palabras.
+            _nombre_map = {c.nombre_empresa.upper().strip(): c
+                           for c in _all_clientes_api if c.nombre_empresa}
             total_by_id = {}
             for entry in _facturado_entries:
                 c_obj = None
@@ -2023,9 +2050,7 @@ def api_crm_table_data(request):
                 # 2) Match por nombre (fallback)
                 if not c_obj:
                     cn_upper = nombre.upper().strip()
-                    for c in _all_clientes_api:
-                        if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
-                            c_obj = c; break
+                    c_obj = _nombre_map.get(cn_upper)
                     if not c_obj:
                         for c in _all_clientes_api:
                             if not c.nombre_empresa: continue
@@ -2101,6 +2126,9 @@ def api_crm_table_data(request):
 
             # Match entries → Cliente por nombre (usando misma lógica que facturado)
             _all_clientes_cob = list(clientes_qs)
+            # (2026-06-10, perf) Match exacto por dict O(1).
+            _nombre_map_cob = {c.nombre_empresa.upper().strip(): c
+                               for c in _all_clientes_cob if c.nombre_empresa}
             total_by_id = {}
             for entry in _cobrado_entries:
                 c_obj = None
@@ -2111,9 +2139,7 @@ def api_crm_table_data(request):
                 if cn_upper in alias_map:
                     cn_upper = alias_map[cn_upper]
                 # Match por nombre
-                for c in _all_clientes_cob:
-                    if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
-                        c_obj = c; break
+                c_obj = _nombre_map_cob.get(cn_upper)
                 if not c_obj:
                     for c in _all_clientes_cob:
                         if not c.nombre_empresa: continue
@@ -3603,7 +3629,6 @@ def oportunidades_por_cliente(request, cliente_id):
     if is_supervisor(request.user):
         cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id) # No filtrar por usuario
         oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado) # Todas las oportunidades del cliente
-        print("DEBUG: Supervisor viendo oportunidades de cliente.")
     else:
         _visible_ids = get_usuarios_visibles_ids(request.user)
         _visible_q = get_clientes_visibles_q(request.user)
@@ -3613,7 +3638,7 @@ def oportunidades_por_cliente(request, cliente_id):
             from django.http import Http404
             raise Http404
         oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado, usuario__in=_visible_ids) if _visible_ids else TodoItem.objects.filter(cliente=cliente_seleccionado)
-        print(f"DEBUG: Vendedor {request.user.username} viendo oportunidades de grupo de cliente.")
+        logger.debug(f"DEBUG: Vendedor {request.user.username} viendo oportunidades de grupo de cliente.")
 
     # El formulario de filtro no necesita el usuario para sus querysets de clientes en este contexto
     # ya que los clientes ya vienen filtrados por la vista o se obtienen todos.
@@ -3660,12 +3685,12 @@ def oportunidades_por_cliente(request, cliente_id):
 
 @login_required
 def producto_dashboard_detail(request, producto_val):
-    print(f"DEBUG: producto_dashboard_detail - producto_val recibido RAW: {producto_val}")
+    logger.debug(f"DEBUG: producto_dashboard_detail - producto_val recibido RAW: {producto_val}")
 
     # Convertir a mayúsculas para asegurar que la comparación con PRODUCTO_CHOICES sea consistente
     producto_val_upper = producto_val.upper()
-    print(f"DEBUG: producto_dashboard_detail - producto_val_upper: {producto_val_upper}")
-    print(f"DEBUG: Keys de PRODUCTO_CHOICES: {list(dict(TodoItem.PRODUCTO_CHOICES).keys())}")
+    logger.debug(f"DEBUG: producto_dashboard_detail - producto_val_upper: {producto_val_upper}")
+    logger.debug(f"DEBUG: Keys de PRODUCTO_CHOICES: {list(dict(TodoItem.PRODUCTO_CHOICES).keys())}")
 
     # Verificar si el producto_val_upper es una clave válida en PRODUCTO_CHOICES
     if producto_val_upper not in dict(TodoItem.PRODUCTO_CHOICES):
@@ -3676,17 +3701,17 @@ def producto_dashboard_detail(request, producto_val):
     else:
         oportunidades = TodoItem.objects.filter(producto=producto_val_upper, usuario=request.user)
 
-    print(f"DEBUG: Oportunidades encontradas para {producto_val_upper} (antes de desglosar): {oportunidades.count()}")
+    logger.debug(f"DEBUG: Oportunidades encontradas para {producto_val_upper} (antes de desglosar): {oportunidades.count()}")
     for op in oportunidades:
-        print(f"DEBUG:   - ID: {op.id}, Oportunidad: {op.oportunidad}, Producto: {op.producto}, Usuario ID: {op.usuario.id}")
+        logger.debug(f"DEBUG:   - ID: {op.id}, Oportunidad: {op.oportunidad}, Producto: {op.producto}, Usuario ID: {op.usuario.id}")
 
     # --- Ventas Cerradas (etapa Ganado/Pagado) para este producto ---
     ventas_cerradas = oportunidades.filter(etapa_corta__in=['Ganado', 'Pagado'])
     total_vendido_cerrado = ventas_cerradas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
     total_vendido_cerrado_count = ventas_cerradas.count() # Conteo de oportunidades cerradas
-    print(f"DEBUG: Ventas Cerradas (100%) para '{producto_val_upper}': {total_vendido_cerrado_count} oportunidades, Monto: {total_vendido_cerrado}")
+    logger.debug(f"DEBUG: Ventas Cerradas (100%) para '{producto_val_upper}': {total_vendido_cerrado_count} oportunidades, Monto: {total_vendido_cerrado}")
     for venta in ventas_cerradas:
-        print(f"DEBUG:   - Oportunidad: {venta.oportunidad}, Monto: {venta.monto}, Probabilidad: {venta.probabilidad_cierre}%")
+        logger.debug(f"DEBUG:   - Oportunidad: {venta.oportunidad}, Monto: {venta.monto}, Probabilidad: {venta.probabilidad_cierre}%")
 
     # --- Oportunidades Vigentes (probabilidad del 1% al 99%) para este producto ---
     oportunidades_vigentes = oportunidades.filter(
@@ -3695,17 +3720,17 @@ def producto_dashboard_detail(request, producto_val):
     )
     total_monto_vigente = oportunidades_vigentes.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
     total_monto_vigente_count = oportunidades_vigentes.count() # Conteo de oportunidades vigentes
-    print(f"DEBUG: Oportunidades Vigentes (0% < prob < 100%) para '{producto_val_upper}': {total_monto_vigente_count} oportunidades, Monto: {total_monto_vigente}")
+    logger.debug(f"DEBUG: Oportunidades Vigentes (0% < prob < 100%) para '{producto_val_upper}': {total_monto_vigente_count} oportunidades, Monto: {total_monto_vigente}")
     for op_vigente in oportunidades_vigentes:
-        print(f"DEBUG:   - Oportunidad: {op_vigente.oportunidad}, Monto: {op_vigente.monto}, Probabilidad: {op_vigente.probabilidad_cierre}%")
+        logger.debug(f"DEBUG:   - Oportunidad: {op_vigente.oportunidad}, Monto: {op_vigente.monto}, Probabilidad: {op_vigente.probabilidad_cierre}%")
 
     # --- Oportunidades Perdidas (probabilidad 0%) para este producto ---
     oportunidades_perdidas = oportunidades.filter(probabilidad_cierre=0)
     total_monto_perdido = oportunidades_perdidas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
     total_monto_perdido_count = oportunidades_perdidas.count() # Conteo de oportunidades perdidas
-    print(f"DEBUG: Oportunidades Perdidas (0%) para '{producto_val_upper}': {total_monto_perdido_count} oportunidades, Monto: {total_monto_perdido}")
+    logger.debug(f"DEBUG: Oportunidades Perdidas (0%) para '{producto_val_upper}': {total_monto_perdido_count} oportunidades, Monto: {total_monto_perdido}")
     for op_perdida in oportunidades_perdidas:
-        print(f"DEBUG:   - Oportunidad: {op_perdida.oportunidad}, Monto: {op_perdida.monto}, Probabilidad: {op_perdida.probabilidad_cierre}%")
+        logger.debug(f"DEBUG:   - Oportunidad: {op_perdida.oportunidad}, Monto: {op_perdida.monto}, Probabilidad: {op_perdida.probabilidad_cierre}%")
 
 
     # Clientes involucrados en este producto
@@ -4040,27 +4065,10 @@ def exportar_oportunidades_csv(request):
         'PÓLIZA': 13, 'CISCO': 14
     }
         
-    # Debug: Print item count and sample data
-    items_count = items.count()
-    print(f"DEBUG: Total items found: {items_count}")
-    
-    if items_count > 0:
-        # Show first item fields for debugging
-        first_item = items.first()
-        print(f"DEBUG: First item fields:")
-        print(f"  - oportunidad: '{first_item.oportunidad}'")
-        print(f"  - mes_cierre: '{first_item.mes_cierre}' (type: {type(first_item.mes_cierre)})")
-        print(f"  - probabilidad_cierre: {first_item.probabilidad_cierre} (type: {type(first_item.probabilidad_cierre)})")
-        print(f"  - monto: {first_item.monto}")
-        print(f"  - area: '{first_item.area}'")
-        print(f"  - producto: '{first_item.producto}'")
-    else:
-        print("DEBUG: No items found - check your filters!")
-    
     # Write data rows (start at row 6 for Excel since we now have metadata headers)
     row = 6
     for item in items:
-        print(f"DEBUG: Processing item: {item.oportunidad}")
+        logger.debug(f"DEBUG: Processing item: {item.oportunidad}")
         # Get cotization details for this opportunity
         cotizaciones = item.cotizaciones.all()
         
@@ -4125,8 +4133,8 @@ def exportar_oportunidades_csv(request):
         mes_cierre_valor = item.mes_cierre  # CharField con valores como '01', '02', etc.
         probabilidad_valor = item.probabilidad_cierre  # IntegerField
         
-        print(f"DEBUG: Raw mes_cierre: '{mes_cierre_valor}' (type: {type(mes_cierre_valor)})")
-        print(f"DEBUG: Raw probabilidad_cierre: {probabilidad_valor} (type: {type(probabilidad_valor)})")
+        logger.debug(f"DEBUG: Raw mes_cierre: '{mes_cierre_valor}' (type: {type(mes_cierre_valor)})")
+        logger.debug(f"DEBUG: Raw probabilidad_cierre: {probabilidad_valor} (type: {type(probabilidad_valor)})")
         
         # Convertir mes_cierre a índice (0-11) para el array de meses
         if mes_cierre_valor and mes_cierre_valor.strip():
@@ -4142,7 +4150,7 @@ def exportar_oportunidades_csv(request):
             # Intentar convertir usando el mapeo de nombres
             if mes_str in mes_nombres_a_numeros:
                 mes = mes_nombres_a_numeros[mes_str]
-                print(f"DEBUG: mes_cierre '{mes_str}' mapped to int: {mes}")
+                logger.debug(f"DEBUG: mes_cierre '{mes_str}' mapped to int: {mes}")
                 
                 # Formatear la probabilidad
                 if probabilidad_valor is not None:
@@ -4153,7 +4161,7 @@ def exportar_oportunidades_csv(request):
                 # Asignar al mes correspondiente (mes-1 porque el array es 0-indexed)
                 month_names = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC']
                 months[mes - 1] = probabilidad_str
-                print(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
+                logger.debug(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
             else:
                 # Intentar como número directo (fallback)
                 try:
@@ -4166,15 +4174,15 @@ def exportar_oportunidades_csv(request):
                         
                         month_names = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC']
                         months[mes - 1] = probabilidad_str
-                        print(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
+                        logger.debug(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
                     else:
-                        print(f"DEBUG: mes_cierre {mes} is out of range (1-12)")
+                        logger.debug(f"DEBUG: mes_cierre {mes} is out of range (1-12)")
                 except (ValueError, TypeError):
-                    print(f"DEBUG: Unable to convert mes_cierre '{mes_str}' - not a recognized month name or number")
+                    logger.debug(f"DEBUG: Unable to convert mes_cierre '{mes_str}' - not a recognized month name or number")
         else:
-            print(f"DEBUG: mes_cierre is None, empty or whitespace: '{mes_cierre_valor}'")
+            logger.debug(f"DEBUG: mes_cierre is None, empty or whitespace: '{mes_cierre_valor}'")
         
-        print(f"DEBUG: Final months array: {months}")
+        logger.debug(f"DEBUG: Final months array: {months}")
         row_data.extend(months)
         
         # Add estatus (etapa_corta) before empleado
@@ -4359,7 +4367,7 @@ def editar_oportunidad_api(request, oportunidad_id):
                 from .views_automatizacion import ejecutar_automatizaciones
                 tareas_auto = ejecutar_automatizaciones(oportunidad, etapa_cambio, request.user)
             except Exception as e_auto:
-                print(f'[Automatización] Error ejecutando reglas: {e_auto}')
+                logger.debug(f'[Automatización] Error ejecutando reglas: {e_auto}')
 
         # Auto-crear ProyectoIAMET cuando un proyecto pasa a Levantamiento (o Vendido s/PO / c/PO como fallback)
         if etapa_cambio and etapa_cambio in ('Levantamiento', 'Vendido s/PO', 'Vendido c/PO') and oportunidad.tipo_negociacion in ('proyecto', 'bitrix_proyecto'):
@@ -4396,7 +4404,7 @@ def editar_oportunidad_api(request, oportunidad_id):
                             fecha_limite=t.fecha_limite.date() if t.fecha_limite else None,
                         )
             except Exception as e_proy:
-                print(f'[ProyectoIAMET] Error auto-creando proyecto: {e_proy}')
+                logger.debug(f'[ProyectoIAMET] Error auto-creando proyecto: {e_proy}')
 
         return JsonResponse({
             'success': True,
@@ -4406,7 +4414,7 @@ def editar_oportunidad_api(request, oportunidad_id):
         })
         
     except Exception as e:
-        print(f"Error editando oportunidad: {e}")
+        logger.debug(f"Error editando oportunidad: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 
@@ -4681,7 +4689,7 @@ def crear_oportunidad_api(request):
         })
 
     except Exception as e:
-        print(f"ERROR: Falló la sincronización con Bitrix24 para la oportunidad {oportunidad_nombre}: {e}")
+        logger.debug(f"ERROR: Falló la sincronización con Bitrix24 para la oportunidad {oportunidad_nombre}: {e}")
         return JsonResponse({
             'success': True, # Still return success for local creation
             'oportunidad': {
@@ -4720,7 +4728,7 @@ def check_new_local_opportunities(request):
             # Hay una oportunidad que se acaba de crear - procesarla inmediatamente
             alert_data = request.session.pop(session_key)  # Remover después de leer
             opportunities_data.append(alert_data)
-            print(f"DEBUG: Detectada oportunidad inmediata desde sesión: {alert_data}")
+            logger.debug(f"DEBUG: Detectada oportunidad inmediata desde sesión: {alert_data}")
         
         # También buscar oportunidades nuevas creadas después del último check
         # Solo buscar las del usuario actual o todas si es supervisor
@@ -4820,8 +4828,8 @@ def check_new_bitrix_opportunities(request):
         # Filtrar solo oportunidades asignadas a este usuario en Bitrix24
         user_deals = [deal for deal in bitrix_deals if deal.get('ASSIGNED_BY_ID') == user_bitrix_id]
         
-        print(f"DEBUG Bot: Usuario Django {request.user.username} → Bitrix ID {user_bitrix_id}")
-        print(f"DEBUG Bot: Encontradas {len(user_deals)} oportunidades para este usuario de {len(bitrix_deals)} totales")
+        logger.debug(f"DEBUG Bot: Usuario Django {request.user.username} → Bitrix ID {user_bitrix_id}")
+        logger.debug(f"DEBUG Bot: Encontradas {len(user_deals)} oportunidades para este usuario de {len(bitrix_deals)} totales")
         
         # Filtrar oportunidades nuevas (que no existen en nuestro sistema)
         recent_deals = []
@@ -4845,7 +4853,7 @@ def check_new_bitrix_opportunities(request):
                             if company_data and company_data.get('TITLE'):
                                 company_name = company_data.get('TITLE')
                         except Exception as e:
-                            print(f"Error obteniendo datos de compañía: {e}")
+                            logger.debug(f"Error obteniendo datos de compañía: {e}")
                     
                     recent_deals.append({
                         'id': deal_id,
@@ -4867,7 +4875,7 @@ def check_new_bitrix_opportunities(request):
                         'detected_at': django_timezone.now().isoformat()
                     })
         
-        print(f"DEBUG Bot: Encontradas {len(recent_deals)} nuevas oportunidades desde Bitrix24")
+        logger.debug(f"DEBUG Bot: Encontradas {len(recent_deals)} nuevas oportunidades desde Bitrix24")
         
         return JsonResponse({
             'success': True,
@@ -4877,7 +4885,7 @@ def check_new_bitrix_opportunities(request):
         })
         
     except Exception as e:
-        print(f"ERROR Bot: Error al verificar oportunidades desde Bitrix24: {e}")
+        logger.debug(f"ERROR Bot: Error al verificar oportunidades desde Bitrix24: {e}")
         return JsonResponse({
             'success': False,
             'error': f'Error al verificar oportunidades desde Bitrix24: {str(e)}'
@@ -5296,7 +5304,7 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
             estado_nuevo=estado
         )
         
-        print(f"🔄 Actividad creada: {actividad.id}, estado_anterior: {actividad.estado_anterior}, estado_nuevo: {actividad.estado_nuevo}")
+        logger.debug(f"🔄 Actividad creada: {actividad.id}, estado_anterior: {actividad.estado_anterior}, estado_nuevo: {actividad.estado_nuevo}")
         
         # Preparar datos del timeline item para el frontend
         usuario_nombre = request.user.get_full_name() or request.user.username
@@ -5356,10 +5364,10 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         )
         
         # Procesar archivos adjuntos
-        print(f"📁 Procesando {len(archivos_keys)} archivos: {archivos_keys}")
+        logger.debug(f"📁 Procesando {len(archivos_keys)} archivos: {archivos_keys}")
         for key in archivos_keys:
             archivo = request.FILES[key]
-            print(f"📄 Procesando archivo: {archivo.name}, tamaño: {archivo.size}, tipo: {archivo.content_type}")
+            logger.debug(f"📄 Procesando archivo: {archivo.name}, tamaño: {archivo.size}, tipo: {archivo.content_type}")
             
             # Determinar tipo de archivo
             content_type = archivo.content_type.lower()
@@ -5374,7 +5382,7 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
             else:
                 tipo_archivo = 'otro'
             
-            print(f"📋 Tipo determinado: {tipo_archivo}")
+            logger.debug(f"📋 Tipo determinado: {tipo_archivo}")
             
             try:
                 # Crear registro de archivo
@@ -5388,7 +5396,7 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
                     descripcion=f"Adjuntado en comentario #{comentario.id}"
                 )
                 
-                print(f"✅ Archivo guardado exitosamente: ID={archivo_obj.id}, URL={archivo_obj.archivo.url}")
+                logger.debug(f"✅ Archivo guardado exitosamente: ID={archivo_obj.id}, URL={archivo_obj.archivo.url}")
                 
                 archivos_subidos.append({
                     'id': archivo_obj.id,
@@ -5399,9 +5407,9 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
                 })
                 
             except Exception as e:
-                print(f"❌ Error guardando archivo {archivo.name}: {e}")
+                logger.debug(f"❌ Error guardando archivo {archivo.name}: {e}")
                 import traceback
-                print(traceback.format_exc())
+                logger.debug(traceback.format_exc())
         
         # Crear actividad en el timeline con referencia al comentario
         descripcion_actividad = contenido[:200] + ('...' if len(contenido) > 200 else '')
@@ -5414,7 +5422,7 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         # Agregar referencia al comentario en la descripción para linking directo
         descripcion_actividad += f" [COMENTARIO_ID:{comentario.id}]"
         
-        print(f"🔥 Creando actividad - Usuario: {request.user}, Usuario ID: {request.user.id}, Nombre: {request.user.get_full_name()}")
+        logger.debug(f"🔥 Creando actividad - Usuario: {request.user}, Usuario ID: {request.user.id}, Nombre: {request.user.get_full_name()}")
         actividad_creada = OportunidadActividad.objects.create(
             oportunidad=oportunidad,
             tipo='comentario',
@@ -5422,7 +5430,7 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
             descripcion=descripcion_actividad,
             usuario=request.user
         )
-        print(f"💬 Actividad creada: ID={actividad_creada.id}, Usuario={actividad_creada.usuario}, Descripcion='{actividad_creada.descripcion}'")
+        logger.debug(f"💬 Actividad creada: ID={actividad_creada.id}, Usuario={actividad_creada.usuario}, Descripcion='{actividad_creada.descripcion}'")
         
         # ======================================
         # CREAR NOTIFICACIONES AUTOMÁTICAMENTE
@@ -5485,8 +5493,8 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         
     except Exception as e:
         import traceback
-        print(f"Error en agregar_comentario_oportunidad: {str(e)}")
-        print(traceback.format_exc())
+        logger.debug(f"Error en agregar_comentario_oportunidad: {str(e)}")
+        logger.debug(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -5509,7 +5517,7 @@ def timeline_oportunidad(request, oportunidad_id):
         try:
             limpiar_actividades_huerfanas(oportunidad)
         except Exception as e:
-            print(f"Error limpiando actividades huérfanas: {e}")
+            logger.debug(f"Error limpiando actividades huérfanas: {e}")
             # Continuar sin limpiar si hay error
         
         # Obtener todas las actividades
@@ -5701,7 +5709,7 @@ def eliminar_comentario_oportunidad(request, comentario_id):
         usuario_comentario = comentario.usuario
         fecha_comentario = comentario.fecha_creacion
         
-        print(f"🗑️ Eliminando comentario ID={comentario_id}, usuario={usuario_comentario}, fecha={fecha_comentario}")
+        logger.debug(f"🗑️ Eliminando comentario ID={comentario_id}, usuario={usuario_comentario}, fecha={fecha_comentario}")
         
         # Buscar y eliminar TODAS las actividades que podrían estar apuntando a este comentario
         try:
@@ -5724,35 +5732,35 @@ def eliminar_comentario_oportunidad(request, comentario_id):
                     comentario_referenciado = int(match.group(1))
                     if comentario_referenciado == comentario_id:
                         deberia_eliminar = True
-                        print(f"🎯 Actividad {actividad.id} apunta al comentario que se va a eliminar: {comentario_id}")
+                        logger.debug(f"🎯 Actividad {actividad.id} apunta al comentario que se va a eliminar: {comentario_id}")
                 else:
                     # Estrategia 2: Fallback para actividades del sistema viejo
                     # Verificar por rango de tiempo
                     diff_tiempo = abs((actividad.fecha_creacion - fecha_comentario).total_seconds())
                     if diff_tiempo <= 300:  # 5 minutos
                         deberia_eliminar = True
-                        print(f"⏱️ Actividad {actividad.id} encontrada por tiempo: diff={diff_tiempo}s")
+                        logger.debug(f"⏱️ Actividad {actividad.id} encontrada por tiempo: diff={diff_tiempo}s")
                     
                     # Verificar por usuario y descripción similar
                     if (actividad.usuario == usuario_comentario and 
                         comentario.contenido in actividad.descripcion):
                         deberia_eliminar = True
-                        print(f"📝 Actividad {actividad.id} encontrada por contenido")
+                        logger.debug(f"📝 Actividad {actividad.id} encontrada por contenido")
                 
                 if deberia_eliminar:
-                    print(f"🗑️ Eliminando actividad relacionada ID={actividad.id}")
+                    logger.debug(f"🗑️ Eliminando actividad relacionada ID={actividad.id}")
                     actividad.delete()
                     actividades_eliminadas += 1
             
-            print(f"✅ Eliminadas {actividades_eliminadas} actividades relacionadas")
+            logger.debug(f"✅ Eliminadas {actividades_eliminadas} actividades relacionadas")
             
         except Exception as e:
-            print(f"⚠️ Error eliminando actividades relacionadas: {e}")
+            logger.debug(f"⚠️ Error eliminando actividades relacionadas: {e}")
             # No fallar si no se pueden eliminar las actividades, el comentario sí se debe eliminar
         
         # Eliminar el comentario
         comentario.delete()
-        print(f"✅ Comentario ID={comentario_id} eliminado exitosamente")
+        logger.debug(f"✅ Comentario ID={comentario_id} eliminado exitosamente")
         
         return JsonResponse({
             'success': True,
@@ -5761,7 +5769,7 @@ def eliminar_comentario_oportunidad(request, comentario_id):
         })
         
     except Exception as e:
-        print(f"❌ Error eliminando comentario: {e}")
+        logger.debug(f"❌ Error eliminando comentario: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -5811,7 +5819,7 @@ def descargar_archivo_oportunidad(request, archivo_id):
         return response
         
     except Exception as e:
-        print(f"❌ Error descargando archivo: {e}")
+        logger.debug(f"❌ Error descargando archivo: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -5861,7 +5869,7 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
         return response
         
     except Exception as e:
-        print(f"❌ Error en vista previa de archivo: {e}")
+        logger.debug(f"❌ Error en vista previa de archivo: {e}")
         return HttpResponse(f'Error al abrir archivo: {str(e)}', status=500)
 
 

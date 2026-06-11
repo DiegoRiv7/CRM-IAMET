@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 02 de Junio</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 02 de Junio, 2026</p>
+            <p>Periodo: 02 Junio (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se entregó una feature que el equipo venía pidiendo desde hace tiempo: <strong>historial de cambios en las tareas</strong>. Cada vez que alguien modifica una tarea (cambia el nombre, mueve la fecha, agrega un participante, la cierra o la reabre, etc.) queda registrada una "versión" con quién lo hizo, qué hizo, cuándo y opcionalmente el motivo. Click en un nuevo botón con icono de reloj en la esquina del modal de la tarea y se abre un timeline con toda la historia. Además, se corrigieron tres bugs visuales del módulo de proyectos que detectamos ayer en validación. <strong>Todo lo de ayer y de hoy ya está en producción</strong> — el equipo lo puede usar desde este momento.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito mayor</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Fixes de proyecto</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">✓</div>
+            <div class="stat-label">En produccion</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: Historial de Cambios en Tareas
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Antes, cuando alguien modificaba una tarea no quedaba rastro de qué cambió ni quién lo hizo. Si alguien movía una fecha límite o reasignaba al responsable, no había forma de auditar el cambio después. <strong>Ahora cada modificación genera una versión</strong> que registra: quién la hizo, cuándo, qué campo cambió (con el valor antes y después), y opcionalmente el motivo cuando aplica (reapertura, cambio de fecha). El acceso es un click sobre el ícono de reloj que apareció arriba a la derecha en el modal de cada tarea — abre un <em>timeline</em> vertical con toda la historia ordenada del más reciente al más antiguo.</p>
+    </div>
+
+    <h2>1. Historial de Cambios en Tareas — el Hito del Día</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Una pieza nueva grande, construida de extremo a extremo: modelo de base de datos, migración, lógica en el endpoint que detecta diferencias, endpoint nuevo para consultarlo, y una UI tipo timeline en el modal de tarea. Aquí lo importante de cada parte:</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Modelo de Versionado en la Base de Datos</span>
+        <div class="update-desc">Se creó una tabla nueva <code>TareaOportunidadHistorial</code> que guarda <strong>una fila por cada cambio</strong>: tarea (FK), autor (FK al usuario), fecha automática, tipo de cambio (11 categorías), valor anterior, valor nuevo, motivo opcional, y un campo <em>extra</em> en JSON para datos auxiliares (por ejemplo, el ID del usuario que se agregó como participante). Migración 0173 aplicada. Las tareas existentes empiezan sin historial — el primer cambio genera la primera versión.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Qué Cambios Quedan Registrados</span>
+        <div class="feature-list" style="padding-left: 5px;">
+            <div><strong>Título</strong> de la tarea.</div>
+            <div><strong>Descripción</strong>.</div>
+            <div><strong>Fecha límite</strong> (día u hora).</div>
+            <div><strong>Responsable</strong> (cambio de asignación).</div>
+            <div><strong>Prioridad</strong> (Normal / Alta).</div>
+            <div><strong>Participantes</strong> (agregados o quitados).</div>
+            <div><strong>Observadores</strong> (agregados o quitados).</div>
+            <div><strong>Estado</strong> (cerrada / reabierta).</div>
+        </div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cómo se Detectan los Cambios sin Tocar el Flujo Actual</span>
+        <div class="update-desc">El endpoint que actualiza la tarea hace un <strong>snapshot</strong> de los campos antes de guardar y los compara después del save. Si algo cambió, se crea automáticamente la fila del historial. El sistema captura cada modificación <em>real</em> — si alguien guarda sin cambiar nada, no se crea versión basura. La parte de M2M (agregar/quitar personas) se loguea en cada rama del endpoint. <strong>El flujo del usuario no cambia</strong>; la única diferencia es que ahora queda registrado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Campo "Motivo" para Cambios Sensibles</span>
+        <div class="update-desc">Cuando alguien <strong>reabre una tarea</strong> o <strong>cambia su fecha límite</strong>, el sistema ya hoy pide un texto que justifique la acción (es un comportamiento previo del CRM). Ese motivo ahora <strong>se guarda como parte de la versión</strong> y aparece en el timeline como un bloque amarillo bien visible. Si en el futuro se agrega el campo "motivo" a otros tipos de cambio, el backend ya está preparado para guardarlo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Botón de Reloj en el Header de la Tarea</span>
+        <div class="update-desc">En la esquina superior derecha del modal de tarea, al lado del botón "X" para cerrar, apareció un nuevo botón con <strong>ícono de reloj</strong>. Mismo estilo blanco semitransparente sobre el header azul. Click → abre el widget del historial. Si el usuario no tiene nada que ver no aparecen distracciones; quien quiere ver la historia, la encuentra a un click.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Timeline Visual de Versiones</span>
+        <div class="update-desc">El widget del historial es un <strong>timeline vertical</strong>. Cada versión muestra:
+            <ul style="margin: 6px 0 0 0; padding-left: 18px; font-size: 13px; color: #4b5563;">
+                <li><strong>Punto del timeline</strong> en color según el tipo (verde para cerrada/agregar, naranja para reabierta, azul para responsable, etc).</li>
+                <li><strong>Avatar del autor</strong> — su foto de perfil si la tiene; si no, sus iniciales sobre un fondo de color.</li>
+                <li><strong>Nombre</strong> + <strong>acción legible</strong> ("Cambió la fecha límite", "Agregó un participante", "Reabrió la tarea").</li>
+                <li><strong>Tiempo relativo</strong> ("hace 5 min", "hace 2 h", "hace 3 d") — al hover muestra la fecha absoluta.</li>
+                <li>Para cambios de valor: chip <span style="background:#FFE3E3;color:#991B1B;padding:2px 6px;border-radius:4px;text-decoration:line-through;font-size:11px;">antes</span> tachado en rojo → chip <span style="background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-size:11px;">después</span> en verde.</li>
+                <li>Para participantes/observadores: chip verde "+ Nombre" o chip rojo "– Nombre".</li>
+                <li>Si hay motivo: bloque amarillo con borde naranja debajo del cambio.</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>2. Tres Fixes del Módulo de Proyectos</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Validando ayer la integración de Proyectos con Calendario de Instalaciones aparecieron tres bugs visuales/de estado. Todos corregidos hoy:</p>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Programa de Obra Mostraba Siempre la Misma Tabla</span>
+        <div class="update-desc">Al cambiar de proyecto, el tab "Programa de Obra" seguía mostrando las instalaciones del proyecto anterior. <strong>El sistema solo recargaba la tabla cuando el usuario hacía click directo</strong> sobre el tab — pero si llegabas ahí por persistencia (porque ese era tu último tab abierto) o por deep-link, la lista quedaba con datos viejos cacheados visualmente. Fix: se interceptan ahora <em>todas</em> las formas en que se activa el tab (click, programático, persistencia) para forzar recarga.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Topbar del Listado de Proyectos se Ocultaba a Veces</span>
+        <div class="update-desc">El topbar con [Filtro][Ordenar] · "Proyectos" · [Buscar][+ Nuevo Proyecto] desaparecía intermitentemente. Causa: el código que abría un proyecto seteaba un <code>display:none</code> directo sobre el topbar (redundante porque la sección padre ya lo ocultaba por cascada). Ese estilo inline persistía y, si la sección se restauraba por otra vía sin pasar por "Volver al portafolio", el topbar quedaba oculto. <strong>Se quitó el inline redundante y se agregó una garantía al entrar al módulo</strong> para que el topbar siempre se vea.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Fix</span>
+        <span class="update-title">Nombre de Oportunidad se Tapaba Detrás de la Cápsula de Tabs</span>
+        <div class="update-desc">En el header del detalle de un proyecto, el bloque izquierdo (Portafolio · nombre del proyecto · oportunidad ligada) <strong>crecía hasta meterse detrás de la cápsula central con las pestañas</strong>. Causa: la cápsula estaba con posicionamiento absoluto — salía del flujo y los lados crecían libremente hasta encimarse. Fix: refactor a CSS grid de 3 columnas donde cada zona reserva su propio espacio. En pantallas chicas (≤1100px) ahora apila vertical: nombre arriba, cápsula en medio ocupando todo el ancho, avatares abajo.</div>
+    </div>
+
+    <h2>3. Deploy a Producción de Todo lo Pendiente</h2>
+
+    <div class="callout">
+        <strong>Hito de hoy:</strong> el feature completo del <em>Calendario de Instalaciones + Tab Programa de Obra en proyectos</em> (lo que veníamos construyendo desde el viernes) <strong>está ya en producción</strong>. El equipo lo puede empezar a usar desde este momento sin esperar más validación.
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Deploy</span>
+        <span class="update-title">Lo que se Subió a Producción Hoy</span>
+        <div class="feature-list" style="padding-left: 5px;">
+            <div>Calendario de Instalaciones con vista <strong>Técnico × Día</strong>.</div>
+            <div>Tab <strong>"Programa de Obra"</strong> en cada Proyecto.</div>
+            <div>Modal único de detalle + edición + asignación de técnicos.</div>
+            <div>Widget de <strong>vista amigable</strong> al click sobre una instalación.</div>
+            <div>Picker de Users con prefill desde la oportunidad ligada.</div>
+            <div><strong>Avatares apilados</strong> en la columna Personal.</div>
+            <div>Persistencia de pestañas al recargar dentro del proyecto.</div>
+            <div><strong>Historial de cambios en tareas</strong> (lo de hoy).</div>
+        </div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-deploy">Deploy</span>
+        <span class="update-title">Migraciones Aplicadas</span>
+        <div class="update-desc">Tres migraciones de base de datos llegaron a producción: <strong>0170</strong> (catálogo de Técnicos + tabla de asignaciones), <strong>0171/0172</strong> (instalaciones ahora ligadas a Proyecto), y <strong>0173</strong> (tabla de versiones de tareas). El comando <code>seed_tecnicos</code> sembró el catálogo inicial. Sin pérdida de datos.</div>
+    </div>
+
+    <h2>4. Próximos Pasos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Validar el Historial con Casos Reales</span>
+        <div class="update-desc">El equipo puede empezar a usarlo desde hoy. La primera tarea que alguien modifique generará su primera versión y el ícono de reloj revelará el cambio. <strong>Lo importante:</strong> validar que los textos legibles ("Cambió la fecha límite", "Agregó participante X") son claros para alguien que no construyó la feature. Si algo se ve confuso, se afina.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Replicar el Historial en Tareas de Proyecto</span>
+        <div class="update-desc">El historial de hoy cubre las <strong>tareas de oportunidad</strong> (las que se ven dentro de una opp y en el módulo Tareas). Hay otro modelo de tareas que vive <em>dentro de proyectos</em> con flujos un poco distintos (donde sí está hoy implementado el prompt obligatorio de "motivo" al reabrir/cambiar fecha). Si se decide que también necesita historial, es replicar el patrón — código en gran parte reutilizable.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Próximo</span>
+        <span class="update-title">Mejoras al Calendario de Instalaciones</span>
+        <div class="update-desc">Dos mejoras anotadas en el reporte de ayer que siguen pendientes: <strong>drag & drop</strong> sobre el grid Técnico × Día (arrastrar un técnico a la celda de un día para crear la asignación), y <strong>asignación masiva multi-día</strong> (si una instalación dura 5 jornadas, crear 5 asignaciones con un solo click). Mejoras de comodidad — el sistema ya funciona sin ellas.</div>
+    </div>
+
+    <h2>5. ¿Qué Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Trazabilidad Real de las Tareas</span>
+        <div class="update-desc">Antes, si una tarea se entregaba tarde y alguien preguntaba "¿quién movió la fecha?, ¿desde cuándo se movió?, ¿con qué motivo?" no había forma de responder. <strong>Ahora hay un timeline visual</strong> que responde sin tener que preguntarle a nadie. Para casos sensibles (reapertura de tareas cerradas, cambios de responsable) hay un rastro de quién decidió qué y cuándo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cultura de Documentación sin Esfuerzo</span>
+        <div class="update-desc">El equipo no necesita acordarse de documentar nada — los cambios se documentan solos. Eso es importante porque las acciones que NO se documentan, no existen para auditorías o para resolver disputas. <strong>Pasamos de "te juro que hice X" a "ve la tarea, ahí está registrado"</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Lecciones para Iteraciones Futuras</span>
+        <div class="update-desc">El historial expone patrones que antes pasaban desapercibidos: ¿cuántas veces se reprograman las tareas?, ¿qué motivos son más comunes?, ¿quién es el que más reabre cosas cerradas? Esto es información que <strong>en algún momento se va a poder reportar y graficar</strong> para tomar decisiones sobre los procesos del equipo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Calendario de Instalaciones Ya en Manos del Equipo</span>
+        <div class="update-desc">Todo lo del calendario que veníamos construyendo desde el viernes <strong>ya está en producción</strong>. Operación y administración pueden empezar a usar el tab "Programa de Obra" dentro de cada proyecto, asignar técnicos, y verlos automáticamente en el calendario. No más Excel paralelo, no más doble captura.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 02 de Junio, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

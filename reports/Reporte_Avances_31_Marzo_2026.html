@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 31 de Marzo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+        .header-meta {
+            text-align: right;
+            font-size: 13px;
+            color: var(--secondary);
+        }
+        h2 {
+            font-size: 19px;
+            margin-top: 25px;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        .achievement-box {
+            background: rgba(0, 82, 212, 0.04);
+            border: 1px solid rgba(0, 82, 212, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .achievement-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 17px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .achievement-title svg {
+            margin-right: 10px;
+        }
+        .badge {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .update-item {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f8f8f8;
+        }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .btn-pdf {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,82,212,0.2);
+        }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 31 de Marzo, 2026</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Este informe detalla las actualizaciones realizadas hoy, enfocadas en el control de compras dentro de proyectos, la visualización universal de archivos y la personalización del perfil de usuario.</p>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Hito Mayor: Sistema de Control de Compras en Proyectos
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">Se implementó un sistema completo de gestión de compras dentro de las partidas de volumetría de cada proyecto. Ahora cada partida cuenta con un <strong>menú interactivo</strong> que permite editarla, eliminarla o iniciar un proceso de compra. Al mandar a comprar, el sistema solicita la cantidad deseada (validando que no exceda la cantidad pendiente), genera automáticamente una <strong>Orden de Compra</strong> vinculada a la partida, y descuenta las unidades del pendiente. Debajo de cada partida se muestran las órdenes de compra generadas con su estado, proveedor y monto. Este flujo permite un control preciso del abastecimiento por proyecto, evitando compras duplicadas y manteniendo trazabilidad completa del proceso.</p>
+    </div>
+
+    <h2>1. Control de Compras en Proyectos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Menú Contextual en Partidas</span>
+        <div class="update-desc">Cada partida de volumetría ahora tiene un botón de acciones con tres opciones: <strong>Editar</strong> (modificar descripción, marca, cantidades, costos y proveedor), <strong>Mandar a comprar</strong> (crear orden de compra con cantidad validada) y <strong>Eliminar</strong> (con confirmación).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Órdenes de Compra desde Partidas</span>
+        <div class="update-desc">Al mandar a comprar, se abre un diálogo que muestra la cantidad disponible, permite ingresar proveedor y precio unitario (pre-llenados desde la partida), calcula el monto total en tiempo real, y genera la OC automáticamente. El sistema no permite comprar más unidades de las pendientes.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Visualización de OCs por Partida</span>
+        <div class="update-desc">Debajo de cada partida se despliegan las órdenes de compra asociadas, mostrando número de OC, cantidad, proveedor, estado y monto. Esto da trazabilidad completa de qué se compró, a quién y cuánto falta por comprar.</div>
+    </div>
+
+    <h2>2. Visor Universal de Archivos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Visualización de Archivos sin Descarga</span>
+        <div class="update-desc">El Drive de oportunidades ahora permite visualizar cualquier tipo de archivo directamente en la página, sin necesidad de descargarlo. Soporta <strong>PDFs</strong> (embebidos), <strong>imágenes</strong> (visor con zoom), <strong>videos y audio</strong> (reproductor nativo), <strong>archivos de texto y código</strong> (visor con formato), y <strong>documentos Office</strong> (Word, Excel, PowerPoint vía Microsoft Office Online en producción). Incluye botón de descarga siempre disponible y cierre con tecla Escape.</div>
+    </div>
+
+    <h2>3. Personalización de Perfil</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Foto de Perfil con Recorte Circular</span>
+        <div class="update-desc">Nuevo sistema de subida de foto de perfil tipo Instagram. Al seleccionar una imagen se abre un editor donde el usuario puede <strong>arrastrar</strong> la foto para posicionarla y usar un <strong>slider de zoom</strong> para ajustarla dentro de un marco circular. La imagen se recorta automáticamente a 400x400px y se aplica al instante en todo el sistema.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Fotos de Perfil Visibles en Todo el CRM</span>
+        <div class="update-desc">Las fotos de perfil ahora se muestran en todos los avatares del sistema: topbar, widget de tareas (responsable, participantes, observadores), comentarios, y selector de responsable. Si el usuario no tiene foto, se mantienen las iniciales como antes.</div>
+    </div>
+
+    <h2>4. Mejoras Adicionales</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Gestión Dinámica de Pipelines y Etapas</span>
+        <div class="update-desc">Las etapas de los pipelines (Runrate, Proyecto, Prospección) ahora se cargan desde la base de datos y se pueden administrar desde el panel de configuración. Los cambios se reflejan automáticamente en el widget de oportunidades y el formulario de creación.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Diálogos del Drive Corregidos</span>
+        <div class="update-desc">Los diálogos de "Nueva Carpeta", "Renombrar" y "Eliminar" del Drive ahora aparecen correctamente encima del panel de archivos, solucionando el problema de z-index que los ocultaba detrás.</div>
+    </div>
+
+</div>
+
+</body>
+</html>

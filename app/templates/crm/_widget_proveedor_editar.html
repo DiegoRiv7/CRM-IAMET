@@ -1,0 +1,132 @@
+{% comment %}
+_widget_proveedor_editar.html — Widget overlay para CREAR o EDITAR un
+proveedor del catálogo CRM. Lógica completa en crm_proveedor_editar_v2.js
+(expone window._crmProveedorEditor con .open({mode, key?}), .close(),
+.save()).
+
+Espejo de _widget_marca_editar.html con prefijos pe- (proveedor editor)
+en lugar de me- (marca editor). Tabs de contactos:
+"Principal" / "Ventas" / "Soporte" (más natural para proveedores).
+
+Solo supervisores deben poder llegar aquí (lo valida el endpoint también).
+{% endcomment %}
+
+<div id="peOverlay" class="pe-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="peTitle">
+    <div class="pe-card" id="peCard">
+        <header class="pe-header">
+            <div class="pe-header-txt">
+                <h2 class="pe-header-title" id="peTitle">Editar proveedor</h2>
+                <div class="pe-header-sub" id="peSubtitle">Datos, contactos y estrategia</div>
+            </div>
+            <button type="button" class="pe-close-btn" id="peBtnClose" title="Cerrar (Esc)" aria-label="Cerrar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="pe-body">
+            <div class="pe-error" id="peError"></div>
+
+            {% comment %} HERO: Logo dropzone centrado + Nombre debajo centrado {% endcomment %}
+            <section class="pe-hero">
+                <div class="pe-dropzone" id="peDropzone" tabindex="0" role="button" aria-label="Subir o arrastrar logo">
+                    <div class="pe-dropzone-preview" id="peLogoPreview">
+                        <span id="peLogoInitials">?</span>
+                    </div>
+                    <div class="pe-dropzone-overlay" id="peDropzoneOverlay">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <span>Arrastra o haz click</span>
+                    </div>
+                    <input type="file" id="peLogoInput" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style="display:none;">
+                </div>
+                <button type="button" class="pe-logo-remove" id="peBtnLogoRemove" style="display:none;">Quitar logo</button>
+                <div class="pe-hero-name">
+                    <input type="text" id="peNombre" class="pe-name-input" maxlength="80" placeholder="Nombre del proveedor" autocomplete="off">
+                </div>
+                <div class="pe-hero-help">PNG · JPEG · SVG · WEBP — máx. 5 MB. El identificador interno se genera del nombre.</div>
+                {% comment %}
+                Campo key oculto: se autogenera del nombre en backend al crear.
+                Mantenido como hidden por compatibilidad con el JS existente.
+                {% endcomment %}
+                <input type="hidden" id="peKey" value="">
+            </section>
+
+            {% comment %} Cuerpo del form: 2 columnas {% endcomment %}
+            <div class="pe-grid">
+
+                {% comment %} Columna izquierda: Datos · Meta · Estrategia {% endcomment %}
+                <div class="pe-col">
+                    <section class="pe-section">
+                        <h3 class="pe-section-title">Datos</h3>
+                        <div class="pe-field">
+                            <label class="pe-label" for="peCategoria">Categoría</label>
+                            <input type="text" id="peCategoria" class="pe-input" maxlength="100" placeholder="Ej. Distribuidor mayorista" autocomplete="off">
+                        </div>
+                        <div class="pe-field">
+                            <label class="pe-label" for="peDescripcion">Descripción</label>
+                            <textarea id="peDescripcion" class="pe-textarea" rows="3" placeholder="Resumen corto del proveedor y su lugar en la cadena de suministro."></textarea>
+                        </div>
+                        <div class="pe-field">
+                            <label class="pe-label" for="peMetaAnual">Meta anual (MXN)</label>
+                            <input type="text" id="peMetaAnual" class="pe-input" inputmode="numeric" placeholder="$0 MXN" autocomplete="off">
+                        </div>
+                    </section>
+
+                    <section class="pe-section">
+                        <h3 class="pe-section-title">Estrategia de compra</h3>
+                        <div class="pe-field">
+                            <textarea id="peEstrategia" class="pe-textarea lg" rows="6" placeholder="Cómo se compra a este proveedor: condiciones, tiempos de entrega, contactos clave, restricciones…"></textarea>
+                        </div>
+                    </section>
+                </div>
+
+                {% comment %} Columna derecha: Contactos (3 tabs) {% endcomment %}
+                <div class="pe-col">
+                    <section class="pe-section">
+                        <h3 class="pe-section-title">Contactos</h3>
+                        <div class="pe-tabs" role="tablist">
+                            <button type="button" class="pe-tab is-on" data-pe-tab="principal" role="tab">Principal</button>
+                            <button type="button" class="pe-tab" data-pe-tab="ventas" role="tab">Ventas</button>
+                            <button type="button" class="pe-tab" data-pe-tab="soporte" role="tab">Soporte</button>
+                        </div>
+
+                        <div class="pe-tab-panel is-on" data-pe-panel="principal">
+                            <div class="pe-field"><label class="pe-label">Nombre</label><input type="text" id="peCtPrincNombre" class="pe-input" maxlength="120" autocomplete="off"></div>
+                            <div class="pe-field"><label class="pe-label">Email</label><input type="email" id="peCtPrincEmail" class="pe-input" maxlength="120" autocomplete="off"></div>
+                            <div class="pe-field"><label class="pe-label">Teléfono</label><input type="text" id="peCtPrincTel" class="pe-input" maxlength="40" autocomplete="off"></div>
+                        </div>
+
+                        <div class="pe-tab-panel" data-pe-panel="ventas">
+                            <div class="pe-field"><label class="pe-label">Nombre</label><input type="text" id="peCtVtaNombre" class="pe-input" maxlength="120" autocomplete="off"></div>
+                            <div class="pe-field"><label class="pe-label">Email</label><input type="email" id="peCtVtaEmail" class="pe-input" maxlength="120" autocomplete="off"></div>
+                            <div class="pe-field"><label class="pe-label">Teléfono</label><input type="text" id="peCtVtaTel" class="pe-input" maxlength="40" autocomplete="off"></div>
+                        </div>
+
+                        <div class="pe-tab-panel" data-pe-panel="soporte">
+                            <div class="pe-field"><label class="pe-label">Nombre</label><input type="text" id="peCtSopNombre" class="pe-input" maxlength="120" autocomplete="off"></div>
+                            <div class="pe-field"><label class="pe-label">Email</label><input type="email" id="peCtSopEmail" class="pe-input" maxlength="120" autocomplete="off"></div>
+                            <div class="pe-field"><label class="pe-label">Teléfono</label><input type="text" id="peCtSopTel" class="pe-input" maxlength="40" autocomplete="off"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <footer class="pe-footer">
+            <div class="pe-footer-left">
+                <button type="button" class="pe-btn pe-btn-danger" id="peBtnDelete" style="display:none;">Eliminar</button>
+            </div>
+            <div class="pe-footer-right">
+                <button type="button" class="pe-btn pe-btn-secondary" id="peBtnCancel">Cancelar</button>
+                <button type="button" class="pe-btn pe-btn-primary" id="peBtnSave">
+                    <span id="peBtnSaveLbl">Guardar</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>

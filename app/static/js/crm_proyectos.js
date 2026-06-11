@@ -1,3 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * crm_proyectos.js — ARCHIVO LEGACY (congelado desde 2026-06-04)
+ *
+ * ~7,400 líneas mezclando lista de proyectos, detalle, levantamientos
+ * y drive. Marcado como LEGACY por Boy Scout Rule.
+ *
+ * NO agregar código aquí. Para nuevas features de proyectos:
+ *   → app/static/js/proyectos_v2.js
+ *
+ * Modificar SOLO para bugs críticos o cambios mínimos. Ver
+ * app/static/js/README.md y ESTRUCTURA.md.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
 /* ============================================================
    crm_proyectos.js  --  Modulo Proyectos (inline section + detail overlay)
    ============================================================ */
@@ -7423,14 +7436,10 @@
         }).catch(function () { alert('Error de red al restaurar.'); });
     };
 
-    // Auto-abrir el detalle si la URL trae ?open_proyecto=N. Esto permite
-    // compartir un link directo al proyecto (botón Compartir).
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(window.proyectosOpenFromUrl, 500);
-        });
-    } else {
+    // Auto-abrir el detalle si la URL trae ?open_proyecto=N. Migrado a
+    // crmReady (Turbo-friendly).
+    window.crmReady(function () {
         setTimeout(window.proyectosOpenFromUrl, 500);
-    }
+    });
 
 })();

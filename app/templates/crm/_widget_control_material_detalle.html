@@ -1,0 +1,133 @@
+{% comment %}
+_widget_control_material_detalle.html — Sección "Control" del dashboard.
+
+Detalle/edición de un MaterialEsperado existente. Permite:
+  - Editar inline título, fechas y estado (barra "Guardar / Cancelar"
+    aparece cuando hay cambios sin guardar).
+  - Confirmar recepción (chip estado → "recibido", auditoría).
+  - Agregar comentarios (lista parseada del TextField `comentarios`).
+  - Eliminar (con confirmación nativa).
+
+Lógica completa en crm_control_material_v2.js
+(window.crmMaterialDetalle.open(materialId)).
+{% endcomment %}
+
+<div class="widget-overlay crm-cm-overlay" id="widgetMaterialDetalle"
+     style="z-index:var(--z-widget);display:none;"
+     onclick="if(event.target===this){window.crmMaterialDetalle && window.crmMaterialDetalle.close();}">
+
+    <div class="crm-cm-card crm-cm-card--detalle" role="dialog" aria-labelledby="cmDetTitulo">
+
+        {# Loading state #}
+        <div id="cmDetLoading" class="crm-cm-loading">
+            <div class="crm-cm-spinner" aria-hidden="true"></div>
+            <span>Cargando material…</span>
+        </div>
+
+        <div id="cmDetContent" style="display:none;">
+
+            {# Header — chip estado + cerrar #}
+            <header class="crm-cm-header crm-cm-header--detalle">
+                <div class="crm-cm-eyebrow">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <span id="cmDetEyebrow">Material esperado</span>
+                </div>
+                <h2 class="crm-cm-title crm-cm-title--editable"
+                    id="cmDetTitulo" data-field="titulo"
+                    title="Click para editar"
+                    tabindex="0">—</h2>
+                <span class="crm-cm-chip-estado" id="cmDetEstadoChip" data-field="estado"
+                      title="Click para cambiar estado" tabindex="0">—</span>
+
+                <button type="button" class="crm-cm-close" id="cmDetClose" title="Cerrar (Esc)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </header>
+
+            <main class="crm-cm-body crm-cm-body--detalle">
+
+                {# ── Proyecto al que pertenece ── #}
+                <section class="crm-cm-section">
+                    <div class="crm-cm-section-label">Proyecto</div>
+                    <div class="crm-cm-proyecto-info">
+                        <div class="crm-cm-proyecto-cliente" id="cmDetCliente">—</div>
+                        <div class="crm-cm-proyecto-opp" id="cmDetOpp">—</div>
+                    </div>
+                </section>
+
+                {# ── Fechas ── #}
+                <section class="crm-cm-section">
+                    <div class="crm-cm-row-2">
+                        <div class="crm-cm-field">
+                            <label class="crm-cm-label">Inicio (esperado)</label>
+                            <div class="crm-cm-editable" data-field="fecha_inicio" tabindex="0"
+                                 id="cmDetFechaIni" title="Click para editar">—</div>
+                        </div>
+                        <div class="crm-cm-field">
+                            <label class="crm-cm-label">Fin (llegada)</label>
+                            <div class="crm-cm-editable" data-field="fecha_fin" tabindex="0"
+                                 id="cmDetFechaFin" title="Click para editar">—</div>
+                        </div>
+                    </div>
+                </section>
+
+                {# ── Confirmación de recepción ── #}
+                <section class="crm-cm-section crm-cm-section--confirma">
+                    <div id="cmDetConfirmadoPanel" style="display:none;">
+                        <div class="crm-cm-confirmado-row">
+                            <svg width="16" height="16" fill="none" stroke="#16A34A" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span class="crm-cm-confirmado-txt">
+                                Confirmado el <strong id="cmDetConfFecha">—</strong>
+                                <span class="crm-cm-confirmado-por">por <strong id="cmDetConfPor">—</strong></span>
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="crm-cm-btn crm-cm-btn--confirma" id="cmDetConfirmarBtn">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Confirmar recepción del material
+                    </button>
+                </section>
+
+                {# ── Comentarios ── #}
+                <section class="crm-cm-section">
+                    <div class="crm-cm-section-label">
+                        Comentarios <span class="crm-cm-com-count" id="cmDetComCount"></span>
+                    </div>
+                    <div class="crm-cm-com-list" id="cmDetComList">
+                        <div class="crm-cm-com-empty">Aún no hay comentarios.</div>
+                    </div>
+                    <div class="crm-cm-com-form">
+                        <textarea class="crm-cm-input crm-cm-textarea" id="cmDetComTexto"
+                                  placeholder="Escribe un comentario sobre el avance del material…" rows="2"></textarea>
+                        <button type="button" class="crm-cm-btn crm-cm-btn--secondary" id="cmDetComEnviar" disabled>
+                            Agregar comentario
+                        </button>
+                    </div>
+                </section>
+
+                {# ── Footer info + eliminar ── #}
+                <section class="crm-cm-section crm-cm-section--meta">
+                    <div class="crm-cm-meta-info">
+                        <span>Creado por <strong id="cmDetCreadoPor">—</strong></span>
+                        <span class="crm-cm-meta-dot">·</span>
+                        <span id="cmDetCreadoEl">—</span>
+                    </div>
+                    <button type="button" class="crm-cm-btn crm-cm-btn--danger" id="cmDetEliminarBtn">
+                        Eliminar material
+                    </button>
+                </section>
+
+                <div class="crm-cm-error" id="cmDetError" style="display:none;"></div>
+            </main>
+
+            {# Barra de cambios sin guardar (sticky bottom). #}
+            <footer class="crm-cm-dirty-bar" id="cmDetDirtyBar" style="display:none;">
+                <span class="crm-cm-dirty-msg">Tienes cambios sin guardar</span>
+                <div class="crm-cm-dirty-actions">
+                    <button type="button" class="crm-cm-btn crm-cm-btn--ghost" id="cmDetDirtyCancel">Descartar</button>
+                    <button type="button" class="crm-cm-btn crm-cm-btn--primary" id="cmDetDirtySave">Guardar cambios</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+</div>

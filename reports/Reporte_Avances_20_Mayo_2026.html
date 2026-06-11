@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 20 de Mayo</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 20 de Mayo, 2026</p>
+            <p>Periodo: 20 Mayo (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">El Asistente AI da el salto a <strong>asistente operativo</strong>: ahora <strong>redacta correos de seguimiento</strong> listos para enviar, con datos reales de la oportunidad o el prospecto. Ademas se rediseno el modulo de Calendario y se mejoro el flujo de conversion de prospeccion a oportunidad.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">1</div>
+            <div class="stat-label">Hito: Correos AI</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Modulos con redaccion</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Vistas calendario</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">31</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Logro Principal: el Asistente AI Redacta Correos de Seguimiento
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El asistente deja de solo opinar y empieza a <strong>producir trabajo concreto</strong>. Lee la oportunidad o el prospecto, mira el historial de correos, las cotizaciones y la actividad agendada, y entrega un <strong>correo de seguimiento listo</strong> con su asunto y cuerpo. Lo unico que queda es revisarlo y enviarlo. El vendedor pasa de <em>&ldquo;no se que escribirle&rdquo;</em> a <em>&ldquo;mando este&rdquo;</em>.</p>
+    </div>
+
+    <h2>1. Correos de Seguimiento Redactados por AI</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Redaccion en Oportunidades</span>
+        <div class="update-desc">Dentro de una oportunidad, el asistente ofrece una opcion para <strong>&ldquo;Redactar seguimiento&rdquo;</strong>. Toma como referencia la <strong>actividad agendada</strong> mas proxima y arma el correo alrededor de ella (recordatorio, propuesta, confirmacion, lo que corresponda).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Personaliza con Cotizaciones y Productos</span>
+        <div class="update-desc">El correo no es generico: el asistente <strong>lee los productos y partidas cotizadas</strong> y los usa para que el mensaje suene aterrizado al caso del cliente, no a una plantilla.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Firma Segun la Institucion (Iamet / Bajanet)</span>
+        <div class="update-desc">El correo sale <strong>firmado con el logo y datos correctos</strong> dependiendo de si la oportunidad pertenece a Iamet o a Bajanet, y desde la cuenta de envio que corresponde. Sin tener que pegar la firma a mano.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Redaccion tambien en Prospeccion</span>
+        <div class="update-desc">En el modulo de Prospeccion, el asistente tambien puede <strong>redactar el primer correo o el correo de retomar</strong>. Lo lanza con un solo click desde el flujo de prospecto y queda listo para revisar.</div>
+    </div>
+
+    <h2>2. Asistente AI mas Util en Cada Modulo</h2>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Coach Tactico de Cierre por Oportunidad</span>
+        <div class="update-desc">Cada oportunidad tiene su propio asistente que actua como <strong>coach</strong>: te dice cual es el siguiente paso para cerrar, que esta detenido, y sugiere preguntas de seguimiento. El orb vive en el header de la oportunidad para tenerlo siempre a mano.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Coach Tactico por Prospecto</span>
+        <div class="update-desc">En cada prospecto, el asistente sugiere el <strong>siguiente paso concreto</strong> (llamar, mandar correo, agendar). Con un click puede <strong>agendar el seguimiento</strong> o disparar la redaccion del correo, sin salir del prospecto.</div>
+    </div>
+
+    <h2>3. Calendario Rediseñado</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Vista Dia tipo Agenda</span>
+        <div class="update-desc">La vista <strong>Dia</strong> ahora es una agenda vertical con tarjetas claras: que es, a que hora, con quien. Mas facil de leer de un vistazo que la cuadricula anterior.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Semana y Mes Pulidos, a Pantalla Completa</span>
+        <div class="update-desc">Se quito el panel lateral y el calendario ahora <strong>usa todo el ancho</strong>. Vistas <strong>Semana</strong> y <strong>Mes</strong> con tooltips ricos al pasar el cursor (resumen de cada evento) y mensaje claro cuando no hay nada agendado.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">Asistente AI Dentro del Calendario</span>
+        <div class="update-desc">Boton de Asistente AI integrado en el calendario: puede <strong>proponer cambios</strong> (mover, agendar, reorganizar) y se los <strong>muestra como vista previa</strong>; solo se aplican si el usuario los acepta. Ningun cambio se hace a tus espaldas.</div>
+    </div>
+
+    <h2>4. Flujo Prospeccion → Oportunidad mas Fino</h2>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Cerrar Ganado Crea la Oportunidad</span>
+        <div class="update-desc">Cuando se cierra ganado un prospecto, el sistema <strong>guia directo a crear la(s) oportunidad(es)</strong>. Menos pasos y menos prospectos que se quedan en el limbo.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Mejora</span>
+        <span class="update-title">Responsable Seleccionable + Aviso Automatico</span>
+        <div class="update-desc">Al crear la oportunidad se puede elegir al <strong>responsable</strong>, se le agenda automaticamente la actividad en su calendario y se le <strong>notifica</strong>. Los supervisores de grupo tambien pueden asignar a su equipo.</div>
+    </div>
+
+    <h2>5. &iquest;Que Gana la Empresa con Esto?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Vendedor Ahorra Tiempo en lo que mas Pesa: Escribir</span>
+        <div class="update-desc">Redactar el correo de seguimiento ya no es un trabajo de 10 minutos pensando que poner. El AI <strong>entrega un borrador aterrizado</strong> al caso, listo para enviar tras una revision rapida.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Seguimientos mas Consistentes y a Tiempo</span>
+        <div class="update-desc">Como el correo sale del contexto real (actividad agendada, cotizacion, ultimo correo), los seguimientos dejan de quedarse en el aire o sonar a plantilla. <strong>Mas trato directo, menos olvidos</strong>.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Coach Virtual en Cada Deal y Cada Prospecto</span>
+        <div class="update-desc">Vendedores con menos experiencia tienen una <strong>guia tactica al lado en todo momento</strong>: que sigue, que preguntar, como retomar. Reduce dependencia de la supervision uno-a-uno.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 20 de Mayo, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -461,3 +461,118 @@
         border: 1px solid #ccc !important;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * RESPONSIVE PARA LAPTOPS PEQUEÑAS — Fase 6.3.E
+ *
+ * Objetivo: que las toolbars del Calendario y Proyectos NO se amontonen
+ * en laptops de 13" (MacBook Air 13", ~1280-1440px de viewport).
+ * NO aplica a móviles ni tablets — esos siguen con el comportamiento
+ * existente arriba.
+ *
+ * Filosofía: cuando el espacio aprieta, reducimos padding, encogemos
+ * gaps, escondemos labels (mantenemos iconos), y al final agrupamos.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Laptops chicas: 1280px - 1440px (MacBook Air 13", laptops 13-14") ── */
+@media (min-width: 769px) and (max-width: 1440px) {
+
+    /* ── CALENDARIO (page-mode) ── */
+    /* La barra .cal-page-bar tiene: filtro + usuarios + asistente | tabs Mes/Semana/Día | toggle Act/Inst + nav fecha + título + Nueva actividad.
+       En 1440px se aprieta visiblemente. Reducimos padding y gap. */
+    .cal-page-bar {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+        gap: 8px !important;
+    }
+    .cal-page-bar .crm-bar-left,
+    .cal-page-bar .crm-bar-right {
+        gap: 6px !important;
+    }
+    /* Botón Asistente AI: solo icono en pantallas chicas (label es texto extra) */
+    .cal-page-bar #calAsistenteBtn span,
+    .cal-page-bar #calFiltroBtn span:not(.cal-filter-dot) {
+        display: none;
+    }
+    /* Toggle Actividades/Instalaciones: reducir padding */
+    .cal-page-bar .cal-source-btn {
+        padding: 4px 8px;
+        font-size: 0.65rem;
+    }
+    /* Navegación de fecha: compactar el título */
+    .cal-page-bar .cal-topnav-title {
+        max-width: 110px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* Botón + Nueva actividad: mantener label (es la acción primaria) pero
+       reducir padding */
+    .cal-page-bar .crm-facet-btn.crm-facet-new {
+        padding: 6px 10px;
+    }
+}
+
+/* ── Laptops MUY chicas: hasta 1280px ── */
+/* Ej. MacBook Air 13" con ventana no maximizada o navegador con sidebar abierta */
+@media (min-width: 769px) and (max-width: 1280px) {
+    .cal-page-bar {
+        flex-wrap: wrap;
+        row-gap: 8px !important;
+    }
+    /* En este tamaño, las tabs centrales se ponen abajo (segunda fila) para
+       que la barra izquierda y derecha tengan aire arriba */
+    .cal-page-bar .crm-tabs--dashboard {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: center;
+    }
+    /* Esconder el toggle Actividades/Instalaciones detrás de su icono para
+       liberar espacio (el usuario ve los iconos, sigue funcionando el click) */
+    .cal-page-bar .cal-source-btn {
+        font-size: 0;          /* esconde el texto pero mantiene el icono */
+        padding: 5px 8px;
+    }
+    .cal-page-bar .cal-source-btn svg {
+        margin-right: 0 !important;
+    }
+}
+
+/* ── PROYECTOS (lista) ── */
+/* El topbar .proy-tabs-wrap tiene: Filtro + Ordenar | "Proyectos" centro | Buscar + Nuevo Proyecto. */
+@media (min-width: 769px) and (max-width: 1440px) {
+    #proyListTopbar {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+        gap: 8px !important;
+    }
+    #proyListTopbar .proy-topbar-left,
+    #proyListTopbar .proy-topbar-right {
+        gap: 6px !important;
+    }
+    /* Buscador: reducir ancho para que quepa Nuevo Proyecto sin apretar */
+    #proyListTopbar .proy-search {
+        width: 180px;
+    }
+    /* Botones del topbar: padding más compacto */
+    #proyListTopbar .proy-facet-btn {
+        padding: 6px 10px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1280px) {
+    /* Buscador aún más compacto en laptops chicas */
+    #proyListTopbar .proy-search {
+        width: 140px;
+    }
+    /* Etiqueta "Filtro" / "Ordenar" oculta — solo icono + caret */
+    #proyListTopbar .proy-facet-btn #proyFilterLabel,
+    #proyListTopbar .proy-facet-btn #proySortLabel {
+        display: none;
+    }
+    /* Nuevo proyecto: solo "+ Nuevo" para ahorrar espacio */
+    #proyListTopbar .proy-btn-new {
+        font-size: 0.78rem;
+        padding: 7px 12px;
+    }
+}

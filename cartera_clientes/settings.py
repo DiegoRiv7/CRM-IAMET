@@ -25,8 +25,18 @@ load_dotenv(dotenv_path=dotenv_path)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+# ══════════════════════════════════════════════════════════════════════
 # SECURITY WARNING: keep the secret key used in production secret!
-# Obtén la SECRET_KEY de las variables de entorno
+#
+# ⚠️ HANDOFF CRÍTICO: el valor por defecto de abajo es INSEGURO. Si el
+# servidor de producción levanta el contenedor SIN un `.env` con
+# DJANGO_SECRET_KEY definido, Django va a usar este string público (que
+# está en GitHub) → las cookies de sesión se pueden forjar.
+#
+# Verificación post-deploy:
+#   docker exec gesti-n-de-ventas-web-1 env | grep DJANGO_SECRET_KEY
+# Debe devolver el valor real, no vacío.
+# ══════════════════════════════════════════════════════════════════════
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%bvhvsoqj7(y%nvdm!*_u26-x3kc$3!f&d#8*j#km!j=g%@iye') # Valor por defecto para desarrollo si no está en .env
 
 # Encryption key for storing email passwords (generate with Fernet.generate_key())
@@ -35,7 +45,19 @@ MAIL_ENCRYPTION_KEY = os.environ.get('MAIL_ENCRYPTION_KEY', '')
 # Tipo de cambio USD → MXN para conversión de cotizaciones a monto de oportunidad
 TIPO_CAMBIO_USD_MXN = os.environ.get('TIPO_CAMBIO_USD_MXN', '20.00')
 
+# ══════════════════════════════════════════════════════════════════════
 # SECURITY WARNING: don't run with debug turned on in production!
+#
+# ⚠️ HANDOFF CRÍTICO: el default es 'True'. En producción, el `.env`
+# del servidor DEBE tener `DJANGO_DEBUG=False`. Si está mal, Django
+# guarda TODAS las queries en memoria (memory leak documentado en
+# Optimizacion_Performance_Pendiente.md) y expone tracebacks completos
+# al usuario en cualquier error.
+#
+# Verificación post-deploy:
+#   docker exec gesti-n-de-ventas-web-1 env | grep DJANGO_DEBUG
+# Debe devolver `False`.
+# ══════════════════════════════════════════════════════════════════════
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
 # En producción, esto debe contener los dominios de tu sitio (ej. ['tudominio.com', 'www.tudominio.com'])

@@ -22,12 +22,19 @@ from . import views_asistente_ideas
 from . import views_asistente_prospeccion
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
+from . import views_sync
+from .views_v2 import proyectos_v2 as views_v2_proyectos
+from .views_v2 import marcas_v2 as views_v2_marcas
+from .views_v2 import proveedores_v2 as views_v2_proveedores
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
     path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
     path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     path('bitrix/lost-opportunities/', views.bitrix_lost_opportunities, name='bitrix-lost-opportunities'),
+
+    # ── Sync entre usuarios (polling ligero por cursor) ──────────────────────
+    path('api/sync/cambios/', views_sync.api_sync_cambios, name='api_sync_cambios'),
 
     # ── CRM Home ─────────────────────────────────────────────────────────────
     path('', views.crm_home, name='root_home'),
@@ -339,6 +346,8 @@ urlpatterns = [
 
     # ── Perfil de usuario ─────────────────────────────────────────────────────
     path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
+    # Página oculta (sin link en el menú) para administrar el fondo del tema Mundial.
+    path('config/fondo-mundial/', views.fondo_mundial_admin, name='fondo_mundial_admin'),
     path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
     path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 
@@ -478,6 +487,38 @@ urlpatterns = [
     path('api/iamet/proyectos/', views_iamet.api_proyectos_lista, name='api_iamet_proyectos_lista'),
     path('api/iamet/proyectos/crear/', views_iamet.api_proyecto_crear, name='api_iamet_proyecto_crear'),
     path('api/iamet/proyectos/dashboard/', views_iamet.api_proyectos_dashboard, name='api_proyectos_dashboard'),
+
+    # ── Dashboard Control (V2 — logística de compra de materiales) ───────────
+    path('api/control/proyectos/', views_v2_proyectos.api_control_proyectos, name='api_control_proyectos'),
+    path('api/control/materiales/', views_v2_proyectos.api_material_lista, name='api_control_material_lista'),
+    path('api/control/materiales/crear/', views_v2_proyectos.api_material_crear, name='api_control_material_crear'),
+    path('api/control/materiales/<int:material_id>/', views_v2_proyectos.api_material_detalle, name='api_control_material_detalle'),
+    path('api/control/materiales/<int:material_id>/actualizar/', views_v2_proyectos.api_material_actualizar, name='api_control_material_actualizar'),
+    path('api/control/materiales/<int:material_id>/eliminar/', views_v2_proyectos.api_material_eliminar, name='api_control_material_eliminar'),
+    path('api/control/materiales/<int:material_id>/confirmar-recepcion/', views_v2_proyectos.api_material_confirmar_recepcion, name='api_control_material_confirmar'),
+
+    # ── Dashboard Marcas (V2) ────────────────────────────────────────────────
+    path('api/marcas/resumen/', views_v2_marcas.api_marcas_resumen, name='api_marcas_resumen'),
+    # CRUD del catálogo (solo supervisores). Las rutas concretas van antes
+    # del catch-all <str:marca_key>/ para que no las capture.
+    path('api/marcas/crear/', views_v2_marcas.api_marca_crear, name='api_marca_crear'),
+    # Quick-create: cualquier login. Crea marca mínima desde nombre (form cotización).
+    path('api/marcas/quick-create/', views_v2_marcas.api_marca_quick_create, name='api_marca_quick_create'),
+    path('api/marcas/<str:marca_key>/edit/', views_v2_marcas.api_marca_edit, name='api_marca_edit'),
+    path('api/marcas/<str:marca_key>/actualizar/', views_v2_marcas.api_marca_actualizar, name='api_marca_actualizar'),
+    path('api/marcas/<str:marca_key>/eliminar/', views_v2_marcas.api_marca_eliminar, name='api_marca_eliminar'),
+    path('api/marcas/<str:marca_key>/', views_v2_marcas.api_marca_detalle, name='api_marca_detalle'),
+
+    # ── Dashboard Proveedores (V2) — espejo de Marcas ───────────────────────
+    # Las rutas concretas van antes del catch-all <str:proveedor_key>/.
+    path('api/proveedores/resumen/', views_v2_proveedores.api_proveedores_resumen, name='api_proveedores_resumen'),
+    path('api/proveedores/crear/', views_v2_proveedores.api_proveedor_crear, name='api_proveedor_crear'),
+    path('api/proveedores/quick-create/', views_v2_proveedores.api_proveedor_quick_create, name='api_proveedor_quick_create'),
+    path('api/proveedores/<str:proveedor_key>/edit/', views_v2_proveedores.api_proveedor_edit, name='api_proveedor_edit'),
+    path('api/proveedores/<str:proveedor_key>/actualizar/', views_v2_proveedores.api_proveedor_actualizar, name='api_proveedor_actualizar'),
+    path('api/proveedores/<str:proveedor_key>/eliminar/', views_v2_proveedores.api_proveedor_eliminar, name='api_proveedor_eliminar'),
+    path('api/proveedores/<str:proveedor_key>/', views_v2_proveedores.api_proveedor_detalle, name='api_proveedor_detalle'),
+
     path('api/iamet/proyectos/financiero/', views_iamet.api_proyectos_financiero, name='api_proyectos_financiero'),
     path('api/iamet/proyectos/<int:proyecto_id>/', views_iamet.api_proyecto_detalle, name='api_iamet_proyecto_detalle'),
     path('api/iamet/proyectos/<int:proyecto_id>/actualizar/', views_iamet.api_proyecto_actualizar, name='api_iamet_proyecto_actualizar'),
