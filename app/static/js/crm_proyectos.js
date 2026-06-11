@@ -925,6 +925,15 @@
         if (listTop) listTop.style.display = '';
         var section = el('proyectosSection');
         if (section) section.style.display = '';
+        // (2026-06-11 fix) Defense in depth inversa: si quedó un DETALLE
+        // abierto de una visita anterior (p.ej. abierto desde una
+        // oportunidad), cerrarlo al entrar a la lista — sin esto, lista y
+        // detalle quedaban renderizados a la vez, uno debajo del otro.
+        var _detPrev = el('widgetProyectoDetalle');
+        if (_detPrev && _detPrev.classList.contains('is-open') &&
+            typeof window.proyectosVolverLista === 'function') {
+            window.proyectosVolverLista();
+        }
         proySetMainTab('programa');
     };
     window.proyectosAbrir = window.proyectosInit;
