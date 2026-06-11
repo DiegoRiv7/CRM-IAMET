@@ -2034,6 +2034,10 @@ def api_crm_table_data(request):
             # Match entries → Cliente: primero por RFC, luego por nombre
             _all_clientes_api = list(clientes_qs)
             _rfc_map = {c.rfc.upper().strip(): c for c in _all_clientes_api if c.rfc}
+            # (2026-06-10, perf) Match exacto por dict O(1) — el scan lineal
+            # solo queda para los fallbacks de substring/palabras.
+            _nombre_map = {c.nombre_empresa.upper().strip(): c
+                           for c in _all_clientes_api if c.nombre_empresa}
             total_by_id = {}
             for entry in _facturado_entries:
                 c_obj = None
@@ -2046,9 +2050,7 @@ def api_crm_table_data(request):
                 # 2) Match por nombre (fallback)
                 if not c_obj:
                     cn_upper = nombre.upper().strip()
-                    for c in _all_clientes_api:
-                        if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
-                            c_obj = c; break
+                    c_obj = _nombre_map.get(cn_upper)
                     if not c_obj:
                         for c in _all_clientes_api:
                             if not c.nombre_empresa: continue
@@ -2124,6 +2126,9 @@ def api_crm_table_data(request):
 
             # Match entries → Cliente por nombre (usando misma lógica que facturado)
             _all_clientes_cob = list(clientes_qs)
+            # (2026-06-10, perf) Match exacto por dict O(1).
+            _nombre_map_cob = {c.nombre_empresa.upper().strip(): c
+                               for c in _all_clientes_cob if c.nombre_empresa}
             total_by_id = {}
             for entry in _cobrado_entries:
                 c_obj = None
@@ -2134,9 +2139,7 @@ def api_crm_table_data(request):
                 if cn_upper in alias_map:
                     cn_upper = alias_map[cn_upper]
                 # Match por nombre
-                for c in _all_clientes_cob:
-                    if c.nombre_empresa and c.nombre_empresa.upper().strip() == cn_upper:
-                        c_obj = c; break
+                c_obj = _nombre_map_cob.get(cn_upper)
                 if not c_obj:
                     for c in _all_clientes_cob:
                         if not c.nombre_empresa: continue

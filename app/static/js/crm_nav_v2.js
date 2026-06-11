@@ -325,10 +325,80 @@
         }
         if (window._CRM_CONFIG) window._CRM_CONFIG.tabActivo = PAGE_TAB;
         if (typeof window._crmSetPeriodo === 'function') window._crmSetPeriodo(null, null, 'crm');
+        // Los KPIs del topbar/footer son nodos COMPARTIDOS y el dashboard
+        // los pisó con sus totales — re-pintar los del kanban.
+        if (typeof window.refreshCrmTable === 'function') window.refreshCrmTable();
         var bd = document.getElementById('btnDashboard');
         if (bd) bd.classList.remove('active');
         urlToCrm();
     }
+
+    /* ── Prewarm del dashboard ───────────────────────────────────────
+       En páginas tab=crm, tras ~3.5s de idle, se disparan los fetchs del
+       dashboard EN BACKGROUND y todo se renderiza dentro del root oculto:
+       cuando el usuario haga click en Reportes ya está PINTADO — entrada
+       instantánea estilo Tareas (dashOpenInline además refresca datos
+       frescos encima).
+
+       Protección: el render del dashboard también escribe en nodos
+       COMPARTIDOS del topbar/footer (facturadoAmount, footerLeft, etc.).
+       Durante el warm, un MutationObserver los regresa a su valor del
+       kanban en cuanto algo los toque; se desconecta solo.             */
+
+    var dashWarmed = false;
+    var SHARED_KPI_IDS = ['facturadoAmount', 'metaDisplay', 'progressPct',
+                          'topbarTotalLabel', 'footerLeft', 'footerRight'];
+
+    function dashPrewarm() {
+        if (dashWarmed || dashInline || calInline) return;
+        if (document.visibilityState === 'hidden') return;
+        if (PAGE_TAB !== 'crm') return;
+        if (!document.getElementById('ckDashRoot')) return;
+        if (typeof window._crmSetPeriodo !== 'function' ||
+            typeof window.refreshCrmTable !== 'function') return;
+        dashWarmed = true;
+
+        // Snapshot + guard de los nodos compartidos del kanban.
+        var snap = {};
+        var fill = document.getElementById('progressFill');
+        var fillW = fill ? fill.style.width : null;
+        SHARED_KPI_IDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) snap[id] = el.textContent;
+        });
+        var restoring = false;
+        var obs = new MutationObserver(function () {
+            if (restoring || dashInline) return;
+            restoring = true;
+            SHARED_KPI_IDS.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && snap[id] !== undefined && el.textContent !== snap[id]) {
+                    el.textContent = snap[id];
+                }
+            });
+            if (fill && fillW !== null && fill.style.width !== fillW) fill.style.width = fillW;
+            restoring = false;
+        });
+        SHARED_KPI_IDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) obs.observe(el, { childList: true, characterData: true, subtree: true });
+        });
+        if (fill) obs.observe(fill, { attributes: true, attributeFilter: ['style'] });
+        // El guard vive mientras llegan los 5 paneles; después ya no estorba.
+        setTimeout(function () { obs.disconnect(); }, 20000);
+
+        try {
+            window._crmSetPeriodo(null, null, 'clientes');
+            window.refreshCrmTable();   // → loadAllClientesPanels() (fetchs en paralelo)
+        } finally {
+            window._crmSetPeriodo(null, null, 'crm');  // restaurar de inmediato
+        }
+    }
+
+    window.crmReady(function () {
+        dashWarmed = false;  // página nueva (turbo:load) → permitir re-warm
+        setTimeout(dashPrewarm, 3500);
+    });
 
     // Captura a nivel document: corre ANTES que los onclick inline y los
     // listeners de crm_main, así tomamos la navegación sin tocar el legacy.
