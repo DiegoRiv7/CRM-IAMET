@@ -842,6 +842,25 @@ body[data-theme="mundial"] .proy-tab-header {
 body[data-theme="mundial"] .proy-tab-header * {
     color: #ffffff !important;
 }
+/* Botones dentro del header greca: el wildcard de arriba les fuerza texto
+   blanco pero su fondo era CLARO (proy-btn-outline, wop-btn, "← Atrás")
+   → pills blancos ilegibles. Mismo glass oscuro que los botones del
+   header del calendario. */
+body[data-theme="mundial"] .proy-tab-header button {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-tab-header button:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+}
+/* Los primarios (+ Nueva instalación, etc.) conservan jerarquía en verde
+   selección — igual que "+Nueva Actividad" del calendario. */
+body[data-theme="mundial"] .proy-tab-header .wop-btn-primary,
+body[data-theme="mundial"] .proy-tab-header .proy-btn-primary {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    border: none !important;
+}
 
 /* --- Diálogos de proyecto (Crear, Editar, etc.) --- */
 body[data-theme="mundial"] .proy-dialog-overlay {
