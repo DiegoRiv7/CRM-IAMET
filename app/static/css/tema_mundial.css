@@ -290,20 +290,22 @@ body[data-theme="mundial"] .glass-card:hover {
    datos se lee sin problema. Toques rojos/verdes de acento mexicano.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Panel principal de los modales */
+/* Panel principal de los modales — gradiente verde mexicano translúcido
+   (tinte verde claro para identidad de tema, superficie clara para que el
+   texto oscuro de los datos se lea bien). */
 body[data-theme="mundial"] .widget-card,
 body[data-theme="mundial"] .widget-card-lg,
 body[data-theme="mundial"] .wn-overlay .wn-card.wn-composer {
-    background: rgba(234, 247, 240, 0.82) !important;
-    backdrop-filter: blur(34px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(34px) saturate(165%) !important;
-    border: 1px solid rgba(0, 104, 71, 0.28) !important;
-    box-shadow: 0 30px 70px rgba(0, 20, 10, 0.42), inset 0 1px 0 rgba(255,255,255,0.65) !important;
+    background: linear-gradient(150deg, rgba(0, 168, 107, 0.14) 0%, rgba(232, 247, 239, 0.80) 45%, rgba(232, 247, 239, 0.82) 100%) !important;
+    backdrop-filter: blur(34px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(34px) saturate(170%) !important;
+    border: 1px solid rgba(0, 104, 71, 0.30) !important;
+    box-shadow: 0 30px 70px rgba(0, 20, 10, 0.42), inset 0 1px 0 rgba(255,255,255,0.7) !important;
 }
 
 /* Sub-tarjetas internas del detalle (MONTO, TAREAS, COTIZACIONES, etc.) */
 body[data-theme="mundial"] .wo-card {
-    background: rgba(255, 255, 255, 0.52) !important;
+    background: rgba(255, 255, 255, 0.50) !important;
     border: 1px solid rgba(0, 104, 71, 0.16) !important;
 }
 body[data-theme="mundial"] .wo-card-accent {
@@ -321,10 +323,47 @@ body[data-theme="mundial"] .wo-type-badge {
     color: #9E0B1C !important;
 }
 
-/* Header del composer de nueva oportunidad */
+/* ── Modal Nueva Oportunidad: header, canvas y footer en glass ── */
 body[data-theme="mundial"] .wn-ctw-header {
     border-bottom-color: rgba(0, 104, 71, 0.20) !important;
 }
 body[data-theme="mundial"] .wn-ctw-canvas {
     background: transparent !important;
+}
+/* Footer (Contacto / Producto / Área / Crear) — era blanco sólido */
+body[data-theme="mundial"] .wn-ctw-toolbar {
+    background: rgba(225, 244, 234, 0.55) !important;
+    border-top-color: rgba(0, 104, 71, 0.22) !important;
+}
+/* Close (X) con hover rojo mexicano */
+body[data-theme="mundial"] .wn-ctw-close:hover {
+    background: rgba(206, 17, 38, 0.12) !important;
+    color: #9E0B1C !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECCIÓN TAREAS — tabla en glass verde; los rojos de "atrasadas" y
+   fechas vencidas YA existen y son el toque rojo natural (se conservan).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Contenedor principal de la tabla (era blanco) */
+body[data-theme="mundial"] .tcp-shell {
+    background: linear-gradient(150deg, rgba(0, 168, 107, 0.10) 0%, rgba(232, 247, 239, 0.78) 45%, rgba(232, 247, 239, 0.80) 100%) !important;
+    backdrop-filter: blur(30px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(165%) !important;
+    border: 1px solid rgba(0, 104, 71, 0.26) !important;
+    box-shadow: 0 14px 40px rgba(0, 20, 10, 0.30) !important;
+}
+/* Panel derecho "TU DÍA" */
+body[data-theme="mundial"] .tcp-detail {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-left-color: rgba(0, 104, 71, 0.22) !important;
+}
+/* Filas transparentes para que se asome el glass verde; el texto oscuro
+   se mantiene legible. Las filas atrasadas conservan su tinte rojo. */
+body[data-theme="mundial"] .tcp-row:hover { background: rgba(255, 255, 255, 0.30) !important; }
+body[data-theme="mundial"] .tcp-row.active { background: rgba(0, 168, 107, 0.16) !important; }
+/* Header de columnas con velo claro para legibilidad */
+body[data-theme="mundial"] .tcp-col-head {
+    background: rgba(255, 255, 255, 0.22) !important;
 }
