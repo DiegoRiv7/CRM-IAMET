@@ -155,10 +155,14 @@
         ?tab=clientes — la nav fina pasó a vivir como pestañas dentro del
         dashboard, así que este botón sigue siendo la entrada principal.
 
-        SIN data-turbo: el dashboard tiene 7+ fetchs en cascada + 3 Chart.js
-        que sufren con navegación SPA (canvas reuse bugs, fetchs duplicados).
+        CON data-turbo (2026-06-10): los dos bloqueadores documentados se
+        arreglaron — ckRenderCharts ahora destruye instancias antes de
+        recrear (crm_main ~3425) y turbo_bootstrap destruye TODOS los
+        Chart.js en turbo:before-render (listeners de resize fugados).
+        Los fetchs del dashboard ya eran paralelos (no cascada) y el
+        wireup completo se re-dispara vía crmReady en cada turbo:load.
         {% endcomment %}
-        <a href="/app/home/?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Reportes"
+        <a href="/app/home/?tab=clientes&mes={{ mes_filter }}&anio={{ anio_filter }}" data-turbo="true" class="crm-sb-btn {% if tab_activo == 'clientes' %}active{% endif %}" id="btnDashboard" data-tooltip="Reportes"
             onclick="try{localStorage.setItem('crmView','crm');}catch(e){}">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

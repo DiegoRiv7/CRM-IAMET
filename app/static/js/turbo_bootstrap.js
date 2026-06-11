@@ -97,6 +97,17 @@
         } catch (e) {
             console.error('[turbo_bootstrap] error en before-render:', e);
         }
+        // Chart.js: destruir TODAS las instancias antes del body-swap.
+        // Cada chart registra listeners de resize en window; con su canvas
+        // muerto tras el swap quedarían fugados y el registry interno
+        // crecería en cada navegación (dashboard de Reportes: 4-9 charts).
+        try {
+            if (window.Chart && window.Chart.instances) {
+                Object.values(window.Chart.instances).forEach(function (c) {
+                    try { c.destroy(); } catch (e2) { }
+                });
+            }
+        } catch (e) { /* defensivo: nunca bloquear la navegación */ }
     });
 
     // ── turbo:load: cleanup del stack ──

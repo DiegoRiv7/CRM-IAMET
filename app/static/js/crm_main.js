@@ -3424,6 +3424,15 @@
 
         function ckRenderCharts(merged, totFact, totCob, totOpp, totCot, prevFact, prevCob, prevOpp, prevCot) {
             if (typeof Chart === 'undefined') return;
+            // (2026-06-10, fix SPA) Destruir las instancias previas ANTES de
+            // recrear. Sin esto, la 2ª llamada (cambio de modo, refresh del
+            // data bus, navegación Turbo) lanza "Canvas is already in use"
+            // y fuga listeners de resize. _renderProspCharts ya lo hacía
+            // bien; este era el bloqueador documentado para SPA en Reportes.
+            Object.keys(_ckChartInstances).forEach(function (k) {
+                try { _ckChartInstances[k].destroy(); } catch (e) { }
+                delete _ckChartInstances[k];
+            });
             var fN = function(s) { return parseFloat((s || '0').replace(/,/g, '')) || 0; };
             var fmtCurrency = function(v) { return v >= 1000000 ? '$' + (v/1000000).toFixed(1) + 'M' : v >= 1000 ? '$' + Math.round(v/1000) + 'K' : '$' + v; };
 
