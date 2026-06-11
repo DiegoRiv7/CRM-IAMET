@@ -12536,6 +12536,36 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     min-width: 0;
 }
 
+/* ── Centrado REAL del island del dashboard (2026-06-11) ──
+   El centrado por spacer (::before flex:1) solo funciona si los lados
+   pesan igual: con #cliFilterIsland visible (modo Clientes) o el botón
+   Ordenar de Reportes, la isla quedaba empujada fuera del centro. En
+   pantallas anchas la isla se centra ABSOLUTA respecto a la barra (igual
+   que la del detalle de proyecto); filtro y pills siguen en el flex
+   normal. Bajo 1680px aplica el modo wrap de arriba (isla en su propia
+   fila) y estas reglas no intervienen. Scoped a #crmContentSection para
+   NO tocar la barra del calendario (cal-page-bar comparte clases). */
+@media (min-width: 1681px) {
+    #crmContentSection .crm-bar.crm-bar--dashboard {
+        position: relative;
+    }
+    #crmContentSection .crm-bar.crm-bar--dashboard::before {
+        display: none;
+    }
+    #crmContentSection .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 46vw;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    #crmContentSection .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard::-webkit-scrollbar {
+        display: none;
+    }
+}
+
 /* Strip café default para prospectos, sobrescribe los defaults por data-tipo
    (alta especificidad para ganar sobre .crm-postit[data-tipo=...]) */
 .crm-postit--prospecto[data-tipo="proyecto"] .crm-postit-strip,

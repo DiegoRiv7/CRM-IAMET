@@ -6568,6 +6568,11 @@
             // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
             // en crm-bar-right. No sobrescribimos su contenido (el SVG debe quedarse).
         }
+        // Exportada: crm_nav_v2.js (dashOpenInline) la invoca para normalizar
+        // la vista a 'crm' antes de mostrar el dashboard inline — sin esto el
+        // guard typeof fallaba en silencio y el dashboard se "abría" dentro
+        // del #crmContentSection oculto (Tareas seguía en pantalla).
+        window.switchCrmView = switchCrmView;
 
         try {
             if (btnTareas) {
@@ -6601,8 +6606,13 @@
             }
 
             // Default view para administradores: 'compras' (no tienen pestaña CRM).
+            // Solo en el home genérico — en destinos explícitos (?tab=clientes,
+            // calendario, etc.) el server-render manda; si no, este switch
+            // tapaba Reportes/Calendario con la vista persistida.
             try {
                 var _isAdmin = !!(window._CRM_CONFIG && window._CRM_CONFIG.esAdministrador);
+                var _pageTabAdm = (window._CRM_CONFIG || {}).tabActivo || '';
+                if (_pageTabAdm && _pageTabAdm !== 'crm' && _pageTabAdm !== 'todos') _isAdmin = false;
                 var _savedView = null;
                 try { _savedView = localStorage.getItem('crmView'); } catch (e) {}
                 if (_isAdmin) {

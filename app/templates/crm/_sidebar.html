@@ -332,11 +332,15 @@
         return;  // No correr el restorer del CRM home; aquí estás en otra página.
     }
 
-    // Si la URL define tab=calendario, ignoramos el crmView persistido: la
-    // página activa la marca el server-render (btnCalendario).
+    // Si la URL define un tab de destino EXPLÍCITO (calendario, clientes/
+    // Reportes, prospectos, ideas, marketing…), ignoramos el crmView
+    // persistido: la página activa la marca el server-render. Antes solo
+    // se excluía calendario y aterrizar en Reportes con crmView='tareas'
+    // mostraba Tareas ENCIMA del dashboard (doble active en el sidebar).
     try {
         var _u = new URL(window.location.href);
-        if (_u.searchParams.get('tab') === 'calendario') return;
+        var _t = _u.searchParams.get('tab');
+        if (_t && _t !== 'crm' && _t !== 'todos') return;
     } catch(e) { /* defensivo */ }
     var v = localStorage.getItem('crmView');
     if (v === 'tareas' || v === 'proyectos') {

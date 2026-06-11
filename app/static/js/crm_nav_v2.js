@@ -408,10 +408,12 @@
         replaceUrl(p.toString());
         window.scrollTo(0, 0);
 
+        // Sidebar: solo Reportes activo. Limpieza COMPLETA — antes solo se
+        // quitaba btnCRM y al entrar desde Tareas/Proyectos quedaban dos
+        // botones marcados.
+        document.querySelectorAll(SIDEBAR_BTN_SEL).forEach(function (b) { b.classList.remove('active'); });
         var bd = document.getElementById('btnDashboard');
         if (bd) bd.classList.add('active');
-        var bc = document.getElementById('btnCRM');
-        if (bc) bc.classList.remove('active');
         return true;
     }
 
