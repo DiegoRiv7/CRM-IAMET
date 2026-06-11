@@ -31,8 +31,24 @@
     var stack = [];           // array de elementos .widget-overlay visibles
     var observers = new WeakMap();
 
+    // ── Qué administra el stack ──
+    // Los .widget-overlay clásicos MÁS los modales que vivían FUERA del
+    // sistema con z-index estático (tarea detalle 10400, crear tarea
+    // 10450, chat de grupo 10300). Al quedar fuera, cualquier widget
+    // abierto DESDE ellos (drive, conversación, actividad, oportunidad…)
+    // aparecía DETRÁS: el stack topa en 8000 y el modal estático siempre
+    // ganaba. Adentro del stack, el orden de apertura manda: lo último
+    // que abres queda hasta arriba. Los dialogs de confirmación (CAPA 5,
+    // 10500) y los toasts (10800) quedan a propósito fuera — son
+    // transitorios y SIEMPRE deben verse encima.
+    var MANAGED_SELECTOR = '.widget-overlay, .crm-task-modal-overlay, ' +
+        '.crm-create-task-overlay, .grupo-overlay';
+    function isManaged(el) {
+        return !!(el && el.nodeType === 1 && el.matches && el.matches(MANAGED_SELECTOR));
+    }
+
     function isOverlayVisible(el) {
-        if (!el || !el.classList || !el.classList.contains('widget-overlay')) return false;
+        if (!isManaged(el)) return false;
         // Tres formas de "visible" que usa el código del CRM:
         //   1. style.display = 'flex' o '' o no 'none'
         //   2. classList contiene 'active' (varios usan esto)
@@ -102,7 +118,7 @@
     }
 
     function scanAll() {
-        document.querySelectorAll('.widget-overlay').forEach(attachObserver);
+        document.querySelectorAll(MANAGED_SELECTOR).forEach(attachObserver);
     }
 
     // ── API pública opcional ──
@@ -142,12 +158,12 @@
         mutations.forEach(function (m) {
             m.addedNodes.forEach(function (n) {
                 if (n.nodeType !== 1) return;
-                if (n.classList && n.classList.contains('widget-overlay')) {
+                if (isManaged(n)) {
                     attachObserver(n);
                 }
                 // Buscar overlays dentro de subárboles agregados.
                 if (n.querySelectorAll) {
-                    n.querySelectorAll('.widget-overlay').forEach(attachObserver);
+                    n.querySelectorAll(MANAGED_SELECTOR).forEach(attachObserver);
                 }
             });
         });
@@ -206,7 +222,7 @@
             'button[onclick*="display=\\"none\\""], ' +
             'button[onclick*="classList.remove(\'active\'"], ' +
             'button[onclick*="closing"], ' +
-            'button[aria-label="Cerrar"], button[title="Cerrar"], ' +
+            'button[aria-label="Cerrar"], button[title^="Cerrar"], ' +
             'button[onclick*="Cerrar()"], button[onclick*="Close()"]'
         );
         if (btn) {

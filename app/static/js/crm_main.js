@@ -6491,6 +6491,16 @@
             if (document.body) document.body.classList.remove('adm-initial-hide');
             localStorage.setItem('crmView', view);
             window._crmTareasMode = (view === 'tareas');
+            // (2026-06-11 fix) Al salir de Tareas, cerrar el detalle de tarea
+            // si quedó ABIERTO — quedaba flotando invisible y dejaba
+            // body.overflow bloqueado (no se podía scrollear en el CRM).
+            // Solo si está activo: cerrarMo­dal en frío dispara refetches.
+            if (view !== 'tareas' && typeof window.crmTaskCerrarModal === 'function') {
+                var _tm = document.getElementById('crmTaskDetailModal');
+                if (_tm && _tm.classList.contains('active')) {
+                    try { window.crmTaskCerrarModal(); } catch (e) { /* noop */ }
+                }
+            }
             var widgetCompras = document.getElementById('widgetCompras');
             if (crmContent) crmContent.style.display = (view === 'crm') ? '' : 'none';
             if (tareasSection) tareasSection.classList.toggle('active', view === 'tareas');
@@ -6558,6 +6568,11 @@
             // NOTA: el boton btnNegociacion ahora es un boton cuadrado con icono +
             // en crm-bar-right. No sobrescribimos su contenido (el SVG debe quedarse).
         }
+        // Exportada: crm_nav_v2.js (dashOpenInline) la invoca para normalizar
+        // la vista a 'crm' antes de mostrar el dashboard inline — sin esto el
+        // guard typeof fallaba en silencio y el dashboard se "abría" dentro
+        // del #crmContentSection oculto (Tareas seguía en pantalla).
+        window.switchCrmView = switchCrmView;
 
         try {
             if (btnTareas) {
@@ -6591,8 +6606,13 @@
             }
 
             // Default view para administradores: 'compras' (no tienen pestaña CRM).
+            // Solo en el home genérico — en destinos explícitos (?tab=clientes,
+            // calendario, etc.) el server-render manda; si no, este switch
+            // tapaba Reportes/Calendario con la vista persistida.
             try {
                 var _isAdmin = !!(window._CRM_CONFIG && window._CRM_CONFIG.esAdministrador);
+                var _pageTabAdm = (window._CRM_CONFIG || {}).tabActivo || '';
+                if (_pageTabAdm && _pageTabAdm !== 'crm' && _pageTabAdm !== 'todos') _isAdmin = false;
                 var _savedView = null;
                 try { _savedView = localStorage.getItem('crmView'); } catch (e) {}
                 if (_isAdmin) {
@@ -7517,14 +7537,22 @@
         }
 
         // Toggle sección collapse/expand
-        document.addEventListener('click', function(e) {
+        // (2026-06-11 fix) Remover-y-reagregar: este wireup corre en cada
+        // turbo:load y document persiste — sin esto se apilaba un listener
+        // por navegación. Se conserva siempre el de la generación vigente
+        // (su closure _tcpCollapsedSections es el vivo).
+        if (window._tcpSecHeadHandler) {
+            document.removeEventListener('click', window._tcpSecHeadHandler);
+        }
+        window._tcpSecHeadHandler = function(e) {
             var head = e.target.closest && e.target.closest('.tcp-section-head');
             if (!head) return;
             var key = head.dataset.tcpSec;
             if (!key) return;
             var isCol = head.classList.toggle('collapsed');
             _tcpCollapsedSections[key] = isCol;
-        });
+        };
+        document.addEventListener('click', window._tcpSecHeadHandler);
 
         // Selección de fila → poblar panel derecho
         window.tcpSelectTask = function(tid) {
@@ -8076,12 +8104,23 @@
                         filterBtn.classList.toggle('active', isOpen);
                     });
                     // Cerrar al clickear fuera
-                    document.addEventListener('click', function(e){
-                        if (!filterPanel.contains(e.target) && e.target !== filterBtn && !filterBtn.contains(e.target)) {
-                            filterPanel.classList.remove('open');
-                            filterBtn.classList.remove('active');
-                        }
-                    });
+                    // (2026-06-11 fix) Guard anti-acumulación: este wireup
+                    // corre en cada turbo:load y document persiste — sin
+                    // guard se apilaba un listener por navegación. Los
+                    // elementos se resuelven al momento del click para que
+                    // el listener único siempre apunte al DOM vigente.
+                    if (!window._tareasFilterDocWired) {
+                        window._tareasFilterDocWired = true;
+                        document.addEventListener('click', function(e){
+                            var fp = document.getElementById('tareasFilterPanel');
+                            var fb = document.getElementById('tareasFilterBtn');
+                            if (!fp || !fb) return;
+                            if (!fp.contains(e.target) && e.target !== fb && !fb.contains(e.target)) {
+                                fp.classList.remove('open');
+                                fb.classList.remove('active');
+                            }
+                        });
+                    }
                 }
                 // Checkbox "Todos" — desmarca todos los individuales
                 var allCb = document.getElementById('tareasRespAll');
@@ -9898,6 +9937,19 @@
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
+            // Elevar por encima del modal de tarea: el drive es CAPA 2 (10200)
+            // y el modal CAPA 4 (10400) — sin esto el drive abre DETRÁS.
+            // woCerrarGestorDrive limpia la clase y el z inline al cerrar.
+            var dw = document.getElementById('widgetOppDrive');
+            if (dw) {
+                var _tm2 = document.getElementById('crmTaskDetailModal');
+                if (_tm2 && _tm2.classList.contains('z-elevated-overlay')) {
+                    // Tarea abierta desde una opp elevada (10900) → aún más arriba.
+                    dw.style.zIndex = '11000';
+                } else {
+                    dw.classList.add('z-elevated-top');
+                }
+            }
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }
 
@@ -9978,6 +10030,15 @@
                                 '</div></div>';
                         }).join('');
                         // Close menus on outside click
+                        // (2026-06-11 fix leak) Cada carga de comentarios
+                        // registraba OTRO listener en document sin remover el
+                        // anterior — tras N tareas abiertas, N listeners
+                        // corriendo en cada click de la página. Remover el
+                        // previo antes de registrar (feed persiste entre
+                        // renders, la referencia sobrevive).
+                        if (feed._menuClose) {
+                            document.removeEventListener('click', feed._menuClose);
+                        }
                         feed._menuClose = function (e) {
                             if (!e.target.closest('.crm-comment-menu-wrap')) {
                                 feed.querySelectorAll('.crm-comment-dropdown').forEach(function (d) { d.style.display = 'none'; });

@@ -12486,9 +12486,48 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     content: '';
     flex: 1 1 0;
 }
-.crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+/* OJO: descendiente, NO hijo directo (>): en modo dashboard-inline el
+   island vive dentro de #ckDashBarRoot (display:contents) — participa
+   del flex de la barra pero NO es hijo directo del .crm-bar, y con `>`
+   ninguna de estas reglas le pegaba (island a la izquierda, sin centrar).
+   En la página nativa tab=clientes sí es hijo directo; el descendiente
+   cubre ambos casos. */
+.crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard {
     margin: 0 !important;
     flex: 0 0 auto;
+}
+
+/* ── Responsive laptop (2026-06-11): el island de 7 modos + el filtro de
+   Clientes + las pills NO caben en una sola línea en pantallas de laptop
+   (~1280-1680px) y se encimaban. La barra envuelve: el island pasa a su
+   propia fila, centrado y con scroll horizontal silencioso si hace falta;
+   filtro y pills se reparten la primera fila. ── */
+@media (max-width: 1680px) {
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard::before {
+        display: none;  /* sin spacer de centrado: el island ya no comparte fila */
+    }
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard {
+        order: 3;
+        flex: 1 1 100%;
+        justify-content: center;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard::-webkit-scrollbar {
+        display: none;
+    }
+}
+@media (max-width: 1380px) {
+    /* Tabs más compactas para que los 7 modos quepan sin scroll */
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard .crm-tab {
+        padding-left: 10px;
+        padding-right: 10px;
+        font-size: 0.78rem;
+    }
 }
 .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-bar-right {
     position: static !important;
@@ -12501,6 +12540,36 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     flex: 1 1 0;
     justify-content: flex-end;
     min-width: 0;
+}
+
+/* ── Centrado REAL del island del dashboard (2026-06-11) ──
+   El centrado por spacer (::before flex:1) solo funciona si los lados
+   pesan igual: con #cliFilterIsland visible (modo Clientes) o el botón
+   Ordenar de Reportes, la isla quedaba empujada fuera del centro. En
+   pantallas anchas la isla se centra ABSOLUTA respecto a la barra (igual
+   que la del detalle de proyecto); filtro y pills siguen en el flex
+   normal. Bajo 1680px aplica el modo wrap de arriba (isla en su propia
+   fila) y estas reglas no intervienen. Scoped a #crmContentSection para
+   NO tocar la barra del calendario (cal-page-bar comparte clases). */
+@media (min-width: 1681px) {
+    #crmContentSection .crm-bar.crm-bar--dashboard {
+        position: relative;
+    }
+    #crmContentSection .crm-bar.crm-bar--dashboard::before {
+        display: none;
+    }
+    #crmContentSection .crm-bar.crm-bar--dashboard .crm-tabs--dashboard {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 46vw;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    #crmContentSection .crm-bar.crm-bar--dashboard .crm-tabs--dashboard::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 /* Strip café default para prospectos, sobrescribe los defaults por data-tipo

@@ -784,38 +784,38 @@ body[data-theme="mundial"] .proy-v3-rag-text {
     color: #ffffff !important;
 }
 
-/* --- KPI strip: frosted glass --- */
+/* --- KPI strip: SÓLIDO (legibilidad prioritaria) --- */
 body[data-theme="mundial"] .proy-v3-kpi-strip {
-    background: rgba(245, 246, 243, 0.55) !important;
-    backdrop-filter: blur(24px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
-    border: 1px solid rgba(0, 80, 45, 0.30) !important;
-    box-shadow: 0 8px 28px rgba(0, 15, 8, 0.30) !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.22) !important;
+    box-shadow: 0 10px 34px rgba(0, 15, 8, 0.38) !important;
 }
 body[data-theme="mundial"] .proy-v3-kpi-cell + .proy-v3-kpi-cell {
-    border-left-color: rgba(0, 80, 45, 0.18) !important;
+    border-left-color: rgba(0, 80, 45, 0.14) !important;
 }
 
-/* --- Dashboard cards (Resumen tab): frosted glass --- */
+/* --- Dashboard cards (Resumen tab): SÓLIDO blanco --- */
 body[data-theme="mundial"] .proy-v3-dash-card {
-    background: rgba(245, 246, 243, 0.55) !important;
-    backdrop-filter: blur(22px) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
-    border: 1px solid rgba(0, 80, 45, 0.25) !important;
-    box-shadow: 0 4px 18px rgba(0, 15, 8, 0.25) !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.20) !important;
+    box-shadow: 0 8px 28px rgba(0, 15, 8, 0.30) !important;
 }
 body[data-theme="mundial"] .proy-v3-dash-card-head {
-    border-bottom-color: rgba(0, 80, 45, 0.15) !important;
+    border-bottom-color: rgba(0, 80, 45, 0.12) !important;
 }
 
-/* --- Tab panes: frosted panels --- */
+/* --- Tab panes: panel SÓLIDO claro (texto oscuro legible) --- */
 body[data-theme="mundial"] .proy-tab-pane {
-    background: rgba(245, 246, 243, 0.55) !important;
-    backdrop-filter: blur(22px) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
-    border: 1px solid rgba(0, 80, 45, 0.25) !important;
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0, 80, 45, 0.22) !important;
     border-radius: 16px !important;
-    box-shadow: 0 8px 28px rgba(0, 15, 8, 0.25) !important;
+    box-shadow: 0 10px 34px rgba(0, 15, 8, 0.38) !important;
 }
 
 /* --- Tab header (dentro de panes) con greca --- */
@@ -979,45 +979,75 @@ body[data-theme="mundial"] .cal-page-bar {
     border-color: transparent !important;
     border-bottom-color: #CE1126 !important;
 }
-/* Topbar facet buttons / tabs / pills all white text on the greca */
-body[data-theme="mundial"] .cal-page-bar .crm-facet-btn,
-body[data-theme="mundial"] .cal-page-bar .crm-facet-add {
-    background: rgba(255,255,255,0.12) !important;
-    border-color: rgba(255,255,255,0.25) !important;
-    color: rgba(255,255,255,0.90) !important;
+/* Topbar facet buttons / pills — glass translúcido sobre la greca.
+   Prefijo .widget-overlay.is-page-mode para ganarle en especificidad a las
+   reglas !important de crm.css (que los ponían blancos sólidos). */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-add,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill {
+    background: rgba(0, 30, 16, 0.34) !important;
+    border: 1px solid rgba(255,255,255,0.38) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.20) !important;
 }
-body[data-theme="mundial"] .cal-page-bar .crm-facet-btn:hover {
-    background: rgba(255,255,255,0.22) !important;
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:not(.crm-facet-new):hover,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
+    background: rgba(0, 30, 16, 0.48) !important;
+    border-color: rgba(255,255,255,0.55) !important;
     color: #ffffff !important;
 }
-body[data-theme="mundial"] .cal-page-bar .crm-period-pill {
-    color: rgba(255,255,255,0.85) !important;
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn svg,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
 }
-body[data-theme="mundial"] .cal-page-bar .crm-period-pill:hover {
+/* Asistente AI (tiene clase .crm-period-pill + .cal-ai-btn) */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-ai-btn {
+    background: linear-gradient(135deg, rgba(0,168,107,0.40) 0%, rgba(206,17,38,0.32) 100%) !important;
+    border: 1px solid rgba(255,255,255,0.35) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-ai-btn:hover {
+    background: linear-gradient(135deg, rgba(0,168,107,0.55) 0%, rgba(206,17,38,0.45) 100%) !important;
+    border-color: rgba(255,255,255,0.55) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-ai-btn svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+/* User picker con valor seleccionado */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill.has-value {
+    background: rgba(0,168,107,0.35) !important;
+    border-color: rgba(255,255,255,0.40) !important;
+}
+/* Dynamic island Mes/Semana/Día */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tabs--dashboard {
+    background: rgba(0, 0, 0, 0.26) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
+    color: rgba(255,255,255,0.78) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab:hover {
     background: rgba(255,255,255,0.14) !important;
     color: #ffffff !important;
 }
-body[data-theme="mundial"] .cal-page-bar .crm-tabs--dashboard {
-    background: rgba(0, 0, 0, 0.22) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-}
-body[data-theme="mundial"] .cal-page-bar .crm-tab {
-    color: rgba(255,255,255,0.72) !important;
-}
-body[data-theme="mundial"] .cal-page-bar .crm-tab:hover {
-    background: rgba(255,255,255,0.12) !important;
-    color: #ffffff !important;
-}
-body[data-theme="mundial"] .cal-page-bar .crm-tab.active {
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab.active {
     background: linear-gradient(135deg, #00a86b 0%, #007a4d 100%) !important;
     color: #ffffff !important;
     box-shadow: 0 2px 10px rgba(0, 168, 107, 0.40) !important;
 }
-/* +Nueva actividad in greca bar */
-body[data-theme="mundial"] .cal-page-bar .crm-facet-new {
+/* +Nueva actividad → verde mexicano (en vez del azul default) */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
     background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
-    border-color: #007a4d !important;
+    border: none !important;
+    color: #ffffff !important;
     box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
+    background: linear-gradient(135deg, #00bd78 0%, #007a4d 100%) !important;
+    box-shadow: 0 4px 14px rgba(0, 168, 107, 0.45) !important;
+    color: #ffffff !important;
 }
 
 /* --- Navegación de fecha (← → Hoy · Junio 2026) --- */
@@ -1219,4 +1249,104 @@ body[data-theme="mundial"] .cal-subnav-default span[id="calNavTitle"] {
 /* View buttons container in subnav */
 body[data-theme="mundial"] .cal-subnav-default > div:last-child {
     background: rgba(0, 80, 45, 0.06) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ACTIVIDADES — modal de detalle + formulario "Nueva Actividad".
+   Misma fórmula: cuerpo claro + header greca azteca verde→rojo.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── DETALLE DE ACTIVIDAD (header inline azul → greca) ──
+   El header es un <div> con estilo inline background:#0052D4 sin clase; lo
+   vencemos con !important sobre el primer hijo de la tarjeta. */
+body[data-theme="mundial"] #widgetOppVerActividad .widget-card {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+body[data-theme="mundial"] #widgetOppVerActividad .widget-card > div:first-child {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+}
+/* Iconito del badge inferior-izquierdo en verde mexicano */
+body[data-theme="mundial"] #widgetOppVerActividad .widget-card > div:first-child > div:last-child {
+    color: #006847 !important;
+}
+
+/* ── FORMULARIO NUEVA ACTIVIDAD (.wact-*) ── */
+body[data-theme="mundial"] .wact-shell {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+/* Header con greca verde→rojo */
+body[data-theme="mundial"] .wact-header {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Breadcrumb e iconos del header en blanco */
+body[data-theme="mundial"] .wact-breadcrumb,
+body[data-theme="mundial"] .wact-crumb-current {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .wact-breadcrumb svg {
+    color: rgba(255,255,255,0.75) !important;
+}
+body[data-theme="mundial"] .wact-close {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="mundial"] .wact-close:hover {
+    background: rgba(206,17,38,0.45) !important;
+    color: #ffffff !important;
+}
+/* Footer/toolbar: verde-crema claro con borde rojo superior */
+body[data-theme="mundial"] .wact-toolbar {
+    background: #e3f2e8 !important;
+    border-top: 2px solid #CE1126 !important;
+}
+/* Botón Guardar Actividad (cuando está listo) → verde mexicano */
+body[data-theme="mundial"] .wact-submit.is-ready {
+    background: linear-gradient(180deg, #00a86b 0%, #006847 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 168, 107, 0.35) !important;
+}
+body[data-theme="mundial"] .wact-submit.is-ready:hover {
+    background: linear-gradient(180deg, #00bd78 0%, #007a4d 100%) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COTIZAR (crear_cotizacion.html) — NO usar la foto de la cancha aquí.
+   La página hereda body[data-theme="mundial"] y en modo ventana su fondo
+   propio (.apple-bg) se oculta, dejando ver la cancha del ::before y
+   causando el "flash". Aquí la apagamos y dejamos un fondo sólido oscuro;
+   la decoración mundial vive solo en la franja/greca del header de la
+   ventana (ya aplicada por .wo-header / chrome de la ventana).
+   Scope doble: por si .dashboard-container queda en el body (merge) o como
+   elemento interno (:has).
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"].dashboard-container::before,
+body[data-theme="mundial"]:has(.dashboard-container)::before {
+    display: none !important;
+}
+body[data-theme="mundial"].dashboard-container,
+body[data-theme="mundial"]:has(.dashboard-container) {
+    background: linear-gradient(165deg, #06351f 0%, #04240f 58%, #2c0a11 100%) !important;
+}
+/* Tarjetas sólidas (sin transparencia que deje ver nada detrás) */
+body[data-theme="mundial"] .dashboard-container .card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 80, 45, 0.18) !important;
 }

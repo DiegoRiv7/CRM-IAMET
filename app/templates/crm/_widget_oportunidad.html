@@ -951,7 +951,14 @@ matarían los bindings posteriores del mismo try-block. El markup original
 
         window.woCerrarGestorDrive = function () {
             var w = document.getElementById('widgetOppDrive');
-            if (w) { w.style.display = 'none'; }
+            if (w) {
+                w.style.display = 'none';
+                // Limpiar la elevación temporal de crmTaskAbrirDrive (drive
+                // abierto desde el modal de tarea) — si queda pegada, el drive
+                // taparía dialogs de CAPA 5 en aperturas normales.
+                w.classList.remove('z-elevated', 'z-elevated-top');
+                w.style.zIndex = 'var(--z-widget-sub)';
+            }
             // Reset búsqueda al cerrar (la vista y el filtro tipo persisten en localStorage)
             _woDriveSearchTerm = '';
             var search = document.getElementById('woDriveSearch');

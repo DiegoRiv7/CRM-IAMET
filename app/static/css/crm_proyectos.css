@@ -1075,17 +1075,19 @@
 .proy-v3-topbar-tabs .active svg { opacity: 1; }
 .proy-v3-topbar-tabs.proy-tab-bar { border-bottom: none; padding: 4px; }
 
-@media (max-width: 1100px) {
-  /* En pantallas medianas las pills no caben en la fila central: el
-     grid pasa a una sola columna (apilado vertical) y la cápsula
-     queda en segunda fila ocupando todo el ancho. */
+@media (max-width: 1500px) {
+  /* La cápsula central creció (Programa de Obra, Finanzas…) y en laptops
+     ya no cabe junto al breadcrumb y los avatares: la columna auto del
+     grid se comía a las laterales y la cápsula quedaba aplastada a la
+     izquierda con el breadcrumb cortado. Dos filas: breadcrumb + acciones
+     arriba, cápsula CENTRADA abajo (scrollea horizontal si no cabe). */
   .proy-v3-topbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
     row-gap: 8px;
   }
-  .proy-v3-topbar-left  { justify-self: start; }
-  .proy-v3-topbar-tabs  { justify-self: stretch; order: 2; }
-  .proy-v3-topbar-right { justify-self: end; order: 3; }
+  .proy-v3-topbar-left  { grid-row: 1; grid-column: 1; justify-self: start; }
+  .proy-v3-topbar-right { grid-row: 1; grid-column: 2; justify-self: end; }
+  .proy-v3-topbar-tabs  { grid-row: 2; grid-column: 1 / -1; justify-self: center; }
 }
 
 .proy-v3-topbar-left {
