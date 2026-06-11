@@ -2493,6 +2493,11 @@ class Tarea(models.Model):
         verbose_name = "Tarea"
         verbose_name_plural = "Tareas"
         ordering = ['-fecha_creacion']
+        indexes = [
+            # (2026-06-10, perf) Vencidas/próximas por oportunidad (api_crm_table_data)
+            models.Index(fields=['oportunidad', 'estado', 'fecha_limite'],
+                         name='idx_tarea_opp_est_lim'),
+        ]
     
     def __str__(self):
         return f"{self.titulo} - {self.proyecto.nombre if self.proyecto else 'Sin Proyecto'}"
@@ -2669,6 +2674,13 @@ class Actividad(models.Model):
         verbose_name = "Actividad del Calendario"
         verbose_name_plural = "Actividades del Calendario"
         ordering = ['fecha_inicio']
+        indexes = [
+            # (2026-06-10, perf) Próxima actividad por oportunidad (kanban CRM)
+            models.Index(fields=['oportunidad', 'completada', 'fecha_inicio'],
+                         name='idx_act_opp_comp_ini'),
+            models.Index(fields=['oportunidad', 'completada', 'fecha_fin'],
+                         name='idx_act_opp_comp_fin'),
+        ]
 
     def __str__(self):
         return f"{self.titulo} ({self.fecha_inicio.strftime('%d/%m/%Y %H:%M')})"
@@ -3075,6 +3087,12 @@ class TareaOportunidad(models.Model):
 
     class Meta:
         ordering = ['-prioridad', 'fecha_limite']
+        indexes = [
+            # (2026-06-10, perf) Lookups del kanban CRM: vencidas/próximas
+            # por oportunidad (crm_home + api_crm_table_data, en cada render)
+            models.Index(fields=['oportunidad', 'estado', 'fecha_limite'],
+                         name='idx_tareaopp_opp_est_lim'),
+        ]
 
     def __str__(self):
         return f'{self.titulo} → {self.oportunidad}'

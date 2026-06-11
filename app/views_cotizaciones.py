@@ -198,7 +198,7 @@ def get_user_clients_api(request):
             # Usamos 'asignado_a' que es el campo correcto en tu modelo Cliente
             from .views_grupos import get_clientes_visibles_q
             clients_queryset = Cliente.objects.filter(get_clientes_visibles_q(request.user))
-            print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo clientes visibles (propios + grupo).")
+            logger.debug(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo clientes visibles (propios + grupo).")
 
         # Serializar los clientes a un formato que pueda ser convertido a JSON
         clients_data = []
@@ -215,7 +215,7 @@ def get_user_clients_api(request):
             })
         return JsonResponse(clients_data, safe=False) # safe=False permite serializar listas directamente
     except Exception as e:
-        print(f"ERROR en get_user_clients_api: {e}")
+        logger.debug(f"ERROR en get_user_clients_api: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -224,7 +224,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
     """
     Vista para generar y mostrar el PDF de una cotización específica en el navegador.
     """
-    print(f"DEBUG: Iniciando view_cotizacion_pdf para la cotización ID: {cotizacion_id}")
+    logger.debug(f"DEBUG: Iniciando view_cotizacion_pdf para la cotización ID: {cotizacion_id}")
     cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
 
     from .views_grupos import puede_actuar_sobre
@@ -266,11 +266,11 @@ def view_cotizacion_pdf(request, cotizacion_id):
         if productos_sin_seccion:
             secciones.append({'titulo': None, 'productos': productos_sin_seccion})
     
-    print(f"DEBUG: Secciones organizadas en view_cotizacion_pdf: {len(secciones)} secciones encontradas")
+    logger.debug(f"DEBUG: Secciones organizadas en view_cotizacion_pdf: {len(secciones)} secciones encontradas")
     for i, seccion in enumerate(secciones):
-        print(f"DEBUG: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
+        logger.debug(f"DEBUG: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
         for j, producto in enumerate(seccion['productos']):
-            print(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
+            logger.debug(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
 
     pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
     pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
@@ -303,7 +303,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
             response.raise_for_status() # Raise an exception for HTTP errors
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
         except requests.exceptions.RequestException as e:
-            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logger.debug(f"ERROR: Error fetching Bajanet logo from URL: {e}")
             logo_base64 = "" # Fallback to empty string if fetching fails
     else: # Fallback to Bajanet if type is not recognized or None
         template_name = 'cotizacion_pdf_template.html'
@@ -317,7 +317,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
             response.raise_for_status() # Raise an exception for HTTP errors
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
         except requests.exceptions.RequestException as e:
-            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logger.debug(f"ERROR: Error fetching Bajanet logo from URL: {e}")
             logo_base64 = "" # Fallback to empty string if fetching fails
 
 
@@ -498,7 +498,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             'oportunidad_id': request.GET.get('oportunidad_id', ''),
             'cliente_id': request.GET.get('cliente_id', '')
         }
-        print(f"DEBUG: Auto-fill detectado desde notificación de oportunidad: {auto_fill_data}")
+        logger.debug(f"DEBUG: Auto-fill detectado desde notificación de oportunidad: {auto_fill_data}")
         
         # Si viene de auto-fill, usar los IDs de los parámetros
         if not oportunidad_id and auto_fill_data['oportunidad_id']:
@@ -506,14 +506,14 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
         if not cliente_id and auto_fill_data['cliente_id']:
             cliente_id = auto_fill_data['cliente_id']
 
-    print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
-    print(f"DEBUG: crear_cotizacion_view - GET parameters: {dict(request.GET)}")
-    print(f"DEBUG: crear_cotizacion_view - oportunidad_id inicial: {oportunidad_id}")
+    logger.debug(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
+    logger.debug(f"DEBUG: crear_cotizacion_view - GET parameters: {dict(request.GET)}")
+    logger.debug(f"DEBUG: crear_cotizacion_view - oportunidad_id inicial: {oportunidad_id}")
     
     # Si no viene oportunidad_id como parámetro de URL, verificar en GET parameters
     if not oportunidad_id and request.GET.get('oportunidad_id'):
         oportunidad_id = request.GET.get('oportunidad_id')
-        print(f"DEBUG: crear_cotizacion_view - oportunidad_id obtenido de GET params: {oportunidad_id}")
+        logger.debug(f"DEBUG: crear_cotizacion_view - oportunidad_id obtenido de GET params: {oportunidad_id}")
     
     if oportunidad_id:
         try:
@@ -531,36 +531,36 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
         try:
             # CORRECTO: La URL pasa el ID de Django, no el bitrix_company_id
             cliente_seleccionado = Cliente.objects.get(id=cliente_id)
-            print(f"DEBUG: crear_cotizacion_view - Cliente encontrado por ID Django: {cliente_seleccionado.nombre_empresa}")
+            logger.debug(f"DEBUG: crear_cotizacion_view - Cliente encontrado por ID Django: {cliente_seleccionado.nombre_empresa}")
         except Cliente.DoesNotExist:
-            print(f"DEBUG: crear_cotizacion_view - Cliente con ID Django {cliente_id} no encontrado")
+            logger.debug(f"DEBUG: crear_cotizacion_view - Cliente con ID Django {cliente_id} no encontrado")
             messages.error(request, f"El cliente con ID {cliente_id} no fue encontrado.")
             return redirect('crear_cotizacion')
 
     if request.method == 'POST':
         try:
-            print(f"DEBUG: Procesando POST request para crear cotización")
-            print(f"DEBUG: Usuario: {request.user}")
-            print(f"DEBUG: POST data keys: {list(request.POST.keys())}")
+            logger.debug(f"DEBUG: Procesando POST request para crear cotización")
+            logger.debug(f"DEBUG: Usuario: {request.user}")
+            logger.debug(f"DEBUG: POST data keys: {list(request.POST.keys())}")
             
             # Instantiate the form with POST data, and provide the user-specific queryset for the cliente field
             form = CotizacionForm(request.POST, user=request.user)
-            print(f"DEBUG: Formulario creado exitosamente")
+            logger.debug(f"DEBUG: Formulario creado exitosamente")
         except Exception as e:
-            print(f"ERROR: Error general en POST request: {e}")
+            logger.debug(f"ERROR: Error general en POST request: {e}")
             import traceback
             traceback.print_exc()
             return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al procesar solicitud: {str(e)}'}]}}, status=500)
 
         if form.is_valid():
-            print(f"DEBUG: Formulario es válido")
+            logger.debug(f"DEBUG: Formulario es válido")
             cotizacion = form.save(commit=False)
             cotizacion.created_by = request.user  # Asignar el usuario creador
             cotizacion.save()
             # Actualizar fecha_actualizacion de la oportunidad vinculada para que suba en la tabla CRM
             if cotizacion.oportunidad:
                 cotizacion.oportunidad.save(update_fields=['fecha_actualizacion'])
-            print(f"DEBUG: Quote saved with ID: {cotizacion.id}")
+            logger.debug(f"DEBUG: Quote saved with ID: {cotizacion.id}")
 
             # Collect product data sent from JavaScript
             productos_data = {}
@@ -608,9 +608,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             productos_lista = [(int(k), v) for k, v in productos_data.items()]
             productos_lista.sort()
             
-            print(f"DEBUG INTERCALAR: {len(titulos_con_posicion)} títulos, {len(productos_lista)} productos")
+            logger.debug(f"DEBUG INTERCALAR: {len(titulos_con_posicion)} títulos, {len(productos_lista)} productos")
             for pos, titulo in titulos_con_posicion:
-                print(f"DEBUG INTERCALAR: Título '{titulo.get('texto')}' en posición DOM {pos}")
+                logger.debug(f"DEBUG INTERCALAR: Título '{titulo.get('texto')}' en posición DOM {pos}")
             
             # Nueva lógica: crear lista completa con títulos y productos en sus posiciones reales
             elementos_temporales = []
@@ -623,7 +623,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     'datos': titulo_data,
                     'nombre': titulo_data.get('texto', 'SIN_TITULO')
                 })
-                print(f"DEBUG INTERCALAR: Título '{titulo_data.get('texto')}' en posición DOM {pos_titulo}")
+                logger.debug(f"DEBUG INTERCALAR: Título '{titulo_data.get('texto')}' en posición DOM {pos_titulo}")
             
             # Agregar productos con posiciones secuenciales donde NO hay títulos
             producto_index = 0
@@ -642,7 +642,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                         'datos': producto_data,
                         'nombre': producto_data.get('nombre_producto', 'SIN_NOMBRE')
                     })
-                    print(f"DEBUG INTERCALAR: Producto '{producto_data.get('nombre_producto')}' en posición DOM {pos}")
+                    logger.debug(f"DEBUG INTERCALAR: Producto '{producto_data.get('nombre_producto')}' en posición DOM {pos}")
                     producto_index += 1
             
             # Ordenar por posición DOM y asignar posiciones finales secuenciales
@@ -657,7 +657,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     'datos': elemento['datos'],
                     'nombre': elemento['nombre']
                 })
-                print(f"DEBUG INTERCALAR: Agregado {elemento['tipo']} '{elemento['nombre']}' en posición final {posicion_final}")
+                logger.debug(f"DEBUG INTERCALAR: Agregado {elemento['tipo']} '{elemento['nombre']}' en posición final {posicion_final}")
                 posicion_final += 1
             
             # Assign a new, sequential 'orden' value based on the sorted list
@@ -665,24 +665,24 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             for i, elemento in enumerate(elementos_con_posicion):
                 elemento['posicion_final'] = i 
 
-            print(f"DEBUG POSITION: Total elementos encontrados: {len(elementos_con_posicion)}")
-            print(f"DEBUG POSITION: Elementos ordenados y con posicion_final:")
+            logger.debug(f"DEBUG POSITION: Total elementos encontrados: {len(elementos_con_posicion)}")
+            logger.debug(f"DEBUG POSITION: Elementos ordenados y con posicion_final:")
             for i, elem in enumerate(elementos_con_posicion):
-                print(f"  {i+1}. {elem['tipo'].upper()}: '{elem['nombre']}' (posición: {elem['posicion']}), posicion_final: {elem['posicion_final']}")
+                logger.debug(f"  {i+1}. {elem['tipo'].upper()}: '{elem['nombre']}' (posición: {elem['posicion']}), posicion_final: {elem['posicion_final']}")
             
             # Crear lista final (now just copy the modified dictionaries)
             elementos_combinados = elementos_con_posicion # No need to create new dictionaries, just use the modified ones
             
-            print(f"DEBUG ORDER: Elementos en orden: {len(elementos_combinados)} elementos")
+            logger.debug(f"DEBUG ORDER: Elementos en orden: {len(elementos_combinados)} elementos")
             for i, elemento in enumerate(elementos_combinados):
                 if elemento['tipo'] == 'titulo':
-                    print(f"DEBUG ORDER: {i+1}. TÍTULO: '{elemento['datos'].get('texto', 'SIN_TEXTO')}' (posición: {elemento['posicion']}), posicion_final: {elemento['posicion_final']}")
+                    logger.debug(f"DEBUG ORDER: {i+1}. TÍTULO: '{elemento['datos'].get('texto', 'SIN_TEXTO')}' (posición: {elemento['posicion']}), posicion_final: {elemento['posicion_final']}")
                 else:
-                    print(f"DEBUG ORDER: {i+1}. PRODUCTO: '{elemento['datos'].get('nombre_producto', 'SIN_NOMBRE')}' (posición: {elemento['posicion']}), posicion_final: {elemento['posicion_final']}")
+                    logger.debug(f"DEBUG ORDER: {i+1}. PRODUCTO: '{elemento['datos'].get('nombre_producto', 'SIN_NOMBRE')}' (posición: {elemento['posicion']}), posicion_final: {elemento['posicion_final']}")
             
             # Mantener productos_list para compatibilidad con el cálculo de totales
             productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
-            print(f"DEBUG: productos_list before saving details: {productos_list}")
+            logger.debug(f"DEBUG: productos_list before saving details: {productos_list}")
 
             calculated_subtotal = Decimal('0.00')
             for item_data in productos_list:
@@ -704,9 +704,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     item_total = cantidad * precio
                     item_total -= item_total * (descuento / Decimal('100.00'))
                     calculated_subtotal += item_total.quantize(Decimal('0.01'))
-                    print(f"DEBUG_CALC: Item: {item_data.get('nombre')}, Quantity: {cantidad}, Price: {precio}, Discount: {descuento}, Item Total (rounded): {item_total.quantize(Decimal('0.01'))}")
+                    logger.debug(f"DEBUG_CALC: Item: {item_data.get('nombre')}, Quantity: {cantidad}, Price: {precio}, Discount: {descuento}, Item Total (rounded): {item_total.quantize(Decimal('0.01'))}")
                 except (ValueError, TypeError, decimal.InvalidOperation) as e:
-                    print(f"DEBUG_ERROR: Error processing item {item_data}: {e}")
+                    logger.debug(f"DEBUG_ERROR: Error processing item {item_data}: {e}")
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
@@ -728,7 +728,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion')
             
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
-            print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
+            logger.debug(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
 
             # Actualizar siempre el monto de la oportunidad con el subtotal (sin IVA) en MXN
             if cotizacion.oportunidad and cotizacion.subtotal > 0:
@@ -758,9 +758,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                                 tipo='titulo',
                                 orden=elemento['posicion_final']
                             )
-                            print(f"DEBUG ORDER: Title created: {titulo_data.get('texto')} with orden {elemento['posicion_final']}")
+                            logger.debug(f"DEBUG ORDER: Title created: {titulo_data.get('texto')} with orden {elemento['posicion_final']}")
                     except Exception as e:
-                        print(f"WARNING: Error creating title {titulo_data}: {e}")
+                        logger.debug(f"WARNING: Error creating title {titulo_data}: {e}")
 
                 else:  # producto
                     item_data = elemento['datos']
@@ -831,7 +831,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             marca_crm=marca_crm_obj,
                             costo_unitario=costo_unitario,
                         )
-                        print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')} with orden {elemento['posicion_final']}")
+                        logger.debug(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')} with orden {elemento['posicion_final']}")
                     except (ValueError, TypeError, decimal.InvalidOperation) as e:
                         cotizacion.delete()
                         return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
@@ -843,7 +843,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # No se requiere sincronización adicional aquí.
 
             # Los títulos ya se procesaron en orden combinado arriba
-            print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
+            logger.debug(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
             
             # Notificar al chat de grupo si la cotización es de un cliente asignado a otro miembro
             try:
@@ -892,14 +892,14 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 errors_dict[field] = [{'message': str(e), 'code': e.code if hasattr(e, 'code') else 'invalid'} for e in field_errors]
             
             # Enhanced debugging information
-            print(f"DEBUG: Form validation failed for crear_cotizacion_view")
-            print(f"DEBUG: Form errors: {errors_dict}")
-            print(f"DEBUG: Form data received: {dict(request.POST.items())}")
-            print(f"DEBUG: Form cleaned_data (if available): {getattr(form, 'cleaned_data', 'N/A')}")
-            print(f"DEBUG: Form non_field_errors: {form.non_field_errors()}")
-            print(f"DEBUG: User: {request.user.username if request.user.is_authenticated else 'Anonymous'}")
-            print(f"DEBUG: Request method: {request.method}")
-            print(f"DEBUG: Content type: {request.content_type}")
+            logger.debug(f"DEBUG: Form validation failed for crear_cotizacion_view")
+            logger.debug(f"DEBUG: Form errors: {errors_dict}")
+            logger.debug(f"DEBUG: Form data received: {dict(request.POST.items())}")
+            logger.debug(f"DEBUG: Form cleaned_data (if available): {getattr(form, 'cleaned_data', 'N/A')}")
+            logger.debug(f"DEBUG: Form non_field_errors: {form.non_field_errors()}")
+            logger.debug(f"DEBUG: User: {request.user.username if request.user.is_authenticated else 'Anonymous'}")
+            logger.debug(f"DEBUG: Request method: {request.method}")
+            logger.debug(f"DEBUG: Content type: {request.content_type}")
             
             return JsonResponse({'success': False, 'errors': errors_dict}, status=400)
 
@@ -913,17 +913,17 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
         # Si viene de auto-fill (Crown Jewel Feature), usar ese título preferentemente
         if is_auto_filled and auto_fill_data.get('titulo'):
             initial_data['titulo'] = f"Cotización - {auto_fill_data['titulo']}"
-            print(f"DEBUG: Título auto-llenado: {initial_data['titulo']}")
+            logger.debug(f"DEBUG: Título auto-llenado: {initial_data['titulo']}")
 
         form = CotizacionForm(initial=initial_data, user=request.user)
         from django.urls import reverse
         form_action_url = reverse('crear_cotizacion_with_id', args=[cliente_id]) if cliente_id else reverse('crear_cotizacion')
-        print(f"DEBUG: crear_cotizacion_view - Generated form_action_url: {form_action_url}")
+        logger.debug(f"DEBUG: crear_cotizacion_view - Generated form_action_url: {form_action_url}")
 
         # Todos los usuarios pueden ver todos los clientes para la creación de cotizaciones
         clientes_django = Cliente.objects.all().order_by('nombre_empresa')
 
-        print(f"DEBUG: crear_cotizacion_view - Clientes obtenidos de Django: {len(clientes_django)}")
+        logger.debug(f"DEBUG: crear_cotizacion_view - Clientes obtenidos de Django: {len(clientes_django)}")
 
         clientes_data_json = []
         for c in clientes_django:
@@ -931,7 +931,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 'id': str(c.id),
                 'name': c.nombre_empresa,
             })
-        print(f"DEBUG: crear_cotizacion_view - Clientes serializados para JSON: {clientes_data_json}")
+        logger.debug(f"DEBUG: crear_cotizacion_view - Clientes serializados para JSON: {clientes_data_json}")
 
         context = {
             'form': form,
@@ -1042,7 +1042,7 @@ def download_and_redirect_cotizacion(request, cotizacion_id, oportunidad_id):
     Vista que muestra una página que descarga el PDF automáticamente y luego redirige 
     a la página de cotizaciones por oportunidad.
     """
-    print(f"DEBUG: download_and_redirect_cotizacion - cotizacion_id: {cotizacion_id}, oportunidad_id: {oportunidad_id}")
+    logger.debug(f"DEBUG: download_and_redirect_cotizacion - cotizacion_id: {cotizacion_id}, oportunidad_id: {oportunidad_id}")
     
     # Verificar que la cotización existe y el usuario tiene permisos
     cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
@@ -1127,7 +1127,7 @@ def _build_cotizacion_pdf_payload(cotizacion, request_user=None):
             response.raise_for_status()
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
         except requests.exceptions.RequestException as e:
-            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logger.debug(f"ERROR: Error fetching Bajanet logo from URL: {e}")
             logo_base64 = ""
 
     context = {
@@ -1161,7 +1161,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     try:
         pdf_bytes, pdf_name = _build_cotizacion_pdf_payload(cotizacion, request_user=request.user)
     except Exception as e:
-        print(f"ERROR: Error generating cotización PDF: {e}")
+        logger.debug(f"ERROR: Error generating cotización PDF: {e}")
         return HttpResponse(f"Internal server error generating PDF: {e}", status=500)
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
@@ -1173,15 +1173,15 @@ def generate_cotizacion_pdf(request, cotizacion_id):
 def cotizaciones_view(request):
     user = request.user
     is_supervisor_flag = is_supervisor(request.user)
-    print(f"DEBUG: cotizaciones_view - Usuario: {user.username}, Es supervisor: {is_supervisor_flag}")
+    logger.debug(f"DEBUG: cotizaciones_view - Usuario: {user.username}, Es supervisor: {is_supervisor_flag}")
 
     # Obtener clientes de la base de datos local
     clientes_locales = Cliente.objects.all().order_by('nombre_empresa')
-    print(f"DEBUG: cotizaciones_view - Clientes locales obtenidos: {clientes_locales.count()}")
+    logger.debug(f"DEBUG: cotizaciones_view - Clientes locales obtenidos: {clientes_locales.count()}")
 
     # Obtener clientes de Bitrix
     clientes_bitrix = get_all_bitrix_companies(request=request)
-    print(f"DEBUG: cotizaciones_view - Clientes de Bitrix obtenidos: {len(clientes_bitrix)}")
+    logger.debug(f"DEBUG: cotizaciones_view - Clientes de Bitrix obtenidos: {len(clientes_bitrix)}")
 
     # Combinar y desduplicar clientes
     clientes_combinados = {cliente.bitrix_company_id: cliente for cliente in clientes_locales if cliente.bitrix_company_id}
@@ -1194,7 +1194,7 @@ def cotizaciones_view(request):
                 defaults={'nombre_empresa': cliente_b['TITLE']}
             )
             if created:
-                print(f"DEBUG: cotizaciones_view - Cliente de Bitrix creado localmente: {cliente_nuevo.nombre_empresa}")
+                logger.debug(f"DEBUG: cotizaciones_view - Cliente de Bitrix creado localmente: {cliente_nuevo.nombre_empresa}")
     
     # Obtener todos los clientes de nuevo para incluir los recién creados
     clientes = Cliente.objects.all().order_by('nombre_empresa')
@@ -1227,7 +1227,7 @@ def cotizaciones_view(request):
             'nombre': cliente.nombre_empresa,
             'cotizaciones': cotizaciones_list
         })
-    print(f"DEBUG: cotizaciones_view - Clientes finales en clientes_asignados: {len(clientes_data)}")
+    logger.debug(f"DEBUG: cotizaciones_view - Clientes finales en clientes_asignados: {len(clientes_data)}")
 
     context = {
         'clientes_asignados': clientes_data,
@@ -1262,7 +1262,7 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
             ).exclude(contenido__contains='[COT_ID:')
             
             if comentarios_sin_patron.exists():
-                print(f"🧹 Limpiando {comentarios_sin_patron.count()} comentarios duplicados antiguos...")
+                logger.debug(f"🧹 Limpiando {comentarios_sin_patron.count()} comentarios duplicados antiguos...")
                 
                 # También eliminar las actividades asociadas
                 for comentario in comentarios_sin_patron:
@@ -1272,7 +1272,7 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
                     ).delete()
                 
                 comentarios_sin_patron.delete()
-                print("✅ Comentarios duplicados eliminados")
+                logger.debug("✅ Comentarios duplicados eliminados")
             
             # Obtener todas las actividades de comentarios de esta oportunidad
             actividades_comentarios = OportunidadActividad.objects.filter(
@@ -1296,8 +1296,8 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
                 if match:
                     cotizaciones_con_comentario.add(int(match.group(1)))
                 
-            print(f"🔍 Cotizaciones con comentarios automáticos: {cotizaciones_con_comentario}")
-            print(f"📊 Cotizaciones actuales en BD: {[c.id for c in cotizaciones]}")
+            logger.debug(f"🔍 Cotizaciones con comentarios automáticos: {cotizaciones_con_comentario}")
+            logger.debug(f"📊 Cotizaciones actuales en BD: {[c.id for c in cotizaciones]}")
             
             # Crear comentarios para cotizaciones sin comentario
             for cotizacion in cotizaciones:
@@ -1324,13 +1324,13 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
                             usuario=cotizacion.created_by
                         )
                         
-                        print(f"✅ Comentario automático creado para cotización {cotizacion.id} - {cot_title}")
+                        logger.debug(f"✅ Comentario automático creado para cotización {cotizacion.id} - {cot_title}")
                         
                     except Exception as e:
-                        print(f"❌ Error creando comentario automático para cotización {cotizacion.id}: {e}")
+                        logger.debug(f"❌ Error creando comentario automático para cotización {cotizacion.id}: {e}")
                         
         except Exception as e:
-            print(f"❌ Error en detección de cotizaciones nuevas: {e}")
+            logger.debug(f"❌ Error en detección de cotizaciones nuevas: {e}")
     
         # Verificar si la oportunidad está ligada a un proyecto
         try:
@@ -1458,7 +1458,7 @@ def crear_cliente_api(request):
             else:
                 return JsonResponse({'success': False, 'errors': {'__all__': ['Could not create company in Bitrix24.']}}, status=400)
         else:
-            print(f"DEBUG: OportunidadModalForm errors: {form.errors}", flush=True)
+            logger.debug(f"DEBUG: OportunidadModalForm errors: {form.errors}", flush=True)
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
@@ -1496,13 +1496,13 @@ def gestion_productos_view(request):
             total_lineas = len(lineas)
             if total_lineas > 10000:
                 batch_size = 1000  # Para datasets muy grandes
-                print(f"IMPORTACIÓN: 🚀 Modo ULTRA-ESCALABLE activado para {total_lineas} líneas (batch: {batch_size})", flush=True)
+                logger.debug(f"IMPORTACIÓN: 🚀 Modo ULTRA-ESCALABLE activado para {total_lineas} líneas (batch: {batch_size})", flush=True)
             elif total_lineas > 5000:
                 batch_size = 750   # Para datasets grandes
-                print(f"IMPORTACIÓN: 🏃 Modo RÁPIDO activado para {total_lineas} líneas (batch: {batch_size})", flush=True)
+                logger.debug(f"IMPORTACIÓN: 🏃 Modo RÁPIDO activado para {total_lineas} líneas (batch: {batch_size})", flush=True)
             else:
                 batch_size = 500   # Para datasets normales
-                print(f"IMPORTACIÓN: ⚡ Modo ESTÁNDAR para {total_lineas} líneas (batch: {batch_size})", flush=True)
+                logger.debug(f"IMPORTACIÓN: ⚡ Modo ESTÁNDAR para {total_lineas} líneas (batch: {batch_size})", flush=True)
             
             from app.models import Marca, ProductoCatalogo, ImportacionProductos
             import re
@@ -1518,7 +1518,7 @@ def gestion_productos_view(request):
                 # Indicador de progreso para datasets grandes
                 if total_lineas > 5000 and i % 1000 == 0:
                     progreso = (i / total_lineas) * 100
-                    print(f"IMPORTACIÓN: Progreso {progreso:.1f}% ({i}/{total_lineas} líneas procesadas)", flush=True)
+                    logger.debug(f"IMPORTACIÓN: Progreso {progreso:.1f}% ({i}/{total_lineas} líneas procesadas)", flush=True)
                 
                 # Detectar si es línea de encabezado y saltarla
                 if linea.lower().startswith('marca') and 'no' in linea.lower() and 'precio' in linea.lower():
@@ -1572,13 +1572,13 @@ def gestion_productos_view(request):
                             productos_actualizados += 1
                             # Solo mostrar logs detallados si dataset es pequeño
                             if total_lineas <= 5000:
-                                print(f"IMPORTACIÓN: Producto actualizado - {marca_nombre} {no_parte}", flush=True)
+                                logger.debug(f"IMPORTACIÓN: Producto actualizado - {marca_nombre} {no_parte}", flush=True)
                         else:
                             # Producto existe pero no actualizar
                             productos_duplicados += 1
                             # Solo mostrar logs detallados si dataset es pequeño
                             if total_lineas <= 5000:
-                                print(f"IMPORTACIÓN: Producto duplicado ignorado - {marca_nombre} {no_parte}", flush=True)
+                                logger.debug(f"IMPORTACIÓN: Producto duplicado ignorado - {marca_nombre} {no_parte}", flush=True)
                     else:
                         # Agregar a lista para bulk_create
                         nuevo_producto = ProductoCatalogo(
@@ -1591,7 +1591,7 @@ def gestion_productos_view(request):
                         productos_nuevos += 1
                         # Solo mostrar logs detallados si dataset es pequeño
                         if total_lineas <= 5000:
-                            print(f"IMPORTACIÓN: Producto nuevo preparado - {marca_nombre} {no_parte}", flush=True)
+                            logger.debug(f"IMPORTACIÓN: Producto nuevo preparado - {marca_nombre} {no_parte}", flush=True)
                     
                     productos_procesados.append({
                         'marca': marca_nombre,
@@ -1611,19 +1611,19 @@ def gestion_productos_view(request):
             
             # Crear productos nuevos en lote
             if productos_para_crear:
-                print(f"IMPORTACIÓN: Creando {len(productos_para_crear)} productos nuevos en lote (batch: {batch_size})...", flush=True)
+                logger.debug(f"IMPORTACIÓN: Creando {len(productos_para_crear)} productos nuevos en lote (batch: {batch_size})...", flush=True)
                 ProductoCatalogo.objects.bulk_create(productos_para_crear, batch_size=batch_size)
-                print(f"IMPORTACIÓN: ✅ {len(productos_para_crear)} productos creados exitosamente", flush=True)
+                logger.debug(f"IMPORTACIÓN: ✅ {len(productos_para_crear)} productos creados exitosamente", flush=True)
             
             # Actualizar productos existentes en lote
             if productos_para_actualizar:
-                print(f"IMPORTACIÓN: Actualizando {len(productos_para_actualizar)} productos en lote (batch: {batch_size})...", flush=True)
+                logger.debug(f"IMPORTACIÓN: Actualizando {len(productos_para_actualizar)} productos en lote (batch: {batch_size})...", flush=True)
                 ProductoCatalogo.objects.bulk_update(
                     productos_para_actualizar, 
                     ['descripcion', 'precio', 'fecha_actualizacion'], 
                     batch_size=batch_size
                 )
-                print(f"IMPORTACIÓN: ✅ {len(productos_para_actualizar)} productos actualizados exitosamente", flush=True)
+                logger.debug(f"IMPORTACIÓN: ✅ {len(productos_para_actualizar)} productos actualizados exitosamente", flush=True)
             
             # Registrar importación
             if productos_procesados:
@@ -1645,12 +1645,12 @@ def gestion_productos_view(request):
                 messages.success(request, mensaje_exito)
                 
                 # Log detallado para debugging
-                print(f"IMPORTACIÓN COMPLETADA:", flush=True)
-                print(f"  - Líneas procesadas: {len(lineas)}", flush=True)
-                print(f"  - Productos nuevos: {productos_nuevos}", flush=True)
-                print(f"  - Productos actualizados: {productos_actualizados}", flush=True)
-                print(f"  - Productos duplicados: {productos_duplicados}", flush=True)
-                print(f"  - Errores: {len(errores)}", flush=True)
+                logger.debug(f"IMPORTACIÓN COMPLETADA:", flush=True)
+                logger.debug(f"  - Líneas procesadas: {len(lineas)}", flush=True)
+                logger.debug(f"  - Productos nuevos: {productos_nuevos}", flush=True)
+                logger.debug(f"  - Productos actualizados: {productos_actualizados}", flush=True)
+                logger.debug(f"  - Productos duplicados: {productos_duplicados}", flush=True)
+                logger.debug(f"  - Errores: {len(errores)}", flush=True)
             
             if errores:
                 for error in errores[:5]:  # Mostrar solo los primeros 5 errores
