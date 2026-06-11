@@ -204,9 +204,10 @@ body[data-theme="mundial"] #crmSearchInput::placeholder {
 
 /* ═══ Vendor hero card — verde mexicano translúcido ═══ */
 body[data-theme="mundial"] .vendor-card {
-    background: linear-gradient(135deg, rgba(0, 104, 71, 0.78) 0%, rgba(0, 168, 107, 0.60) 100%) !important;
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
+    /* PERF: sin blur; gradiente más opaco compensa */
+    background: linear-gradient(135deg, rgba(0, 104, 71, 0.90) 0%, rgba(0, 168, 107, 0.76) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.20) !important;
     box-shadow: 0 8px 34px rgba(0, 0, 0, 0.32) !important;
 }
@@ -231,9 +232,10 @@ body[data-theme="mundial"] .crm-kanban-col.collapsed:hover {
 }
 /* Solo el encabezado lleva un velo oscuro para legibilidad del texto */
 body[data-theme="mundial"] .crm-kanban-head {
-    background: rgba(0, 22, 11, 0.44) !important;
-    backdrop-filter: blur(11px);
-    -webkit-backdrop-filter: blur(11px);
+    /* PERF: sin blur (7 columnas = 7 regiones); velo más opaco compensa */
+    background: rgba(0, 22, 11, 0.62) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.12) !important;
 }
 body[data-theme="mundial"] .crm-kanban-stage-name {
@@ -259,14 +261,16 @@ body[data-theme="mundial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
 
 /* ═══ Cards de oportunidades (kanban): glass esmerilado translúcido ═══ */
 body[data-theme="mundial"] .crm-kanban-card.crm-postit {
-    background: rgba(255, 255, 255, 0.87) !important;
-    backdrop-filter: blur(16px) saturate(150%);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    /* PERF: sin backdrop-filter — una región de blur POR TARJETA tiraba
+       el scroll del kanban; alpha más alto compensa la legibilidad. */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.75) !important;
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
 }
 body[data-theme="mundial"] .crm-kanban-card.crm-postit:hover {
-    background: rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
     transform: translateY(-3px) !important;
 }
@@ -429,14 +433,15 @@ body[data-theme="mundial"] .ww-ctrls button:last-child:hover {
    Prospección ya está temada porque reutiliza .crm-kanban-col / .crm-postit.
    ═══════════════════════════════════════════════════════════════════════ */
 body[data-theme="mundial"] .idea-card {
-    background: rgba(255, 255, 255, 0.88) !important;
-    backdrop-filter: blur(16px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+    /* PERF: sin blur por tarjeta (ver nota en .crm-postit) */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.75) !important;
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
 }
 body[data-theme="mundial"] .idea-card:hover {
-    background: rgba(255, 255, 255, 0.94) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.30) !important;
 }
 
@@ -545,9 +550,10 @@ body[data-theme="mundial"] .tareas-cal-col.col-hoy {
     border-color: rgba(0,168,107,0.5) !important;
 }
 body[data-theme="mundial"] .tareas-cal-col-head {
-    background: rgba(0, 22, 11, 0.40) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    /* PERF: sin blur (7 columnas); velo más opaco compensa */
+    background: rgba(0, 22, 11, 0.60) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border-bottom-color: rgba(255,255,255,0.14) !important;
 }
 body[data-theme="mundial"] .tareas-cal-day-name,
@@ -557,9 +563,10 @@ body[data-theme="mundial"] .tareas-cal-count {
 }
 /* Cards de la vista calendario: glass esmerilado blanco */
 body[data-theme="mundial"] .tareas-card {
-    background: rgba(255, 255, 255, 0.88) !important;
-    backdrop-filter: blur(14px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+    /* PERF: sin blur por tarjeta (ver nota en .crm-postit) */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.70) !important;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22) !important;
 }
@@ -665,14 +672,15 @@ body[data-theme="mundial"] #proyListView .crm-list-hcell {
 
 /* --- Filas de proyectos: glass esmerilado (como cards kanban) --- */
 body[data-theme="mundial"] #proyListView .crm-list-row {
-    background: rgba(255, 255, 255, 0.87) !important;
-    backdrop-filter: blur(16px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+    /* PERF: sin blur por fila (ver nota en .crm-postit) */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.75) !important;
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
 }
 body[data-theme="mundial"] #proyListView .crm-list-row:hover {
-    background: rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
     transform: translateY(-2px) !important;
 }
@@ -1349,4 +1357,26 @@ body[data-theme="mundial"]:has(.dashboard-container) {
 body[data-theme="mundial"] .dashboard-container .card {
     background: #ffffff !important;
     border: 1px solid rgba(0, 80, 45, 0.18) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX GLOBAL: CAMPOS DE FORMULARIO (2026-06-11)
+   crm.css pone al body color blanco en mundial (var --text-crm) y el
+   preflight de Tailwind hace que input/select/textarea HEREDEN ese color
+   → cualquier campo sin color explícito escribía blanco-sobre-blanco
+   (ej. "Nueva instalación" del Programa de Obra, selects que se veían
+   vacíos). Default oscuro SIN !important y con especificidad mínima:
+   los campos sobre superficies oscuras del tema (buscadores del topbar,
+   proy-search…) tienen su blanco explícito con !important y no se tocan.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] input,
+body[data-theme="mundial"] select,
+body[data-theme="mundial"] textarea {
+    color: #1e293b;
+    caret-color: #1e293b;
+}
+body[data-theme="mundial"] select option {
+    color: #1e293b;
+    background: #ffffff;
 }
