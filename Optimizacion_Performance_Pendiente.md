@@ -70,11 +70,24 @@ grep DJANGO_DEBUG ~/crm-iamet/.env
 
 ---
 
+## Hecho el 2026-06-10 (commit `a25630fd` en `pruebas`)
+
+- **N+1 del render CRM (no estaba en este plan — era EL cuello real)**:
+  `crm_home` tab=crm hacía 4 queries POR oportunidad → 300-1000 queries
+  por render (los 5-7s de carga/cambio de periodo). Reescrito con 4
+  queries batched, semántica idéntica. Migración **0186** agrega índices
+  compuestos (TareaOportunidad/Actividad/Tarea por oportunidad+estado+fecha).
+- **Fase 1.1 COMPLETA**: 261 `print()` → `logger.debug` en views_crm,
+  views_cotizaciones y bitrix_integration (script con balance de parens
+  + validación AST).
+- **Fase 1.2 auditada**: `/api/tareas/` ya estaba optimizado
+  (select_related + prefetch + historial batched) — sin cambios.
+
 ## Pendiente — Plan para retomar (en orden de impacto)
 
 ### Fase 1 — Backend cleanup (~2 horas)
 
-#### 1.1 Eliminar / silenciar los `print()` en views
+#### 1.1 ✅ HECHO (2026-06-10) — Eliminar / silenciar los `print()` en views
 - `app/views_crm.py`: 71 prints
 - `app/views_cotizaciones.py`: 95 prints
 - `app/bitrix_integration.py`: 114 prints
