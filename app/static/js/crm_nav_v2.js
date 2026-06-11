@@ -213,7 +213,13 @@
 
     var calInline = false;
     var calSaved = null;   // { sections: {id: display}, overlayCss, cardCss }
-    var CAL_SECTION_IDS = ['crmContentSection', 'tareasSection', 'proyectosSection', 'widgetCompras'];
+    // widgetProyectoDetalle: el detalle de proyecto es HERMANO de
+    // #proyectosSection (se muestra vía clase .is-open, no por display) —
+    // si está abierto al entrar al calendario también hay que taparlo, y
+    // el inline display:none gana sobre la clase sin tocarla, así que al
+    // restaurar el user vuelve exactamente al proyecto que tenía abierto.
+    var CAL_SECTION_IDS = ['crmContentSection', 'tareasSection', 'proyectosSection', 'widgetProyectoDetalle', 'widgetCompras'];
+    var SIDEBAR_BTN_SEL = '.island-nav-btn, .crm-sb-btn';
     var CAL_CARD_PAGE_CSS = ';width:100%;height:auto;min-height:100vh;max-width:none;' +
         'background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;';
 
@@ -257,10 +263,18 @@
         window._crmNavCalInline = true;  // leído por el botón de cierre oculto del template
         replaceUrl('tab=calendario');
         window.scrollTo(0, 0);
+        // Sidebar: solo Calendario debe verse activo. Antes solo se limpiaba
+        // btnCRM y al entrar desde Proyectos/Tareas quedaban DOS botones
+        // marcados. Se guarda cuáles estaban activos para restaurarlos al salir.
+        calSaved.activeBtnIds = [];
+        document.querySelectorAll(SIDEBAR_BTN_SEL).forEach(function (b) {
+            if (b.classList.contains('active')) {
+                if (b.id) calSaved.activeBtnIds.push(b.id);
+                b.classList.remove('active');
+            }
+        });
         var bc = document.getElementById('btnCalendario');
         if (bc) bc.classList.add('active');
-        var bcrm = document.getElementById('btnCRM');
-        if (bcrm) bcrm.classList.remove('active');
         return true;
     }
 
@@ -282,9 +296,15 @@
                 if (el) el.style.display = calSaved.sections[id];
             });
         }
-        calSaved = null;
         var bc = document.getElementById('btnCalendario');
         if (bc) bc.classList.remove('active');
+        if (calSaved && calSaved.activeBtnIds) {
+            calSaved.activeBtnIds.forEach(function (id) {
+                var b = document.getElementById(id);
+                if (b) b.classList.add('active');
+            });
+        }
+        calSaved = null;
         urlToCrm();
     }
 
