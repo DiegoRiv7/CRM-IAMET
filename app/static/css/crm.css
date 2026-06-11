@@ -12486,7 +12486,13 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     content: '';
     flex: 1 1 0;
 }
-.crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+/* OJO: descendiente, NO hijo directo (>): en modo dashboard-inline el
+   island vive dentro de #ckDashBarRoot (display:contents) — participa
+   del flex de la barra pero NO es hijo directo del .crm-bar, y con `>`
+   ninguna de estas reglas le pegaba (island a la izquierda, sin centrar).
+   En la página nativa tab=clientes sí es hijo directo; el descendiente
+   cubre ambos casos. */
+.crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard {
     margin: 0 !important;
     flex: 0 0 auto;
 }
@@ -12504,20 +12510,20 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     .crm-page-sidebar .crm-bar.crm-bar--dashboard::before {
         display: none;  /* sin spacer de centrado: el island ya no comparte fila */
     }
-    .crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard {
         order: 3;
         flex: 1 1 100%;
         justify-content: center;
         overflow-x: auto;
         scrollbar-width: none;
     }
-    .crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard::-webkit-scrollbar {
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard::-webkit-scrollbar {
         display: none;
     }
 }
 @media (max-width: 1380px) {
     /* Tabs más compactas para que los 7 modos quepan sin scroll */
-    .crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard .crm-tab {
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-tabs--dashboard .crm-tab {
         padding-left: 10px;
         padding-right: 10px;
         font-size: 0.78rem;
@@ -12552,7 +12558,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     #crmContentSection .crm-bar.crm-bar--dashboard::before {
         display: none;
     }
-    #crmContentSection .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+    #crmContentSection .crm-bar.crm-bar--dashboard .crm-tabs--dashboard {
         position: absolute;
         left: 50%;
         top: 50%;
@@ -12561,7 +12567,7 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
         overflow-x: auto;
         scrollbar-width: none;
     }
-    #crmContentSection .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard::-webkit-scrollbar {
+    #crmContentSection .crm-bar.crm-bar--dashboard .crm-tabs--dashboard::-webkit-scrollbar {
         display: none;
     }
 }
