@@ -307,7 +307,9 @@ body[data-theme="mundial"] .wn-overlay .wn-card.wn-composer {
 body[data-theme="mundial"] .wo-header,
 body[data-theme="mundial"] .wn-ctw-header,
 body[data-theme="mundial"] .muro-card-header,
-body[data-theme="mundial"] .tcp-col-head {
+body[data-theme="mundial"] .tcp-col-head,
+body[data-theme="mundial"] .crm-tw-header,
+body[data-theme="mundial"] .crm-ctw-header {
     background-color: #5c0f17 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
@@ -377,9 +379,9 @@ body[data-theme="mundial"] .wn-ctw-toolbar {
 /* Shell frosted: vidrio esmerilado claro → la cancha se asoma por detrás
    pero el texto (oscuro) se mantiene legible gracias al blur + tinte. */
 body[data-theme="mundial"] .tcp-shell {
-    background: rgba(245, 246, 243, 0.74) !important;
-    backdrop-filter: blur(26px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
     border: 1px solid rgba(0, 80, 45, 0.30) !important;
     box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
 }
@@ -474,4 +476,90 @@ body[data-theme="mundial"] .muro-close-btn { color: rgba(255,255,255,0.85) !impo
 body[data-theme="mundial"] .muro-close-btn:hover {
     background: rgba(206,17,38,0.45) !important;
     color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   WIDGET DETALLE DE TAREA — misma fórmula (cuerpo claro + header greca).
+   El header (.crm-tw-header) ya recibe el fondo greca por la regla
+   compartida; aquí cuerpo claro + textos/iconos del header en blanco.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .crm-task-modal {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+body[data-theme="mundial"] .crm-tw-header {
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Breadcrumb, iconos y close del header en claro */
+body[data-theme="mundial"] .crm-tw-header,
+body[data-theme="mundial"] .crm-tw-header a,
+body[data-theme="mundial"] .crm-tw-header button,
+body[data-theme="mundial"] .crm-tw-header svg { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-tw-header button:hover { background: rgba(255,255,255,0.16) !important; }
+body[data-theme="mundial"] .crm-tw-header-divider { background: rgba(255,255,255,0.25) !important; }
+/* Cuerpo y panel lateral: claros (texto oscuro original legible) */
+body[data-theme="mundial"] .crm-tw-main { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FORM CREAR TAREA — cuerpo claro + header greca + footer claro.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .crm-create-task-container {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(0, 80, 45, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(0, 15, 8, 0.55) !important;
+}
+body[data-theme="mundial"] .crm-ctw-header {
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Botón de oportunidad vinculada y close en claro */
+body[data-theme="mundial"] .crm-ctw-project { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-ctw-project:hover { background: rgba(255,255,255,0.16) !important; color:#ffffff !important; }
+body[data-theme="mundial"] .crm-ctw-project-ico { color: #ffffff !important; }
+body[data-theme="mundial"] .crm-ctw-chev { color: rgba(255,255,255,0.7) !important; }
+body[data-theme="mundial"] .crm-ctw-close { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="mundial"] .crm-ctw-close:hover { background: rgba(206,17,38,0.45) !important; color:#ffffff !important; }
+/* Cuerpo claro (título/inputs legibles) + footer claro con borde rojo */
+body[data-theme="mundial"] .crm-ctw-canvas { background: transparent !important; }
+body[data-theme="mundial"] .crm-ctw-toolbar {
+    background: #e3f2e8 !important;
+    border-top: 2px solid #CE1126 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VISTA CALENDARIO DE TAREAS — columnas por día transparentes (como el
+   kanban del CRM); cards en glass esmerilado. La cancha se ve detrás.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"] .tareas-cal-col {
+    background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(0, 20, 10, 0.14) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+body[data-theme="mundial"] .tareas-cal-col.col-atrasadas {
+    background: linear-gradient(180deg, rgba(206,17,38,0.10) 0%, rgba(120,10,18,0.18) 100%) !important;
+    border-color: rgba(206,17,38,0.45) !important;
+}
+body[data-theme="mundial"] .tareas-cal-col.col-hoy {
+    background: linear-gradient(180deg, rgba(0,168,107,0.12) 0%, rgba(0,80,45,0.16) 100%) !important;
+    border-color: rgba(0,168,107,0.5) !important;
+}
+body[data-theme="mundial"] .tareas-cal-col-head {
+    background: rgba(0, 22, 11, 0.40) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-bottom-color: rgba(255,255,255,0.14) !important;
+}
+body[data-theme="mundial"] .tareas-cal-day-name,
+body[data-theme="mundial"] .tareas-cal-day-num,
+body[data-theme="mundial"] .tareas-cal-count {
+    color: #ffffff !important;
+}
+/* Cards de la vista calendario: glass esmerilado blanco */
+body[data-theme="mundial"] .tareas-card {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(14px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.70) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22) !important;
 }
