@@ -410,3 +410,23 @@ Es esqueleto + JS: los datos llegan por fetch (loadAllClientesPanels).
                 }
             })();
             </script>
+<script>
+(function () {
+    /* (2026-06-11, bug reportado) El filtro "Ambos / Solo Clientes / Solo
+       Prospectos" (#cliFilterIsland) pertenece SOLO al modo Clientes
+       (clientes_tabla). _crmSetMode lo oculta en los modos core
+       (oportunidades/prospección/proyectos), pero Materiales, Proveedores,
+       Marcas y Reportes son módulos v2 con handlers propios que NO pasan
+       por _crmSetMode — al cambiar a esos modos el filtro se quedaba
+       visible. Delegación en la island: cualquier modo distinto de
+       Clientes lo oculta (al volver a Clientes, _crmSetMode lo re-muestra). */
+    var island = document.getElementById('dashDynamicIsland');
+    if (!island) return;
+    island.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('button');
+        if (!btn || btn.id === 'crmModeClientes') return;
+        var f = document.getElementById('cliFilterIsland');
+        if (f) f.style.display = 'none';
+    });
+})();
+</script>

@@ -12490,6 +12490,39 @@ body:has(#pkKanbanBoard):not(:has(#tareasSection.active)):not(:has(#proyectosSec
     margin: 0 !important;
     flex: 0 0 auto;
 }
+
+/* ── Responsive laptop (2026-06-11): el island de 7 modos + el filtro de
+   Clientes + las pills NO caben en una sola línea en pantallas de laptop
+   (~1280-1680px) y se encimaban. La barra envuelve: el island pasa a su
+   propia fila, centrado y con scroll horizontal silencioso si hace falta;
+   filtro y pills se reparten la primera fila. ── */
+@media (max-width: 1680px) {
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard::before {
+        display: none;  /* sin spacer de centrado: el island ya no comparte fila */
+    }
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard {
+        order: 3;
+        flex: 1 1 100%;
+        justify-content: center;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard::-webkit-scrollbar {
+        display: none;
+    }
+}
+@media (max-width: 1380px) {
+    /* Tabs más compactas para que los 7 modos quepan sin scroll */
+    .crm-page-sidebar .crm-bar.crm-bar--dashboard > .crm-tabs--dashboard .crm-tab {
+        padding-left: 10px;
+        padding-right: 10px;
+        font-size: 0.78rem;
+    }
+}
 .crm-page-sidebar .crm-bar.crm-bar--dashboard .crm-bar-right {
     position: static !important;
     transform: none !important;
