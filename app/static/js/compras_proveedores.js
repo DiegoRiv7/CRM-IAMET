@@ -1495,6 +1495,11 @@
         var root = document.getElementById('comprasProveedoresSection');
         if (!root) return;
         if (state.initialized) {
+            // Turbo reemplaza el body al navegar: el flag (JS de módulo)
+            // sobrevive pero el DOM no. Si el root nuevo viene vacío hay
+            // que re-pintar el shell — sin esto, Proveedores quedaba EN
+            // BLANCO al volver a Compras tras una navegación.
+            if (!root.firstElementChild) renderShell();
             // re-fetch silently when re-entering tab
             fetchProveedores();
             return;
