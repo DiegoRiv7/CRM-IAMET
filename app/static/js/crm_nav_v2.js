@@ -174,23 +174,27 @@
         return true;
     };
 
-    /* ── Calendario sin navegación ──────────────────────────────────────
-       El calendario ya existe COMPLETO como widget modal en toda página
-       CRM (#widgetCalendarioMaster, 98vw×97vh, con su header y subnav).
-       En vez de navegar a ?tab=calendario (re-render del server, barra
-       azul, se pierden las ventanas), el botón del sidebar lo abre como
-       overlay encima del CRM: abrir es inmediato y CERRAR es instantáneo
-       porque el CRM nunca dejó de estar ahí. La URL se sincroniza con
-       replaceState para que F5/compartir caigan en la página real del
-       calendario. Aterrizajes directos en ?tab=calendario conservan el
-       modo página del server (markup propio, no se toca).
+    /* ── Calendario: SIEMPRE en modo página, sin navegar ─────────────────
+       (2026-06-10, pedido del usuario) El calendario debe verse como la
+       página completa de ?tab=calendario — con Instalaciones, filtro,
+       picker de usuarios, técnicos, asistente — NO como widget modal. El
+       header modal fue ELIMINADO del template (tenía ids duplicados con
+       el page-bar); el page-bar es ahora el único header, así que el modo
+       página se puede activar client-side en cualquier página del CRM:
 
-       NOTA: NO se puede replicar el modo página en el cliente — los dos
-       headers del template son ramas {% if %}/{% else %} con ids
-       duplicados entre sí (calUserPickerBtn, calUserFilter…); renderizar
-       ambos rompería los scripts del calendario.                        */
+       · window.calendarioAbrir queda envuelto: CUALQUIER llamador
+         (sidebar, notificaciones, ingeniero) entra en modo página.
+       · pageizeCalendar(): oculta las secciones de la página, aplica
+         is-page-mode + estilos de página a overlay/card (guardando los
+         originales), sincroniza URL. unpageizeCalendar() restaura todo.
+       · Aterrizajes nativos en ?tab=calendario: sin cambios (el server
+         ya renderiza page-mode; el wrap no interviene).                  */
 
     var calInline = false;
+    var calSaved = null;   // { sections: {id: display}, overlayCss, cardCss }
+    var CAL_SECTION_IDS = ['crmContentSection', 'tareasSection', 'proyectosSection', 'widgetCompras'];
+    var CAL_CARD_PAGE_CSS = ';width:100%;height:auto;min-height:100vh;max-width:none;' +
+        'background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;';
 
     function replaceUrl(qs) {
         try { window.history.replaceState({}, '', window.location.pathname + '?' + qs); } catch (e) { }
@@ -199,41 +203,91 @@
     function urlToCrm() {
         var cfg = window._CRM_CONFIG || {};
         var p = new URLSearchParams();
-        p.set('tab', 'crm');
+        p.set('tab', PAGE_TAB && PAGE_TAB !== 'calendario' ? PAGE_TAB : 'crm');
         if (cfg.mesFiltro) p.set('mes', cfg.mesFiltro);
         if (cfg.anioFiltro) p.set('anio', cfg.anioFiltro);
         if (cfg.vendedoresFilter) p.set('vendedores', cfg.vendedoresFilter);
         replaceUrl(p.toString());
     }
 
-    function calOpenInline() {
-        if (!document.getElementById('widgetCalendarioMaster')) return false;
-        if (typeof window.calendarioAbrir !== 'function') return false;
-        try { window.calendarioAbrir(); } catch (e) {
-            console.error('[crmNavV2] calendarioAbrir:', e);
-            return false;
-        }
+    function pageizeCalendar() {
+        var ov = document.getElementById('widgetCalendarioMaster');
+        if (!ov) return false;
+        if (ov.classList.contains('is-page-mode')) return true;  // nativo o ya activo
+        var card = ov.querySelector('.cal-card');
+        calSaved = {
+            sections: {},
+            overlayCss: ov.style.cssText,
+            cardCss: card ? card.style.cssText : '',
+        };
+        CAL_SECTION_IDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                calSaved.sections[id] = el.style.display;
+                el.style.display = 'none';
+            }
+        });
+        ov.classList.add('is-page-mode');
+        ov.style.display = 'flex';
+        ov.style.alignItems = 'stretch';
+        ov.style.justifyContent = 'stretch';
+        if (card) card.style.cssText += CAL_CARD_PAGE_CSS;
         calInline = true;
+        window._crmNavCalInline = true;  // leído por el botón de cierre oculto del template
         replaceUrl('tab=calendario');
+        window.scrollTo(0, 0);
         var bc = document.getElementById('btnCalendario');
         if (bc) bc.classList.add('active');
+        var bcrm = document.getElementById('btnCRM');
+        if (bcrm) bcrm.classList.remove('active');
         return true;
     }
 
-    // Cualquier cierre del calendario (X, Esc vía stack, o nuestros botones)
-    // pasa por calendarioCerrar — el wrap restaura la URL del CRM cuando el
-    // calendario lo abrimos nosotros. calendarioCerrar ya limpia el .active.
+    function unpageizeCalendar() {
+        if (!calInline) return;
+        calInline = false;
+        window._crmNavCalInline = false;
+        var ov = document.getElementById('widgetCalendarioMaster');
+        if (ov) {
+            ov.classList.remove('is-page-mode');
+            var card = ov.querySelector('.cal-card');
+            ov.style.cssText = (calSaved && calSaved.overlayCss) || '';
+            ov.style.display = 'none';
+            if (card && calSaved) card.style.cssText = calSaved.cardCss;
+        }
+        if (calSaved) {
+            Object.keys(calSaved.sections).forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = calSaved.sections[id];
+            });
+        }
+        calSaved = null;
+        var bc = document.getElementById('btnCalendario');
+        if (bc) bc.classList.remove('active');
+        urlToCrm();
+    }
+
+    // Wraps: CUALQUIER apertura entra en modo página; CUALQUIER cierre
+    // (Esc vía stack, botón oculto, sidebar) restaura la página original.
     window.crmReady(function () {
         if (window._crmNavCalWrapped) return;
-        if (typeof window.calendarioCerrar !== 'function') return;
+        if (typeof window.calendarioAbrir !== 'function' ||
+            typeof window.calendarioCerrar !== 'function') return;
         window._crmNavCalWrapped = true;
+
+        var origAbrir = window.calendarioAbrir;
+        window.calendarioAbrir = function () {
+            if (PAGE_TAB !== 'calendario') {
+                dashCloseInline();
+                pageizeCalendar();
+            }
+            return origAbrir.apply(this, arguments);
+        };
+
         var origCerrar = window.calendarioCerrar;
         window.calendarioCerrar = function () {
             var r = origCerrar.apply(this, arguments);
-            if (calInline) {
-                calInline = false;
-                urlToCrm();
-            }
+            unpageizeCalendar();
             return r;
         };
     });
@@ -407,11 +461,13 @@
         if (!t) return;
 
         if (t.id === 'btnCalendario') {
-            if (PAGE_TAB !== 'crm') return;   // landing ≠ crm → navegación normal
+            if (PAGE_TAB === 'calendario') return;  // página nativa → default
+            if (!document.getElementById('widgetCalendarioMaster')) return;  // sin widget → Turbo normal
             ev.preventDefault();
             ev.stopPropagation();
-            dashCloseInline();  // calendario sobre el CRM, no sobre el dashboard
-            if (!calInline) calOpenInline();
+            // El wrap de calendarioAbrir hace el pageize (y cierra el
+            // dashboard inline si estaba abierto).
+            if (!calInline && typeof window.calendarioAbrir === 'function') window.calendarioAbrir();
             return;
         }
 
