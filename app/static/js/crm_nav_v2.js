@@ -249,6 +249,15 @@
 
     var dashInline = false;
 
+    // Tab REAL con el que el server sirvió la página actual. Se captura en
+    // cada carga/turbo:load porque _CRM_CONFIG.tabActivo se MUTA durante el
+    // modo dashboard-inline (paridad con la página nativa) y los guards de
+    // navegación de este módulo necesitan el valor original.
+    var PAGE_TAB = (window._CRM_CONFIG || {}).tabActivo || '';
+    window.crmReady(function () {
+        if (!dashInline) PAGE_TAB = (window._CRM_CONFIG || {}).tabActivo || '';
+    });
+
     function dashOpenInline() {
         var root = document.getElementById('ckDashRoot');
         var barRoot = document.getElementById('ckDashBarRoot');
@@ -261,6 +270,20 @@
         // display:contents → los hijos participan del flex de la barra
         // como si no hubiera wrapper.
         barRoot.style.display = 'contents';
+
+        // Paridad TOTAL con la página nativa tab=clientes:
+        // 1) La barra cambia de clase (centrado de la island y estilos del
+        //    dashboard viven en .crm-bar--dashboard).
+        var bar = document.querySelector('.crm-bar');
+        if (bar) {
+            bar.classList.add('crm-bar--dashboard');
+            bar.classList.remove('crm-bar--unified');
+        }
+        // 2) Mucho código legacy y de módulos v2 se bifurca por
+        //    _CRM_CONFIG.tabActivo — en modo inline debe decir 'clientes'
+        //    (los guards de navegación de este módulo usan PAGE_TAB, que
+        //    captura el tab REAL con el que se sirvió la página).
+        if (window._CRM_CONFIG) window._CRM_CONFIG.tabActivo = 'clientes';
 
         window._crmSetPeriodo(null, null, 'clientes');
         window.refreshCrmTable();  // currentTab='clientes' → loadAllClientesPanels()
@@ -295,6 +318,12 @@
         if (root) root.style.display = 'none';
         var barRoot = document.getElementById('ckDashBarRoot');
         if (barRoot) barRoot.style.display = 'none';
+        var bar = document.querySelector('.crm-bar');
+        if (bar) {
+            bar.classList.remove('crm-bar--dashboard');
+            bar.classList.add('crm-bar--unified');
+        }
+        if (window._CRM_CONFIG) window._CRM_CONFIG.tabActivo = PAGE_TAB;
         if (typeof window._crmSetPeriodo === 'function') window._crmSetPeriodo(null, null, 'crm');
         var bd = document.getElementById('btnDashboard');
         if (bd) bd.classList.remove('active');
@@ -306,10 +335,9 @@
     document.addEventListener('click', function (ev) {
         var t = ev.target.closest && ev.target.closest('#btnCalendario, #btnDashboard, #btnCRM, #btnTareas, #btnProyectos, #btnCompras');
         if (!t) return;
-        var cfg = window._CRM_CONFIG || {};
 
         if (t.id === 'btnCalendario') {
-            if (cfg.tabActivo !== 'crm') return;   // landing ≠ crm → navegación normal
+            if (PAGE_TAB !== 'crm') return;   // landing ≠ crm → navegación normal
             ev.preventDefault();
             ev.stopPropagation();
             dashCloseInline();  // calendario sobre el CRM, no sobre el dashboard
@@ -318,7 +346,7 @@
         }
 
         if (t.id === 'btnDashboard') {
-            if (cfg.tabActivo !== 'crm') return;   // landing ≠ crm → Turbo normal
+            if (PAGE_TAB !== 'crm') return;   // landing ≠ crm → Turbo normal
             if (calInline && typeof window.calendarioCerrar === 'function') window.calendarioCerrar();
             if (dashInline) { ev.preventDefault(); ev.stopPropagation(); return; }
             if (dashOpenInline()) {
