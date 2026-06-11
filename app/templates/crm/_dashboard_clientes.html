@@ -1,0 +1,293 @@
+{% comment %}
+═══ DASHBOARD DE CLIENTES (tab=clientes) — PARTIAL ═══
+Extraído de _content.html (2026-06-10). Esqueleto puro (cero variables
+de contexto): KPIs, charts y tablas se llenan client-side con los 7
+fetchs paralelos de loadAllClientesPanels. En tab=clientes se incluye
+normal; en tab=crm va oculto en #ckDashRoot para el switch instantáneo
+de crm_nav_v2.js (entrar a Reportes sin tocar el servidor).
+{% endcomment %}
+<style>
+    /* Modo dashboard-inline: entrar a Reportes desde una página CRM sin
+       recarga (crm_nav_v2.js pone body.ck-dash-inline). Se ocultan las
+       vistas del kanban y sus controles propios; pills de periodo,
+       footer y barra base son COMPARTIDOS y se quedan. */
+    body.ck-dash-inline #crmViewCards,
+    body.ck-dash-inline #crmViewList,
+    body.ck-dash-inline #crmViewKanban,
+    body.ck-dash-inline #crmTopTabs,
+    body.ck-dash-inline #crmBarLeft {
+        display: none !important;
+    }
+</style>
+        <!-- KPI Cards (dashboard: toggle modo y period pills ya están arriba en crm-bar) -->
+        <div id="ckKpiRow" class="ck-kpi-row" style="display:none;">
+            <div class="ck-kpi-card ck-kpi--fact" style="cursor:pointer;" onclick="ckAbrirDesgloseFacturacion()">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span class="ck-kpi-label">FACTURADO</span>
+                    <span class="ck-kpi-pct-badge" id="ckPctFact"></span>
+                    {% if es_supervisor %}
+                    <button onclick="document.getElementById('ckExcelInput').click();" style="margin-left:auto;padding:3px 8px;border-radius:6px;border:1px solid #059669;background:rgba(5,150,105,0.08);color:#059669;font-size:0.65rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Subir Excel de facturacion">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Excel
+                    </button>
+                    <input type="file" id="ckExcelInput" accept=".xls,.xlsx" style="display:none;" onchange="ckSubirExcelFacturacion(this)">
+                    {% endif %}
+                </div>
+                <div class="ck-kpi-value" id="ckKpiFact">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaFact">de — meta</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--fact" id="ckProgFact" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendFact"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--cob" style="cursor:pointer;" onclick="ckAbrirDesgloseCobrado()">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span class="ck-kpi-label">COBRADO</span>
+                    <span class="ck-kpi-pct-badge ck-pct--cob" id="ckPctCob"></span>
+                    {% if es_supervisor %}
+                    <button onclick="event.stopPropagation();document.getElementById('ckCobradoInput').click();" style="margin-left:auto;padding:3px 8px;border-radius:6px;border:1px solid #059669;background:rgba(5,150,105,0.08);color:#059669;font-size:0.65rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Subir CSV de cobrado">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        CSV
+                    </button>
+                    <input type="file" id="ckCobradoInput" accept=".csv" style="display:none;" onchange="ckSubirCsvCobrado(this)">
+                    {% endif %}
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--cob" id="ckKpiCob">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaCob">de — meta</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--cob" id="ckProgCob" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendCob"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--opp" style="cursor:pointer;" onclick="ckAbrirDetalle('oportunidades')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <span class="ck-kpi-label">OPORTUNIDADES</span>
+                    <span class="ck-kpi-pct-badge ck-pct--opp" id="ckPctOpp"></span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--opp" id="ckKpiOpp">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaOpp">de — meta</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--opp" id="ckProgOpp" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendOpp"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--cot" style="cursor:pointer;" onclick="ckAbrirDetalle('cotizado')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <span class="ck-kpi-label">COTIZADO</span>
+                    <span class="ck-kpi-pct-badge ck-pct--cot" id="ckPctCot"></span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--cot" id="ckKpiCot">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaCot">de — meta</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--cot" id="ckProgCot" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendCot"></div>
+            </div>
+        </div>
+
+        <div id="ckKpiRowProsp" class="ck-kpi-row" style="display:none;">
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_generadas')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span class="ck-kpi-label">PROSPECCIONES</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspGen">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspGen">prospecciones creadas</div>
+                <div class="ck-kpi-of-meta" id="ckSubProspCamp" style="font-size:0.6rem;color:#86868B;margin-top:2px;"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_opps')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span class="ck-kpi-label">CONVERTIDAS</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspOpps">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspOpps">oportunidades creadas</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_ventas')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span class="ck-kpi-label">VENTAS GENERADAS</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspVentas">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspVentas">desde prospecciones</div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--prosp" style="cursor:pointer;" onclick="ckAbrirDetalle('prosp_tasa')">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span class="ck-kpi-label">TASA DE CONTACTO</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProspTasa">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProspTasa">de respuesta</div>
+            </div>
+        </div>
+
+        <!-- Charts Section for Prospección -->
+        <div id="ckChartsSectionProsp" style="display:none;padding:0 12px 40px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;">
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">PROSPECTOS POR MARCA</div>
+                    <canvas id="ckChartProspMarca"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">TASA DE CONTACTO</div>
+                    <canvas id="ckChartProspFunnel"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">TOP CLIENTES — PROSPECTOS</div>
+                    <canvas id="ckChartProspTopClientes"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">TASA DE CONVERSIÓN</div>
+                    <canvas id="ckChartProspConversion"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section (replaces the old table) -->
+        <div id="ckChartsSection" style="padding:0 12px 40px;display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Facturado vs Meta por Cliente</div>
+                    <canvas id="ckChartFactVsMeta"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Top 5 Clientes — Oportunidades</div>
+                    <canvas id="ckChartTopClientes"></canvas>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Tendencia Mensual</div>
+                    <canvas id="ckChartTendencia"></canvas>
+                </div>
+                <div class="ck-chart-card">
+                    <div class="ck-chart-title">Facturado por Vendedor</div>
+                    <canvas id="ckChartPorVendedor"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Dashboard Proyectos (KPIs + Charts + Lista en riesgo) ═══ -->
+        <div id="ckKpiRowProy" class="ck-kpi-row" style="display:none;">
+            <div class="ck-kpi-card ck-kpi--proy-act">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span class="ck-kpi-label">PROYECTOS ACTIVOS</span>
+                </div>
+                <div class="ck-kpi-value" id="ckKpiProyActivos">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyActivos">de — totales</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-act" id="ckProgProyActivos" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyActivos"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--proy-bud">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span class="ck-kpi-label">PRESUPUESTO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--proy-bud" id="ckKpiProyBudget">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyBudget">ejecutado de —</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-bud" id="ckProgProyBudget" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyBudget"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--proy-avg">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span class="ck-kpi-label">AVANCE PROMEDIO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--proy-avg" id="ckKpiProyAvance">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyAvance">del portafolio</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-avg" id="ckProgProyAvance" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyAvance"></div>
+            </div>
+            <div class="ck-kpi-card ck-kpi--proy-mar">
+                <div class="ck-kpi-header">
+                    <svg class="ck-kpi-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span class="ck-kpi-label">MARGEN ESPERADO</span>
+                </div>
+                <div class="ck-kpi-value ck-kpi-value--proy-mar" id="ckKpiProyMargen">—</div>
+                <div class="ck-kpi-of-meta" id="ckMetaProyMargen">utilidad presupuestada</div>
+                <div class="ck-kpi-prog-track"><div class="ck-kpi-prog-fill ck-prog--proy-mar" id="ckProgProyMargen" style="width:0%"></div></div>
+                <div class="ck-kpi-trend" id="ckTrendProyMargen"></div>
+            </div>
+        </div>
+
+        <div id="ckChartsSectionProy" style="display:none;padding:0 12px 40px;">
+            <div style="display:grid;grid-template-columns:1.05fr 1.4fr;gap:14px;margin-top:16px;">
+                <div class="ck-chart-card crm-dash-proyectos-chart">
+                    <div class="ck-chart-title">DISTRIBUCION POR ESTADO</div>
+                    <div class="crm-dash-proyectos-chart-wrap">
+                        <canvas id="ckChartProyEstados"></canvas>
+                    </div>
+                    <div class="crm-dash-proyectos-legend" id="ckChartProyEstadosLegend"></div>
+                </div>
+                <div class="ck-chart-card crm-dash-proyectos-riesgo">
+                    <div class="ck-chart-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                        <span>PROYECTOS EN RIESGO</span>
+                        <span class="crm-dash-proyectos-riesgo-count" id="ckProyRiesgoCount">0</span>
+                    </div>
+                    <div class="crm-dash-proyectos-riesgo-list" id="ckProyRiesgoList">
+                        <div class="crm-dash-proyectos-riesgo-empty">Cargando…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modo "Clientes": tabla cliente × marca (sin recargar) -->
+        <div id="ckClientesTablaSection" style="display:none;padding:0;">
+            {% include "crm/_content_clientes.html" %}
+        </div>
+
+        {% comment %}
+        Modo "Control" — logística de compra de materiales por proyecto.
+        Estructura V2 (Boy Scout). Toda la lógica está en crm_control_v2.js,
+        estilos en control_v2.css. Datos de momento HARDCODED (borrador).
+        {% endcomment %}
+        {% include "crm/_widget_control.html" %}
+
+        {# Modos "Proveedores" y "Marcas" — secciones V2 separadas. #}
+        {% include "crm/_widget_proveedores.html" %}
+        {% include "crm/_widget_marcas.html" %}
+
+        <!-- Hidden tbody for data merge (used by renderClientesCombinedTable) -->
+        <div id="clientesCombinedTbody" style="display:none;"></div>
+
+        <!-- Overlay detalle de vista -->
+        <div id="clientesDetalleOverlay" style="display:none;position:fixed;inset:0;z-index:10200;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:16px;width:96%;max-width:1380px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.25);overflow:hidden;">
+                <div style="display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid #F0F0F0;flex-shrink:0;gap:10px;">
+                    <span id="clientesDetalleTitulo" style="font-size:0.88rem;font-weight:800;color:#1D1D1F;flex:1;"></span>
+                    <span id="clientesDetalleStats" style="font-size:0.78rem;color:#6B7280;"></span>
+                    <button type="button" onclick="clientesVistaDetalleCerrar()" style="border:none;background:none;cursor:pointer;color:#8E8E93;padding:4px;border-radius:8px;display:flex;align-items:center;" title="Cerrar">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div style="overflow:auto;flex:1;">
+                    <table class="crm-table" style="width:100%;table-layout:fixed;">
+                        <thead id="clientesDetalleThead"></thead>
+                        <tbody id="clientesDetalleTbody" class="text-[11px] divide-y divide-gray-100 bg-white">
+                            <tr><td colspan="14" class="text-center py-20 text-gray-400 italic">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Section (replaces charts when KPI clicked) -->
+        <div id="ckDetalleSection" style="display:none;padding:0 12px 20px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <button onclick="ckVolverGraficas()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;border:1px solid #E5E5EA;background:#F5F5F7;color:#3C3C43;font-size:0.82rem;font-weight:600;cursor:pointer;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                    Volver a graficas
+                </button>
+                <h3 id="ckDetalleTitulo" style="font-size:1.1rem;font-weight:700;color:#1D1D1F;margin:0;">Detalle</h3>
+            </div>
+            <div style="background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">
+                <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+                    <thead>
+                        <tr id="ckDetalleHead" style="background:#F5F5F7;">
+                            <!-- headers set by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="ckDetalleTbody">
+                        <!-- rows set by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+

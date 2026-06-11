@@ -1,0 +1,412 @@
+{% comment %}
+═══ BARRA DEL DASHBOARD (tab=clientes) — PARTIAL ═══
+Extraído de _content.html (2026-06-10) para poder renderizarlo TAMBIÉN
+oculto en páginas tab=crm y entrar a Reportes con switch client-side
+instantáneo (crm_nav_v2.js: dashOpenInline). En tab=clientes se incluye
+normal; en tab=crm va dentro de #ckDashBarRoot (display:none →
+display:contents al activarse, para no romper el flex de la barra).
+Es esqueleto + JS: los datos llegan por fetch (loadAllClientesPanels).
+{% endcomment %}
+            <!-- Filtro Mostrar (Ambos / Solo Clientes / Solo Prospectos) — solo visible en modo clientes_tabla -->
+            <div class="crm-bar-left cli-filter-island" id="cliFilterIsland" style="display:none;">
+                <button type="button" data-cli-show="ambos" class="cli-filter-btn cli-filter-active">Ambos</button>
+                <button type="button" data-cli-show="clientes" class="cli-filter-btn">Solo Clientes</button>
+                <button type="button" data-cli-show="prospectos" class="cli-filter-btn">Solo Prospectos</button>
+            </div>
+            {% comment %}
+            DOS dynamic islands superpuestos:
+              #dashDynamicIsland → 5 tabs (default visible).
+              #repDynamicIsland  → tabs de reportes (oculto, aparece cuando
+                                    se entra al módulo de reportes via SPA).
+            El script SPA hace cross-slide entre las dos al
+            entrar/salir del módulo de Reportes.
+            {% endcomment %}
+            <div class="crm-tabs crm-tabs--dashboard" id="dashDynamicIsland">
+                <button type="button" id="crmModeOpp" onclick="window._crmSetMode('oportunidades')" class="crm-tab active">Oportunidades</button>
+                <button type="button" id="crmModeProsp" onclick="window._crmSetMode('prospeccion')" class="crm-tab">Prospectos</button>
+                <button type="button" id="crmModeProyectos" onclick="window._crmSetMode('proyectos')" class="crm-tab">Proyectos</button>
+                <button type="button" id="crmModeClientes" onclick="window._crmSetMode('clientes_tabla')" class="crm-tab">Clientes</button>
+                <button type="button" id="crmModeControl" class="crm-tab" title="Logística de compra de materiales por proyecto">Materiales</button>
+                <button type="button" id="crmModeProveedores" class="crm-tab" title="Proveedores">Proveedores</button>
+                <button type="button" id="crmModeMarcas" class="crm-tab" title="Marcas — catálogo, pipeline y avance a meta">Marcas</button>
+                <button type="button" id="crmModeReportes" class="crm-tab crm-tab-reportes" title="Ir a Reportes" hidden style="display:none;">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>Reportes
+                </button>
+            </div>
+            {% comment %}
+            Proxy "Ordenar" del SPA — solo visible cuando reportes está
+            activo. Las opciones del menú las popula el iframe al cargar
+            (postMessage rep:ready con sort_options del reporte activo).
+            {% endcomment %}
+            <div class="rep-spa-sort-wrap" id="repSpaSortWrap" hidden>
+                <button type="button" class="rep-spa-sort-btn" id="repSpaSortBtn" aria-haspopup="menu" aria-expanded="false">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                    <span id="repSpaSortLabel">Ordenar</span>
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="rep-spa-sort-menu" id="repSpaSortMenu" hidden role="menu"></div>
+            </div>
+            <div class="crm-tabs crm-tabs--dashboard crm-tabs--reportes" id="repDynamicIsland" hidden>
+                <button type="button" id="repDynBack" class="crm-tab crm-tab-reportes-back" title="Volver al Dashboard">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button type="button" class="crm-tab active" data-rep-slug="oportunidades-abiertas">Oportunidades Abiertas</button>
+                <button type="button" class="crm-tab" data-rep-slug="oportunidades-cerradas">Oportunidades Cerradas</button>
+                <button type="button" class="crm-tab" data-rep-slug="clientes">Por Cliente</button>
+                <button type="button" class="crm-tab crm-tab-personalizado" data-rep-slug="personalizado">
+                    <svg width="11" height="11" fill="none" stroke="#A78BFA" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-1px;"><path d="M12 3l1.9 5.8L19.7 11l-5.8 1.9L12 19l-1.9-5.8L4.3 11l5.8-1.9z"/></svg>Personalizado
+                </button>
+            </div>
+            {% comment %}
+            SPA Reportes — iframe overlay.
+            El overlay vive como position: fixed; top = altura de la barra
+            del dashboard (calculada al abrir). Asi las pills de periodo y
+            vendedor de .crm-bar-right SIGUEN visibles arriba del iframe y
+            sus filtros afectan al reporte cargado (pasados como query
+            params al iframe URL).
+            {% endcomment %}
+            <div id="crmReportesOverlay" class="crm-reportes-overlay" hidden>
+                <iframe id="crmReportesFrame" title="Reportes" frameborder="0"></iframe>
+            </div>
+            <script>
+            (function(){
+                var REPORTES_SLUGS = {
+                    'oportunidades-abiertas': 1,
+                    'oportunidades-cerradas': 1,
+                    'clientes': 1,
+                    'personalizado': 1,
+                };
+                var dashIsland = document.getElementById('dashDynamicIsland');
+                var repIsland  = document.getElementById('repDynamicIsland');
+                var overlay = document.getElementById('crmReportesOverlay');
+                var frame = document.getElementById('crmReportesFrame');
+                var btnR = document.getElementById('crmModeReportes');
+                var btnBack = document.getElementById('repDynBack');
+                if (!dashIsland || !repIsland || !overlay || !frame || !btnR || !btnBack) return;
+
+                var _dashUrlBefore = null;
+                var _abierto = false;
+
+                // Filtros del dashboard (mes, año, vendedor) que se pasan
+                // al iframe. Los reportes los respetan: si dice "Mayo 2026,
+                // Roberto Lopez" → el reporte filtra opps de Roberto Lopez
+                // con cierre en mayo 2026.
+                function leerFiltrosDashboard() {
+                    var p = {};
+                    try {
+                        var u = new URL(window.location.href);
+                        var keys = ['mes', 'anio', 'vendedores', 'desde', 'hasta'];
+                        keys.forEach(function (k) {
+                            var v = u.searchParams.get(k);
+                            if (v != null && v !== '') p[k] = v;
+                        });
+                    } catch (e) { /* defensivo */ }
+                    return p;
+                }
+                function urlEmbedded(slug) {
+                    var qs = new URLSearchParams({ embedded: '1' });
+                    var f = leerFiltrosDashboard();
+                    Object.keys(f).forEach(function (k) {
+                        // Renombrar 'vendedores' (del dashboard) → 'vendedor'
+                        // (param del reporte, single id). Si trae varios IDs
+                        // separados por coma, tomamos el primero.
+                        if (k === 'vendedores' && f[k]) {
+                            var first = String(f[k]).split(',')[0].trim();
+                            if (first) qs.set('vendedor', first);
+                        } else {
+                            qs.set(k, f[k]);
+                        }
+                    });
+                    return '/app/reportes/' + slug + '/?' + qs.toString();
+                }
+
+                // Calcula el top del overlay = base inferior de la barra
+                // del dashboard. Se invoca al abrir y al hacer resize.
+                function ajustarTopOverlay() {
+                    var bar = document.querySelector('#crmContentSection .crm-bar');
+                    if (!bar) return;
+                    var rect = bar.getBoundingClientRect();
+                    overlay.style.top = Math.max(0, Math.round(rect.bottom + 6)) + 'px';
+                }
+                function slugFromUrl(href) {
+                    try {
+                        var u = new URL(href, window.location.origin);
+                        var m = u.pathname.match(/^\/app\/reportes\/([^\/?#]+)/);
+                        return m ? m[1] : null;
+                    } catch (e) { return null; }
+                }
+                function setRepTabActive(slug) {
+                    repIsland.querySelectorAll('[data-rep-slug]').forEach(function (t) {
+                        t.classList.toggle('active', t.getAttribute('data-rep-slug') === slug);
+                    });
+                }
+
+                function abrirReportes(slug, push) {
+                    var s = slug && REPORTES_SLUGS[slug] ? slug : 'oportunidades-abiertas';
+                    if (!_abierto) {
+                        _dashUrlBefore = window.location.href;
+                    }
+                    _abierto = true;
+                    document.body.classList.add('crm-reportes-active');
+                    showProxies(true);
+                    // Cross-slide entre los dos dynamic islands.
+                    dashIsland.classList.add('crm-tabs-sliding-out-left');
+                    setTimeout(function () {
+                        dashIsland.hidden = true;
+                        dashIsland.classList.remove('crm-tabs-sliding-out-left');
+                        repIsland.hidden = false;
+                        // reflow
+                        void repIsland.offsetWidth;
+                        repIsland.classList.add('crm-tabs-sliding-in-from-right');
+                        setTimeout(function () {
+                            repIsland.classList.remove('crm-tabs-sliding-in-from-right');
+                        }, 320);
+                    }, 220);
+                    setRepTabActive(s);
+                    // Overlay con iframe (top ajustado a la barra del dashboard).
+                    ajustarTopOverlay();
+                    overlay.hidden = false;
+                    void overlay.offsetWidth;
+                    overlay.classList.add('crm-reportes-overlay-active');
+                    frame.src = urlEmbedded(s);
+                    if (push !== false) {
+                        try { window.history.pushState({ rep: s }, '', '/app/reportes/' + s + '/'); } catch (_) {}
+                    }
+                }
+
+                function cambiarReporte(slug, push) {
+                    if (!REPORTES_SLUGS[slug]) return;
+                    setRepTabActive(slug);
+                    frame.src = urlEmbedded(slug);
+                    if (push !== false) {
+                        try { window.history.pushState({ rep: slug }, '', '/app/reportes/' + slug + '/'); } catch (_) {}
+                    }
+                }
+
+                function cerrarReportes(push) {
+                    if (!_abierto) return;
+                    _abierto = false;
+                    document.body.classList.remove('crm-reportes-active');
+                    showProxies(false);
+                    // Cross-slide inverso.
+                    repIsland.classList.add('crm-tabs-sliding-out-right');
+                    setTimeout(function () {
+                        repIsland.hidden = true;
+                        repIsland.classList.remove('crm-tabs-sliding-out-right');
+                        dashIsland.hidden = false;
+                        void dashIsland.offsetWidth;
+                        dashIsland.classList.add('crm-tabs-sliding-in-from-left');
+                        setTimeout(function () {
+                            dashIsland.classList.remove('crm-tabs-sliding-in-from-left');
+                        }, 320);
+                    }, 220);
+                    overlay.classList.remove('crm-reportes-overlay-active');
+                    overlay.classList.add('crm-reportes-overlay-leaving');
+                    setTimeout(function () {
+                        overlay.hidden = true;
+                        overlay.classList.remove('crm-reportes-overlay-leaving');
+                        frame.src = 'about:blank';
+                    }, 260);
+                    if (push !== false) {
+                        var dest = _dashUrlBefore || '/app/home/?tab=clientes';
+                        _dashUrlBefore = null;
+                        try { window.history.pushState({ rep: null }, '', dest); } catch (_) {}
+                    }
+                }
+
+                btnR.addEventListener('click', function () { abrirReportes('oportunidades-abiertas'); });
+                btnBack.addEventListener('click', function () { cerrarReportes(true); });
+
+                // ─── Proxies (Ordenar, Búsqueda, Filtros, Exportar) ───
+                var sortWrap = document.getElementById('repSpaSortWrap');
+                var sortBtn  = document.getElementById('repSpaSortBtn');
+                var sortMenu = document.getElementById('repSpaSortMenu');
+                var sortLabel = document.getElementById('repSpaSortLabel');
+                var spaSearchWrap = document.getElementById('repSpaSearchWrap');
+                var spaSearchInput = document.getElementById('repSpaSearch');
+                var spaFilter = document.getElementById('repSpaFilter');
+                var spaFilterDot = document.getElementById('repSpaFilterDot');
+                var spaExport = document.getElementById('repSpaExport');
+
+                function showProxies(visible) {
+                    [sortWrap, spaSearchWrap, spaFilter, spaExport].forEach(function (el) {
+                        if (!el) return;
+                        el.hidden = !visible;
+                    });
+                    if (!visible) {
+                        // Limpiar estado: dot apagado, input vacío, menu cerrado.
+                        if (sortMenu) sortMenu.hidden = true;
+                        if (sortBtn) sortBtn.setAttribute('aria-expanded', 'false');
+                        if (spaFilterDot) spaFilterDot.hidden = true;
+                        if (spaSearchInput) spaSearchInput.value = '';
+                    }
+                }
+
+                function popularSortMenu(config) {
+                    if (!sortMenu || !config) return;
+                    sortMenu.innerHTML = '';
+                    var sections = config.sort_options || [];
+                    sections.forEach(function (sec) {
+                        var h = document.createElement('div');
+                        h.className = 'rep-spa-sort-section';
+                        h.textContent = sec.section || '';
+                        sortMenu.appendChild(h);
+                        (sec.items || []).forEach(function (it) {
+                            var btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'rep-spa-sort-item';
+                            btn.setAttribute('data-sort', it.key);
+                            btn.textContent = it.label;
+                            if (it.key === config.current_sort) btn.classList.add('is-active');
+                            btn.addEventListener('click', function (e) {
+                                e.stopPropagation();
+                                frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:sort:pick', key: it.key }, '*');
+                                sortMenu.hidden = true;
+                                sortBtn.setAttribute('aria-expanded', 'false');
+                                // Optimistic: actualizar label inmediato
+                                if (sortLabel) sortLabel.textContent = it.label;
+                                sortMenu.querySelectorAll('.rep-spa-sort-item').forEach(function (b) {
+                                    b.classList.toggle('is-active', b === btn);
+                                });
+                            });
+                            sortMenu.appendChild(btn);
+                        });
+                    });
+                    if (sortLabel && config.current_label) sortLabel.textContent = config.current_label;
+                    if (sortWrap) sortWrap.hidden = !sections.length;
+                }
+
+                function configurarProxies(meta) {
+                    if (!meta) return;
+                    if (spaSearchInput) {
+                        spaSearchInput.placeholder = meta.search_placeholder || 'Buscar…';
+                        spaSearchInput.value = meta.search_value || '';
+                    }
+                    if (spaSearchWrap) spaSearchWrap.hidden = !meta.has_search;
+                    if (spaFilter) spaFilter.hidden = !meta.has_filters;
+                    if (spaFilterDot) spaFilterDot.hidden = !meta.has_active_filters;
+                    if (spaExport) spaExport.hidden = !meta.has_export;
+                    popularSortMenu(meta);
+                }
+
+                if (sortBtn && sortMenu) {
+                    sortBtn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        var open = sortMenu.hidden;
+                        sortMenu.hidden = !open;
+                        sortBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    });
+                    document.addEventListener('click', function (e) {
+                        if (sortMenu.hidden) return;
+                        if (!sortWrap.contains(e.target)) {
+                            sortMenu.hidden = true;
+                            sortBtn.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                }
+                if (spaSearchInput) {
+                    var _searchT;
+                    spaSearchInput.addEventListener('input', function () {
+                        clearTimeout(_searchT);
+                        var v = spaSearchInput.value;
+                        _searchT = setTimeout(function () {
+                            frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:search', q: v }, '*');
+                        }, 280);
+                    });
+                }
+                if (spaFilter) {
+                    spaFilter.addEventListener('click', function () {
+                        frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:filters:open' }, '*');
+                    });
+                }
+                if (spaExport) {
+                    spaExport.addEventListener('click', function () {
+                        frame.contentWindow && frame.contentWindow.postMessage({ type: 'rep:export' }, '*');
+                    });
+                }
+
+                // ─── Propagación dinámica de pills del dashboard al iframe ─
+                // Escuchamos cambios en la URL del dashboard (pills hacen
+                // history.replaceState o full reload). Detectamos vía
+                // MutationObserver sobre los labels de las pills (más
+                // robusto que monitorear URL).
+                function syncFiltrosAlIframe() {
+                    if (!_abierto || !frame.contentWindow) return;
+                    var f = leerFiltrosDashboard();
+                    frame.contentWindow.postMessage({ type: 'rep:filters:update', filters: f }, '*');
+                }
+                ['pillPeriodoLabel', 'pillVendedorLabel'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    var mo = new MutationObserver(function () {
+                        if (_abierto) syncFiltrosAlIframe();
+                    });
+                    mo.observe(el, { childList: true, characterData: true, subtree: true });
+                });
+
+                // Tabs del repIsland → cambiar reporte (sin reload del padre).
+                repIsland.querySelectorAll('[data-rep-slug]').forEach(function (t) {
+                    t.addEventListener('click', function () {
+                        cambiarReporte(t.getAttribute('data-rep-slug'), true);
+                    });
+                });
+
+                // popstate: back/forward del browser → sincronizar.
+                window.addEventListener('popstate', function () {
+                    var slug = slugFromUrl(window.location.href);
+                    if (slug && REPORTES_SLUGS[slug]) {
+                        if (!_abierto) abrirReportes(slug, false);
+                        else cambiarReporte(slug, false);
+                    } else {
+                        if (_abierto) cerrarReportes(false);
+                    }
+                });
+
+                // postMessage del iframe.
+                window.addEventListener('message', function (e) {
+                    var d = e.data;
+                    if (!d || typeof d !== 'object' || !d.type) return;
+                    if (d.type === 'rep:close') {
+                        cerrarReportes(true);
+                    } else if (d.type === 'rep:navigate' && d.slug) {
+                        cambiarReporte(d.slug, true);
+                    } else if (d.type === 'rep:opendetalle' && d.id) {
+                        if (typeof window.openDetalle === 'function') window.openDetalle(parseInt(d.id, 10));
+                    } else if (d.type === 'rep:opencliente' && d.id) {
+                        if (typeof window.openClienteModal === 'function') {
+                            window.openClienteModal(parseInt(d.id, 10), d.nombre || '', d.tab || 'oportunidades');
+                        }
+                    } else if (d.type === 'rep:ready') {
+                        // El iframe terminó de cargar y nos envía su config
+                        // (sort_options, current_sort, search_placeholder,
+                        // has_filters, has_active_filters, has_export, etc.).
+                        configurarProxies(d);
+                    } else if (d.type === 'rep:filterdot') {
+                        // Drawer aplicó/limpió filtros → actualizar el dot.
+                        if (spaFilterDot) spaFilterDot.hidden = !d.active;
+                    }
+                });
+
+                // Cambios de filtros del dashboard (pills) mientras reportes
+                // está abierto → actualizar el iframe.src con los nuevos
+                // params. Los pills disparan navegación con location.href
+                // change; el SPA detecta el cambio escuchando hashchange
+                // (no aplica) y mejor: el dashboard ya hace recarga al
+                // cambiar pills, así que en SPA tenemos que escuchar otro
+                // evento. Por simplicidad: cuando el usuario cambia un pill
+                // estando en reportes, la página recarga el dashboard +
+                // overlay se reabre con los nuevos params (popstate).
+
+                // Resize: re-ajustar top del overlay (la barra puede cambiar
+                // de altura en ciertos tabs).
+                window.addEventListener('resize', function () {
+                    if (_abierto) ajustarTopOverlay();
+                });
+
+                // Carga inicial: si la URL es /app/reportes/<slug>/, abrir directo.
+                var startSlug = slugFromUrl(window.location.pathname);
+                if (startSlug) {
+                    abrirReportes(startSlug, false);
+                }
+            })();
+            </script>

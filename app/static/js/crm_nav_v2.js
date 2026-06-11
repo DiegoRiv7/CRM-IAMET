@@ -238,10 +238,73 @@
         };
     });
 
+    /* ── Reportes (dashboard tab=clientes) como vista client-side ───────
+       El dashboard es esqueleto puro: sus datos llegan por los 7 fetchs
+       paralelos de loadAllClientesPanels. En páginas tab=crm el markup
+       viene OCULTO (#ckDashRoot + #ckDashBarRoot, ver _content.html), así
+       que "entrar a Reportes" es mostrar el esqueleto al instante y
+       disparar los fetchs — igual de inmediato que Tareas, cero server
+       render. refreshCrmTable() con currentTab='clientes' (vía
+       _crmSetPeriodo) ya llama loadAllClientesPanels() solo.            */
+
+    var dashInline = false;
+
+    function dashOpenInline() {
+        var root = document.getElementById('ckDashRoot');
+        var barRoot = document.getElementById('ckDashBarRoot');
+        if (!root || !barRoot) return false;
+        if (typeof window._crmSetPeriodo !== 'function' ||
+            typeof window.refreshCrmTable !== 'function') return false;
+
+        document.body.classList.add('ck-dash-inline');
+        root.style.display = '';
+        // display:contents → los hijos participan del flex de la barra
+        // como si no hubiera wrapper.
+        barRoot.style.display = 'contents';
+
+        window._crmSetPeriodo(null, null, 'clientes');
+        window.refreshCrmTable();  // currentTab='clientes' → loadAllClientesPanels()
+        if (typeof window._crmSetMode === 'function') {
+            var saved = null;
+            try { saved = localStorage.getItem('crm_clientes_mode'); } catch (e) { }
+            try { window._crmSetMode(saved || 'oportunidades'); } catch (e) { }
+        }
+
+        dashInline = true;
+        var cfg = window._CRM_CONFIG || {};
+        var p = new URLSearchParams();
+        p.set('tab', 'clientes');
+        if (cfg.mesFiltro) p.set('mes', cfg.mesFiltro);
+        if (cfg.anioFiltro) p.set('anio', cfg.anioFiltro);
+        if (cfg.vendedoresFilter) p.set('vendedores', cfg.vendedoresFilter);
+        replaceUrl(p.toString());
+        window.scrollTo(0, 0);
+
+        var bd = document.getElementById('btnDashboard');
+        if (bd) bd.classList.add('active');
+        var bc = document.getElementById('btnCRM');
+        if (bc) bc.classList.remove('active');
+        return true;
+    }
+
+    function dashCloseInline() {
+        if (!dashInline) return;
+        dashInline = false;
+        document.body.classList.remove('ck-dash-inline');
+        var root = document.getElementById('ckDashRoot');
+        if (root) root.style.display = 'none';
+        var barRoot = document.getElementById('ckDashBarRoot');
+        if (barRoot) barRoot.style.display = 'none';
+        if (typeof window._crmSetPeriodo === 'function') window._crmSetPeriodo(null, null, 'crm');
+        var bd = document.getElementById('btnDashboard');
+        if (bd) bd.classList.remove('active');
+        urlToCrm();
+    }
+
     // Captura a nivel document: corre ANTES que los onclick inline y los
     // listeners de crm_main, así tomamos la navegación sin tocar el legacy.
     document.addEventListener('click', function (ev) {
-        var t = ev.target.closest && ev.target.closest('#btnCalendario, #btnCRM, #btnTareas, #btnProyectos, #btnCompras');
+        var t = ev.target.closest && ev.target.closest('#btnCalendario, #btnDashboard, #btnCRM, #btnTareas, #btnProyectos, #btnCompras');
         if (!t) return;
         var cfg = window._CRM_CONFIG || {};
 
@@ -249,14 +312,28 @@
             if (cfg.tabActivo !== 'crm') return;   // landing ≠ crm → navegación normal
             ev.preventDefault();
             ev.stopPropagation();
+            dashCloseInline();  // calendario sobre el CRM, no sobre el dashboard
             if (!calInline) calOpenInline();
             return;
         }
 
-        // Los demás botones del sidebar: si el calendario está abierto como
-        // overlay, cerrarlo primero y dejar que el handler normal siga.
+        if (t.id === 'btnDashboard') {
+            if (cfg.tabActivo !== 'crm') return;   // landing ≠ crm → Turbo normal
+            if (calInline && typeof window.calendarioCerrar === 'function') window.calendarioCerrar();
+            if (dashInline) { ev.preventDefault(); ev.stopPropagation(); return; }
+            if (dashOpenInline()) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+            return;
+        }
+
+        // Los demás botones del sidebar: si el calendario o el dashboard
+        // están abiertos inline, cerrarlos y dejar que el handler normal
+        // (switchCrmView de crm_main) haga el cambio de vista.
         if (calInline && typeof window.calendarioCerrar === 'function') {
             window.calendarioCerrar();
         }
+        dashCloseInline();
     }, true);
 })();
