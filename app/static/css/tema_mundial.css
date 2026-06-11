@@ -306,7 +306,8 @@ body[data-theme="mundial"] .wn-overlay .wn-card.wn-composer {
    de México) + destello rojo. Texto blanco encima. */
 body[data-theme="mundial"] .wo-header,
 body[data-theme="mundial"] .wn-ctw-header,
-body[data-theme="mundial"] .muro-card-header {
+body[data-theme="mundial"] .muro-card-header,
+body[data-theme="mundial"] .tcp-col-head {
     background-color: #5c0f17 !important;
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
@@ -373,21 +374,32 @@ body[data-theme="mundial"] .wn-ctw-toolbar {
    SECCIÓN TAREAS — panel sólido claro (legible) sobre la cancha; el verde
    vive en bordes y el rojo natural de "ATRASADAS"/vencidas se conserva.
    ═══════════════════════════════════════════════════════════════════════ */
+/* Shell frosted: vidrio esmerilado claro → la cancha se asoma por detrás
+   pero el texto (oscuro) se mantiene legible gracias al blur + tinte. */
 body[data-theme="mundial"] .tcp-shell {
-    background: #f5f5f3 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    background: rgba(245, 246, 243, 0.74) !important;
+    backdrop-filter: blur(26px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
     border: 1px solid rgba(0, 80, 45, 0.30) !important;
-    box-shadow: 0 14px 44px rgba(0, 15, 8, 0.42) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
 }
-/* Panel derecho "TU DÍA" */
+/* Panel derecho "TU DÍA" — frosted también */
 body[data-theme="mundial"] .tcp-detail {
-    background: #ffffff !important;
-    border-left-color: rgba(0, 80, 45, 0.20) !important;
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(22px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+    border-left-color: rgba(0, 80, 45, 0.22) !important;
 }
-body[data-theme="mundial"] .tcp-row:hover { background: #f1faf4 !important; }
-body[data-theme="mundial"] .tcp-row.active { background: #e1f4e9 !important; }
-body[data-theme="mundial"] .tcp-col-head { background: #e7f3ec !important; }
+/* Header de columnas (TAREA · ESTADO · …) como barra greca verde→rojo */
+body[data-theme="mundial"] .tcp-col-head {
+    color: #ffffff !important;
+    border-bottom: 2px solid #CE1126 !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+body[data-theme="mundial"] .tcp-col-head > span { color: #ffffff !important; }
+/* Filas: el texto se asienta sobre el frosted; hover/active claros */
+body[data-theme="mundial"] .tcp-row:hover { background: rgba(255, 255, 255, 0.45) !important; }
+body[data-theme="mundial"] .tcp-row.active { background: rgba(0, 168, 107, 0.18) !important; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    CONTROLES DE VENTANA (— □ ×) — sólidos blancos sobre el header oscuro
