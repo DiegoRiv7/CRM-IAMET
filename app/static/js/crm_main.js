@@ -9937,6 +9937,19 @@
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
+            // Elevar por encima del modal de tarea: el drive es CAPA 2 (10200)
+            // y el modal CAPA 4 (10400) — sin esto el drive abre DETRÁS.
+            // woCerrarGestorDrive limpia la clase y el z inline al cerrar.
+            var dw = document.getElementById('widgetOppDrive');
+            if (dw) {
+                var _tm2 = document.getElementById('crmTaskDetailModal');
+                if (_tm2 && _tm2.classList.contains('z-elevated-overlay')) {
+                    // Tarea abierta desde una opp elevada (10900) → aún más arriba.
+                    dw.style.zIndex = '11000';
+                } else {
+                    dw.classList.add('z-elevated-top');
+                }
+            }
             if (typeof woAbrirGestorDrive === 'function') woAbrirGestorDrive();
         }
 
