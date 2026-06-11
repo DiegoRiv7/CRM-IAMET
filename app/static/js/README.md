@@ -52,7 +52,8 @@ para nuevos módulos:
 | `widget_toast.js` | Helper global `window.toast(msg, type, ttl)` |
 | `widget_data_bus.js` | Event bus `crm:data-changed` + auto-emit en fetch |
 | `widget_url_sync.js` | URL syncing con `crmWidgetUrl.set/clear/read` |
-| `widget_window.js` | Sistema de ventanas: resize por esquinas, drag, minimizar a dock, máx 4 ventanas. Opt-in: whitelist `WINDOWABLE_IDS`, `data-windowable="1"`, o `crmWidgetWindow.enhance(overlay)` (así lo usa oportunidad_widget_v2). CSS en `widget_window.css` |
+| `widget_window.js` | Sistema de ventanas: resize de 8 puntos, drag con snap a bordes/mitades/cuartos, animaciones FLIP, minimizar a dock, foco visual, Mission Control (click en zona vacía) y Window Picker al exceder máx 4. Opt-in: whitelist `WINDOWABLE_IDS`, `data-windowable="1"`, o `crmWidgetWindow.enhance(overlay)` (así lo usa oportunidad_widget_v2). CSS en `widget_window.css` |
+| `crm_nav_v2.js` | **Navegación SPA del CRM** (2026-06-10): cambio de mes/año/vendedores in-place (`crmApplyPeriod`: fetch SSR + swap de contenedores — las ventanas sobreviven), Calendario como overlay sin navegar (URL sync por wrap de `calendarioCerrar`). Usa `window._crmSetPeriodo` y `_crmSyncPeriodPills` (hooks mínimos en legacy/_content) |
 
 ## 📝 Convenciones obligatorias para archivos V2
 

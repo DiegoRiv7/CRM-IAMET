@@ -274,6 +274,54 @@ Plan completo en `Plan_Fase6_Refactor.md`. Resumen de sub-fases:
 | 3.A-D — Optimizar usuarios | ⏳ En curso | Cleanups críticos + `crm_main.js` Turbo-tolerant + Turbo activo |
 | 4.A-E — Documentar handoff | Pendiente | SERVIDOR.md, README, DEPLOYMENT, ARQUITECTURA, DECISIONES |
 
+### 🪟 Ola junio-2026: instanciable + ventanas + SPA + sync (HECHA)
+
+Cuatro piezas grandes construidas el 9-10 de junio 2026 (todas en `pruebas`):
+
+**1. Widget de Oportunidad INSTANCIABLE** (`oportunidad_widget_v2.js` +
+`_widget_oportunidad_v2.html`): reemplaza el bloque detalle congelado de
+`crm_main.js` (~751-2041, ahora muerto) y el singleton `#widgetDetalle`
+(reducido a stub de ids que el init legacy aún referencia). Template
+`<template>` clonable con `data-wo` (cero ids), hasta 4 oportunidades
+abiertas y EDITABLES a la vez + cotizador instanciado (una ventana por
+opp/cotización). Takeover: `window.openDetalle/openCotizador/
+openEditCotizacion` reasignados + guards de 1 línea en el legacy
+(closures internos del kanban). Activo en CRM home y reportes.
+
+**2. Sistema de ventanas** (`widget_window.js` + `.css`): widgets como
+ventanas de escritorio — resize de 8 puntos, drag con snap a
+bordes/mitades/cuartos (ghost indicator), animaciones FLIP, minimizar al
+dock, foco visual por contraste, Mission Control (click en zona vacía
+oculta/restaura ventanas) y Window Picker al exceder el máximo de 4.
+Integración: overlays normales del stack manager; opt-in vía
+`WINDOWABLE_IDS`, `data-windowable="1"` o `crmWidgetWindow.enhance()`.
+
+**3. Navegación sin recargas** (`crm_nav_v2.js`): cambiar
+mes/año/vendedores hace swap in-place del HTML server-rendered
+(contenedores de datos solamente — las ventanas abiertas SOBREVIVEN);
+el Calendario abre como overlay sin navegar (URL sincronizada con
+replaceState); tabs del topbar con Turbo + progress bar. Setter
+`window._crmSetPeriodo` en crm_main (el periodo vive en closures).
+Reportes (tab=clientes) conserva recarga clásica A PROPÓSITO: Chart.js
+con bugs bajo SPA (ver comentario en `_sidebar.html`).
+
+**4. Sync entre usuarios** (`crm_sync.js` + `app/signals_sync.py` +
+`views_sync.py` + modelo `CrmCambio`, **migración 0185**): polling cada
+20s por cursor de PK (pausa total con pestaña oculta, backoff, jitter)
+que re-emite cambios de OTROS usuarios al `crmDataBus` — kanban,
+ventanas abiertas, tareas, comentarios de tareas, drive, conversación,
+calendario, programa de obra y notificaciones se refrescan solos.
+NO cubierto aún: eventos/cursos/certificaciones, chat, marcas/proveedores.
+
+**Pendientes de la ola** (ver memoria del proyecto): expandir ventanas a
+más widgets (mecánico: whitelist + formatos compactos), pase de fondo a
+Reportes (paralelizar fetchs en cascada + ciclo de vida de Chart.js +
+performance de servidor — relacionado con `Optimizacion_Performance_Pendiente.md`).
+
+**Nota**: el breadcrumb "Padre › Hijo" de widgets anidados quedó
+DESACTIVADO a pedido de los usuarios (flag `BREADCRUMB_ON` en
+`widget_stack.js` — reactivar es una línea).
+
 ### 🏕️ Boy Scout Rule (desde 2026-06-04)
 
 **Política**: los archivos legacy gigantes NO se modifican. Todo código
