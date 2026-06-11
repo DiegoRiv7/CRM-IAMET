@@ -124,6 +124,19 @@
                 try { window._crmTaskRecargarComentarios(d.extra && d.extra.tarea_id); } catch (e) { }
             }
         });
+        // Prospectos: si otro usuario crea/edita/mueve un prospecto y tengo
+        // el kanban de prospección abierto, refrescarlo in-place (la función
+        // hace swap del board vía crmApplyPeriod; sin board presente, no-op).
+        var prospectoTimer = null;
+        window.crmDataBus.on('prospecto', function () {
+            if (!document.getElementById('pkKanbanBoard')) return;
+            clearTimeout(prospectoTimer);
+            prospectoTimer = setTimeout(function () {
+                if (typeof window.recargarProspectosKanban === 'function') {
+                    try { window.recargarProspectosKanban(); } catch (e) { }
+                }
+            }, 800);
+        });
     });
 
     // Debug en consola: crmSync.now() fuerza un poll.

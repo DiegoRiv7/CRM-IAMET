@@ -26,12 +26,46 @@
 (function () {
     'use strict';
 
-    var SWAP_IDS = ['crmTbody', 'crmListBody', 'crmCardsGrid'];
+    // Config por tab: qué contenedores server-rendered se trasplantan y qué
+    // re-inicialización corre después del swap. Agregar un tab nuevo = una
+    // entrada aquí (los pills/labels/URL son genéricos).
+    var SWAP_CONFIG = {
+        crm: {
+            ids: ['crmTbody', 'crmListBody', 'crmCardsGrid'],
+            after: function (params, mes, anio) {
+                // Colores/KPIs/kanban/binds — el mismo pase de cada page load
+                // (refreshCrmTable usa el periodo ya seteado en el closure).
+                if (typeof window.refreshCrmTable === 'function') window.refreshCrmTable();
+                // KPI facturado: en page load un script de _scripts_main lo
+                // sobreescribe con el total del desglose (la fuente "real").
+                var vq = params.get('vendedores') ? '&vendedores=' + encodeURIComponent(params.get('vendedores')) : '';
+                fetch('/app/api/desglose-facturacion/?mes=' + (mes || 'todos') + '&anio=' + (anio || 'todos') + vq, { credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (resp) {
+                        if (resp.ok && resp.total !== undefined) {
+                            var fa = document.getElementById('facturadoAmount');
+                            if (fa) fa.textContent = '$' + Number(resp.total).toLocaleString('en-US', { maximumFractionDigits: 0 });
+                        }
+                    })
+                    .catch(function () { });
+            },
+        },
+        prospectos: {
+            ids: ['pkKanbanBoard'],
+            after: function () {
+                // Re-aplicar filtros/orden/colapsadas guardados a las cards
+                // nuevas (crm_prospectos_kanban.js).
+                if (typeof window.pkKanbanRehydrate === 'function') {
+                    try { window.pkKanbanRehydrate(); } catch (e) { }
+                }
+            },
+        },
+    };
     var LABEL_IDS = ['crmWorkspaceCount'];
     var busy = false;
 
-    function setLoading(on) {
-        SWAP_IDS.forEach(function (id) {
+    function setLoading(on, ids) {
+        (ids || []).forEach(function (id) {
             var el = document.getElementById(id);
             if (el) {
                 el.style.transition = 'opacity 0.15s ease';
@@ -71,24 +105,24 @@
     }
 
     window.crmApplyPeriod = function (params) {
+        var tab, cfg;
         try {
-            // Solo aplica en la pestaña CRM con el kanban presente; en otras
-            // pestañas (clientes/prospección/ideas) el contenido es otro y
-            // el reload clásico sigue siendo el camino.
-            var tab = params.get('tab') || (window._CRM_CONFIG && window._CRM_CONFIG.tabActivo) || 'crm';
-            if (tab !== 'crm') return false;
-            if (!document.getElementById('crmListBody')) return false;
-            if (typeof window.refreshCrmTable !== 'function') return false;
+            // Aplica en los tabs con config de swap (crm, prospectos); el
+            // resto conserva el reload clásico.
+            tab = params.get('tab') || (window._CRM_CONFIG && window._CRM_CONFIG.tabActivo) || 'crm';
+            cfg = SWAP_CONFIG[tab];
+            if (!cfg) return false;
+            if (!document.getElementById(cfg.ids[0])) return false;
             if (typeof window._crmSetPeriodo !== 'function') return false;
             if (busy) return true;  // ya hay un cambio en vuelo; ignorar el doble click
         } catch (e) {
             return false;
         }
 
-        params.set('tab', 'crm');
+        params.set('tab', tab);
         var url = window.location.pathname + '?' + params.toString();
         busy = true;
-        setLoading(true);
+        setLoading(true, cfg.ids);
 
         fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'crm-nav-v2' } })
             .then(function (r) {
@@ -98,12 +132,12 @@
             .then(function (html) {
                 var doc = new DOMParser().parseFromString(html, 'text/html');
 
-                // Validación: si el HTML no trae el kanban (sesión expirada,
-                // error del server), mejor recargar de verdad.
-                if (!doc.getElementById('crmListBody')) throw new Error('fragmento sin kanban');
+                // Validación: si el HTML no trae el contenedor (sesión
+                // expirada, error del server), mejor recargar de verdad.
+                if (!doc.getElementById(cfg.ids[0])) throw new Error('fragmento sin ' + cfg.ids[0]);
 
                 // 1. Trasplantar contenedores de datos.
-                SWAP_IDS.forEach(function (id) {
+                cfg.ids.forEach(function (id) {
                     var cur = document.getElementById(id);
                     var nue = doc.getElementById(id);
                     if (cur && nue) cur.innerHTML = nue.innerHTML;
@@ -130,7 +164,7 @@
                 // 4. Estado del legacy + URL + config global.
                 var mes = params.get('mes');
                 var anio = params.get('anio');
-                window._crmSetPeriodo(mes, anio, 'crm');
+                window._crmSetPeriodo(mes, anio, tab);
                 if (window._CRM_CONFIG) {
                     if (mes != null) window._CRM_CONFIG.mesFiltro = mes;
                     if (anio != null) window._CRM_CONFIG.anioFiltro = anio;
@@ -144,25 +178,12 @@
                     try { window._crmSyncPeriodPills(); } catch (e) { }
                 }
 
-                // 5. Colores/KPIs/kanban/binds — el mismo pase que corre en
-                //    cada page load (refreshCrmTable usa el periodo ya seteado).
-                window.refreshCrmTable();
+                // 5. Re-inicialización propia del tab (colores/KPIs/binds…).
+                try { cfg.after(params, mes, anio); } catch (e) {
+                    console.error('[crmNavV2] after-swap:', e);
+                }
 
-                // 6. KPI facturado: en page load un script de _scripts_main
-                //    lo sobreescribe con el total del desglose (la fuente
-                //    "real", incluye clientes sin match) — replicarlo.
-                var vq = params.get('vendedores') ? '&vendedores=' + encodeURIComponent(params.get('vendedores')) : '';
-                fetch('/app/api/desglose-facturacion/?mes=' + (mes || 'todos') + '&anio=' + (anio || 'todos') + vq, { credentials: 'same-origin' })
-                    .then(function (r) { return r.json(); })
-                    .then(function (resp) {
-                        if (resp.ok && resp.total !== undefined) {
-                            var fa = document.getElementById('facturadoAmount');
-                            if (fa) fa.textContent = '$' + Number(resp.total).toLocaleString('en-US', { maximumFractionDigits: 0 });
-                        }
-                    })
-                    .catch(function () { });
-
-                setLoading(false);
+                setLoading(false, cfg.ids);
                 busy = false;
             })
             .catch(function (err) {
