@@ -1326,3 +1326,27 @@ body[data-theme="mundial"] .wact-submit.is-ready {
 body[data-theme="mundial"] .wact-submit.is-ready:hover {
     background: linear-gradient(180deg, #00bd78 0%, #007a4d 100%) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COTIZAR (crear_cotizacion.html) — NO usar la foto de la cancha aquí.
+   La página hereda body[data-theme="mundial"] y en modo ventana su fondo
+   propio (.apple-bg) se oculta, dejando ver la cancha del ::before y
+   causando el "flash". Aquí la apagamos y dejamos un fondo sólido oscuro;
+   la decoración mundial vive solo en la franja/greca del header de la
+   ventana (ya aplicada por .wo-header / chrome de la ventana).
+   Scope doble: por si .dashboard-container queda en el body (merge) o como
+   elemento interno (:has).
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="mundial"].dashboard-container::before,
+body[data-theme="mundial"]:has(.dashboard-container)::before {
+    display: none !important;
+}
+body[data-theme="mundial"].dashboard-container,
+body[data-theme="mundial"]:has(.dashboard-container) {
+    background: linear-gradient(165deg, #06351f 0%, #04240f 58%, #2c0a11 100%) !important;
+}
+/* Tarjetas sólidas (sin transparencia que deje ver nada detrás) */
+body[data-theme="mundial"] .dashboard-container .card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 80, 45, 0.18) !important;
+}
