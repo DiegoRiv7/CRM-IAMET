@@ -340,38 +340,11 @@
         --accent-crm: #0a84ff;
     }
 
-    /* ── TEMA MUNDIAL — Edición Copa del Mundo 2026 ── */
-    body[data-theme="mundial"] {
-        --bg-crm: #04210f;
-        --text-crm: #ffffff;
-        --card-bg: rgba(255, 255, 255, 0.94);
-        --border-crm: rgba(255, 255, 255, 0.22);
-        --table-header-bg: rgba(255, 255, 255, 0.10);
-        --table-row-hover: rgba(255, 255, 255, 0.16);
-        --accent-crm: #00a86b;
-        --island-bg: rgba(255, 255, 255, 0.14);
-        --island-border: rgba(255, 255, 255, 0.28);
-        background-color: #04210f;
-    }
-
-    /* Capa de fondo FIJA y dedicada (técnica a prueba de balas): se pinta
-       detrás de todo el contenido (z-index:-1) y cubre el viewport completo.
-       No compite con el background-color del body ni con estilos inline.
-       Scrim casi transparente para que la cancha sea protagonista.
-       El JS sobreescribe --mundial-img con cache-bust al subir una imagen. */
-    body[data-theme="mundial"]::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: -1;
-        pointer-events: none;
-        background-image:
-            radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%),
-            var(--mundial-img, url('/media/fondos/mundial.jpg'));
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
+    {% comment %}
+    El tema Mundial (variables, fondo y todos los overrides visuales) vive
+    en app/static/css/tema_mundial.css — un archivo único y autocontenido.
+    Aquí solo queda el JS que aplica data-theme y la variable --mundial-img.
+    {% endcomment %}
 
     /* Si el body tiene el data-theme, cambiamos su fondo y el de crm-page */
     body[data-theme],

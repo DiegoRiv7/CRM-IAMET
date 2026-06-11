@@ -112,6 +112,14 @@
     <link rel="stylesheet" href="{% static 'css/widget_window.css' %}?v=20260610-ww-v6">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% comment %}
+    Tema Mundial — archivo único y autocontenido. Todas sus reglas están
+    scopeadas a body[data-theme="mundial"], así que solo pinta cuando ese
+    tema está activo; en cualquier otro tema es inerte. Quitar el tema =
+    borrar esta línea y el archivo.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260610-mundial">
+
 
     <!-- Intro.js for Tutorial -->
     <script src="https://unpkg.com/intro.js/intro.js"></script>
