@@ -901,20 +901,69 @@ body[data-theme="mundial"] .proy-fin-head {
 
 /* ═══════════════════════════════════════════════════════════════════════
    CALENDARIO — panel SÓLIDO claro (como Tareas) con header greca.
-   Legibilidad es prioridad; la cancha se asoma por los bordes.
+   Legibilidad es prioridad; fondo opaco, texto oscuro legible.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* --- Container: frosted shell (como tareas) --- */
-body[data-theme="mundial"] .cal-card,
-body[data-theme="mundial"] .cal-card--page {
-    background: rgba(245, 246, 243, 0.55) !important;
-    backdrop-filter: blur(24px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+/* --- Container: SÓLIDO blanco (override inline rgba) --- */
+body[data-theme="mundial"] .cal-card {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(0, 80, 45, 0.30) !important;
     box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
 }
+body[data-theme="mundial"] .cal-card--page {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
 body[data-theme="mundial"] .widget-overlay.is-page-mode {
     background: transparent !important;
+}
+
+/* --- Header principal del overlay (div sin clase, primer hijo de .cal-card)
+       y subnav: barra greca azteca verde→rojo --- */
+body[data-theme="mundial"] .cal-card > div:first-child {
+    background-color: #5c0f17 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(206,17,38,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #064e2b 0%, #0a3a22 40%, #6e1018 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #CE1126 !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child * {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child button {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child button:hover {
+    background: rgba(255,255,255,0.22) !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child .cal-userpick-btn {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+/* +Nueva Actividad button in header */
+body[data-theme="mundial"] .cal-card > div:first-child button[onclick*="CrearActividad"] {
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+}
+/* Close button × */
+body[data-theme="mundial"] .cal-card > div:first-child button[onclick*="Cerrar"] {
+    background: transparent !important;
+}
+body[data-theme="mundial"] .cal-card > div:first-child button[onclick*="Cerrar"]:hover {
+    background: rgba(206,17,38,0.30) !important;
+}
+
+/* --- Subnav (arrows + Hoy + título + Mes/Semana/Día) --- */
+body[data-theme="mundial"] .cal-subnav-default {
+    background: rgba(0, 60, 32, 0.06) !important;
+    border-bottom-color: rgba(0, 80, 45, 0.12) !important;
 }
 
 /* --- Topbar del calendario: greca azteca verde→rojo --- */
@@ -1143,15 +1192,31 @@ body[data-theme="mundial"] .cal-hover-popover {
     box-shadow: 0 16px 48px rgba(0, 15, 8, 0.30) !important;
 }
 
-/* --- View buttons (Mes / Semana / Día) standalone (non-page mode) --- */
+/* --- View buttons (Mes / Semana / Día) — both modes --- */
 body[data-theme="mundial"] .cal-view-btn {
     color: #5a7a64 !important;
 }
 body[data-theme="mundial"] .cal-view-btn:hover {
     color: #1a1a1a !important;
+    background: rgba(0, 80, 45, 0.08) !important;
 }
 body[data-theme="mundial"] .cal-view-btn.active {
-    background: #ffffff !important;
+    background: linear-gradient(135deg, #00a86b 0%, #006847 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 168, 107, 0.30) !important;
+}
+
+/* --- Subnav buttons (overlay mode): dark on light --- */
+body[data-theme="mundial"] .cal-subnav-default button[onclick*="Nav"] {
+    background: rgba(0, 80, 45, 0.08) !important;
+}
+body[data-theme="mundial"] .cal-subnav-default button[onclick*="Nav"]:hover {
+    background: rgba(0, 80, 45, 0.16) !important;
+}
+body[data-theme="mundial"] .cal-subnav-default span[id="calNavTitle"] {
     color: #1a1a1a !important;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.12) !important;
+}
+/* View buttons container in subnav */
+body[data-theme="mundial"] .cal-subnav-default > div:last-child {
+    background: rgba(0, 80, 45, 0.06) !important;
 }
