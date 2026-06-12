@@ -954,6 +954,13 @@ body[data-theme="mundial"] .cal-card--page {
 body[data-theme="mundial"] .widget-overlay.is-page-mode {
     background: transparent !important;
 }
+/* MODO PÁGINA: crm.css fuerza transparent !important en la card con MÁS
+   especificidad (.widget-overlay.is-page-mode .cal-card--page) que la
+   regla sólida de arriba — al recargar ?tab=calendario la cuadrícula se
+   veía atravesada por la cancha. Esta regla (más específica aún) gana. */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-card--page {
+    background: #f5f5f3 !important;
+}
 
 /* --- Header principal del overlay (div sin clase, primer hijo de .cal-card)
        y subnav: barra greca azteca verde→rojo --- */
