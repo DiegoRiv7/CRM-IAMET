@@ -1521,6 +1521,8 @@ document.addEventListener('click', function(ev) {
                 '</div>' +
             '</div>';
         document.body.appendChild(overlay);
+        // Hook ventanas (prospecto_windows.js): windowiza el visor si el prospecto está en ventana.
+        if (typeof window._wpWindowizeActInfo === 'function') window._wpWindowizeActInfo(overlay);
         overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     }
 
