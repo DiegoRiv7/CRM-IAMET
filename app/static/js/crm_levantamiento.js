@@ -975,7 +975,7 @@
                 ? '<div class="lw-evid-add-plus">+</div><div class="lw-evid-add-label">' + (isMobile ? 'Cámara' : 'Subir') + '</div>'
                 : '<div class="lw-evid-add-plus lw-evid-add-plus-lg">+</div>' + (isMobile ? hintMobile : hintDesktop)) +
             '<input type="file" id="lw_f1_photo_input" accept="image/*" multiple' + captureAttr +
-            ' hidden onchange="lwP2UploadFiles(this.files); this.value=\'\';">' +
+            ' hidden onchange="lwP2UploadFiles(this.files, this);">' +
         '</label>';
 
         zone.innerHTML = thumbs + addCard;
@@ -2095,7 +2095,7 @@
                   '<div class="lw-evid-add-title">Arrastra fotos aquí</div>' +
                   '<div class="lw-evid-add-hint">o pega con <kbd>⌘V</kbd> &middot; click para seleccionar</div>' +
                   '<div class="lw-evid-add-hint-sm">JPG · PNG · WebP</div>') +
-            '<input type="file" id="lw_f2_photo_input" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="lwP2UploadFiles(this.files); this.value=\'\';">' +
+            '<input type="file" id="lw_f2_photo_input" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="lwP2UploadFiles(this.files, this);">' +
         '</label>';
 
         zone.innerHTML = thumbs + addCard;
@@ -2165,18 +2165,26 @@
         });
     }
 
-    window.lwP2UploadFiles = function (files) {
+    window.lwP2UploadFiles = function (files, inputEl) {
         if (!files || !files.length) return;
         // Una foto → un comentario antes de subir. En cámara móvil llegan de
         // una en una; en lotes de desktop el diálogo avanza "1 de N".
         var list = Array.from(files);
         var i = 0;
         (function next() {
-            if (i >= list.length) return;
+            if (i >= list.length) {
+                // El input se limpia HASTA que el lote terminó de subir:
+                // resetearlo antes (el viejo onchange hacía this.value=''
+                // inmediato) invalida los File pendientes en WebKit/Safari
+                // y el server recibía archivos de 0 bytes — el registro se
+                // creaba con comentario pero la foto quedaba rota.
+                if (inputEl) { try { inputEl.value = ''; } catch (e) { } }
+                return;
+            }
             var f = list[i]; i++;
             lwFotoComentarioDialog(f, i, list.length).then(function (comentario) {
-                if (comentario !== null) uploadEvidencia(f, comentario);
-                next();
+                var p = (comentario !== null) ? uploadEvidencia(f, comentario) : null;
+                if (p && typeof p.then === 'function') { p.then(next, next); } else { next(); }
             });
         })();
     };
@@ -2210,7 +2218,7 @@
         // El nombre del archivo ya viaja en nombre_original (server-side);
         // comentario es SOLO lo que escribió el técnico.
         fd.append('comentario', comentario || '');
-        fetch('/app/api/iamet/levantamientos/' + state.lev.id + '/evidencia/', {
+        return fetch('/app/api/iamet/levantamientos/' + state.lev.id + '/evidencia/', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
