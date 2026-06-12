@@ -867,12 +867,16 @@
             e.stopPropagation();
             menu.classList.toggle('is-open');
         });
-        // Click fuera cierra
-        document.addEventListener('click', function (e) {
+        // Click fuera cierra. Remove-then-add: wireWidgetMenu corre en CADA
+        // apertura del widget de marca — sin esto se acumulaba un listener
+        // de document (con referencia al menu viejo) por apertura.
+        if (window._mkMenuDocClose) document.removeEventListener('click', window._mkMenuDocClose);
+        window._mkMenuDocClose = function (e) {
             if (!menu.contains(e.target) && e.target !== btn) {
                 menu.classList.remove('is-open');
             }
-        }, { once: false });
+        };
+        document.addEventListener('click', window._mkMenuDocClose);
         menu.querySelectorAll('[data-mk-menu]').forEach(function (b) {
             b.addEventListener('click', function (e) {
                 e.stopPropagation();

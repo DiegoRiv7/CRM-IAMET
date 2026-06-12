@@ -156,6 +156,12 @@
     }
 
     function bindGlobalEvents() {
+        // Guard GLOBAL: init() re-corre con cada body nuevo de Turbo (su
+        // flag vive en dataset del section, que se reemplaza al navegar),
+        // pero estos listeners van a document — que persiste. Sin guard se
+        // acumulaba un keydown + un click por cada visita a Compras.
+        if (window._comprasProdGlobalWired) return;
+        window._comprasProdGlobalWired = true;
         // Esc closes modals/dropdowns/preview
         document.addEventListener('keydown', function (ev) {
             if (ev.key === 'Escape') {

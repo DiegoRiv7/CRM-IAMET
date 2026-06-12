@@ -1399,3 +1399,9 @@ body[data-theme="mundial"] select option {
     color: #1e293b;
     background: #ffffff;
 }
+/* Editores contenteditable (correo, reporte del levantamiento, etc.):
+   son divs y no los cubre la regla de arriba — heredan igual el blanco
+   del body. Sin caret-color para no pisar el caret propio de cada editor. */
+body[data-theme="mundial"] [contenteditable="true"] {
+    color: #1e293b;
+}
