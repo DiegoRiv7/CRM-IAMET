@@ -117,10 +117,63 @@
         window.abrirWidgetProspecto = wrapped;
     }
 
+    /* ════════ IDEAS — misma receta ════════
+       widgetIdea es windowable (data-windowable). Hooks en crm_ideas.js:
+       _ideaWindowPolicy (multi-idea via iframe) y _ideaWindowizeConvertir
+       (cascada del convertidor). El composer global de actividades
+       (calGlobalAbrirCrearActividad, compartido con el calendario) se
+       envuelve para cascada SOLO cuando la idea está en ventana. */
+
+    function ideaWindowed() {
+        var w = document.getElementById('widgetIdea');
+        return !!(w && w.classList.contains('ww-windowed'));
+    }
+
+    window._ideaWindowPolicy = function (id) {
+        var w = document.getElementById('widgetIdea');
+        var visible = w && window.getComputedStyle(w).display !== 'none';
+        var enVentana = w && w.classList.contains('ww-windowed');
+        var otroId = window._currentIdeaId &&
+            String(window._currentIdeaId) !== String(id);
+        if (visible && enVentana && otroId &&
+            window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
+            window.crmIframeWindow.open(
+                'idea:' + id,
+                '/app/widget/idea/' + id + '/',
+                'Idea',
+                null,
+                { forceWindow: true, wf: 0.6, maxw: 1100, hf: 0.84 }
+            );
+            return true;   // el legacy no abre el singleton
+        }
+        return false;
+    };
+
+    window._ideaWindowizeConvertir = function (ov) {
+        if (ideaWindowed()) windowizeSub(ov, { w: 640, h: 560 });
+    };
+
+    function wrapComposerGlobal() {
+        var orig = window.calGlobalAbrirCrearActividad;
+        if (typeof orig !== 'function' || orig._pwWrapped) return;
+        var wrapped = function () {
+            var r = orig.apply(this, arguments);
+            // Cascada solo si lo abrió una IDEA en ventana (el calendario
+            // y demás contextos siguen con su overlay clásico).
+            if (ideaWindowed() && window._calContextoIdea) {
+                windowizeSub(document.getElementById('widgetGlobalCrearActividad'), { w: 640, h: 580 });
+            }
+            return r;
+        };
+        wrapped._pwWrapped = true;
+        window.calGlobalAbrirCrearActividad = wrapped;
+    }
+
     function wireAll() {
         wrapOpener('wpAbrirPanelActividades', 'widgetProspectoActividades', { w: 640, h: 580 });
         wrapOpener('wpAbrirModalCrearOpp', 'widgetCrearOppDesdeProspecto', { w: 820, h: 700 });
         wrapAbrirProspecto();
+        wrapComposerGlobal();
     }
 
     if (typeof window.crmReady === 'function') {

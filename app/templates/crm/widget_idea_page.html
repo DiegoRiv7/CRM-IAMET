@@ -1,0 +1,81 @@
+{% load static %}{% load l10n %}<!DOCTYPE html>
+{% comment %}
+Idea como PÁGINA (cuerpo de un iframe de ventana) — multi-idea.
+Mismo truco que widget_prospecto_page. Incluye además:
+- _widget_oportunidad.html → helpers wact* compartidos.
+- _widget_calendario.html → composer global de actividades
+  (calGlobalAbrirCrearActividad / widgetGlobalCrearActividad) que usa
+  el botón "+Agendar" de la idea. El calendario en sí nunca se abre.
+{% endcomment %}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Idea</title>
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260612-idea-page">
+    {# Tema (greca/cancha): el iframe es un documento aparte #}
+    <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260612-iframe-tema">
+    <style>
+        html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
+        /* El overlay de la idea ES la página; el cierre vive en la X de
+           la ventana padre. */
+        #widgetIdea {
+            display: flex !important;
+            position: static !important;
+            inset: auto !important;
+            background: transparent !important;
+            width: 100vw; height: 100vh;
+            padding: 0 !important;
+        }
+        #widgetIdea > .widget-card {
+            width: 100% !important;
+            max-width: none !important;
+            height: 100vh !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        #widgetIdea .widget-close { display: none !important; }
+    </style>
+    <script>
+        /* Shims: estos globals los pone el CRM home; aquí versiones mínimas. */
+        window.crmReady = function (fn) {
+            if (document.readyState !== 'loading') { try { fn(); } catch (e) { } }
+            else document.addEventListener('DOMContentLoaded', function () { try { fn(); } catch (e) { } });
+        };
+        window.crmDataBus = window.crmDataBus || {
+            on: function () { return function () { }; },
+            emit: function () { },
+        };
+        window.getCsrf = window.getCsrf || function () {
+            var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+            return v ? v.pop() : '';
+        };
+        window.showToast = window.showToast || function (msg) { try { console.log('[toast]', msg); } catch (e) { } };
+    </script>
+</head>
+<body data-theme="{{ request.user.userprofile.theme|default:'mundial' }}">
+    <form style="display:none;">{% csrf_token %}</form>
+    {% include "crm/_widget_oportunidad.html" %}
+    {% include "crm/_widget_calendario.html" %}
+    {% include "crm/_widget_idea.html" %}
+    <script src="{% static 'js/crm_ideas.js' %}?v=20260612-win-hooks"></script>
+    <script>
+        (function () {
+            function boot() {
+                try {
+                    if (typeof window._ideasWireDetail === 'function') window._ideasWireDetail();
+                    if (typeof window.openIdeaDetail === 'function') {
+                        window.openIdeaDetail({{ idea_id|unlocalize }});
+                    }
+                } catch (e) {
+                    document.body.innerHTML = '<div style="padding:2rem;color:#FF3B30;font-size:0.9rem;">No se pudo cargar la idea: ' + (e && e.message) + '</div>';
+                }
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+            else boot();
+        })();
+    </script>
+</body>
+</html>

@@ -39,3 +39,11 @@ def widget_prospecto_page(request, prospecto_id):
     return render(request, 'crm/widget_prospecto_page.html', {
         'prospecto_id': prospecto_id,
     })
+
+
+@login_required
+def widget_idea_page(request, idea_id):
+    """Idea como página completa (cuerpo de un iframe de ventana)."""
+    return render(request, 'crm/widget_idea_page.html', {
+        'idea_id': idea_id,
+    })
