@@ -37,6 +37,10 @@ Mismo truco que widget_prospecto_page. Incluye además:
             border: none !important;
         }
         #widgetIdea .widget-close { display: none !important; }
+        /* El marco de la ventana (chrome del iframe) es el ÚNICO header:
+           el del widget adentro duplicaba la greca. El título real sube
+           al marco vía postMessage (abajo). */
+        #ideaContent > .wo-header { display: none !important; }
     </style>
     <script>
         /* Shims: estos globals los pone el CRM home; aquí versiones mínimas. */
@@ -75,6 +79,17 @@ Mismo truco que widget_prospecto_page. Incluye además:
             }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
             else boot();
+            // Subir el título real al marco de la ventana padre.
+            var _ttl = 0;
+            var _ttlTimer = setInterval(function () {
+                _ttl++;
+                var el = document.getElementById('wiTitulo');
+                var txt = el && (el.textContent || '').trim();
+                if (txt) {
+                    try { window.parent.postMessage({ type: 'widget-title', title: 'Idea — ' + txt }, window.location.origin); } catch (e) { }
+                    clearInterval(_ttlTimer);
+                } else if (_ttl > 40) { clearInterval(_ttlTimer); }
+            }, 250);
         })();
     </script>
 </body>

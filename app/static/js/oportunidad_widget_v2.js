@@ -1448,6 +1448,22 @@
 
     // El iframe del cotizador postea 'cotizacion-created' al guardar:
     // identificar QUÉ ventana lo envió (e.source) y refrescar su opp.
+    // Las páginas-iframe (idea/prospecto) postean su título real al cargar
+    // — el marco nace con título genérico porque al click no lo conocemos.
+    window.addEventListener('message', function (e) {
+        if (!e.data || e.data.type !== 'widget-title' || !e.data.title) return;
+        for (var key in cotWindows) {
+            var ov = cotWindows[key];
+            if (!ov || !document.body.contains(ov)) continue;
+            var ifr = ov.querySelector('iframe');
+            if (ifr && ifr.contentWindow === e.source) {
+                var t = ov.querySelector('[data-cot-title]');
+                if (t) t.textContent = String(e.data.title).slice(0, 120);
+                return;
+            }
+        }
+    });
+
     window.addEventListener('message', function (e) {
         if (!e.data || e.data.type !== 'cotizacion-created') return;
         for (var key in cotWindows) {
