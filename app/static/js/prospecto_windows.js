@@ -169,6 +169,31 @@
         window.calGlobalAbrirCrearActividad = wrapped;
     }
 
+    // ── Composer de actividades pedido por una ventana-iframe de idea ──
+    // El iframe no puede poner ventanas en el escritorio del padre: nos
+    // delega la apertura. Ponemos el contexto de SU idea, abrimos el
+    // composer del padre como ventana, y al cerrarse limpiamos contexto y
+    // le avisamos para que refresque sus actividades.
+    window.addEventListener('message', function (e) {
+        if (e.origin !== window.location.origin) return;
+        if (!e.data || e.data.type !== 'open-actividad-composer') return;
+        if (typeof window.calGlobalAbrirCrearActividad !== 'function') return;
+        window._calContextoIdea = e.data.ideaId || null;
+        window.calGlobalAbrirCrearActividad();
+        var ov = document.getElementById('widgetGlobalCrearActividad');
+        if (!ov) return;
+        windowizeSub(ov, { w: 640, h: 580 });
+        var src = e.source;
+        var obs = new MutationObserver(function () {
+            if (window.getComputedStyle(ov).display === 'none') {
+                obs.disconnect();
+                window._calContextoIdea = null;
+                try { src.postMessage({ type: 'actividad-composer-closed' }, window.location.origin); } catch (err) { }
+            }
+        });
+        obs.observe(ov, { attributes: true, attributeFilter: ['style', 'class'] });
+    });
+
     function wireAll() {
         wrapOpener('wpAbrirPanelActividades', 'widgetProspectoActividades', { w: 640, h: 580 });
         wrapOpener('wpAbrirModalCrearOpp', 'widgetCrearOppDesdeProspecto', { w: 820, h: 700 });
