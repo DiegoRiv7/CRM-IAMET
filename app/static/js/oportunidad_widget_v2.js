@@ -110,6 +110,46 @@
     function isWindowed(inst) { return inst.root.classList.contains('ww-windowed'); }
     function isMinimized(inst) { return inst.root.classList.contains('ww-minimized'); }
 
+    /* ── Sub-widgets como VENTANA cuando la opp está en ventana ─────
+       Drive, Conversación, Actividad y Todas-las-tareas son overlays
+       SINGLETON del legacy: abiertos desde una opp windowizada tapaban
+       TODO el escritorio (modal fullscreen sobre las demás ventanas).
+       Regla: si la opp que los abre está en ventana, el sub-widget
+       también — en cascada junto a ella. Al cerrarse, widget_window lo
+       regresa a modal (el estado ventana no persiste), así el flujo
+       modal clásico queda intacto cuando la opp es modal. Se llama
+       DESPUÉS del opener legacy (que ya lo dejó visible). */
+    function openSubWindowed(inst, overlayId) {
+        if (!inst || !isWindowed(inst)) return;          // modo modal clásico
+        var ww = window.crmWidgetWindow;
+        if (!ww || typeof ww.windowize !== 'function') return;
+        var ov = document.getElementById(overlayId);
+        if (!ov || !ov.classList.contains('widget-overlay')) return;
+        if (ov.classList.contains('ww-windowed')) {
+            // Ya está en ventana (p.ej. el drive de OTRA opp): el opener
+            // legacy ya re-apuntó su contenido al nuevo foco — solo
+            // traerla al frente.
+            if (window.crmWidgetStack) {
+                window.crmWidgetStack.remove(ov);
+                window.crmWidgetStack.push(ov);
+            }
+            return;
+        }
+        try { ww.enhance(ov); } catch (e) { }
+        var r = null;
+        try {
+            var card = inst.root.querySelector('.ww-card') || inst.root.firstElementChild;
+            var b = card ? card.getBoundingClientRect() : null;
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var w = Math.min(Math.round(vw * 0.46), 880);
+            var h = Math.min(Math.round(vh * 0.74), 740);
+            var x = b ? Math.round(Math.min(b.left + 56, vw - w - 12)) : Math.round((vw - w) / 2);
+            var y = b ? Math.round(Math.min(b.top + 56, vh - h - 12)) : Math.round((vh - h) / 2);
+            r = { x: Math.max(8, x), y: Math.max(8, y), w: w, h: h };
+        } catch (e) { r = null; }
+        ww.windowize(ov, r);
+    }
+
     function bringFront(inst) {
         if (window.crmWidgetStack) {
             window.crmWidgetStack.remove(inst.root);
@@ -252,17 +292,25 @@
                 setFocus(inst);
                 if (inst.actividadId && typeof window.woVerActividad === 'function') {
                     window.woVerActividad(inst.actividadId);
+                    openSubWindowed(inst, 'widgetOppVerActividad');
                 } else if (typeof window.woAbrirWidgetCrearActividad === 'function') {
                     window.woAbrirWidgetCrearActividad();
+                    openSubWindowed(inst, 'widgetOppCrearActividad');
                 }
                 break;
             case 'abrir-drive':
                 setFocus(inst);
-                if (typeof window.woAbrirGestorDrive === 'function') window.woAbrirGestorDrive();
+                if (typeof window.woAbrirGestorDrive === 'function') {
+                    window.woAbrirGestorDrive();
+                    openSubWindowed(inst, 'widgetOppDrive');
+                }
                 break;
             case 'abrir-conversacion':
                 setFocus(inst);
-                if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion();
+                if (typeof window.woAbrirGestorConversacion === 'function') {
+                    window.woAbrirGestorConversacion();
+                    openSubWindowed(inst, 'widgetOppConversacion');
+                }
                 break;
             case 'abrir-asistente':
                 setFocus(inst);
@@ -388,7 +436,10 @@
                 // Proyectos Bitrix24: abrir el Drive automáticamente.
                 if (data.tipo_negociacion === 'bitrix_proyecto') {
                     setTimeout(function () {
-                        if (typeof window.woAbrirGestorDrive === 'function') window.woAbrirGestorDrive();
+                        if (typeof window.woAbrirGestorDrive === 'function') {
+                            window.woAbrirGestorDrive();
+                            openSubWindowed(inst, 'widgetOppDrive');
+                        }
                     }, 150);
                 }
             })
@@ -1061,7 +1112,10 @@
                     btn.textContent = 'Ver todas (' + tareas.length + ')';
                     btn.addEventListener('click', function () {
                         setFocus(inst);
-                        if (typeof window.woAbrirTodasTareas === 'function') window.woAbrirTodasTareas(oppId);
+                        if (typeof window.woAbrirTodasTareas === 'function') {
+                            window.woAbrirTodasTareas(oppId);
+                            openSubWindowed(inst, 'widgetTodasTareas');
+                        }
                     });
                     more.appendChild(btn);
                     container.appendChild(more);
