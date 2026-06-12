@@ -1,4 +1,4 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}{% load l10n %}<!DOCTYPE html>
 {% comment %}
 Drive de una oportunidad como PÁGINA (cuerpo de un iframe de ventana).
 Ver views_widget_pages.widget_drive_page: incluye el template completo
@@ -60,8 +60,8 @@ Todo lo demás del template queda con display:none (su default).
         (function () {
             function boot() {
                 try {
-                    if (typeof window.woSetCurrentOppId === 'function') window.woSetCurrentOppId({{ oportunidad_id }});
-                    window._woCurrentOppId = {{ oportunidad_id }};
+                    if (typeof window.woSetCurrentOppId === 'function') window.woSetCurrentOppId({{ oportunidad_id|unlocalize }});
+                    window._woCurrentOppId = {{ oportunidad_id|unlocalize }};
                     if (typeof window.woAbrirGestorDrive === 'function') window.woAbrirGestorDrive();
                 } catch (e) {
                     document.body.innerHTML = '<div style="padding:2rem;color:#FF3B30;font-size:0.9rem;">No se pudo cargar el drive: ' + (e && e.message) + '</div>';

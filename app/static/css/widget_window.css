@@ -600,3 +600,14 @@ body.ww-mission-control [data-action] {
 .ww-card.ww-xs .wo-info-value {
     font-size: 1.05rem;
 }
+
+
+/* ── Formularios compactos en modo ventana ──
+   El alto fijo de la ventana (--ww-h) dejaba un mar vacío bajo el footer
+   del form de actividad (no tiene contenido scrolleable que lo justifique).
+   La card se ajusta SIEMPRE a su contenido; la ventana la envuelve. */
+.widget-overlay.ww-windowed .wact-shell.ww-card {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 24px) !important;
+}
