@@ -20,6 +20,7 @@ from . import views_ideas
 from . import views_asistente
 from . import views_asistente_ideas
 from . import views_asistente_prospeccion
+from . import views_widget_pages
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
 from . import views_sync
@@ -348,6 +349,9 @@ urlpatterns = [
     path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
     # Página oculta (sin link en el menú) para administrar el fondo del tema Mundial.
     path('config/fondo-mundial/', views.fondo_mundial_admin, name='fondo_mundial_admin'),
+
+    # Páginas standalone de widgets (cuerpo de ventanas-iframe — ver views_widget_pages)
+    path('widget/drive/<int:oportunidad_id>/', views_widget_pages.widget_drive_page, name='widget_drive_page'),
     path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
     path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 

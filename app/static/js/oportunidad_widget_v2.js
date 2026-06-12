@@ -141,8 +141,15 @@
             var card = inst.root.querySelector('.ww-card') || inst.root.firstElementChild;
             var b = card ? card.getBoundingClientRect() : null;
             var vw = window.innerWidth, vh = window.innerHeight;
-            var w = Math.min(Math.round(vw * 0.46), 880);
-            var h = Math.min(Math.round(vh * 0.74), 740);
+            // Formularios compactos: ventana a la medida del contenido —
+            // con el tamaño genérico quedaban como sábana blanca vacía.
+            var pref = {
+                widgetOppCrearActividad: { w: 620, h: 560 },
+                widgetOppVerActividad: { w: 640, h: 600 },
+                widgetTodasTareas: { w: 780, h: 680 },
+            }[overlayId] || null;
+            var w = Math.min(pref ? pref.w : Math.min(Math.round(vw * 0.46), 880), vw - 24);
+            var h = Math.min(pref ? pref.h : Math.min(Math.round(vh * 0.74), 740), vh - 24);
             var x = b ? Math.round(Math.min(b.left + 56, vw - w - 12)) : Math.round((vw - w) / 2);
             var y = b ? Math.round(Math.min(b.top + 56, vh - h - 12)) : Math.round((vh - h) / 2);
             r = { x: Math.max(8, x), y: Math.max(8, y), w: w, h: h };
@@ -300,9 +307,14 @@
                 break;
             case 'abrir-drive':
                 setFocus(inst);
-                if (typeof window.woAbrirGestorDrive === 'function') {
+                if (isWindowed(inst)) {
+                    // Multi-drive real: una ventana-iframe POR oportunidad
+                    // (página standalone /app/widget/drive/<id>/ — el
+                    // singleton legacy se instancia gratis dentro del
+                    // iframe, mismo truco que el cotizador).
+                    openDriveWindow(inst);
+                } else if (typeof window.woAbrirGestorDrive === 'function') {
                     window.woAbrirGestorDrive();
-                    openSubWindowed(inst, 'widgetOppDrive');
                 }
                 break;
             case 'abrir-conversacion':
@@ -436,9 +448,10 @@
                 // Proyectos Bitrix24: abrir el Drive automáticamente.
                 if (data.tipo_negociacion === 'bitrix_proyecto') {
                     setTimeout(function () {
-                        if (typeof window.woAbrirGestorDrive === 'function') {
+                        if (isWindowed(inst)) {
+                            openDriveWindow(inst);
+                        } else if (typeof window.woAbrirGestorDrive === 'function') {
                             window.woAbrirGestorDrive();
-                            openSubWindowed(inst, 'widgetOppDrive');
                         }
                     }, 150);
                 }
@@ -1328,7 +1341,7 @@
 
     var cotWindows = {};  // key -> overlay
 
-    function openCotWindow(key, src, titulo, inst) {
+    function openCotWindow(key, src, titulo, inst, opts) {
         var existing = cotWindows[key];
         if (existing && document.body.contains(existing)) {
             existing.classList.remove('ww-minimized');
@@ -1370,8 +1383,8 @@
         // ventana (encimada con offset) para no tapar a las demás.
         if (inst && isWindowed(inst) && window.crmWidgetWindow) {
             var vw = window.innerWidth, vh = window.innerHeight;
-            var w = Math.min(Math.round(vw * 0.72), 1400);
-            var h = Math.round(vh * 0.86);
+            var w = Math.min(Math.round(vw * ((opts && opts.wf) || 0.72)), (opts && opts.maxw) || 1400);
+            var h = Math.round(vh * ((opts && opts.hf) || 0.86));
             var n = Object.keys(cotWindows).length;
             window.crmWidgetWindow.windowize(ov, {
                 x: Math.max(8, Math.min(60 + n * 30, vw - w - 12)),
@@ -1411,6 +1424,14 @@
         var id = parseInt(String(cotId).replace(/[^\d]/g, ''), 10);
         if (!id) return;
         openCotWindow('cot:' + id, '/app/cotizacion/' + id + '/editar/?widget_mode=1', 'Editar cotización #' + id, inst || null);
+    }
+
+    // Drive como ventana-iframe (key 'drive:<oppId>'): reabre/trae al
+    // frente si ya existe — un drive POR oportunidad, simultáneos.
+    function openDriveWindow(inst) {
+        var titulo = 'Drive — ' + ((inst.data && inst.data.oportunidad) || ('Oportunidad #' + inst.oppId));
+        openCotWindow('drive:' + inst.oppId, '/app/widget/drive/' + inst.oppId + '/', titulo, inst,
+            { wf: 0.5, maxw: 980, hf: 0.8 });
     }
 
     // El iframe del cotizador postea 'cotizacion-created' al guardar:

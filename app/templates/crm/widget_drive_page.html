@@ -1,0 +1,75 @@
+{% load static %}<!DOCTYPE html>
+{% comment %}
+Drive de una oportunidad como PÁGINA (cuerpo de un iframe de ventana).
+Ver views_widget_pages.widget_drive_page: incluye el template completo
+de la oportunidad (el closure del drive no se puede extraer sin cirugía)
+con shims de los globals del CRM home, y bootea el drive en modo página.
+Todo lo demás del template queda con display:none (su default).
+{% endcomment %}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Drive — {{ oportunidad_titulo }}</title>
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260612-drive-page">
+    <style>
+        html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
+        /* El overlay del drive ES la página: sin backdrop, sin centrado, sin X
+           (el cierre vive en la ventana padre). */
+        #widgetOppDrive {
+            display: flex !important;
+            position: static !important;
+            inset: auto !important;
+            background: transparent !important;
+            width: 100vw; height: 100vh;
+            padding: 0 !important;
+        }
+        #widgetOppDrive > .widget-card {
+            width: 100% !important;
+            max-width: none !important;
+            height: 100vh !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        #widgetOppDrive .widget-close { display: none !important; }
+    </style>
+    <script>
+        /* Shims: el template de la oportunidad espera estos globals del CRM
+           home. Aquí el iframe es un mundo aparte — versiones mínimas. */
+        window.crmReady = function (fn) {
+            if (document.readyState !== 'loading') { try { fn(); } catch (e) { } }
+            else document.addEventListener('DOMContentLoaded', function () { try { fn(); } catch (e) { } });
+        };
+        window.crmDataBus = window.crmDataBus || {
+            on: function () { return function () { }; },
+            emit: function () { },
+        };
+        window.getCsrf = window.getCsrf || function () {
+            var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+            return v ? v.pop() : '';
+        };
+        window.showToast = window.showToast || function (msg) { try { console.log('[toast]', msg); } catch (e) { } };
+    </script>
+</head>
+<body>
+    <form style="display:none;">{% csrf_token %}</form>
+    {% include "crm/_widget_oportunidad.html" %}
+    <script>
+        (function () {
+            function boot() {
+                try {
+                    if (typeof window.woSetCurrentOppId === 'function') window.woSetCurrentOppId({{ oportunidad_id }});
+                    window._woCurrentOppId = {{ oportunidad_id }};
+                    if (typeof window.woAbrirGestorDrive === 'function') window.woAbrirGestorDrive();
+                } catch (e) {
+                    document.body.innerHTML = '<div style="padding:2rem;color:#FF3B30;font-size:0.9rem;">No se pudo cargar el drive: ' + (e && e.message) + '</div>';
+                }
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+            else boot();
+        })();
+    </script>
+</body>
+</html>
