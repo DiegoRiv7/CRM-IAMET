@@ -1381,7 +1381,9 @@
         }
         // Si la opp está en modo ventana, el cotizador también nace como
         // ventana (encimada con offset) para no tapar a las demás.
-        if (inst && isWindowed(inst) && window.crmWidgetWindow) {
+        // opts.forceWindow: nace como ventana sin opp ligada (p.ej. las
+        // ventanas de prospecto que abre prospecto_windows.js).
+        if (((inst && isWindowed(inst)) || (opts && opts.forceWindow)) && window.crmWidgetWindow) {
             var vw = window.innerWidth, vh = window.innerHeight;
             var w = Math.min(Math.round(vw * ((opts && opts.wf) || 0.72)), (opts && opts.maxw) || 1400);
             var h = Math.round(vh * ((opts && opts.hf) || 0.86));
@@ -1431,6 +1433,10 @@
         if (!id) return;
         openCotWindow('cot:' + id, '/app/cotizacion/' + id + '/editar/?widget_mode=1', 'Editar cotización #' + id, inst || null);
     }
+
+    // Infraestructura de ventanas-iframe expuesta para otros módulos
+    // (prospecto_windows.js la usa para el multi-prospecto).
+    window.crmIframeWindow = { open: openCotWindow, close: closeCotWindow };
 
     // Drive como ventana-iframe (key 'drive:<oppId>'): reabre/trae al
     // frente si ya existe — un drive POR oportunidad, simultáneos.

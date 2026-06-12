@@ -27,3 +27,15 @@ def widget_drive_page(request, oportunidad_id):
         'oportunidad_id': opp.id,
         'oportunidad_titulo': opp.oportunidad or '',
     })
+
+
+@login_required
+def widget_prospecto_page(request, prospecto_id):
+    """Prospecto como página completa (cuerpo de un iframe de ventana).
+
+    Sin query a BD: el widget legacy hace su propio fetch del detalle
+    (con sus permisos); esta vista solo arma el chrome del iframe.
+    """
+    return render(request, 'crm/widget_prospecto_page.html', {
+        'prospecto_id': prospecto_id,
+    })

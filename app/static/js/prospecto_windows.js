@@ -86,9 +86,41 @@
         }
     };
 
+    // ── Multi-prospecto (mismo truco que el drive/cotizador) ────────
+    // El widget legacy es singleton: si ya hay un prospecto abierto EN
+    // VENTANA y se pide OTRO, el nuevo abre como ventana-iframe propia
+    // (/app/widget/prospecto/<id>/ — N iframes = N prospectos editables).
+    // Si el singleton está libre (o en modo modal), flujo clásico.
+    function wrapAbrirProspecto() {
+        var orig = window.abrirWidgetProspecto;
+        if (typeof orig !== 'function' || orig._pwWrapped) return;
+        var wrapped = function (id) {
+            var w = document.getElementById('widgetProspecto');
+            var visible = w && window.getComputedStyle(w).display !== 'none';
+            var enVentana = w && w.classList.contains('ww-windowed');
+            var otroId = window._currentProspectoId &&
+                String(window._currentProspectoId) !== String(id);
+            if (visible && enVentana && otroId &&
+                window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
+                window.crmIframeWindow.open(
+                    'prospecto:' + id,
+                    '/app/widget/prospecto/' + id + '/',
+                    'Prospecto',
+                    null,
+                    { forceWindow: true, wf: 0.6, maxw: 1100, hf: 0.84 }
+                );
+                return;
+            }
+            return orig.apply(this, arguments);
+        };
+        wrapped._pwWrapped = true;
+        window.abrirWidgetProspecto = wrapped;
+    }
+
     function wireAll() {
         wrapOpener('wpAbrirPanelActividades', 'widgetProspectoActividades', { w: 640, h: 580 });
         wrapOpener('wpAbrirModalCrearOpp', 'widgetCrearOppDesdeProspecto', { w: 820, h: 700 });
+        wrapAbrirProspecto();
     }
 
     if (typeof window.crmReady === 'function') {
