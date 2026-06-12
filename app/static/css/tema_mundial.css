@@ -1414,3 +1414,10 @@ body[data-theme="mundial"] select option {
 body[data-theme="mundial"] [contenteditable="true"] {
     color: #1e293b;
 }
+
+
+/* Título del marco de las ventanas-iframe (idea/prospecto/drive/cotizador):
+   el chrome trae color oscuro inline y sobre la greca era ilegible. */
+body[data-theme="mundial"] .oppv2-cot [data-cot-title] {
+    color: #ffffff !important;
+}
