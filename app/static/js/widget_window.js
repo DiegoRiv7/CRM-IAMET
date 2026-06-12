@@ -1024,7 +1024,11 @@
     // kanban, filas de lista, etc. (el click ahí tiene su propio
     // handler que abre detalle/edita).
     var MC_CRM_CARDS = '.kanban-card, .crm-row, .crm-card, tr[data-opp-id], ' +
-        '[data-opp-id], [data-card-id], [data-action]';
+        '[data-opp-id], [data-card-id], [data-action], ' +
+        // Kanbans de Ideas y Prospección + filas de listas genéricas:
+        // click ahí ABRE el detalle, nunca debe disparar Mission Control.
+        '.idea-card, [data-idea-id], [data-prospecto-id], ' +
+        '.crm-kanban-card, .crm-postit, .crm-list-row';
 
     function onGlobalClickForMC(ev) {
         if (ev.button !== 0) return;
