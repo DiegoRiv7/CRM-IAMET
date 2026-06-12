@@ -13,6 +13,8 @@ display:none (su default).
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Prospecto</title>
     <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260612-prospecto-page">
+    {# Tema (greca/cancha): el iframe es un documento aparte — sin esto el contenido sale en tema default #}
+    <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260612-iframe-tema">
     <style>
         html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
         /* El overlay del prospecto ES la página: sin backdrop ni centrado.
@@ -53,7 +55,7 @@ display:none (su default).
         window.showToast = window.showToast || function (msg) { try { console.log('[toast]', msg); } catch (e) { } };
     </script>
 </head>
-<body>
+<body data-theme="{{ request.user.userprofile.theme|default:'mundial' }}">
     <form style="display:none;">{% csrf_token %}</form>
     {% include "crm/_widget_oportunidad.html" %}
     {% include "crm/_widget_prospecto.html" %}
