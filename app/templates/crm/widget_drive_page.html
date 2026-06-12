@@ -15,6 +15,9 @@ Todo lo demás del template queda con display:none (su default).
     {# Tema (greca/cancha): el iframe es un documento aparte — sin esto el contenido sale en tema default #}
     <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260612-iframe-tema">
     <style>
+        /* Sin la foto de la cancha DENTRO de la ventana: se asomaba como
+           flash mientras cargaba el widget, y es peso gratis por iframe. */
+        body[data-theme="mundial"]::before { display: none !important; }
         html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
         /* El overlay del drive ES la página: sin backdrop, sin centrado, sin X
            (el cierre vive en la ventana padre). */

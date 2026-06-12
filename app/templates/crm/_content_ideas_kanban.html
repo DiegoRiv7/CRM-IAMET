@@ -300,34 +300,7 @@ Hidratado client-side desde /app/api/ideas/.
     <div class="crm-kanban-board pk-board" id="ideasKanbanBoard"></div>
 </div>
 
-<script>
-window._IDEAS_ETAPAS = [
-    { key: 'capturada',      label: 'Capturada' },
-    { key: 'en_analisis',    label: 'En Análisis' },
-    { key: 'validada',       label: 'Validada' },
-    { key: 'en_seguimiento', label: 'En Seguimiento' },
-    { key: 'convertida',     label: 'Convertida' },
-    { key: 'pausada',        label: 'Pausada' },
-    { key: 'descartada',     label: 'Descartada' },
-];
-window._IDEAS_TIPOS = [
-    { id: 'territorial',  label: 'Territorial' },
-    { id: 'vertical',     label: 'Vertical' },
-    { id: 'marca',        label: 'Marca' },
-    { id: 'cliente',      label: 'Cliente' },
-    { id: 'reactivacion', label: 'Reactivación' },
-    { id: 'tendencia',    label: 'Tendencia' },
-    { id: 'asociacion',   label: 'Asociación' },
-    { id: 'evento',       label: 'Evento' },
-    { id: 'tecnologia',   label: 'Tecnología' },
-    { id: 'competencia',  label: 'Competencia' },
-];
-window._IDEAS_POTENCIAL = [
-    { id: 'alto',  label: 'Alto' },
-    { id: 'medio', label: 'Medio' },
-    { id: 'bajo',  label: 'Bajo' },
-];
-</script>
+{% include "crm/_ideas_catalogos.html" %}
 
 {% include "crm/_widget_nueva_idea.html" %}
 {% include "crm/_widget_idea.html" %}
