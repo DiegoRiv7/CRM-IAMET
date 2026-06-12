@@ -36,15 +36,22 @@ body[data-theme="mundial"] {
 body[data-theme="mundial"]::before {
     content: '';
     position: fixed;
-    inset: 0;
+    /* inset negativo: compensa el sangrado del blur en los bordes */
+    inset: -24px;
     z-index: -1;
     pointer-events: none;
     background-image:
-        radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.06) 0%, rgba(2,24,12,0.22) 70%, rgba(1,16,8,0.40) 100%),
+        radial-gradient(ellipse 140% 110% at 50% 42%, rgba(3,32,16,0.30) 0%, rgba(2,24,12,0.48) 70%, rgba(1,16,8,0.62) 100%),
         var(--mundial-img, url('/media/fondos/mundial.jpg'));
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    /* La cancha como AMBIENTE, no como protagonista: blur suave +
+       scrim más oscuro → el texto blanco y los paneles translúcidos
+       vuelven a leerse en cualquier zona de la foto. Este blur se
+       rasteriza UNA vez (capa fija compositada) — no es por-frame
+       como los backdrop-filter que quitamos de las tarjetas. */
+    filter: blur(5px) brightness(0.92);
 }
 
 /* ═══ Layout: transparente para dejar ver la cancha ═══ */
