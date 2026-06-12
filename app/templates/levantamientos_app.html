@@ -318,11 +318,26 @@
 
         /* ── Forzar que proyectos se vea como si fuera móvil
               SIEMPRE en el PWA (incluso en iPad/desktop chrome) ── */
-        .lev-app-content .proy-tabs-wrap,
         .lev-app-content #proyTabDashboard,
         .lev-app-content #proyTabFinanciero,
         .lev-app-content .proy-facet-left,
         .lev-app-content .proy-btn-new { display: none !important; }
+        /* Topbar del listado: en la app solo vive la BÚSQUEDA. El rediseño
+           movió #proySearch adentro de .proy-tabs-wrap (antes oculto entero
+           aquí y la app se quedó sin buscador); se muestra el wrap pero con
+           filtros/orden y tabs ocultos — search a lo ancho, estilo móvil.
+           Cuando se abre un proyecto, #proyectosSection entero se oculta
+           (proyectosVerDetalle), así que el !important no se fuga al detalle. */
+        .lev-app-content .proy-tabs-wrap {
+            display: flex !important;
+            padding: 10px 14px 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .lev-app-content .proy-tabs-wrap .proy-topbar-left,
+        .lev-app-content .proy-tabs-wrap .proy-tabs { display: none !important; }
+        .lev-app-content .proy-tabs-wrap .proy-topbar-right { width: 100%; flex: 1 1 100%; }
         .lev-app-content #proyTabPrograma { display: block !important; padding: 12px 14px 24px !important; }
         .lev-app-content .proy-facet-bar { padding: 10px 0 !important; border: none !important; background: transparent !important; }
         .lev-app-content .proy-facet-right { width: 100%; }
@@ -514,7 +529,7 @@
     <script src="{% static 'js/lev_offline.js' %}"></script>
     <script src="{% static 'js/crm_proyectos.js' %}"></script>
     <script src="{% static 'js/crm_volumetria.js' %}?v=20260506-ipados6"></script>
-    <script src="{% static 'js/crm_levantamiento.js' %}?v=20260505-vol-v4e"></script>
+    <script src="{% static 'js/crm_levantamiento.js' %}?v=20260612-foto-fix2"></script>
 
     <script>
         (function () {

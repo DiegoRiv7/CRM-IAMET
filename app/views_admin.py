@@ -1572,10 +1572,25 @@ def fondo_mundial_admin(request):
             else:
                 try:
                     os.makedirs(fondos_dir, exist_ok=True)
-                    with open(destino, 'wb') as f:
-                        for chunk in archivo.chunks():
-                            f.write(chunk)
-                    mensaje = 'Fondo del tema Mundial actualizado correctamente.'
+                    # Normalizar SIEMPRE antes de guardar: las fotos de
+                    # cámara/stock llegan en 4000-8000px y varios MB, y el
+                    # navegador decodifica la imagen COMPLETA en cada carga
+                    # de página (el fondo vive en body::before). Tope 2560px
+                    # de ancho + JPEG progresivo q82 sin EXIF ≈ 300-500KB,
+                    # visualmente idéntico como fondo.
+                    from PIL import Image
+                    img = Image.open(archivo)
+                    img = img.convert('RGB')
+                    MAX_W = 2560
+                    if img.width > MAX_W:
+                        alto = int(img.height * MAX_W / img.width)
+                        img = img.resize((MAX_W, alto), Image.LANCZOS)
+                    img.save(destino, 'JPEG', quality=82, optimize=True, progressive=True)
+                    peso_kb = os.path.getsize(destino) / 1024
+                    mensaje = (
+                        'Fondo actualizado y optimizado: %dx%dpx, %.0f KB.'
+                        % (img.width, img.height, peso_kb)
+                    )
                 except Exception as e:
                     error = f'Error al guardar el archivo: {e}'
 

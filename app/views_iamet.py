@@ -4311,6 +4311,11 @@ def api_levantamiento_evidencia_subir(request, levantamiento_id):
     archivo = request.FILES.get('archivo')
     if not archivo:
         return JsonResponse({'success': False, 'error': 'Archivo requerido (campo "archivo")'}, status=400)
+    # Cinturón: WebKit/Safari puede mandar el File en 0 bytes si el input se
+    # reseteó antes de que la subida saliera — sin esto se creaba el registro
+    # con comentario pero con la foto vacía (miniatura rota).
+    if not archivo.size:
+        return JsonResponse({'success': False, 'error': 'La foto llegó vacía — intenta de nuevo'}, status=400)
 
     producto_idx = request.POST.get('producto_idx')
     try:

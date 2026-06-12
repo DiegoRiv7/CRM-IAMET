@@ -310,11 +310,15 @@
 
     // Wraps: CUALQUIER apertura entra en modo página; CUALQUIER cierre
     // (Esc vía stack, botón oculto, sidebar) restaura la página original.
+    // OJO: el script inline del template del calendario se RE-EJECUTA en
+    // cada navegación Turbo y reasigna calendarioAbrir/Cerrar CRUDAS — un
+    // guard de una-sola-vez dejaba las páginas post-navegación sin el wrap
+    // (el calendario abría como widget modal "a veces"). Se re-envuelve en
+    // cada crmReady; el marcador _navWrapped evita doble wrap.
     window.crmReady(function () {
-        if (window._crmNavCalWrapped) return;
         if (typeof window.calendarioAbrir !== 'function' ||
             typeof window.calendarioCerrar !== 'function') return;
-        window._crmNavCalWrapped = true;
+        if (window.calendarioAbrir._navWrapped) return;
 
         var origAbrir = window.calendarioAbrir;
         window.calendarioAbrir = function () {
@@ -324,6 +328,7 @@
             }
             return origAbrir.apply(this, arguments);
         };
+        window.calendarioAbrir._navWrapped = true;
 
         var origCerrar = window.calendarioCerrar;
         window.calendarioCerrar = function () {
@@ -331,6 +336,7 @@
             unpageizeCalendar();
             return r;
         };
+        window.calendarioCerrar._navWrapped = true;
     });
 
     /* ── Reportes (dashboard tab=clientes) como vista client-side ───────
