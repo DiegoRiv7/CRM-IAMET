@@ -1405,9 +1405,15 @@
             if (window.crmWidgetStack) window.crmWidgetStack.remove(ov);
             ov.remove();
         }, 200);
-        // Refrescar la opp ligada (lista de cotizaciones) + kanban.
-        if (inst && alive(inst) && isVisible(inst)) load(inst, inst.oppId);
-        if (window.crmDataBus && inst) window.crmDataBus.emit('oportunidad', 'update', inst ? inst.oppId : null);
+        // Refrescar la opp ligada (lista de cotizaciones) + kanban — SOLO
+        // al cerrar un cotizador (pudo crear/editar una cotización). Las
+        // ventanas de drive no cambian la card de la opp: recargarla hacía
+        // un flash de "Cargando oportunidad" gratuito al cerrar el drive.
+        var esCotizador = String(key).indexOf('drive:') !== 0;
+        if (esCotizador) {
+            if (inst && alive(inst) && isVisible(inst)) load(inst, inst.oppId);
+            if (window.crmDataBus && inst) window.crmDataBus.emit('oportunidad', 'update', inst ? inst.oppId : null);
+        }
     }
 
     function openCotizadorV2(oppId, inst) {
