@@ -952,9 +952,11 @@
         zone.classList.toggle('lw-evid-empty', !hasPhotos);
 
         var thumbs = evs.map(function (ev) {
+            var cap1 = ev.comentario || '';
             return '<div class="lw-evid-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
                 '<img src="' + esc(ev.url) + '" alt="">' +
                 '<button type="button" class="lw-evid-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
+                (cap1 ? '<div class="lw-evid-name" title="' + esc(cap1) + '">' + esc(cap1) + '</div>' : '') +
             '</div>';
         }).join('');
 
@@ -2082,7 +2084,7 @@
             return '<div class="lw-evid-thumb" onclick="lwP2Lightbox(' + ev.id + ')">' +
                 '<img src="' + esc(ev.url) + '" alt="">' +
                 '<button type="button" class="lw-evid-del" title="Eliminar" onclick="event.stopPropagation(); lwP2DeleteEvidencia(' + ev.id + ')">×</button>' +
-                (ev.nombre_original ? '<div class="lw-evid-name">' + esc(ev.nombre_original) + '</div>' : '') +
+                ((ev.comentario || ev.nombre_original) ? '<div class="lw-evid-name" title="' + esc(ev.comentario || ev.nombre_original) + '">' + esc(ev.comentario || ev.nombre_original) + '</div>' : '') +
             '</div>';
         }).join('');
 
@@ -2102,11 +2104,81 @@
         var ev = (state.lev.evidencias || []).find(function (e) { return e.id === id; });
         if (!ev) return;
         $('lwLightboxImg').src = ev.url;
+        var cap = $('lwLightboxCap');
+        if (cap) {
+            cap.textContent = ev.comentario || '';
+            cap.style.display = ev.comentario ? '' : 'none';
+        }
         $('lwLightbox').style.display = 'flex';
     };
+
+    // ── Diálogo foto + comentario (ANTES de subir) ──────────────────────
+    // El técnico toma la foto con la cámara y antes de guardarla escribe de
+    // qué es ("Rack principal, Nave 3") — así las evidencias quedan
+    // documentadas y no "regadas". Resuelve con el comentario ('' permitido)
+    // o null si descartó la foto.
+    function lwFotoComentarioDialog(file, idx, total) {
+        _lwCloseExistingModals();
+        return new Promise(function (resolve) {
+            var url = URL.createObjectURL(file);
+            var bd = document.createElement('div');
+            bd.className = 'lw-confirm-backdrop';
+            var box = document.createElement('div');
+            box.className = 'lw-confirm-box';
+            box.setAttribute('role', 'dialog');
+            box.setAttribute('aria-modal', 'true');
+            var contador = total > 1 ? ' · ' + idx + ' de ' + total : '';
+            box.innerHTML =
+                '<div class="lw-confirm-body" style="width:100%;min-width:0;">' +
+                    '<div class="lw-confirm-title">Foto de evidencia' + contador + '</div>' +
+                    '<img class="lw-foto-preview" alt="" style="display:block;width:100%;max-height:42vh;object-fit:contain;border-radius:12px;background:rgba(15,23,42,0.05);margin:10px 0;">' +
+                    // font-size 16px: evita el auto-zoom de iOS al enfocar
+                    '<input type="text" class="lw-foto-comentario" maxlength="255" enterkeyhint="done" ' +
+                        'placeholder="¿De qué es esta foto? Ej. Rack principal, Nave 3" ' +
+                        'style="width:100%;box-sizing:border-box;border:1px solid #CBD5E1;border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;color:#0F172A;background:#fff;outline:none;">' +
+                '</div>' +
+                '<div class="lw-confirm-actions">' +
+                    '<button type="button" class="lw-confirm-cancel">Descartar</button>' +
+                    '<button type="button" class="lw-confirm-ok">Guardar foto</button>' +
+                '</div>';
+            bd.appendChild(box);
+            document.body.appendChild(bd);
+            box.querySelector('.lw-foto-preview').src = url;
+            var input = box.querySelector('.lw-foto-comentario');
+            setTimeout(function () { input.focus(); }, 30);
+
+            function close(result) {
+                document.removeEventListener('keydown', onKey, true);
+                URL.revokeObjectURL(url);
+                if (bd.parentNode) bd.parentNode.removeChild(bd);
+                resolve(result);
+            }
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); close(null); }
+                if (e.key === 'Enter') { e.preventDefault(); close(input.value.trim()); }
+            }
+            document.addEventListener('keydown', onKey, true);
+            box.querySelector('.lw-confirm-ok').addEventListener('click', function () { close(input.value.trim()); });
+            box.querySelector('.lw-confirm-cancel').addEventListener('click', function () { close(null); });
+            // Sin cierre por click en el backdrop: un toque accidental no
+            // debe descartar la foto que el técnico acaba de tomar.
+        });
+    }
+
     window.lwP2UploadFiles = function (files) {
         if (!files || !files.length) return;
-        Array.from(files).forEach(function (f) { uploadEvidencia(f); });
+        // Una foto → un comentario antes de subir. En cámara móvil llegan de
+        // una en una; en lotes de desktop el diálogo avanza "1 de N".
+        var list = Array.from(files);
+        var i = 0;
+        (function next() {
+            if (i >= list.length) return;
+            var f = list[i]; i++;
+            lwFotoComentarioDialog(f, i, list.length).then(function (comentario) {
+                if (comentario !== null) uploadEvidencia(f, comentario);
+                next();
+            });
+        })();
     };
     window.lwP2DeleteEvidencia = function (id) {
         lwConfirm({
@@ -2132,10 +2204,12 @@
             });
         });
     };
-    function uploadEvidencia(file) {
+    function uploadEvidencia(file, comentario) {
         var fd = new FormData();
         fd.append('archivo', file);
-        fd.append('comentario', file.name || '');
+        // El nombre del archivo ya viaja en nombre_original (server-side);
+        // comentario es SOLO lo que escribió el técnico.
+        fd.append('comentario', comentario || '');
         fetch('/app/api/iamet/levantamientos/' + state.lev.id + '/evidencia/', {
             method: 'POST',
             credentials: 'same-origin',

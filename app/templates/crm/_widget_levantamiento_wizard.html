@@ -846,6 +846,8 @@
     <!-- Lightbox de fotos -->
     <div class="lw-lightbox" id="lwLightbox" style="display:none;" onclick="this.style.display='none'">
         <img id="lwLightboxImg" src="">
+        {# Comentario de la foto (lo que escribió el técnico al tomarla) #}
+        <div id="lwLightboxCap" style="display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:26px;max-width:86vw;background:rgba(15,23,42,0.80);color:#fff;padding:8px 18px;border-radius:999px;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;"></div>
     </div>
 
     <!-- Botón flotante de ayuda + mini FAQ panel — OCULTO temporalmente
