@@ -86,13 +86,25 @@ Mismo truco que widget_prospecto_page. Incluye además:
             else boot();
             // El composer de actividades abre como VENTANA PROPIA en el
             // escritorio del padre (no como sheet dentro de esta ventana):
-            // se delega vía postMessage. El padre pone el contexto de idea,
-            // windowiza su composer y avisa al cerrar para refrescar aquí.
-            window.calGlobalAbrirCrearActividad = function () {
-                try {
-                    window.parent.postMessage({ type: 'open-actividad-composer', ideaId: {{ idea_id|unlocalize }} }, window.location.origin);
-                } catch (e) { }
-            };
+            // se delega vía postMessage. El padre abre una ventana-composer
+            // dedicada a esta idea y avisa al cerrar para refrescar aquí.
+            // Se asigna ahora Y en cada tick corto: el template del
+            // calendario re-asigna su versión y nadie debe pisarnos.
+            function _delegarComposer() {
+                window.calGlobalAbrirCrearActividad = function () {
+                    try {
+                        window.parent.postMessage({ type: 'open-actividad-composer', ideaId: {{ idea_id|unlocalize }} }, window.location.origin);
+                    } catch (e) { }
+                };
+                window.calGlobalAbrirCrearActividad._delegado = true;
+            }
+            _delegarComposer();
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.calGlobalAbrirCrearActividad._delegado) _delegarComposer();
+                setTimeout(function () {
+                    if (!window.calGlobalAbrirCrearActividad._delegado) _delegarComposer();
+                }, 400);
+            });
             window.addEventListener('message', function (e) {
                 if (e.origin !== window.location.origin) return;
                 if (!e.data || e.data.type !== 'actividad-composer-closed') return;

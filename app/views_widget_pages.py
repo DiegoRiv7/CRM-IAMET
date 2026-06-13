@@ -11,11 +11,13 @@ modo página.
 """
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.cache import never_cache
 
 from .models import TodoItem
 
 
 @login_required
+@never_cache
 def widget_drive_page(request, oportunidad_id):
     """Drive de UNA oportunidad como página completa (cuerpo de un iframe).
 
@@ -30,6 +32,7 @@ def widget_drive_page(request, oportunidad_id):
 
 
 @login_required
+@never_cache
 def widget_prospecto_page(request, prospecto_id):
     """Prospecto como página completa (cuerpo de un iframe de ventana).
 
@@ -42,6 +45,7 @@ def widget_prospecto_page(request, prospecto_id):
 
 
 @login_required
+@never_cache
 def widget_idea_page(request, idea_id):
     """Idea como página completa (cuerpo de un iframe de ventana)."""
     return render(request, 'crm/widget_idea_page.html', {
@@ -50,6 +54,7 @@ def widget_idea_page(request, idea_id):
 
 
 @login_required
+@never_cache
 def widget_actividad_idea_page(request, idea_id):
     """Composer de actividad ligado a una idea (ventana-iframe propia)."""
     return render(request, 'crm/widget_actividad_idea_page.html', {
