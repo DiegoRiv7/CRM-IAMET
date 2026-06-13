@@ -5261,6 +5261,13 @@
         position: absolute;
         top: calc(100% + 6px);
         right: 0;
+    }
+    /* El menú/toast ahora viven en el lado IZQUIERDO del header (junto al
+       cliente): alineados a la izquierda para no clipearse fuera de la card. */
+    .crm-tw-header-left .crm-tw-menu,
+    .crm-tw-header-left .crm-tw-share-toast {
+        left: 0;
+        right: auto;
         min-width: 240px;
         background: #fff;
         border: 1px solid rgba(226, 232, 240, 0.8);
