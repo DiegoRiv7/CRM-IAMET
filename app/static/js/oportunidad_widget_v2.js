@@ -1436,7 +1436,11 @@
 
     // Infraestructura de ventanas-iframe expuesta para otros módulos
     // (prospecto_windows.js la usa para el multi-prospecto).
-    window.crmIframeWindow = { open: openCotWindow, close: closeCotWindow };
+    window.crmIframeWindow = {
+        open: openCotWindow,
+        close: closeCotWindow,
+        get: function (key) { return cotWindows[key] || null; },
+    };
 
     // Drive como ventana-iframe (key 'drive:<oppId>'): reabre/trae al
     // frente si ya existe — un drive POR oportunidad, simultáneos.

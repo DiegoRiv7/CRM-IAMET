@@ -170,28 +170,36 @@
     }
 
     // ── Composer de actividades pedido por una ventana-iframe de idea ──
-    // El iframe no puede poner ventanas en el escritorio del padre: nos
-    // delega la apertura. Ponemos el contexto de SU idea, abrimos el
-    // composer del padre como ventana, y al cerrarse limpiamos contexto y
-    // le avisamos para que refresque sus actividades.
+    // Cada idea-iframe recibe SU PROPIO composer como ventana-iframe
+    // (key 'composer:idea:<id>') — N composers simultáneos sin pelear
+    // por el singleton del padre (que queda para la idea principal).
+    // El composer postea 'actividad-composer-done' al cerrar: cerramos
+    // su ventana y avisamos a la ventana de ESA idea para que refresque.
     window.addEventListener('message', function (e) {
         if (e.origin !== window.location.origin) return;
-        if (!e.data || e.data.type !== 'open-actividad-composer') return;
-        if (typeof window.calGlobalAbrirCrearActividad !== 'function') return;
-        window._calContextoIdea = e.data.ideaId || null;
-        window.calGlobalAbrirCrearActividad();
-        var ov = document.getElementById('widgetGlobalCrearActividad');
-        if (!ov) return;
-        windowizeSub(ov, { w: 640, h: 580 });
-        var src = e.source;
-        var obs = new MutationObserver(function () {
-            if (window.getComputedStyle(ov).display === 'none') {
-                obs.disconnect();
-                window._calContextoIdea = null;
-                try { src.postMessage({ type: 'actividad-composer-closed' }, window.location.origin); } catch (err) { }
+        if (!e.data) return;
+
+        if (e.data.type === 'open-actividad-composer' && e.data.ideaId) {
+            if (!window.crmIframeWindow || typeof window.crmIframeWindow.open !== 'function') return;
+            window.crmIframeWindow.open(
+                'composer:idea:' + e.data.ideaId,
+                '/app/widget/actividad/idea/' + e.data.ideaId + '/',
+                'Nueva actividad',
+                null,
+                { forceWindow: true, wf: 0.36, maxw: 680, hf: 0.7 }
+            );
+            return;
+        }
+
+        if (e.data.type === 'actividad-composer-done' && e.data.ideaId) {
+            if (!window.crmIframeWindow) return;
+            try { window.crmIframeWindow.close('composer:idea:' + e.data.ideaId); } catch (err) { }
+            var ideaOv = window.crmIframeWindow.get && window.crmIframeWindow.get('idea:' + e.data.ideaId);
+            var ifr = ideaOv && ideaOv.querySelector('iframe');
+            if (ifr && ifr.contentWindow) {
+                try { ifr.contentWindow.postMessage({ type: 'actividad-composer-closed' }, window.location.origin); } catch (err) { }
             }
-        });
-        obs.observe(ov, { attributes: true, attributeFilter: ['style', 'class'] });
+        }
     });
 
     function wireAll() {

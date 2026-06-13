@@ -47,3 +47,11 @@ def widget_idea_page(request, idea_id):
     return render(request, 'crm/widget_idea_page.html', {
         'idea_id': idea_id,
     })
+
+
+@login_required
+def widget_actividad_idea_page(request, idea_id):
+    """Composer de actividad ligado a una idea (ventana-iframe propia)."""
+    return render(request, 'crm/widget_actividad_idea_page.html', {
+        'idea_id': idea_id,
+    })
