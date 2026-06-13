@@ -1421,3 +1421,29 @@ body[data-theme="mundial"] [contenteditable="true"] {
 body[data-theme="mundial"] .oppv2-cot [data-cot-title] {
     color: #ffffff !important;
 }
+
+
+/* ── Header del modal de tarea: nuevo layout (acciones izq, ventana der) ──
+   La regla general pinta TODO el header en blanco; los controles de
+   ventana [— □ ×] son círculos CLAROS → su glifo debe ser oscuro, y la X
+   dentro del cluster adopta el mismo círculo para consistencia. */
+body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn,
+body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn svg {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .crm-tw-header .ww-ctrls button,
+body[data-theme="mundial"] .crm-tw-header .ww-ctrls button svg {
+    color: #3C3C43 !important;
+}
+body[data-theme="mundial"] .crm-tw-header .ww-ctrls button:hover {
+    background: #E5E5EA !important;
+}
+body[data-theme="mundial"] .crm-tw-header .ww-ctrls .crm-tw-icon-btn {
+    background: #F2F2F7 !important;
+    border-radius: 50% !important;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
