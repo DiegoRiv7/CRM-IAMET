@@ -19,6 +19,9 @@ ventana de la idea para que refresque.
     <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260612-cot-title">
     <style>
         body[data-theme="mundial"]::before { display: none !important; }
+        /* Layout fijo a la medida de la ventana: sin scrollbar fantasma
+           (el gutter blanco a la derecha) ni colchón del body. */
+        html, body { overflow: hidden; }
         html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
         /* El composer ES la página: sin backdrop, ocupa todo el iframe. */
         #widgetGlobalCrearActividad {

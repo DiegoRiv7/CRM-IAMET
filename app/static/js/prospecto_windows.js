@@ -186,7 +186,7 @@
                 '/app/widget/actividad/idea/' + e.data.ideaId + '/',
                 'Nueva actividad',
                 null,
-                { forceWindow: true, w: 680, h: 470 }
+                { forceWindow: true, w: 780, h: 420 }
             );
             return;
         }
