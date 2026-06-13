@@ -14,12 +14,12 @@
    Solo con clase: jamás display inline, porque widgets como
    widgetDetalle se cierran quitando 'active' y un inline pegado
    dejaría la X sin efecto. */
-.widget-overlay.ww-minimized {
+.ww-minimized {
     display: none !important;
 }
 
 /* ── Overlay en modo ventana ── */
-.widget-overlay.ww-windowed {
+.ww-windowed {
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -32,7 +32,7 @@
     position: relative;  /* ancla de los handles también en modo maximizado */
 }
 
-.widget-overlay.ww-windowed .ww-card {
+.ww-windowed .ww-card {
     pointer-events: auto;
     position: fixed !important;
     left: var(--ww-x) !important;
@@ -59,7 +59,7 @@
    tenga que mantener una clase en el body. Evita el bug de "se
    queda oscuro cuando ya cerré todas las ventanas". */
 body.ww-has-windows::after,
-body:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
+body:has(.ww-windowed:not(.ww-minimized))::after {
     content: '';
     position: fixed;
     inset: 0;
@@ -71,12 +71,12 @@ body:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
 
 /* Mission Control activo → fondo limpio (las ventanas se fueron) */
 body.ww-mission-control.ww-has-windows::after,
-body.ww-mission-control:has(.widget-overlay.ww-windowed:not(.ww-minimized))::after {
+body.ww-mission-control:has(.ww-windowed:not(.ww-minimized))::after {
     opacity: 0;
 }
 
 /* Ventanas en SEGUNDO plano: un poco más oscuras que la activa */
-.widget-overlay.ww-windowed:not(.ww-focused) .ww-card {
+.ww-windowed:not(.ww-focused) .ww-card {
     filter: brightness(0.88);
 }
 
@@ -84,7 +84,7 @@ body.ww-mission-control:has(.widget-overlay.ww-windowed:not(.ww-minimized))::aft
    ventanas flotantes — el sistema de ventanas tiene su propio
    sistema de identificación (foco visual + dock). El breadcrumb
    solo aplicaba al modo modal apilado. */
-body:has(.widget-overlay.ww-windowed:not(.ww-minimized)) #crmWidgetBreadcrumb {
+body:has(.ww-windowed:not(.ww-minimized)) #crmWidgetBreadcrumb {
     display: none !important;
 }
 
@@ -445,7 +445,7 @@ body.ww-mission-control [data-action] {
 }
 
 /* En modo ventana la franja superior funciona como barra de título */
-.widget-overlay.ww-windowed .ww-card .wo-header {
+.ww-windowed .ww-card .wo-header {
     cursor: grab;
 }
 
@@ -509,12 +509,12 @@ body.ww-mission-control [data-action] {
 
 /* El botón [□] de "modo ventana" recibe un realce sutil cuando la
    ventana ESTÁ en modo flotante, para que se note que sigue activo. */
-.widget-overlay.ww-windowed .ww-btn-win {
+.ww-windowed .ww-btn-win {
     background: #007AFF;
     color: #fff;
 }
 
-.widget-overlay.ww-windowed .ww-btn-win:hover {
+.ww-windowed .ww-btn-win:hover {
     background: #0066D6;
     color: #fff;
 }
@@ -606,7 +606,7 @@ body.ww-mission-control [data-action] {
    El alto fijo de la ventana (--ww-h) dejaba un mar vacío bajo el footer
    del form de actividad (no tiene contenido scrolleable que lo justifique).
    La card se ajusta SIEMPRE a su contenido; la ventana la envuelve. */
-.widget-overlay.ww-windowed .wact-shell.ww-card {
+.ww-windowed .wact-shell.ww-card {
     height: auto !important;
     min-height: 0 !important;
     max-height: calc(100vh - 24px) !important;

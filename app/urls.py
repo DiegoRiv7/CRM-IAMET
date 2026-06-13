@@ -355,6 +355,7 @@ urlpatterns = [
     path('widget/prospecto/<int:prospecto_id>/', views_widget_pages.widget_prospecto_page, name='widget_prospecto_page'),
     path('widget/idea/<int:idea_id>/', views_widget_pages.widget_idea_page, name='widget_idea_page'),
     path('widget/actividad/idea/<int:idea_id>/', views_widget_pages.widget_actividad_idea_page, name='widget_actividad_idea_page'),
+    path('widget/tarea/<int:tarea_id>/', views_widget_pages.widget_tarea_page, name='widget_tarea_page'),
     path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
     path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 

@@ -60,3 +60,12 @@ def widget_actividad_idea_page(request, idea_id):
     return render(request, 'crm/widget_actividad_idea_page.html', {
         'idea_id': idea_id,
     })
+
+
+@login_required
+@never_cache
+def widget_tarea_page(request, tarea_id):
+    """Detalle de tarea como página completa (ventana-iframe propia)."""
+    return render(request, 'crm/widget_tarea_page.html', {
+        'tarea_id': tarea_id,
+    })

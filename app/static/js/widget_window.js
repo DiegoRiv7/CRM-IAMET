@@ -136,7 +136,7 @@
 
     function countWindows() {
         var n = 0;
-        document.querySelectorAll('.widget-overlay.ww-windowed').forEach(function (el) {
+        document.querySelectorAll('.ww-windowed').forEach(function (el) {
             if (isVisible(el)) n++;
         });
         return n;
@@ -270,7 +270,7 @@
         // del stack vía MutationObserver, igual que nosotros). Usar
         // el DOM + z-index garantiza que vemos el estado real ahora.
         var candidates = Array.prototype.slice.call(
-            document.querySelectorAll('.widget-overlay.ww-windowed:not(.ww-minimized)')
+            document.querySelectorAll('.ww-windowed:not(.ww-minimized)')
         ).filter(isVisible);
         candidates.sort(function (a, b) {
             var za = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
@@ -278,7 +278,7 @@
             return zb - za;
         });
         var focused = candidates[0] || null;
-        document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
+        document.querySelectorAll('.ww-focused').forEach(function (el) {
             if (el !== focused) el.classList.remove('ww-focused');
         });
         if (focused && !focused.classList.contains('ww-focused')) {
@@ -578,7 +578,7 @@
 
     function activeWindows() {
         return Array.prototype.slice.call(
-            document.querySelectorAll('.widget-overlay.ww-windowed:not(.ww-minimized)')
+            document.querySelectorAll('.ww-windowed:not(.ww-minimized)')
         ).filter(isVisible);
     }
 
@@ -918,7 +918,7 @@
         if (ev.button !== 0) return;
         var card = ev.target.closest('.ww-card');
         if (!card) return;
-        var overlay = card.closest('.widget-overlay');
+        var overlay = card.closest('.widget-overlay, [data-ww-enhanced]');
         if (!overlay) return;
 
         if (overlay.classList.contains('ww-windowed')) bringToFront(overlay);
@@ -944,7 +944,7 @@
     function onDblClick(ev) {
         var card = ev.target.closest('.ww-card');
         if (!card) return;
-        var overlay = card.closest('.widget-overlay');
+        var overlay = card.closest('.widget-overlay, [data-ww-enhanced]');
         if (!overlay || !overlay.classList.contains('ww-windowed')) return;
         if (ev.target.closest(INTERACTIVE)) return;
         if (ev.clientY - card.getBoundingClientRect().top > DRAG_STRIP) return;
@@ -1014,7 +1014,9 @@
             var el = document.getElementById(id);
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
-        document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
+        // Cualquier overlay marcado — incluye modales fuera de .widget-overlay
+        // (p.ej. el detalle de tarea, .crm-task-modal-overlay).
+        document.querySelectorAll('[data-windowable]').forEach(enhance);
     }
 
     /* ── Mission Control: click en zona vacía ─────────────────────── */
@@ -1088,7 +1090,7 @@
             setTimeout(function () {
                 var ae = document.activeElement;
                 if (ae && ae.tagName === 'IFRAME') {
-                    var ov = ae.closest('.widget-overlay.ww-windowed');
+                    var ov = ae.closest('.ww-windowed');
                     if (ov) bringToFront(ov);
                 }
             }, 0);
@@ -1097,7 +1099,7 @@
         // está activo, recalcular las posiciones de salida para que
         // sigan ocultas correctamente tras el resize.
         window.addEventListener('resize', function () {
-            document.querySelectorAll('.widget-overlay.ww-windowed').forEach(function (el) {
+            document.querySelectorAll('.ww-windowed').forEach(function (el) {
                 var s = st(el);
                 if (s.rect) applyRect(el, s.rect);
             });
