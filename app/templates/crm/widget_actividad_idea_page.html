@@ -31,6 +31,10 @@ ventana de la idea para que refresque.
             align-items: stretch !important;
             justify-content: stretch !important;
         }
+        /* El marco de la ventana ya es el header ("Nueva actividad"):
+           el wact-header interno duplicaba la greca. El cierre vive en
+           Cancelar / Guardar / la X del marco. */
+        #widgetGlobalCrearActividad .wact-header { display: none !important; }
         #widgetGlobalCrearActividad .wact-shell {
             width: 100% !important;
             max-width: none !important;

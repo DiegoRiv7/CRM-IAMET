@@ -1385,8 +1385,12 @@
         // ventanas de prospecto que abre prospecto_windows.js).
         if (((inst && isWindowed(inst)) || (opts && opts.forceWindow)) && window.crmWidgetWindow) {
             var vw = window.innerWidth, vh = window.innerHeight;
-            var w = Math.min(Math.round(vw * ((opts && opts.wf) || 0.72)), (opts && opts.maxw) || 1400);
-            var h = Math.round(vh * ((opts && opts.hf) || 0.86));
+            var w = (opts && opts.w)
+                ? Math.min(opts.w, vw - 24)
+                : Math.min(Math.round(vw * ((opts && opts.wf) || 0.72)), (opts && opts.maxw) || 1400);
+            var h = (opts && opts.h)
+                ? Math.min(opts.h, vh - 24)
+                : Math.round(vh * ((opts && opts.hf) || 0.86));
             var n = Object.keys(cotWindows).length;
             window.crmWidgetWindow.windowize(ov, {
                 x: Math.max(8, Math.min(60 + n * 30, vw - w - 12)),
