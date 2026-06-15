@@ -1,0 +1,106 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   perf_lite.css — MODO LIGERO para máquinas viejas / con GPU integrada.
+
+   Activado por perf_mode.js añadiendo la clase `body.ww-lite` (manual,
+   auto por hardware, o auto-dinámico cuando la página "sufre"). Apaga los
+   efectos CAROS de repintado/compositing que ahogan a las gráficas
+   integradas de ~2014 (Intel HD/Iris) — SIN quitar funcionalidad:
+
+     · backdrop-filter: blur()  → el efecto más caro en GPU vieja.
+     · filter: brightness()     → recompone TODAS las ventanas de fondo
+                                   en cada frame del arrastre.
+     · box-shadow grandes       → repintado lento al mover/redimensionar.
+     · transiciones/animaciones → instantáneas (cero jank de animación).
+
+   Todo vive bajo `body.ww-lite`: en modo normal este archivo no hace nada.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Cero backdrop-filter (el más caro) ──
+   Scoped a los contenedores de ventanas + CRM/tareas; no global para no
+   afectar superficies que dependan del desenfoque fuera de estos módulos. */
+body.ww-lite .ww-card,
+body.ww-lite #wwDock,
+body.ww-lite .ww-dock-chip,
+body.ww-lite .ww-snap-ghost,
+body.ww-lite .ww-mc-backdrop,
+body.ww-lite .ww-mc-card,
+body.ww-lite .ww-window-picker,
+body.ww-lite .widget-overlay,
+body.ww-lite .crm-task-modal-overlay,
+body.ww-lite .crm-task-modal,
+body.ww-lite .crm-main,
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-postit,
+body.ww-lite .idea-card,
+body.ww-lite .tareas-card,
+body.ww-lite .tcp-card,
+body.ww-lite .crm-kanban-head,
+body.ww-lite .tareas-cal-col-head {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 2. Sin brightness en ventanas de fondo ──
+   Era el mayor costo durante el arrastre (recompone cada ventana). La
+   ventana activa ya queda al frente por z-index; un borde sutil basta. */
+body.ww-lite .ww-windowed:not(.ww-focused) .ww-card {
+    filter: none !important;
+}
+
+/* ── 3. Sombras suaves → borde fino (mismo "flota" visual, repintado barato) ── */
+body.ww-lite .ww-card {
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+}
+body.ww-lite .ww-dock-chip,
+body.ww-lite .ww-snap-ghost,
+body.ww-lite .ww-window-picker {
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.14) !important;
+}
+
+/* ── 4. Animaciones instantáneas ──
+   Las del modo ventana (windowize/minimize/restore/FLIP) y el velo de
+   fondo. El JS tiene fallback por setTimeout, así que cerrar/minimizar
+   sigue funcionando aunque no haya transitionend. */
+body.ww-lite .ww-card,
+body.ww-lite .ww-dock-chip,
+body.ww-lite #wwDock,
+body.ww-lite .ww-mc-card,
+body.ww-lite .ww-mc-backdrop {
+    transition: none !important;
+    animation: none !important;
+}
+body.ww-lite::after,
+body.ww-lite::before {
+    transition: none !important;
+}
+
+/* ── 5. CRM + Tareas: apagar las animaciones más visibles (hover/transform) ──
+   En máquinas viejas, los transform/scale en hover de las tarjetas son
+   las que más se "sienten". Las dejamos sin transición (cambio instantáneo,
+   no se rompe ningún estado). Scoped a las cards de estos módulos. */
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-postit,
+body.ww-lite .idea-card,
+body.ww-lite .tareas-card,
+body.ww-lite .tcp-card,
+body.ww-lite .crm-list-row,
+body.ww-lite .proy-detail-card,
+body.ww-lite .crm-kanban-card:hover,
+body.ww-lite .crm-postit:hover {
+    transition: none !important;
+    animation: none !important;
+}
+body.ww-lite .crm-kanban-card:hover,
+body.ww-lite .crm-postit:hover,
+body.ww-lite .idea-card:hover,
+body.ww-lite .tareas-card:hover,
+body.ww-lite .crm-list-row:hover {
+    transform: none !important;
+}
+
+/* ── 6. La foto de la cancha del Tema Mundial: sin parallax/efectos extra
+   (se queda la imagen fija, ya es barata). Aquí solo aseguramos que el
+   ::before del fondo no lleve filtros costosos si algún día se agregan. */
+body.ww-lite[data-theme="mundial"]::before {
+    filter: none !important;
+}

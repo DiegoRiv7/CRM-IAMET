@@ -133,6 +133,26 @@
                         value="{{ request.user.userprofile.theme|default:'mundial' }}">
                 </div>
 
+                {# ── Rendimiento (Modo Ligero) ── client-side por equipo (localStorage),
+                   NO parte del form: no se envía al servidor. #}
+                <div style="margin-top: 18px;">
+                    <label style="font-size:0.75rem; font-weight:700; color:#86868b; display:block; margin-bottom:8px; margin-left:4px;">Rendimiento</label>
+                    <div id="perfModeSeg" style="display:flex; gap:6px; background:#f2f2f7; border-radius:12px; padding:4px;">
+                        <button type="button" data-perf-opt="auto" onclick="if(window.crmPerfMode)window.crmPerfMode.set('auto');"
+                            class="perf-seg-btn" style="flex:1; border:none; background:transparent; border-radius:9px; padding:8px 6px; font-size:0.78rem; font-weight:700; color:#3c3c43; cursor:pointer;">Automático</button>
+                        <button type="button" data-perf-opt="lite" onclick="if(window.crmPerfMode)window.crmPerfMode.set('lite');"
+                            class="perf-seg-btn" style="flex:1; border:none; background:transparent; border-radius:9px; padding:8px 6px; font-size:0.78rem; font-weight:700; color:#3c3c43; cursor:pointer;">Ligero</button>
+                        <button type="button" data-perf-opt="full" onclick="if(window.crmPerfMode)window.crmPerfMode.set('full');"
+                            class="perf-seg-btn" style="flex:1; border:none; background:transparent; border-radius:9px; padding:8px 6px; font-size:0.78rem; font-weight:700; color:#3c3c43; cursor:pointer;">Completo</button>
+                    </div>
+                    <div id="perfModeHint" style="font-size:0.72rem; color:#86868b; margin-top:8px; margin-left:4px;">Automático · efectos completos</div>
+                    <style>
+                        #perfModeSeg .perf-seg-btn.active { background:#fff; color:#0052D4; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+                        body.ww-lite #perfModeSeg .perf-seg-btn.active { box-shadow:0 0 0 1px rgba(0,0,0,0.12); }
+                    </style>
+                    <script>(function(){ if(window.crmPerfMode&&window.crmPerfMode.refreshUI)window.crmPerfMode.refreshUI(); })();</script>
+                </div>
+
                 {% if not request.user.is_superuser %}
                 <div
                     style="background:rgba(0,122,255,0.05); border-radius:14px; padding:12px; margin-top:5px; border:1px solid rgba(0,122,255,0.1);">
