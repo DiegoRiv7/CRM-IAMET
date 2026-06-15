@@ -98,6 +98,33 @@
 <!-- macOS Style Toasts Container -->
 <div id="macostToastContainer" style="position:fixed; top:20px; right:20px; z-index:10800; /* CAPA TOP */ display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
 
+<!-- ═══ CENTRO DE NOTIFICACIONES (cajón derecho, estilo macOS) — Fase 1 ═══
+     Reemplaza al modal gigante como UI principal. Se abre desde la campana
+     o asomando el mouse al borde derecho. Minimalista + agrupado + filtros. -->
+<div id="notifEdgeHandle" title="Notificaciones" onclick="window.notifDrawerToggle()" aria-hidden="true"></div>
+<div id="notifDrawer" class="nd-drawer">
+    <div class="nd-head">
+        <span class="nd-head-title">Notificaciones</span>
+        <div class="nd-head-actions">
+            <button class="nd-ghost" onclick="notifMarcarTodoLeido()" title="Marcar todo como le&iacute;do">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+            <button class="nd-ghost" onclick="window.notifDrawerClose()" title="Cerrar">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+    </div>
+    <div class="nd-chips" id="notifDrawerChips">
+        <button class="nd-chip active" data-d="all" onclick="notifDrawerFiltro('all',this)">Todo</button>
+        <button class="nd-chip" data-d="parati" onclick="notifDrawerFiltro('parati',this)">Para ti</button>
+        <button class="nd-chip" data-d="unread" onclick="notifDrawerFiltro('unread',this)">No le&iacute;das</button>
+        <button class="nd-chip" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
+        <button class="nd-chip" data-d="oportunidades" onclick="notifDrawerFiltro('oportunidades',this)">Oportunidades</button>
+        <button class="nd-chip" data-d="equipo" onclick="notifDrawerFiltro('equipo',this)">Equipo</button>
+    </div>
+    <div class="nd-list" id="notifDrawerList"></div>
+</div>
+
 <style>
 /* ═══ macOS Toasts ═══ */
 .macos-toast {
@@ -573,6 +600,123 @@
     .notif-v2-item { padding: 12px 16px; }
     .notif-v2-date-group { padding: 12px 16px 6px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   CENTRO DE NOTIFICACIONES — cajón derecho estilo macOS (Fase 1)
+   ════════════════════════════════════════════════════════════════════ */
+#notifEdgeHandle {
+    position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+    width: 5px; height: 56px; border-radius: 7px 0 0 7px;
+    background: rgba(100,116,139,0.26); z-index: 10650; cursor: pointer;
+    transition: background .15s ease, width .15s ease;
+}
+#notifEdgeHandle:hover { background: rgba(37,99,235,0.65); width: 7px; }
+
+.nd-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 384px; max-width: 92vw;
+    background: rgba(250,250,252,0.85);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-left: 1px solid rgba(15,23,42,0.08);
+    box-shadow: -16px 0 50px rgba(15,23,42,0.16);
+    z-index: 10700; display: flex; flex-direction: column;
+    transform: translateX(102%);
+    transition: transform .28s cubic-bezier(.32,.72,0,1);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+}
+.nd-drawer.open { transform: translateX(0); }
+body.ww-lite .nd-drawer { backdrop-filter: none; -webkit-backdrop-filter: none; background: #FAFAFC; }
+
+.nd-head { display: flex; align-items: center; padding: 18px 18px 10px; gap: 8px; }
+.nd-head-title { font-size: 1.15rem; font-weight: 700; color: #0F172A; letter-spacing: -0.02em; flex: 1; }
+.nd-head-actions { display: flex; gap: 4px; }
+.nd-ghost {
+    width: 30px; height: 30px; border: none; background: rgba(15,23,42,0.05);
+    border-radius: 8px; color: #475569; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: background .12s;
+}
+.nd-ghost:hover { background: rgba(15,23,42,0.1); }
+
+.nd-chips { display: flex; gap: 7px; padding: 2px 16px 12px; overflow-x: auto; scrollbar-width: none; }
+.nd-chips::-webkit-scrollbar { display: none; }
+.nd-chip {
+    flex: 0 0 auto; background: #EFF1F5; border: none; color: #64748B;
+    padding: 6px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: all .14s; font-family: inherit;
+}
+.nd-chip:hover { background: #E4E8EF; color: #334155; }
+.nd-chip.active { background: #1C1C1E; color: #fff; }
+
+.nd-list { flex: 1; overflow-y: auto; padding: 4px 12px 28px; }
+.nd-list::-webkit-scrollbar { width: 5px; }
+.nd-list::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 3px; }
+
+.nd-card {
+    display: flex; align-items: flex-start; gap: 11px;
+    padding: 11px 12px; border-radius: 14px; cursor: pointer;
+    background: rgba(255,255,255,0.55); margin-bottom: 8px;
+    border: 1px solid rgba(15,23,42,0.05);
+    transition: background .12s, transform .08s;
+}
+.nd-card:hover { background: #fff; }
+.nd-card:active { transform: scale(0.99); }
+.nd-card.nd-unread { background: #fff; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
+.nd-ic { width: 34px; height: 34px; border-radius: 10px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+.nd-ic svg { width: 16px; height: 16px; }
+.nd-ic.pr-critical { background: #FEE2E2; } .nd-ic.pr-critical svg { stroke: #DC2626; }
+.nd-ic.pr-important { background: #FEF3C7; } .nd-ic.pr-important svg { stroke: #D97706; }
+.nd-ic.pr-info { background: #E0EAFF; } .nd-ic.pr-info svg { stroke: #3B82F6; }
+.nd-bd { flex: 1; min-width: 0; }
+.nd-title {
+    font-size: 13.5px; font-weight: 600; color: #1C1C1E; line-height: 1.32;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.nd-msg { font-size: 12px; color: #64748B; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nd-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
+.nd-time { font-size: 11px; color: #94A3B8; white-space: nowrap; }
+.nd-dot { width: 8px; height: 8px; border-radius: 50%; background: #2563EB; }
+.nd-count { display: inline-block; background: #E2E8F0; color: #475569; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 0 7px; margin-left: 2px; vertical-align: middle; }
+
+.nd-actions { display: flex; gap: 6px; margin-top: 9px; }
+.nd-act { flex: 1; padding: 6px; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.nd-act-ok { background: #16A34A; color: #fff; } .nd-act-ok:hover { background: #15803D; }
+.nd-act-no { background: #EF4444; color: #fff; } .nd-act-no:hover { background: #DC2626; }
+
+/* Pila (stack) agrupada estilo Apple */
+.nd-stack { margin-bottom: 8px; }
+.nd-stack-head {
+    display: flex; align-items: flex-start; gap: 11px; padding: 11px 12px;
+    border-radius: 14px; cursor: pointer; background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(15,23,42,0.06); position: relative;
+}
+.nd-stack-head:hover { background: #fff; }
+.nd-stack.nd-unread .nd-stack-head { background: #fff; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
+/* efecto pila: dos láminas escalonadas debajo cuando está colapsado */
+.nd-stack:not(.open) .nd-stack-head::before,
+.nd-stack:not(.open) .nd-stack-head::after {
+    content: ''; position: absolute; left: 8px; right: 8px; bottom: -4px; height: 12px;
+    background: rgba(255,255,255,0.6); border: 1px solid rgba(15,23,42,0.05);
+    border-radius: 0 0 12px 12px; z-index: -1;
+}
+.nd-stack:not(.open) .nd-stack-head::after { left: 13px; right: 13px; bottom: -8px; opacity: .55; }
+.nd-chev { color: #94A3B8; transition: transform .18s; flex: 0 0 auto; }
+.nd-stack.open .nd-chev { transform: rotate(180deg); }
+.nd-stack-items { display: none; padding: 6px 0 2px 6px; }
+.nd-stack.open .nd-stack-items { display: block; }
+.nd-stack-items .nd-card { background: transparent; border: none; box-shadow: none; margin-bottom: 1px; padding: 8px 10px; }
+.nd-stack-items .nd-card:hover { background: rgba(15,23,42,0.04); }
+
+.nd-empty { text-align: center; color: #94A3B8; padding: 64px 20px; font-size: 14px; font-weight: 600; }
+.nd-empty svg { display: block; margin: 0 auto 12px; }
+.nd-empty-sub { font-size: 12px; font-weight: 400; margin-top: 4px; color: #A2ADBC; }
+@keyframes notif-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 480px) {
+    .nd-drawer { width: 100vw; max-width: 100vw; }
+    #notifEdgeHandle { display: none; }
+}
 </style>
 
 <script>
@@ -733,6 +877,9 @@
 
     /* ═══ Render ═══ */
     function _render() {
+        // El cajón derecho (UI principal) se refresca con cada cambio de datos.
+        try { _renderDrawer(); } catch (e) { }
+
         const container = document.getElementById('notifListContainer');
         if (!container) return;
 
@@ -1144,6 +1291,172 @@
         _render();
     };
 
+    /* ════════════════════════════════════════════════════════════════
+       CENTRO DE NOTIFICACIONES — cajón derecho (Fase 1)
+       Reusa _nData, ICONS, _timeAgo, _getPriority y los handlers globales
+       (notifHandleClick / notifQuickAction / procesarSolicitudPerfil).
+       Render propio: minimalista + agrupado por "tipo de cosa" estilo Apple.
+       ════════════════════════════════════════════════════════════════ */
+    var _dFiltro = 'all';
+
+    // Buckets de agrupación por CLASE de notificación (no por entidad),
+    // como las pilas del Centro de Notificaciones de macOS.
+    var DRAWER_GROUPS = [
+        { key: 'vencidas',    label: 'Vencimientos',     tipos: ['tarea_vencida','actividad_vencida','tarea_por_vencer','actividad_por_vencer'] },
+        { key: 'asignadas',   label: 'Asignaciones',     tipos: ['tarea_asignada','tarea_opp_asignada','prospecto_asignado','proyecto_agregado','programacion_proyecto','tarea_participante','tarea_observador'] },
+        { key: 'menciones',   label: 'Menciones',        tipos: ['mencion','muro_mencion','tarea_mencion'] },
+        { key: 'comentarios', label: 'Comentarios',      tipos: ['comentario_oportunidad','tarea_comentario','tarea_opp_comentario','oportunidad_mensaje','respuesta'] },
+        { key: 'reprog',      label: 'Reprogramaciones', tipos: ['tarea_reprogramada'] },
+        { key: 'muro',        label: 'Equipo & Muro',    tipos: ['muro_post','mensaje_grupo'] },
+        { key: 'cert',        label: 'Certificaciones',  tipos: ['certificacion_por_vencer','certificacion_vencida'] },
+        { key: 'sistema',     label: 'Sistema',          tipos: ['solicitud_cambio_perfil','rendimiento_bajo','sistema'] }
+    ];
+    function _ndGroupOf(tipo) {
+        for (var i = 0; i < DRAWER_GROUPS.length; i++) {
+            if (DRAWER_GROUPS[i].tipos.indexOf(tipo) !== -1) return DRAWER_GROUPS[i];
+        }
+        return { key: 'otras', label: 'Otras', tipos: [] };
+    }
+
+    function _ndEsc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+    }
+
+    function _drawerMatch(n) {
+        if (_dFiltro === 'all') return true;
+        if (_dFiltro === 'parati') return PRIORITY_CRITICAL.includes(n.tipo) || PRIORITY_IMPORTANT.includes(n.tipo);
+        if (_dFiltro === 'unread') return !n.leida;
+        if (_dFiltro === 'tareas') return CAT_TAREAS.includes(n.tipo);
+        if (_dFiltro === 'oportunidades') return CAT_OPPS.includes(n.tipo);
+        if (_dFiltro === 'equipo') return CAT_EQUIPO.includes(n.tipo);
+        if (_dFiltro === 'admin') return CAT_ADMIN.includes(n.tipo);
+        return true;
+    }
+
+    function _ndCleanMsg(s) {
+        return _ndEsc(String(s || '').replace(/^sistema\s+/i, '').trim());
+    }
+
+    function _ndCard(n) {
+        var pr = _getPriority(n.tipo);
+        var icon = ICONS[n.tipo] || ICONS['sistema'] || '';
+        var title = _ndEsc(n.titulo || '');
+        var msg = _ndCleanMsg(n.mensaje);
+        var unread = n.leida ? '' : ' nd-unread';
+        var dot = n.leida ? '' : '<span class="nd-dot"></span>';
+
+        // Solicitud de cambio de perfil: acciones inline (no navega).
+        if (n.tipo === 'solicitud_cambio_perfil' && n.solicitud_perfil_data) {
+            var sid = n.solicitud_perfil_data.id;
+            return '<div class="nd-card pr-' + pr + unread + '">' +
+                '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
+                '<div class="nd-bd">' +
+                    '<div class="nd-title">' + (title || msg) + '</div>' +
+                    (title && msg ? '<div class="nd-msg">' + msg + '</div>' : '') +
+                    '<div class="nd-actions">' +
+                        '<button class="nd-act nd-act-ok" onclick="event.stopPropagation(); procesarSolicitudPerfil(' + sid + ', true, ' + n.id + ')">Aprobar</button>' +
+                        '<button class="nd-act nd-act-no" onclick="event.stopPropagation(); procesarSolicitudPerfil(' + sid + ', false, ' + n.id + ')">Rechazar</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="nd-meta"><span class="nd-time">' + _timeAgo(n.fecha) + '</span>' + dot + '</div>' +
+            '</div>';
+        }
+
+        // rendimiento_bajo: en el cajón no tiene panel expandible → solo leer.
+        var onclick = (n.tipo === 'rendimiento_bajo')
+            ? "notifQuickAction('leer', " + n.id + ")"
+            : "notifHandleClick(" + n.id + ", " + (n.tarea_id || 0) + ", " + (n.oportunidad_id || 0) + ", " + (n.tarea_opp_id || 0) + ", '" + n.tipo + "'); window.notifDrawerClose();";
+
+        return '<div class="nd-card pr-' + pr + unread + '" onclick="' + onclick + '">' +
+            '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
+            '<div class="nd-bd">' +
+                '<div class="nd-title">' + (title || msg) + '</div>' +
+                (title && msg ? '<div class="nd-msg">' + msg + '</div>' : '') +
+            '</div>' +
+            '<div class="nd-meta"><span class="nd-time">' + _timeAgo(n.fecha) + '</span>' + dot + '</div>' +
+        '</div>';
+    }
+
+    function _ndStack(grp, items) {
+        var pr = _getPriority(items[0].tipo);
+        var icon = ICONS[items[0].tipo] || ICONS['sistema'] || '';
+        var unreadN = items.filter(function (x) { return !x.leida; }).length;
+        var preview = _ndCleanMsg(items[0].titulo || items[0].mensaje);
+        var sub = items.map(_ndCard).join('');
+        return '<div class="nd-stack' + (unreadN ? ' nd-unread' : '') + '">' +
+            '<div class="nd-stack-head" onclick="this.parentNode.classList.toggle(\'open\')">' +
+                '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
+                '<div class="nd-bd">' +
+                    '<div class="nd-title">' + _ndEsc(grp.label) + '<span class="nd-count">' + items.length + '</span></div>' +
+                    '<div class="nd-msg">' + preview + '</div>' +
+                '</div>' +
+                '<div class="nd-meta">' +
+                    '<span class="nd-time">' + _timeAgo(items[0].fecha) + '</span>' +
+                    '<svg class="nd-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                '</div>' +
+            '</div>' +
+            '<div class="nd-stack-items">' + sub + '</div>' +
+        '</div>';
+    }
+
+    function _renderDrawer() {
+        var list = document.getElementById('notifDrawerList');
+        if (!list) return;
+        var arr = _sortNotifs(_nData.filter(_drawerMatch).slice());
+
+        if (!arr.length) {
+            if (!_firstLoadDone) {
+                list.innerHTML = '<div class="nd-empty"><svg width="34" height="34" fill="none" stroke="#CBD5E1" stroke-width="2" viewBox="0 0 24 24" style="animation:notif-spin 1s linear infinite;"><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>Cargando…</div>';
+                return;
+            }
+            list.innerHTML = '<div class="nd-empty">' +
+                '<svg width="42" height="42" fill="none" stroke="#22C55E" stroke-width="1.6" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+                'Todo al d&iacute;a' +
+                '<div class="nd-empty-sub">' + (_dFiltro === 'all' ? 'No tienes notificaciones.' : 'Nada aqu&iacute; por ahora.') + '</div>' +
+            '</div>';
+            return;
+        }
+
+        // Agrupar por clase, preservando el orden ya ordenado (prioridad/fecha).
+        var buckets = {}, order = [];
+        arr.forEach(function (n) {
+            var g = _ndGroupOf(n.tipo);
+            if (!buckets[g.key]) { buckets[g.key] = { grp: g, items: [] }; order.push(g.key); }
+            buckets[g.key].items.push(n);
+        });
+        var html = '';
+        order.forEach(function (k) {
+            var b = buckets[k];
+            html += (b.items.length >= 2) ? _ndStack(b.grp, b.items) : _ndCard(b.items[0]);
+        });
+        list.innerHTML = html;
+    }
+
+    window.notifDrawerFiltro = function (cat, btn) {
+        _dFiltro = cat;
+        document.querySelectorAll('#notifDrawerChips .nd-chip').forEach(function (b) { b.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        _renderDrawer();
+    };
+    window.notifDrawerOpen = function () {
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
+        d.classList.add('open');
+        _renderDrawer();
+        if (window.notifLoad) window.notifLoad();   // refrescar al abrir
+    };
+    window.notifDrawerClose = function () {
+        var d = document.getElementById('notifDrawer');
+        if (d) d.classList.remove('open');
+    };
+    window.notifDrawerToggle = function () {
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
+        d.classList.contains('open') ? window.notifDrawerClose() : window.notifDrawerOpen();
+    };
+
     /* ═══ Click Handler ═══ */
     window.notifHandleClick = async function(id, tareaId, oppId, actId, tipo) {
         const nRel = _nData.find(x => x.id === id);
@@ -1542,6 +1855,44 @@
             window.crmDataBus.on('tarea-opp', refreshSoon);
             window.crmDataBus.on('oportunidad', refreshSoon);
         }
+
+        // ── Asomar el cajón desde el borde derecho (gatillo tipo macOS) ──
+        // Solo si el cursor toca el borde EXTREMO (~2px) y se queda ~250ms.
+        // No se dispara arrastrando una ventana, con el spotlight abierto, ni
+        // en la franja del topbar. Apagable con localStorage notifEdgePeek=off.
+        // El rechazo barato va PRIMERO: la inmensa mayoría de movimientos no
+        // están en el borde → un solo if y return (clave para Modo Ligero).
+        var _edgeT = null;
+        var _edgePeekOff = false;
+        try { _edgePeekOff = localStorage.getItem('notifEdgePeek') === 'off'; } catch (e) { }
+        document.addEventListener('mousemove', function (e) {
+            if (e.clientX < window.innerWidth - 2) {
+                if (_edgeT) { clearTimeout(_edgeT); _edgeT = null; }
+                return;
+            }
+            if (_edgePeekOff || _edgeT || e.clientY <= 64) return;
+            if (document.body.classList.contains('ww-dragging')) return;
+            var d = document.getElementById('notifDrawer');
+            if (!d || d.classList.contains('open')) return;
+            var sp = document.getElementById('spotlight-modal');
+            if (sp && sp.classList.contains('active')) return;
+            _edgeT = setTimeout(function () { _edgeT = null; window.notifDrawerOpen(); }, 250);
+        }, { passive: true });
+
+        // Cerrar el cajón: Esc + clic fuera (sin tapar la página con backdrop).
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var d = document.getElementById('notifDrawer');
+                if (d && d.classList.contains('open')) window.notifDrawerClose();
+            }
+        });
+        document.addEventListener('mousedown', function (e) {
+            var d = document.getElementById('notifDrawer');
+            if (!d || !d.classList.contains('open')) return;
+            if (d.contains(e.target)) return;
+            if (e.target.closest && (e.target.closest('#btnNotificaciones') || e.target.closest('#notifEdgeHandle'))) return;
+            window.notifDrawerClose();
+        });
     });
 
 })();
