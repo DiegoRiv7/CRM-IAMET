@@ -6891,6 +6891,13 @@
             if (typeof switchCrmView === 'function') switchCrmView('tareas');
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
+            // Reset de caché ANTES de cargar — IDÉNTICO al clic en el botón
+            // Tareas. Sin esto, en el doble dispatch del reload (DOMContentLoaded
+            // + el turbo:load que Turbo emite también en la carga inicial) el
+            // caché podía quedar en un estado parcial/vacío y el cockpit se
+            // pintaba sin tareas. Forzar un fetch limpio lo resuelve.
+            _crmTareasCache = {};
+            _tareasPollHash = null;
             cargarTareasCRM();
         } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
             if (typeof switchCrmView === 'function') switchCrmView('proyectos');
