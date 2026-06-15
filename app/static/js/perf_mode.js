@@ -34,7 +34,12 @@
     function setPref(v) {
         if (v !== 'auto' && v !== 'lite' && v !== 'full') return;
         try { localStorage.setItem(LS_KEY, v); } catch (e) { }
+        // Cambio manual: cortar cualquier probe/estado del controlador y
+        // re-arrancar según el nuevo modo (auto → vigila; manual → para).
+        _autoDowngraded = false; _probing = false; _rafOn = false;
+        if (_probeTimer) { clearTimeout(_probeTimer); _probeTimer = null; }
         resolve();
+        startController();
     }
 
     // Señales ESTÁTICAS solo si son inequívocas. NO usamos
@@ -77,7 +82,7 @@
     function loadBenchmark() {
         if (_benchDone) return;
         if (getPref() !== 'auto') { _benchDone = true; return; }       // manual: no medir
-        if (document.body.classList.contains(LITE_CLASS)) { _benchDone = true; return; } // ya ligero (reduced-motion)
+        if (document.body.classList.contains(LITE_CLASS)) { _benchDone = true; startController(); return; } // ya ligero (reduced-motion)
         _benchDone = true;
         var last = performance.now(), jank = 0, frames = 0;
         function tick(now) {
@@ -90,6 +95,7 @@
                     applyLite(true);
                     updateToggleUI();
                 }
+                startController();               // el benchmark cede al controlador adaptativo
                 return;                          // benchmark terminado
             }
             requestAnimationFrame(tick);
@@ -97,45 +103,128 @@
         requestAnimationFrame(tick);
     }
 
-    /* ── Monitor dinámico: solo durante un arrastre de ventana ── */
-    var _monRunning = false;
-    function startMonitor() {
-        if (_monRunning) return;
-        if (getPref() !== 'auto') return;                 // manual: sin auto-switch
-        if (document.body.classList.contains(LITE_CLASS)) return;  // ya ligero
-        _monRunning = true;
-        var last = performance.now();
-        var jank = 0, frames = 0;
-        function tick(now) {
-            if (!_monRunning) return;
-            var dt = now - last; last = now;
-            frames++;
-            if (dt > 50) jank++;                          // frame >50ms = pico <20fps
-            if (frames >= 45) {                           // ~0.75-1.5s de muestra
-                if (jank >= 18) {                         // ≥40% frames con jank → sufre
-                    _jankSeen = true;
-                    applyLite(true);
-                    updateToggleUI();
-                    _monRunning = false;
-                    return;
-                }
-                jank = 0; frames = 0;
-            }
-            requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-    }
-    function stopMonitor() { _monRunning = false; }
+    /* ══════════════════════════════════════════════════════════════════
+       CONTROLADOR ADAPTATIVO DE DOS VÍAS (solo en modo 'auto')
 
-    // Arrancar el monitor al iniciar un arrastre sobre una ventana (peor
-    // caso de repintado); detener al soltar. Captura para correr antes que
-    // los handlers del drag.
-    document.addEventListener('pointerdown', function (ev) {
-        if (!ev.target || !ev.target.closest) return;
-        if (ev.target.closest('.ww-card')) startMonitor();
-    }, true);
-    document.addEventListener('pointerup', stopMonitor, true);
-    document.addEventListener('pointercancel', stopMonitor, true);
+       · En COMPLETO: vigila los FPS. Si la máquina SUFRE de forma
+         SOSTENIDA (≈2.5s bajo 32fps — p.ej. AutoCAD + 10 apps comiéndose
+         el equipo) → baja a ligero. Requiere jank sostenido, no picos,
+         para no dar "falsos bajos rendimientos".
+       · En LIGERO (bajado por el controlador): cada cierto tiempo y SOLO
+         en reposo (usuario sin interactuar), hace un "probe" a completo
+         ~1.6s; si fluye (carga liberada) → se queda en completo; si no →
+         vuelve a ligero y ESPACIA el próximo intento (backoff 30s→3min).
+       · Pausado cuando la pestaña no es visible. En ligero NO corre rAF
+         continuo (espera el probe por timer) → cero costo en reposo.
+       ══════════════════════════════════════════════════════════════════ */
+    var FPS_BAD = 32, FPS_GOOD = 50;
+    var DOWNGRADE_MS = 2500;          // jank sostenido → completo→ligero
+    var PROBE_DUR = 1600;             // duración del probe a completo
+    var PROBE_BASE = 30000, PROBE_MAX = 180000;
+
+    var _autoDowngraded = false;      // en ligero por decisión del controlador
+    var _fpsAvg = 60, _badAccum = 0, _lastT = 0, _rafOn = false;
+    var _lastInteract = Date.now();
+    var _probing = false, _probeUntil = 0, _probeGood = 0;
+    var _probeTimer = null, _probeInterval = PROBE_BASE;
+
+    function idle() { return Date.now() - _lastInteract > 1800; }
+
+    function ensureRaf() {
+        if (_rafOn) return;
+        if (getPref() !== 'auto' || document.hidden) return;
+        _rafOn = true; _lastT = 0;
+        requestAnimationFrame(rafLoop);
+    }
+    function markInteract() { _lastInteract = Date.now(); ensureRaf(); }
+    ['pointerdown', 'pointermove', 'wheel', 'keydown'].forEach(function (e) {
+        window.addEventListener(e, markInteract, { passive: true, capture: true });
+    });
+    window.addEventListener('scroll', markInteract, { passive: true, capture: true });
+
+    function rafLoop(now) {
+        if (!_rafOn) return;
+        if (document.hidden || getPref() !== 'auto') { _rafOn = false; return; }
+        if (_lastT === 0) { _lastT = now; requestAnimationFrame(rafLoop); return; }
+        var dt = now - _lastT; _lastT = now;
+        if (dt > 0) {
+            _fpsAvg = _fpsAvg * 0.85 + (1000 / dt) * 0.15;
+            step(now, dt);
+        }
+        if (_rafOn) requestAnimationFrame(rafLoop);
+    }
+
+    function step(now, dt) {
+        var lite = document.body.classList.contains(LITE_CLASS);
+        if (_probing) {
+            if (_fpsAvg >= FPS_GOOD) _probeGood += dt;
+            if (now >= _probeUntil) endProbe();
+            return;
+        }
+        if (lite) return;  // en ligero sin probe: el rAF no debería correr
+        // COMPLETO: acumular jank SOSTENIDO → bajar.
+        if (_fpsAvg < FPS_BAD) _badAccum += dt;
+        else _badAccum = Math.max(0, _badAccum - dt * 0.6);  // recupera, no de golpe
+        if (_badAccum > DOWNGRADE_MS) {
+            applyLite(true); _autoDowngraded = true; _jankSeen = true;
+            _badAccum = 0; _rafOn = false;     // en ligero esperamos al probe por timer
+            updateToggleUI();
+            scheduleProbe();
+        } else if (_fpsAvg >= FPS_GOOD && now - _lastInteract > 6000) {
+            // Completo fluido + reposo prolongado → apagar rAF para ahorrar
+            // (se re-arma en la próxima interacción / visibilitychange).
+            _rafOn = false;
+        }
+    }
+
+    function scheduleProbe() {
+        if (_probeTimer) clearTimeout(_probeTimer);
+        _probeTimer = setTimeout(tryProbe, _probeInterval);
+    }
+    function tryProbe() {
+        if (getPref() !== 'auto' || !_autoDowngraded) return;
+        if (document.hidden || !idle()) { scheduleProbe(); return; }  // reintentar en reposo
+        _probing = true; _probeGood = 0; _probeUntil = performance.now() + PROBE_DUR;
+        _fpsAvg = 60;
+        applyLite(false);   // subir a completo SOLO para medir
+        ensureRaf();
+    }
+    function endProbe() {
+        _probing = false;
+        if (_probeGood > PROBE_DUR * 0.6) {
+            // Fluye → la carga se liberó: quedarse en completo.
+            _autoDowngraded = false; _jankSeen = false; _probeInterval = PROBE_BASE;
+            updateToggleUI();   // seguimos en completo con rAF vigilando
+        } else {
+            // Sigue pesado → volver a ligero y espaciar el próximo probe.
+            applyLite(true);
+            _probeInterval = Math.min(_probeInterval * 2, PROBE_MAX);
+            _rafOn = false;
+            updateToggleUI();
+            scheduleProbe();
+        }
+    }
+
+    // Arrancar a vigilar tras resolver el modo inicial.
+    function startController() {
+        if (getPref() !== 'auto') { _rafOn = false; if (_probeTimer) clearTimeout(_probeTimer); return; }
+        if (document.body.classList.contains(LITE_CLASS)) {
+            // Si es ligero por señal ESTÁTICA (reduced-motion / RAM baja),
+            // el usuario/equipo PIDE poco movimiento → quedarse en ligero,
+            // sin probes de subida. Si es por JANK del benchmark, sí
+            // programar probes para recuperar completo cuando se libere carga.
+            if (staticLowEnd()) { _autoDowngraded = false; return; }
+            _autoDowngraded = true;
+            scheduleProbe();
+        } else {
+            ensureRaf();
+        }
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { _rafOn = false; return; }
+        if (getPref() === 'auto' && !document.body.classList.contains(LITE_CLASS)) ensureRaf();
+    });
 
     /* ── UI del toggle en el perfil (3 estados) ── */
     function updateToggleUI() {

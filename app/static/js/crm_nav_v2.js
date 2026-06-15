@@ -464,6 +464,10 @@
 
     function dashPrewarm() {
         if (dashWarmed || dashInline || calInline) return;
+        // Modo Ligero: NO precargar el dashboard en background — es trabajo
+        // (fetches + render) que el equipo viejo no pidió. Reportes igual
+        // carga al entrar; solo se pierde el "ya estaba caliente".
+        if (document.body.classList.contains('ww-lite')) return;
         if (document.visibilityState === 'hidden') return;
         if (PAGE_TAB !== 'crm') return;
         if (!document.getElementById('ckDashRoot')) return;

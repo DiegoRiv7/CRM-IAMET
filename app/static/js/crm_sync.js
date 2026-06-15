@@ -30,7 +30,14 @@
     var MAX_INTERVAL = 300000;   // tope de backoff: 5 min
     var CURSOR_KEY = '_crm_sync_cursor';
 
-    var interval = BASE_INTERVAL;
+    // En Modo Ligero el polling de sync baja a 45s: menos CPU/red en
+    // equipos viejos (o con carga externa). El sync sigue funcionando,
+    // solo refresca un poco menos seguido.
+    function baseInterval() {
+        return document.body.classList.contains('ww-lite') ? 45000 : BASE_INTERVAL;
+    }
+
+    var interval = baseInterval();
     var timer = null;
     var inFlight = false;
 
@@ -79,7 +86,7 @@
                 if (!data.ok) throw new Error(data.error || 'sync error');
                 if (data.cursor !== undefined && data.cursor !== null) setCursor(data.cursor);
                 emitir(data.cambios);
-                interval = BASE_INTERVAL;  // éxito → reset del backoff
+                interval = baseInterval();  // éxito → reset del backoff
                 schedule(interval);
             })
             .catch(function (err) {
@@ -96,7 +103,7 @@
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') {
                 // Al volver a la pestaña: ponerse al día de inmediato.
-                interval = BASE_INTERVAL;
+                interval = baseInterval();
                 schedule(400);
             } else {
                 clearTimeout(timer);  // pestaña oculta: cero tráfico
