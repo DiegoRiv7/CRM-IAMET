@@ -6876,9 +6876,16 @@
         // crm_main.js para tener openDetalle, pero NO deben restaurar el sidebar
         // — el server-render ya marcó el botón correcto. Sin este guard se veía
         // doble-active (ej. Reportes + Tareas ambos azules en /app/reportes/).
-        var _isCrmHome = window.location.pathname.indexOf('/app/todos') === 0
-                      || window.location.pathname === '/app/'
-                      || window.location.pathname === '/app';
+        // OJO: el CRM home se sirve en /app/home/ (principal) Y /app/todos/
+        // (alias histórico). Faltaba /app/home → en una recarga F5 en
+        // /app/home/ este guard daba false y se SALTABA toda la restauración
+        // de vista (Tareas/Proyectos quedaban vacíos hasta volver a dar clic).
+        // Alineado con el mismo check de _sidebar.html.
+        var _path = window.location.pathname;
+        var _isCrmHome = _path.indexOf('/app/home') === 0
+                      || _path.indexOf('/app/todos') === 0
+                      || _path === '/app/'
+                      || _path === '/app';
         if (!_isCrmHome) {
             // No-op: no restaurar nada del CRM en páginas externas.
         } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
