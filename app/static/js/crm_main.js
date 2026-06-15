@@ -6883,16 +6883,18 @@
             // No-op: no restaurar nada del CRM en páginas externas.
         } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            // switchCrmView ACTIVA la sección (igual que el clic en el botón
+            // Tareas). Antes solo se marcaba el botón + cargarTareasCRM, sin
+            // activar bien la sección → en una recarga F5 quedaba vacía hasta
+            // volver a dar clic. Replicar el clic exacto resuelve el reload.
+            if (typeof switchCrmView === 'function') switchCrmView('tareas');
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
-            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             cargarTareasCRM();
         } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
-            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             if (typeof proyectosInit === 'function') proyectosInit();
         }
 
@@ -8181,9 +8183,13 @@
                     requestAnimationFrame(function(){ sb.style.transition = ''; });
                 }
             }
-            // Migrado a crmReady: corre en DOMContentLoaded y en cada
-            // turbo:load (cuando Turbo se active en Fase 3.C).
-            window.crmReady(bind);
+            // Esta IIFE ya corre DENTRO del wireup (que es un callback de
+            // crmReady). Registrar bind con crmReady AQUÍ lo agendaba durante
+            // el dispatch del forEach → en una recarga F5 se SALTABA (forEach
+            // no visita elementos agregados durante la iteración) y la barra
+            // de tareas quedaba sin cablear hasta navegar por Turbo. Llamada
+            // directa: corre en primera carga y en cada turbo:load, una vez.
+            bind();
         })();
 
         // ══════════════════════════════════════════════════════════════
@@ -8517,8 +8523,13 @@
 
                 setTimeout(renderChips, 300);
             }
-            // Migrado a crmReady (Turbo-friendly).
-            window.crmReady(init);
+            // Llamada directa (no crmReady): esta IIFE ya corre dentro del
+            // wireup (callback de crmReady). Registrarla aquí la saltaba en la
+            // recarga F5 (forEach no visita callbacks agregados durante el
+            // dispatch) → la vista de tareas (cockpit/calendar) no se aplicaba
+            // y quedaba vacía hasta volver a entrar. Directo: 1ª carga + cada
+            // turbo:load, una vez.
+            init();
         })();
 
         // ── Dropdown para asignar oportunidad a tarea ──
