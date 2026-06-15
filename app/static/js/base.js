@@ -160,40 +160,42 @@
         return out;
     }
 
+    // Punto de estado: el color del pill (success/warning/danger/info/neutral)
+    // condensado a un solo dot — la señal de estado sin recargar la fila.
+    function renderStatusDot(r) {
+        if (!r.status_label) return '';
+        var cls = r.status_class || 'neutral';
+        return '<span class="sp-status-dot sp-dot-' + escapeHtml(cls) + '" title="' + escapeHtml(r.status_label) + '"></span>';
+    }
+
     function renderResultItem(r, idx, q) {
         var icon = ICONS[r.type] || ICONS.accion;
         var iconTag = r.type === 'accion' ? ICONS.accion : icon;
         var title = highlight(r.title, q);
         var subtitle = highlight(r.subtitle || '', q);
-        var metaParts = [];
-        if (r.responsable) metaParts.push(renderAvatar(r.responsable) + '<span class="sp-owner-name">' + escapeHtml(r.responsable.nombre) + '</span>');
-        if (r.monto_formatted) metaParts.push('<span class="sp-monto">' + escapeHtml(r.monto_formatted) + '</span>');
-        if (r.fecha_relative)  metaParts.push('<span class="sp-date">' + escapeHtml(r.fecha_relative) + '</span>');
-        var metaHtml = metaParts.length ? '<div class="sp-meta">' + metaParts.join('<span class="sp-dot-sep">·</span>') + '</div>' : '';
+        // Fila minimalista: icono + (título / subtítulo) y, a la derecha, solo
+        // un punto de estado + el avatar del responsable. El monto, la fecha,
+        // los badges PO/Factura y la flecha se quitan para mantenerla limpia.
+        var dot = renderStatusDot(r);
+        var avatar = r.responsable ? renderAvatar(r.responsable) : '';
+        var aside = (dot || avatar) ? '<div class="sp-aside">' + dot + avatar + '</div>' : '';
 
         return (
             '<div class="sp-item" data-index="' + idx + '" onclick="selectResult(' + idx + ')">' +
                 '<div class="sp-icon sp-icon-' + escapeHtml(r.type) + '">' + iconTag + '</div>' +
                 '<div class="sp-body">' +
-                    '<div class="sp-row1">' +
-                        '<span class="sp-title">' + title + '</span>' +
-                        renderStatusPill(r) +
-                        renderBadges(r) +
-                    '</div>' +
-                    '<div class="sp-row2">' +
-                        (subtitle ? '<span class="sp-subtitle">' + subtitle + '</span>' : '') +
-                        metaHtml +
-                    '</div>' +
+                    '<div class="sp-row1"><span class="sp-title">' + title + '</span></div>' +
+                    (subtitle ? '<div class="sp-row2"><span class="sp-subtitle">' + subtitle + '</span></div>' : '') +
                 '</div>' +
-                '<svg class="sp-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>' +
+                aside +
             '</div>'
         );
     }
 
     function renderSectionHeader(type, count) {
+        // Sin badge de conteo: encabezado tenue al estilo Spotlight.
         var label = LABELS[type] || type;
-        var badge = (count != null) ? ' <span class="sp-section-count">' + count + '</span>' : '';
-        return '<div class="sp-section-header">' + label + badge + '</div>';
+        return '<div class="sp-section-header">' + label + '</div>';
     }
 
     function displayResults(results, q) {
