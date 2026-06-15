@@ -31,6 +31,11 @@
     'use strict';
 
     var MAX_WINDOWS = 4;
+    // En Modo Ligero el tope baja a 3: menos ventanas simultáneas = menos
+    // capas/compositing/memoria en equipos viejos → más fluido.
+    function maxWindows() {
+        return document.body.classList.contains('ww-lite') ? 3 : MAX_WINDOWS;
+    }
     var MIN_W = 380;
     var MIN_H = 260;
     var SNAP = 14;          // px de tolerancia para "imantar" a los bordes
@@ -184,7 +189,7 @@
 
     function windowize(overlay, rect) {
         if (overlay.classList.contains('ww-windowed')) return true;
-        if (countWindows() >= MAX_WINDOWS) {
+        if (countWindows() >= maxWindows()) {
             // En lugar de un toast huérfano, abrir el selector visual
             // estilo Mission Control: el usuario elige cuál cerrar
             // para que la nueva tome su lugar. Si cancela, la ventana
@@ -402,8 +407,8 @@
 
     function restoreFromDock(overlay) {
         var s = st(overlay);
-        if (s.windowed && countWindows() >= MAX_WINDOWS) {
-            notify('Máximo ' + MAX_WINDOWS + ' ventanas abiertas a la vez');
+        if (s.windowed && countWindows() >= maxWindows()) {
+            notify('Máximo ' + maxWindows() + ' ventanas abiertas a la vez');
             return;
         }
         // Capturar rect del chip ANTES de removerlo — el destino visual

@@ -133,8 +133,7 @@
                         value="{{ request.user.userprofile.theme|default:'mundial' }}">
                 </div>
 
-                {# ── Rendimiento (Modo Ligero) ── client-side por equipo (localStorage),
-                   NO parte del form: no se envía al servidor. #}
+                {% comment %}Rendimiento (Modo Ligero): client-side por equipo (localStorage), NO parte del form — no se envía al servidor.{% endcomment %}
                 <div style="margin-top: 18px;">
                     <label style="font-size:0.75rem; font-weight:700; color:#86868b; display:block; margin-bottom:8px; margin-left:4px;">Rendimiento</label>
                     <div id="perfModeSeg" style="display:flex; gap:6px; background:#f2f2f7; border-radius:12px; padding:4px;">
