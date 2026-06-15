@@ -232,6 +232,42 @@
         return false;
     };
 
+    // Drive desde una tarea: si la tarea está EN VENTANA, el drive abre
+    // como ventana-iframe propia (key 'drive:<oppId>', reusa la del opp si
+    // ya existe). Lo consume crmTaskAbrirDrive (crm_main). Si la tarea es
+    // modal clásico, devuelve false → drive overlay de siempre.
+    window._taskDriveAsWindow = function (oppId) {
+        if (!oppId) return false;
+        var m = document.getElementById('crmTaskDetailModal');
+        var enVentana = m && m.classList.contains('ww-windowed') &&
+            window.getComputedStyle(m).display !== 'none';
+        if (!enVentana) return false;
+        if (!window.crmIframeWindow || typeof window.crmIframeWindow.open !== 'function') return false;
+        window.crmIframeWindow.open(
+            'drive:' + oppId,
+            '/app/widget/drive/' + oppId + '/',
+            'Drive',
+            null,
+            { forceWindow: true, w: 980, h: 680 }
+        );
+        return true;
+    };
+
+    // Petición de las ventanas-iframe de tarea: abrir el drive de su opp
+    // como ventana en ESTE escritorio (el iframe no puede ponerla solo).
+    window.addEventListener('message', function (e) {
+        if (e.origin !== window.location.origin) return;
+        if (!e.data || e.data.type !== 'open-task-drive' || !e.data.oppId) return;
+        if (!window.crmIframeWindow || typeof window.crmIframeWindow.open !== 'function') return;
+        window.crmIframeWindow.open(
+            'drive:' + e.data.oppId,
+            '/app/widget/drive/' + e.data.oppId + '/',
+            'Drive',
+            null,
+            { forceWindow: true, w: 980, h: 680 }
+        );
+    });
+
     // El modal de tarea bloquea el scroll del body al abrir; en modo
     // VENTANA el usuario debe poder scrollear la página de atrás.
     (function () {

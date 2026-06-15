@@ -65,7 +65,17 @@ def widget_actividad_idea_page(request, idea_id):
 @login_required
 @never_cache
 def widget_tarea_page(request, tarea_id):
-    """Detalle de tarea como página completa (ventana-iframe propia)."""
+    """Detalle de tarea como página completa (ventana-iframe propia).
+
+    Pasa los flags de rol REALES: sin esto la página renderiza el modal
+    con permisos de vendedor raso (esSupervisor=False…) y un supervisor
+    veía la tarea con menos controles que en el modal principal.
+    """
+    from .views_utils import is_supervisor, is_administrador
+    profile = getattr(request.user, 'userprofile', None)
     return render(request, 'crm/widget_tarea_page.html', {
         'tarea_id': tarea_id,
+        'es_supervisor': is_supervisor(request.user),
+        'es_administrador': is_administrador(request.user),
+        'es_ingeniero': (getattr(profile, 'rol', 'vendedor') == 'ingeniero') if profile else False,
     })

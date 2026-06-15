@@ -1045,8 +1045,12 @@
         // propio comportamiento). El shield se incluye por defensa:
         // en algunos browsers el target del click se determina al
         // pointerdown, cuando el shield aún cubría el viewport.
+        // [data-ww-enhanced] / .ww-windowed cubre los modales que NO son
+        // .widget-overlay (p.ej. el detalle de tarea, .crm-task-modal-overlay):
+        // sin esto, clicar DENTRO de una ventana de tarea activaba Mission
+        // Control como si fuera el fondo.
         if (ev.target.closest(
-            '.widget-overlay, #wwDock, .ww-snap-ghost, .ww-mc-hint, .ww-drag-shield'
+            '.widget-overlay, [data-ww-enhanced], .ww-windowed, #wwDock, .ww-snap-ghost, .ww-mc-hint, .ww-drag-shield'
         )) {
             return;
         }

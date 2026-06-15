@@ -9947,6 +9947,11 @@
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
+            // Si la tarea está en VENTANA (o dentro de un iframe de tarea), el
+            // drive abre como VENTANA propia (prospecto_windows / la página
+            // iframe lo manejan). Si devuelve true, no abrimos el modal.
+            if (typeof window._taskDriveAsWindow === 'function' &&
+                window._taskDriveAsWindow(_crmTaskCurrentOppId)) return;
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             // Elevar por encima del modal de tarea: el drive es CAPA 2 (10200)
             // y el modal CAPA 4 (10400) — sin esto el drive abre DETRÁS.

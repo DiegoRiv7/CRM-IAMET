@@ -50,10 +50,10 @@ y helpers compartidos.
             usuarioNombre: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
             usuarioAvatar: '{{ request.user.userprofile.get_avatar_url|default:""|escapejs }}',
             userId: parseInt("{{ request.user.id|unlocalize }}") || -1,
-            isSuperuser: false,
-            esSupervisor: false,
-            esAdministrador: false,
-            esIngeniero: false,
+            isSuperuser: "{{ request.user.is_superuser|yesno:'true,false' }}" === "true",
+            esSupervisor: "{{ es_supervisor|yesno:'true,false' }}" === "true",
+            esAdministrador: "{{ es_administrador|yesno:'true,false' }}" === "true",
+            esIngeniero: "{{ es_ingeniero|yesno:'true,false' }}" === "true",
             etapasPipeline: [],
         };
         window._CRM_CONFIG = _CRM_CONFIG;
@@ -77,9 +77,19 @@ y helpers compartidos.
     {% include "crm/_widget_tarea_detalle.html" %}
     {% include "crm/_widget_oportunidad.html" %}
     <script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
-    <script src="{% static 'js/crm_main.js' %}?v=20260615-task-policy"></script>
+    <script src="{% static 'js/crm_main.js' %}?v=20260615-task-drive"></script>
     <script>
         (function () {
+            // Drive desde esta tarea: el iframe no puede poner ventanas en el
+            // escritorio del padre → se lo delega. Devuelve true para que
+            // crmTaskAbrirDrive NO abra el overlay modal dentro del iframe.
+            window._taskDriveAsWindow = function (oppId) {
+                if (!oppId) return false;
+                try {
+                    window.parent.postMessage({ type: 'open-task-drive', oppId: oppId }, window.location.origin);
+                    return true;
+                } catch (e) { return false; }
+            };
             function boot() {
                 try {
                     if (typeof window.crmTaskVerDetalle === 'function') {
