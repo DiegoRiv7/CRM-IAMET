@@ -2,41 +2,67 @@
 <div class="widget-overlay{% if tab_activo == 'calendario' %} is-page-mode{% endif %}" id="widgetCalendarioMaster" style="z-index:var(--z-widget);{% if tab_activo == 'calendario' %}display:flex;position:static;background:transparent;align-items:stretch;justify-content:stretch;{% else %}display:none;{% endif %}"><!-- Nivel 1: calendario standalone (o page-mode) -->
     <div class="cal-card{% if tab_activo == 'calendario' %} cal-card--page{% endif %}" style="{% if tab_activo == 'calendario' %}width:100%;height:auto;min-height:100vh;max-width:none;background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;{% else %}width:98vw;height:97vh;max-width:none;background:rgba(255,255,255,0.96);backdrop-filter:blur(64px) saturate(180%);-webkit-backdrop-filter:blur(64px) saturate(180%);border-radius:24px;box-shadow:0 2px 0 rgba(255,255,255,0.95) inset,0 32px 64px rgba(0,0,0,0.18);border:1px solid rgba(15,23,42,0.06);{% endif %}display:flex;flex-direction:column;overflow:hidden;">
         <style>
-            /* ═══ HEADER DEL CALENDARIO — layout intencional (fix "fila rara") ═══
-               .cal-page-bar hereda de .crm-bar--dashboard, cuya media query
-               (max-width:1680px) está pensada para el island de 7 modos de
-               Clientes y fuerza la isla a flex:1 1 100% → banda estirada vacía
-               en una 2ª fila. El calendario solo tiene 3-4 vistas: aquí la
-               dejamos como un pill COMPACTO y CENTRADO en su propia fila, con
-               los controles arriba bien repartidos. Layout limpio tipo
-               Fantastical: [controles izq] ........ [controles der] / [vistas]. */
-            .widget-overlay.is-page-mode .cal-page-bar {
-                flex-wrap: wrap !important;
-                row-gap: 9px !important;
-                column-gap: 10px !important;
+            /* ═══ HEADER DEL CALENDARIO v2 — grid 2×2 balanceado ═══
+               .cal-page-bar heredaba el flex+wrap de .crm-bar--dashboard
+               (pensado para el island de 7 modos de Clientes) y amontonaba
+               todo a la derecha. Lo reemplazamos por un grid intencional:
+                 [ nav (‹›Hoy título) ]        [ + Nueva actividad ]
+                 [ Filtro·Usuarios·Asist ]     [ Fuente + Mes/Semana/Día ]
+               Estilo Fantastical: navegación prominente arriba-izq, CTA
+               arriba-der, herramientas y vistas abajo. */
+            .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
+                display: grid !important;
+                grid-template-columns: 1fr auto;
+                grid-template-areas:
+                    "nav   cta"
+                    "tools views";
+                align-items: center;
+                column-gap: 16px;
+                row-gap: 11px;
+                flex-wrap: nowrap !important;
             }
-            .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-left {
-                order: 1 !important;
-                flex: 1 1 auto !important;
-                min-width: 0 !important;
-                flex-wrap: wrap !important;
-                gap: 8px !important;
+            .cal-hdr-nav   { grid-area: nav;   display: flex; align-items: center; gap: 6px; min-width: 0; }
+            .cal-hdr-cta   { grid-area: cta;   display: flex; align-items: center; gap: 8px; justify-self: end; }
+            .cal-hdr-tools { grid-area: tools; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+            .cal-hdr-views { grid-area: views; display: flex; align-items: center; gap: 10px; justify-self: end; flex-wrap: wrap; justify-content: flex-end; }
+            /* Título de mes/semana/día grande y prominente */
+            .cal-hdr-nav .cal-topnav-title {
+                font-size: 1.32rem !important;
+                font-weight: 800 !important;
+                letter-spacing: -0.01em;
+                margin-left: 8px;
+                white-space: nowrap;
             }
-            .widget-overlay.is-page-mode .cal-page-bar > .crm-bar-right {
-                order: 2 !important;
-                margin-left: auto !important;
-                flex-wrap: wrap !important;
-                justify-content: flex-end !important;
-                gap: 8px !important;
-            }
-            /* Isla de vistas (Mes/Semana/Día): compacta y centrada en su fila */
-            .widget-overlay.is-page-mode .cal-page-bar > .crm-tabs--dashboard {
-                order: 3 !important;
-                flex: 0 0 auto !important;
+            /* La isla de vistas ya no es hijo directo de .cal-page-bar, así que
+               las reglas de altura de crm.css (> .crm-tabs--dashboard) no le
+               pegan: la dimensionamos aquí. */
+            .cal-hdr-views .crm-tabs--dashboard {
+                height: 36px; box-sizing: border-box;
+                display: inline-flex !important; align-items: center;
+                padding: 0 3px;
+                flex: 0 0 auto !important;   /* anula el flex:1 1 100% heredado de la media query de Clientes */
                 width: auto !important;
-                margin: 2px auto 0 !important;
-                justify-content: center !important;
+                order: 0 !important;
+                overflow: visible !important;
             }
+            /* En pantallas angostas, las dos columnas se apilan limpio */
+            @media (max-width: 880px) {
+                .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
+                    grid-template-columns: 1fr;
+                    grid-template-areas: "nav" "cta" "tools" "views";
+                }
+                .cal-hdr-cta, .cal-hdr-views { justify-self: start; justify-content: flex-start; }
+            }
+            /* Toggle Fuente del Calendario: Actividades / Instalaciones */
+            .cal-source-btn {
+                border: none; background: transparent; padding: 5px 11px;
+                border-radius: 999px; font-size: 0.7rem; font-weight: 600;
+                font-family: inherit; color: #86868B; cursor: pointer;
+                transition: all 0.15s; white-space: nowrap;
+            }
+            .cal-source-btn:hover { color: #1D1D1F; }
+            .cal-source-btn-active { background: #fff; color: #1D1D1F; box-shadow: 0 1px 4px rgba(15,23,42,0.10); }
+            .cal-source-btn-active:hover { color: #1D1D1F; }
 
             /* ─── FullCalendar base ─── */
             #fullCalendarRoot {
@@ -314,8 +340,38 @@
         {% endcomment %}
         <!-- ── Outer header (page mode): estilo .crm-bar.crm-bar--dashboard para
              mantener armonía con Oportunidades/Prospección/Proyectos ── -->
-        <div class="crm-bar crm-bar--dashboard cal-page-bar">
-            <div class="crm-bar-left">
+        <div class="crm-bar crm-bar--dashboard cal-page-bar cal-hdr">
+            {% comment %} ── ZONA NAV: navegación de fecha (arriba-izquierda) ── {% endcomment %}
+            <div class="cal-hdr-nav">
+                <div class="cal-topnav" style="display:flex;align-items:center;gap:4px;">
+                    <button type="button" class="cal-topnav-arrow" onclick="calNavPrev()" title="Anterior">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button type="button" class="cal-topnav-arrow" onclick="calNavNext()" title="Siguiente">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <button type="button" class="cal-topnav-today" onclick="calNavToday()">Hoy</button>
+                    <span id="calNavTitlePage" class="cal-topnav-title">—</span>
+                </div>
+            </div>
+
+            {% comment %} ── ZONA CTA: nueva actividad (arriba-derecha) ── {% endcomment %}
+            <div class="cal-hdr-cta">
+                <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nueva actividad</span>
+                </button>
+                {% comment %}
+                Botón de cierre OCULTO: widget_stack (Esc) cierra el widget de
+                tope clickeando su [data-widget-close]. En modo página inline
+                regresa a la página original vía calendarioCerrar.
+                {% endcomment %}
+                <button type="button" data-widget-close style="display:none"
+                    onclick="if(window._crmNavCalInline && typeof calendarioCerrar==='function')calendarioCerrar()"></button>
+            </div>
+
+            {% comment %} ── ZONA TOOLS: filtro · usuarios · asistente (abajo-izquierda) ── {% endcomment %}
+            <div class="cal-hdr-tools">
                 <!-- Filtro de tipos (Tareas / Actividades / Eventos / Cursos) -->
                 <div class="cal-filter-wrap" style="position:relative;">
                     <button type="button" class="crm-facet-btn crm-facet-add" id="calFiltroBtn" onclick="calFiltroToggle(event)" title="Filtro">
@@ -330,7 +386,7 @@
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="curso" checked><span class="cal-filter-dot" style="background:#10B981;"></span><span>Cursos</span></label>
                     </div>
                 </div>
-                <!-- Selector de usuario (mismo estilo que el pill "Vendedores Todos" del CRM) -->
+                <!-- Selector de usuario -->
                 <div id="calUserPickerWrap" class="cal-userpick-wrap" style="position:relative;">
                     <button type="button" id="calUserPickerBtn" class="crm-period-pill" onclick="calUserPickerToggle(event)" aria-haspopup="listbox" aria-expanded="false">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -346,56 +402,16 @@
                     </div>
                     <input type="hidden" id="calUserFilter" value="all">
                 </div>
-                {% comment %}
-                Asistente AI del calendario: abre el modal compartido en modo
-                'calendario' para reagendar vencidas o rellenar huecos con
-                actividades de seguimiento sobre opps/prospectos importantes.
-                {% endcomment %}
+                {% comment %} Asistente AI del calendario {% endcomment %}
                 <button type="button" id="calAsistenteBtn" class="crm-period-pill cal-ai-btn" onclick="calAsistenteAbrir()" title="Asistente de calendario (AI)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
                     <span>Asistente</span>
                 </button>
             </div>
-            <!-- Dynamic island central: Mes / Semana / Día / (Técnicos solo en modo Instalaciones) -->
-            <div class="crm-tabs crm-tabs--dashboard">
-                <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
-                <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
-                <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
-                <button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
-            </div>
-            <style>
-                /* Toggle Fuente del Calendario: Actividades / Instalaciones.
-                   Vive en la barra derecha (junto a la navegación de fechas)
-                   para no competir con la dynamic island central. */
-                .cal-source-btn {
-                    border: none;
-                    background: transparent;
-                    padding: 5px 11px;
-                    border-radius: 999px;
-                    font-size: 0.7rem;
-                    font-weight: 600;
-                    font-family: inherit;
-                    color: #86868B;
-                    cursor: pointer;
-                    transition: all 0.15s;
-                    white-space: nowrap;
-                }
-                .cal-source-btn:hover { color: #1D1D1F; }
-                .cal-source-btn-active {
-                    background: #fff;
-                    color: #1D1D1F;
-                    box-shadow: 0 1px 4px rgba(15,23,42,0.10);
-                }
-                .cal-source-btn-active:hover { color: #1D1D1F; }
-            </style>
-            <div class="crm-bar-right" style="display:flex;align-items:center;gap:10px;">
-                {% comment %}
-                Toggle "Actividades / Instalaciones" — fuente del calendario.
-                Vive aquí (lado derecho, junto a la navegación de fecha) para
-                no quitarle protagonismo a la dynamic island central
-                Mes/Semana/Día. Default: Actividades. El JS (calSetSource)
-                cambia la fuente y recarga los eventos visibles.
-                {% endcomment %}
+
+            {% comment %} ── ZONA VIEWS: fuente + vistas (abajo-derecha) ── {% endcomment %}
+            <div class="cal-hdr-views">
+                {% comment %} Toggle "Actividades / Instalaciones" — fuente del calendario {% endcomment %}
                 <div class="cal-source-toggle" id="calSourceToggle" role="tablist" style="display:inline-flex;gap:2px;background:#F2F2F7;padding:3px;border-radius:999px;">
                     <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Calendario de actividades (default)">
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
@@ -406,36 +422,13 @@
                         Instalaciones
                     </button>
                 </div>
-                {% comment %}
-                Navegación de fecha en el topbar (compacta): prev / next / Hoy +
-                título. Antes vivía debajo del topbar como cal-page-monthnav y
-                quitaba espacio vertical al calendario. Ahora va a la izquierda
-                del botón "Nueva actividad".
-                {% endcomment %}
-                <div class="cal-topnav" style="display:flex;align-items:center;gap:4px;">
-                    <button type="button" class="cal-topnav-arrow" onclick="calNavPrev()" title="Anterior">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                    </button>
-                    <button type="button" class="cal-topnav-arrow" onclick="calNavNext()" title="Siguiente">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                    </button>
-                    <button type="button" class="cal-topnav-today" onclick="calNavToday()">Hoy</button>
-                    <span id="calNavTitlePage" class="cal-topnav-title">—</span>
+                <!-- Dynamic island: Mes / Semana / Día / (Técnicos solo en modo Instalaciones) -->
+                <div class="crm-tabs crm-tabs--dashboard">
+                    <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
+                    <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
+                    <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
+                    <button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
                 </div>
-                <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    <span>Nueva actividad</span>
-                </button>
-                {% comment %}
-                Botón de cierre OCULTO: widget_stack (Esc) cierra el widget de
-                tope clickeando su [data-widget-close]. En modo página inline
-                (abierto desde otra página sin navegar) esto regresa a la
-                página original vía calendarioCerrar→unpageizeCalendar; en la
-                página nativa ?tab=calendario es no-op (Esc no debe "cerrar"
-                una página).
-                {% endcomment %}
-                <button type="button" data-widget-close style="display:none"
-                    onclick="if(window._crmNavCalInline && typeof calendarioCerrar==='function')calendarioCerrar()"></button>
             </div>
         </div>
 
