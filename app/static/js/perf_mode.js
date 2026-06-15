@@ -37,13 +37,16 @@
         resolve();
     }
 
+    // Señales ESTÁTICAS solo si son inequívocas. NO usamos
+    // hardwareConcurrency: Safari lo capa y reportaba ≤4 hasta en una M2 →
+    // metía equipos modernos a ligero por error. La detección real de
+    // "equipo lento" la hace el benchmark de FPS (mide rendimiento de
+    // verdad, sin falsos positivos).
     function staticLowEnd() {
         try {
             if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-            var hc = navigator.hardwareConcurrency;
-            if (typeof hc === 'number' && hc > 0 && hc <= 4) return true;
-            var dm = navigator.deviceMemory;   // no existe en Safari → ignorado
-            if (typeof dm === 'number' && dm > 0 && dm <= 4) return true;
+            var dm = navigator.deviceMemory;   // Chrome; ausente en Safari
+            if (typeof dm === 'number' && dm > 0 && dm <= 2) return true;  // RAM genuinamente baja
         } catch (e) { }
         return false;
     }
@@ -62,6 +65,36 @@
         // auto
         applyLite(staticLowEnd() || _jankSeen);
         updateToggleUI();
+    }
+
+    /* ── Benchmark de carga: medición REAL de rendimiento ──
+       Corre en modo COMPLETO durante ~1s, cuando el kanban (con sus
+       animaciones de urgencia) ya está pintado. Si la máquina sufre
+       (muchos frames largos sostenidos) → ligero. Mide rendimiento de
+       verdad: una M2 lo pasa fácil → completo; una 2015 con kanban lleno
+       no lo pasa → ligero. Cero falsos positivos por specs reportadas. */
+    var _benchDone = false;
+    function loadBenchmark() {
+        if (_benchDone) return;
+        if (getPref() !== 'auto') { _benchDone = true; return; }       // manual: no medir
+        if (document.body.classList.contains(LITE_CLASS)) { _benchDone = true; return; } // ya ligero (reduced-motion)
+        _benchDone = true;
+        var last = performance.now(), jank = 0, frames = 0;
+        function tick(now) {
+            var dt = now - last; last = now;
+            frames++;
+            if (dt > 40) jank++;                 // frame >40ms = <25fps
+            if (frames >= 55) {                  // ~1s de muestra real
+                if (jank >= 22) {                // ≥40% frames lentos SOSTENIDO → equipo lento
+                    _jankSeen = true;
+                    applyLite(true);
+                    updateToggleUI();
+                }
+                return;                          // benchmark terminado
+            }
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
     }
 
     /* ── Monitor dinámico: solo durante un arrastre de ventana ── */
@@ -143,4 +176,10 @@
     // Re-aplicar en cada navegación Turbo (body reemplazado pierde la clase).
     if (window.crmReady) window.crmReady(resolve);
     document.addEventListener('turbo:load', resolve);
+
+    // Benchmark de carga: tras ~700ms (el kanban + sus animaciones ya están
+    // pintados) se mide el rendimiento real ~1s. Solo una vez por carga.
+    function scheduleBench() { setTimeout(loadBenchmark, 700); }
+    if (document.readyState === 'complete') scheduleBench();
+    else window.addEventListener('load', scheduleBench);
 })();
