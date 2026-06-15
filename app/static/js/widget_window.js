@@ -807,10 +807,21 @@
             mode: mode,
             startX: ev.clientX,
             startY: ev.clientY,
+            curDx: 0,
+            curDy: 0,
             startRect: {
                 x: s.rect.x, y: s.rect.y, w: s.rect.w, h: s.rect.h,
             },
         };
+        // MOVER: promover la card a su propia capa GPU y arrastrar con
+        // transform (solo composita). Sin esto, mover actualizaba left/top
+        // en cada frame → layout+paint del contenido (la oportunidad, con
+        // DOM rico, se arrastraba lentísimo). El iframe de tarea ya era su
+        // propia capa, por eso ése sí iba fluido.
+        if (mode === 'move' && card) {
+            card.style.willChange = 'transform';
+            card.style.transition = 'none';
+        }
         addShield(cursor);
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp, { once: true });
@@ -826,8 +837,13 @@
         var r = { x: s0.x, y: s0.y, w: s0.w, h: s0.h };
 
         if (dragState.mode === 'move') {
-            r.x = s0.x + dx;
-            r.y = s0.y + dy;
+            // Mover = solo transform (composite). NO tocar left/top aquí:
+            // eso forzaría layout+paint del contenido en cada frame. La
+            // posición real se fija en onPointerUp.
+            dragState.curDx = dx;
+            dragState.curDy = dy;
+            var mcard = getCard(dragState.overlay);
+            if (mcard) mcard.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
             // Snap visual: si el puntero entra en una zona, mostrar
             // el ghost. La aplicación real ocurre en onPointerUp.
             var zone = snapZoneFor(ev.clientX, ev.clientY);
@@ -837,6 +853,7 @@
             } else {
                 hideSnapGhost();
             }
+            return;  // no applyRect durante el move
         } else {
             // Resize por esquina: 'nw' | 'ne' | 'sw' | 'se'
             var dir = dragState.mode;
@@ -870,18 +887,30 @@
         if (dragState) {
             var s = st(dragState.overlay);
             if (dragState.mode === 'move') {
-                if (snapTarget) {
-                    // Aplicar snap rect con animación FLIP suave.
-                    var card = getCard(dragState.overlay);
-                    var fromRect = card ? card.getBoundingClientRect() : null;
-                    applyRect(dragState.overlay, {
-                        x: snapTarget.x, y: snapTarget.y,
-                        w: snapTarget.w, h: snapTarget.h,
-                    });
-                    if (fromRect) flipAnimate(card, fromRect, 240);
-                } else if (s.rect) {
-                    applyRect(dragState.overlay, snapToEdges(s.rect));
+                var card = getCard(dragState.overlay);
+                // Capturar la posición VISUAL actual (con el transform del
+                // drag aplicado) ANTES de limpiar, para un FLIP sin saltos.
+                var fromRect = card ? card.getBoundingClientRect() : null;
+                if (card) {
+                    card.style.transform = '';
+                    card.style.willChange = '';
+                    card.style.transition = '';
                 }
+                var s0 = dragState.startRect;
+                var finalRect;
+                if (snapTarget) {
+                    finalRect = { x: snapTarget.x, y: snapTarget.y, w: snapTarget.w, h: snapTarget.h };
+                } else {
+                    finalRect = snapToEdges({
+                        x: s0.x + dragState.curDx, y: s0.y + dragState.curDy,
+                        w: s0.w, h: s0.h,
+                    });
+                }
+                applyRect(dragState.overlay, finalRect);
+                // FLIP solo si hay snap (o imán de borde) que mueva la card
+                // respecto a donde está; si soltaste libre, fromRect≈final →
+                // sin animación, sin parpadeo.
+                if (fromRect) flipAnimate(card, fromRect, snapTarget ? 240 : 0);
             }
             lastDragEnd = Date.now();
         }

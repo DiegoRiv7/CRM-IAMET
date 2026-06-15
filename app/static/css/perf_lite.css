@@ -104,3 +104,83 @@ body.ww-lite .crm-list-row:hover {
 body.ww-lite[data-theme="mundial"]::before {
     filter: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   "LOOK 2015" — aplanado agresivo de CRM / Ideas / Prospección /
+   Oportunidades / Proyectos. Todo bajo body.ww-lite (en modo normal, nada).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 7. MATAR animaciones INFINITAS (el mayor costo oculto) ──
+   Pulsos de urgencia que repintan SIN PARAR en cada tarjeta vencida —
+   con un kanban lleno son decenas de repintados por segundo. En ligero
+   la tarjeta se queda roja FIJA (misma señal visual, cero costo). */
+body.ww-lite .crm-list-strip,
+body.ww-lite .crm-postit,
+body.ww-lite .crm-postit-strip,
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-list-row,
+body.ww-lite .crm-alert-icon,
+body.ww-lite .dashi-live-dot,
+body.ww-lite [class*="heat"],
+body.ww-lite [class*="illuminate"],
+body.ww-lite [class*="pulse"],
+body.ww-lite [class*="-live"],
+body.ww-lite .proy-v2-pulse,
+body.ww-lite .asist-orb,
+body.ww-lite .asist-orb-ring,
+body.ww-lite .asist-orb-core {
+    animation: none !important;
+}
+
+/* ── 8. Sombras → planas (separación con borde fino) en TODAS las
+   superficies de estos módulos. Las sombras suaves son lo que más
+   cuesta repintar al hacer scroll con muchas tarjetas. ── */
+body.ww-lite .crm-kanban-col,
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-postit,
+body.ww-lite .crm-list-row,
+body.ww-lite .crm-card,
+body.ww-lite .idea-card,
+body.ww-lite .tareas-card,
+body.ww-lite .tcp-card,
+body.ww-lite .wo-card,
+body.ww-lite .wo-quick-card,
+body.ww-lite .widget-card,
+body.ww-lite .widget-card-lg,
+body.ww-lite .proy-detail-card,
+body.ww-lite .proy-v3-kpi-strip,
+body.ww-lite .proy-v3-dash-card,
+body.ww-lite .proy-tab-pane,
+body.ww-lite #proyListView .crm-list-row {
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.10) !important;
+}
+
+/* ── 9. Cero transiciones/animaciones de entrada en el contenido de
+   estos módulos (cambios instantáneos = sin jank de animación). Scoped a
+   los contenedores principales para no tocar timers que dependan de
+   transitionend fuera del CRM. ── */
+body.ww-lite .crm-content .crm-kanban-card,
+body.ww-lite .crm-content .crm-postit,
+body.ww-lite .crm-content .crm-list-row,
+body.ww-lite .crm-content .idea-card,
+body.ww-lite .crm-content .wo-info-item,
+body.ww-lite .opp-v2 .wo-card,
+body.ww-lite .opp-v2 .wo-info-item,
+body.ww-lite .opp-v2 .wo-pipeline-stage,
+body.ww-lite #widgetProspecto .wo-card,
+body.ww-lite #widgetIdea .idea-detail-card,
+body.ww-lite #widgetProyectoDetalle .proy-tab-pane,
+body.ww-lite #widgetProyectoDetalle .proy-v3-dash-card {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ── 10. Sin transform en hover de pills/tabs de estos módulos
+   (el "levantar" en hover repinta; en ligero, sin movimiento). ── */
+body.ww-lite .wo-pipeline-stage:hover,
+body.ww-lite .proy-v3-topbar-tab:hover,
+body.ww-lite .crm-tab:hover,
+body.ww-lite .crm-kanban-card:hover,
+body.ww-lite .crm-postit:hover {
+    transform: none !important;
+}
