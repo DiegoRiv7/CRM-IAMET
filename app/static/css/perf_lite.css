@@ -231,6 +231,27 @@ body.ww-lite .ww-windowed:not(.ww-minimized) .ww-card {
     contain: layout;
 }
 
+/* ── CROSSFADE de cambio de modo ──
+   Clase TRANSITORIA (no bajo ww-lite): perf_mode.js la pone ~460ms al
+   alternar modo para que sombras/blur/brillo aparezcan/desaparezcan con
+   transición — sobre todo al SUBIR a completo, que no sea "de golpe". */
+body.ww-fx-fade .ww-card,
+body.ww-fx-fade .crm-kanban-col,
+body.ww-fx-fade .crm-kanban-card,
+body.ww-fx-fade .crm-postit,
+body.ww-fx-fade .idea-card,
+body.ww-fx-fade .tareas-card,
+body.ww-fx-fade .tcp-card,
+body.ww-fx-fade .wo-card,
+body.ww-fx-fade .widget-card,
+body.ww-fx-fade .widget-card-lg,
+body.ww-fx-fade .crm-list-row,
+body.ww-fx-fade .proy-detail-card,
+body.ww-fx-fade .proy-v3-dash-card {
+    transition: box-shadow .42s ease, filter .42s ease, background-color .42s ease,
+                -webkit-backdrop-filter .42s ease, backdrop-filter .42s ease !important;
+}
+
 /* ── 15. Aplanar SUB-CAPAS dentro del contenido de la ventana ──
    Cualquier hijo con will-change / filter / transform propio crea su
    capa y encarece mover la ventana. En ligero los neutralizamos para

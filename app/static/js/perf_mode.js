@@ -56,9 +56,27 @@
         return false;
     }
 
-    function applyLite(on) {
+    // Cache POR SESIÓN de "este equipo va lento": evita re-medir (y el
+    // micro-jank del benchmark) en cada recarga. Se limpia al cerrar la
+    // pestaña; si la carga se libera, el probe lo borra al volver a completo.
+    var SS_LITE = 'crmPerfSessionLite';
+    function sessionLiteSet(v) { try { v ? sessionStorage.setItem(SS_LITE, '1') : sessionStorage.removeItem(SS_LITE); } catch (e) { } }
+    function sessionLiteGet() { try { return sessionStorage.getItem(SS_LITE) === '1'; } catch (e) { return false; } }
+
+    var _fxTimer = null;
+    function applyLite(on, smooth) {
         var b = document.body;
         if (!b) return;
+        var was = b.classList.contains(LITE_CLASS);
+        if (!!on === was) return;   // sin cambio real
+        // Crossfade: al cambiar de modo (sobre todo SUBIR a completo) las
+        // sombras/blur/brillo aparecen/desaparecen con transición, no de
+        // golpe. El JS pone ww-fx-fade ~420ms (ver perf_lite.css).
+        if (smooth) {
+            b.classList.add('ww-fx-fade');
+            if (_fxTimer) clearTimeout(_fxTimer);
+            _fxTimer = setTimeout(function () { b.classList.remove('ww-fx-fade'); }, 460);
+        }
         if (on) b.classList.add(LITE_CLASS);
         else b.classList.remove(LITE_CLASS);
     }
@@ -67,9 +85,42 @@
         var pref = getPref();
         if (pref === 'lite') { applyLite(true); updateToggleUI(); return; }
         if (pref === 'full') { applyLite(false); updateToggleUI(); return; }
-        // auto
-        applyLite(staticLowEnd() || _jankSeen);
+        // auto: ligero si señal estática, o jank ya visto, o el equipo ya
+        // venía marcado lento esta sesión (evita re-jank en cada recarga).
+        applyLite(staticLowEnd() || _jankSeen || sessionLiteGet());
         updateToggleUI();
+    }
+
+    /* ── Aviso sutil (estilo notice de fallo): pill chico abajo, 5s ── */
+    var _noticeEl = null, _noticeTimer = null;
+    function showNotice(text) {
+        try {
+            if (!_noticeEl) {
+                _noticeEl = document.createElement('div');
+                _noticeEl.id = 'perfModeNotice';
+                _noticeEl.style.cssText = [
+                    'position:fixed', 'left:50%', 'bottom:18px', 'transform:translateX(-50%) translateY(8px)',
+                    'z-index:99998', 'background:rgba(28,28,30,0.92)', 'color:#fff',
+                    'font:500 12.5px -apple-system,"Segoe UI",Roboto,sans-serif', 'letter-spacing:0.01em',
+                    'padding:8px 14px', 'border-radius:999px', 'box-shadow:0 4px 16px rgba(0,0,0,0.25)',
+                    'pointer-events:none', 'opacity:0', 'transition:opacity .25s ease, transform .25s ease',
+                    'display:flex', 'align-items:center', 'gap:8px', 'max-width:90vw', 'white-space:nowrap'
+                ].join(';');
+                document.body.appendChild(_noticeEl);
+            }
+            _noticeEl.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#34C759;flex:0 0 auto;"></span><span></span>';
+            _noticeEl.lastChild.textContent = text;
+            // forzar reflow → animar entrada
+            void _noticeEl.offsetHeight;
+            _noticeEl.style.opacity = '1';
+            _noticeEl.style.transform = 'translateX(-50%) translateY(0)';
+            if (_noticeTimer) clearTimeout(_noticeTimer);
+            _noticeTimer = setTimeout(function () {
+                if (!_noticeEl) return;
+                _noticeEl.style.opacity = '0';
+                _noticeEl.style.transform = 'translateX(-50%) translateY(8px)';
+            }, 5000);
+        } catch (e) { /* el aviso nunca debe romper nada */ }
     }
 
     /* ── Benchmark de carga: medición REAL de rendimiento ──
@@ -92,8 +143,10 @@
             if (frames >= 55) {                  // ~1s de muestra real
                 if (jank >= 22) {                // ≥40% frames lentos SOSTENIDO → equipo lento
                     _jankSeen = true;
-                    applyLite(true);
+                    applyLite(true);             // al cargar: instantáneo (aún no hay nada que "suavizar")
+                    sessionLiteSet(true);
                     updateToggleUI();
+                    showNotice('Modo ligero activado para mantener la fluidez');
                 }
                 startController();               // el benchmark cede al controlador adaptativo
                 return;                          // benchmark terminado
@@ -166,9 +219,12 @@
         if (_fpsAvg < FPS_BAD) _badAccum += dt;
         else _badAccum = Math.max(0, _badAccum - dt * 0.6);  // recupera, no de golpe
         if (_badAccum > DOWNGRADE_MS) {
-            applyLite(true); _autoDowngraded = true; _jankSeen = true;
+            // Bajar INSTANTÁNEO (escapar del jank ya), sin crossfade.
+            applyLite(true, false); _autoDowngraded = true; _jankSeen = true;
+            sessionLiteSet(true);
             _badAccum = 0; _rafOn = false;     // en ligero esperamos al probe por timer
             updateToggleUI();
+            showNotice('Modo ligero activado para mantener la fluidez');
             scheduleProbe();
         } else if (_fpsAvg >= FPS_GOOD && now - _lastInteract > 6000) {
             // Completo fluido + reposo prolongado → apagar rAF para ahorrar
@@ -186,7 +242,7 @@
         if (document.hidden || !idle()) { scheduleProbe(); return; }  // reintentar en reposo
         _probing = true; _probeGood = 0; _probeUntil = performance.now() + PROBE_DUR;
         _fpsAvg = 60;
-        applyLite(false);   // subir a completo SOLO para medir
+        applyLite(false, true);   // SUBIR a completo SUAVE (crossfade) para medir
         ensureRaf();
     }
     function endProbe() {
@@ -194,10 +250,12 @@
         if (_probeGood > PROBE_DUR * 0.6) {
             // Fluye → la carga se liberó: quedarse en completo.
             _autoDowngraded = false; _jankSeen = false; _probeInterval = PROBE_BASE;
+            sessionLiteSet(false);
             updateToggleUI();   // seguimos en completo con rAF vigilando
+            showNotice('Efectos completos restaurados');
         } else {
-            // Sigue pesado → volver a ligero y espaciar el próximo probe.
-            applyLite(true);
+            // Sigue pesado → volver a ligero SUAVE y espaciar el próximo probe.
+            applyLite(true, true);
             _probeInterval = Math.min(_probeInterval * 2, PROBE_MAX);
             _rafOn = false;
             updateToggleUI();
