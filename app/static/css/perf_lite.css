@@ -211,3 +211,33 @@ body.ww-lite .crm-task-modal * {
 body.ww-dragging .ww-windowed:not(.ww-minimized) .ww-card {
     will-change: transform;
 }
+
+/* ── 13. Quitar el ORBE del asistente en las ventanas (lite) ──
+   Sus anillos usan transform → cada uno es una SUB-CAPA dentro de la
+   ventana, lo que impide tratar la ventana como una capa plana única al
+   arrastrar. En ligero se oculta (el asistente sigue disponible desde
+   su acceso global). */
+body.ww-lite .wo-asist-btn-title,
+body.ww-lite .asist-orb {
+    display: none !important;
+}
+
+/* ── 14. Aislar el layout de cada ventana (contain:layout) ──
+   Aísla el recálculo de layout de la ventana del resto del documento, sin
+   recortar (NO usamos 'paint' para no cortar popovers que escapen del
+   card, como los pickers de etapa/fecha). Bajo riesgo, ayuda a que mover
+   una ventana no toque el layout de lo demás. */
+body.ww-lite .ww-windowed:not(.ww-minimized) .ww-card {
+    contain: layout;
+}
+
+/* ── 15. Aplanar SUB-CAPAS dentro del contenido de la ventana ──
+   Cualquier hijo con will-change / filter / transform propio crea su
+   capa y encarece mover la ventana. En ligero los neutralizamos para
+   que la ventana sea UNA sola capa lisa (lo que hace fluido al iframe). */
+body.ww-lite .opp-v2 .wo-content *,
+body.ww-lite #widgetProspecto .wo-content *,
+body.ww-lite #widgetIdea .idea-detail-card * {
+    will-change: auto !important;
+    filter: none !important;
+}
