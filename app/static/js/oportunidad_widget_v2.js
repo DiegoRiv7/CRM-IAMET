@@ -397,7 +397,10 @@
                     var w = Math.min(Math.round(vw * 0.62), 1150);
                     var h = Math.round(vh * 0.8);
                     var n = others.length;
-                    window.crmWidgetWindow.windowize(target.root, {
+                    // opts.rect (p.ej. abierta desde una notificación con el
+                    // cajón abierto) fija una posición/tamaño explícitos para
+                    // que la ventana quepa A LA IZQUIERDA del cajón, sin taparlo.
+                    window.crmWidgetWindow.windowize(target.root, opts.rect || {
                         x: Math.max(10, Math.min(40 + n * 38, vw - w - 16)),
                         y: Math.max(8, Math.min(28 + n * 34, vh - h - 12)),
                         w: w, h: h,
@@ -1396,7 +1399,7 @@
                 ? Math.min(opts.h, vh - 24)
                 : Math.round(vh * ((opts && opts.hf) || 0.86));
             var n = Object.keys(cotWindows).length;
-            window.crmWidgetWindow.windowize(ov, {
+            window.crmWidgetWindow.windowize(ov, (opts && opts.rect) || {
                 x: Math.max(8, Math.min(60 + n * 30, vw - w - 12)),
                 y: Math.max(6, Math.min(20 + n * 26, vh - h - 8)),
                 w: w, h: h,

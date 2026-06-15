@@ -124,6 +124,8 @@
     </div>
     <div class="nd-list" id="notifDrawerList"></div>
 </div>
+<!-- Preview al pasar el cursor (a la izquierda del cajón) -->
+<div id="ndPreview" class="nd-preview" aria-hidden="true"></div>
 
 <style>
 /* ═══ macOS Toasts ═══ */
@@ -680,7 +682,7 @@ body.ww-lite .nd-card { backdrop-filter: none; -webkit-backdrop-filter: none; ba
     overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
     -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.nd-msg { font-size: 12px; color: #64748B; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nd-msg { font-size: 12px; color: #475569; font-weight: 500; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nd-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
 .nd-time { font-size: 11px; color: #94A3B8; white-space: nowrap; }
 .nd-dot { width: 8px; height: 8px; border-radius: 50%; background: #2563EB; }
@@ -717,10 +719,41 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::before,
 body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .nd-chev { color: #94A3B8; transition: transform .18s; flex: 0 0 auto; }
 .nd-stack.open .nd-chev { transform: rotate(180deg); }
-.nd-stack-items { display: none; padding: 6px 0 2px 6px; }
-.nd-stack.open .nd-stack-items { display: block; }
-.nd-stack-items .nd-card { background: transparent; border: none; box-shadow: none; margin-bottom: 1px; padding: 9px 10px; border-radius: 12px; -webkit-backdrop-filter: none; backdrop-filter: none; }
-.nd-stack-items .nd-card:hover { background: rgba(255,255,255,0.55); box-shadow: none; }
+/* Al expandir, los sub-items van dentro de un panel frosted para que NO se
+   pierdan con el fondo: cada uno es su propia tarjetita de vidrio. */
+.nd-stack-items { display: none; }
+.nd-stack.open .nd-stack-items {
+    display: block; margin-top: 8px; padding: 8px;
+    background: rgba(255,255,255,0.28); border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.45);
+    -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+}
+.nd-stack-items .nd-card {
+    background: rgba(255,255,255,0.66); border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.06); margin-bottom: 7px;
+    padding: 10px 11px; border-radius: 14px;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.nd-stack-items .nd-card:last-child { margin-bottom: 0; }
+.nd-stack-items .nd-card:hover { background: rgba(255,255,255,0.9); }
+body.ww-lite .nd-stack.open .nd-stack-items { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(241,243,247,0.9); }
+body.ww-lite .nd-stack-items .nd-card { background: #fff; }
+
+/* Preview al pasar el cursor — popover de vidrio a la izquierda del cajón */
+.nd-preview {
+    position: fixed; z-index: 10720; width: 320px; max-width: 42vw;
+    background: rgba(255,255,255,0.9);
+    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.7); border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(15,23,42,0.22);
+    padding: 14px 16px; opacity: 0; transform: translateX(8px); pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+}
+.nd-preview.show { opacity: 1; transform: translateX(0); }
+.nd-preview-title { font-size: 13.5px; font-weight: 700; color: #0F172A; margin-bottom: 6px; line-height: 1.3; }
+.nd-preview-msg { font-size: 12.5px; color: #334155; line-height: 1.5; white-space: normal; }
+.nd-preview-meta { margin-top: 10px; font-size: 11px; color: #94A3B8; }
+body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none; background: #fff; }
 
 .nd-empty { text-align: center; color: #94A3B8; padding: 64px 20px; font-size: 14px; font-weight: 600; }
 .nd-empty svg { display: block; margin: 0 auto 12px; }
@@ -1366,7 +1399,7 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
         // Solicitud de cambio de perfil: acciones inline (no navega).
         if (n.tipo === 'solicitud_cambio_perfil' && n.solicitud_perfil_data) {
             var sid = n.solicitud_perfil_data.id;
-            return '<div class="nd-card pr-' + pr + unread + '">' +
+            return '<div class="nd-card pr-' + pr + unread + '" data-nid="' + n.id + '">' +
                 '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
                 '<div class="nd-bd">' +
                     '<div class="nd-title">' + (title || msg) + '</div>' +
@@ -1382,7 +1415,7 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
 
         // Clic SIEMPRE abre la entidad como VENTANA y NO cierra el cajón
         // (queda abierto detrás, fijado). Ver window.notifOpenItem.
-        return '<div class="nd-card pr-' + pr + unread + '" onclick="window.notifOpenItem(' + n.id + ')">' +
+        return '<div class="nd-card pr-' + pr + unread + '" data-nid="' + n.id + '" onclick="window.notifOpenItem(' + n.id + ')">' +
             '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
             '<div class="nd-bd">' +
                 '<div class="nd-title">' + (title || msg) + '</div>' +
@@ -1399,7 +1432,7 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
         var preview = _ndCleanMsg(items[0].titulo || items[0].mensaje);
         var sub = items.map(_ndCard).join('');
         return '<div class="nd-stack' + (unreadN ? ' nd-unread' : '') + '">' +
-            '<div class="nd-stack-head" onclick="this.parentNode.classList.toggle(\'open\')">' +
+            '<div class="nd-stack-head" data-nid="' + items[0].id + '" onclick="this.parentNode.classList.toggle(\'open\')">' +
                 '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
                 '<div class="nd-bd">' +
                     '<div class="nd-title">' + _ndEsc(grp.label) + '<span class="nd-count">' + items.length + '</span></div>' +
@@ -1487,6 +1520,45 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
         _renderDrawer();
     }
 
+    // ── Preview al pasar el cursor (popover a la izquierda del cajón) ──
+    var _ndPrevT = null;
+    function _ndShowPreview(nid, anchor) {
+        var n = _nData.find(function (x) { return x.id === nid; });
+        var p = document.getElementById('ndPreview');
+        if (!n || !p || !anchor) return;
+        var title = _ndEsc(n.titulo || '');
+        var msg = _ndCleanMsg(n.mensaje);
+        var rem = (n.remitente && !/sistema/i.test(n.remitente)) ? _ndEsc(n.remitente) : 'Sistema';
+        p.innerHTML =
+            (title ? '<div class="nd-preview-title">' + title + '</div>' : '') +
+            (msg ? '<div class="nd-preview-msg">' + msg + '</div>' : '') +
+            '<div class="nd-preview-meta">' + rem + ' &middot; ' + _ndEsc(n.fecha || '') + '</div>';
+        var d = document.getElementById('notifDrawer');
+        var dw = d ? d.offsetWidth : 392;
+        var r = anchor.getBoundingClientRect();
+        // medir alto antes de posicionar
+        p.style.visibility = 'hidden'; p.classList.add('show');
+        var ph = p.offsetHeight;
+        p.style.top = Math.max(12, Math.min(r.top, window.innerHeight - ph - 12)) + 'px';
+        p.style.right = (dw + 14) + 'px';
+        p.style.left = 'auto';
+        p.style.visibility = '';
+    }
+    function _ndHidePreview() {
+        var p = document.getElementById('ndPreview');
+        if (p) p.classList.remove('show');
+    }
+
+    // Rect para que la ventana abierta quepa A LA IZQUIERDA del cajón (sin
+    // taparlo) cuando el cajón está abierto. Si está cerrado, ventana amplia.
+    function _ndFitRect() {
+        var d = document.getElementById('notifDrawer');
+        var reserve = (d && d.classList.contains('open')) ? (d.offsetWidth + 24) : 0;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var w = Math.min(1180, Math.max(460, vw - reserve - 48));
+        return { x: 24, y: 72, w: w, h: Math.round(vh * 0.82) };
+    }
+
     // Abrir la entidad de una notificación SIEMPRE como VENTANA, dejando el
     // cajón abierto (fijado) detrás. Reusa el mismo patrón del buscador:
     // tarea → ventana-iframe; oportunidad → openDetalle({asWindow}); el resto
@@ -1503,15 +1575,17 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
         var esChat = (n.tipo === 'oportunidad_mensaje' || n.tipo === 'comentario_oportunidad');
         if (!esChat) _ndMarkRead(id);
 
-        // Tarea → ventana-iframe (igual que el buscador).
+        var rect = _ndFitRect();   // ventana A LA IZQUIERDA del cajón, sin taparlo
+
+        // Tarea → ventana-iframe (igual que el buscador), pero acomodada a la izq.
         if (n.tarea_id && window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
             window.crmIframeWindow.open('tarea:' + n.tarea_id, '/app/widget/tarea/' + n.tarea_id + '/', 'Tarea', null,
-                { forceWindow: true, wf: 0.62, maxw: 1180, hf: 0.84 });
+                { forceWindow: true, rect: rect });
             return;
         }
         // Oportunidad (o tarea de oportunidad con su opp) → ventana flotante.
         if (n.oportunidad_id && typeof window.openDetalle === 'function') {
-            window.openDetalle(n.oportunidad_id, { asWindow: true });
+            window.openDetalle(n.oportunidad_id, { asWindow: true, rect: rect });
             return;
         }
         // Resto (calendario, muro, grupo, proyecto, prospecto, cert): handler
@@ -1948,11 +2022,26 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
         if (_nd) {
             _nd.addEventListener('mouseenter', function () { clearTimeout(_drawerLeaveT); });
             _nd.addEventListener('mouseleave', function () {
+                clearTimeout(_ndPrevT); _ndHidePreview();
                 if (!_nd.classList.contains('open') || _drawerPinned) return;
                 clearTimeout(_drawerLeaveT);
                 _drawerLeaveT = setTimeout(function () {
                     if (!_drawerPinned && _nd.classList.contains('open')) window.notifDrawerClose();
                 }, 260);
+            });
+            // Preview al pasar el cursor sobre una notificación (~350ms).
+            _nd.addEventListener('mouseover', function (e) {
+                var card = e.target.closest && e.target.closest('[data-nid]');
+                if (!card) return;
+                var nid = parseInt(card.getAttribute('data-nid'), 10);
+                clearTimeout(_ndPrevT);
+                _ndPrevT = setTimeout(function () { _ndShowPreview(nid, card); }, 350);
+            });
+            _nd.addEventListener('mouseout', function (e) {
+                var card = e.target.closest && e.target.closest('[data-nid]');
+                if (!card) return;
+                if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+                clearTimeout(_ndPrevT); _ndHidePreview();
             });
         }
 
