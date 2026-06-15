@@ -6464,6 +6464,7 @@
         var _crmAllTareas = [];
         var _crmCurrentFilter = 'pendientes';
         var _crmTareasCache = {};  // cache por estado (solo pendientes)
+        var _crmTareasFetching = false;  // guard: evita fetches duplicados en vuelo
         var _crmPage = 1;
         var _crmTotalPages = 1;
         var _crmTotalTareas = 0;
@@ -6807,6 +6808,15 @@
                 return;
             }
 
+            // Guard anti-duplicado: en una recarga, Turbo emite turbo:load
+            // ADEMÁS de DOMContentLoaded → el wireup (y esta función) corren
+            // dos veces y disparaban 4 fetches (2 por llamada). Si ya hay un
+            // fetch en vuelo, no lanzar otro: el que está corriendo pinta al
+            // terminar. Las recargas tras mutación ocurren después (sin fetch
+            // en vuelo), así que no se bloquean.
+            if (_crmTareasFetching) return;
+            _crmTareasFetching = true;
+
             var grid = document.getElementById('tareasCardsGrid');
             if (grid) grid.innerHTML = '<div class="tareas-empty-card">Cargando tareas...</div>';
 
@@ -6818,6 +6828,7 @@
                 fetch('/app/api/tareas/?estado=completadas&page=1&page_size=100').then(function(r){ return r.ok ? r.json() : { success:false, tareas:[] }; }).catch(function(){ return { success:false, tareas:[] }; })
             ])
                 .then(function (results) {
+                    _crmTareasFetching = false;
                     var data = results[0];
                     var dataCompl = results[1] || { tareas: [] };
                     if (data.success && Array.isArray(data.tareas)) {
@@ -6838,6 +6849,7 @@
                     }
                 })
                 .catch(function (err) {
+                    _crmTareasFetching = false;
                     console.error('[Tareas] Error:', err);
                     if (grid) grid.innerHTML = '<div class="tareas-empty-card">Error: ' + err.message + '</div>';
                 });
@@ -6898,13 +6910,10 @@
             if (typeof switchCrmView === 'function') switchCrmView('tareas');
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
-            // Reset de caché ANTES de cargar — IDÉNTICO al clic en el botón
-            // Tareas. Sin esto, en el doble dispatch del reload (DOMContentLoaded
-            // + el turbo:load que Turbo emite también en la carga inicial) el
-            // caché podía quedar en un estado parcial/vacío y el cockpit se
-            // pintaba sin tareas. Forzar un fetch limpio lo resuelve.
-            _crmTareasCache = {};
-            _tareasPollHash = null;
+            // Sin reset de caché aquí: en una recarga el caché ya está vacío,
+            // y resetearlo en el 2º dispatch (turbo:load) podía descartar el
+            // resultado del fetch ya completado → fetch extra. El guard
+            // _crmTareasFetching de cargarTareasCRM evita los duplicados.
             cargarTareasCRM();
         } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
             if (typeof switchCrmView === 'function') switchCrmView('proyectos');
