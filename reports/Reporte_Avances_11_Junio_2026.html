@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Quincenal/Lanzamiento — 11 de Junio 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #003366; /* Azul Corporativo */
+            --mexico-green: #006847; /* Verde México */
+            --mexico-red: #CE1126; /* Rojo México (acentos mínimos) */
+            --accent-bg: #F0F7F4;
+            --text-dark: #1F2937;
+            --text-muted: #6B7280;
+            --border: #D1D5DB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #E5E7EB;
+            color: var(--text-dark);
+            padding: 50px 20px;
+            line-height: 1.5;
+        }
+
+        .report-card {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER RELEASE ═══════ */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--mexico-green) 100%);
+            color: white;
+            padding: 60px 60px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Patrón de greca sutil en el header */
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0V0zm20 20h20v20H20V20zM0 20h10v10H0V20zm20-20h10v10H20V0z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+            opacity: 0.4;
+        }
+
+        .release-tag {
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            line-height: 1.1;
+        }
+
+        header p {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .meta-strip {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* ═══════ MAIN MILESTONE ═══════ */
+        .hero-section {
+            padding: 40px 60px;
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .status-badge {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid var(--mexico-green);
+            flex-shrink: 0;
+        }
+
+        .hero-text h2 {
+            font-size: 22px;
+            color: var(--mexico-green);
+            margin-bottom: 5px;
+        }
+
+        .hero-text p {
+            font-size: 15px;
+            color: var(--text-dark);
+        }
+
+        /* ═══════ CONTENT SECTIONS ═══════ */
+        .content {
+            padding: 50px 60px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: -15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title::after { content: ''; height: 1px; flex: 1; background: var(--border); }
+
+        .feature-card {
+            padding: 25px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+        .feature-card:hover { transform: translateY(-3px); border-color: var(--mexico-green); }
+
+        .feature-card h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+        }
+
+        .feature-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ═══════ MEXICO THEME SPECIAL ═══════ */
+        .mexico-highlight {
+            grid-column: 1 / -1;
+            background: #fff;
+            border: 2px solid var(--mexico-green);
+            border-radius: 12px;
+            padding: 30px;
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mexico-highlight::after {
+            content: 'MEX 2026';
+            position: absolute;
+            right: -15px;
+            bottom: 5px;
+            font-size: 40px;
+            font-weight: 900;
+            color: rgba(0, 104, 71, 0.05);
+            transform: rotate(-5deg);
+        }
+
+        .mexico-icon { font-size: 45px; }
+
+        .mexico-info h3 { color: var(--mexico-green); margin-bottom: 5px; }
+        .mexico-info p { font-size: 14px; color: var(--text-dark); }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: #f9fafb;
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author-info { font-size: 12px; color: var(--text-muted); }
+        .btn-pdf {
+            background: var(--mexico-green);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-pdf:hover { background: #004d35; }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { padding: 0; background: white; }
+            .report-card { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-pdf { display: none; }
+            header, .status-badge, .mexico-highlight { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            /* Evitar 3ra hoja */
+            footer { break-inside: avoid; margin-bottom: 0; }
+            .report-card { padding-bottom: 1px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-card">
+    <header>
+        <div class="release-tag">UPDATE v2026.06.11</div>
+        <h1>Lanzamiento Oficial: <br>Mundial 2026 — México</h1>
+        <p>Despliegue final de infraestructura, temática visual y optimización de datos.</p>
+        
+        <div class="meta-strip">
+            <span>CLIENTE: IAMET CRM</span>
+            <span>ESTADO: PRODUCCIÓN</span>
+            <span>FECHA: 11 DE JUNIO, 2026</span>
+        </div>
+    </header>
+
+    <div class="hero-section">
+        <div class="status-badge">🚀</div>
+        <div class="hero-text">
+            <h2>Hito Principal: Deploy Exitoso</h2>
+            <p>Se realizó el merge final de la rama de pruebas a la rama principal. <strong>Todos los avances</strong> de la semana ya están disponibles en el servidor de producción para todos los usuarios.</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="grid">
+            
+            <div class="section-title">Experiencia de Usuario</div>
+
+            <div class="mexico-highlight">
+                <div class="mexico-icon">🇲🇽</div>
+                <div class="mexico-info">
+                    <h3>Temática Mundial 2026 (México)</h3>
+                    <p>Implementación de una estética profesional inspirada en México: patrones de grecas aztecas en cabeceras, botones con alto contraste y un balón Telstar 3D en la pantalla de acceso.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <h3>🖥️ Consolidación de Interfaz</h3>
+                <p>Auditoría completa de legibilidad: corregimos problemas de contraste en formularios y botones que eran difíciles de leer. Ahora cada sección es sólida y clara.</p>
+            </div>
+
+            <div class="feature-card">
+                <h3>🪟 Gestión de Ventanas v2</h3>
+                <p>Estabilización del sistema multi-ventana. Se integró el selector inteligente para cuando hay muchas tareas abiertas y se mejoró el foco visual.</p>
+            </div>
+
+            <div class="section-title">Ingeniería y Rendimiento</div>
+
+            <div class="feature-card">
+                <h3>⚡ Salto de Velocidad (Perf)</h3>
+                <p>Optimizamos la base de datos eliminando consultas repetitivas. El Dashboard ahora carga con solo 5 consultas en lugar de cientos, reduciendo el tiempo de espera al mínimo.</p>
+            </div>
+
+            <div class="feature-card">
+                <h3>📂 Drive y Reportes Sync</h3>
+                <p>Los reportes y el gestor de archivos ahora son instantáneos. No requieren recarga del servidor para mostrar los cambios más recientes entre usuarios.</p>
+            </div>
+
+        </div>
+
+        <section style="background: #f3f4f6; padding: 25px; border-radius: 8px; border-left: 4px solid var(--primary);">
+            <h4 style="font-size: 14px; margin-bottom: 8px; color: var(--primary);">Resumen Técnico de Estabilidad</h4>
+            <p style="font-size: 13px; color: var(--text-dark);">
+                Durante el día se auditaron los módulos de Compras, Marcas, Proyectos y Calendario. Se eliminaron fugas de memoria y procesos huérfanos que podían congelar la pantalla tras largas sesiones de uso. El sistema se reporta 100% estable.
+            </p>
+        </section>
+    </div>
+
+    <footer>
+        <div class="author-info">
+            <strong>Diego Jafet Rivera Cordova</strong><br>
+            Responsable de Desarrollo CRM
+        </div>
+        <button class="btn-pdf" onclick="window.print()">DESCARGAR REPORTE PDF</button>
+    </footer>
+</div>
+
+</body>
+</html>

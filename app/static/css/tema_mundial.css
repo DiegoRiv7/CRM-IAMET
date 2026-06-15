@@ -1431,6 +1431,14 @@ body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn,
 body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn svg {
     color: #ffffff !important;
 }
+/* Hover / abierto: el botón toma fondo CLARO → su glifo debe ir oscuro
+   (si no, queda blanco-sobre-gris, el 'cuadrado blanco' del menú abierto). */
+body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn:hover,
+body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn.is-open,
+body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn:hover svg,
+body[data-theme="mundial"] .crm-tw-header-left .crm-tw-icon-btn.is-open svg {
+    color: #1E293B !important;
+}
 body[data-theme="mundial"] .crm-tw-header .ww-ctrls button,
 body[data-theme="mundial"] .crm-tw-header .ww-ctrls button svg {
     color: #3C3C43 !important;
@@ -1446,4 +1454,21 @@ body[data-theme="mundial"] .crm-tw-header .ww-ctrls .crm-tw-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+/* Dropdown de 3-puntos (.crm-tw-menu): es un panel BLANCO que cuelga del
+   header — la regla general lo pintaba con texto blanco (invisible).
+   Texto oscuro sobre el panel; el item 'danger' conserva su rojo. */
+body[data-theme="mundial"] .crm-tw-menu,
+body[data-theme="mundial"] .crm-tw-menu button,
+body[data-theme="mundial"] .crm-tw-menu button svg,
+body[data-theme="mundial"] .crm-tw-menu span {
+    color: #1D1D1F !important;
+}
+body[data-theme="mundial"] .crm-tw-menu .crm-tw-menu-item.danger,
+body[data-theme="mundial"] .crm-tw-menu .crm-tw-menu-item.danger svg,
+body[data-theme="mundial"] .crm-tw-menu .crm-tw-menu-item.danger span {
+    color: #DC2626 !important;
+}
+body[data-theme="mundial"] .crm-tw-menu button:hover {
+    background: #F2F2F7 !important;
 }

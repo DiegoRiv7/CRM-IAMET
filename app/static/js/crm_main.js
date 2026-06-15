@@ -8907,7 +8907,12 @@
                 var _cur = _CRM_CONFIG.userId;
                 var _su = _CRM_CONFIG.isSuperuser;
                 var _crId = (tarea.creado_por_data && tarea.creado_por_data.id) ? tarea.creado_por_data.id : null;
-                menuEliminar.style.display = (_su || (_cur && _crId && _cur === _crId)) ? 'flex' : 'none';
+                var _puedeEliminar = !!(_su || (_cur && _crId && _cur === _crId));
+                menuEliminar.style.display = _puedeEliminar ? 'flex' : 'none';
+                // Si "Eliminar" es la única acción del menú y está oculta, el
+                // botón de 3-puntos abría una caja vacía → ocultarlo.
+                var _menuWrap = document.getElementById('crmTaskMenuBtn');
+                if (_menuWrap) _menuWrap.style.display = _puedeEliminar ? '' : 'none';
             }
 
             // Subtareas O Tarea padre (mutuamente excluyentes)
@@ -9006,6 +9011,12 @@
         }
 
         function crmTaskVerDetalle(tareaId) {
+            // Política multi-tarea (prospecto_windows.js): si el modal ya está
+            // VISIBLE+EN VENTANA mostrando OTRA tarea, abrir la nueva como
+            // ventana-iframe propia. Guard al inicio para que TODO punto de
+            // entrada (inline onclick + llamadas locales del closure como
+            // tcpExpandir/tcpToggleCheck) pase por la política.
+            if (typeof window._taskWindowPolicy === 'function' && window._taskWindowPolicy(tareaId)) return;
             _crmCurrentTaskId = tareaId;
             window._crmCurrentTaskId = tareaId;  // expone para el modal de historial
             _crmTaskCurrentOppId = null;

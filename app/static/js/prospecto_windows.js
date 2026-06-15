@@ -207,31 +207,30 @@
        (data-windowable). Si está VISIBLE+EN VENTANA mostrando OTRA
        tarea, la nueva abre como ventana-iframe propia (key
        'tarea:<id>') — hasta 4 tareas a la vez, todas editables. */
-    function wrapTaskVerDetalle() {
-        var orig = window.crmTaskVerDetalle;
-        if (typeof orig !== 'function' || orig._pwWrapped) return;
-        var wrapped = function (id) {
-            var m = document.getElementById('crmTaskDetailModal');
-            var visible = m && window.getComputedStyle(m).display !== 'none';
-            var enVentana = m && m.classList.contains('ww-windowed');
-            var otroId = window._crmCurrentTaskId &&
-                String(window._crmCurrentTaskId) !== String(id);
-            if (visible && enVentana && otroId &&
-                window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
-                window.crmIframeWindow.open(
-                    'tarea:' + id,
-                    '/app/widget/tarea/' + id + '/',
-                    'Tarea',
-                    null,
-                    { forceWindow: true, wf: 0.62, maxw: 1180, hf: 0.84 }
-                );
-                return;
-            }
-            return orig.apply(this, arguments);
-        };
-        wrapped._pwWrapped = true;
-        window.crmTaskVerDetalle = wrapped;
-    }
+    // Política multi-tarea: la consume crmTaskVerDetalle como guard inicial
+    // (crm_main). Devuelve true si abrió ventana-iframe propia (el legacy
+    // NO debe seguir). Vive en window porque crmTaskVerDetalle se llama
+    // desde el closure de crm_main y desde inline onclick.
+    window._taskWindowPolicy = function (id) {
+        var m = document.getElementById('crmTaskDetailModal');
+        if (!m) return false;
+        var visible = window.getComputedStyle(m).display !== 'none';
+        var enVentana = m.classList.contains('ww-windowed');
+        var otroId = window._crmCurrentTaskId &&
+            String(window._crmCurrentTaskId) !== String(id);
+        if (visible && enVentana && otroId &&
+            window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
+            window.crmIframeWindow.open(
+                'tarea:' + id,
+                '/app/widget/tarea/' + id + '/',
+                'Tarea',
+                null,
+                { forceWindow: true, wf: 0.62, maxw: 1180, hf: 0.84 }
+            );
+            return true;
+        }
+        return false;
+    };
 
     // El modal de tarea bloquea el scroll del body al abrir; en modo
     // VENTANA el usuario debe poder scrollear la página de atrás.
@@ -259,7 +258,8 @@
         wrapOpener('wpAbrirModalCrearOpp', 'widgetCrearOppDesdeProspecto', { w: 820, h: 700 });
         wrapAbrirProspecto();
         wrapComposerGlobal();
-        wrapTaskVerDetalle();
+        // _taskWindowPolicy ya está en window (asignación directa arriba); no
+        // necesita wireAll. El guard vive dentro de crmTaskVerDetalle.
     }
 
     if (typeof window.crmReady === 'function') {

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avances CRM IAMET — 09 Junio 2026</title>
+    <!-- Incluimos Caveat para los títulos imitando la letra manuscrita de la imagen y Delius o Patrick Hand para el cuerpo -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            /* Fuente amigable estilo "handwritten" pero muy legible */
+            font-family: 'Patrick Hand', cursive;
+            /* Fondo crema como en la imagen */
+            background-color: #f7f4e9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 30px 15px;
+            color: #2b2b2b;
+        }
+
+        /* Patrón sutil de puntitos (grid) como en el fondo de la imagen */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(#d5d1c5 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .infographic {
+            width: 700px;
+            position: relative;
+            z-index: 5;
+            padding: 40px 0;
+        }
+
+        /* ═══════ HEADER / TITULO ═══════ */
+        .top-meta {
+            text-align: center;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-weight: bold;
+        }
+        .star {
+            font-family: sans-serif;
+            font-weight: 300;
+            font-size: 20px;
+        }
+
+        .main-title {
+            text-align: center;
+            font-family: 'Caveat', cursive;
+            font-size: 68px;
+            line-height: 0.9;
+            color: #2b2b2b;
+            margin-bottom: 25px;
+            position: relative;
+            transform: rotate(-2deg);
+        }
+        
+        .main-title .line-through {
+            position: relative;
+            display: inline-block;
+        }
+        
+        /* Línea tipo trazo de plumón debajo del texto */
+        .main-title .line-through::after {
+            content: "";
+            position: absolute;
+            left: -5%;
+            bottom: 5px;
+            width: 110%;
+            height: 3px;
+            background-color: #2b2b2b;
+            border-radius: 5px;
+            transform: rotate(1deg);
+        }
+
+        .intro-text {
+            text-align: center;
+            font-size: 20px;
+            line-height: 1.5;
+            max-width: 500px;
+            margin: 0 auto 40px;
+            color: #3b3b3b;
+        }
+
+        .intro-text strong {
+            font-family: 'Caveat', cursive;
+            font-size: 26px;
+        }
+
+        /* ═══════ ILUSTRACIÓN CENTRAL ═══════ */
+        .illustration {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .laptop-svg {
+            width: 120px;
+            height: auto;
+        }
+
+        /* ═══════ ETIQUETAS (PILLS) ESTILO MANUSCRITO ═══════ */
+        .tag-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .tag-yellow {
+            background-color: #f6c039;
+            border: 3px solid #2b2b2b;
+            border-radius: 50px;
+            padding: 10px 30px;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 4px 5px 0px rgba(43,43,43,0.15); /* Sombra suave para volumen */
+            transform: rotate(-1deg);
+        }
+
+        .tag-white {
+            background-color: #fff;
+            border: 2px solid #2b2b2b;
+            border-radius: 50%; /* Óvalo */
+            padding: 12px 35px;
+            text-align: center;
+            min-width: 320px;
+            border-radius: 100px / 40px; /* Óvalo achatado como en la imagen */
+        }
+        
+        .tag-label {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #555;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .tag-value {
+            font-size: 18px;
+            color: #2b2b2b;
+        }
+
+        /* ═══════ BLOQUES DE CONTENIDO ═══════ */
+        .section-box {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px dashed #bbb;
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: 'Caveat', cursive;
+            font-size: 34px;
+            color: #2b2b2b;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .section-text {
+            font-size: 18px;
+            line-height: 1.4;
+            color: #444;
+            margin-bottom: 15px;
+        }
+        
+        .bullet-list {
+            list-style: none;
+            padding-left: 10px;
+        }
+        
+        .bullet-list li {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 6px;
+            font-size: 18px;
+        }
+        
+        .bullet-list li::before {
+            content: "✦";
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 12px;
+            color: #f6c039;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: #fff;
+            border: 2px solid #2b2b2b;
+            border-radius: 15px;
+            padding: 10px;
+            border-radius: 20px 5px 20px 5px / 5px 20px 5px 20px; /* Estilo dibujado a mano */
+        }
+        
+        .stat-item .num {
+            font-family: 'Caveat', cursive;
+            font-size: 38px;
+            line-height: 1;
+            color: #2b2b2b;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        .btn-pdf {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            background: #f6c039; color: #2b2b2b; border: 2px solid #2b2b2b;
+            padding: 8px 16px; border-radius: 20px; font-weight: bold; font-family: 'Patrick Hand';
+            font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.8);
+            transition: transform 0.1s;
+        }
+        .btn-pdf:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px; }
+        
+        @media print {
+            @page { margin: 0; }
+            html, body {
+                height: auto; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                background: #f7f4e9 !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+            }
+            body::before { 
+                background-image: radial-gradient(#d5d1c5 1px, transparent 1px) !important;
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+            }
+            .btn-pdf { display: none !important; }
+            .infographic { 
+                width: 100%; 
+                max-width: 100%; 
+                padding: 20px 0 0 0 !important;
+                margin: 0 !important;
+            }
+            .tag-yellow, .tag-white, .section-box, .stat-item {
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+            }
+            .section-box { 
+                page-break-inside: avoid; 
+                break-inside: avoid; 
+            }
+            .section-box:last-child { margin-bottom: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="btn-pdf" onclick="window.print()">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+    Exportar
+</button>
+
+<div class="infographic">
+
+    <!-- ═══════ TOP META ═══════ -->
+    <div class="top-meta">
+        <span class="star">✦</span> CRM IAMET · 09 JUNIO 2026 <span class="star">✦</span>
+    </div>
+
+    <!-- ═══════ TITLE ═══════ -->
+    <h1 class="main-title">
+        <span style="font-size: 40px; position: absolute; left: 10%;">✦</span>
+        ¡Avances del<br>
+        <span class="line-through">día de hoy!</span>
+        <span style="font-size: 30px; position: absolute; right: 10%; bottom: 20%;">✦</span>
+    </h1>
+
+    <!-- ═══════ INTRO ═══════ -->
+    <p class="intro-text">
+        ¿Sabías que un buen sistema permite a tu equipo tomar decisiones más rápidas sin revisar decenas de archivos? En este avance resumimos cómo mejoramos el <strong>CRM</strong> haciéndolo más ágil, claro y profesional. ¡Acompáñame a explorarlo!
+    </p>
+
+    <!-- ═══════ ILUSTRACION (En SVG estático) ═══════ -->
+    <div class="illustration">
+        <svg class="laptop-svg" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Pantalla base -->
+            <rect x="20" y="20" width="60" height="40" rx="3" fill="#e5e5e5" stroke="#2b2b2b" stroke-width="2"/>
+            <!-- Marco interior -->
+            <rect x="24" y="24" width="52" height="30" fill="#fff" stroke="#2b2b2b" stroke-width="1.5"/>
+            <!-- Teclado base -->
+            <path d="M10 60 L90 60 L95 70 L5 70 Z" fill="#d1d1d1" stroke="#2b2b2b" stroke-width="2" stroke-linejoin="round"/>
+            <!-- Trackpad -->
+            <rect x="42" y="66" width="16" height="2" rx="1" fill="#2b2b2b"/>
+            <!-- Líneas de código animadas estáticas -->
+            <line x1="30" y1="30" x2="50" y2="30" stroke="#2b2b2b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="30" y1="36" x2="65" y2="36" stroke="#2b2b2b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="30" y1="42" x2="45" y2="42" stroke="#2b2b2b" stroke-width="1.5" stroke-linecap="round"/>
+            <!-- Acento amarillo -->
+            <line x1="48" y1="42" x2="60" y2="42" stroke="#f6c039" stroke-width="2" stroke-linecap="round"/>
+            <line x1="30" y1="48" x2="40" y2="48" stroke="#2b2b2b" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+    </div>
+
+    <!-- ═══════ ETIQUETAS DATOS ═══════ -->
+    <div class="tag-container">
+        <div class="tag-yellow">
+            Responsable: Diego Rivera
+        </div>
+        
+        <div class="tag-white">
+            <div class="tag-label">// Resumen Rápido</div>
+            <div class="tag-value">27 Tareas Entregadas Hoy</div>
+        </div>
+
+        <div class="tag-white">
+            <div class="tag-label">// Enfoque Principal</div>
+            <div class="tag-value">Cotización y Proveedores</div>
+        </div>
+    </div>
+
+    <!-- ═══════ SECCIÓN 1: PROVEEDORES ═══════ -->
+    <div class="section-box">
+        <h2 class="section-title">Nuevos Proveedores 🏭</h2>
+        <p class="section-text">
+            ¡La sección de proveedores ya está completamente viva! Ahora nuestro equipo puede:
+        </p>
+        <ul class="bullet-list">
+            <li>Asignar <strong>varios proveedores</strong> a un solo negocio sin limitantes.</li>
+            <li>Buscar y filtrar la información desde el tablero principal.</li>
+            <li>Consultar rápidamente con quién estamos trabajando cada oportunidad.</li>
+        </ul>
+    </div>
+
+    <!-- ═══════ SECCIÓN 2: COTIZACIÓN ═══════ -->
+    <div class="section-box">
+        <h2 class="section-title">Cotizaciones más Inteligentes 💸</h2>
+        <p class="section-text">
+            Modernizamos los números para hacer el trabajo contable automático. ¿Qué cambia?
+        </p>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="num">Costo</div>
+                <div>por cada producto</div>
+            </div>
+            <div class="stat-item">
+                <div class="num">Utilidad</div>
+                <div>calculada en tiempo real</div>
+            </div>
+        </div>
+        <p class="section-text" style="margin-top: 15px;">
+            Además retiramos barras y alertas innecesarias, haciendo que el documento sea mucho más limpio y profesional a la vista.
+        </p>
+    </div>
+
+    <!-- ═══════ SECCIÓN 3: MARCAS & VENTANAS ═══════ -->
+    <div class="section-box">
+        <h2 class="section-title">Orden Visual y Multitareas 🪟</h2>
+        <p class="section-text">
+            La pestaña de marcas ha quedado <strong>100% estable</strong> (¡adiós pantallas en blanco!).
+            <br><br>
+            Aparte de esto creamos la <em>magia de las ventanas</em>: ahora puedes ver y editar <strong>múltiples oportunidades al mismo tiempo</strong> usando cajitas que puedes mover por la pantalla, como si fuera el escritorio de tu computadora.
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

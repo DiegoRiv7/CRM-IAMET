@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 10 de Junio 2026</title>
+    <!-- Usamos Inter para un look profesional y limpio -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #003366; /* Azul Corporativo */
+            --primary-light: #0055A4;
+            --accent: #E6F0FA;
+            --success: #10B981;
+            --text-dark: #1F2937;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --bg-light: #F9FAFB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: #F3F4F6;
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .report-page {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 45px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .header-content h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 4px;
+        }
+
+        .header-content p {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .header-meta {
+            text-align: right;
+        }
+
+        .header-date {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+
+        .header-period {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* ═══════ EXPORT BUTTON ═══════ */
+        .btn-export {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+        .btn-export:hover { background: rgba(255,255,255,0.25); }
+
+        /* ═══════ STATS BAR ═══════ */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-item {
+            padding: 24px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+        }
+        .stat-item:last-child { border-right: none; }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ═══════ CONTENT ═══════ */
+        .content {
+            padding: 50px;
+        }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 40px;
+            color: var(--text-dark);
+            border-left: 4px solid var(--primary-light);
+            padding-left: 20px;
+        }
+
+        section {
+            margin-bottom: 45px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .section-badge {
+            background-color: var(--accent);
+            color: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ═══════ INFOGRAPHIC BLOCKS ═══════ */
+        .grid-blocks {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .block {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .block:hover { border-color: var(--primary-light); }
+
+        .block h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .block p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+
+        /* ═══════ TIMELINE STYLE ═══════ */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+        }
+
+        .item-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            margin-top: 6px;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .timeline-item:not(:last-child) .item-marker::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 5px;
+            width: 2px;
+            height: calc(100% + 4px);
+            background: var(--border);
+        }
+
+        .item-content h4 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .item-content p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background-color: var(--bg-light);
+            padding: 30px 50px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ═══════ PRINT STYLES ═══════ */
+        @media print {
+            @page { margin: 0; }
+            html, body {
+                height: auto;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white;
+            }
+            .report-page { 
+                box-shadow: none; 
+                border-radius: 0; 
+                width: 100%; 
+                overflow: visible !important; 
+                margin: 0 !important; 
+                padding-bottom: 1px !important;
+            }
+            .btn-export { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .section-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .item-marker { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section:last-of-type { margin-bottom: 0 !important; }
+            footer { margin-top: 20px !important; padding-bottom: 20px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-page">
+    <button class="btn-export" onclick="window.print()">EXPORTAR PDF</button>
+
+    <header>
+        <div class="header-content">
+            <p>REPORTE DE PROGRESO</p>
+            <h1>CRM IAMET — AVANCES</h1>
+            <p>Responsable: Diego Jafet Rivera Cordova</p>
+        </div>
+        <div class="header-meta">
+            <div class="header-date">RESUMEN DEL DÍA</div>
+            <div class="header-period">10 JUNIO 2026</div>
+        </div>
+    </header>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">40+</div>
+            <div class="stat-label">Mejoras / Fixes</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">Real-Time</div>
+            <div class="stat-label">Conectividad</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">V2</div>
+            <div class="stat-label">Sist. Ventanas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Disponibilidad</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Hoy nos enfocamos en elevar la <strong>conectividad interactiva</strong> del CRM y refinar la experiencia de usuario mediante un bus de datos inteligente, permitiendo una colaboración fluida entre equipos de ingeniería y ventas.
+        </div>
+
+        <!-- ═══════ SINCRONIZACIÓN ═══════ -->
+        <section>
+            <div class="section-header">
+                <div class="section-badge">1</div>
+                <h2>Interacción sin recargas</h2>
+            </div>
+            <div class="grid-blocks">
+                <div class="block">
+                    <h3>🤝 Bus de Datos CRM</h3>
+                    <p>Implementación de sincronización ligera que permite ver cursores y cambios de otros usuarios en tiempo real sin recargar la página.</p>
+                </div>
+                <div class="block">
+                    <h3>📂 Archivos en Vivo (Sync)</h3>
+                    <p>Ahora, cuando un usuario sube un archivo al Drive, este aparece instantáneamente en la pantalla de los demás compañeros que tengan el Drive abierto, sin necesidad de recargar la página.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ USABILIDAD ═══════ -->
+        <section style="break-before: page; padding-top: 50px;">
+            <div class="section-header">
+                <div class="section-badge">2</div>
+                <h2>Gestión Avanzada de Ventanas</h2>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="item-marker"></div>
+                    <div class="item-content">
+                        <h4>Control Total de Tamaño</h4>
+                        <p>Las ventanas de oportunidades ahora permiten redimensión desde 8 puntos distintos (4 esquinas y 4 lados) para mayor flexibilidad.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="item-marker"></div>
+                    <div class="item-content">
+                        <h4>Window Picker Estilo Apple</h4>
+                        <p>Cuando se excede el número máximo de ventanas abiertas, se activa un selector visual inteligente para organizar el trabajo.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="item-marker"></div>
+                    <div class="item-content">
+                        <h4>Foco e Identificación Visual</h4>
+                        <p>Mejoramos el contraste y el seguimiento del foco de la ventana activa, eliminando distracciones visuales.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ NEGOCIO ═══════ -->
+        <section>
+            <div class="section-header">
+                <div class="section-badge">3</div>
+                <h2>Operación y Permisos</h2>
+            </div>
+            <div class="block" style="width: 100%;">
+                <h3>💼 Flexibilidad para Ventas</h3>
+                <p>Se habilitó un nuevo permiso inteligente que permite a los vendedores con perfil técnico realizar levantamientos de ingeniería directamente, eliminando cuellos de botella operativos en la asignación de tareas.</p>
+            </div>
+        </section>
+
+        <!-- ═══════ CORRECCIONES ═══════ -->
+        <section>
+            <div class="section-header">
+                <div class="section-badge">4</div>
+                <h2>Estabilidad y Estética</h2>
+            </div>
+            <div class="grid-blocks">
+                <div class="block">
+                    <h3>⚙️ Optimización de Satélites</h3>
+                    <p>Corrección de conflictos de visualización al abrir múltiples archivos o herramientas externas simultáneamente.</p>
+                </div>
+                <div class="block">
+                    <h3>⚡ Limpieza de Cache</h3>
+                    <p>Implementación de mecanismos para asegurar que los últimos cambios de diseño se vean reflejados sin necesidad de limpiar el navegador manualmente.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>CRM IAMET &copy; 2026 — Ingeniería de Software</p>
+    </footer>
+</div>
+
+</body>
+</html>
