@@ -1141,6 +1141,10 @@
         unwindowize: unwindowize,
         minimize: minimize,
         enhance: enhance,
+        // ensureDock: el contenedor #wwDock (lo crea si falta). Lo reusa
+        // window_session.js para sus chips perezosos de restauración —
+        // así comparten el mismo dock y estilos.
+        ensureDock: ensureDock,
         missionControl: {
             activate: activateMissionControl,
             deactivate: deactivateMissionControl,

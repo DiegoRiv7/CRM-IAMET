@@ -1444,6 +1444,26 @@
         open: openCotWindow,
         close: closeCotWindow,
         get: function (key) { return cotWindows[key] || null; },
+        // Descriptores reabribles de las ventanas-iframe ABIERTAS (no
+        // minimizadas-fantasma): {key, src, title}. Lo usa window_session.js
+        // para el snapshot de restauración tras reload.
+        list: function () {
+            var out = [];
+            for (var key in cotWindows) {
+                var ov = cotWindows[key];
+                if (!ov || !document.body.contains(ov)) continue;
+                var ifr = ov.querySelector('iframe');
+                var t = ov.querySelector('[data-cot-title]');
+                if (ifr && ifr.src) {
+                    out.push({
+                        key: key,
+                        src: ifr.getAttribute('src') || ifr.src,
+                        title: (t && t.textContent) || ov.getAttribute('data-widget-title') || '',
+                    });
+                }
+            }
+            return out;
+        },
     };
 
     // Drive como ventana-iframe (key 'drive:<oppId>'): reabre/trae al
