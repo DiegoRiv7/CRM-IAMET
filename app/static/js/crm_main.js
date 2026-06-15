@@ -6883,16 +6883,19 @@
             // No-op: no restaurar nada del CRM en páginas externas.
         } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            // ACTIVAR la sección igual que el clic en el botón Tareas
+            // (switchCrmView oculta el CRM y marca tareasSection .active). Antes
+            // solo se marcaba el botón → en una recarga F5 la sección no quedaba
+            // bien activada y se veía vacía hasta volver a dar clic. Solo corre
+            // en este branch (reload-en-tareas), NO en cada carga → sin costo.
+            if (typeof switchCrmView === 'function') switchCrmView('tareas');
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
-            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             cargarTareasCRM();
         } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
-            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             if (typeof proyectosInit === 'function') proyectosInit();
         }
 
