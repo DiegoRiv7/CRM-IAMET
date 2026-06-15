@@ -351,7 +351,8 @@
 
     /* ── Apertura / política de instancias ────────────────────────── */
 
-    function open(oppId) {
+    function open(oppId, opts) {
+        opts = opts || {};
         var id = parseInt(String(oppId).replace(/[^\d]/g, ''), 10);
         if (!id || isNaN(id)) return;
 
@@ -387,8 +388,11 @@
                 });
                 target.root.style.display = 'flex';
                 // Si ya hay ventanas abiertas, la nueva nace como ventana en
-                // cascada (no como modal que taparía a las demás).
-                if (others.length && window.crmWidgetWindow) {
+                // cascada (no como modal que taparía a las demás). Con
+                // opts.asWindow (p.ej. abierta desde el buscador) SIEMPRE
+                // nace como ventana flotante, para que aparezca sobre la
+                // sección actual (tareas, ideas, etc.) sin taparla entera.
+                if ((others.length || opts.asWindow) && window.crmWidgetWindow) {
                     var vw = window.innerWidth, vh = window.innerHeight;
                     var w = Math.min(Math.round(vw * 0.62), 1150);
                     var h = Math.round(vh * 0.8);
@@ -1583,8 +1587,8 @@
     // Globals: este script carga DESPUÉS de crm_main.js, así que gana la
     // asignación. Si el takeover está apagado, delega al legacy.
     var legacyOpenDetalle = window.openDetalle;
-    window.openDetalle = function (oppId) {
-        if (takeoverActive()) return open(oppId);
+    window.openDetalle = function (oppId, opts) {
+        if (takeoverActive()) return open(oppId, opts);
         if (typeof legacyOpenDetalle === 'function') return legacyOpenDetalle(oppId);
     };
     var legacyOpenCotizador = window.openCotizador;

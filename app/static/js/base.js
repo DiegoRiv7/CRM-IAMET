@@ -495,12 +495,16 @@
         pushRecent(r);
         closeSpotlight();
 
-        var enCRM = window.location.pathname === '/app/todos/';
+        // Abrir SIEMPRE en sitio, como ventana flotante, cuando el shell del
+        // CRM está cargado (sus APIs de ventana existen) — sin importar en qué
+        // sección estés (tareas, ideas, prospección...) y SIN recargar ni
+        // cambiar de vista. Solo si la API no está disponible (p.ej. el buscador
+        // abierto en una página suelta) se cae a navegación por URL.
 
         if (r.type === 'oportunidad' && r.id) {
             var url = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.id;
             if (newTab) { window.open(url, '_blank'); return; }
-            if (enCRM && typeof window.openDetalle === 'function') { window.openDetalle(r.id); return; }
+            if (typeof window.openDetalle === 'function') { window.openDetalle(r.id, { asWindow: true }); return; }
             window.location.href = url;
             return;
         }
@@ -508,7 +512,7 @@
             if (r.opp_id) {
                 var url2 = '/app/todos/?tab=crm&mes=todos&open_opp=' + r.opp_id;
                 if (newTab) { window.open(url2, '_blank'); return; }
-                if (enCRM && typeof window.openDetalle === 'function') { window.openDetalle(r.opp_id); return; }
+                if (typeof window.openDetalle === 'function') { window.openDetalle(r.opp_id, { asWindow: true }); return; }
                 window.location.href = url2;
             } else {
                 if (newTab) window.open('/app/todos/?tab=crm', '_blank');
@@ -519,15 +523,23 @@
         if (r.type === 'tarea' && r.id) {
             var url3 = '/app/todos/?tab=crm&open_task=' + r.id;
             if (newTab) { window.open(url3, '_blank'); return; }
-            if (enCRM && typeof window.crmTaskVerDetalle === 'function') { window.crmTaskVerDetalle(r.id); return; }
+            // Ventana-iframe flotante: misma experiencia que las tareas en
+            // ventana, aparece sobre la sección actual sin salir de ella.
+            if (window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
+                window.crmIframeWindow.open(
+                    'tarea:' + r.id, '/app/widget/tarea/' + r.id + '/', 'Tarea', null,
+                    { forceWindow: true, wf: 0.62, maxw: 1180, hf: 0.84 }
+                );
+                return;
+            }
+            if (typeof window.crmTaskVerDetalle === 'function') { window.crmTaskVerDetalle(r.id); return; }
             window.location.href = url3;
             return;
         }
         if (r.type === 'cliente' && r.id) {
             var urlC = '/app/todos/?tab=crm&open_cliente=' + r.id;
             if (newTab) { window.open(urlC, '_blank'); return; }
-            // Si estamos en el CRM y el widget de cliente existe, abrirlo directo en Información
-            if (enCRM && typeof window.openClienteModal === 'function') {
+            if (typeof window.openClienteModal === 'function') {
                 window.openClienteModal(r.id, r.title || r.nombre || '', 'info');
                 return;
             }
@@ -537,12 +549,9 @@
         if (r.type === 'proyecto' && r.id) {
             var urlP = '/app/todos/?tab=crm&open_proyecto=' + r.id;
             if (newTab) { window.open(urlP, '_blank'); return; }
-            // En CRM: usar el click del botón Proyectos del sidebar. Ese
-            // listener dispara el cleanup correcto (oculta dashIngRoot del
-            // ingeniero, hace switchCrmView para vendedor/admin, etc). Luego
-            // abrimos el detalle con un pequeño delay para que la sección
-            // esté visible.
-            if (enCRM && typeof window.proyectosVerDetalle === 'function') {
+            // Proyectos no es ventana flotante: usa el botón del sidebar (dispara
+            // el cleanup correcto) y abre el detalle inline tras un pequeño delay.
+            if (typeof window.proyectosVerDetalle === 'function') {
                 var btnProy = document.getElementById('btnProyectos');
                 if (btnProy) btnProy.click();
                 else if (typeof window.switchCrmView === 'function') window.switchCrmView('proyectos');
