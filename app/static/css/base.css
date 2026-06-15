@@ -1026,26 +1026,13 @@ html[data-theme="perla"] div .apple-card:hover {
     white-space: nowrap;
 }
 
-/* ── Aside (lado derecho de la fila): punto de estado + avatar ── */
+/* ── Aside (lado derecho de la fila): avatar del responsable ── */
 .spotlight-v2 .sp-aside {
     display: flex;
     align-items: center;
-    gap: 11px;
     flex-shrink: 0;
     margin-left: 10px;
 }
-.spotlight-v2 .sp-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: #CBD5E1;
-}
-.spotlight-v2 .sp-status-dot.sp-dot-success { background: #22C55E; }
-.spotlight-v2 .sp-status-dot.sp-dot-warning { background: #F59E0B; }
-.spotlight-v2 .sp-status-dot.sp-dot-danger  { background: #EF4444; }
-.spotlight-v2 .sp-status-dot.sp-dot-info    { background: #3B82F6; }
-.spotlight-v2 .sp-status-dot.sp-dot-neutral { background: #94A3B8; }
 
 /* ── Avatar ── */
 .spotlight-v2 .sp-avatar {

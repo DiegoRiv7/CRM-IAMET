@@ -160,25 +160,16 @@
         return out;
     }
 
-    // Punto de estado: el color del pill (success/warning/danger/info/neutral)
-    // condensado a un solo dot — la señal de estado sin recargar la fila.
-    function renderStatusDot(r) {
-        if (!r.status_label) return '';
-        var cls = r.status_class || 'neutral';
-        return '<span class="sp-status-dot sp-dot-' + escapeHtml(cls) + '" title="' + escapeHtml(r.status_label) + '"></span>';
-    }
-
     function renderResultItem(r, idx, q) {
         var icon = ICONS[r.type] || ICONS.accion;
         var iconTag = r.type === 'accion' ? ICONS.accion : icon;
         var title = highlight(r.title, q);
         var subtitle = highlight(r.subtitle || '', q);
         // Fila minimalista: icono + (título / subtítulo) y, a la derecha, solo
-        // un punto de estado + el avatar del responsable. El monto, la fecha,
-        // los badges PO/Factura y la flecha se quitan para mantenerla limpia.
-        var dot = renderStatusDot(r);
+        // el avatar del responsable. El monto, la fecha, los badges PO/Factura,
+        // la pill/punto de estado y la flecha se quitan para mantenerla limpia.
         var avatar = r.responsable ? renderAvatar(r.responsable) : '';
-        var aside = (dot || avatar) ? '<div class="sp-aside">' + dot + avatar + '</div>' : '';
+        var aside = avatar ? '<div class="sp-aside">' + avatar + '</div>' : '';
 
         return (
             '<div class="sp-item" data-index="' + idx + '" onclick="selectResult(' + idx + ')">' +
