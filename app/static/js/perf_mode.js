@@ -40,6 +40,11 @@
         if (_probeTimer) { clearTimeout(_probeTimer); _probeTimer = null; }
         resolve();
         startController();
+        // Telemetría del cambio manual (el usuario eligió explícitamente).
+        var liteNow = !!(document.body && document.body.classList.contains(LITE_CLASS));
+        if (v === 'lite') report('lite', 'manual_lite', null);
+        else if (v === 'full') report('full', 'manual_full', null);
+        else report(liteNow ? 'lite' : 'full', 'manual_auto', null);
     }
 
     // Señales ESTÁTICAS solo si son inequívocas. NO usamos
@@ -123,6 +128,54 @@
         } catch (e) { /* el aviso nunca debe romper nada */ }
     }
 
+    /* ── Telemetría (opcional, fire-and-forget) ──
+       Reporta SOLO cambios ASENTADOS de modo (no por frame) a
+       /app/api/perf/evento/ para que los supervisores vean en el panel
+       qué equipos batallan. Nunca bloquea ni rompe nada: si falla, se
+       ignora. 'benchmark'/'static' se mandan una vez por sesión (no una
+       fila por recarga); los dinámicos/manuales son raros de por sí. */
+    function csrfCookie() {
+        try {
+            var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+            if (m) return decodeURIComponent(m[1]);
+            var el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
+        } catch (e) { return ''; }
+    }
+    function deviceInfo() {
+        var info = {};
+        try { info.cores = navigator.hardwareConcurrency || null; } catch (e) { }
+        try { info.device_memory = (typeof navigator.deviceMemory === 'number') ? navigator.deviceMemory : null; } catch (e) { }
+        try {
+            var dpr = Math.round((window.devicePixelRatio || 1) * 10) / 10;
+            info.pantalla = (screen.width + 'x' + screen.height + '@' + dpr).slice(0, 24);
+        } catch (e) { }
+        return info;
+    }
+    function report(modo, motivo, fps) {
+        try {
+            // Dedupe por sesión para los motivos que se repiten en cada carga.
+            if (motivo === 'benchmark' || motivo === 'static') {
+                var k = 'crmPerfRep_' + motivo;
+                if (sessionStorage.getItem(k) === '1') return;
+                sessionStorage.setItem(k, '1');
+            }
+            var payload = deviceInfo();
+            payload.modo = modo;
+            payload.motivo = motivo;
+            if (typeof fps === 'number' && isFinite(fps)) payload.fps = Math.round(fps * 10) / 10;
+            var body = JSON.stringify(payload);
+            // sendBeacon no manda CSRF header → usamos fetch keepalive.
+            fetch('/app/api/perf/evento/', {
+                method: 'POST',
+                credentials: 'same-origin',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfCookie() },
+                body: body
+            }).catch(function () { /* telemetría: nunca romper */ });
+        } catch (e) { /* idem */ }
+    }
+
     /* ── Benchmark de carga: medición REAL de rendimiento ──
        Corre en modo COMPLETO durante ~1s, cuando el kanban (con sus
        animaciones de urgencia) ya está pintado. Si la máquina sufre
@@ -135,18 +188,20 @@
         if (getPref() !== 'auto') { _benchDone = true; return; }       // manual: no medir
         if (document.body.classList.contains(LITE_CLASS)) { _benchDone = true; startController(); return; } // ya ligero (reduced-motion)
         _benchDone = true;
-        var last = performance.now(), jank = 0, frames = 0;
+        var t0 = performance.now(), last = t0, jank = 0, frames = 0;
         function tick(now) {
             var dt = now - last; last = now;
             frames++;
             if (dt > 40) jank++;                 // frame >40ms = <25fps
             if (frames >= 55) {                  // ~1s de muestra real
+                var fps = frames * 1000 / (now - t0);   // FPS promedio real de la muestra
                 if (jank >= 22) {                // ≥40% frames lentos SOSTENIDO → equipo lento
                     _jankSeen = true;
                     applyLite(true);             // al cargar: instantáneo (aún no hay nada que "suavizar")
                     sessionLiteSet(true);
                     updateToggleUI();
                     showNotice('Modo ligero activado para mantener la fluidez');
+                    report('lite', 'benchmark', fps);
                 }
                 startController();               // el benchmark cede al controlador adaptativo
                 return;                          // benchmark terminado
@@ -225,6 +280,7 @@
             _badAccum = 0; _rafOn = false;     // en ligero esperamos al probe por timer
             updateToggleUI();
             showNotice('Modo ligero activado para mantener la fluidez');
+            report('lite', 'dynamic', _fpsAvg);
             scheduleProbe();
         } else if (_fpsAvg >= FPS_GOOD && now - _lastInteract > 6000) {
             // Completo fluido + reposo prolongado → apagar rAF para ahorrar
@@ -253,6 +309,7 @@
             sessionLiteSet(false);
             updateToggleUI();   // seguimos en completo con rAF vigilando
             showNotice('Efectos completos restaurados');
+            report('full', 'probe_up', _fpsAvg);
         } else {
             // Sigue pesado → volver a ligero SUAVE y espaciar el próximo probe.
             applyLite(true, true);
@@ -271,7 +328,7 @@
             // el usuario/equipo PIDE poco movimiento → quedarse en ligero,
             // sin probes de subida. Si es por JANK del benchmark, sí
             // programar probes para recuperar completo cuando se libere carga.
-            if (staticLowEnd()) { _autoDowngraded = false; return; }
+            if (staticLowEnd()) { _autoDowngraded = false; report('lite', 'static', null); return; }
             _autoDowngraded = true;
             scheduleProbe();
         } else {

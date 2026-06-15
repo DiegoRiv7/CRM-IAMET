@@ -6396,3 +6396,48 @@ class CrmCambio(models.Model):
 
     def __str__(self):
         return f'{self.entidad}#{self.objeto_id} {self.accion}'
+
+
+class PerfEvent(models.Model):
+    """Telemetría del Modo Ligero (ver perf_mode.js / perf_lite.css).
+
+    Cada vez que el modo se ASIENTA por decisión automática (el benchmark
+    de carga baja a ligero, el controlador adaptativo baja por jank
+    sostenido, o un probe sube de vuelta a completo) o el usuario lo
+    cambia a mano, el cliente manda un evento ligero a
+    /app/api/perf/evento/. Sirve para que supervisores vean en el panel
+    qué equipos batallan, cuántos corren en ligero y por qué — sin tocar
+    nada de la experiencia del usuario.
+
+    Es telemetría de bajo volumen (solo cambios asentados, no por frame).
+    Las filas viejas se purgan oportunistamente desde el endpoint (>60d).
+    """
+    MODOS = [('lite', 'Ligero'), ('full', 'Completo')]
+    MOTIVOS = [
+        ('benchmark', 'Benchmark de carga'),    # equipo lento detectado al cargar
+        ('dynamic', 'Jank sostenido'),          # bajó por carga durante la sesión
+        ('probe_up', 'Carga liberada'),         # subió a completo tras un probe
+        ('static', 'Señal del equipo'),         # reduced-motion / RAM baja
+        ('manual_lite', 'Manual · ligero'),
+        ('manual_full', 'Manual · completo'),
+        ('manual_auto', 'Manual · automático'),
+    ]
+
+    usuario = models.ForeignKey(User, null=True, blank=True,
+                                on_delete=models.SET_NULL, related_name='perf_eventos')
+    modo = models.CharField(max_length=8, choices=MODOS)
+    motivo = models.CharField(max_length=16, choices=MOTIVOS)
+    fps = models.FloatField(null=True, blank=True)             # FPS promedio medido
+    cores = models.IntegerField(null=True, blank=True)         # hardwareConcurrency
+    device_memory = models.FloatField(null=True, blank=True)   # GB (Chrome); null en Safari
+    pantalla = models.CharField(max_length=24, blank=True, default='')  # ej. "1920x1080@2"
+    user_agent = models.CharField(max_length=300, blank=True, default='')
+    ts = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Evento de rendimiento'
+        verbose_name_plural = 'Eventos de rendimiento'
+        ordering = ['-ts']
+
+    def __str__(self):
+        return f'{self.modo}/{self.motivo} @ {self.ts:%Y-%m-%d %H:%M}'

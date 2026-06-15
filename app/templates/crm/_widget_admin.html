@@ -282,6 +282,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
           Alias Clientes
         </button>
+        <p class="admin-section-label" style="margin-top:8px;">Sistema</p>
+        <button class="admin-nav-item" id="admNav-rendimiento" onclick="adminNavClick(this,'rendimiento')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Rendimiento
+        </button>
         <div class="admin-sidebar-spacer"></div>
         <div class="admin-sidebar-footer">CRM v2.0 &mdash; Solo supervisores</div>
       </nav>
@@ -400,6 +405,7 @@ window.loadAdminSection = function(section){
   else if(section==='oportunidades') loadOportunidades();
   else if(section==='permisos')  loadPermisos();
   else if(section==='alias')    loadAlias();
+  else if(section==='rendimiento') loadRendimiento();
 };
 
 /* ── Usuarios ────────────────────────────────────────── */
@@ -1487,6 +1493,153 @@ window.admEliminarAlias = function(id){
     else _showAdminToast(res.error || 'Error', false);
   });
 };
+
+/* ── Rendimiento (telemetría Modo Ligero) ────────────── */
+window._admPerfDias = 30;
+window.loadRendimiento = function(){
+  var ac = getAC();
+  fetch('/app/api/admin/perf/stats/?dias='+(window._admPerfDias||30))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){ ac.innerHTML = '<div class="admin-card-inner" style="color:#8E8E93;">No se pudo cargar la telemetr&iacute;a.</div>'; return; }
+      _renderRendimiento(d);
+    })
+    .catch(function(){ ac.innerHTML = '<div class="admin-card-inner" style="color:#FF3B30;">Error de red al cargar rendimiento.</div>'; });
+};
+
+function _perfBadge(modo){
+  return modo==='lite'
+    ? '<span class="admin-badge admin-badge-orange">Ligero</span>'
+    : '<span class="admin-badge admin-badge-green">Completo</span>';
+}
+
+function _renderRendimiento(d){
+  var ac = getAC();
+  var pm = d.por_modo||{}, lite=pm.lite||0, full=pm.full||0;
+  var equiposTotal = d.equipos_total||0, liteAhora = d.lite_ahora||0;
+  var pctLite = equiposTotal ? Math.round(liteAhora*100/equiposTotal) : 0;
+
+  var h = '';
+  /* Header + selector de rango */
+  h += '<div class="admin-card-inner">';
+  h += '<div class="admin-content-header">';
+  h += '<span class="admin-content-title">Rendimiento &mdash; Modo Ligero</span>';
+  h += '<div class="admin-filter-row">';
+  h += '<select class="admin-input" id="admPerfDias" style="max-width:150px;" onchange="window._admPerfDias=parseInt(this.value);loadRendimiento();">';
+  [['7','&Uacute;ltimos 7 d&iacute;as'],['30','&Uacute;ltimos 30 d&iacute;as'],['90','&Uacute;ltimos 90 d&iacute;as']].forEach(function(o){
+    h += '<option value="'+o[0]+'"'+((window._admPerfDias||30)==parseInt(o[0])?' selected':'')+'>'+o[1]+'</option>';
+  });
+  h += '</select>';
+  h += '<button class="admin-btn admin-btn-secondary" onclick="loadRendimiento()" title="Refrescar">&#8635;</button>';
+  h += '</div></div>';
+  h += '<p class="admin-help">Telemetr&iacute;a an&oacute;nima de la experiencia de cada equipo. El modo se decide solo (o a mano por el usuario) y no afecta funcionalidad. &Uacute;til para ver qu&eacute; equipos batallan.</p>';
+
+  /* KPIs */
+  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:4px;">';
+  h += _kpi('Equipos en ligero ahora', liteAhora+' / '+equiposTotal, pctLite+'% de los equipos activos', pctLite>=50?'#C26900':'#1C8C3C');
+  h += _kpi('Eventos (ligero)', lite, 'cambios a ligero en el rango', '#C26900');
+  h += _kpi('Eventos (completo)', full, 'subidas a completo en el rango', '#1C8C3C');
+  h += _kpi('Total de eventos', d.total||0, 'en los &uacute;ltimos '+(d.dias||30)+' d&iacute;as', '#007AFF');
+  h += '</div>';
+  h += '</div>';
+
+  /* Equipos (último estado por usuario) */
+  h += '<div class="admin-card-inner">';
+  h += '<div class="admin-content-header"><span class="admin-content-title">Equipos &mdash; &uacute;ltimo estado</span></div>';
+  if(!(d.equipos||[]).length){
+    h += '<div style="color:#8E8E93;font-size:0.82rem;padding:8px 2px;">A&uacute;n no hay datos. Aparecer&aacute;n cuando los usuarios naveguen con la nueva versi&oacute;n.</div>';
+  } else {
+    h += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Modo</th><th>Motivo</th><th>FPS</th><th>N&uacute;cleos</th><th>RAM</th><th>Navegador</th><th>Pantalla</th><th>Visto</th></tr></thead><tbody>';
+    (d.equipos||[]).forEach(function(e){
+      h += '<tr>';
+      h += '<td><strong style="font-size:0.82rem;">'+_esc(e.usuario)+'</strong></td>';
+      h += '<td>'+_perfBadge(e.modo)+'</td>';
+      h += '<td style="color:#636366;">'+_esc(e.motivo)+'</td>';
+      h += '<td>'+(e.fps!=null?e.fps:'&mdash;')+'</td>';
+      h += '<td>'+(e.cores!=null?e.cores:'&mdash;')+'</td>';
+      h += '<td>'+(e.ram!=null?(e.ram+' GB'):'&mdash;')+'</td>';
+      h += '<td style="color:#636366;">'+_esc(e.navegador)+'</td>';
+      h += '<td style="color:#8E8E93;font-size:0.76rem;">'+_esc(e.pantalla||'—')+'</td>';
+      h += '<td style="color:#8E8E93;font-size:0.76rem;">'+_esc(e.ts)+'</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '</div>';
+
+  /* Desglose por motivo / navegador */
+  h += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+  h += '<div class="admin-card-inner" style="flex:1;min-width:240px;">';
+  h += '<div class="admin-content-header"><span class="admin-content-title" style="font-size:0.85rem;">Por motivo</span></div>';
+  h += _miniList(d.por_motivo, _MOTIVO_LABELS);
+  h += '</div>';
+  h += '<div class="admin-card-inner" style="flex:1;min-width:240px;">';
+  h += '<div class="admin-content-header"><span class="admin-content-title" style="font-size:0.85rem;">Por navegador (equipos)</span></div>';
+  h += _miniList(d.por_navegador, null);
+  h += '</div>';
+  h += '</div>';
+
+  /* Eventos recientes */
+  h += '<div class="admin-card-inner">';
+  h += '<div class="admin-content-header"><span class="admin-content-title">Eventos recientes</span></div>';
+  if(!(d.recientes||[]).length){
+    h += '<div style="color:#8E8E93;font-size:0.82rem;padding:8px 2px;">Sin eventos en el rango.</div>';
+  } else {
+    h += '<table class="admin-table"><thead><tr><th>Cu&aacute;ndo</th><th>Usuario</th><th>Modo</th><th>Motivo</th><th>FPS</th><th>Navegador</th></tr></thead><tbody>';
+    (d.recientes||[]).forEach(function(e){
+      h += '<tr>';
+      h += '<td style="color:#8E8E93;font-size:0.78rem;white-space:nowrap;">'+_esc(e.ts)+'</td>';
+      h += '<td>'+_esc(e.usuario)+'</td>';
+      h += '<td>'+_perfBadge(e.modo)+'</td>';
+      h += '<td style="color:#636366;">'+_esc(e.motivo)+'</td>';
+      h += '<td>'+(e.fps!=null?e.fps:'&mdash;')+'</td>';
+      h += '<td style="color:#636366;">'+_esc(e.navegador)+'</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '</div>';
+
+  ac.innerHTML = h;
+}
+
+var _MOTIVO_LABELS = {
+  benchmark:'Benchmark de carga', dynamic:'Jank sostenido', probe_up:'Carga liberada',
+  static:'Señal del equipo', manual_lite:'Manual · ligero',
+  manual_full:'Manual · completo', manual_auto:'Manual · automático'
+};
+
+function _kpi(titulo, valor, sub, color){
+  var h = '<div style="flex:1;min-width:150px;background:rgba(255,255,255,0.7);border-radius:14px;padding:14px 16px;border:1px solid rgba(0,0,0,0.05);">';
+  h += '<div style="font-size:0.68rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8E8E93;margin-bottom:6px;">'+titulo+'</div>';
+  h += '<div style="font-size:1.5rem;font-weight:700;color:'+(color||'#1C1C1E')+';line-height:1.1;">'+valor+'</div>';
+  h += '<div style="font-size:0.72rem;color:#8E8E93;margin-top:3px;">'+sub+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function _miniList(obj, labels){
+  obj = obj||{};
+  var keys = Object.keys(obj).sort(function(a,b){ return (obj[b]||0)-(obj[a]||0); });
+  if(!keys.length) return '<div style="color:#8E8E93;font-size:0.8rem;">Sin datos.</div>';
+  var max = 1; keys.forEach(function(k){ if(obj[k]>max) max=obj[k]; });
+  var h = '';
+  keys.forEach(function(k){
+    var label = labels ? (labels[k]||k) : k;
+    var pct = Math.round((obj[k]||0)*100/max);
+    h += '<div style="margin-bottom:8px;">';
+    h += '<div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#3A3A3C;margin-bottom:3px;"><span>'+_esc(label)+'</span><strong>'+obj[k]+'</strong></div>';
+    h += '<div style="height:6px;background:rgba(0,0,0,0.06);border-radius:6px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:#007AFF;border-radius:6px;"></div></div>';
+    h += '</div>';
+  });
+  return h;
+}
+
+function _esc(s){
+  return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
 
 /* ── Auto-load on open ───────────────────────────────── */
 (function(){

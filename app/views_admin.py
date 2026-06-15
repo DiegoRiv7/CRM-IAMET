@@ -2366,3 +2366,164 @@ def api_admin_prospecto_detalle(request, potencial_id):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Telemetría del Modo Ligero (perf_mode.js → PerfEvent)
+# ──────────────────────────────────────────────────────────────────────
+
+def _navegador_corto(ua):
+    """Etiqueta corta de navegador/OS desde el User-Agent (para la tabla)."""
+    ua = ua or ''
+    u = ua.lower()
+    # Navegador (orden importa: Edge/Chrome contienen 'safari', etc.)
+    if 'edg/' in u or 'edge' in u:        nav = 'Edge'
+    elif 'opr/' in u or 'opera' in u:     nav = 'Opera'
+    elif 'firefox' in u:                  nav = 'Firefox'
+    elif 'chrome' in u or 'crios' in u:   nav = 'Chrome'
+    elif 'safari' in u:                   nav = 'Safari'
+    else:                                 nav = 'Otro'
+    # Sistema operativo
+    if 'mac os x' in u or 'macintosh' in u: so = 'macOS'
+    elif 'windows' in u:                    so = 'Windows'
+    elif 'iphone' in u or 'ipad' in u:      so = 'iOS'
+    elif 'android' in u:                    so = 'Android'
+    elif 'linux' in u:                      so = 'Linux'
+    else:                                   so = ''
+    return f'{nav} · {so}' if so else nav
+
+
+@login_required
+@require_POST
+def api_perf_evento(request):
+    """Recibe un evento de Modo Ligero del cliente (perf_mode.js).
+
+    Ligero y a prueba de fallos: cualquier dato malo se descarta sin
+    romper. Solo registra cambios ASENTADOS de modo (no por frame).
+    """
+    from .models import PerfEvent
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False}, status=400)
+
+    modo = data.get('modo')
+    motivo = data.get('motivo')
+    modos_validos = {c[0] for c in PerfEvent.MODOS}
+    motivos_validos = {c[0] for c in PerfEvent.MOTIVOS}
+    if modo not in modos_validos or motivo not in motivos_validos:
+        return JsonResponse({'ok': False, 'error': 'modo/motivo inválido'}, status=400)
+
+    def _num(v, cast):
+        try:
+            return cast(v)
+        except (TypeError, ValueError):
+            return None
+
+    PerfEvent.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        modo=modo,
+        motivo=motivo,
+        fps=_num(data.get('fps'), float),
+        cores=_num(data.get('cores'), int),
+        device_memory=_num(data.get('device_memory'), float),
+        pantalla=str(data.get('pantalla') or '')[:24],
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:300],
+    )
+
+    # Purga oportunista de filas viejas (>60 días) — barato, sin cron.
+    try:
+        corte = timezone.now() - timedelta(days=60)
+        PerfEvent.objects.filter(ts__lt=corte).delete()
+    except Exception:
+        pass
+
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def api_admin_perf_stats(request):
+    """Agregados de telemetría de Modo Ligero para el panel (supervisores)."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    from .models import PerfEvent
+
+    try:
+        dias = int(request.GET.get('dias', 30))
+    except (TypeError, ValueError):
+        dias = 30
+    dias = max(1, min(dias, 120))
+    desde = timezone.now() - timedelta(days=dias)
+
+    qs = PerfEvent.objects.filter(ts__gte=desde).select_related('usuario')
+
+    # Conteos por modo y por motivo.
+    por_modo = {'lite': 0, 'full': 0}
+    por_motivo = {}
+    for modo, n in qs.values_list('modo').annotate(n=Count('id')):
+        por_modo[modo] = n
+    for motivo, n in qs.values('motivo').annotate(n=Count('id')).values_list('motivo', 'n'):
+        por_motivo[motivo] = n
+
+    # Último estado conocido por usuario (qué equipos corren en ligero hoy).
+    por_navegador = {}
+    ultimos = {}
+    for ev in qs.order_by('-ts'):
+        uid = ev.usuario_id or 0
+        if uid in ultimos:
+            continue
+        ultimos[uid] = ev
+
+    equipos = []
+    lite_ahora = 0
+    for uid, ev in ultimos.items():
+        if ev.modo == 'lite':
+            lite_ahora += 1
+        nombre = '—'
+        if ev.usuario:
+            nombre = (ev.usuario.get_full_name() or ev.usuario.username)
+        nav = _navegador_corto(ev.user_agent)
+        por_navegador[nav] = por_navegador.get(nav, 0) + 1
+        equipos.append({
+            'usuario': nombre,
+            'modo': ev.modo,
+            'motivo': ev.get_motivo_display(),
+            'motivo_key': ev.motivo,
+            'fps': round(ev.fps, 1) if ev.fps is not None else None,
+            'cores': ev.cores,
+            'ram': ev.device_memory,
+            'navegador': nav,
+            'pantalla': ev.pantalla,
+            'ts': timezone.localtime(ev.ts).strftime('%d/%m %H:%M'),
+        })
+    equipos.sort(key=lambda e: (e['modo'] != 'lite', e['usuario'].lower()))
+
+    # Eventos recientes (timeline corta).
+    recientes = []
+    for ev in qs.order_by('-ts')[:40]:
+        nombre = '—'
+        if ev.usuario:
+            nombre = (ev.usuario.get_full_name() or ev.usuario.username)
+        recientes.append({
+            'usuario': nombre,
+            'modo': ev.modo,
+            'motivo': ev.get_motivo_display(),
+            'motivo_key': ev.motivo,
+            'fps': round(ev.fps, 1) if ev.fps is not None else None,
+            'navegador': _navegador_corto(ev.user_agent),
+            'ts': timezone.localtime(ev.ts).strftime('%d/%m %H:%M'),
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'dias': dias,
+        'total': qs.count(),
+        'por_modo': por_modo,
+        'por_motivo': por_motivo,
+        'por_navegador': por_navegador,
+        'lite_ahora': lite_ahora,
+        'equipos_total': len(equipos),
+        'equipos': equipos,
+        'recientes': recientes,
+    })

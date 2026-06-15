@@ -201,6 +201,10 @@ urlpatterns = [
     path('api/admin/contactos/', views.api_admin_contactos, name='api_admin_contactos'),
     path('api/admin/metas/', views.api_admin_metas, name='api_admin_metas'),
     path('api/admin/permisos/<int:user_id>/', views.api_admin_permisos, name='api_admin_permisos'),
+    path('api/admin/perf/stats/', views.api_admin_perf_stats, name='api_admin_perf_stats'),
+
+    # ── Telemetría Modo Ligero ────────────────────────────────────────────────
+    path('api/perf/evento/', views.api_perf_evento, name='api_perf_evento'),
 
     # ── APIs Marketing Hub ────────────────────────────────────────────────────
     path('api/marketing/recursos/', views_marketing.api_marketing_recursos_list, name='api_marketing_recursos_list'),
