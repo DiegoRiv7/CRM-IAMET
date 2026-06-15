@@ -363,6 +363,11 @@
         if (same) {
             same.root.classList.remove('ww-minimized');  // restaura del dock si aplica
             same.root.style.display = 'flex';
+            // Si nos piden ventana (p.ej. desde una notificación) y está como
+            // modal, acomodarla como ventana con el rect dado (cabe a la izq).
+            if (opts.asWindow && opts.rect && !isWindowed(same) && window.crmWidgetWindow) {
+                try { window.crmWidgetWindow.windowize(same.root, opts.rect); } catch (e) { }
+            }
             bringFront(same);
             load(same, id);
             return;
@@ -407,6 +412,12 @@
                     });
                 }
             }
+        }
+
+        // asWindow + rect explícito sobre una instancia REUSADA como modal
+        // (no recién creada) → convertirla a ventana acomodada a la izquierda.
+        if (opts.asWindow && opts.rect && target && !isWindowed(target) && !isMinimized(target) && window.crmWidgetWindow) {
+            try { window.crmWidgetWindow.windowize(target.root, opts.rect); } catch (e) { }
         }
 
         load(target, id);

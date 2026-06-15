@@ -115,10 +115,10 @@
         </div>
     </div>
     <div class="nd-chips" id="notifDrawerChips">
-        <button class="nd-chip active" data-d="all" onclick="notifDrawerFiltro('all',this)">Todo</button>
+        <button class="nd-chip active" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
+        <button class="nd-chip" data-d="all" onclick="notifDrawerFiltro('all',this)">Todo</button>
         <button class="nd-chip" data-d="parati" onclick="notifDrawerFiltro('parati',this)">Para ti</button>
         <button class="nd-chip" data-d="unread" onclick="notifDrawerFiltro('unread',this)">No le&iacute;das</button>
-        <button class="nd-chip" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
         <button class="nd-chip" data-d="oportunidades" onclick="notifDrawerFiltro('oportunidades',this)">Oportunidades</button>
         <button class="nd-chip" data-d="equipo" onclick="notifDrawerFiltro('equipo',this)">Equipo</button>
     </div>
@@ -723,14 +723,15 @@ body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none;
    pierdan con el fondo: cada uno es su propia tarjetita de vidrio. */
 .nd-stack-items { display: none; }
 .nd-stack.open .nd-stack-items {
-    display: block; margin-top: 8px; padding: 8px;
-    background: rgba(255,255,255,0.28); border-radius: 18px;
-    border: 1px solid rgba(255,255,255,0.45);
-    -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+    display: block; margin-top: 8px; padding: 7px 6px;
+    background: rgba(255,255,255,0.10); border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.30);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
+/* sub-tarjetas más SÓLIDAS para que NO se pierdan sobre el panel translúcido */
 .nd-stack-items .nd-card {
-    background: rgba(255,255,255,0.66); border: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 2px 8px rgba(15,23,42,0.06); margin-bottom: 7px;
+    background: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.85);
+    box-shadow: 0 3px 12px rgba(15,23,42,0.10); margin-bottom: 7px;
     padding: 10px 11px; border-radius: 14px;
     -webkit-backdrop-filter: none; backdrop-filter: none;
 }
@@ -1344,7 +1345,7 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
        (notifHandleClick / notifQuickAction / procesarSolicitudPerfil).
        Render propio: minimalista + agrupado por "tipo de cosa" estilo Apple.
        ════════════════════════════════════════════════════════════════ */
-    var _dFiltro = 'all';
+    var _dFiltro = 'tareas';     // por defecto: notificaciones de tareas
     var _drawerPinned = false;   // true = se queda abierto (campana o abrió algo)
     var _drawerLeaveT = null;    // timer de auto-cierre al salir el cursor
 
@@ -1553,10 +1554,11 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     // taparlo) cuando el cajón está abierto. Si está cerrado, ventana amplia.
     function _ndFitRect() {
         var d = document.getElementById('notifDrawer');
-        var reserve = (d && d.classList.contains('open')) ? (d.offsetWidth + 24) : 0;
+        var dw = (d && d.classList.contains('open')) ? d.offsetWidth : 0;
         var vw = window.innerWidth, vh = window.innerHeight;
-        var w = Math.min(1180, Math.max(460, vw - reserve - 48));
-        return { x: 24, y: 72, w: w, h: Math.round(vh * 0.82) };
+        var x = 20, gap = 28;   // ocupa el espacio a la IZQ del cajón, ~gap antes
+        var w = Math.max(460, vw - dw - x - gap);
+        return { x: x, y: 60, w: w, h: Math.round(vh * 0.86) };
     }
 
     // Abrir la entidad de una notificación SIEMPRE como VENTANA, dejando el
