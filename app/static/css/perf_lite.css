@@ -184,3 +184,30 @@ body.ww-lite .crm-kanban-card:hover,
 body.ww-lite .crm-postit:hover {
     transform: none !important;
 }
+
+/* ── 11. CLAVE para el arrastre fluido de oportunidades/prospecto/idea ──
+   Estas ventanas NO son iframe (son DOM en la página). Cualquier
+   backdrop-filter ADENTRO crea una sub-capa que re-evalúa lo que tiene
+   detrás en CADA frame al mover la ventana → el arrastre se arrastra.
+   El iframe de tarea no sufre esto porque está aislado en su documento.
+   En ligero matamos TODO backdrop-filter dentro del contenido de la
+   ventana → mover = composite puro de UNA capa, igual de fluido que el
+   iframe. (Scoped a las ventanas, no global.) */
+body.ww-lite .opp-v2 *,
+body.ww-lite #widgetDetalle *,
+body.ww-lite #widgetProspecto *,
+body.ww-lite #widgetIdea *,
+body.ww-lite #widgetClienteOportunidades *,
+body.ww-lite .crm-task-modal * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 12. Durante el arrastre, promover TODAS las ventanas a su propia
+   capa GPU (como los iframes). Así, al solaparse, la zona que se
+   descubre se recompone de su capa (barato) en vez de repintar el DOM
+   pesado de la ventana de atrás. Solo durante el drag → sin costo de
+   memoria en reposo. */
+body.ww-dragging .ww-windowed:not(.ww-minimized) .ww-card {
+    will-change: transform;
+}

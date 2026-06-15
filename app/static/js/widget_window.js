@@ -821,6 +821,9 @@
         if (mode === 'move' && card) {
             card.style.willChange = 'transform';
             card.style.transition = 'none';
+            // Pre-promover a capa GPU YA (translate3d nulo): la rasterización
+            // pesada ocurre una vez al iniciar, no en el primer frame del move.
+            card.style.transform = 'translate3d(0,0,0)';
         }
         addShield(cursor);
         window.addEventListener('pointermove', onPointerMove);
@@ -843,7 +846,11 @@
             dragState.curDx = dx;
             dragState.curDy = dy;
             var mcard = getCard(dragState.overlay);
-            if (mcard) mcard.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+            // translate3d (no translate 2D): fuerza compositing por GPU en
+            // TODO navegador, incluido WebKit viejo (Mac 2015 Safari) donde
+            // translate 2D puede caer en CPU → arrastre lento de ventanas
+            // con DOM pesado como la oportunidad.
+            if (mcard) mcard.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
             // Snap visual: si el puntero entra en una zona, mostrar
             // el ghost. La aplicación real ocurre en onPointerUp.
             var zone = snapZoneFor(ev.clientX, ev.clientY);
