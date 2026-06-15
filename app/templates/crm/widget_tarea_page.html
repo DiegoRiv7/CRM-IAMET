@@ -12,7 +12,7 @@ y helpers compartidos.
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarea</title>
-    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260612-tarea-page">
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260615-tarea-degreca">
     <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260615-tw-menu">
     <style>
         body[data-theme="mundial"]::before { display: none !important; }
@@ -37,6 +37,30 @@ y helpers compartidos.
             box-shadow: none !important;
         }
         #crmTaskDetailModal .crm-tw-icon-btn[onclick*="CerrarModal"] { display: none !important; }
+        /* El marco de la ventana ya aporta la barra greca con el título y los
+           controles [— □ ×]. El header del widget se DE-GRECA → tira de
+           acciones CLARA (breadcrumb / link / 3-puntos / historial), sin
+           duplicar la greca (la 'segunda barra' del screenshot). */
+        #crmTaskDetailModal .crm-tw-header {
+            background: #ffffff !important;
+            background-image: none !important;
+            border-bottom: 1px solid rgba(15,23,42,0.08) !important;
+            border-radius: 0 !important;
+        }
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn svg,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-crumb-pill,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-cliente-crumb,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-chev {
+            color: #475569 !important;
+        }
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn:hover {
+            background: #F1F5F9 !important;
+        }
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn:hover svg {
+            color: #1E293B !important;
+        }
+        #crmTaskDetailModal .crm-tw-header-divider { background: rgba(15,23,42,0.1) !important; }
     </style>
     <script>
         /* Shims de los globals del CRM home. _CRM_CONFIG mínimo ANTES de
@@ -106,6 +130,17 @@ y helpers compartidos.
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 50); });
             } else { setTimeout(boot, 50); }
+            // Subir el título real al marco de la ventana padre ("Tarea — X").
+            var _ttl = 0;
+            var _ttlTimer = setInterval(function () {
+                _ttl++;
+                var el = document.getElementById('crm-task-titulo');
+                var txt = el && (el.textContent || '').trim();
+                if (txt) {
+                    try { window.parent.postMessage({ type: 'widget-title', title: 'Tarea — ' + txt }, window.location.origin); } catch (e) { }
+                    clearInterval(_ttlTimer);
+                } else if (_ttl > 60) { clearInterval(_ttlTimer); }
+            }, 200);
         })();
     </script>
 </body>

@@ -11,7 +11,7 @@ Todo lo demás del template queda con display:none (su default).
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Drive — {{ oportunidad_titulo }}</title>
-    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260612-drive-page">
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260615-drive-degreca">
     {# Tema (greca/cancha): el iframe es un documento aparte — sin esto el contenido sale en tema default #}
     <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260615-tw-menu">
     <style>
@@ -39,6 +39,18 @@ Todo lo demás del template queda con display:none (su default).
             border: none !important;
         }
         #widgetOppDrive .widget-close { display: none !important; }
+        /* El marco de la ventana ya aporta la barra greca "Drive". El header
+           del widget se DE-GRECA → toolbar clara con sus acciones (Nueva
+           Carpeta / Subir Archivo / breadcrumb), sin duplicar la greca. */
+        #widgetOppDrive .wo-header {
+            background: #ffffff !important;
+            background-image: none !important;
+            border-bottom: 1px solid rgba(15,23,42,0.08) !important;
+            border-radius: 0 !important;
+        }
+        #widgetOppDrive .wo-header h2 { color: #1D1D1F !important; }
+        #widgetOppDrive .wo-header #woDriveBreadcrumb,
+        #widgetOppDrive .wo-header #woDriveBreadcrumb * { color: #86868B !important; }
     </style>
     <script>
         /* Shims: el template de la oportunidad espera estos globals del CRM
