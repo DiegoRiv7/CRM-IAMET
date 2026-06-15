@@ -1034,6 +1034,12 @@
 
     function onGlobalClickForMC(ev) {
         if (ev.button !== 0) return;
+        // El target ya NO está en el DOM: el handler propio del elemento lo
+        // reemplazó en este mismo click (p.ej. clicar la descripción de una
+        // tarea la convierte en textarea — descEl.replaceWith). Sin esto,
+        // closest() falla sobre el nodo huérfano y MC se activa como si
+        // fuera el fondo.
+        if (ev.target && ev.target.nodeType === 1 && !ev.target.isConnected) return;
         // Suprimir clicks sintéticos justo después de un drag/resize
         // que terminó sin moverse (el browser sigue disparando click
         // aunque el pointerdown haya hecho preventDefault).
