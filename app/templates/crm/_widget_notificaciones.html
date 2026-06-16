@@ -116,11 +116,9 @@
     </div>
     <div class="nd-chips" id="notifDrawerChips">
         <button class="nd-chip active" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
-        <button class="nd-chip" data-d="all" onclick="notifDrawerFiltro('all',this)">Todo</button>
-        <button class="nd-chip" data-d="parati" onclick="notifDrawerFiltro('parati',this)">Para ti</button>
-        <button class="nd-chip" data-d="unread" onclick="notifDrawerFiltro('unread',this)">No le&iacute;das</button>
         <button class="nd-chip" data-d="oportunidades" onclick="notifDrawerFiltro('oportunidades',this)">Oportunidades</button>
-        <button class="nd-chip" data-d="equipo" onclick="notifDrawerFiltro('equipo',this)">Equipo</button>
+        <button class="nd-chip" data-d="vencidas" onclick="notifDrawerFiltro('vencidas',this)">Vencidas</button>
+        <button class="nd-chip" data-d="general" onclick="notifDrawerFiltro('general',this)">General</button>
     </div>
     <div class="nd-list" id="notifDrawerList"></div>
 </div>
@@ -1374,14 +1372,21 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         });
     }
 
+    // ── 4 secciones del cajón ──
+    // Vencidas: lo que urge (tareas/actividades/certificaciones por vencer o
+    // vencidas). Tareas: el resto de cosas de tareas (asignaciones, menciones
+    // en tarea, comentarios, reprogramaciones). Oportunidades: comentarios,
+    // mensajes y menciones de oportunidad. General: TODO lo demás (muro,
+    // grupos, proyectos, prospectos, sistema, solicitudes… cualquier otra).
+    var F_VENCIDAS = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'certificacion_vencida', 'certificacion_por_vencer'];
+    var F_TAREAS = ['tarea_asignada', 'tarea_opp_asignada', 'tarea_reprogramada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_opp_comentario', 'programacion_proyecto'];
+    var F_OPORTUNIDADES = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion'];
+
     function _drawerMatch(n) {
-        if (_dFiltro === 'all') return true;
-        if (_dFiltro === 'parati') return PRIORITY_CRITICAL.includes(n.tipo) || PRIORITY_IMPORTANT.includes(n.tipo);
-        if (_dFiltro === 'unread') return !n.leida;
-        if (_dFiltro === 'tareas') return CAT_TAREAS.includes(n.tipo);
-        if (_dFiltro === 'oportunidades') return CAT_OPPS.includes(n.tipo);
-        if (_dFiltro === 'equipo') return CAT_EQUIPO.includes(n.tipo);
-        if (_dFiltro === 'admin') return CAT_ADMIN.includes(n.tipo);
+        if (_dFiltro === 'tareas') return F_TAREAS.indexOf(n.tipo) !== -1;
+        if (_dFiltro === 'oportunidades') return F_OPORTUNIDADES.indexOf(n.tipo) !== -1;
+        if (_dFiltro === 'vencidas') return F_VENCIDAS.indexOf(n.tipo) !== -1;
+        if (_dFiltro === 'general') return F_TAREAS.indexOf(n.tipo) === -1 && F_OPORTUNIDADES.indexOf(n.tipo) === -1 && F_VENCIDAS.indexOf(n.tipo) === -1;
         return true;
     }
 
@@ -1561,6 +1566,28 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         return { x: x, y: 60, w: w, h: Math.round(vh * 0.86) };
     }
 
+    // Garantiza que la oportunidad quede como VENTANA acomodada al rect
+    // (a la izquierda del cajón), aunque open() la haya reusado como modal.
+    // Reintenta unos frames porque la instancia puede tardar en existir.
+    function _ndForceWindow(oppId, rect) {
+        var tries = 0;
+        (function attempt() {
+            tries++;
+            try {
+                var insts = (window.OppWidgetV2 && window.OppWidgetV2.instances) ? window.OppWidgetV2.instances() : [];
+                var inst = null;
+                for (var i = 0; i < insts.length; i++) { if (insts[i].oppId === oppId) { inst = insts[i]; break; } }
+                if (inst && inst.root && window.crmWidgetWindow) {
+                    if (!inst.root.classList.contains('ww-windowed')) {
+                        window.crmWidgetWindow.windowize(inst.root, rect);
+                    }
+                    return;
+                }
+            } catch (e) { }
+            if (tries < 6) setTimeout(attempt, 70);
+        })();
+    }
+
     // Abrir la entidad de una notificación SIEMPRE como VENTANA, dejando el
     // cajón abierto (fijado) detrás. Reusa el mismo patrón del buscador:
     // tarea → ventana-iframe; oportunidad → openDetalle({asWindow}); el resto
@@ -1585,9 +1612,11 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
                 { forceWindow: true, rect: rect });
             return;
         }
-        // Oportunidad (o tarea de oportunidad con su opp) → ventana flotante.
+        // Oportunidad (o tarea de oportunidad con su opp) → ventana flotante
+        // dimensionada a la izquierda del cajón (con refuerzo por si se reusó).
         if (n.oportunidad_id && typeof window.openDetalle === 'function') {
             window.openDetalle(n.oportunidad_id, { asWindow: true, rect: rect });
+            _ndForceWindow(n.oportunidad_id, rect);
             return;
         }
         // Resto (calendario, muro, grupo, proyecto, prospecto, cert): handler
