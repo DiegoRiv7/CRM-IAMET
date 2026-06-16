@@ -12,7 +12,15 @@
   min-height: 0 !important;
   margin-bottom: 0 !important;
 }
-#proyTabPrograma { padding: 0 2px 10px !important; }
+#proyTabPrograma { padding: 0 0 10px !important; }
+/* El margen lateral real venía de .proyectos-section (padding 1rem + max-width
+   99%). Lo reducimos para que las columnas casi toquen la barra, como Opps. */
+#proyectosSection { padding-left: 8px !important; padding-right: 8px !important; max-width: 100% !important; }
+/* Alinear Filtro/Ordenar (izq) y Buscar/+Nuevo (der) con el borde de la 1ª y
+   última columna: el board arranca a ~2px del contenido (padding de
+   .crm-kanban-board), así que los lados del toolbar van al mismo 2px. */
+#proyectosSection .proy-topbar-left { left: 2px !important; }
+#proyectosSection .proy-topbar-right { right: 2px !important; }
 /* El board pegado al toolbar y más alto (menos recorte inferior). */
 #proyKanbanBoard {
   padding-top: 2px !important;
