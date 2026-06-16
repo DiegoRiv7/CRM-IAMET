@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from app.models import (
-            Tarea, TareaOportunidad, Notificacion,
+            Tarea, TareaOportunidad, Notificacion, Actividad,
         )
         from app.views_utils import crear_notificacion
 
@@ -60,7 +60,8 @@ class Command(BaseCommand):
         umbral_por_vencer = now + timedelta(minutes=umbral_min)
 
         creadas = {'tarea_vencida': 0, 'tarea_por_vencer': 0,
-                   'actividad_vencida': 0, 'actividad_por_vencer': 0}
+                   'actividad_vencida': 0, 'actividad_por_vencer': 0,
+                   'actividad_opp_vencida': 0, 'actividad_opp_por_vencer': 0}
         omitidas = 0
 
         self.stdout.write(self.style.NOTICE(
@@ -158,6 +159,62 @@ class Command(BaseCommand):
                     creadas[tipo] += 1
                     if verbose:
                         self.stdout.write(f'  + {tipo} → {user.username} (tarea-opp {t.id})')
+
+        # ─── Actividades PROGRAMADAS de Oportunidad (modelo Actividad) ───
+        # Las "ACTIVIDAD PROGRAMADA" del panel de la oportunidad son del modelo
+        # Actividad (con fecha_fin y completada). Antes NO mandaban aviso al
+        # vencer/por vencer; aquí se cubre ese hueco. Bloque AISLADO en try
+        # propio: si algo fallara, no afecta los avisos de tareas de arriba.
+        try:
+            actividades_opp = Actividad.objects.filter(
+                completada=False,
+                oportunidad__isnull=False,
+                fecha_fin__isnull=False,
+            ).select_related('oportunidad', 'creado_por').prefetch_related('participantes')
+
+            for a in actividades_opp:
+                users = set()
+                if a.creado_por_id:
+                    users.add(a.creado_por)
+                for p in a.participantes.all():
+                    users.add(p)
+                if not users:
+                    continue
+
+                vencida = a.fecha_fin < now
+                por_vencer = (not vencida) and a.fecha_fin <= umbral_por_vencer
+                if not vencida and not por_vencer:
+                    continue
+
+                tipo = 'actividad_opp_vencida' if vencida else 'actividad_opp_por_vencer'
+                titulo = 'Actividad de oportunidad vencida' if vencida else 'Actividad de oportunidad por vencer'
+                nombre_opp = a.oportunidad.oportunidad if a.oportunidad else ''
+                mensaje = (
+                    f'La actividad "{a.titulo}" de la oportunidad "{nombre_opp}" ha vencido.' if vencida
+                    else f'La actividad "{a.titulo}" de "{nombre_opp}" vence en menos de {umbral_min} minutos.'
+                )
+
+                for user in users:
+                    # Idempotente: mismo usuario+tipo+oportunidad+mensaje (el
+                    # mensaje incluye el título de la actividad) → no duplica.
+                    ya = Notificacion.objects.filter(
+                        usuario_destinatario=user, tipo=tipo,
+                        oportunidad=a.oportunidad, mensaje=mensaje,
+                    ).exists()
+                    if ya:
+                        omitidas += 1
+                        continue
+                    n = crear_notificacion(
+                        user, tipo, titulo, mensaje,
+                        oportunidad=a.oportunidad,
+                    )
+                    if n:
+                        creadas[tipo] += 1
+                        if verbose:
+                            self.stdout.write(f'  + {tipo} → {user.username} (actividad-opp {a.id})')
+        except Exception as e:
+            logger.warning('[vencimientos] bloque actividades-opp falló (ignorado): %s', e)
+            self.stdout.write(self.style.WARNING(f'Actividades-opp: omitido por error: {e}'))
 
         # ─── Resumen ───
         total_creadas = sum(creadas.values())

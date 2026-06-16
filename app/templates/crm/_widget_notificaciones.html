@@ -784,7 +784,7 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     let _firstLoadDone = false;
 
     /* ═══ Priority & Category Maps ═══ */
-    const PRIORITY_CRITICAL = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'rendimiento_bajo'];
+    const PRIORITY_CRITICAL = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'actividad_opp_vencida', 'actividad_opp_por_vencer', 'rendimiento_bajo'];
     const PRIORITY_IMPORTANT = ['tarea_reprogramada', 'tarea_asignada', 'tarea_opp_asignada', 'mencion', 'muro_mencion', 'tarea_mencion', 'solicitud_cambio_perfil'];
     const PRIORITY_INFO = ['tarea_participante', 'tarea_observador', 'comentario_oportunidad', 'tarea_comentario', 'tarea_opp_comentario', 'oportunidad_mensaje', 'muro_post', 'respuesta', 'sistema', 'proyecto_agregado', 'programacion_proyecto', 'mensaje_grupo'];
 
@@ -798,6 +798,8 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         'actividad_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
         'tarea_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
         'actividad_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+        'actividad_opp_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 14v3" /><path d="M12 19v.5"/></svg>',
+        'actividad_opp_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         'rendimiento_bajo': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
         'tarea_reprogramada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         'tarea_asignada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>',
@@ -1358,7 +1360,7 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     // Buckets de agrupación por CLASE de notificación (no por entidad),
     // como las pilas del Centro de Notificaciones de macOS.
     var DRAWER_GROUPS = [
-        { key: 'vencidas',    label: 'Vencimientos',     tipos: ['tarea_vencida','actividad_vencida','tarea_por_vencer','actividad_por_vencer'] },
+        { key: 'vencidas',    label: 'Vencimientos',     tipos: ['tarea_vencida','actividad_vencida','tarea_por_vencer','actividad_por_vencer','actividad_opp_vencida','actividad_opp_por_vencer'] },
         { key: 'asignadas',   label: 'Asignaciones',     tipos: ['tarea_asignada','tarea_opp_asignada','prospecto_asignado','proyecto_agregado','programacion_proyecto','tarea_participante','tarea_observador'] },
         { key: 'menciones',   label: 'Menciones',        tipos: ['mencion','muro_mencion','tarea_mencion'] },
         { key: 'comentarios', label: 'Comentarios',      tipos: ['comentario_oportunidad','tarea_comentario','tarea_opp_comentario','oportunidad_mensaje','respuesta'] },
@@ -1385,7 +1387,8 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     // por su 'tipo'. Así "Tarea reabierta" (que llega como tipo genérico pero
     // trae tarea_id) cae en Tareas, no en General.
     var F_VENCIDAS = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'certificacion_vencida', 'certificacion_por_vencer'];
-    var F_OPP_TIPOS = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion'];
+    var F_OPP_TIPOS = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion', 'actividad_opp_vencida', 'actividad_opp_por_vencer'];
+    var F_OPP_ACTIVIDAD = ['actividad_opp_vencida', 'actividad_opp_por_vencer'];
 
     function _ndIsVenc(n) { return F_VENCIDAS.indexOf(n.tipo) !== -1; }
     function _ndIsTarea(n) {
@@ -1415,6 +1418,12 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         var t = (n.titulo || '') + ' ' + (n.mensaje || '');
         if (/reabier|volvi[oó] a abrir|cambi[oó] la (fecha|hora)|reprogram|nuevo participante|agreg[oó].*participante|cambi[oó].*responsable|nuevo responsable|reasign/i.test(t)) return 'editada';
         return 'general';
+    }
+
+    // Subsección dentro de Oportunidades: Comentarios → Actividades.
+    function _ndOppSub(n) {
+        if (F_OPP_ACTIVIDAD.indexOf(n.tipo) !== -1) return 'actividades';
+        return 'comentarios';   // comentarios, mensajes, menciones, etc.
     }
 
     // Subsección dentro de General: Sistema → Grupo → Muro.
@@ -1511,6 +1520,11 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
                 { key: 'venc', label: 'Vencidas' },
                 { key: 'general', label: 'Generales' },
                 { key: 'editada', label: 'Editadas' }
+            ]);
+        } else if (_dFiltro === 'oportunidades') {
+            html = _ndRenderSubsections(arr, _ndOppSub, [
+                { key: 'comentarios', label: 'Comentarios' },
+                { key: 'actividades', label: 'Actividades' }
             ]);
         } else if (_dFiltro === 'general') {
             html = _ndRenderSubsections(arr, _ndGeneralSub, [

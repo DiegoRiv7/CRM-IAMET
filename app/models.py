@@ -1635,6 +1635,8 @@ class Notificacion(models.Model):
         ('tarea_por_vencer', 'Tarea por vencer'),
         ('actividad_vencida', 'Actividad vencida'),
         ('actividad_por_vencer', 'Actividad por vencer'),
+        ('actividad_opp_vencida', 'Actividad de oportunidad vencida'),
+        ('actividad_opp_por_vencer', 'Actividad de oportunidad por vencer'),
         ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
         # Importantes
         ('tarea_reprogramada', 'Tarea reprogramada'),
@@ -1799,8 +1801,9 @@ class Notificacion(models.Model):
         # Actividades del calendario
         if t in ('actividad_vencida', 'actividad_por_vencer'):
             return '/app/home/?open_calendario=1'
-        # Oportunidades
-        if t in ('mencion', 'comentario_oportunidad', 'oportunidad_mensaje') and oid:
+        # Oportunidades (incluye actividades programadas de la opp vencidas/por vencer)
+        if t in ('mencion', 'comentario_oportunidad', 'oportunidad_mensaje',
+                 'actividad_opp_vencida', 'actividad_opp_por_vencer') and oid:
             return f'/app/home/?open_opp={oid}'
         # Equipo
         if t in ('muro_post', 'muro_mencion', 'respuesta'):
