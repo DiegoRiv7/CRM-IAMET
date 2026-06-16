@@ -4,6 +4,17 @@
 <style>
 /* El board del kanban de proyectos hereda .crm-kanban-board (igual que opps) */
 #proyKanbanBoard { padding-top:8px; }
+/* Columnas más limpias: con pocas tarjetas el marco completo (borde + degradado
+   inferior) que hereda de Oportunidades se ve pesado. Borde muy sutil y fondo
+   transparente — solo en Proyectos (#proyKanbanBoard), no toca Oportunidades. */
+#proyKanbanBoard .crm-kanban-col {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+/* El toolbar debe quedar por ENCIMA del board: si no, el strip de color de una
+   tarjeta (z-index propio) se encima sobre el dropdown de Filtro (la "línea
+   morada" sobre las opciones). Elevamos su contexto de apilamiento. */
+#proyListTopbar { position: relative; z-index: 40; }
 /* Filtro estilo Oportunidades — popover de 2 niveles (.pf-*).
    El contenido .pf-* usa texto oscuro sobre blanco, así que forzamos fondo
    sólido claro: el tema "mundial" pinta .proy-facet-menu oscuro y volvía
@@ -14,7 +25,10 @@
   border:1px solid #E5E7EB !important;
   box-shadow:0 16px 44px rgba(15,23,42,0.20) !important;
   backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  z-index:10600 !important;
 }
+/* El menú de Ordenar comparte el problema de apilamiento — mismo z alto. */
+#proySortMenu { z-index:10600 !important; }
 .pf-head { font-size:0.66rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#94A3B8; padding:6px 10px 8px; }
 .pf-dim { display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:none; background:transparent; padding:11px 12px; border-radius:10px; font-size:0.98rem; font-weight:600; color:#1C1C1E; cursor:pointer; transition:background .12s; }
 .pf-dim:hover { background:#F1F5F9; }
