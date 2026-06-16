@@ -101,7 +101,7 @@
 <!-- ═══ CENTRO DE NOTIFICACIONES (cajón derecho, estilo macOS) — Fase 1 ═══
      Reemplaza al modal gigante como UI principal. Se abre desde la campana
      o asomando el mouse al borde derecho. Minimalista + agrupado + filtros. -->
-<div id="notifEdgeHandle" title="Notificaciones" onclick="window.notifDrawerToggle()" aria-hidden="true"></div>
+<div id="notifEdgeHandle" title="Notificaciones" onclick="window.notifDrawerPeekToggle()" aria-hidden="true"></div>
 {% comment %}data-windowable: el sistema de ventanas (widget_window.js) inyecta los
 controles minimizar/maximizar junto a la X y permite sacarlo como ventana flotante
 y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
@@ -1620,11 +1620,24 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
             _drawerPinned = !opts.peek;
             if (restored) return;   // el chip ya la mostró
         }
-        _drawerPinned = !opts.peek;
+        _drawerPinned = opts.asWindow ? true : !opts.peek;
         clearTimeout(_drawerLeaveT);
         d.classList.add('open');
         _renderDrawer();
         if (window.notifLoad) window.notifLoad();   // refrescar al abrir
+        // asWindow (campana): nace como VENTANA centrada (entra desde la
+        // derecha y se acomoda al centro vía el FLIP del sistema de ventanas).
+        if (opts.asWindow && window.crmWidgetWindow && window.crmWidgetWindow.windowize
+            && !d.classList.contains('ww-windowed')) {
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var w = Math.min(Math.round(vw * 0.74), 1180);
+            var h = Math.round(vh * 0.80);
+            try {
+                window.crmWidgetWindow.windowize(d, {
+                    x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h
+                });
+            } catch (e) { }
+        }
     };
     window.notifDrawerClose = function () {
         var d = document.getElementById('notifDrawer');
@@ -1637,13 +1650,19 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         clearTimeout(_drawerLeaveT);
         _drawerPinned = false;
     };
+    // CAMPANA → ventana centrada (acción deliberada).
     window.notifDrawerToggle = function () {
         var d = document.getElementById('notifDrawer');
         if (!d) return;
-        // Si es ventana flotante visible, la campana la cierra; si está
-        // cerrada/cajón, alterna como siempre.
+        var abierto = d.classList.contains('open') || _ndIsWindowed(d) || d.classList.contains('ww-minimized');
+        abierto ? window.notifDrawerClose() : window.notifDrawerOpen({ asWindow: true });
+    };
+    // HANDLE del borde → cajón lateral fijado (clic deliberado, no se auto-cierra).
+    window.notifDrawerPeekToggle = function () {
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
         var abierto = d.classList.contains('open') || _ndIsWindowed(d);
-        abierto ? window.notifDrawerClose() : window.notifDrawerOpen();
+        abierto ? window.notifDrawerClose() : window.notifDrawerOpen({});
     };
 
     // Marcar leída (local + servidor) y refrescar contadores/cajón.
