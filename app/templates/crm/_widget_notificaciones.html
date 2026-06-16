@@ -651,6 +651,14 @@ body.ww-lite .nd-drawer { backdrop-filter: none; -webkit-backdrop-filter: none; 
 .nd-chip.active { background: #1C1C1E; color: #fff; border-color: transparent; }
 body.ww-lite .nd-chip { backdrop-filter: none; -webkit-backdrop-filter: none; background: #EFF1F5; }
 
+/* Encabezado de subsección dentro de un filtro (ej. Tareas → Vencidas) */
+.nd-subhead {
+    font-size: 10.5px; font-weight: 800; letter-spacing: 0.09em;
+    text-transform: uppercase; color: #8A97AC;
+    padding: 14px 6px 6px; margin: 0;
+}
+.nd-list > .nd-subhead:first-child { padding-top: 4px; }
+
 .nd-list { flex: 1; overflow-y: auto; padding: 4px 14px 28px; }
 .nd-list::-webkit-scrollbar { width: 5px; }
 .nd-list::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 3px; }
@@ -1372,22 +1380,39 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         });
     }
 
-    // ── 4 secciones del cajón ──
-    // Vencidas: lo que urge (tareas/actividades/certificaciones por vencer o
-    // vencidas). Tareas: el resto de cosas de tareas (asignaciones, menciones
-    // en tarea, comentarios, reprogramaciones). Oportunidades: comentarios,
-    // mensajes y menciones de oportunidad. General: TODO lo demás (muro,
-    // grupos, proyectos, prospectos, sistema, solicitudes… cualquier otra).
+    // ── 4 secciones del cajón (enrutado por TIPO + ENTIDAD ligada) ──
+    // Clave: una notificación se clasifica por la cosa a la que apunta, no solo
+    // por su 'tipo'. Así "Tarea reabierta" (que llega como tipo genérico pero
+    // trae tarea_id) cae en Tareas, no en General.
     var F_VENCIDAS = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'certificacion_vencida', 'certificacion_por_vencer'];
-    var F_TAREAS = ['tarea_asignada', 'tarea_opp_asignada', 'tarea_reprogramada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_opp_comentario', 'programacion_proyecto'];
-    var F_OPORTUNIDADES = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion'];
+    var F_OPP_TIPOS = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion'];
+
+    function _ndIsVenc(n) { return F_VENCIDAS.indexOf(n.tipo) !== -1; }
+    function _ndIsTarea(n) {
+        // CAT_TAREAS ya cubre asignadas/menciones/comentarios/reprogramadas/
+        // vencidas de tarea; el tarea_id/tarea_opp_id atrapa el resto
+        // (reabiertas y cualquier cosa ligada a una tarea aunque sea 'sistema').
+        return CAT_TAREAS.indexOf(n.tipo) !== -1 || !!n.tarea_id || !!n.tarea_opp_id;
+    }
+    function _ndIsOpp(n) {
+        if (_ndIsTarea(n)) return false;               // una tarea de opp es de Tareas
+        return F_OPP_TIPOS.indexOf(n.tipo) !== -1 || !!n.oportunidad_id;
+    }
 
     function _drawerMatch(n) {
-        if (_dFiltro === 'tareas') return F_TAREAS.indexOf(n.tipo) !== -1;
-        if (_dFiltro === 'oportunidades') return F_OPORTUNIDADES.indexOf(n.tipo) !== -1;
-        if (_dFiltro === 'vencidas') return F_VENCIDAS.indexOf(n.tipo) !== -1;
-        if (_dFiltro === 'general') return F_TAREAS.indexOf(n.tipo) === -1 && F_OPORTUNIDADES.indexOf(n.tipo) === -1 && F_VENCIDAS.indexOf(n.tipo) === -1;
+        if (_dFiltro === 'tareas') return _ndIsTarea(n);
+        if (_dFiltro === 'oportunidades') return _ndIsOpp(n);
+        if (_dFiltro === 'vencidas') return _ndIsVenc(n);
+        if (_dFiltro === 'general') return !_ndIsTarea(n) && !_ndIsOpp(n) && !_ndIsVenc(n);
         return true;
+    }
+
+    // Subsección dentro de Tareas: Vencidas / Cambio de horario / Normales.
+    function _ndTareaSub(n) {
+        if (_ndIsVenc(n)) return 'venc';
+        var t = (n.titulo || '') + ' ' + (n.mensaje || '');
+        if (n.tipo === 'tarea_reprogramada' || /reabier|volvi[oó] a abrir|cambi[oó] la (fecha|hora)|reprogram/i.test(t)) return 'cambio';
+        return 'normal';
     }
 
     function _ndCleanMsg(s) {
@@ -1471,7 +1496,32 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
             return;
         }
 
-        // Agrupar por clase, preservando el orden ya ordenado (prioridad/fecha).
+        var html;
+        if (_dFiltro === 'tareas') {
+            // Tareas se parte en 3 subsecciones: Vencidas / Cambio de horario /
+            // Normales. Dentro de cada una se agrupa en pilas como siempre.
+            var subDefs = [
+                { key: 'venc', label: 'Vencidas' },
+                { key: 'cambio', label: 'Cambio de horario' },
+                { key: 'normal', label: 'Normales' }
+            ];
+            var subItems = { venc: [], cambio: [], normal: [] };
+            arr.forEach(function (n) { subItems[_ndTareaSub(n)].push(n); });
+            html = '';
+            subDefs.forEach(function (s) {
+                if (!subItems[s.key].length) return;
+                html += '<div class="nd-subhead">' + s.label + '</div>';
+                html += _ndRenderGroups(subItems[s.key]);
+            });
+        } else {
+            html = _ndRenderGroups(arr);
+        }
+        list.innerHTML = html;
+    }
+
+    // Agrupa una lista de notifs en pilas por clase (DRAWER_GROUPS),
+    // preservando el orden ya ordenado (prioridad/fecha). Devuelve HTML.
+    function _ndRenderGroups(arr) {
         var buckets = {}, order = [];
         arr.forEach(function (n) {
             var g = _ndGroupOf(n.tipo);
@@ -1483,7 +1533,7 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
             var b = buckets[k];
             html += (b.items.length >= 2) ? _ndStack(b.grp, b.items) : _ndCard(b.items[0]);
         });
-        list.innerHTML = html;
+        return html;
     }
 
     window.notifDrawerFiltro = function (cat, btn) {
