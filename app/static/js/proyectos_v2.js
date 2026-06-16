@@ -77,6 +77,9 @@
         var marca = p.oportunidad_producto || '—';
         var monto = p.oportunidad_monto || 0;
         var cliente = p.cliente_nombre || 'Sin cliente';
+        var oppId = parseInt(p.oportunidad_id || 0, 10) || 0;
+        var oppNombre = p.oportunidad_nombre || '';
+        var hasOpp = !!(oppId && oppNombre);
         return '<div class="crm-kanban-card crm-postit" data-proy-id="' + p.id + '" onclick="if(window.proyectosVerDetalle)proyectosVerDetalle(' + p.id + ')" style="cursor:pointer;">' +
             '<div class="crm-postit-strip" style="background:' + color + ';"></div>' +
             '<div style="margin-bottom:12px;padding-right:8px;position:relative;z-index:1;">' +
@@ -109,13 +112,17 @@
                 '</div>' +
                 '<div style="font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;background:#F5F3FF;color:#7C3AED;border-color:#DDD6FE;">Proyecto</div>' +
             '</div>' +
+            // Footer = la OPORTUNIDAD ligada. Clic aquí abre la VENTANA de la
+            // oportunidad (no el proyecto): stopPropagation corta el onclick del
+            // card. Si el proyecto no tiene opp, queda informativo (no clickable).
             '<div style="margin-top:auto;position:relative;z-index:1;">' +
-                '<div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">' +
+                '<div' + (hasOpp ? ' onclick="event.stopPropagation(); if(window.openDetalle)window.openDetalle(' + oppId + ',{asWindow:true});"' : '') +
+                    ' style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;cursor:' + (hasOpp ? 'pointer' : 'default') + ';">' +
                     '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">' +
-                        '<svg width="14" height="14" fill="none" stroke="#9CA3AF" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
-                        '<span style="font-size:0.78rem;font-weight:500;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(_statusLabel(p.status)) + (p.oportunidad_nombre ? ' · ' + _esc(p.oportunidad_nombre) : '') + '</span>' +
+                        '<svg width="14" height="14" fill="none" stroke="' + (hasOpp ? '#2563EB' : '#9CA3AF') + '" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+                        '<span style="font-size:0.78rem;font-weight:500;color:' + (hasOpp ? '#2563EB' : '#9CA3AF') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(hasOpp ? oppNombre : 'Sin oportunidad ligada') + '</span>' +
                     '</div>' +
-                    '<svg width="14" height="14" fill="none" stroke="#D1D5DB" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>' +
+                    (hasOpp ? '<svg width="14" height="14" fill="none" stroke="#93B4F5" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>' : '') +
                 '</div>' +
             '</div>' +
         '</div>';
