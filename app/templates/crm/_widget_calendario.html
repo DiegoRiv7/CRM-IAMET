@@ -2378,14 +2378,14 @@
         html += '<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:0.78rem;table-layout:fixed;">';
         // Header
         html += '<thead><tr>';
-        html += '<th style="position:sticky;left:0;top:0;z-index:3;background:#FAFAFC;border-bottom:1px solid #E5E5EA;border-right:1px solid #E5E5EA;padding:10px 12px;text-align:left;color:#1D1D1F;font-weight:700;width:140px;">Técnico</th>';
+        html += '<th style="position:sticky;left:0;z-index:3;background:#FAFAFC;border-bottom:1px solid #E5E5EA;border-right:1px solid #E5E5EA;padding:10px 12px;text-align:left;color:#1D1D1F;font-weight:700;width:140px;">Técnico</th>';
         dias.forEach(function (iso) {
             var parts = iso.split('-');
             var dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
             var hoyISO = _calFmtDateISO(new Date());
             var isHoy = iso === hoyISO;
             var bg = isHoy ? '#FFF6E5' : '#FAFAFC';
-            html += '<th style="position:sticky;top:0;z-index:2;background:' + bg + ';border-bottom:1px solid #E5E5EA;padding:8px 6px;text-align:center;font-weight:600;color:#1D1D1F;">';
+            html += '<th style="background:' + bg + ';border-bottom:1px solid #E5E5EA;padding:8px 6px;text-align:center;font-weight:600;color:#1D1D1F;">';
             html += '<div style="font-size:0.7rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;">' + _CAL_TEC_DAYS_ES[dt.getDay()].slice(0, 3) + '</div>';
             html += '<div style="font-size:0.95rem;font-weight:700;' + (isHoy ? 'color:#FF9500;' : '') + '">' + dt.getDate() + '</div>';
             html += '<div style="font-size:0.66rem;color:#86868B;">' + _CAL_TEC_MONTHS_ES[dt.getMonth()] + '</div>';
