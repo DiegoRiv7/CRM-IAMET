@@ -1600,6 +1600,16 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     // salir). Campana / handle / abrir algo → fijado (se queda).
     function _ndIsWindowed(d) { return d && d.classList.contains('ww-windowed') && !d.classList.contains('ww-minimized'); }
 
+    // Limpia TODO el estilo inline que pudieran haber dejado windowize/flip o
+    // las animaciones del buzón. Sin esto, un transform/transition residual
+    // rompe el slide del cajón (se ocultaría de golpe en vez de deslizarse).
+    function _ndResetCard(card) {
+        if (!card) return;
+        card.style.transition = ''; card.style.transform = ''; card.style.transformOrigin = '';
+        card.style.position = ''; card.style.left = ''; card.style.top = '';
+        card.style.width = ''; card.style.height = ''; card.style.opacity = '';
+    }
+
     window.notifDrawerOpen = function (opts) {
         opts = opts || {};
         var d = document.getElementById('notifDrawer');
@@ -1617,6 +1627,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         }
         _drawerPinned = opts.asWindow ? true : !opts.peek;
         clearTimeout(_drawerLeaveT);
+        _ndResetCard(d.querySelector('.nd-shell'));   // sin estilos residuales
 
         if (opts.asWindow && window.crmWidgetWindow && window.crmWidgetWindow.windowize
             && !d.classList.contains('ww-windowed')) {
@@ -1672,15 +1683,49 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     window.notifDrawerClose = function () {
         var d = document.getElementById('notifDrawer');
         if (!d) return;
-        // Salida también con panel sólido (sin blur) → más fluida al esconderse.
-        d.classList.add('nd-sliding');
-        // Si está en modo ventana flotante, devolverla a cajón antes de ocultar.
-        if (d.classList.contains('ww-windowed') && window.crmWidgetWindow && window.crmWidgetWindow.unwindowize) {
-            try { window.crmWidgetWindow.unwindowize(d); } catch (e) { }
-        }
-        d.classList.remove('open');
+        var card = d.querySelector('.nd-shell');
+        var lite = document.body.classList.contains('ww-lite');
+        var bell = document.getElementById('btnNotificaciones');
+        var windowed = d.classList.contains('ww-windowed') && !d.classList.contains('ww-minimized');
         clearTimeout(_drawerLeaveT);
         _drawerPinned = false;
+
+        // VENTANA (campana) → animación INVERSA del buzón: la ventana se ENCOGE
+        // de vuelta hacia la campana (en vez de irse a la derecha). Al terminar,
+        // se sale de modo ventana sin el FLIP de regreso.
+        if (windowed && card && bell && !lite) {
+            var c = card.getBoundingClientRect();
+            var bb = bell.getBoundingClientRect();
+            var dx = (bb.left + bb.width / 2) - (c.left + c.width / 2);
+            var dy = (bb.top + bb.height / 2) - (c.top + c.height / 2);
+            d.classList.add('nd-sliding');
+            card.style.transformOrigin = '50% 50%';
+            card.style.transition = 'transform .32s cubic-bezier(.4,0,.7,1), opacity .28s ease';
+            void card.offsetHeight;   // registrar estado inicial
+            card.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.05)';
+            card.style.opacity = '0';
+            clearTimeout(_slideT);
+            _slideT = setTimeout(function () {
+                d.classList.remove('ww-windowed', 'open', 'nd-sliding');  // cerrar sin FLIP de vuelta
+                // Reset SIN animar (transición none por un frame), si no el cajón
+                // se deslizaría visiblemente de la campana al borde derecho.
+                card.style.transition = 'none';
+                card.style.transform = ''; card.style.opacity = ''; card.style.transformOrigin = '';
+                card.style.position = ''; card.style.left = ''; card.style.top = '';
+                card.style.width = ''; card.style.height = '';
+                requestAnimationFrame(function () { card.style.transition = ''; });
+            }, 320);
+            return;
+        }
+
+        // VENTANA sin campana / Modo Ligero: cierre estándar (a cajón y ocultar).
+        if (windowed && window.crmWidgetWindow && window.crmWidgetWindow.unwindowize) {
+            try { window.crmWidgetWindow.unwindowize(d); } catch (e) { }
+        }
+        // CAJÓN lateral: slide-out limpio (sin inline residual que lo rompa).
+        if (card) { card.style.transition = ''; card.style.transform = ''; }
+        d.classList.add('nd-sliding');
+        d.classList.remove('open');
         clearTimeout(_slideT);
         _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); }, 360);
     };
