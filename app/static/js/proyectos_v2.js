@@ -158,7 +158,7 @@
         board.style.display = 'flex';
 
         var filtered = _applyFilters(_lastProjects);
-        _buildFilterMenu();   // refrescar opciones (clientes) según datos
+        _updateFilterPill();
 
         var byCol = {};
         filtered.forEach(function (p) {
@@ -214,9 +214,23 @@
         board.innerHTML = html;
     };
 
-    /* ── Filtro estilo Oportunidades (Etapa · Cliente · Monto · Fechas) ──
-       Inyecta un formulario compacto en el menú existente #proyFilterMenu y
-       filtra del lado cliente sobre los proyectos ya cargados. */
+    /* ════════════════════════════════════════════════════════════════════
+       FILTRO estilo Oportunidades — popover de 2 niveles:
+       1) "FILTRAR POR" → lista de dimensiones (Cliente · Etapa · Monto · Fecha)
+       2) al elegir una → buscador + checklist MULTI-SELECCIÓN + Quitar/Aplicar
+       Filtra del lado cliente sobre los proyectos ya cargados.
+       ════════════════════════════════════════════════════════════════════ */
+    var _facetView = 'dims';          // 'dims' | 'cliente' | 'etapa' | 'monto' | 'fecha'
+    var _facetTemp = { cliente: {}, etapa: {} };   // selección temporal (multi) por dim
+    var _facetMonto = { min: '', max: '' };
+    var _facetFecha = { desde: '', hasta: '' };
+    var DIMS = [
+        { k: 'cliente', label: 'Cliente' },
+        { k: 'etapa', label: 'Etapa' },
+        { k: 'monto', label: 'Monto' },
+        { k: 'fecha', label: 'Fecha de creación' }
+    ];
+
     function _uniqueClientes() {
         var set = {}, out = [];
         _lastProjects.forEach(function (p) {
@@ -225,81 +239,133 @@
         });
         return out.sort();
     }
-    function _buildFilterMenu() {
-        var menu = document.getElementById('proyFilterMenu');
-        if (!menu) return;
-        // Si el menú está abierto, no reconstruir (no perder el foco/scroll).
-        if (menu.style.display === 'block' && menu.getAttribute('data-built') === '1') return;
-
-        var f = _proyFilters;
-        var stages = _stages().map(function (s) { return { k: s.nombre.trim().toUpperCase(), label: s.nombre, color: s.color }; });
-        stages.push({ k: SIN_OPP, label: 'Sin oportunidad', color: '#94A3B8' });
-
-        var etapaChips = stages.map(function (s) {
-            var on = f.etapa.indexOf(s.k) !== -1;
-            return '<button type="button" class="proyf-chip' + (on ? ' on' : '') + '" data-etapa="' + _esc(s.k) + '">' +
-                '<span style="width:7px;height:7px;border-radius:50%;background:' + s.color + ';display:inline-block;margin-right:5px;"></span>' + _esc(s.label) + '</button>';
-        }).join('');
-
-        var clienteOpts = '<option value="">Todos los clientes</option>' + _uniqueClientes().map(function (c) {
-            return '<option value="' + _esc(c) + '"' + (f.cliente.indexOf(c) !== -1 ? ' selected' : '') + '>' + _esc(c) + '</option>';
-        }).join('');
-
-        menu.style.minWidth = '300px';
-        menu.innerHTML =
-            '<div class="proyf-sec-label">Etapa</div>' +
-            '<div class="proyf-chips" id="proyfEtapas">' + etapaChips + '</div>' +
-            '<div class="proyf-sec-label">Cliente</div>' +
-            '<select class="proyf-input" id="proyfCliente">' + clienteOpts + '</select>' +
-            '<div class="proyf-sec-label">Monto (MXN)</div>' +
-            '<div class="proyf-row"><input class="proyf-input" id="proyfMin" type="number" inputmode="numeric" placeholder="Mín" value="' + (f.montoMin != null ? f.montoMin : '') + '"><span class="proyf-dash">–</span><input class="proyf-input" id="proyfMax" type="number" inputmode="numeric" placeholder="Máx" value="' + (f.montoMax != null ? f.montoMax : '') + '"></div>' +
-            '<div class="proyf-sec-label">Fecha de creación</div>' +
-            '<div class="proyf-row"><input class="proyf-input" id="proyfDesde" type="date" value="' + _esc(f.fDesde) + '"><span class="proyf-dash">–</span><input class="proyf-input" id="proyfHasta" type="date" value="' + _esc(f.fHasta) + '"></div>' +
-            '<div class="proyf-actions"><button type="button" class="proyf-btn-clear" id="proyfClear">Limpiar</button><button type="button" class="proyf-btn-apply" id="proyfApply">Aplicar</button></div>';
-        menu.setAttribute('data-built', '1');
-
-        // Toggle de chips de etapa (sin cerrar el menú)
-        menu.querySelectorAll('#proyfEtapas .proyf-chip').forEach(function (chip) {
-            chip.addEventListener('click', function (e) {
-                e.stopPropagation();
-                chip.classList.toggle('on');
-            });
-        });
-        // Evitar que clicks dentro del menú lo cierren (una sola vez).
-        if (!menu._proyfBound) {
-            menu.addEventListener('click', function (e) { e.stopPropagation(); });
-            menu._proyfBound = true;
+    function _facetValues(dim) {
+        if (dim === 'etapa') {
+            var st = _stages().map(function (s) { return { v: s.nombre.trim().toUpperCase(), label: s.nombre, color: s.color }; });
+            st.push({ v: SIN_OPP, label: 'Sin oportunidad', color: '#94A3B8' });
+            return st;
         }
+        return _uniqueClientes().map(function (c) { return { v: c, label: c }; });
+    }
+    function _fm() { return document.getElementById('proyFilterMenu'); }
 
-        var apply = menu.querySelector('#proyfApply');
-        if (apply) apply.addEventListener('click', function () {
-            var etapas = [];
-            menu.querySelectorAll('#proyfEtapas .proyf-chip.on').forEach(function (c) { etapas.push(c.getAttribute('data-etapa')); });
-            var cli = (menu.querySelector('#proyfCliente') || {}).value || '';
-            var mn = (menu.querySelector('#proyfMin') || {}).value;
-            var mx = (menu.querySelector('#proyfMax') || {}).value;
-            _proyFilters = {
-                etapa: etapas,
-                cliente: cli ? [cli] : [],
-                montoMin: mn !== '' ? parseFloat(mn) : null,
-                montoMax: mx !== '' ? parseFloat(mx) : null,
-                fDesde: (menu.querySelector('#proyfDesde') || {}).value || '',
-                fHasta: (menu.querySelector('#proyfHasta') || {}).value || ''
-            };
-            menu.style.display = 'none';
-            _updateFilterPill();
-            window.proyKanbanRender(_lastProjects);
-        });
-        var clr = menu.querySelector('#proyfClear');
-        if (clr) clr.addEventListener('click', function () {
+    window.proyFilterOpen = function (e) {
+        if (e) e.stopPropagation();
+        var m = _fm(); if (!m) return;
+        var sm = document.getElementById('proySortMenu'); if (sm) sm.style.display = 'none';
+        if (m.style.display === 'block') { m.style.display = 'none'; return; }
+        _facetView = 'dims';
+        _facetRender();
+        m.style.display = 'block';
+    };
+
+    function _facetOpenDim(dim) {
+        _facetView = dim;
+        if (dim === 'cliente' || dim === 'etapa') {
+            _facetTemp[dim] = {};
+            (_proyFilters[dim] || []).forEach(function (v) { _facetTemp[dim][v] = 1; });
+        } else if (dim === 'monto') {
+            _facetMonto = { min: _proyFilters.montoMin != null ? _proyFilters.montoMin : '', max: _proyFilters.montoMax != null ? _proyFilters.montoMax : '' };
+        } else if (dim === 'fecha') {
+            _facetFecha = { desde: _proyFilters.fDesde || '', hasta: _proyFilters.fHasta || '' };
+        }
+        _facetRender();
+    }
+    function _facetCloseApply() { var m = _fm(); if (m) m.style.display = 'none'; _updateFilterPill(); window.proyKanbanRender(_lastProjects); }
+
+    function _facetRender() {
+        var m = _fm(); if (!m) return;
+        if (!m._proyfBound) { m.addEventListener('click', function (e) { e.stopPropagation(); }); m._proyfBound = true; }
+        m.style.minWidth = '290px';
+        if (_facetView === 'dims') { m.innerHTML = _facetDimsHtml(); _wireDims(m); }
+        else if (_facetView === 'monto') { m.innerHTML = _facetRangeHtml('monto'); _wireRange(m, 'monto'); }
+        else if (_facetView === 'fecha') { m.innerHTML = _facetRangeHtml('fecha'); _wireRange(m, 'fecha'); }
+        else { m.innerHTML = _facetListHtml(_facetView); _wireList(m, _facetView); }
+    }
+    function _facetDimsHtml() {
+        var f = _proyFilters;
+        function badge(n) { return n ? '<span class="pf-dim-badge">' + n + '</span>' : ''; }
+        return '<div class="pf-head">Filtrar por</div>' + DIMS.map(function (d) {
+            var n = d.k === 'cliente' ? f.cliente.length : d.k === 'etapa' ? f.etapa.length :
+                d.k === 'monto' ? ((f.montoMin != null || f.montoMax != null) ? 1 : 0) : ((f.fDesde || f.fHasta) ? 1 : 0);
+            return '<button type="button" class="pf-dim" data-dim="' + d.k + '">' + d.label + badge(n) +
+                '<svg width="15" height="15" fill="none" stroke="#CBD5E1" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;"><path d="M9 18l6-6-6-6"/></svg></button>';
+        }).join('') + (_filtersActive() ? '<button type="button" class="pf-clear-all" data-act="clear-all">Limpiar todo</button>' : '');
+    }
+    function _facetListHtml(dim) {
+        var vals = _facetValues(dim), temp = _facetTemp[dim] || {};
+        var cnt = Object.keys(temp).filter(function (k) { return temp[k]; }).length;
+        var rows = vals.map(function (o) {
+            var on = !!temp[o.v];
+            return '<button type="button" class="pf-opt' + (on ? ' on' : '') + '" data-val="' + _esc(o.v) + '">' +
+                (o.color ? '<span class="pf-dot" style="background:' + o.color + '"></span>' : '') +
+                '<span class="pf-opt-label">' + _esc(o.label) + '</span>' +
+                '<svg class="pf-check" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2.6" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></button>';
+        }).join('') || '<div class="pf-empty">Sin opciones</div>';
+        var title = dim === 'cliente' ? 'Cliente' : 'Etapa';
+        return '<button type="button" class="pf-back" data-act="back">‹ ' + title + '</button>' +
+            '<div class="pf-search"><svg width="14" height="14" fill="none" stroke="#8e8e93" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/></svg><input type="text" placeholder="Buscar ' + (dim === 'cliente' ? 'cliente' : 'etapa') + '..."></div>' +
+            '<div class="pf-list">' + rows + '</div>' +
+            '<div class="pf-actions"><button type="button" class="pf-clear" data-act="clear">Quitar</button><button type="button" class="pf-apply" data-act="apply">Aplicar (' + cnt + ')</button></div>';
+    }
+    function _facetRangeHtml(dim) {
+        var isMonto = dim === 'monto';
+        var a = isMonto ? _facetMonto.min : _facetFecha.desde;
+        var b = isMonto ? _facetMonto.max : _facetFecha.hasta;
+        var t = isMonto ? 'number' : 'date';
+        var ph1 = isMonto ? 'Mín' : '', ph2 = isMonto ? 'Máx' : '';
+        return '<button type="button" class="pf-back" data-act="back">‹ ' + (isMonto ? 'Monto' : 'Fecha de creación') + '</button>' +
+            '<div class="pf-range"><input class="proyf-input" id="pfA" type="' + t + '" inputmode="numeric" placeholder="' + ph1 + '" value="' + _esc(a) + '"><span class="proyf-dash">–</span><input class="proyf-input" id="pfB" type="' + t + '" inputmode="numeric" placeholder="' + ph2 + '" value="' + _esc(b) + '"></div>' +
+            '<div class="pf-actions"><button type="button" class="pf-clear" data-act="clear">Quitar</button><button type="button" class="pf-apply" data-act="apply">Aplicar</button></div>';
+    }
+    function _wireDims(m) {
+        m.querySelectorAll('.pf-dim').forEach(function (b) { b.addEventListener('click', function () { _facetOpenDim(b.getAttribute('data-dim')); }); });
+        var ca = m.querySelector('[data-act="clear-all"]');
+        if (ca) ca.addEventListener('click', function () {
             _proyFilters = { etapa: [], cliente: [], montoMin: null, montoMax: null, fDesde: '', fHasta: '' };
-            menu.setAttribute('data-built', '0');
-            _buildFilterMenu();
-            menu.style.display = 'none';
-            _updateFilterPill();
-            window.proyKanbanRender(_lastProjects);
+            _facetCloseApply();
         });
     }
+    function _wireList(m, dim) {
+        m.querySelector('[data-act="back"]').addEventListener('click', function () { _facetView = 'dims'; _facetRender(); });
+        var inp = m.querySelector('.pf-search input');
+        if (inp) {
+            inp.addEventListener('input', function () {
+                var q = this.value.toLowerCase();
+                m.querySelectorAll('.pf-opt').forEach(function (o) {
+                    var lbl = (o.querySelector('.pf-opt-label').textContent || '').toLowerCase();
+                    o.style.display = (!q || lbl.indexOf(q) !== -1) ? '' : 'none';
+                });
+            });
+            setTimeout(function () { try { inp.focus(); } catch (e) { } }, 30);
+        }
+        m.querySelectorAll('.pf-opt').forEach(function (o) {
+            o.addEventListener('click', function () {
+                var v = o.getAttribute('data-val');
+                if (_facetTemp[dim][v]) delete _facetTemp[dim][v]; else _facetTemp[dim][v] = 1;
+                o.classList.toggle('on');
+                var ap = m.querySelector('.pf-apply');
+                if (ap) ap.textContent = 'Aplicar (' + Object.keys(_facetTemp[dim]).length + ')';
+            });
+        });
+        m.querySelector('[data-act="clear"]').addEventListener('click', function () { _proyFilters[dim] = []; _facetCloseApply(); });
+        m.querySelector('[data-act="apply"]').addEventListener('click', function () { _proyFilters[dim] = Object.keys(_facetTemp[dim]); _facetCloseApply(); });
+    }
+    function _wireRange(m, dim) {
+        m.querySelector('[data-act="back"]').addEventListener('click', function () { _facetView = 'dims'; _facetRender(); });
+        m.querySelector('[data-act="clear"]').addEventListener('click', function () {
+            if (dim === 'monto') { _proyFilters.montoMin = null; _proyFilters.montoMax = null; }
+            else { _proyFilters.fDesde = ''; _proyFilters.fHasta = ''; }
+            _facetCloseApply();
+        });
+        m.querySelector('[data-act="apply"]').addEventListener('click', function () {
+            var a = (m.querySelector('#pfA') || {}).value, b = (m.querySelector('#pfB') || {}).value;
+            if (dim === 'monto') { _proyFilters.montoMin = a !== '' ? parseFloat(a) : null; _proyFilters.montoMax = b !== '' ? parseFloat(b) : null; }
+            else { _proyFilters.fDesde = a || ''; _proyFilters.fHasta = b || ''; }
+            _facetCloseApply();
+        });
+    }
+
     function _updateFilterPill() {
         var btn = document.getElementById('proyFilterBtn');
         var lbl = document.getElementById('proyFilterLabel');

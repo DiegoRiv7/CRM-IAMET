@@ -4,23 +4,35 @@
 <style>
 /* El board del kanban de proyectos hereda .crm-kanban-board (igual que opps) */
 #proyKanbanBoard { padding-top:8px; }
-/* Filtro estilo Oportunidades (Etapa · Cliente · Monto · Fechas) */
-#proyFilterMenu { padding:14px; }
-.proyf-sec-label { font-size:0.66rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#94A3B8; margin:10px 0 6px; }
-.proyf-sec-label:first-child { margin-top:0; }
-.proyf-chips { display:flex; flex-wrap:wrap; gap:6px; }
-.proyf-chip { display:inline-flex; align-items:center; padding:5px 10px; border-radius:999px; border:1px solid #E2E8F0; background:#fff; color:#475569; font-size:0.76rem; font-weight:600; cursor:pointer; transition:all .12s; }
-.proyf-chip:hover { background:#F1F5F9; }
-.proyf-chip.on { background:#111317; color:#fff; border-color:transparent; }
-.proyf-chip.on span { filter:brightness(1.4); }
-.proyf-input { width:100%; box-sizing:border-box; border:1px solid #E2E8F0; border-radius:9px; padding:7px 10px; font-size:0.82rem; color:#1C1C1E; background:#fff; outline:none; }
+/* Filtro estilo Oportunidades — popover de 2 niveles (.pf-*) */
+#proyFilterMenu { padding:10px; min-width:290px; max-height:70vh; overflow-y:auto; }
+.pf-head { font-size:0.66rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#94A3B8; padding:6px 10px 8px; }
+.pf-dim { display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:none; background:transparent; padding:11px 12px; border-radius:10px; font-size:0.98rem; font-weight:600; color:#1C1C1E; cursor:pointer; transition:background .12s; }
+.pf-dim:hover { background:#F1F5F9; }
+.pf-dim-badge { background:#2563EB; color:#fff; font-size:0.66rem; font-weight:700; border-radius:999px; padding:1px 7px; }
+.pf-clear-all { width:100%; text-align:center; border:none; background:transparent; color:#DC2626; font-size:0.82rem; font-weight:600; padding:10px; cursor:pointer; margin-top:4px; border-top:1px solid #F1F5F9; }
+.pf-back { display:inline-flex; align-items:center; border:none; background:transparent; color:#2563EB; font-size:0.85rem; font-weight:700; padding:6px 8px 10px; cursor:pointer; }
+.pf-search { display:flex; align-items:center; gap:7px; border:1px solid #E2E8F0; border-radius:10px; padding:7px 11px; margin:0 4px 8px; background:#fff; }
+.pf-search:focus-within { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
+.pf-search input { border:none; outline:none; background:transparent; font-size:0.85rem; color:#1C1C1E; width:100%; }
+.pf-list { max-height:300px; overflow-y:auto; padding:0 2px; }
+.pf-opt { display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:none; background:transparent; padding:10px 11px; border-radius:9px; font-size:0.9rem; font-weight:600; color:#1C1C1E; cursor:pointer; transition:background .1s; }
+.pf-opt:hover { background:#F4F6F9; }
+.pf-opt.on { background:#EAF1FE; }
+.pf-dot { width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+.pf-opt-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pf-check { opacity:0; flex:0 0 auto; }
+.pf-opt.on .pf-check { opacity:1; }
+.pf-empty { padding:18px; text-align:center; color:#A0AAB8; font-size:0.82rem; }
+.pf-range { display:flex; align-items:center; gap:8px; padding:0 6px 4px; }
+.proyf-input { width:100%; box-sizing:border-box; border:1px solid #E2E8F0; border-radius:9px; padding:8px 10px; font-size:0.85rem; color:#1C1C1E; background:#fff; outline:none; }
 .proyf-input:focus { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
-.proyf-row { display:flex; align-items:center; gap:8px; }
 .proyf-dash { color:#94A3B8; }
-.proyf-actions { display:flex; gap:8px; margin-top:14px; }
-.proyf-btn-clear { flex:1; padding:8px; border:none; border-radius:9px; background:rgba(15,23,42,0.06); color:#475569; font-size:0.82rem; font-weight:600; cursor:pointer; }
-.proyf-btn-apply { flex:1; padding:8px; border:none; border-radius:9px; background:#2563EB; color:#fff; font-size:0.82rem; font-weight:600; cursor:pointer; }
-.proyf-btn-apply:hover { opacity:.9; }
+.pf-actions { display:flex; gap:8px; padding:12px 6px 4px; }
+.pf-clear { flex:1; padding:9px; border:1px solid #E2E8F0; border-radius:10px; background:#fff; color:#475569; font-size:0.85rem; font-weight:600; cursor:pointer; }
+.pf-clear:hover { background:#F8FAFC; }
+.pf-apply { flex:1.4; padding:9px; border:none; border-radius:10px; background:#2563EB; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; }
+.pf-apply:hover { opacity:.9; }
 </style>
 <div class="proyectos-section" id="proyectosSection">
 
@@ -34,29 +46,13 @@
     <div class="proy-topbar-side proy-topbar-left" id="proyTopbarLeft">
       <!-- Filtro dropdown -->
       <div class="proy-facet-wrap" style="position:relative;">
-        <button type="button" class="proy-facet-btn" id="proyFilterBtn" onclick="proyFilterMenuToggle(event)">
+        <button type="button" class="proy-facet-btn" id="proyFilterBtn" onclick="proyFilterOpen(event)">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
           <span id="proyFilterLabel">Filtro</span>
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </button>
-        <div class="proy-facet-menu" id="proyFilterMenu" style="display:none;">
-          <div class="proy-facet-item" data-filter="todos" onclick="proyFilterPick('todos','Todos')">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-            Todos
-          </div>
-          <div class="proy-facet-item" data-filter="active" onclick="proyFilterPick('active','Activos')">
-            <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="10 8 16 12 10 16"/></svg>
-            Activos
-          </div>
-          <div class="proy-facet-item" data-filter="completed" onclick="proyFilterPick('completed','Completados')">
-            <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Completados
-          </div>
-          <div class="proy-facet-item" data-filter="planning" onclick="proyFilterPick('planning','Planificación')">
-            <svg width="14" height="14" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            Planificación
-          </div>
-        </div>
+        <!-- El contenido del menú lo arma proyectos_v2.js (facet de 2 niveles). -->
+        <div class="proy-facet-menu" id="proyFilterMenu" style="display:none;"></div>
       </div>
 
       <!-- Ordenar dropdown -->
