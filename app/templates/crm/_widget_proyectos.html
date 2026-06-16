@@ -2,14 +2,25 @@
      SECCION PROYECTOS (inline, como tareas)
      ═══════════════════════════════════════════════════════════════ -->
 <style>
-/* Toggle Kanban/Lista — segmentado minimalista (Modo Ligero: sólido, sin sombra) */
-.proy-view-toggle { display:inline-flex; gap:2px; background:#EEF1F5; border:1px solid #E2E8F0; border-radius:10px; padding:2px; }
-.proy-view-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:26px; border:none; background:transparent; color:#94A3B8; border-radius:8px; cursor:pointer; transition:background .14s, color .14s; }
-.proy-view-btn:hover { color:#475569; }
-.proy-view-btn.active { background:#fff; color:#1C1C1E; box-shadow:0 1px 3px rgba(15,23,42,0.12); }
-body.ww-lite .proy-view-btn.active { box-shadow:none; border:1px solid #E2E8F0; }
 /* El board del kanban de proyectos hereda .crm-kanban-board (igual que opps) */
 #proyKanbanBoard { padding-top:8px; }
+/* Filtro estilo Oportunidades (Etapa · Cliente · Monto · Fechas) */
+#proyFilterMenu { padding:14px; }
+.proyf-sec-label { font-size:0.66rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#94A3B8; margin:10px 0 6px; }
+.proyf-sec-label:first-child { margin-top:0; }
+.proyf-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.proyf-chip { display:inline-flex; align-items:center; padding:5px 10px; border-radius:999px; border:1px solid #E2E8F0; background:#fff; color:#475569; font-size:0.76rem; font-weight:600; cursor:pointer; transition:all .12s; }
+.proyf-chip:hover { background:#F1F5F9; }
+.proyf-chip.on { background:#111317; color:#fff; border-color:transparent; }
+.proyf-chip.on span { filter:brightness(1.4); }
+.proyf-input { width:100%; box-sizing:border-box; border:1px solid #E2E8F0; border-radius:9px; padding:7px 10px; font-size:0.82rem; color:#1C1C1E; background:#fff; outline:none; }
+.proyf-input:focus { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
+.proyf-row { display:flex; align-items:center; gap:8px; }
+.proyf-dash { color:#94A3B8; }
+.proyf-actions { display:flex; gap:8px; margin-top:14px; }
+.proyf-btn-clear { flex:1; padding:8px; border:none; border-radius:9px; background:rgba(15,23,42,0.06); color:#475569; font-size:0.82rem; font-weight:600; cursor:pointer; }
+.proyf-btn-apply { flex:1; padding:8px; border:none; border-radius:9px; background:#2563EB; color:#fff; font-size:0.82rem; font-weight:600; cursor:pointer; }
+.proyf-btn-apply:hover { opacity:.9; }
 </style>
 <div class="proyectos-section" id="proyectosSection">
 
@@ -63,15 +74,6 @@ body.ww-lite .proy-view-btn.active { box-shadow:none; border:1px solid #E2E8F0; 
         </div>
       </div>
 
-      <!-- Toggle de vista: Kanban (default) / Lista -->
-      <div class="proy-view-toggle" role="group" aria-label="Vista">
-        <button type="button" class="proy-view-btn active" id="proyViewKanbanBtn" onclick="proyToggleView('kanban')" title="Vista Kanban">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
-        </button>
-        <button type="button" class="proy-view-btn" id="proyViewListBtn" onclick="proyToggleView('list')" title="Vista Lista">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        </button>
-      </div>
     </div>
 
     <div class="proy-tabs">
