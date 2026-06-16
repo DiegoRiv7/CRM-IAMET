@@ -1050,19 +1050,41 @@ body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-perio
     color: #ffffff !important;
     stroke: #ffffff !important;
 }
-/* Asistente AI (tiene clase .crm-period-pill + .cal-ai-btn) */
-body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-ai-btn {
-    background: linear-gradient(135deg, rgba(0,168,107,0.40) 0%, rgba(206,17,38,0.32) 100%) !important;
-    border: 1px solid rgba(255,255,255,0.35) !important;
+/* Búsqueda en el header (pill expandible) + estrella del Asistente.
+   Mismo look verde-oscuro translúcido que los otros botones del header. */
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-pill {
+    background: rgba(0, 30, 16, 0.34) !important;
+    border: 1px solid rgba(255,255,255,0.38) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.20) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-hdrsearch.open .cal-search-pill {
+    background: rgba(0, 30, 16, 0.48) !important;
+    border-color: rgba(255,255,255,0.5) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ic,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-input,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-clear {
     color: #ffffff !important;
 }
-body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-ai-btn:hover {
-    background: linear-gradient(135deg, rgba(0,168,107,0.55) 0%, rgba(206,17,38,0.45) 100%) !important;
-    border-color: rgba(255,255,255,0.55) !important;
-}
-body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-ai-btn svg {
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ic svg,
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-clear svg {
     color: #ffffff !important;
     stroke: #ffffff !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-input::placeholder {
+    color: rgba(255,255,255,0.75) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai {
+    color: #FFE08A !important;
+    border-left: 1px solid rgba(255,255,255,0.3) !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai svg {
+    color: #FFE08A !important;
+    stroke: #FFE08A !important;
+}
+body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai:hover {
+    color: #FFD24A !important;
 }
 /* User picker con valor seleccionado */
 body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill.has-value {
@@ -1152,22 +1174,6 @@ body[data-theme="mundial"] .cal-userpick-btn.has-value {
     background: rgba(0, 168, 107, 0.25) !important;
     border-color: rgba(0, 168, 107, 0.50) !important;
     color: #ffffff !important;
-}
-
-/* --- AI button --- */
-body[data-theme="mundial"] .cal-ai-btn {
-    background: linear-gradient(135deg, rgba(0,168,107,0.18) 0%, rgba(206,17,38,0.14) 100%) !important;
-    border-color: rgba(0,168,107,0.30) !important;
-    color: rgba(255, 255, 255, 0.90) !important;
-}
-body[data-theme="mundial"] .cal-ai-btn:hover {
-    background: linear-gradient(135deg, rgba(0,168,107,0.28) 0%, rgba(206,17,38,0.22) 100%) !important;
-    border-color: rgba(0,168,107,0.50) !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(0,168,107,0.25) !important;
-}
-body[data-theme="mundial"] .cal-ai-btn svg {
-    color: #00a86b !important;
 }
 
 /* --- Filter popup --- */
