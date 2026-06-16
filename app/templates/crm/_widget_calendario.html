@@ -82,6 +82,19 @@
                 border-top-left-radius: 20px;
                 border-top-right-radius: 20px;
             }
+            /* CTA "Nueva actividad" → bolita redonda con + (FAB).
+               Especificidad alta para ganarle a la regla de altura uniforme
+               de crm.css (.is-page-mode .cal-page-bar .crm-facet-new). */
+            .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new.cal-fab {
+                width: 38px !important; min-width: 38px !important; max-width: 38px !important;
+                height: 38px !important; min-height: 38px !important; max-height: 38px !important;
+                padding: 0 !important;
+                border-radius: 50% !important;
+                justify-content: center !important;
+                align-items: center !important;
+                gap: 0 !important;
+            }
+            .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new.cal-fab svg { margin: 0 !important; }
             /* Toggle Fuente del Calendario: Actividades / Instalaciones */
             .cal-source-btn {
                 border: none; background: transparent; padding: 5px 11px;
@@ -386,9 +399,8 @@
 
             {% comment %} ── ZONA CTA: nueva actividad (arriba-derecha) ── {% endcomment %}
             <div class="cal-hdr-cta">
-                <button type="button" class="crm-facet-btn crm-facet-new" onclick="calGlobalAbrirCrearActividad()">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    <span>Nueva actividad</span>
+                <button type="button" class="crm-facet-btn crm-facet-new cal-fab" onclick="calGlobalAbrirCrearActividad()" title="Nueva actividad" aria-label="Nueva actividad">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
                 {% comment %}
                 Botón de cierre OCULTO: widget_stack (Esc) cierra el widget de
