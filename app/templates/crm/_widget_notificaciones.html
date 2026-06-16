@@ -641,14 +641,18 @@ body.ww-lite .nd-drawer { backdrop-filter: none; -webkit-backdrop-filter: none; 
 /* Chips: ENVUELVEN para que se vean todos (Oportunidades incluida) */
 .nd-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 2px 16px 14px; }
 .nd-chip {
-    flex: 0 0 auto; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.5); color: #475569;
-    padding: 6px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 500;
-    cursor: pointer; white-space: nowrap; transition: all .14s; font-family: inherit;
-    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    flex: 0 0 auto; background: rgba(255,255,255,0.94); border: 1px solid rgba(15,23,42,0.07);
+    color: #475569; padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: all .15s; font-family: inherit;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.7);
 }
-.nd-chip:hover { background: rgba(255,255,255,0.8); color: #334155; }
-.nd-chip.active { background: #1C1C1E; color: #fff; border-color: transparent; }
-body.ww-lite .nd-chip { backdrop-filter: none; -webkit-backdrop-filter: none; background: #EFF1F5; }
+.nd-chip:hover { background: #fff; color: #1C1C1E; box-shadow: 0 4px 12px rgba(15,23,42,0.13); }
+.nd-chip.active {
+    background: #111317; color: #fff; border-color: transparent; font-weight: 700;
+    box-shadow: 0 5px 16px rgba(15,23,42,0.30);
+}
+body.ww-lite .nd-chip { background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,0.1); }
+body.ww-lite .nd-chip.active { background: #111317; box-shadow: 0 2px 8px rgba(15,23,42,0.3); }
 
 /* Encabezado de subsección dentro de un filtro (ej. Tareas → Vencidas) */
 .nd-subhead {
