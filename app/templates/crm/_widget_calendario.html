@@ -93,6 +93,11 @@
             /* La cadena flex hasta el grid debe propagar altura definida */
             .widget-overlay.is-page-mode .cal-card--page .cal-page-body { min-height: 0 !important; }
             .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
+                /* relative (no sticky): el sticky se pegaba al tope de la VENTANA
+                   e ignoraba el margen superior del card. Relative lo mantiene
+                   dentro del card flotante (con su margen arriba), como Tareas. */
+                position: relative !important;
+                top: auto !important;
                 border-top-left-radius: 18px;
                 border-top-right-radius: 18px;
             }
