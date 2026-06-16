@@ -2962,14 +2962,16 @@ select.proy-info-input {
 
 /* Botones facet (Filtro / Ordenar) */
 #proyectosSection .proy-facet-btn {
-  padding: 7px 13px;
+  /* Mismas dimensiones que el .crm-facet-btn de Oportunidades (compacto). */
+  height: 30px;
+  padding: 0 12px;
   background: var(--proy-wm-card);
   border: 1px solid var(--proy-wm-border-strong);
   border-style: solid;
-  border-radius: var(--proy-wm-radius-sm);
+  border-radius: 8px;
   font-family: var(--proy-wm-font);
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--proy-wm-text-2);
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -2991,12 +2993,13 @@ select.proy-info-input {
 /* Input de búsqueda */
 #proyectosSection .proy-search,
 #proyectosSection .proy-topbar-right .proy-search {
-  padding: 8px 14px 8px 34px;
+  height: 30px;
+  padding: 0 12px 0 32px;
   background: var(--proy-wm-card);
   border: 1px solid var(--proy-wm-border-strong);
-  border-radius: var(--proy-wm-radius-sm);
+  border-radius: 8px;
   font-family: var(--proy-wm-font);
-  font-size: 13px;
+  font-size: 0.72rem;
   color: var(--proy-wm-text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -3014,12 +3017,13 @@ select.proy-info-input {
 /* Botón "+ Nuevo proyecto" en topbar derecho */
 #proyectosSection .proy-topbar-right .proy-btn-new,
 #proyectosSection .proy-btn-new {
-  padding: 8px 16px;
+  height: 30px;
+  padding: 0 14px;
   background: var(--proy-wm-accent);
   border: none;
-  border-radius: var(--proy-wm-radius-sm);
+  border-radius: 8px;
   font-family: var(--proy-wm-font);
-  font-size: 13px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #ffffff;
   box-shadow: none;
