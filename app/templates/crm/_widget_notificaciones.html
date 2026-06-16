@@ -2259,26 +2259,36 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         // están en el borde → un solo if y return (clave para Modo Ligero).
         var _edgeT = null;
         var _edgePeekOff = false;
+        var _nd = document.getElementById('notifDrawer');
         try { _edgePeekOff = localStorage.getItem('notifEdgePeek') === 'off'; } catch (e) { }
         document.addEventListener('mousemove', function (e) {
+            // CASO A — cajón ASOMADO abierto (sin fijar, ni ventana/dock): se
+            // cierra cuando el cursor se va a la IZQUIERDA del cajón. Basado en
+            // POSICIÓN, no en mouseleave: durante el slide de entrada el borde
+            // del cajón cruza bajo el cursor quieto y disparaba un cierre falso
+            // (flicker/trabado en Modo Completo). Aquí eso no pasa porque el
+            // cursor del asomar está a la DERECHA, nunca a la izquierda.
+            if (_nd && _nd.classList.contains('open') && !_drawerPinned
+                && !_nd.classList.contains('ww-windowed') && !_nd.classList.contains('ww-minimized')) {
+                var shell = _nd.querySelector('.nd-shell');
+                var left = shell ? shell.getBoundingClientRect().left : (window.innerWidth - 420);
+                if (e.clientX < left - 32) window.notifDrawerClose();
+                return;
+            }
+            // CASO B — gatillo de asomar (rechazo barato primero, clave en Ligero).
             if (e.clientX < window.innerWidth - 2) {
                 if (_edgeT) { clearTimeout(_edgeT); _edgeT = null; }
                 return;
             }
             if (_edgePeekOff || _edgeT || e.clientY <= 64) return;
             if (document.body.classList.contains('ww-dragging')) return;
-            var d = document.getElementById('notifDrawer');
-            // No asomar si ya está abierto, o si es ventana flotante / en el dock.
-            if (!d || d.classList.contains('open') || d.classList.contains('ww-windowed')) return;
+            if (!_nd || _nd.classList.contains('open') || _nd.classList.contains('ww-windowed')) return;
             var sp = document.getElementById('spotlight-modal');
             if (sp && sp.classList.contains('active')) return;
             _edgeT = setTimeout(function () { _edgeT = null; window.notifDrawerOpen({ peek: true }); }, 250);
         }, { passive: true });
 
-        // Auto-cierre al salir el cursor — SOLO si se abrió por asomar (no
-        // fijado). Si lo abriste con la campana, o abriste algo (se fija),
-        // se queda. Pequeño retardo para no cerrarlo por cruzar el borde.
-        var _nd = document.getElementById('notifDrawer');
+        // (_nd ya está declarado arriba para el gatillo de asomar.)
         if (_nd) {
             // Integrar con el sistema de ventanas: inyecta los controles
             // minimizar/maximizar junto a la X (idempotente, se auto-salta si
@@ -2295,19 +2305,11 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
                     clearTimeout(_drawerLeaveT);
                 }
             }, true);
-            _nd.addEventListener('mouseenter', function () { clearTimeout(_drawerLeaveT); });
+            // El auto-cierre del asomado lo maneja el mousemove (por posición),
+            // no el mouseleave — así no choca con el slide de entrada. Aquí solo
+            // ocultamos el preview al salir.
             _nd.addEventListener('mouseleave', function () {
                 clearTimeout(_ndPrevT); _ndHidePreview();
-                // En modo ventana flotante o minimizado NO se auto-cierra.
-                if (_nd.classList.contains('ww-windowed') || _nd.classList.contains('ww-minimized')) return;
-                if (!_nd.classList.contains('open') || _drawerPinned) return;
-                clearTimeout(_drawerLeaveT);
-                _drawerLeaveT = setTimeout(function () {
-                    if (!_drawerPinned && _nd.classList.contains('open') &&
-                        !_nd.classList.contains('ww-windowed') && !_nd.classList.contains('ww-minimized')) {
-                        window.notifDrawerClose();
-                    }
-                }, 260);
             });
             // Preview al pasar el cursor sobre una notificación (~350ms).
             _nd.addEventListener('mouseover', function (e) {
