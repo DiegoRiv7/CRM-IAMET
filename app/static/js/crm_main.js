@@ -10252,8 +10252,24 @@
                 _crmFilesAdd(e.dataTransfer.files);
             });
         }
-        var fileInput = document.getElementById('crm-task-file-input');
-        if (fileInput) { fileInput.addEventListener('change', function () { _crmFilesAdd(this.files); this.value = ''; }); }
+        // Selección de archivos ("selecciona"): el change se delega a nivel
+        // document UNA sola vez y llama al _crmFilesAdd vigente (expuesto en
+        // window cada crmReady). Antes el listener se ataba a la instancia del
+        // input y, al re-ejecutarse crmReady (turbo:load) o reabrir el modal,
+        // quedaba huérfano/duplicado: el primero en disparar hacía this.value=''
+        // y borraba los archivos antes de que el handler vigente los leyera, así
+        // que "selecciona" no adjuntaba nada (el drag-drop sí, porque va sobre el
+        // form, no sobre el input). La delegación es inmune a esos recreados.
+        window._crmTaskFilesAdd = _crmFilesAdd;
+        if (!window._crmTaskFileChangeDelegated) {
+            window._crmTaskFileChangeDelegated = true;
+            document.addEventListener('change', function (e) {
+                var t = e.target;
+                if (!t || t.id !== 'crm-task-file-input' || !t.files || !t.files.length) return;
+                if (typeof window._crmTaskFilesAdd === 'function') window._crmTaskFilesAdd(t.files);
+                t.value = '';
+            });
+        }
 
         // Allow drop on textarea + comment form — show drop zone hint while dragging
         var commentInput = document.getElementById('crm-task-comment-input');
