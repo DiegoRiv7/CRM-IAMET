@@ -78,6 +78,7 @@ def api_admin_usuarios(request):
                 'rol': getattr(profile, 'rol', 'vendedor') if profile else 'vendedor',
                 'can_manage_marketing': getattr(profile, 'can_manage_marketing', False) if profile else False,
                 'puede_levantamiento': getattr(profile, 'puede_levantamiento', False) if profile else False,
+                'puede_crear_prospecto': getattr(profile, 'puede_crear_prospecto', False) if profile else False,
             })
         return JsonResponse({'usuarios': data})
 
@@ -400,6 +401,12 @@ def api_admin_permisos(request, user_id):
         profile.puede_levantamiento = bool(data['puede_levantamiento'])
         profile.save(update_fields=['puede_levantamiento'])
         response_data['puede_levantamiento'] = profile.puede_levantamiento
+
+    if 'puede_crear_prospecto' in data:
+        profile, _ = UserProfile.objects.get_or_create(user=usuario)
+        profile.puede_crear_prospecto = bool(data['puede_crear_prospecto'])
+        profile.save(update_fields=['puede_crear_prospecto'])
+        response_data['puede_crear_prospecto'] = profile.puede_crear_prospecto
 
     return JsonResponse(response_data)
 
@@ -2274,11 +2281,16 @@ def api_admin_alias_clientes(request):
 
 @login_required
 def api_admin_prospectos(request):
-    """GET: lista todos los ClientePotencial. POST: crea uno (nombre + asignado_a)."""
-    if not is_supervisor(request.user):
-        return JsonResponse({'error': 'No autorizado'}, status=403)
+    """GET: lista todos los ClientePotencial (solo supervisores/admins).
+    POST: crea uno (nombre + asignado_a). Pueden crear: supervisores,
+    administradores, o usuarios con el permiso UserProfile.puede_crear_prospecto.
+    """
+    es_sup_o_admin = is_supervisor(request.user) or is_administrador(request.user)
 
     if request.method == 'GET':
+        # El listado completo sigue siendo solo para supervisores/admins.
+        if not es_sup_o_admin:
+            return JsonResponse({'error': 'No autorizado'}, status=403)
         qs = (
             ClientePotencial.objects
             .select_related('asignado_a')
@@ -2299,6 +2311,12 @@ def api_admin_prospectos(request):
         return JsonResponse({'prospectos': data})
 
     if request.method == 'POST':
+        # Permiso para crear: supervisores/admins, o el flag puede_crear_prospecto.
+        profile = getattr(request.user, 'userprofile', None)
+        puede_crear = es_sup_o_admin or bool(getattr(profile, 'puede_crear_prospecto', False))
+        if not puede_crear:
+            return JsonResponse({'error': 'No tienes permiso para crear prospectos. Pídele a un administrador que te lo habilite.'}, status=403)
+
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
@@ -2317,6 +2335,13 @@ def api_admin_prospectos(request):
             vendedor = User.objects.get(id=asignado_id)
         except User.DoesNotExist:
             return JsonResponse({'error': 'Vendedor no encontrado'}, status=404)
+
+        # Usuario normal: solo puede asignar a sí mismo o a miembros de su grupo.
+        if not es_sup_o_admin and vendedor.id != request.user.id:
+            from .views_grupos import get_usuarios_visibles_ids
+            visibles = get_usuarios_visibles_ids(request.user)
+            if visibles is not None and vendedor.id not in visibles:
+                return JsonResponse({'error': 'Solo puedes asignar a miembros de tu grupo'}, status=403)
 
         potencial = ClientePotencial.objects.create(
             nombre=nombre,

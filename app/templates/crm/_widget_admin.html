@@ -528,6 +528,17 @@ window.admToggleLevantamiento = function(uid, val){
   });
 };
 
+window.admToggleCrearProspecto = function(uid, val){
+  fetch('/app/api/admin/permisos/'+uid+'/',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify({puede_crear_prospecto: val})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.success) _showAdminToast('Permiso actualizado');
+    else _showAdminToast(res.error||'Error', false);
+  });
+};
+
 window.admCambiarRol = function(uid, currentRol){
   // Buscar usuario para saber si es supervisor
   var u = (window._admUsuarios||[]).find(function(x){ return x.id===uid; });
@@ -1093,12 +1104,22 @@ window.loadPermisos = function(){
   fetch('/app/api/admin/usuarios/').then(function(r){return r.json();}).then(function(data){
     var h = '<div class="admin-card-inner">';
     h += '<div class="admin-content-header"><span class="admin-content-title">Control de Acceso</span></div>';
-    h += '<p class="admin-help">Los supervisores pueden ver todos los vendedores y acceder a este panel de administraci&oacute;n. Gesti&oacute;n Marketing: permite subir, editar y borrar material en el m&oacute;dulo Marketing. Levantamiento: habilita la app m&oacute;vil de levantamientos para vendedores (los ingenieros ya tienen acceso por su rol).</p>';
-    h += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Email</th><th>Acceso Supervisor</th><th>Gesti&oacute;n Marketing</th><th>Levantamiento</th><th>Activo</th></tr></thead><tbody>';
+    h += '<p class="admin-help">Los supervisores pueden ver todos los vendedores y acceder a este panel de administraci&oacute;n. Gesti&oacute;n Marketing: permite subir, editar y borrar material en el m&oacute;dulo Marketing. Levantamiento: habilita la app m&oacute;vil de levantamientos para vendedores (los ingenieros ya tienen acceso por su rol). Crear Prospecto: permite crear prospectos sin ser supervisor (los normales solo pueden asign&aacute;rselos a s&iacute; mismos o a su grupo).</p>';
+    h += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Email</th><th>Acceso Supervisor</th><th>Gesti&oacute;n Marketing</th><th>Levantamiento</th><th>Crear Prospecto</th><th>Activo</th></tr></thead><tbody>';
     (data.usuarios||[]).forEach(function(u){
       var supChk = u.is_supervisor ? 'checked' : '';
       var mktChk = u.can_manage_marketing ? 'checked' : '';
       var levChk = u.puede_levantamiento ? 'checked' : '';
+      var prospChk = u.puede_crear_prospecto ? 'checked' : '';
+      // Supervisores/admins ya pueden crear prospectos por su rol → toggle
+      // marcado y deshabilitado (es informativo, el flag no aplica para ellos).
+      var esSupOAdmin = u.is_supervisor || (u.rol === 'administrador');
+      var prospToggle;
+      if (esSupOAdmin) {
+        prospToggle = '<label class="admin-toggle" title="Puede crear por su rol" style="opacity:0.55;cursor:not-allowed;"><input type="checkbox" checked disabled><span class="admin-toggle-slider"></span></label>';
+      } else {
+        prospToggle = '<label class="admin-toggle"><input type="checkbox" '+prospChk+' onchange="admToggleCrearProspecto('+u.id+',this.checked)"><span class="admin-toggle-slider"></span></label>';
+      }
       // Ingenieros: acceso a Levantamientos por su rol, no por el flag.
       // Mostramos el toggle deshabilitado y marcado para que sea claro.
       var esIng = (u.rol === 'ingeniero');
@@ -1114,6 +1135,7 @@ window.loadPermisos = function(){
       h += '<td><label class="admin-toggle"><input type="checkbox" '+supChk+' onchange="admToggleSupervisor('+u.id+',this.checked)"><span class="admin-toggle-slider"></span></label></td>';
       h += '<td><label class="admin-toggle"><input type="checkbox" '+mktChk+' onchange="admToggleMarketing('+u.id+',this.checked)"><span class="admin-toggle-slider"></span></label></td>';
       h += '<td>'+levToggle+'</td>';
+      h += '<td>'+prospToggle+'</td>';
       h += '<td><span class="admin-badge '+(u.is_active?'admin-badge-green':'admin-badge-red')+'">'+(u.is_active?'Activo':'Inactivo')+'</span></td>';
       h += '</tr>';
     });

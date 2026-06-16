@@ -70,6 +70,11 @@ class UserProfile(models.Model):
     # (mantiene su vista de oportunidades). Los ingenieros y supervisores
     # acceden siempre, sin necesidad de este flag.
     puede_levantamiento = models.BooleanField(default=False, verbose_name="Puede iniciar Levantamientos")
+    # Permiso granular para crear prospectos (ClientePotencial) sin ser supervisor.
+    # Independiente del rol — un vendedor con este flag puede crear prospectos y
+    # asignárselos a sí mismo o a miembros de su grupo. Se administra desde el
+    # panel admin → Permisos. Supervisores y administradores pueden siempre.
+    puede_crear_prospecto = models.BooleanField(default=False, verbose_name="Puede crear Prospectos")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
