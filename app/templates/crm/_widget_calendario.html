@@ -1078,39 +1078,62 @@
         var inp = document.getElementById('calSearchInput'); if (inp) { inp.value = ''; inp.focus(); }
         window.calSearchFilter('');
     };
+    // Búsqueda POTENTE: consulta el backend (actividades + tareas) en TODAS
+    // las fechas, no solo el mes/semana visible. Debounced.
+    var _calSearchDebTimer = null, _calSearchSeq = 0;
     window.calSearchFilter = function (q) {
         var cl = document.getElementById('calSearchClear'); if (cl) cl.style.display = q ? 'grid' : 'none';
         var res = document.getElementById('calSearchResults'); if (!res) return;
-        var ql = String(q || '').trim().toLowerCase();
-        if (!ql) { res.style.display = 'none'; res.innerHTML = ''; return; }
-        var evs = (window._calAllEvents || _globalEvents || []);
-        var matches = evs.filter(function (e) {
-            var ep = e.extendedProps || {};
-            var opp = ep.opportunity ? (ep.opportunity.text || ep.opportunity.nombre || '') : '';
-            return ((e.title || '') + ' ' + opp).toLowerCase().indexOf(ql) >= 0;
-        }).sort(function (a, b) { return String(a.start || '').localeCompare(String(b.start || '')); }).slice(0, 8);
-        if (!matches.length) { res.style.display = 'block'; res.innerHTML = '<div class="cal-sr-empty">Sin resultados</div>'; return; }
-        var MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-        var html = '';
-        matches.forEach(function (e) {
-            var esTarea = String(e.id).indexOf('tarea-') === 0;
-            var ep = e.extendedProps || {};
-            var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
-            var color = e.color || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
-            if (color === '#8B5CF6') color = '#B45309';
-            var s = String(e.start || ''); var sub = '';
-            if (s.length >= 16) { var dd = parseInt(s.substring(8, 10), 10); var mo = parseInt(s.substring(5, 7), 10) - 1; sub = dd + ' ' + (MES[mo] || '') + ' · ' + parseInt(s.substring(11, 13), 10) + ':' + s.substring(14, 16); }
-            var safeId = String(e.id).replace(/'/g, '');
-            var dotStyle = esTarea ? ('background:#fff;border:2px solid ' + color + ';box-sizing:border-box;') : ('background:' + color + ';');
-            html += '<button type="button" class="cal-sr-item" onclick="calSearchGo(\'' + safeId + '\')">' +
-                '<span class="cal-sr-dot" style="' + dotStyle + '"></span>' +
-                '<span class="cal-sr-main"><span class="cal-sr-title">' + woEscape(e.title || '') + '</span><span class="cal-sr-sub">' + sub + '</span></span></button>';
-        });
-        res.style.display = 'block'; res.innerHTML = html;
+        var ql = String(q || '').trim();
+        if (ql.length < 2) { res.style.display = 'none'; res.innerHTML = ''; clearTimeout(_calSearchDebTimer); return; }
+        clearTimeout(_calSearchDebTimer);
+        _calSearchDebTimer = setTimeout(function () { _calSearchRun(ql); }, 220);
     };
-    window.calSearchGo = function (id) {
+    function _calSearchRun(ql) {
+        var res = document.getElementById('calSearchResults'); if (!res) return;
+        var seq = ++_calSearchSeq;
+        res.style.display = 'block'; res.innerHTML = '<div class="cal-sr-empty">Buscando…</div>';
+        var sel = document.getElementById('calUserFilter'); var uv = sel ? sel.value : 'all';
+        var uq = (uv && uv !== 'all') ? (String(uv).indexOf(',') >= 0 ? ('&user_ids=' + encodeURIComponent(uv)) : ('&user_id=' + encodeURIComponent(uv))) : '';
+        var pAct = fetch('/app/api/actividades/?q=' + encodeURIComponent(ql) + uq, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).catch(function () { return []; });
+        var pTar = fetch('/app/api/tareas/?q=' + encodeURIComponent(ql) + uq + '&per_page=30', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).catch(function () { return { tareas: [] }; });
+        Promise.all([pAct, pTar]).then(function (r) {
+            if (seq !== _calSearchSeq) return; // descartar respuesta vieja
+            var acts = Array.isArray(r[0]) ? r[0] : [];
+            var tars = (r[1] && (r[1].tareas || r[1].results)) || [];
+            var items = [];
+            acts.forEach(function (a) { items.push({ id: a.id, title: a.title, date: String(a.start || '').substring(0, 10), start: a.start, tarea: false, color: a.color, opp: a.opportunity }); });
+            tars.forEach(function (t) { if (!t.fecha_limite) return; items.push({ id: 'tarea-' + t.id, title: t.titulo, date: String(t.fecha_limite || '').substring(0, 10), start: t.fecha_limite, tarea: true }); });
+            items = items.filter(function (x) { return x.date; }).sort(function (a, b) { return String(a.start || '').localeCompare(String(b.start || '')); }).slice(0, 12);
+            if (!items.length) { res.innerHTML = '<div class="cal-sr-empty">Sin resultados</div>'; return; }
+            var MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            var html = '';
+            items.forEach(function (it) {
+                var color = it.tarea ? '#FF9500' : (it.color || (it.opp ? '#0052D4' : '#3A3A3C'));
+                if (color === '#8B5CF6') color = '#B45309';
+                var p = it.date.split('-'); var sub = parseInt(p[2], 10) + ' ' + (MES[parseInt(p[1], 10) - 1] || '') + ' ' + p[0];
+                var st = String(it.start || ''); if (st.length >= 16) sub += ' · ' + parseInt(st.substring(11, 13), 10) + ':' + st.substring(14, 16);
+                var dot = it.tarea ? ('background:#fff;border:2px solid ' + color + ';box-sizing:border-box;') : ('background:' + color + ';');
+                var safeId = String(it.id).replace(/'/g, '');
+                html += '<button type="button" class="cal-sr-item" onclick="calSearchGo(\'' + safeId + '\',\'' + it.date + '\')">' +
+                    '<span class="cal-sr-dot" style="' + dot + '"></span>' +
+                    '<span class="cal-sr-main"><span class="cal-sr-title">' + woEscape(it.title || '') + '</span><span class="cal-sr-sub">' + sub + '</span></span></button>';
+            });
+            res.innerHTML = html;
+        });
+    }
+    window.calSearchGo = function (id, dateISO) {
         window.calSearchClose();
-        if (typeof window._calOpenFull === 'function') window._calOpenFull(id);
+        if (dateISO) {
+            var p = dateISO.split('-');
+            var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+            if (_globalCalendar && _globalCalendar.gotoDate) { try { _globalCalendar.gotoDate(d); } catch (e) {} }
+            _calCurrentDay = new Date(d); _calWeekStart = calGetWeekStart(new Date(d));
+            var selF = document.getElementById('calUserFilter');
+            if (typeof calGlobalRefetch === 'function') calGlobalRefetch(selF ? selF.value : 'all');
+            if (typeof calUpdateNavTitle === 'function') calUpdateNavTitle();
+        }
+        if (typeof window._calOpenFull === 'function') setTimeout(function () { window._calOpenFull(id); }, 80);
     };
 
     /* ═══ SEMANA — render estilo Claude Design (reemplaza el render anterior) ═══ */

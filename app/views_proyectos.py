@@ -2563,9 +2563,16 @@ def actividad_list_create(request):
                 except Exception:
                     pass
 
-            # Filtro por mes (YYYY-MM)
+            # Búsqueda de texto (búsqueda potente del calendario): cuando hay
+            # ?q=, filtra por título/descripción en TODAS las fechas e ignora
+            # el filtro de mes (para encontrar actividades fuera del mes visible).
+            q_param = request.GET.get('q', '').strip()
+            if q_param:
+                actividades = actividades.filter(Q(titulo__icontains=q_param) | Q(descripcion__icontains=q_param))
+
+            # Filtro por mes (YYYY-MM) — se omite cuando hay búsqueda de texto.
             mes_param = request.GET.get('mes', '').strip()
-            if mes_param:
+            if mes_param and not q_param:
                 try:
                     from datetime import datetime as _dt
                     year, month = int(mes_param[:4]), int(mes_param[5:7])
