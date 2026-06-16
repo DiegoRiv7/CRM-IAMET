@@ -72,24 +72,29 @@
                por eso vamos con !important. NO usamos overflow:hidden para no
                romper el position:sticky del header; en su lugar redondeamos las
                esquinas superiores del header para que peguen con el card. */
+            /* Card FLOTANTE con márgenes en TODOS los lados (como el panel de
+               Tareas): no pegado a la barra izquierda; la cancha se ve alrededor.
+               width:auto anula el width:100% inline para que los márgenes laterales
+               no desborden. */
             .widget-overlay.is-page-mode .cal-card.cal-card--page {
-                margin: 8px 16px 16px !important;
-                border-radius: 20px !important;
-                /* Altura FIJA (no solo min-height): FullCalendar height:'100%'
-                   necesita una cadena de altura definida para llenar; con solo
-                   min-height el grid caía a alturas naturales (hueco abajo). */
-                height: calc(100vh - 24px) !important;
-                min-height: calc(100vh - 24px) !important;
-                max-height: calc(100vh - 24px) !important;
+                /* El overlay padre es flex: con flex:1 + margin el card respeta
+                   márgenes en los 4 lados (el width:100% inline los desbordaba). */
+                flex: 1 1 auto !important;
+                margin: 14px !important;
+                width: auto !important;
+                max-width: none !important;
+                border-radius: 18px !important;
+                height: calc(100vh - 28px) !important;
+                min-height: calc(100vh - 28px) !important;
+                max-height: calc(100vh - 28px) !important;
                 padding: 0 0 14px !important;
                 overflow: hidden !important;
             }
             /* La cadena flex hasta el grid debe propagar altura definida */
             .widget-overlay.is-page-mode .cal-card--page .cal-page-body { min-height: 0 !important; }
-            #fullCalendarRoot { height: 100%; }
             .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
-                border-top-left-radius: 20px;
-                border-top-right-radius: 20px;
+                border-top-left-radius: 18px;
+                border-top-right-radius: 18px;
             }
             /* CTA "Nueva actividad" → bolita redonda con + (FAB).
                Especificidad alta para ganarle a la regla de altura uniforme
