@@ -764,6 +764,22 @@ body.ww-lite .nd-card { backdrop-filter: none; -webkit-backdrop-filter: none; ba
 .nd-stack-items .nd-card:hover { background: #fff; }
 body.ww-lite .nd-stack-items .nd-card { background: #fff; }
 
+/* Desvanecer una notif al completar/aplazar su tarea: la tarjeta se
+   funde y colapsa para que las de abajo suban suave, sin recargar el
+   cajón ni cerrar la pila expandida. En Modo Ligero NO se usa (el JS
+   reconstruye al instante). */
+@keyframes nd-card-out {
+    0%   { opacity: 1; transform: none; max-height: 120px; }
+    55%  { opacity: 0; transform: translateX(12px); max-height: 120px; }
+    100% { opacity: 0; transform: translateX(12px);
+           max-height: 0; margin-top: 0; margin-bottom: 0;
+           padding-top: 0; padding-bottom: 0; border-width: 0; }
+}
+.nd-card.nd-removing {
+    overflow: hidden; pointer-events: none;
+    animation: nd-card-out .34s cubic-bezier(.4,0,.2,1) forwards;
+}
+
 /* Preview al pasar el cursor — popover sólido a la izquierda del cajón */
 .nd-preview {
     position: fixed; z-index: 10720; width: 320px; max-width: 42vw;
@@ -1497,7 +1513,7 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         var unreadN = items.filter(function (x) { return !x.leida; }).length;
         var preview = _ndCleanMsg(items[0].titulo || items[0].mensaje);
         var sub = items.map(_ndCard).join('');
-        return '<div class="nd-stack' + (unreadN ? ' nd-unread' : '') + '">' +
+        return '<div class="nd-stack' + (unreadN ? ' nd-unread' : '') + '" data-stackkey="' + grp.key + '">' +
             '<div class="nd-stack-head" data-nid="' + items[0].id + '" onclick="this.parentNode.classList.toggle(\'open\')">' +
                 '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
                 '<div class="nd-bd">' +
@@ -1513,9 +1529,61 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         '</div>';
     }
 
+    // ── Render con animación de salida + preservación de pilas abiertas ──
+    // _renderDrawer es el punto de entrada "inteligente": si el ÚNICO cambio
+    // respecto a lo que ya está en pantalla es que SE QUITARON tarjetas
+    // (completar/aplazar una tarea), las funde una a una y luego repinta;
+    // así la pila "Vencidas" que tenías abierta no se cierra ni parpadea.
+    // Cualquier otro cambio (altas, reordenamiento, cambio de filtro, primera
+    // carga) o Modo Ligero → repinta al instante (_renderDrawerNow).
+    var _NDREMOVE_MS = 340;
+    var _ndAnimT = null;
+
+    function _ndCaptureOpen() {
+        var s = {};
+        var list = document.getElementById('notifDrawerList');
+        if (list) list.querySelectorAll('.nd-stack.open[data-stackkey]').forEach(function (el) {
+            s[el.getAttribute('data-stackkey')] = 1;
+        });
+        return s;
+    }
+
     function _renderDrawer() {
         var list = document.getElementById('notifDrawerList');
         if (!list) return;
+        var arr = _sortNotifs(_nData.filter(_drawerMatch).slice());
+
+        var lite = document.body.classList.contains('ww-lite') || !_firstLoadDone;
+        if (!lite) {
+            // ¿Solo se quitaron tarjetas? Detecta nids en el DOM que ya no están.
+            var newIds = {};
+            arr.forEach(function (n) { newIds[n.id] = 1; });
+            var domCards = list.querySelectorAll('.nd-card[data-nid]');
+            var domIds = {}, removed = [];
+            domCards.forEach(function (el) {
+                var id = el.getAttribute('data-nid');
+                domIds[id] = 1;
+                if (!newIds[id]) removed.push(el);
+            });
+            var anyAdded = false;
+            for (var k in newIds) { if (!domIds[k]) { anyAdded = true; break; } }
+            // Solo tarjetas VISIBLES (las de una pila colapsada no se ven).
+            var vis = removed.filter(function (el) { return el.offsetParent !== null; });
+            if (vis.length && !anyAdded) {
+                clearTimeout(_ndAnimT);
+                vis.forEach(function (el) { el.classList.add('nd-removing'); });
+                _ndAnimT = setTimeout(function () { _ndAnimT = null; _renderDrawerNow(); }, _NDREMOVE_MS);
+                return;
+            }
+        }
+        clearTimeout(_ndAnimT); _ndAnimT = null;
+        _renderDrawerNow();
+    }
+
+    function _renderDrawerNow() {
+        var list = document.getElementById('notifDrawerList');
+        if (!list) return;
+        var _openState = _ndCaptureOpen();
         var arr = _sortNotifs(_nData.filter(_drawerMatch).slice());
 
         if (!arr.length) {
@@ -1553,6 +1621,10 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
             html = _ndRenderGroups(arr);
         }
         list.innerHTML = html;
+        // Reabrir las pilas que el usuario tenía expandidas antes del repintado.
+        list.querySelectorAll('.nd-stack[data-stackkey]').forEach(function (el) {
+            if (_openState[el.getAttribute('data-stackkey')]) el.classList.add('open');
+        });
     }
 
     // Parte una lista en subsecciones con encabezado (orden = subDefs); dentro
