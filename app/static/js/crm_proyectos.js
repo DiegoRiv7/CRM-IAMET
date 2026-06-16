@@ -1131,7 +1131,11 @@
 
     function renderProjectCards(projects) {
         // Nombre histórico para compatibilidad; delega al nuevo renderer
-        return renderProjectsTable(projects);
+        var r = renderProjectsTable(projects);
+        // Hook para el Kanban (proyectos_v2.js): se re-renderiza con los MISMOS
+        // datos filtrados/ordenados que la lista, en cada carga/filtro/búsqueda.
+        try { if (window.proyKanbanRender) window.proyKanbanRender(projects); } catch (e) { }
+        return r;
     }
 
     function renderProjectsTable(projects) {

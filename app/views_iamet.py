@@ -612,6 +612,7 @@ def _proyecto_to_dict(p, include_alerts=False):
         'oportunidad_producto': opp.producto if opp else None,
         'oportunidad_etapa': opp.etapa_corta if opp else None,
         'oportunidad_etapa_color': opp.etapa_color if opp else None,
+        'oportunidad_probabilidad': (opp.probabilidad_cierre or 0) if opp else 0,
         'levantamientos_count': lev_count,
         'levantamiento_fase_max': lev_fase_max,
     }

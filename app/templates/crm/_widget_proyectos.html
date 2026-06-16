@@ -1,6 +1,16 @@
 <!-- ═══════════════════════════════════════════════════════════════
      SECCION PROYECTOS (inline, como tareas)
      ═══════════════════════════════════════════════════════════════ -->
+<style>
+/* Toggle Kanban/Lista — segmentado minimalista (Modo Ligero: sólido, sin sombra) */
+.proy-view-toggle { display:inline-flex; gap:2px; background:#EEF1F5; border:1px solid #E2E8F0; border-radius:10px; padding:2px; }
+.proy-view-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:26px; border:none; background:transparent; color:#94A3B8; border-radius:8px; cursor:pointer; transition:background .14s, color .14s; }
+.proy-view-btn:hover { color:#475569; }
+.proy-view-btn.active { background:#fff; color:#1C1C1E; box-shadow:0 1px 3px rgba(15,23,42,0.12); }
+body.ww-lite .proy-view-btn.active { box-shadow:none; border:1px solid #E2E8F0; }
+/* El board del kanban de proyectos hereda .crm-kanban-board (igual que opps) */
+#proyKanbanBoard { padding-top:8px; }
+</style>
 <div class="proyectos-section" id="proyectosSection">
 
   <!-- Topbar del listado: [Filtro][Ordenar] · cápsula "Proyectos" · [Buscar][+ Nuevo].
@@ -52,6 +62,16 @@
           <div class="proy-facet-item" onclick="proySortPick('monto_asc','Menor monto')">Menor monto</div>
         </div>
       </div>
+
+      <!-- Toggle de vista: Kanban (default) / Lista -->
+      <div class="proy-view-toggle" role="group" aria-label="Vista">
+        <button type="button" class="proy-view-btn active" id="proyViewKanbanBtn" onclick="proyToggleView('kanban')" title="Vista Kanban">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
+        </button>
+        <button type="button" class="proy-view-btn" id="proyViewListBtn" onclick="proyToggleView('list')" title="Vista Lista">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+      </div>
     </div>
 
     <div class="proy-tabs">
@@ -74,8 +94,13 @@
        (Dashboard / Financiero) controlados por proySetMainTab; se eliminaron
        porque esos modos se viven ahora en el Dashboard global. -->
   <div id="proyTabPrograma" style="padding:0 24px 20px;">
-    <!-- Lista de proyectos (estilo CRM list-row, sin color-logic) -->
-    <div id="proyListView">
+    <!-- Vista KANBAN (default) — mismo formato que el kanban de Oportunidades.
+         Las tarjetas las pinta proyectos_v2.js (proyKanbanRender). -->
+    <div class="crm-kanban-board" id="proyKanbanBoard" style="height:calc(100vh - 150px);"></div>
+
+    <!-- Lista de proyectos (estilo CRM list-row, sin color-logic) — oculta por
+         default; se alterna con el toggle de vista. -->
+    <div id="proyListView" style="display:none;">
       <div class="crm-list-head">
         <div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">PROYECTO / CLIENTE</div>
         <div class="crm-list-hcell" style="flex:1;">MONTO</div>
