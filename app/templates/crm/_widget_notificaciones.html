@@ -1609,9 +1609,16 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         opts = opts || {};
         var d = document.getElementById('notifDrawer');
         if (!d) return;
-        // Si está como ventana en el dock (minimizada), restaurarla.
-        if (d.classList.contains('ww-minimized') && window.crmWidgetWindow) {
-            d.classList.remove('ww-minimized');
+        // Si está minimizada en el dock, restaurarla vía SU chip (limpia bien:
+        // anima de vuelta y borra el chip). Si no hay chip, quitar la clase.
+        if (d.classList.contains('ww-minimized')) {
+            var restored = false;
+            document.querySelectorAll('#wwDock .ww-dock-chip').forEach(function (c) {
+                if (!restored && c._wwOverlay === d) { c.click(); restored = true; }
+            });
+            if (!restored) d.classList.remove('ww-minimized');
+            _drawerPinned = !opts.peek;
+            if (restored) return;   // el chip ya la mostró
         }
         _drawerPinned = !opts.peek;
         clearTimeout(_drawerLeaveT);
@@ -1622,7 +1629,6 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     window.notifDrawerClose = function () {
         var d = document.getElementById('notifDrawer');
         if (!d) return;
-        d.classList.remove('ww-minimized');
         // Si está en modo ventana flotante, devolverla a cajón antes de ocultar.
         if (d.classList.contains('ww-windowed') && window.crmWidgetWindow && window.crmWidgetWindow.unwindowize) {
             try { window.crmWidgetWindow.unwindowize(d); } catch (e) { }
@@ -2182,15 +2188,27 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
             if (window.crmWidgetWindow && window.crmWidgetWindow.enhance) {
                 try { window.crmWidgetWindow.enhance(_nd); } catch (e) { }
             }
+            // Clic en los controles de ventana (− □) o arranque de arrastre →
+            // FIJAR el cajón, para que el auto-cierre del modo asomado no
+            // compita con minimizar/maximizar/mover (captura, antes que el ww).
+            _nd.addEventListener('pointerdown', function (e) {
+                if (e.target.closest && e.target.closest('.ww-ctrls, .ww-btn, .nd-head')) {
+                    _drawerPinned = true;
+                    clearTimeout(_drawerLeaveT);
+                }
+            }, true);
             _nd.addEventListener('mouseenter', function () { clearTimeout(_drawerLeaveT); });
             _nd.addEventListener('mouseleave', function () {
                 clearTimeout(_ndPrevT); _ndHidePreview();
-                // En modo ventana flotante NO se auto-cierra al salir el cursor.
-                if (_nd.classList.contains('ww-windowed')) return;
+                // En modo ventana flotante o minimizado NO se auto-cierra.
+                if (_nd.classList.contains('ww-windowed') || _nd.classList.contains('ww-minimized')) return;
                 if (!_nd.classList.contains('open') || _drawerPinned) return;
                 clearTimeout(_drawerLeaveT);
                 _drawerLeaveT = setTimeout(function () {
-                    if (!_drawerPinned && _nd.classList.contains('open') && !_nd.classList.contains('ww-windowed')) window.notifDrawerClose();
+                    if (!_drawerPinned && _nd.classList.contains('open') &&
+                        !_nd.classList.contains('ww-windowed') && !_nd.classList.contains('ww-minimized')) {
+                        window.notifDrawerClose();
+                    }
                 }, 260);
             });
             // Preview al pasar el cursor sobre una notificación (~350ms).
