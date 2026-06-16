@@ -337,15 +337,29 @@
             .cal-week-empty-t { font-size:0.92rem; font-weight:700; color:#6B7280; }
             .cal-week-empty-s { font-size:0.78rem; color:#9CA3AF; margin-top:3px; }
 
-            /* ─── Vista Mes: eventos más legibles ─── */
+            /* ─── Vista Mes: píldoras de evento estilo Calendario CRM ─── */
             #fullCalendarRoot .fc-daygrid-day-frame { padding:4px; }
-            #fullCalendarRoot .fc-daygrid-event { margin-top:3px !important; }
+            /* Reset del wrapper de FullCalendar: nuestra píldora .cal-mev lleva
+               todo el estilo (sin el fondo/borde que FC pinta del color del evento) */
+            #fullCalendarRoot .fc-daygrid-event,
+            #fullCalendarRoot .fc-event {
+                background:transparent !important; border:none !important;
+                box-shadow:none !important; padding:0 !important; margin-top:2px !important;
+            }
             #fullCalendarRoot .fc-daygrid-event-harness { transition:transform 0.12s; }
             #fullCalendarRoot .fc-daygrid-event-harness:hover { transform:translateY(-1px); z-index:6; }
-            #fullCalendarRoot .fc-event { box-shadow:0 1px 2px rgba(0,0,0,0.04); }
-            #fullCalendarRoot .fc-event:hover { opacity:1 !important; filter:brightness(0.97); box-shadow:0 3px 10px rgba(0,0,0,0.10); }
-            #fullCalendarRoot .fc-daygrid-more-link { font-size:0.72rem !important; font-weight:600 !important; color:#0052D4 !important; padding:2px 6px !important; border-radius:5px; display:inline-flex; align-items:center; }
-            #fullCalendarRoot .fc-daygrid-more-link:hover { background:rgba(0,82,212,0.08); }
+            /* Píldora de actividad/evento/curso: sólida del color (texto blanco) */
+            .cal-mev { display:flex; align-items:center; gap:5px; width:100%; padding:2px 7px; border-radius:7px; font-size:11.5px; line-height:1.35; overflow:hidden; box-sizing:border-box; transition:filter .12s, background .12s; }
+            .cal-mev-act { color:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.16); }
+            .cal-mev-act:hover { filter:brightness(1.07); }
+            /* Píldora de tarea: punto hueco + texto del color, sin fondo */
+            .cal-mev-tarea { background:transparent; }
+            .cal-mev-tarea:hover { background:rgba(20,30,55,0.06); }
+            .cal-mev-time { font-weight:700; opacity:0.95; font-variant-numeric:tabular-nums; flex-shrink:0; }
+            .cal-mev-dot { width:9px; height:9px; border-radius:50%; border:2px solid currentColor; background:#fff; flex-shrink:0; box-sizing:border-box; }
+            .cal-mev-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; flex:1; min-width:0; }
+            #fullCalendarRoot .fc-daygrid-more-link { font-size:0.72rem !important; font-weight:600 !important; color:var(--muted,#8b9099) !important; padding:1px 6px !important; border-radius:5px; display:inline-flex; align-items:center; }
+            #fullCalendarRoot .fc-daygrid-more-link:hover { background:rgba(0,82,212,0.08); color:#0052D4 !important; }
             /* Popover nativo de FullCalendar (lista de "más eventos") */
             #fullCalendarRoot .fc-popover {
                 background:#fff !important;
@@ -791,18 +805,41 @@
                         var color   = evColor || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
                         var bgTint  = evColor ? (evColor + '12') : (esTarea ? 'rgba(255,149,0,0.09)' : hasOpp ? 'rgba(0,82,212,0.07)' : 'rgba(29,29,31,0.06)');
                         var borderC = evColor ? (evColor + '40') : (esTarea ? 'rgba(255,149,0,0.3)' : hasOpp ? 'rgba(0,82,212,0.25)' : 'rgba(29,29,31,0.16)');
-                        var opacityStyle = isCompletada ? 'opacity:0.38;' : '';
+                        var opacityStyle = isCompletada ? 'opacity:0.42;' : '';
                         var strikeStyle = isCompletada ? 'text-decoration:line-through;' : '';
+                        // Hora de inicio (HH:MM → "10:00" / "9:30") desde el ISO local.
+                        var startStr = (stored && stored.start) ? String(stored.start) : '';
+                        var timeTxt = '';
+                        if (startStr.length >= 16) {
+                            var _h = parseInt(startStr.substring(11, 13), 10);
+                            var _m = startStr.substring(14, 16);
+                            if (!isNaN(_h)) timeTxt = (_m === '00') ? (_h + ':00') : (_h + ':' + _m);
+                        }
                         // Indicador de actividad recurrente (parte de una serie).
                         var esRecurrente = !!(stored && stored.recurrence_group_id);
-                        var recurIcon = esRecurrente
-                            ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.85;" title="Actividad recurrente"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
+                        // ── Estilo diseño (Calendario CRM) con NUESTROS colores por tipo ──
+                        // Tarea → punto + texto del color (sin fondo). Actividad/evento/
+                        // curso → píldora SÓLIDA del color con texto blanco + hora.
+                        if (esTarea) {
+                            var recurT = esRecurrente
+                                ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.8;"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
+                                : '';
+                            return { html:
+                                '<div class="cal-mev cal-mev-tarea" style="'+opacityStyle+'">' +
+                                '<span class="cal-mev-dot" style="border-color:'+color+';"></span>' +
+                                '<span class="cal-mev-title" style="color:'+color+';'+strikeStyle+'">'+title+'</span>' +
+                                recurT +
+                                '</div>'
+                            };
+                        }
+                        var recurA = esRecurrente
+                            ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.9;"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
                             : '';
                         return { html:
-                            '<div style="display:flex;align-items:center;gap:6px;padding:4px 9px 4px 8px;border-radius:6px;background:'+bgTint+';border:1px solid '+borderC+';border-left:3px solid '+color+';width:100%;overflow:hidden;box-sizing:border-box;'+opacityStyle+'">' +
-                            '<div style="width:6px;height:6px;border-radius:50%;background:'+color+';flex-shrink:0;"></div>' +
-                            '<div style="font-size:0.82rem;font-weight:600;color:'+color+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;letter-spacing:-0.005em;'+strikeStyle+'">'+title+'</div>' +
-                            recurIcon +
+                            '<div class="cal-mev cal-mev-act" style="background:'+color+';'+opacityStyle+'">' +
+                            (timeTxt ? '<span class="cal-mev-time">'+timeTxt+'</span>' : '') +
+                            '<span class="cal-mev-title">'+title+'</span>' +
+                            recurA +
                             '</div>'
                         };
                     },
