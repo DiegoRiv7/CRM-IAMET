@@ -1212,12 +1212,32 @@ body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-more-link {
     color: #006847 !important;
     font-weight: 700 !important;
 }
+/* Marco alrededor del grid (parece una sección, no un widget suelto) */
 body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid {
-    border: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.09) !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
 }
+/* Cerrar CADA celda con líneas en los 4 lados (estilo Apple Calendar):
+   right + bottom en cada td/th; el marco del scrollgrid cierra arriba e
+   izquierda. Se anula el `th{border:none}` y `scrollgrid{border:none}` base. */
 body[data-theme="mundial"] #fullCalendarRoot td,
 body[data-theme="mundial"] #fullCalendarRoot th {
-    border-color: rgba(0, 0, 0, 0.07) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot th {
+    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid-sync-table td,
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day {
+    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+/* Header de días (LUN MAR…): franja sutil para separarla del grid */
+body[data-theme="mundial"] #fullCalendarRoot .fc-col-header-cell {
+    background: #fbfbfa !important;
+    padding-top: 9px !important; padding-bottom: 11px !important;
 }
 
 /* --- FullCalendar popover ("+3 más") --- */

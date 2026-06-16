@@ -741,8 +741,11 @@
                     initialDate: new Date(),
                     locale: 'es',
                     firstDay: 1,
-                    height: isPageMode ? 'auto' : '100%',
-                    expandRows: !isPageMode,
+                    /* Siempre llenar el contenedor (page-mode incluido): el card
+                       tiene min-height de viewport, así el grid del mes estira sus
+                       filas para abarcar todo el alto (sin hueco vacío abajo). */
+                    height: '100%',
+                    expandRows: true,
                     headerToolbar: false,
                     buttonText: { today: 'Hoy', more: 'más' },
                     eventInteractive: true,
