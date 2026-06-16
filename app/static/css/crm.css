@@ -5360,7 +5360,11 @@
     .crm-tw-main-scroll {
         flex: 1;
         overflow-y: auto;
-        padding: 48px 72px 40px;
+        /* Margen superior se conserva (sirve en modo ventana). Lados reducidos:
+           izquierda 28px = alineado con el texto del pill de cliente del header
+           (16px padding header + 12px padding del pill); derecha 28px (antes 72)
+           para quitar el margen derecho y que el contenido use el ancho. */
+        padding: 48px 28px 40px;
         min-height: 0;
     }
     .crm-tw-main-scroll::-webkit-scrollbar { width: 5px; }
@@ -5369,7 +5373,7 @@
     .crm-tw-main-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
     @media (max-width: 1200px) {
-        .crm-tw-main-scroll { padding: 36px 44px 32px; }
+        .crm-tw-main-scroll { padding: 36px 28px 32px; }
     }
     @media (max-width: 960px) {
         .crm-tw-main-scroll { padding: 24px 24px; }
@@ -5532,10 +5536,12 @@
         line-height: 1.78;
         letter-spacing: -0.005em;
         white-space: pre-line;
-        padding: 4px 0;
+        /* Descripción "encerrada" en tarjeta suave gris (estilo elegido). */
+        padding: 16px 18px;
         margin: 0;
-        border-radius: 10px;
-        border: 1px solid transparent;
+        border-radius: 14px;
+        background: #F8FAFC;
+        border: 1px solid #EAEEF3;
         cursor: text;
         transition: all 0.2s;
         word-break: break-word;
@@ -5561,11 +5567,11 @@
     .crm-task-desc-content li,
     .crm-tw-desc li { margin: 4px 0; }
     .crm-task-desc-content:hover,
-    .crm-tw-desc:hover { background: transparent; }
+    .crm-tw-desc:hover { background: #F4F6F9; border-color: #E2E8F0; }
     .crm-task-desc-content:focus,
     .crm-tw-desc:focus {
         background: #fff;
-        padding: 14px 16px;
+        padding: 16px 18px;
         border-color: #BFDBFE;
         box-shadow: 0 0 0 4px rgba(191, 219, 254, 0.35);
         outline: none;
@@ -5583,8 +5589,11 @@
         position: absolute;
         left: 0; right: 0; bottom: 0;
         height: 72px;
-        background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 90%);
+        /* Funde hacia el color de la tarjeta (#F8FAFC), no blanco, para que el
+           degradado del "Mostrar más" no corte con un borde visible. */
+        background: linear-gradient(180deg, rgba(248,250,252,0) 0%, #F8FAFC 90%);
         pointer-events: none;
+        border-radius: 0 0 14px 14px;
     }
     .crm-task-desc-toggle {
         display: none;
