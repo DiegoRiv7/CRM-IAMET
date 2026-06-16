@@ -11,47 +11,50 @@
                Estilo Fantastical: navegación prominente arriba-izq, CTA
                arriba-der, herramientas y vistas abajo. */
             .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
-                display: grid !important;
-                grid-template-columns: 1fr auto;
-                grid-template-areas:
-                    "nav   cta"
-                    "tools views";
+                display: flex !important;
                 align-items: center;
-                column-gap: 16px;
-                row-gap: 11px;
-                flex-wrap: nowrap !important;
+                gap: 10px;
+                flex-wrap: wrap;
+                row-gap: 9px;
             }
-            .cal-hdr-nav   { grid-area: nav;   display: flex; align-items: center; gap: 6px; min-width: 0; }
-            .cal-hdr-cta   { grid-area: cta;   display: flex; align-items: center; gap: 8px; justify-self: end; }
-            .cal-hdr-tools { grid-area: tools; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-            .cal-hdr-views { grid-area: views; display: flex; align-items: center; gap: 10px; justify-self: end; flex-wrap: wrap; justify-content: flex-end; }
-            /* Título de mes/semana/día grande y prominente */
+            /* Orden visual en una sola fila: [tools] ....... [isla] [nav] [CTA] */
+            .cal-hdr-tools { order: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; margin-right: auto; }
+            .cal-hdr-views { order: 2; display: flex; align-items: center; }
+            .cal-hdr-nav   { order: 3; display: flex; align-items: center; gap: 6px; min-width: 0; }
+            .cal-hdr-cta   { order: 4; display: flex; align-items: center; gap: 8px; }
+            /* Título de mes/semana/día prominente */
             .cal-hdr-nav .cal-topnav-title {
-                font-size: 1.32rem !important;
+                font-size: 1.18rem !important;
                 font-weight: 800 !important;
                 letter-spacing: -0.01em;
-                margin-left: 8px;
+                margin-left: 6px;
                 white-space: nowrap;
             }
-            /* La isla de vistas ya no es hijo directo de .cal-page-bar, así que
-               las reglas de altura de crm.css (> .crm-tabs--dashboard) no le
-               pegan: la dimensionamos aquí. */
+            /* Isla de vistas: pill COMPACTO y MUY redondeado (no el cuadrón) */
             .cal-hdr-views .crm-tabs--dashboard {
-                height: 36px; box-sizing: border-box;
+                height: 34px !important; min-height: 34px !important; max-height: 34px !important;
+                box-sizing: border-box;
                 display: inline-flex !important; align-items: center;
-                padding: 0 3px;
+                padding: 0 3px !important;
+                border-radius: 999px !important;
                 flex: 0 0 auto !important;   /* anula el flex:1 1 100% heredado de la media query de Clientes */
                 width: auto !important;
                 order: 0 !important;
                 overflow: visible !important;
             }
-            /* En pantallas angostas, las dos columnas se apilan limpio */
-            @media (max-width: 880px) {
-                .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
-                    grid-template-columns: 1fr;
-                    grid-template-areas: "nav" "cta" "tools" "views";
-                }
-                .cal-hdr-cta, .cal-hdr-views { justify-self: start; justify-content: flex-start; }
+            .cal-hdr-views .crm-tabs--dashboard .crm-tab {
+                height: 28px !important; min-height: 28px !important; max-height: 28px !important;
+                padding: 0 14px !important;
+                border-radius: 999px !important;
+                font-size: 0.82rem !important;
+            }
+            /* Separador dentro del popup de Filtro (entre "Mostrar" y "Fuente") */
+            .cal-filter-pop-sep { height: 1px; background: rgba(15,23,42,0.08); margin: 9px 2px 4px; }
+            /* Botones de Fuente dentro del popup: segmentado a todo el ancho */
+            .cal-filter-pop .cal-source-toggle .cal-source-btn { flex: 1; justify-content: center; }
+            /* En pantallas angostas: tools arriba, resto abajo sin amontonar */
+            @media (max-width: 820px) {
+                .cal-hdr-tools { margin-right: 0; flex: 1 1 100%; }
             }
             /* Toggle Fuente del Calendario: Actividades / Instalaciones */
             .cal-source-btn {
@@ -384,6 +387,23 @@
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="actividad" checked><span class="cal-filter-dot" style="background:#0052D4;"></span><span>Actividades</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="evento" checked><span class="cal-filter-dot" style="background:#8B5CF6;"></span><span>Eventos</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="curso" checked><span class="cal-filter-dot" style="background:#10B981;"></span><span>Cursos</span></label>
+                        {% comment %}
+                        Fuente del calendario (antes era un toggle aparte en el
+                        header). Actividades por defecto; Instalaciones = Plan de
+                        Trabajo. Mismos IDs/onclick → calSetSource sigue igual.
+                        {% endcomment %}
+                        <div class="cal-filter-pop-sep"></div>
+                        <div class="cal-filter-pop-lbl">Fuente</div>
+                        <div class="cal-source-toggle" id="calSourceToggle" role="tablist" style="display:flex;gap:3px;background:#F2F2F7;padding:3px;border-radius:10px;margin-top:5px;">
+                            <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Calendario de actividades (default)">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+                                Actividades
+                            </button>
+                            <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Calendario de instalaciones (Plan de Trabajo)">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M14.7 6.3a1 1 0 010 1.4l-7 7-3-3a1 1 0 011.4-1.4l1.6 1.6 5.6-5.6a1 1 0 011.4 0z"/><circle cx="12" cy="12" r="10"/></svg>
+                                Instalaciones
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <!-- Selector de usuario -->
@@ -409,19 +429,8 @@
                 </button>
             </div>
 
-            {% comment %} ── ZONA VIEWS: fuente + vistas (abajo-derecha) ── {% endcomment %}
+            {% comment %} ── ZONA VIEWS: isla de vistas (Mes/Semana/Día) ── {% endcomment %}
             <div class="cal-hdr-views">
-                {% comment %} Toggle "Actividades / Instalaciones" — fuente del calendario {% endcomment %}
-                <div class="cal-source-toggle" id="calSourceToggle" role="tablist" style="display:inline-flex;gap:2px;background:#F2F2F7;padding:3px;border-radius:999px;">
-                    <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Calendario de actividades (default)">
-                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-                        Actividades
-                    </button>
-                    <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Calendario de instalaciones (Plan de Trabajo)">
-                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M14.7 6.3a1 1 0 010 1.4l-7 7-3-3a1 1 0 011.4-1.4l1.6 1.6 5.6-5.6a1 1 0 011.4 0z"/><circle cx="12" cy="12" r="10"/></svg>
-                        Instalaciones
-                    </button>
-                </div>
                 <!-- Dynamic island: Mes / Semana / Día / (Técnicos solo en modo Instalaciones) -->
                 <div class="crm-tabs crm-tabs--dashboard">
                     <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
