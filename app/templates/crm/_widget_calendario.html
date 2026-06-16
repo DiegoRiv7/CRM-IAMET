@@ -76,18 +76,25 @@
                (que peleaba con el flex + width:100% inline), ponemos PADDING en
                el overlay → inserta el card por los 4 lados, garantizado. */
             .widget-overlay.is-page-mode {
+                height: 100vh !important;
+                max-height: 100vh !important;
                 padding: 20px !important;
                 box-sizing: border-box !important;
+                display: flex !important;
+                overflow: hidden !important;
             }
             .widget-overlay.is-page-mode .cal-card.cal-card--page {
+                /* flex:1 llena el área con padding del overlay → margen en los 4
+                   lados (incluido ABAJO). Sin altura fija para que el padding
+                   inferior siempre quede como margen. */
                 flex: 1 1 auto !important;
                 margin: 0 !important;
                 width: auto !important;
                 max-width: none !important;
                 border-radius: 22px !important;
-                height: calc(100vh - 40px) !important;
-                min-height: calc(100vh - 40px) !important;
-                max-height: calc(100vh - 40px) !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
                 padding: 0 0 14px !important;
                 overflow: hidden !important;
                 border: 1px solid rgba(255,255,255,0.55) !important;
