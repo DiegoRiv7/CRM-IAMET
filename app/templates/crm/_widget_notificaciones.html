@@ -105,7 +105,7 @@
 {% comment %}data-windowable: el sistema de ventanas (widget_window.js) inyecta los
 controles minimizar/maximizar junto a la X y permite sacarlo como ventana flotante
 y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
-<div id="notifDrawer" class="nd-drawer" data-windowable="1" data-widget-title="Notificaciones">
+<div id="notifDrawer" class="nd-drawer" data-windowable="1" data-ww-drag-windowize="1" data-widget-title="Notificaciones">
     <div class="nd-shell">
         <div class="nd-head">
             <span class="nd-head-title">Notificaciones</span>
@@ -656,6 +656,8 @@ body.ww-lite .nd-shell { backdrop-filter: none; -webkit-backdrop-filter: none; b
 
 /* Chips: ENVUELVEN para que se vean todos (Oportunidades incluida) */
 .nd-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 2px 16px 14px; }
+/* En modo ventana (más ancho) los chips van centrados. */
+.nd-drawer.ww-windowed .nd-chips { justify-content: center; }
 .nd-chip {
     flex: 0 0 auto; background: rgba(255,255,255,0.94); border: 1px solid rgba(15,23,42,0.07);
     color: #475569; padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;

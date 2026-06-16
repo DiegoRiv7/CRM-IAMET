@@ -973,11 +973,18 @@
             return;
         }
 
-        // 2) Franja superior → mover (solo en modo ventana)
-        if (!overlay.classList.contains('ww-windowed')) return;
+        // 2) Franja superior → mover.
         if (ev.target.closest(INTERACTIVE)) return;
-        var top = card.getBoundingClientRect().top;
-        if (ev.clientY - top > DRAG_STRIP) return;
+        var cr = card.getBoundingClientRect();
+        if (ev.clientY - cr.top > DRAG_STRIP) return;
+        if (!overlay.classList.contains('ww-windowed')) {
+            // Por defecto, un widget NO-ventana no se arrastra. Pero si el
+            // overlay opta con data-ww-drag-windowize (p.ej. el cajón de
+            // notificaciones), arrastrar desde arriba lo CONVIERTE en ventana
+            // en su posición/forma actual y arranca el movimiento (estilo macOS).
+            if (!overlay.hasAttribute('data-ww-drag-windowize')) return;
+            if (!windowize(overlay, { x: cr.left, y: cr.top, w: cr.width, h: cr.height })) return;
+        }
         startInteraction(overlay, 'move', ev, 'grabbing');
     }
 
