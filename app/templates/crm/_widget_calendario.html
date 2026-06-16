@@ -465,7 +465,8 @@
             .cwd-col.weekend{ background:rgba(10,116,240,.022); }
             .cwd-col.today{ background:rgba(0,168,107,.045); }
             .cwd-ev{ position:absolute; overflow:hidden; text-align:left; border-radius:7px; padding:4px 8px; display:flex; gap:6px; transition:filter .12s, box-shadow .12s; z-index:2; border:none; cursor:pointer; box-sizing:border-box; }
-            .cwd-ev.act{ box-shadow:0 2px 7px rgba(0,0,0,.18); }
+            .cwd-ev.act{ box-shadow:0 2px 7px rgba(0,0,0,.18); cursor:grab; }
+            .cwd-ev.act:active{ cursor:grabbing; }
             .cwd-ev.act:hover{ filter:brightness(1.06); z-index:5; }
             .cwd-ev.tarea:hover{ filter:brightness(0.98); z-index:5; }
             .cwd-ev-bar{ position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px; }
@@ -1150,7 +1151,8 @@
                 '<span class="cwd-ev-bar" style="background:' + color + ';"></span>' +
                 '<span class="cwd-ev-body"><span class="cwd-ev-title" style="' + strike + '"><span class="cwd-task-dot"></span>' + title + '</span>' + (short ? '' : '<span class="cwd-ev-time">' + t1 + '</span>') + '</span></button>';
         }
-        return '<button type="button" class="cwd-ev act' + (short ? ' short' : '') + '" data-evt-id="' + safeId + '" style="' + pos + 'background:' + color + ';color:#fff;' + op + '" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">' +
+        // Actividades: SIN onclick — el drag (mousedown/up) maneja clic vs arrastre.
+        return '<button type="button" class="cwd-ev act' + (short ? ' short' : '') + '" data-evt-id="' + safeId + '" style="' + pos + 'background:' + color + ';color:#fff;' + op + '">' +
             '<span class="cwd-ev-body"><span class="cwd-ev-title" style="' + strike + '">' + title + '</span>' + (short ? '' : '<span class="cwd-ev-time">' + t1 + (t2 ? (' – ' + t2) : '') + '</span>') + '</span></button>';
     }
     window._calWeekColClick = function (ev, dISO, START, HOUR_H) {
@@ -1175,6 +1177,79 @@
             el.addEventListener('mouseleave', function () { clearTimeout(window._calHoverTimer); if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview(); });
         });
     }
+    /* ─── Arrastrar para reagendar (solo actividades, no tareas) ─── */
+    var _cwdDrag = null, _cwdCtx = null;
+    function _cwdLocalIso(d) {
+        var p = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':00';
+    }
+    function _calWeekBindDrag() {
+        var root = document.getElementById('calWeekViewRoot'); if (!root) return;
+        root.querySelectorAll('.cwd-ev.act[data-evt-id]').forEach(function (el) {
+            if (el._cwdDragBound) return; el._cwdDragBound = true;
+            el.addEventListener('mousedown', _cwdEvMouseDown);
+        });
+    }
+    function _cwdEvMouseDown(e) {
+        if (e.button !== 0) return;
+        var el = e.currentTarget;
+        var id = el.getAttribute('data-evt-id');
+        var stored = _globalEvents.find(function (x) { return String(x.id) === String(id); });
+        if (!stored) return;
+        var colsEl = document.querySelector('#calWeekViewRoot .cwd-cols'); if (!colsEl) return;
+        var colsRect = colsEl.getBoundingClientRect();
+        _cwdDrag = {
+            el: el, id: id, stored: stored,
+            startX: e.clientX, startY: e.clientY,
+            origTop: parseFloat(el.style.top) || 0,
+            origStartMs: new Date(stored.start).getTime(),
+            origEndMs: stored.end ? new Date(stored.end).getTime() : (new Date(stored.start).getTime() + 3600000),
+            dayW: colsRect.width / 7, moved: false, deltaMin: 0, deltaDays: 0,
+            HOUR_H: (_cwdCtx ? _cwdCtx.HOUR_H : 60)
+        };
+        document.addEventListener('mousemove', _cwdEvMouseMove);
+        document.addEventListener('mouseup', _cwdEvMouseUp);
+        e.preventDefault();
+    }
+    function _cwdEvMouseMove(e) {
+        if (!_cwdDrag) return;
+        var dy = e.clientY - _cwdDrag.startY, dx = e.clientX - _cwdDrag.startX;
+        if (!_cwdDrag.moved && Math.abs(dy) < 4 && Math.abs(dx) < 4) return;
+        _cwdDrag.moved = true;
+        var ppm = _cwdDrag.HOUR_H / 60;
+        _cwdDrag.deltaMin = Math.round(dy / ppm / 15) * 15;
+        _cwdDrag.deltaDays = Math.round(dx / _cwdDrag.dayW);
+        _cwdDrag.el.style.zIndex = '20';
+        _cwdDrag.el.style.opacity = '0.88';
+        _cwdDrag.el.style.cursor = 'grabbing';
+        _cwdDrag.el.style.top = (_cwdDrag.origTop + _cwdDrag.deltaMin * ppm) + 'px';
+        _cwdDrag.el.style.transform = 'translateX(' + (_cwdDrag.deltaDays * _cwdDrag.dayW) + 'px)';
+    }
+    function _cwdEvMouseUp() {
+        document.removeEventListener('mousemove', _cwdEvMouseMove);
+        document.removeEventListener('mouseup', _cwdEvMouseUp);
+        var drag = _cwdDrag; _cwdDrag = null;
+        if (!drag) return;
+        if (!drag.moved) { if (typeof window._calOpenFull === 'function') window._calOpenFull(drag.id); return; }
+        var deltaMs = drag.deltaDays * 86400000 + drag.deltaMin * 60000;
+        if (deltaMs === 0) { calRenderWeekView(_calWeekStart); return; }
+        var newStart = new Date(drag.origStartMs + deltaMs);
+        var newEnd = new Date(drag.origEndMs + deltaMs);
+        var startStr = _cwdLocalIso(newStart), endStr = _cwdLocalIso(newEnd);
+        var stored = drag.stored, ep = stored.extendedProps || {};
+        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
+        // Optimista: actualiza local + re-render, luego PUT.
+        stored.start = startStr; stored.end = endStr;
+        if (window._calAllEvents) { var a = window._calAllEvents.find(function (x) { return String(x.id) === String(drag.id); }); if (a) { a.start = startStr; a.end = endStr; } }
+        calRenderWeekView(_calWeekStart);
+        fetch('/app/api/actividades/' + drag.id + '/', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ title: stored.title, start: startStr, end: endStr, description: stored.description || '', tipo: ep.tipo_actividad || 'otro', color: stored.color || '#1D1D1F', participants: (ep.participants || []).map(function (p) { return p.id; }), opportunity: ep.opportunity ? ep.opportunity.id : null })
+        }).then(function (r) { return r.json(); }).then(function (res) {
+            if (res && res.error) { var sel = document.getElementById('calUserFilter'); calGlobalRefetch(sel ? sel.value : 'all'); }
+        }).catch(function () { var sel = document.getElementById('calUserFilter'); calGlobalRefetch(sel ? sel.value : 'all'); });
+    }
+
     function _calRenderWeekDesign(weekStart) {
         var root = document.getElementById('calWeekViewRoot'); if (!root) return;
         if (!root.offsetWidth) { requestAnimationFrame(function () { _calRenderWeekDesign(weekStart); }); return; }
@@ -1207,7 +1282,9 @@
         });
         h += '</div></div></div></div>';
         root.innerHTML = h;
+        _cwdCtx = { START: START, HOUR_H: HOUR_H, weekStart: new Date(weekStart) };
         _calWeekBindHoverDesign();
+        _calWeekBindDrag();
         var sc = root.querySelector('.cwd-scroll'); if (sc) sc.scrollTop = Math.max(0, (8.5 - START) * HOUR_H);
     }
 
@@ -1549,6 +1626,10 @@
             else weekSeed = new Date();
             _calWeekStart = calGetWeekStart(weekSeed);
             calRenderWeekView(_calWeekStart);
+            // Sync: asegurar datos del mes visible de la semana (si difiere del
+            // último fetch, recarga y re-renderiza). Antes no refetcheaba al
+            // cambiar de vista → la semana no reflejaba lo del mes/día.
+            if (typeof window.calMaybeRefetchOnMonthChange === 'function') window.calMaybeRefetchOnMonthChange();
         } else if (mode === 'tecnicos') {
             if (gridRoot) {
                 gridRoot.style.display = 'flex';
@@ -1578,6 +1659,8 @@
             else daySeed = new Date();
             _calCurrentDay = new Date(daySeed);
             calRenderDayView(_calCurrentDay);
+            // Sync: igual que semana — recargar el mes visible si cambió.
+            if (typeof window.calMaybeRefetchOnMonthChange === 'function') window.calMaybeRefetchOnMonthChange();
         }
         calUpdateNavTitle();
     };
