@@ -1783,14 +1783,24 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
         if (p) p.classList.remove('show');
     }
 
-    // Rect para que la ventana abierta quepa A LA IZQUIERDA del cajón (sin
-    // taparlo) cuando el cajón está abierto. Si está cerrado, ventana amplia.
+    // Rect para que la ventana abierta quepa A LA IZQUIERDA del panel de
+    // notificaciones (sin taparlo). Se mide el PANEL VISIBLE (.nd-shell), no
+    // el overlay #notifDrawer (que es inset:0 y ocupa todo el ancho → daría
+    // espacio 0 y la ventana saldría al mínimo).
     function _ndFitRect() {
         var d = document.getElementById('notifDrawer');
-        var dw = (d && d.classList.contains('open')) ? d.offsetWidth : 0;
         var vw = window.innerWidth, vh = window.innerHeight;
-        var x = 20, gap = 28;   // ocupa el espacio a la IZQ del cajón, ~gap antes
-        var w = Math.max(460, vw - dw - x - gap);
+        var x = 20, gap = 28;
+        var avail = vw;   // por defecto: todo el ancho
+        if (d && (d.classList.contains('open') || _ndIsWindowed(d))) {
+            var shell = d.querySelector('.nd-shell');
+            if (shell) {
+                var r = shell.getBoundingClientRect();
+                // espacio a la izquierda del panel (su borde izquierdo)
+                if (r.width > 0 && r.left > 360) avail = r.left;
+            }
+        }
+        var w = Math.max(520, avail - x - gap);
         return { x: x, y: 60, w: w, h: Math.round(vh * 0.86) };
     }
 
