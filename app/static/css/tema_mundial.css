@@ -1178,66 +1178,76 @@ body[data-theme="mundial"] .cal-filter-pop-item:hover {
     background: rgba(255, 255, 255, 0.10) !important;
 }
 
-/* --- FullCalendar grid: sobre el frosted shell (texto oscuro legible) --- */
-/* Grid del mes estilo Apple Calendar: celdas SÓLIDAS blancas, bordes finos
-   y limpios, sobre el card glass (el glass se asoma solo en los márgenes). */
+/* ═══ Grid del MES — estilo Calendario CRM (Claude Design) ═══
+   Tipografía, celdas, números y header tal cual el diseño; conservamos
+   nuestros colores por tipo (píldoras) y el "hoy" en verde mexicano.
+   --hair = rgba(20,30,55,.08) como en el diseño. */
 body[data-theme="mundial"] #fullCalendarRoot {
-    --fc-border-color: rgba(0, 0, 0, 0.07) !important;
+    --fc-border-color: rgba(20,30,55,.08) !important;
     --fc-page-bg-color: #ffffff !important;
     --fc-neutral-bg-color: #ffffff !important;
-    --fc-today-bg-color: rgba(0, 168, 107, 0.08) !important;
+    --fc-today-bg-color: rgba(0,168,107,.05) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
 }
-/* Cada día = cuadro blanco sólido definido */
-body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day {
-    background: #ffffff !important;
-}
-/* Días de meses contiguos: un pelín apagados (como Apple) */
-body[data-theme="mundial"] #fullCalendarRoot .fc-day-other {
-    background: #f6f6f4 !important;
-}
-body[data-theme="mundial"] #fullCalendarRoot .fc-day-other .fc-daygrid-day-number {
-    color: #b8bcc0 !important;
+/* Sin marco interno: el card redondeado es el contenedor */
+body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid { border: none !important; }
+/* Header de días (LUN MAR…): izquierda, gris, uppercase, hairline abajo */
+body[data-theme="mundial"] #fullCalendarRoot .fc-col-header-cell {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(20,30,55,.08) !important;
+    text-align: left !important;
+    padding: 0 !important;
 }
 body[data-theme="mundial"] #fullCalendarRoot .fc-col-header-cell-cushion {
-    color: #6e7378 !important;
-}
-body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day-number {
-    color: #1a1a1a !important;
-}
-body[data-theme="mundial"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
-    background-color: #00a86b !important;
-    color: #ffffff !important;
-}
-body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-more-link {
-    color: #006847 !important;
+    color: #8b9099 !important;
+    font-size: 11.5px !important;
     font-weight: 700 !important;
+    letter-spacing: .4px !important;
+    text-transform: uppercase !important;
+    padding: 11px 14px !important;
+    display: block !important;
+    text-align: left !important;
 }
-/* Marco alrededor del grid (parece una sección, no un widget suelto) */
-body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid {
-    border: 1px solid rgba(0, 0, 0, 0.09) !important;
-    border-radius: 14px !important;
-    overflow: hidden !important;
-}
-/* Cerrar CADA celda con líneas en los 4 lados (estilo Apple Calendar):
-   right + bottom en cada td/th; el marco del scrollgrid cierra arriba e
-   izquierda. Se anula el `th{border:none}` y `scrollgrid{border:none}` base. */
+/* Celdas: cuadro blanco con hairlines (right + bottom); última col sin right */
 body[data-theme="mundial"] #fullCalendarRoot td,
-body[data-theme="mundial"] #fullCalendarRoot th {
-    border-color: rgba(0, 0, 0, 0.08) !important;
-}
-body[data-theme="mundial"] #fullCalendarRoot th {
-    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-body[data-theme="mundial"] #fullCalendarRoot .fc-scrollgrid-sync-table td,
+body[data-theme="mundial"] #fullCalendarRoot th { border-color: rgba(20,30,55,.08) !important; }
 body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day {
-    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    background: #ffffff !important;
+    border-right: 1px solid rgba(20,30,55,.08) !important;
+    border-bottom: 1px solid rgba(20,30,55,.08) !important;
+    transition: background .12s !important;
 }
-/* Header de días (LUN MAR…): franja sutil para separarla del grid */
-body[data-theme="mundial"] #fullCalendarRoot .fc-col-header-cell {
-    background: #fbfbfa !important;
-    padding-top: 9px !important; padding-bottom: 11px !important;
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day:nth-child(7n) { border-right: none !important; }
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day:hover { background: rgba(10,116,240,.035) !important; }
+/* Días de otro mes: muy sutil + número apagado */
+body[data-theme="mundial"] #fullCalendarRoot .fc-day-other { background: rgba(20,30,55,.018) !important; }
+body[data-theme="mundial"] #fullCalendarRoot .fc-day-other .fc-daygrid-day-number { color: #aeb4bd !important; }
+/* Marco de celda con poco padding (números y píldoras pegados arriba) */
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day-frame { padding: 2px 5px 5px !important; }
+/* Número del día: arriba-derecha, círculo 24px, gris-tinta */
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-day-number {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #3b3f46 !important;
+    width: 24px !important; height: 24px !important;
+    border-radius: 50% !important;
+    display: grid !important; place-items: center !important;
+    padding: 0 !important;
+    margin: 4px 4px 0 0 !important;
+}
+/* Hoy: círculo verde mexicano (nuestro acento), número blanco */
+body[data-theme="mundial"] #fullCalendarRoot .fc-day-today { background: rgba(0,168,107,.05) !important; }
+body[data-theme="mundial"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
+    background: #00a86b !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(0,168,107,.4) !important;
+}
+/* "N más" en gris discreto (estilo diseño) */
+body[data-theme="mundial"] #fullCalendarRoot .fc-daygrid-more-link {
+    color: #8b9099 !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
 }
 
 /* --- FullCalendar popover ("+3 más") --- */
