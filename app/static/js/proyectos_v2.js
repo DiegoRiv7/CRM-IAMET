@@ -416,8 +416,11 @@
     function _updatePeriodPill() {
         var lbl = document.getElementById('proyPeriodLabel');
         if (lbl) lbl.textContent = _periodLabel();
+        // NO usamos .active: en mundial pinta el botón verde y se ve raro. El
+        // pill queda con el estilo neutro de Filtro/Ordenar (como el de
+        // Oportunidades), no como filtro "activo".
         var btn = document.getElementById('proyPeriodBtn');
-        if (btn) btn.classList.toggle('active', !!(_proyPeriod.meses.length || _proyPeriod.anios.length));
+        if (btn) btn.classList.remove('active');
     }
     function _periodYears() {
         var cur = _pNow.getFullYear(), ys = [];
