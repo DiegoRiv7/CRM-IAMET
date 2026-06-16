@@ -50,6 +50,14 @@ def api_admin_usuarios(request):
 
     if request.method == 'GET':
         usuarios = User.objects.select_related('userprofile').all().order_by('first_name', 'last_name')
+        # ?ambito=grupo: limita la lista a los usuarios del grupo del solicitante
+        # cuando NO es supervisor ni administrador (un usuario normal solo puede
+        # asignar prospectos a miembros de su grupo). Supervisores/admins ven todos.
+        if request.GET.get('ambito') == 'grupo' and not (is_supervisor(request.user) or is_administrador(request.user)):
+            from .views_grupos import get_usuarios_visibles_ids
+            visibles = get_usuarios_visibles_ids(request.user)
+            if visibles is not None:
+                usuarios = usuarios.filter(id__in=visibles)
         data = []
         for u in usuarios:
             grupos = [g.name for g in u.groups.all()]

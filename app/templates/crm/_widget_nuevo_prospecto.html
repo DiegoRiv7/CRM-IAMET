@@ -73,8 +73,10 @@
                             </div>
                         </div>
 
-                        {% if es_supervisor or es_administrador %}
-                        <!-- Pill "Asignar a" — solo supervisores/administradores -->
+                        {% comment %} Pill "Asignar a" — disponible para TODOS los usuarios.
+                           Supervisores/admins pueden asignar a cualquiera; los usuarios
+                           normales solo a miembros de su grupo (la lista se filtra en el
+                           backend con ?ambito=grupo y se valida al crear). {% endcomment %}
                         <div class="wn-ctw-popwrap">
                             <button type="button" class="wn-ctw-pill-meta" id="wpAsignadoBtn" data-me-id="{{ user.id }}" onclick="wpOpenPop('asignado', event)" title="Asignar el prospecto a un vendedor">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -87,11 +89,10 @@
                                 <div id="wpAsigList" style="max-height:240px;overflow-y:auto;margin-top:8px;border-top:1px solid #F1F5F9;padding-top:8px;"></div>
                             </div>
                         </div>
-                        {% endif %}
                     </div>
 
-                    {% if es_supervisor or es_administrador %}
-                    <!-- Bloque "Actividad inicial" — visible cuando se asigna a OTRO vendedor -->
+                    {% comment %} Bloque "Actividad inicial" — visible cuando se asigna a
+                       OTRO usuario (cualquiera, no solo supervisores). {% endcomment %}
                     <div class="wn-ctw-actinit" id="wpActInitBlock" style="display:none;margin-top:14px;padding:14px 16px;background:linear-gradient(180deg,#F7F9FF 0%,#FFFFFF 100%);border:1px solid #DBE4FF;border-radius:14px;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                             <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;">
@@ -157,7 +158,6 @@
                         }
                         .wp-ai-chip.active svg { stroke: #fff; }
                     </style>
-                    {% endif %}
 
                     <!-- Notas (opcional) -->
                     <textarea class="wn-ctw-desc" id="wpfComentarios" placeholder="Añade contexto de la prospección, siguientes pasos o notas…" rows="4"></textarea>
@@ -914,8 +914,10 @@
             var list = document.getElementById('wpAsigList');
             if (list) list.innerHTML = '<div style="padding:14px;color:#86868B;font-size:0.78rem;text-align:center;">Cargando vendedores…</div>';
             _wpVendedoresLoading = true;
-            console.log('[NuevoProspecto] Cargando vendedores desde /app/api/admin/usuarios/');
-            fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+            console.log('[NuevoProspecto] Cargando vendedores desde /app/api/admin/usuarios/?ambito=grupo');
+            // ?ambito=grupo: el backend limita la lista al grupo del usuario cuando
+            // NO es supervisor/admin; para supervisores/admins devuelve todos.
+            fetch('/app/api/admin/usuarios/?ambito=grupo', { credentials: 'same-origin' })
                 .then(function(r) {
                     console.log('[NuevoProspecto] HTTP', r.status, r.statusText);
                     if (!r.ok) throw new Error('HTTP ' + r.status);
