@@ -4485,6 +4485,13 @@
                     openDetalle(currentOppId);
                 }
             }
+            // Una tarea abierta en ventana-iframe (widget_tarea_page) se completó/
+            // aplazó/reabrió → el iframe nos pide refrescar las notificaciones del
+            // escritorio para que su notif de vencimiento (ya borrada en el server)
+            // desaparezca al instante del cajón abierto, sin esperar el poll.
+            if (e.data && e.data.type === 'notif-refresh') {
+                if (typeof window.notifLoad === 'function') window.notifLoad();
+            }
         });
 
         // "Cotizar" buttons in table (initial bind)
@@ -9485,6 +9492,9 @@
                         crmTaskRenderData(_crmTaskLastData);
                         showToast('Tarea actualizada', 'success');
                         if (window._crmTareasMode) recargarTareasCRM();
+                        // Si se aplazó la fecha, su notif de vencimiento ya no
+                        // aplica (el server la borró) → refrescar notificaciones.
+                        if (typeof notifLoad === 'function') notifLoad();
                     } else { showToast(d.error || 'Error al guardar', 'error'); }
                 }).catch(function () { showToast('Error de conexion', 'error'); });
         }
@@ -9936,6 +9946,7 @@
                     if (overlay) overlay.style.display = 'none';
                     if (data.success) {
                         showToast('Tarea reabierta', 'success');
+                        if (typeof notifLoad === 'function') notifLoad();
                         // Limpiar caché y recargar tabla para que aparezca en pendientes
                         _crmTareasCache = {};
                         if (window._crmTareasMode) cargarTareasCRM(_crmCurrentFilter);

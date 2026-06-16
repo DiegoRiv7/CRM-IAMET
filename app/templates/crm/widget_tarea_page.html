@@ -101,7 +101,7 @@ y helpers compartidos.
     {% include "crm/_widget_tarea_detalle.html" %}
     {% include "crm/_widget_oportunidad.html" %}
     <script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
-    <script src="{% static 'js/crm_main.js' %}?v=20260615-tareas-dedup"></script>
+    <script src="{% static 'js/crm_main.js' %}?v=20260616-notif-bridge"></script>
     <script>
         (function () {
             // Drive desde esta tarea: el iframe no puede poner ventanas en el
@@ -113,6 +113,17 @@ y helpers compartidos.
                     window.parent.postMessage({ type: 'open-task-drive', oppId: oppId }, window.location.origin);
                     return true;
                 } catch (e) { return false; }
+            };
+            // Esta página NO incluye el widget de notificaciones (vive en el
+            // escritorio padre). crm_main.js llama notifLoad() tras completar /
+            // aplazar / comentar la tarea; aquí ese notifLoad reenvía la orden al
+            // padre por postMessage para que su cajón retire al instante la notif
+            // de vencimiento (el server ya la borró en el save). Sin esto el
+            // usuario tenía que cerrar y reabrir las notificaciones para verlo.
+            window.notifLoad = function () {
+                try {
+                    window.parent.postMessage({ type: 'notif-refresh' }, window.location.origin);
+                } catch (e) { }
             };
             function boot() {
                 try {
