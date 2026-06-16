@@ -4,6 +4,30 @@
 (function() {
     'use strict';
 
+    // ── Abrir "Nuevo prospecto" desde el "+" de una columna (etapa) ──
+    // Se delega a nivel `document` y UNA sola vez: el <script> tiene
+    // data-turbo-eval="false" (corre una vez en la carga inicial) y el listener
+    // de document sobrevive a la navegación Turbo. Antes esto vivía atado a
+    // #pkKanbanBoard dentro del init de abajo, que retorna temprano cuando el
+    // board no existe al cargar (p.ej. la carga inicial fue en otra pestaña) →
+    // el "+" no abría el formulario tras navegar a Prospección.
+    if (!window._pkAddDelegated) {
+        window._pkAddDelegated = true;
+        document.addEventListener('click', function(ev) {
+            var btnAdd = ev.target.closest && ev.target.closest('[data-act="pk-add"]');
+            if (!btnAdd || !btnAdd.closest('#pkKanbanBoard')) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            // Etapa de la columna → el form la usa como etapa inicial (payload.etapa).
+            window._pkStageForNew = btnAdd.getAttribute('data-stage') || null;
+            if (typeof window._setNuevoProspectoMode === 'function') {
+                window._setNuevoProspectoMode('prospecto');
+            }
+            var w = document.getElementById('widgetNuevoProspecto');
+            if (w) w.classList.add('active');
+        });
+    }
+
     var board = document.getElementById('pkKanbanBoard');
     if (!board) return;
 
@@ -303,19 +327,10 @@
             applyCollapsed();
             return;
         }
-        var btnAdd = ev.target.closest('[data-act="pk-add"]');
-        if (btnAdd) {
-            ev.stopPropagation();
-            // Pasar la etapa al widget: se creará con esa etapa inicial
-            var stageKey = btnAdd.getAttribute('data-stage') || '';
-            window._pkStageForNew = stageKey || null;
-            if (typeof window._setNuevoProspectoMode === 'function') {
-                window._setNuevoProspectoMode('prospecto');
-            }
-            var w = document.getElementById('widgetNuevoProspecto');
-            if (w) w.classList.add('active');
-            return;
-        }
+        // El "+" (pk-add) se maneja con delegación a nivel document arriba, para
+        // que funcione aunque este init haya retornado temprano (board ausente
+        // al cargar). No se maneja aquí para no duplicar la apertura del form.
+
         // Click en columna colapsada → expandir
         var colClick = ev.target.closest('.crm-kanban-col.collapsed');
         if (colClick) {
