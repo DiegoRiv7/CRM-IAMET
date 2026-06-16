@@ -820,13 +820,8 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     const PRIORITY_IMPORTANT = ['tarea_reprogramada', 'tarea_asignada', 'tarea_opp_asignada', 'mencion', 'muro_mencion', 'tarea_mencion', 'solicitud_cambio_perfil'];
     const PRIORITY_INFO = ['tarea_participante', 'tarea_observador', 'comentario_oportunidad', 'tarea_comentario', 'tarea_opp_comentario', 'oportunidad_mensaje', 'muro_post', 'respuesta', 'sistema', 'proyecto_agregado', 'programacion_proyecto', 'mensaje_grupo'];
 
-    // Nota: actividad_vencida/actividad_por_vencer (vencimientos del panel
-    // TAREAS de la oportunidad, modelo TareaOportunidad) y actividad_opp_*
-    // (panel ACTIVIDAD PROGRAMADA) NO son Tareas: viven dentro de la
-    // oportunidad → cuentan/clasifican como Oportunidades (ver CAT_OPPS y el
-    // early-return de _ndIsTarea).
-    const CAT_TAREAS = ['tarea_vencida', 'tarea_por_vencer', 'tarea_asignada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada', 'tarea_opp_asignada', 'tarea_opp_comentario', 'programacion_proyecto'];
-    const CAT_OPPS = ['comentario_oportunidad', 'oportunidad_mensaje', 'actividad_vencida', 'actividad_por_vencer', 'actividad_opp_vencida', 'actividad_opp_por_vencer'];
+    const CAT_TAREAS = ['tarea_vencida', 'tarea_por_vencer', 'tarea_asignada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada', 'actividad_vencida', 'actividad_por_vencer', 'tarea_opp_asignada', 'tarea_opp_comentario', 'programacion_proyecto'];
+    const CAT_OPPS = ['comentario_oportunidad', 'oportunidad_mensaje'];
     const CAT_EQUIPO = ['muro_post', 'muro_mencion', 'mencion', 'respuesta', 'proyecto_agregado', 'mensaje_grupo'];
     const CAT_ADMIN = ['rendimiento_bajo', 'solicitud_cambio_perfil', 'tarea_reprogramada', 'sistema'];
 
@@ -1425,17 +1420,11 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     // por su 'tipo'. Así "Tarea reabierta" (que llega como tipo genérico pero
     // trae tarea_id) cae en Tareas, no en General.
     var F_VENCIDAS = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'certificacion_vencida', 'certificacion_por_vencer'];
-    // Actividades de oportunidad (ambos paneles): viven dentro de la opp →
-    // sección Oportunidades, subsección "Actividades". actividad_* trae
-    // tarea_opp_id, así que hay que excluirlas explícitamente de _ndIsTarea.
-    var F_OPP_ACTIVIDAD = ['actividad_opp_vencida', 'actividad_opp_por_vencer', 'actividad_vencida', 'actividad_por_vencer'];
-    var F_OPP_TIPOS = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion'].concat(F_OPP_ACTIVIDAD);
+    var F_OPP_TIPOS = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion', 'actividad_opp_vencida', 'actividad_opp_por_vencer'];
+    var F_OPP_ACTIVIDAD = ['actividad_opp_vencida', 'actividad_opp_por_vencer'];
 
     function _ndIsVenc(n) { return F_VENCIDAS.indexOf(n.tipo) !== -1; }
     function _ndIsTarea(n) {
-        // Las actividades de oportunidad NO son Tareas aunque traigan
-        // tarea_opp_id (su hogar es la oportunidad, no la sección Tareas).
-        if (F_OPP_ACTIVIDAD.indexOf(n.tipo) !== -1) return false;
         // CAT_TAREAS ya cubre asignadas/menciones/comentarios/reprogramadas/
         // vencidas de tarea; el tarea_id/tarea_opp_id atrapa el resto
         // (reabiertas y cualquier cosa ligada a una tarea aunque sea 'sistema').
