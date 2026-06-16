@@ -379,8 +379,31 @@
             .cmd-cell { border-right:1px solid rgba(20,30,55,.08); border-bottom:1px solid rgba(20,30,55,.08); padding:4px 6px 6px; min-height:0; display:flex; flex-direction:column; gap:3px; overflow:hidden; cursor:pointer; transition:background .12s; background:#fff; }
             .cmd-cell:nth-child(7n){ border-right:none; }
             .cmd-cell:hover{ background:rgba(10,116,240,.035); }
-            .cmd-cell.out{ background:rgba(20,30,55,.018); }
+            .cmd-cell.out{ background:#f4f5f3; }
             .cmd-cell.out .cmd-num{ color:#aeb4bd; }
+            /* + del header oculto: lo reemplazan los FABs abajo-derecha (diseño) */
+            .cal-hdr-cta .crm-facet-new.cal-fab { display:none !important; }
+            /* ── FABs (lupa + +) estilo Claude Design, en verde Mundial ── */
+            .cal-fab-stack{ position:fixed; right:30px; bottom:30px; display:flex; flex-direction:column; align-items:flex-end; gap:16px; z-index:60; }
+            .cal-fab{ width:56px; height:56px; border-radius:50%; background:linear-gradient(155deg,#00bd78 0%,#00a86b 55%,#007a4d 100%); color:#fff; display:grid; place-items:center; border:none; cursor:pointer; box-shadow:0 10px 26px rgba(0,120,70,.42),0 2px 6px rgba(0,120,70,.3); transition:transform .2s cubic-bezier(.34,1.56,.64,1),filter .15s; }
+            .cal-fab:hover{ transform:translateY(-2px) scale(1.04); filter:brightness(1.06); }
+            .cal-fab:active{ transform:scale(.95); }
+            .cal-searchfab{ position:relative; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+            .cal-search-pill{ height:56px; width:56px; border-radius:28px; background:linear-gradient(155deg,#00bd78,#007a4d); color:#fff; display:flex; align-items:center; overflow:hidden; box-shadow:0 10px 26px rgba(0,120,70,.42),0 2px 6px rgba(0,120,70,.3); transition:width .34s cubic-bezier(.4,1.2,.5,1); cursor:pointer; }
+            .cal-searchfab.open .cal-search-pill{ width:340px; cursor:default; }
+            .cal-search-ic{ width:56px; height:56px; display:grid; place-items:center; flex-shrink:0; color:#fff; background:none; border:none; cursor:pointer; }
+            .cal-search-input{ flex:1; min-width:0; background:none; border:none; outline:none; color:#fff; font-size:14.5px; font-weight:500; padding-right:6px; }
+            .cal-search-input::placeholder{ color:rgba(255,255,255,.8); }
+            .cal-search-clear{ width:34px; height:56px; display:grid; place-items:center; color:rgba(255,255,255,.85); flex-shrink:0; background:none; border:none; cursor:pointer; }
+            .cal-search-clear:hover{ color:#fff; }
+            .cal-search-results{ width:340px; background:#fff; border-radius:16px; box-shadow:0 12px 40px rgba(15,45,95,.18); padding:6px; max-height:340px; overflow-y:auto; }
+            .cal-sr-item{ display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:9px 11px; border-radius:11px; transition:.12s; background:none; border:none; cursor:pointer; }
+            .cal-sr-item:hover{ background:rgba(0,168,107,.08); }
+            .cal-sr-dot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+            .cal-sr-main{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+            .cal-sr-title{ font-size:14px; font-weight:600; color:#1b1d21; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .cal-sr-sub{ font-size:12px; color:#8b9099; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .cal-sr-empty{ padding:18px; text-align:center; color:#8b9099; font-size:13.5px; }
             .cmd-date{ display:flex; justify-content:flex-end; }
             .cmd-num{ font-size:13px; font-weight:600; color:#3b3f46; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; }
             .cmd-num.on{ background:#00a86b; color:#fff; box-shadow:0 3px 9px rgba(0,168,107,.4); }
@@ -574,6 +597,25 @@
             </div>
 
         </div><!-- /body -->
+
+        <!-- ═══ FABs (estilo Claude Design): lupa de búsqueda + crear actividad ═══ -->
+        <div class="cal-fab-stack">
+            <div class="cal-searchfab" id="calSearchFab">
+                <div class="cal-search-results" id="calSearchResults" style="display:none;"></div>
+                <div class="cal-search-pill" onclick="if(!this.parentNode.classList.contains('open'))calSearchOpen()">
+                    <button type="button" class="cal-search-ic" onclick="event.stopPropagation();calSearchToggle()" aria-label="Buscar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+                    </button>
+                    <input type="text" id="calSearchInput" class="cal-search-input" placeholder="Buscar actividad o tarea…" autocomplete="off" oninput="calSearchFilter(this.value)" onkeydown="if(event.key==='Escape')calSearchClose()" style="display:none;">
+                    <button type="button" class="cal-search-clear" id="calSearchClear" onclick="calSearchClearInput()" style="display:none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+            <button type="button" class="cal-fab" onclick="if(typeof window.calGlobalAbrirCrearActividad==='function')window.calGlobalAbrirCrearActividad()" aria-label="Nueva actividad" title="Nueva actividad">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -928,6 +970,72 @@
         html += '</div></div>';
         root.innerHTML = html;
         _calMonthBindHover();
+    };
+
+    /* ═══ FAB de búsqueda (lupa) — filtra eventos del calendario ═══ */
+    function _calSearchOutside(e) {
+        var fab = document.getElementById('calSearchFab');
+        if (fab && !fab.contains(e.target)) {
+            var inp = document.getElementById('calSearchInput');
+            if (!inp || !inp.value) window.calSearchClose();
+        }
+    }
+    window.calSearchOpen = function () {
+        var fab = document.getElementById('calSearchFab'); if (!fab) return;
+        fab.classList.add('open');
+        var inp = document.getElementById('calSearchInput');
+        if (inp) { inp.style.display = ''; setTimeout(function () { inp.focus(); }, 180); }
+        setTimeout(function () { document.addEventListener('mousedown', _calSearchOutside); }, 0);
+    };
+    window.calSearchToggle = function () {
+        var fab = document.getElementById('calSearchFab'); if (!fab) return;
+        if (fab.classList.contains('open')) window.calSearchClose(); else window.calSearchOpen();
+    };
+    window.calSearchClose = function () {
+        var fab = document.getElementById('calSearchFab'); if (!fab) return;
+        fab.classList.remove('open');
+        var inp = document.getElementById('calSearchInput'); if (inp) { inp.value = ''; inp.style.display = 'none'; }
+        var cl = document.getElementById('calSearchClear'); if (cl) cl.style.display = 'none';
+        var res = document.getElementById('calSearchResults'); if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+        document.removeEventListener('mousedown', _calSearchOutside);
+    };
+    window.calSearchClearInput = function () {
+        var inp = document.getElementById('calSearchInput'); if (inp) { inp.value = ''; inp.focus(); }
+        window.calSearchFilter('');
+    };
+    window.calSearchFilter = function (q) {
+        var cl = document.getElementById('calSearchClear'); if (cl) cl.style.display = q ? 'grid' : 'none';
+        var res = document.getElementById('calSearchResults'); if (!res) return;
+        var ql = String(q || '').trim().toLowerCase();
+        if (!ql) { res.style.display = 'none'; res.innerHTML = ''; return; }
+        var evs = (window._calAllEvents || _globalEvents || []);
+        var matches = evs.filter(function (e) {
+            var ep = e.extendedProps || {};
+            var opp = ep.opportunity ? (ep.opportunity.text || ep.opportunity.nombre || '') : '';
+            return ((e.title || '') + ' ' + opp).toLowerCase().indexOf(ql) >= 0;
+        }).sort(function (a, b) { return String(a.start || '').localeCompare(String(b.start || '')); }).slice(0, 8);
+        if (!matches.length) { res.style.display = 'block'; res.innerHTML = '<div class="cal-sr-empty">Sin resultados</div>'; return; }
+        var MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        var html = '';
+        matches.forEach(function (e) {
+            var esTarea = String(e.id).indexOf('tarea-') === 0;
+            var ep = e.extendedProps || {};
+            var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
+            var color = e.color || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
+            if (color === '#8B5CF6') color = '#B45309';
+            var s = String(e.start || ''); var sub = '';
+            if (s.length >= 16) { var dd = parseInt(s.substring(8, 10), 10); var mo = parseInt(s.substring(5, 7), 10) - 1; sub = dd + ' ' + (MES[mo] || '') + ' · ' + parseInt(s.substring(11, 13), 10) + ':' + s.substring(14, 16); }
+            var safeId = String(e.id).replace(/'/g, '');
+            var dotStyle = esTarea ? ('background:#fff;border:2px solid ' + color + ';box-sizing:border-box;') : ('background:' + color + ';');
+            html += '<button type="button" class="cal-sr-item" onclick="calSearchGo(\'' + safeId + '\')">' +
+                '<span class="cal-sr-dot" style="' + dotStyle + '"></span>' +
+                '<span class="cal-sr-main"><span class="cal-sr-title">' + woEscape(e.title || '') + '</span><span class="cal-sr-sub">' + sub + '</span></span></button>';
+        });
+        res.style.display = 'block'; res.innerHTML = html;
+    };
+    window.calSearchGo = function (id) {
+        window.calSearchClose();
+        if (typeof window._calOpenFull === 'function') window._calOpenFull(id);
     };
 
     /* ─── ABRIR / CERRAR ─── */
