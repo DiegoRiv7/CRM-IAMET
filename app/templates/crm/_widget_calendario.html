@@ -72,23 +72,25 @@
                por eso vamos con !important. NO usamos overflow:hidden para no
                romper el position:sticky del header; en su lugar redondeamos las
                esquinas superiores del header para que peguen con el card. */
-            /* Card FLOTANTE con márgenes en TODOS los lados (como el panel de
-               Tareas): no pegado a la barra izquierda; la cancha se ve alrededor.
-               width:auto anula el width:100% inline para que los márgenes laterales
-               no desborden. */
+            /* Card FLOTANTE como el panel de Tareas. En vez de margen en el card
+               (que peleaba con el flex + width:100% inline), ponemos PADDING en
+               el overlay → inserta el card por los 4 lados, garantizado. */
+            .widget-overlay.is-page-mode {
+                padding: 16px !important;
+                box-sizing: border-box !important;
+            }
             .widget-overlay.is-page-mode .cal-card.cal-card--page {
-                /* El overlay padre es flex: con flex:1 + margin el card respeta
-                   márgenes en los 4 lados (el width:100% inline los desbordaba). */
                 flex: 1 1 auto !important;
-                margin: 14px !important;
+                margin: 0 !important;
                 width: auto !important;
                 max-width: none !important;
                 border-radius: 18px !important;
-                height: calc(100vh - 28px) !important;
-                min-height: calc(100vh - 28px) !important;
-                max-height: calc(100vh - 28px) !important;
+                height: calc(100vh - 32px) !important;
+                min-height: calc(100vh - 32px) !important;
+                max-height: calc(100vh - 32px) !important;
                 padding: 0 0 14px !important;
                 overflow: hidden !important;
+                box-shadow: 0 18px 50px rgba(0, 15, 8, 0.45) !important;
             }
             /* La cadena flex hasta el grid debe propagar altura definida */
             .widget-overlay.is-page-mode .cal-card--page .cal-page-body { min-height: 0 !important; }
