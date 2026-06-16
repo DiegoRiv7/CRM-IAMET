@@ -2,8 +2,22 @@
      SECCION PROYECTOS (inline, como tareas)
      ═══════════════════════════════════════════════════════════════ -->
 <style>
-/* El board del kanban de proyectos hereda .crm-kanban-board (igual que opps) */
-#proyKanbanBoard { padding-top:8px; }
+/* ── Espaciado como Oportunidades: empezar más arriba y con menos margen ──
+   El listado de Proyectos tenía un toolbar alto (min-height:48 + padding 14) y
+   el board envuelto con padding lateral de 24px, lo que empujaba el kanban
+   hacia abajo y adentro. Lo apretamos AGRESIVO con !important (los valores
+   inline del HTML solo se vencen con !important). */
+#proyectosSection #proyListTopbar {
+  padding: 6px 14px !important;
+  min-height: 0 !important;
+  margin-bottom: 0 !important;
+}
+#proyTabPrograma { padding: 0 10px 10px !important; }
+/* El board pegado al toolbar y más alto (menos recorte inferior). */
+#proyKanbanBoard {
+  padding-top: 2px !important;
+  height: calc(100vh - 104px) !important;
+}
 /* Columnas IDÉNTICAS a las de Oportunidades (mismo glass oscuro sutil del tema
    mundial). Lo forzamos explícito porque algo en la cascada le estaba dejando
    a Proyectos el borde gris claro pronunciado de la base (#E2E8F0) en vez del
