@@ -2252,12 +2252,18 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
             var refreshSoon = function () {
                 _pollStaleReads = 0;  // volver a polling rápido
                 clearTimeout(_pollTimer);
-                setTimeout(function () { _pollForToasts(); _armPoll(); }, 300);
+                // _load() (recarga completa) y NO _pollForToasts(): este último
+                // solo detecta notifs NUEVAS (id > maxVisto) y nunca refleja
+                // BORRADOS. Al completar/aplazar una tarea el backend borra su
+                // notif de vencimiento; solo _load() la quita de la vista en
+                // tiempo real. _armPoll reanuda el polling de toasts normal.
+                setTimeout(function () { _load(); _armPoll(); }, 300);
             };
             window.crmDataBus.on('notificacion', refreshSoon);
-            // También en cambios que producen notificaciones — tareas, opps, etc.
+            // También en cambios que producen/retiran notificaciones.
             window.crmDataBus.on('tarea', refreshSoon);
             window.crmDataBus.on('tarea-opp', refreshSoon);
+            window.crmDataBus.on('actividad', refreshSoon);
             window.crmDataBus.on('oportunidad', refreshSoon);
         }
 
