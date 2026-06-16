@@ -785,6 +785,33 @@
         };
     }
 
+    /* ─── Ajuste de altura del Mes (bulletproof) ───
+       FullCalendar v6 con height:'100%' es poco confiable al cambiar la
+       opción en vivo (no llena). Medimos el alto real del contenedor en px
+       y se lo damos a FC + expandRows, así las filas llenan exactamente. */
+    function _calFitMonthHeight() {
+        if (!_globalCalendar || _calViewMode !== 'month') return;
+        var root = document.getElementById('fullCalendarRoot');
+        if (!root) return;
+        var h = root.clientHeight;
+        if (h && h > 120) {
+            try {
+                _globalCalendar.setOption('expandRows', true);
+                _globalCalendar.setOption('height', h);
+                _globalCalendar.updateSize();
+            } catch (e) {}
+        }
+    }
+    // Re-ajustar al cambiar el tamaño de la ventana (una sola vez).
+    if (!window._calMonthResizeBound) {
+        window._calMonthResizeBound = true;
+        var _calRzT = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(_calRzT);
+            _calRzT = setTimeout(_calFitMonthHeight, 150);
+        });
+    }
+
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
         var ov = document.getElementById('widgetCalendarioMaster');
@@ -951,7 +978,6 @@
         // no aplican a instancias viejas sin re-setear las opciones aquí.
         if (_globalCalendar) {
             try {
-                _globalCalendar.setOption('height', '100%');
                 _globalCalendar.setOption('expandRows', true);
                 _globalCalendar.setOption('eventContent', _calMonthEvContent);
             } catch (e) {}
@@ -959,6 +985,9 @@
 
         setTimeout(function () {
             if (_globalCalendar) { _globalCalendar.today(); _globalCalendar.render(); }
+            // Ajuste de altura en px tras render (FC height:'100%' no llena fiable).
+            requestAnimationFrame(_calFitMonthHeight);
+            setTimeout(_calFitMonthHeight, 260);
             calUpdateNavTitle();
             // Restaurar la última vista usada (mes/semana/día) si difiere de la actual
             try {
@@ -1104,6 +1133,8 @@
                 else if (prevMode === 'day' && _calCurrentDay) targetDate = _calCurrentDay;
                 if (targetDate) _globalCalendar.gotoDate(targetDate);
                 _globalCalendar.render();
+                requestAnimationFrame(_calFitMonthHeight);
+                setTimeout(_calFitMonthHeight, 260);
             }
         } else if (mode === 'week') {
             weekRoot.style.display = 'flex';
