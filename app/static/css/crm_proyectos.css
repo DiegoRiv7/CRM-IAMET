@@ -1259,12 +1259,39 @@
   flex-shrink: 0;
 }
 
-/* Variante minimal: layout vertical (título arriba, meta line abajo). */
+/* Variante minimal: tarjeta blanca estilo Apple (título arriba, meta abajo).
+   Antes el título/meta flotaban transparentes sobre el fondo (en mundial se
+   leía mal). Ahora viven dentro de una card limpia, consistente con los panes. */
 .proy-v3-header.proy-v3-header--minimal {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 30px rgba(15, 23, 42, 0.06);
 }
-.proy-v3-header--minimal .proy-v3-name { margin-bottom: 8px; }
+.proy-v3-header--minimal .proy-v3-name { margin-bottom: 10px; }
+
+/* Chip de oportunidad en la esquina superior derecha (junto a los avatares). */
+.proy-v3-opp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.proy-v3-opp-pill:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+.proy-v3-opp-pill svg { color: #2563eb; flex-shrink: 0; }
+.proy-v3-opp-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 .proy-v3-meta-line {
   display: flex;

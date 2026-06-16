@@ -772,26 +772,40 @@ body[data-theme="mundial"] .proy-v3-add-member:hover {
     color: #ffffff !important;
 }
 
-/* --- Header del proyecto (nombre + meta line) --- */
-body[data-theme="mundial"] .proy-v3-header {
-    background: transparent !important;
+/* --- Chip de oportunidad (esquina sup. derecha): glass como el toolbar --- */
+body[data-theme="mundial"] .proy-v3-opp-pill {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: rgba(255, 255, 255, 0.90) !important;
+}
+body[data-theme="mundial"] .proy-v3-opp-pill:hover {
+    background: rgba(255, 255, 255, 0.20) !important;
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] .proy-v3-opp-pill svg { color: rgba(255, 255, 255, 0.90) !important; }
+
+/* --- Header del proyecto (nombre + meta line): TARJETA BLANCA estilo Apple ---
+   Antes era transparente con texto blanco sobre el estadio (se leía mal). Ahora
+   es una card blanca, así que el texto vuelve a ser oscuro como en modo claro. */
+body[data-theme="mundial"] .proy-v3-header.proy-v3-header--minimal {
+    background: #ffffff !important;
 }
 body[data-theme="mundial"] .proy-v3-name {
-    color: #ffffff !important;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+    color: #0f172a !important;
+    text-shadow: none !important;
 }
 body[data-theme="mundial"] .proy-v3-meta-line {
-    color: rgba(255, 255, 255, 0.75) !important;
+    color: #64748b !important;
 }
 body[data-theme="mundial"] .proy-v3-meta-sep {
-    color: rgba(255, 255, 255, 0.40) !important;
+    color: #cbd5e1 !important;
 }
 body[data-theme="mundial"] .proy-v3-meta-cliente,
 body[data-theme="mundial"] .proy-v3-meta-fechas {
-    color: rgba(255, 255, 255, 0.80) !important;
+    color: #1e293b !important;
 }
 body[data-theme="mundial"] .proy-v3-rag-text {
-    color: #ffffff !important;
+    color: inherit !important;
 }
 
 /* --- KPI strip: SÓLIDO (legibilidad prioritaria) --- */

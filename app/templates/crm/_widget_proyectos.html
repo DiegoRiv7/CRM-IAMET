@@ -235,11 +235,8 @@
         <!-- Nombre del proyecto como breadcrumb clickable (también vuelve al
              listado). Lo rellena renderProjectOverview / proyectosVerDetalle. -->
         <button type="button" class="proy-v3-back proy-v3-crumb-name" id="proyV3CrumbName" onclick="proyectosVolverLista()" title="Volver al portafolio" style="background:transparent;border:none;cursor:pointer;font:inherit;color:inherit;padding:0;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Proyecto</button>
+        {% comment %} El chip de oportunidad se movió a la esquina superior derecha (junto a los avatares). Separador legacy oculto para no romper el JS que lo referencia. {% endcomment %}
         <span class="proy-v3-topbar-sep" aria-hidden="true" id="proyV3CrumbOppSep" style="display:none;">·</span>
-        <a href="#" class="proy-v3-opp-link" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)" title="Abrir oportunidad ligada">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <span id="proyDetailOppText">—</span>
-        </a>
         <!-- legacy ID hidden — ya no se muestra en el topbar -->
         <span id="proyV3ProjectId" style="display:none;"></span>
       </div>
@@ -293,6 +290,12 @@
       </div>
 
       <div class="proy-v3-topbar-right">
+        <!-- Oportunidad ligada — chip en la esquina superior derecha, antes de
+             los avatares. Clic abre la oportunidad. IDs intactos (JS los usa). -->
+        <a href="#" class="proy-v3-opp-pill" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)" title="Abrir oportunidad ligada">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span id="proyDetailOppText">—</span>
+        </a>
         <div class="proy-v3-avatars" id="proyV2AvatarStack"></div>
         <div class="proy-v3-add-member-wrap" style="position:relative;">
           <button class="proy-v3-add-member" type="button" aria-label="Agregar miembro" title="Agregar miembro" onclick="proyDetailAgregarMiembro(event)">
