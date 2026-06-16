@@ -72,7 +72,9 @@
 
     function _card(p) {
         var avance = Math.max(0, Math.min(100, parseInt(p.oportunidad_probabilidad || 0, 10) || 0));
-        var color = p.oportunidad_etapa_color || '#7C3AED';
+        // Todas las tarjetas de PROYECTO en morado (identidad visual de
+        // proyecto), sin importar la etapa de la oportunidad ligada.
+        var color = '#7C3AED';
         var etapa = p.oportunidad_etapa || (p.oportunidad_id ? 'Sin etapa' : 'Sin oportunidad');
         var marca = p.oportunidad_producto || '—';
         var monto = p.oportunidad_monto || 0;
@@ -81,7 +83,7 @@
         var oppNombre = p.oportunidad_nombre || '';
         var hasOpp = !!(oppId && oppNombre);
         return '<div class="crm-kanban-card crm-postit" data-proy-id="' + p.id + '" onclick="if(window.proyectosVerDetalle)proyectosVerDetalle(' + p.id + ')" style="cursor:pointer;">' +
-            '<div class="crm-postit-strip" style="background:' + color + ';"></div>' +
+            '<div class="crm-postit-strip" style="background:linear-gradient(180deg,#A78BFA 0%,#7C3AED 100%);"></div>' +
             '<div style="margin-bottom:12px;padding-right:8px;position:relative;z-index:1;">' +
                 '<h3 style="font-size:0.95rem;font-weight:700;color:#2563EB;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + _esc(p.nombre || 'Proyecto') + '</h3>' +
                 '<div style="font-size:0.8rem;font-weight:500;color:#6B7280;margin-top:2px;">' + _esc(cliente) + '</div>' +

@@ -9211,6 +9211,18 @@
         var _crmTaskEdits = {};
         var _crmTaskOriginal = {};
         var _crmTaskLastData = null;
+        // Cambios PENDIENTES de participantes/observadores (no se guardan hasta
+        // que el usuario da "Guardar"; "Cancelar" los descarta). add = usuarios
+        // por añadir {id,nombre,avatar_url}; remove = ids por quitar.
+        var _crmTaskInvPending = { participantes: { add: [], remove: [] }, observadores: { add: [], remove: [] } };
+        function _crmTaskResetInvPending() {
+            _crmTaskInvPending = { participantes: { add: [], remove: [] }, observadores: { add: [], remove: [] } };
+        }
+        function _crmTaskHasPendingInv() {
+            var p = _crmTaskInvPending;
+            return (p.participantes.add.length + p.participantes.remove.length +
+                    p.observadores.add.length + p.observadores.remove.length) > 0;
+        }
 
         function crmTaskShowSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
@@ -9220,43 +9232,15 @@
             var bar = document.getElementById('crmTaskSaveBar');
             if (bar) bar.style.display = 'none';
             _crmTaskEdits = {};
+            _crmTaskResetInvPending();
         }
 
         function crmTaskRenderEditUI(tarea) {
             _crmTaskLastData = tarea;
             crmTaskHideSaveBar();
 
-            function crmTaskRenderSbList(containerId, people, grupo, bgColor) {
-                var cont = document.getElementById(containerId);
-                if (!cont) return;
-                if (!people.length) {
-                    cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
-                    return;
-                }
-                var _curUid = _CRM_CONFIG.userId;
-                cont.innerHTML = people.map(function (p) {
-                    var avInner = p.avatar_url
-                        ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
-                        : crmTaskGetInitials(p.nombre);
-                    // Mostrar X (quitar) si:
-                    //   • el usuario actual tiene permiso pleno (creador/superuser), o
-                    //   • es ingeniero y el target es él mismo (quitarse).
-                    var canRemoveThis = _crmTaskCanEdit ||
-                        (_crmTaskIsIngeniero && p.id === _curUid);
-                    var rm = canRemoveThis
-                        ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + grupo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
-                        : '';
-                    return '<div class="crm-tw-sb-row" title="' + p.nombre + '">' +
-                        '<div class="crm-tw-sb-row-left">' +
-                            '<span style="width:22px;height:22px;border-radius:50%;background:' + bgColor + ';color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
-                            '<span class="crm-tw-sb-row-name">' + p.nombre + '</span>' +
-                        '</div>' +
-                        rm +
-                    '</div>';
-                }).join('');
-            }
-            crmTaskRenderSbList('crm-task-participantes-container', tarea.participantes || [], 'participantes', '#6366F1');
-            crmTaskRenderSbList('crm-task-observadores-container', tarea.observadores || [], 'observadores', '#8B5CF6');
+            _crmRenderInvList('participantes');
+            _crmRenderInvList('observadores');
 
             // Responsable: clickeable si tiene edición plena O si es ingeniero
             // que actualmente está asignado a la tarea (puede quitarse o cambiar).
@@ -9400,7 +9384,12 @@
                         var nombre = u.nombre_completo || u.nombre || u.username || ''; div.textContent = nombre;
                         div.addEventListener('mouseenter', function () { div.style.background = '#F3F4F6'; });
                         div.addEventListener('mouseleave', function () { div.style.background = ''; });
-                        div.addEventListener('click', function () {
+                        div.addEventListener('click', function (e) {
+                            // stopPropagation: el item es descendiente de respContainer
+                            // y abajo le re-asignamos respContainer.onclick = editar; sin
+                            // esto el mismo click burbujea y REABRE el buscador, así que
+                            // el nombre nuevo "no se mostraba" (volvía a la lista).
+                            if (e) { e.stopPropagation(); e.preventDefault(); }
                             _crmTaskEdits.asignado_a = u.id;
                             _crmTaskEdits.asignado_a_nombre = nombre;
                             _crmTaskEdits.asignado_a_avatar = u.avatar_url || null;
@@ -9423,6 +9412,49 @@
             buscarResp('');
         }
 
+        // Render de la lista de participantes/observadores fusionando los datos
+        // del server (_crmTaskLastData) con los cambios PENDIENTES (_crmTaskInvPending).
+        function _crmRenderInvList(tipo) {
+            var containerId = tipo === 'participantes' ? 'crm-task-participantes-container' : 'crm-task-observadores-container';
+            var bgColor = tipo === 'participantes' ? '#6366F1' : '#8B5CF6';
+            var cont = document.getElementById(containerId);
+            if (!cont) return;
+            var base = (_crmTaskLastData && _crmTaskLastData[tipo]) || [];
+            var pend = _crmTaskInvPending[tipo] || { add: [], remove: [] };
+            // efectivos = base (sin los marcados para quitar) + pendientes de añadir
+            var people = base.filter(function (p) { return pend.remove.indexOf(p.id) === -1; })
+                .map(function (p) { return { id: p.id, nombre: p.nombre, avatar_url: p.avatar_url, _pending: false }; });
+            pend.add.forEach(function (p) {
+                if (people.some(function (x) { return x.id === p.id; })) return;
+                people.push({ id: p.id, nombre: p.nombre, avatar_url: p.avatar_url, _pending: true });
+            });
+            if (!people.length) {
+                cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
+                return;
+            }
+            var _curUid = _CRM_CONFIG.userId;
+            cont.innerHTML = people.map(function (p) {
+                var avInner = p.avatar_url
+                    ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                    : crmTaskGetInitials(p.nombre);
+                // Quitar permitido si: permiso pleno, o ingeniero quitándose, o es un pendiente.
+                var canRemoveThis = _crmTaskCanEdit || (_crmTaskIsIngeniero && p.id === _curUid) || p._pending;
+                var rm = canRemoveThis
+                    ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + tipo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+                    : '';
+                var pendTag = p._pending
+                    ? '<span style="font-size:9px;font-weight:700;color:#0052D4;background:#E8F0FE;border-radius:4px;padding:1px 5px;margin-left:6px;flex-shrink:0;">nuevo</span>'
+                    : '';
+                return '<div class="crm-tw-sb-row" title="' + p.nombre + '"' + (p._pending ? ' style="opacity:0.92;"' : '') + '>' +
+                    '<div class="crm-tw-sb-row-left">' +
+                        '<span style="width:22px;height:22px;border-radius:50%;background:' + bgColor + ';color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
+                        '<span class="crm-tw-sb-row-name">' + p.nombre + '</span>' + pendTag +
+                    '</div>' +
+                    rm +
+                '</div>';
+            }).join('');
+        }
+
         function crmTaskAgregarInvolucrado(tipo) {
             var existing = document.getElementById('crmTaskInvSW'); if (existing) existing.remove();
             var cid = tipo === 'participantes' ? 'crm-task-participantes-container' : 'crm-task-observadores-container';
@@ -9442,10 +9474,20 @@
                         var nombre = u.nombre_completo || u.nombre || u.username || ''; div.textContent = nombre;
                         div.addEventListener('mouseenter', function () { div.style.background = '#F3F4F6'; });
                         div.addEventListener('mouseleave', function () { div.style.background = ''; });
-                        div.addEventListener('click', function () {
-                            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' }, body: JSON.stringify({ user_id: u.id, action: 'add', tipo: tipo }) })
-                                .then(function (r) { return r.json(); }).then(function (d) { wrap.remove(); if (d.success) { crmTaskVerDetalle(_crmCurrentTaskId); } else { showToast(d.error || 'Error', 'error'); } });
+                        div.addEventListener('click', function (e) {
+                            if (e) { e.stopPropagation(); e.preventDefault(); }
+                            // STAGED: no se guarda hasta "Guardar". Lo metemos a pendientes.
+                            var pend = _crmTaskInvPending[tipo];
+                            var ri = pend.remove.indexOf(u.id); if (ri !== -1) pend.remove.splice(ri, 1);
+                            var base = (_crmTaskLastData && _crmTaskLastData[tipo]) || [];
+                            var yaBase = base.some(function (x) { return x.id === u.id; });
+                            var yaPend = pend.add.some(function (x) { return x.id === u.id; });
+                            if (!yaBase && !yaPend) {
+                                pend.add.push({ id: u.id, nombre: nombre, avatar_url: u.avatar_url || null });
+                            }
+                            wrap.remove();
+                            crmTaskShowSaveBar();
+                            _crmRenderInvList(tipo);
                         });
                         dd.appendChild(div);
                     }); dd.style.display = 'block';
@@ -9457,12 +9499,66 @@
         }
 
         function crmTaskRemoverInvolucrado(tipo, userId) {
-            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' }, body: JSON.stringify({ user_id: userId, action: 'remove', tipo: tipo }) })
-                .then(function (r) { return r.json(); }).then(function (d) { if (d.success) { crmTaskVerDetalle(_crmCurrentTaskId); } else { showToast(d.error || 'Error', 'error'); } });
+            // STAGED: si era un pendiente de añadir lo quitamos de add; si es uno
+            // existente lo marcamos para quitar. Nada se guarda hasta "Guardar".
+            var pend = _crmTaskInvPending[tipo]; if (!pend) return;
+            var idx = -1;
+            for (var i = 0; i < pend.add.length; i++) { if (pend.add[i].id === userId) { idx = i; break; } }
+            if (idx !== -1) { pend.add.splice(idx, 1); }
+            else if (pend.remove.indexOf(userId) === -1) { pend.remove.push(userId); }
+            crmTaskShowSaveBar();
+            _crmRenderInvList(tipo);
+        }
+
+        // Confirma en el server los cambios pendientes de participantes/observadores.
+        function _crmCommitInvolucrados(csrf) {
+            var calls = [];
+            ['participantes', 'observadores'].forEach(function (tipo) {
+                var pend = _crmTaskInvPending[tipo];
+                pend.add.forEach(function (p) {
+                    calls.push(fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify({ user_id: p.id, action: 'add', tipo: tipo }) }));
+                });
+                pend.remove.forEach(function (id) {
+                    calls.push(fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify({ user_id: id, action: 'remove', tipo: tipo }) }));
+                });
+            });
+            return Promise.all(calls);
+        }
+
+        // Guardado cuando hay cambios de involucrados: confirma involucrados +
+        // (opcional) campos, y re-carga el detalle para reflejar todo consistente.
+        function _crmTaskDoGuardarConInvolucrados(razon) {
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = csrfEl ? csrfEl.value : '';
+            var fieldKeys = ['titulo', 'descripcion', 'fecha_limite', 'asignado_a', 'cliente_id'];
+            var hasFields = fieldKeys.some(function (k) { return k in _crmTaskEdits; });
+            _crmCommitInvolucrados(csrf).then(function () {
+                if (!hasFields) return { success: true };
+                var payload = {};
+                if (_crmTaskEdits.titulo) payload.titulo = _crmTaskEdits.titulo;
+                if ('descripcion' in _crmTaskEdits) payload.descripcion = _crmTaskEdits.descripcion;
+                if ('fecha_limite' in _crmTaskEdits) payload.fecha_limite = _crmTaskEdits.fecha_limite;
+                if ('asignado_a' in _crmTaskEdits) payload.asignado_a = _crmTaskEdits.asignado_a;
+                if ('cliente_id' in _crmTaskEdits) payload.cliente_id = _crmTaskEdits.cliente_id;
+                if (razon) payload.razon_reprogramacion = razon;
+                return fetch('/app/api/tarea/' + _crmCurrentTaskId + '/actualizar/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify(payload) }).then(function (r) { return r.json(); });
+            }).then(function (d) {
+                if (d && d.success) {
+                    crmTaskHideSaveBar();
+                    showToast('Tarea actualizada', 'success');
+                    crmTaskVerDetalle(_crmCurrentTaskId);  // re-fetch: refleja involucrados + campos
+                    if (window._crmTareasMode) recargarTareasCRM();
+                    if (typeof notifLoad === 'function') notifLoad();
+                } else {
+                    showToast((d && d.error) || 'Error al guardar', 'error');
+                }
+            }).catch(function () { showToast('Error de conexion', 'error'); });
         }
 
         function _crmTaskDoGuardar(razon) {
+            // Si hay cambios pendientes de participantes/observadores, usamos el
+            // flujo que los confirma y re-carga el detalle (consistente).
+            if (_crmTaskHasPendingInv()) { _crmTaskDoGuardarConInvolucrados(razon); return; }
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
             var payload = {};
             if (_crmTaskEdits.titulo) payload.titulo = _crmTaskEdits.titulo;
@@ -9501,7 +9597,9 @@
 
         function crmTaskGuardar() {
             if (!_crmCurrentTaskId) return;
-            if (Object.keys(_crmTaskEdits).length === 0) return;
+            // Nada que guardar si no hay ni ediciones de campos ni cambios de
+            // participantes/observadores pendientes.
+            if (Object.keys(_crmTaskEdits).length === 0 && !_crmTaskHasPendingInv()) return;
 
             // Si el responsable (no creador, no superuser) cambia la fecha_limite, pedir razón
             var curId = _CRM_CONFIG.userId;
