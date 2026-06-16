@@ -140,7 +140,9 @@
     // created_at del proyecto.
     var _MESES_NOM = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     var _pNow = new Date();
-    var _proyPeriod = { meses: [_pNow.getMonth() + 1], anios: [_pNow.getFullYear()] };
+    // Default: TODO el año actual (todos los meses). meses:[] = todos. Así el
+    // tablero no se ve casi vacío; al entrar un año nuevo arranca en ese año.
+    var _proyPeriod = { meses: [], anios: [_pNow.getFullYear()] };
     var _proyPeriodTemp = { meses: [], anios: [] };
 
     function _applyFilters(projects) {
@@ -461,7 +463,8 @@
             });
         });
         m.querySelector('[data-pact="reset"]').addEventListener('click', function () {
-            t.meses = [_pNow.getMonth() + 1]; t.anios = [_pNow.getFullYear()];
+            // Restablecer = default: todos los meses del año actual.
+            t.meses = []; t.anios = [_pNow.getFullYear()];
             _proyPeriod = { meses: t.meses.slice(), anios: t.anios.slice() };
             _updatePeriodPill(); _periodClose(); window.proyKanbanRender(_lastProjects);
         });
