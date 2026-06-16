@@ -83,6 +83,27 @@
 .pf-clear:hover { background:#F8FAFC; }
 .pf-apply { flex:1.4; padding:9px; border:none; border-radius:10px; background:#2563EB; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; }
 .pf-apply:hover { opacity:.9; }
+/* ── Popover de Periodo (Mes/Año), estilo Oportunidades ── */
+#proyPeriodMenu {
+  right:0; left:auto; min-width:340px; padding:8px;
+  background:#ffffff !important; border:1px solid #E5E7EB !important;
+  box-shadow:0 16px 44px rgba(15,23,42,0.20) !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  z-index:10600 !important;
+}
+.pp-cols { display:flex; gap:6px; }
+.pp-col { flex:1; min-width:0; }
+.pp-col-head { font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#94A3B8; padding:6px 10px 6px; }
+.pp-list { max-height:248px; overflow-y:auto; }
+.pp-opt { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; text-align:left; border:none; background:transparent; padding:7px 10px; border-radius:8px; font-size:0.82rem; font-weight:500; color:#1C1C1E; cursor:pointer; transition:background .1s; }
+.pp-opt:hover { background:#F4F6F9; }
+.pp-opt.on { background:#EAF1FE; color:#1D4ED8; font-weight:600; }
+.pp-ck { flex:0 0 auto; }
+.pp-actions { display:flex; gap:8px; padding:10px 4px 2px; border-top:1px solid #F1F5F9; margin-top:6px; }
+.pp-reset { flex:1; padding:9px; border:1px solid #E2E8F0; border-radius:10px; background:#fff; color:#475569; font-size:0.82rem; font-weight:600; cursor:pointer; }
+.pp-reset:hover { background:#F8FAFC; }
+.pp-apply { flex:1.5; padding:9px; border:none; border-radius:10px; background:#2563EB; color:#fff; font-size:0.82rem; font-weight:700; cursor:pointer; }
+.pp-apply:hover { opacity:.9; }
 </style>
 <div class="proyectos-section" id="proyectosSection">
 
@@ -127,6 +148,16 @@
     </div>
 
     <div class="proy-topbar-side proy-topbar-right" id="proyTopbarRight">
+      <!-- Periodo (Mes · Año) — multi-select como Oportunidades. Default: mes y
+           año actuales. El menú lo arma proyectos_v2.js (proyPeriod*). -->
+      <div class="proy-facet-wrap" style="position:relative;">
+        <button type="button" class="proy-facet-btn" id="proyPeriodBtn" onclick="proyPeriodToggle(event)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span id="proyPeriodLabel">Periodo</span>
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="proy-facet-menu" id="proyPeriodMenu" style="display:none;"></div>
+      </div>
       <div class="proy-search-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
           <circle cx="11" cy="11" r="7"/>

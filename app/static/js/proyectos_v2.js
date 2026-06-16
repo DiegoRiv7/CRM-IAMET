@@ -134,6 +134,15 @@
     var _proyFilters = { etapa: [], cliente: [], montoMin: null, montoMax: null, fDesde: '', fHasta: '' };
     var _lastProjects = [];
 
+    // ── Periodo (Mes/Año), como Oportunidades ──────────────────────────
+    // Default: mes y año ACTUALES (se recalcula en cada carga → al entrar un
+    // mes nuevo, arranca en ese mes). Arrays vacíos = "todos". Filtra por
+    // created_at del proyecto.
+    var _MESES_NOM = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    var _pNow = new Date();
+    var _proyPeriod = { meses: [_pNow.getMonth() + 1], anios: [_pNow.getFullYear()] };
+    var _proyPeriodTemp = { meses: [], anios: [] };
+
     function _applyFilters(projects) {
         var f = _proyFilters;
         return projects.filter(function (p) {
@@ -146,6 +155,16 @@
                 var d = String(p.created_at || '').slice(0, 10);
                 if (f.fDesde && d < f.fDesde) return false;
                 if (f.fHasta && d > f.fHasta) return false;
+            }
+            // Periodo Mes/Año por created_at. Proyectos sin fecha no se ocultan.
+            if (_proyPeriod.meses.length || _proyPeriod.anios.length) {
+                var pd = String(p.created_at || '').slice(0, 10);
+                if (pd) {
+                    var yr = parseInt(pd.slice(0, 4), 10);
+                    var mo = parseInt(pd.slice(5, 7), 10);
+                    if (_proyPeriod.meses.length && _proyPeriod.meses.indexOf(mo) === -1) return false;
+                    if (_proyPeriod.anios.length && _proyPeriod.anios.indexOf(yr) === -1) return false;
+                }
             }
             return true;
         });
@@ -384,4 +403,91 @@
         if (lbl) lbl.textContent = n ? ('Filtro · ' + n) : 'Filtro';
         if (btn) btn.classList.toggle('active', n > 0);
     }
+
+    // ── Periodo (Mes/Año): pill + popover multi-select estilo Oportunidades ──
+    function _periodLabel() {
+        var m = _proyPeriod.meses, a = _proyPeriod.anios;
+        var ml = !m.length ? 'Todos' : (m.length === 1 ? _MESES_NOM[m[0] - 1] : (m.length + ' meses'));
+        var al = !a.length ? 'Todos' : (a.length === 1 ? String(a[0]) : (a.length + ' años'));
+        return ml + ' · ' + al;
+    }
+    function _updatePeriodPill() {
+        var lbl = document.getElementById('proyPeriodLabel');
+        if (lbl) lbl.textContent = _periodLabel();
+        var btn = document.getElementById('proyPeriodBtn');
+        if (btn) btn.classList.toggle('active', !!(_proyPeriod.meses.length || _proyPeriod.anios.length));
+    }
+    function _periodYears() {
+        var cur = _pNow.getFullYear(), ys = [];
+        for (var y = 2024; y <= cur + 1; y++) ys.push(y);
+        return ys;
+    }
+    function _periodClose() { var m = document.getElementById('proyPeriodMenu'); if (m) m.style.display = 'none'; }
+    function _periodRender() {
+        var m = document.getElementById('proyPeriodMenu'); if (!m) return;
+        if (!m._pBound) { m.addEventListener('click', function (e) { e.stopPropagation(); }); m._pBound = true; }
+        var t = _proyPeriodTemp;
+        function ck(on) { return on ? '<svg class="pp-ck" width="15" height="15" fill="none" stroke="#2563EB" stroke-width="2.6" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' : ''; }
+        var mesesHtml = '<button type="button" class="pp-opt' + (!t.meses.length ? ' on' : '') + '" data-pm="0">Todos los meses' + ck(!t.meses.length) + '</button>';
+        _MESES_NOM.forEach(function (nom, i) {
+            var on = t.meses.indexOf(i + 1) !== -1;
+            mesesHtml += '<button type="button" class="pp-opt' + (on ? ' on' : '') + '" data-pm="' + (i + 1) + '">' + nom + ck(on) + '</button>';
+        });
+        var aniosHtml = '<button type="button" class="pp-opt' + (!t.anios.length ? ' on' : '') + '" data-pa="0">Todos los años' + ck(!t.anios.length) + '</button>';
+        _periodYears().forEach(function (y) {
+            var on = t.anios.indexOf(y) !== -1;
+            aniosHtml += '<button type="button" class="pp-opt' + (on ? ' on' : '') + '" data-pa="' + y + '">' + y + ck(on) + '</button>';
+        });
+        m.innerHTML =
+            '<div class="pp-cols">' +
+                '<div class="pp-col"><div class="pp-col-head">Meses</div><div class="pp-list">' + mesesHtml + '</div></div>' +
+                '<div class="pp-col"><div class="pp-col-head">Años</div><div class="pp-list">' + aniosHtml + '</div></div>' +
+            '</div>' +
+            '<div class="pp-actions"><button type="button" class="pp-reset" data-pact="reset">Restablecer</button><button type="button" class="pp-apply" data-pact="apply">Aplicar</button></div>';
+        m.querySelectorAll('[data-pm]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var v = parseInt(b.getAttribute('data-pm'), 10);
+                if (v === 0) { t.meses = []; }
+                else { var ix = t.meses.indexOf(v); if (ix === -1) t.meses.push(v); else t.meses.splice(ix, 1); }
+                _periodRender();
+            });
+        });
+        m.querySelectorAll('[data-pa]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var v = parseInt(b.getAttribute('data-pa'), 10);
+                if (v === 0) { t.anios = []; }
+                else { var ix = t.anios.indexOf(v); if (ix === -1) t.anios.push(v); else t.anios.splice(ix, 1); }
+                _periodRender();
+            });
+        });
+        m.querySelector('[data-pact="reset"]').addEventListener('click', function () {
+            t.meses = [_pNow.getMonth() + 1]; t.anios = [_pNow.getFullYear()];
+            _proyPeriod = { meses: t.meses.slice(), anios: t.anios.slice() };
+            _updatePeriodPill(); _periodClose(); window.proyKanbanRender(_lastProjects);
+        });
+        m.querySelector('[data-pact="apply"]').addEventListener('click', function () {
+            _proyPeriod = { meses: t.meses.slice(), anios: t.anios.slice() };
+            _updatePeriodPill(); _periodClose(); window.proyKanbanRender(_lastProjects);
+        });
+    }
+    window.proyPeriodToggle = function (e) {
+        if (e) e.stopPropagation();
+        var m = document.getElementById('proyPeriodMenu'); if (!m) return;
+        var fm = document.getElementById('proyFilterMenu'); if (fm) fm.style.display = 'none';
+        var sm = document.getElementById('proySortMenu'); if (sm) sm.style.display = 'none';
+        if (m.style.display === 'block') { m.style.display = 'none'; return; }
+        _proyPeriodTemp = { meses: _proyPeriod.meses.slice(), anios: _proyPeriod.anios.slice() };
+        _periodRender();
+        m.style.display = 'block';
+    };
+    // Cerrar el popover al hacer click afuera.
+    document.addEventListener('click', function (e) {
+        var m = document.getElementById('proyPeriodMenu');
+        if (!m || m.style.display !== 'block') return;
+        var btn = document.getElementById('proyPeriodBtn');
+        if (!m.contains(e.target) && !(btn && btn.contains(e.target))) m.style.display = 'none';
+    });
+    // Pintar el label inicial (mes·año actual).
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _updatePeriodPill);
+    else _updatePeriodPill();
 })();
