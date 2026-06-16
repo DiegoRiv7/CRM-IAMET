@@ -622,10 +622,10 @@ y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
 }
 .nd-shell {
     display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;
-    background: linear-gradient(180deg, rgba(255,255,255,0.52), rgba(244,247,252,0.46));
-    backdrop-filter: blur(44px) saturate(190%);
-    -webkit-backdrop-filter: blur(44px) saturate(190%);
-    border: 1px solid rgba(255,255,255,0.6);
+    /* SÓLIDO (igual que Modo Ligero) — sin translucidez ni blur: no se ve la
+       página detrás y no hay "pop" de color al animar. Más liviano también. */
+    background: #F4F6FA;
+    border: 1px solid rgba(15,23,42,0.10);
     border-radius: 26px;
     box-shadow: 0 28px 80px rgba(15,23,42,0.28), 0 8px 24px rgba(15,23,42,0.14);
 }
@@ -641,14 +641,10 @@ y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
 .nd-drawer:not(.ww-windowed).open .nd-shell { transform: translateX(0); }
 body.ww-lite .nd-shell { backdrop-filter: none; -webkit-backdrop-filter: none; background: #F4F6FA; }
 
-/* Mientras ENTRA o SALE, el panel se anima SÓLIDO (sin blur): mover un
-   backdrop-filter blur(44px) re-muestrea el fondo cada frame y se siente
-   pesado. Animamos un panel liso (barato) y el vidrio vuelve al quedar
-   quieto. En Modo Ligero ya es sólido, así que no cambia nada. */
+/* Durante la animación, promover a su capa (will-change). El panel ya es
+   sólido siempre, así que no hay cambio de color de entrada/salida. */
 .nd-drawer.nd-sliding .nd-shell {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(247, 249, 252, 0.98);
+    background: #F4F6FA;
     will-change: transform;
 }
 
@@ -670,10 +666,10 @@ body.ww-lite .nd-shell { backdrop-filter: none; -webkit-backdrop-filter: none; b
 /* En modo ventana (más ancho) los chips van centrados. */
 .nd-drawer.ww-windowed .nd-chips { justify-content: center; }
 .nd-chip {
-    flex: 0 0 auto; background: rgba(255,255,255,0.94); border: 1px solid rgba(15,23,42,0.07);
+    flex: 0 0 auto; background: #fff; border: 1px solid rgba(15,23,42,0.07);
     color: #475569; padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
     cursor: pointer; white-space: nowrap; transition: all .15s; font-family: inherit;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.7);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.08);
 }
 .nd-chip:hover { background: #fff; color: #1C1C1E; box-shadow: 0 4px 12px rgba(15,23,42,0.13); }
 .nd-chip.active {
@@ -700,15 +696,14 @@ body.ww-lite .nd-chip.active { background: #111317; box-shadow: 0 2px 8px rgba(1
 .nd-card {
     display: flex; align-items: flex-start; gap: 12px;
     padding: 13px 14px; border-radius: 20px; cursor: pointer;
-    background: rgba(255,255,255,0.52); margin-bottom: 12px;
-    border: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 6px 22px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
-    -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+    background: #fff; margin-bottom: 12px;
+    border: 1px solid rgba(15,23,42,0.06);
+    box-shadow: 0 6px 22px rgba(15,23,42,0.10);
     transition: background .14s, transform .08s, box-shadow .14s;
 }
-.nd-card:hover { background: rgba(255,255,255,0.78); box-shadow: 0 10px 28px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.8); }
+.nd-card:hover { background: #fff; box-shadow: 0 10px 28px rgba(15,23,42,0.14); }
 .nd-card:active { transform: scale(0.99); }
-.nd-card.nd-unread { background: rgba(255,255,255,0.72); }
+.nd-card.nd-unread { background: #fff; }
 body.ww-lite .nd-card { backdrop-filter: none; -webkit-backdrop-filter: none; background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,0.08); }
 .nd-ic { width: 36px; height: 36px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
 .nd-ic svg { width: 17px; height: 17px; }
@@ -736,55 +731,44 @@ body.ww-lite .nd-card { backdrop-filter: none; -webkit-backdrop-filter: none; ba
 .nd-stack { margin-bottom: 12px; }
 .nd-stack-head {
     display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px;
-    border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.52);
-    border: 1px solid rgba(255,255,255,0.6); position: relative;
-    box-shadow: 0 6px 22px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
-    -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+    border-radius: 20px; cursor: pointer; background: #fff;
+    border: 1px solid rgba(15,23,42,0.06); position: relative;
+    box-shadow: 0 6px 22px rgba(15,23,42,0.10);
     transition: background .14s, box-shadow .14s;
 }
-.nd-stack-head:hover { background: rgba(255,255,255,0.78); box-shadow: 0 10px 28px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.8); }
-.nd-stack.nd-unread .nd-stack-head { background: rgba(255,255,255,0.72); }
-body.ww-lite .nd-stack-head { backdrop-filter: none; -webkit-backdrop-filter: none; background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,0.08); }
+.nd-stack-head:hover { background: #fff; box-shadow: 0 10px 28px rgba(15,23,42,0.14); }
+.nd-stack.nd-unread .nd-stack-head { background: #fff; }
 /* efecto pila: dos láminas escalonadas debajo cuando está colapsado */
 .nd-stack:not(.open) .nd-stack-head::before,
 .nd-stack:not(.open) .nd-stack-head::after {
     content: ''; position: absolute; left: 10px; right: 10px; bottom: -5px; height: 14px;
-    background: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.5);
+    background: #fff; border: 1px solid rgba(15,23,42,0.05);
     border-radius: 0 0 18px 18px; z-index: -1;
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
 .nd-stack:not(.open) .nd-stack-head::after { left: 16px; right: 16px; bottom: -10px; opacity: .6; }
-body.ww-lite .nd-stack:not(.open) .nd-stack-head::before,
-body.ww-lite .nd-stack:not(.open) .nd-stack-head::after { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .nd-chev { color: #94A3B8; transition: transform .18s; flex: 0 0 auto; }
 .nd-stack.open .nd-chev { transform: rotate(180deg); }
-/* Al expandir, los sub-items van dentro de un panel frosted para que NO se
-   pierdan con el fondo: cada uno es su propia tarjetita de vidrio. */
+/* Al expandir, los sub-items van en un panel sólido (igual que Modo Ligero). */
 .nd-stack-items { display: none; }
 .nd-stack.open .nd-stack-items {
     display: block; margin-top: 8px; padding: 7px 6px;
-    background: rgba(255,255,255,0.10); border-radius: 18px;
-    border: 1px solid rgba(255,255,255,0.30);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    background: rgba(241,243,247,0.9); border-radius: 18px;
+    border: 1px solid rgba(15,23,42,0.05);
 }
-/* sub-tarjetas más SÓLIDAS para que NO se pierdan sobre el panel translúcido */
 .nd-stack-items .nd-card {
-    background: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.85);
-    box-shadow: 0 3px 12px rgba(15,23,42,0.10); margin-bottom: 7px;
+    background: #fff; border: 1px solid rgba(15,23,42,0.06);
+    box-shadow: 0 3px 12px rgba(15,23,42,0.08); margin-bottom: 7px;
     padding: 10px 11px; border-radius: 14px;
-    -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .nd-stack-items .nd-card:last-child { margin-bottom: 0; }
-.nd-stack-items .nd-card:hover { background: rgba(255,255,255,0.9); }
-body.ww-lite .nd-stack.open .nd-stack-items { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(241,243,247,0.9); }
+.nd-stack-items .nd-card:hover { background: #fff; }
 body.ww-lite .nd-stack-items .nd-card { background: #fff; }
 
-/* Preview al pasar el cursor — popover de vidrio a la izquierda del cajón */
+/* Preview al pasar el cursor — popover sólido a la izquierda del cajón */
 .nd-preview {
     position: fixed; z-index: 10720; width: 320px; max-width: 42vw;
-    background: rgba(255,255,255,0.9);
-    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.7); border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(15,23,42,0.08); border-radius: 16px;
     box-shadow: 0 18px 50px rgba(15,23,42,0.22);
     padding: 14px 16px; opacity: 0; transform: translateX(8px); pointer-events: none;
     transition: opacity .16s ease, transform .16s ease;
@@ -793,7 +777,6 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
 .nd-preview-title { font-size: 13.5px; font-weight: 700; color: #0F172A; margin-bottom: 6px; line-height: 1.3; }
 .nd-preview-msg { font-size: 12.5px; color: #334155; line-height: 1.5; white-space: normal; }
 .nd-preview-meta { margin-top: 10px; font-size: 11px; color: #94A3B8; }
-body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none; background: #fff; }
 
 .nd-empty { text-align: center; color: #94A3B8; padding: 64px 20px; font-size: 14px; font-weight: 600; }
 .nd-empty svg { display: block; margin: 0 auto 12px; }
