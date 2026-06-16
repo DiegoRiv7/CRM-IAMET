@@ -446,6 +446,40 @@
             .cmd-more{ font-size:11px; font-weight:600; color:#8b9099; padding:1px 6px; text-align:left; background:none; border:none; cursor:pointer; }
             .cmd-more:hover{ color:#0a74f0; }
 
+            /* ═══ SEMANA — diseño Claude Design (.cwd-*), colores nuestros ═══ */
+            #calWeekViewRoot { font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif; }
+            .cwd-week{ display:flex; flex-direction:column; height:100%; }
+            .cwd-colhead{ display:grid; grid-template-columns:54px repeat(7,1fr); border-bottom:1px solid rgba(20,30,55,.08); flex-shrink:0; }
+            .cwd-dh{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 0 8px; }
+            .cwd-dh-name{ font-size:11px; font-weight:700; color:#8b9099; letter-spacing:.3px; text-transform:uppercase; }
+            .cwd-dh-num{ font-size:17px; font-weight:600; color:#3b3f46; width:30px; height:30px; display:grid; place-items:center; border-radius:50%; }
+            .cwd-dh-num.on{ background:#00a86b; color:#fff; box-shadow:0 3px 9px rgba(0,168,107,.4); }
+            .cwd-scroll{ flex:1; overflow-y:auto; min-height:0; }
+            .cwd-body{ display:flex; }
+            .cwd-gutter{ width:54px; flex-shrink:0; }
+            .cwd-gut-row{ position:relative; }
+            .cwd-gut-label{ position:absolute; top:-7px; right:8px; font-size:11px; font-weight:500; color:#aeb4bd; font-variant-numeric:tabular-nums; }
+            .cwd-cols{ flex:1; display:grid; grid-template-columns:repeat(7,1fr); position:relative; }
+            .cwd-grid-line{ position:absolute; left:0; right:0; height:1px; background:rgba(20,30,55,.08); }
+            .cwd-col{ position:relative; border-left:1px solid rgba(20,30,55,.08); cursor:pointer; }
+            .cwd-col.weekend{ background:rgba(10,116,240,.022); }
+            .cwd-col.today{ background:rgba(0,168,107,.045); }
+            .cwd-ev{ position:absolute; overflow:hidden; text-align:left; border-radius:7px; padding:4px 8px; display:flex; gap:6px; transition:filter .12s, box-shadow .12s; z-index:2; border:none; cursor:pointer; box-sizing:border-box; }
+            .cwd-ev.act{ box-shadow:0 2px 7px rgba(0,0,0,.18); }
+            .cwd-ev.act:hover{ filter:brightness(1.06); z-index:5; }
+            .cwd-ev.tarea:hover{ filter:brightness(0.98); z-index:5; }
+            .cwd-ev-bar{ position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px; }
+            .cwd-ev.tarea .cwd-ev-body{ padding-left:4px; }
+            .cwd-ev-body{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+            .cwd-ev-title{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px; }
+            .cwd-task-dot{ width:9px; height:9px; border-radius:50%; border:2px solid currentColor; flex-shrink:0; box-sizing:border-box; }
+            .cwd-ev-time{ font-size:11px; font-weight:500; opacity:.92; font-variant-numeric:tabular-nums; }
+            .cwd-ev.short{ padding:1px 8px; }
+            .cwd-ev.short .cwd-ev-body{ flex-direction:row; align-items:center; gap:6px; }
+            .cwd-now{ position:absolute; left:0; right:0; z-index:4; display:flex; align-items:center; pointer-events:none; }
+            .cwd-now-dot{ width:9px; height:9px; border-radius:50%; background:#00a86b; margin-left:-4px; box-shadow:0 0 0 3px rgba(0,168,107,.18); }
+            .cwd-now-rule{ flex:1; height:1.5px; background:#00a86b; }
+
             #fullCalendarRoot .fc-daygrid-more-link { font-size:0.72rem !important; font-weight:600 !important; color:var(--muted,#8b9099) !important; padding:1px 6px !important; border-radius:5px; display:inline-flex; align-items:center; }
             #fullCalendarRoot .fc-daygrid-more-link:hover { background:rgba(0,82,212,0.08); color:#0052D4 !important; }
             /* Popover nativo de FullCalendar (lista de "más eventos") */
@@ -1065,6 +1099,118 @@
         if (typeof window._calOpenFull === 'function') window._calOpenFull(id);
     };
 
+    /* ═══ SEMANA — render estilo Claude Design (reemplaza el render anterior) ═══ */
+    function _calWeekLayout(evs, START, END) {
+        var items = evs.map(function (e) {
+            var s = String(e.start || ''), en = String(e.end || '');
+            var sM = s.length >= 16 ? (parseInt(s.substring(11, 13), 10) * 60 + parseInt(s.substring(14, 16), 10)) : START * 60;
+            var eM = en.length >= 16 ? (parseInt(en.substring(11, 13), 10) * 60 + parseInt(en.substring(14, 16), 10)) : sM + 30;
+            sM = Math.max(START * 60, Math.min(sM, END * 60 - 5));
+            eM = Math.max(sM + 15, Math.min(eM, END * 60));
+            return { e: e, s: sM, en: eM };
+        }).sort(function (a, b) { return a.s - b.s || a.en - b.en; });
+        var res = [], cluster = [], clusterEnd = -1;
+        function flush() {
+            var colsArr = [];
+            cluster.forEach(function (it) {
+                var placed = false;
+                for (var c = 0; c < colsArr.length; c++) { if (colsArr[c][colsArr[c].length - 1].en <= it.s) { colsArr[c].push(it); it.col = c; placed = true; break; } }
+                if (!placed) { it.col = colsArr.length; colsArr.push([it]); }
+            });
+            var ncols = colsArr.length;
+            cluster.forEach(function (it) { res.push({ e: it.e, s: it.s, en: it.en, col: it.col, cols: ncols }); });
+            cluster = []; clusterEnd = -1;
+        }
+        items.forEach(function (it) { if (cluster.length && it.s >= clusterEnd) flush(); cluster.push(it); clusterEnd = Math.max(clusterEnd, it.en); });
+        if (cluster.length) flush();
+        return res;
+    }
+    function _calWeekEvHtml(p, START, HOUR_H) {
+        var e = p.e, ep = e.extendedProps || {};
+        var esTarea = String(e.id).indexOf('tarea-') === 0;
+        var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
+        var isComp = esTarea ? (ep.estado === 'completada') : ep.completada;
+        var color = e.color || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
+        if (color === '#8B5CF6') color = '#B45309';
+        var top = (p.s - START * 60) / 60 * HOUR_H;
+        var height = Math.max(22, (p.en - p.s) / 60 * HOUR_H - 3);
+        var gap = 4, wp = 100 / p.cols;
+        var left = 'calc(' + (p.col * wp) + '% + ' + (p.col === 0 ? 2 : gap / 2) + 'px)';
+        var width = 'calc(' + wp + '% - ' + (gap + (p.col === 0 ? 4 : 2)) + 'px)';
+        var short = (p.en - p.s) <= 30;
+        var safeId = String(e.id).replace(/'/g, '');
+        var title = woEscape(e.title || '');
+        var s = String(e.start || ''), en = String(e.end || '');
+        var t1 = s.length >= 16 ? (parseInt(s.substring(11, 13), 10) + ':' + s.substring(14, 16)) : '';
+        var t2 = en.length >= 16 ? (parseInt(en.substring(11, 13), 10) + ':' + en.substring(14, 16)) : '';
+        var op = isComp ? 'opacity:0.5;' : '', strike = isComp ? 'text-decoration:line-through;' : '';
+        var pos = 'top:' + top + 'px;height:' + height + 'px;left:' + left + ';width:' + width + ';';
+        if (esTarea) {
+            return '<button type="button" class="cwd-ev tarea' + (short ? ' short' : '') + '" data-evt-id="' + safeId + '" style="' + pos + 'background:' + color + '24;color:' + color + ';box-shadow:inset 0 0 0 1px ' + color + '4D;' + op + '" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">' +
+                '<span class="cwd-ev-bar" style="background:' + color + ';"></span>' +
+                '<span class="cwd-ev-body"><span class="cwd-ev-title" style="' + strike + '"><span class="cwd-task-dot"></span>' + title + '</span>' + (short ? '' : '<span class="cwd-ev-time">' + t1 + '</span>') + '</span></button>';
+        }
+        return '<button type="button" class="cwd-ev act' + (short ? ' short' : '') + '" data-evt-id="' + safeId + '" style="' + pos + 'background:' + color + ';color:#fff;' + op + '" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">' +
+            '<span class="cwd-ev-body"><span class="cwd-ev-title" style="' + strike + '">' + title + '</span>' + (short ? '' : '<span class="cwd-ev-time">' + t1 + (t2 ? (' – ' + t2) : '') + '</span>') + '</span></button>';
+    }
+    window._calWeekColClick = function (ev, dISO, START, HOUR_H) {
+        if (ev.target && ev.target.closest && ev.target.closest('.cwd-ev')) return;
+        var rect = ev.currentTarget.getBoundingClientRect();
+        var min = START * 60 + Math.floor((ev.clientY - rect.top) / HOUR_H * 60 / 30) * 30;
+        min = Math.max(START * 60, min);
+        var p = dISO.split('-');
+        var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), Math.floor(min / 60), min % 60);
+        if (typeof window.calGlobalAbrirCrearActividad === 'function') window.calGlobalAbrirCrearActividad(d);
+    };
+    function _calWeekBindHoverDesign() {
+        var root = document.getElementById('calWeekViewRoot'); if (!root) return;
+        root.querySelectorAll('.cwd-ev[data-evt-id]').forEach(function (el) {
+            if (el._calHoverBound) return; el._calHoverBound = true;
+            var id = el.getAttribute('data-evt-id');
+            el.addEventListener('mouseenter', function (e) {
+                clearTimeout(window._calHoverTimer);
+                var mx = e.clientX, my = e.clientY;
+                window._calHoverTimer = setTimeout(function () { _calShowHoverPreview(id, el, { mouseX: mx, mouseY: my }); }, 400);
+            });
+            el.addEventListener('mouseleave', function () { clearTimeout(window._calHoverTimer); if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview(); });
+        });
+    }
+    function _calRenderWeekDesign(weekStart) {
+        var root = document.getElementById('calWeekViewRoot'); if (!root) return;
+        if (!root.offsetWidth) { requestAnimationFrame(function () { _calRenderWeekDesign(weekStart); }); return; }
+        _calWeekStart = weekStart;
+        if (weekStart && (!_calCurrentDay || _calCurrentDay.getMonth() !== weekStart.getMonth() || _calCurrentDay.getFullYear() !== weekStart.getFullYear())) _calCurrentDay = new Date(weekStart);
+        if (typeof window._calRefreshUsersForMes === 'function') window._calRefreshUsersForMes();
+        var START = 7, END = 21, HOUR_H = 60;
+        var now = new Date(), todayISO = _calFmtDateISO(now);
+        var DOW = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+        var days = []; for (var i = 0; i < 7; i++) { var d = new Date(weekStart); d.setDate(d.getDate() + i); days.push(d); }
+        var allEvts = window._calAllEvents || _globalEvents || [];
+        var sel = document.getElementById('calUserFilter'); var fv = sel ? sel.value : 'all';
+        var filtered = (typeof _calFilterEventsForSelection === 'function') ? _calFilterEventsForSelection(allEvts, fv) : allEvts;
+        if (typeof _calApplyTypeFilters === 'function') filtered = _calApplyTypeFilters(filtered);
+        var totalH = (END - START) * HOUR_H;
+        var h = '<div class="cwd-week"><div class="cwd-colhead"><div class="cwd-corner"></div>';
+        days.forEach(function (d) { var t = _calFmtDateISO(d) === todayISO; h += '<div class="cwd-dh"><span class="cwd-dh-name">' + DOW[(d.getDay() + 6) % 7] + '</span><span class="cwd-dh-num' + (t ? ' on' : '') + '">' + d.getDate() + '</span></div>'; });
+        h += '</div><div class="cwd-scroll"><div class="cwd-body"><div class="cwd-gutter">';
+        for (var hr = START; hr <= END; hr++) { h += '<div class="cwd-gut-row" style="height:' + HOUR_H + 'px;"><span class="cwd-gut-label">' + hr + ':00</span></div>'; }
+        h += '</div><div class="cwd-cols" style="height:' + totalH + 'px;">';
+        for (var hr2 = START; hr2 <= END; hr2++) { h += '<div class="cwd-grid-line" style="top:' + ((hr2 - START) * HOUR_H) + 'px;"></div>'; }
+        days.forEach(function (d, di) {
+            var dISO = _calFmtDateISO(d), isT = dISO === todayISO, we = (di === 5 || di === 6);
+            var dayEv = filtered.filter(function (e) { return e.start && String(e.start).substring(0, 10) === dISO; });
+            var placed = _calWeekLayout(dayEv, START, END);
+            h += '<div class="cwd-col' + (isT ? ' today' : '') + (we ? ' weekend' : '') + '" data-date="' + dISO + '" onclick="_calWeekColClick(event,\'' + dISO + '\',' + START + ',' + HOUR_H + ')">';
+            placed.forEach(function (p) { h += _calWeekEvHtml(p, START, HOUR_H); });
+            if (isT) { var nm = now.getHours() * 60 + now.getMinutes(); if (nm >= START * 60 && nm <= END * 60) { h += '<div class="cwd-now" style="top:' + ((nm / 60 - START) * HOUR_H) + 'px;"><span class="cwd-now-dot"></span><span class="cwd-now-rule"></span></div>'; } }
+            h += '</div>';
+        });
+        h += '</div></div></div></div>';
+        root.innerHTML = h;
+        _calWeekBindHoverDesign();
+        var sc = root.querySelector('.cwd-scroll'); if (sc) sc.scrollTop = Math.max(0, (8.5 - START) * HOUR_H);
+    }
+
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
         var ov = document.getElementById('widgetCalendarioMaster');
@@ -1570,6 +1716,9 @@
     }
 
     function calRenderWeekView(weekStart) {
+        // Render de Semana = diseño Claude Design (.cwd-*). El código viejo de
+        // abajo queda inerte (early return) para no perder referencias.
+        return _calRenderWeekDesign(weekStart);
         var container = document.getElementById('calWeekTimeline');
         if (!container) return;
         if (!container.offsetWidth) {
