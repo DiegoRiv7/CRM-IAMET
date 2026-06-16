@@ -5860,7 +5860,10 @@
 
     /* ── Chat tray inferior ── */
     .crm-tw-tray {
-        padding: 14px 40px 18px;
+        /* Lados a 28px = alineado con el contenido (crm-tw-main-scroll) y con el
+           nombre del cliente del header, para que la caja de comentarios empiece
+           igual que todo lo demás. */
+        padding: 14px 28px 18px;
         background: #fff;
         border-top: 1px solid #F1F5F9;
         flex-shrink: 0;

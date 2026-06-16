@@ -12,7 +12,7 @@ y helpers compartidos.
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarea</title>
-    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260616-tw-desc-card">
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260616-tw-tray-align">
     <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260615-tw-menu">
     <style>
         body[data-theme="mundial"]::before { display: none !important; }
@@ -101,7 +101,7 @@ y helpers compartidos.
     {% include "crm/_widget_tarea_detalle.html" %}
     {% include "crm/_widget_oportunidad.html" %}
     <script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
-    <script src="{% static 'js/crm_main.js' %}?v=20260616-task-edit-staged"></script>
+    <script src="{% static 'js/crm_main.js' %}?v=20260616-task-subtask-toolbar"></script>
     <script>
         (function () {
             // Drive desde esta tarea: el iframe no puede poner ventanas en el

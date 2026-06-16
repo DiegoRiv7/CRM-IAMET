@@ -8997,19 +8997,14 @@
                         }).join('') + '</div>';
                     }
                     if (total === 0) {
-                        var emptyState =
-                            '<div class="crm-tw-empty" onclick="crmTaskCrearSubtarea()" role="button">' +
-                                '<span class="crm-tw-empty-ico"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
-                                '<span class="crm-tw-empty-title">Añadir subtarea</span>' +
-                                '<span class="crm-tw-empty-hint">Divide la tarea en pasos</span>' +
-                            '</div>';
-                        subtareasSection.innerHTML = headHtml + emptyState;
+                        // Sin subtareas: ocultamos toda la sección (el botón "Añadir
+                        // subtarea" se movió al icono junto al @ del comentario, para
+                        // ganar espacio). Sólo se muestra cuando ya hay subtareas.
+                        subtareasSection.innerHTML = '';
                     } else {
-                        var addBtn = '<button type="button" class="crm-tw-subtarea-add" onclick="crmTaskCrearSubtarea()">' +
-                            '<span class="crm-tw-subtarea-add-ico"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
-                            '<span>Añadir subtarea</span>' +
-                        '</button>';
-                        subtareasSection.innerHTML = headHtml + listHtml + addBtn;
+                        // Con subtareas: header + progreso + lista (sin el botón
+                        // "Añadir subtarea"; crear va desde la barra de comentarios).
+                        subtareasSection.innerHTML = headHtml + listHtml;
                     }
                 }
             }
