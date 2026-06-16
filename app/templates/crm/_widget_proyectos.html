@@ -4,12 +4,15 @@
 <style>
 /* El board del kanban de proyectos hereda .crm-kanban-board (igual que opps) */
 #proyKanbanBoard { padding-top:8px; }
-/* Columnas más limpias: con pocas tarjetas el marco completo (borde + degradado
-   inferior) que hereda de Oportunidades se ve pesado. Borde muy sutil y fondo
-   transparente — solo en Proyectos (#proyKanbanBoard), no toca Oportunidades. */
+/* Columnas IDÉNTICAS a las de Oportunidades (mismo glass oscuro sutil del tema
+   mundial). Lo forzamos explícito porque algo en la cascada le estaba dejando
+   a Proyectos el borde gris claro pronunciado de la base (#E2E8F0) en vez del
+   borde sutil del tema. !important + ID gana siempre. */
 #proyKanbanBoard .crm-kanban-col {
-  background: transparent !important;
-  border-color: rgba(255,255,255,0.08) !important;
+  background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(0,20,10,0.14) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 /* El toolbar debe quedar por ENCIMA del board: si no, el strip de color de una
    tarjeta (z-index propio) se encima sobre el dropdown de Filtro (la "línea
