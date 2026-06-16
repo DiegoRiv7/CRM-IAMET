@@ -52,9 +52,35 @@
             .cal-filter-pop-sep { height: 1px; background: rgba(15,23,42,0.08); margin: 9px 2px 4px; }
             /* Botones de Fuente dentro del popup: segmentado a todo el ancho */
             .cal-filter-pop .cal-source-toggle .cal-source-btn { flex: 1; justify-content: center; }
-            /* En pantallas angostas: tools arriba, resto abajo sin amontonar */
+            /* Isla de vistas CENTRADA en el header: flota en el hueco central.
+               El header sticky ya sirve de containing block para el absolute
+               (no tocamos su position para no romper el sticky). */
+            @media (min-width: 821px) {
+                .cal-hdr-views {
+                    position: absolute;
+                    left: 50%; top: 50%;
+                    transform: translate(-50%, -50%);
+                }
+            }
+            /* En pantallas angostas: tools arriba, resto abajo; isla en flujo */
             @media (max-width: 820px) {
                 .cal-hdr-tools { margin-right: 0; flex: 1 1 100%; }
+                .cal-hdr-views { position: static; transform: none; }
+            }
+            /* ── Calendario flotante con márgenes (no edge-to-edge) ──
+               .cal-card--page trae estilos inline (border-radius:0, margin:0),
+               por eso vamos con !important. NO usamos overflow:hidden para no
+               romper el position:sticky del header; en su lugar redondeamos las
+               esquinas superiores del header para que peguen con el card. */
+            .widget-overlay.is-page-mode .cal-card.cal-card--page {
+                margin: 8px 16px 16px !important;
+                border-radius: 20px !important;
+                min-height: calc(100vh - 24px) !important;
+                padding: 0 0 14px !important;
+            }
+            .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
+                border-top-left-radius: 20px;
+                border-top-right-radius: 20px;
             }
             /* Toggle Fuente del Calendario: Actividades / Instalaciones */
             .cal-source-btn {

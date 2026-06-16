@@ -933,28 +933,30 @@ body[data-theme="mundial"] .proy-fin-head {
    Legibilidad es prioridad; fondo opaco, texto oscuro legible.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* --- Container: SÓLIDO blanco (override inline rgba) --- */
+/* --- Container: liquid glass sutil (frosted) — un poco de cancha se asoma
+       difuminada por detrás, pero el texto sigue legible (opacidad alta). --- */
 body[data-theme="mundial"] .cal-card {
-    background: #f5f5f3 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border: 1px solid rgba(0, 80, 45, 0.30) !important;
-    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.40) !important;
+    background: rgba(245, 246, 243, 0.86) !important;
+    backdrop-filter: blur(22px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 16px 48px rgba(0, 15, 8, 0.42) !important;
 }
 body[data-theme="mundial"] .cal-card--page {
-    background: #f5f5f3 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    background: rgba(245, 246, 243, 0.86) !important;
+    backdrop-filter: blur(22px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
 }
 body[data-theme="mundial"] .widget-overlay.is-page-mode {
     background: transparent !important;
 }
 /* MODO PÁGINA: crm.css fuerza transparent !important en la card con MÁS
    especificidad (.widget-overlay.is-page-mode .cal-card--page) que la
-   regla sólida de arriba — al recargar ?tab=calendario la cuadrícula se
-   veía atravesada por la cancha. Esta regla (más específica aún) gana. */
+   regla de arriba. Esta (más específica aún) gana → glass frosted. */
 body[data-theme="mundial"] .widget-overlay.is-page-mode .cal-card--page {
-    background: #f5f5f3 !important;
+    background: rgba(245, 246, 243, 0.86) !important;
+    backdrop-filter: blur(22px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
 }
 
 /* --- Header principal del overlay (div sin clase, primer hijo de .cal-card)
