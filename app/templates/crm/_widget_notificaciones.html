@@ -641,6 +641,17 @@ y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
 .nd-drawer:not(.ww-windowed).open .nd-shell { transform: translateX(0); }
 body.ww-lite .nd-shell { backdrop-filter: none; -webkit-backdrop-filter: none; background: #F4F6FA; }
 
+/* Mientras ENTRA o SALE, el panel se anima SÓLIDO (sin blur): mover un
+   backdrop-filter blur(44px) re-muestrea el fondo cada frame y se siente
+   pesado. Animamos un panel liso (barato) y el vidrio vuelve al quedar
+   quieto. En Modo Ligero ya es sólido, así que no cambia nada. */
+.nd-drawer.nd-sliding .nd-shell {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(247, 249, 252, 0.98);
+    will-change: transform;
+}
+
 .nd-head { display: flex; align-items: center; padding: 18px 18px 10px; gap: 8px; }
 .nd-head-title { font-size: 1.18rem; font-weight: 700; color: #0F172A; letter-spacing: -0.02em; flex: 1; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
 .nd-head-actions { display: flex; align-items: center; gap: 8px; }
@@ -1378,6 +1389,7 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     var _dFiltro = 'tareas';     // por defecto: notificaciones de tareas
     var _drawerPinned = false;   // true = se queda abierto (campana o abrió algo)
     var _drawerLeaveT = null;    // timer de auto-cierre al salir el cursor
+    var _slideT = null;          // timer para quitar .nd-sliding (panel sólido al animar)
 
     // Buckets de agrupación por CLASE de notificación (no por entidad),
     // como las pilas del Centro de Notificaciones de macOS.
@@ -1622,26 +1634,63 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         }
         _drawerPinned = opts.asWindow ? true : !opts.peek;
         clearTimeout(_drawerLeaveT);
-        d.classList.add('open');
-        _renderDrawer();
-        if (window.notifLoad) window.notifLoad();   // refrescar al abrir
-        // asWindow (campana): nace como VENTANA centrada (entra desde la
-        // derecha y se acomoda al centro vía el FLIP del sistema de ventanas).
+
         if (opts.asWindow && window.crmWidgetWindow && window.crmWidgetWindow.windowize
             && !d.classList.contains('ww-windowed')) {
+            // CAMPANA → "carta saliendo del buzón": se pre-posiciona la card en
+            // la campana y el FLIP del sistema de ventanas la hace CRECER desde
+            // ahí hasta el centro. Panel sólido durante la animación (barato).
+            d.classList.add('open');
+            _renderDrawer();
+            if (window.notifLoad) window.notifLoad();
             var vw = window.innerWidth, vh = window.innerHeight;
             var w = Math.min(Math.round(vw * 0.74), 1180);
             var h = Math.round(vh * 0.80);
-            try {
-                window.crmWidgetWindow.windowize(d, {
-                    x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h
-                });
-            } catch (e) { }
+            var rect = { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
+            var card = d.querySelector('.nd-shell');
+            var bell = document.getElementById('btnNotificaciones');
+            var lite = document.body.classList.contains('ww-lite');
+            d.classList.add('nd-sliding');
+            var clearCard = function () {
+                if (!card) return;
+                card.style.position = ''; card.style.left = ''; card.style.top = '';
+                card.style.width = ''; card.style.height = ''; card.style.opacity = '';
+            };
+            if (card && bell && !lite) {
+                var b = bell.getBoundingClientRect();
+                card.style.position = 'fixed';
+                card.style.left = b.left + 'px'; card.style.top = b.top + 'px';
+                card.style.width = b.width + 'px'; card.style.height = b.height + 'px';
+                card.style.opacity = '0';
+            }
+            var ok = false;
+            try { ok = window.crmWidgetWindow.windowize(d, rect); } catch (e) { }
+            if (!ok) {
+                // No se pudo windowizar (tope de ventanas / picker): limpiar el
+                // pre-posicionado y quedar como cajón lateral normal.
+                clearCard();
+                d.classList.remove('nd-sliding');
+                return;
+            }
+            if (card && !lite) requestAnimationFrame(function () { card.style.opacity = ''; });
+            clearTimeout(_slideT);
+            _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); clearCard(); }, 360);
+            return;
         }
+
+        // CAJÓN lateral: slide-in con panel SÓLIDO durante la animación (fluido).
+        d.classList.add('nd-sliding');
+        d.classList.add('open');
+        _renderDrawer();
+        if (window.notifLoad) window.notifLoad();
+        clearTimeout(_slideT);
+        _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); }, 360);
     };
     window.notifDrawerClose = function () {
         var d = document.getElementById('notifDrawer');
         if (!d) return;
+        // Salida también con panel sólido (sin blur) → más fluida al esconderse.
+        d.classList.add('nd-sliding');
         // Si está en modo ventana flotante, devolverla a cajón antes de ocultar.
         if (d.classList.contains('ww-windowed') && window.crmWidgetWindow && window.crmWidgetWindow.unwindowize) {
             try { window.crmWidgetWindow.unwindowize(d); } catch (e) { }
@@ -1649,6 +1698,8 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
         d.classList.remove('open');
         clearTimeout(_drawerLeaveT);
         _drawerPinned = false;
+        clearTimeout(_slideT);
+        _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); }, 360);
     };
     // CAMPANA → ventana centrada (acción deliberada).
     window.notifDrawerToggle = function () {
