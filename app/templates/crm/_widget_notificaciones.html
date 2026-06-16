@@ -117,7 +117,6 @@
     <div class="nd-chips" id="notifDrawerChips">
         <button class="nd-chip active" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
         <button class="nd-chip" data-d="oportunidades" onclick="notifDrawerFiltro('oportunidades',this)">Oportunidades</button>
-        <button class="nd-chip" data-d="vencidas" onclick="notifDrawerFiltro('vencidas',this)">Vencidas</button>
         <button class="nd-chip" data-d="general" onclick="notifDrawerFiltro('general',this)">General</button>
     </div>
     <div class="nd-list" id="notifDrawerList"></div>
@@ -653,9 +652,10 @@ body.ww-lite .nd-chip { backdrop-filter: none; -webkit-backdrop-filter: none; ba
 
 /* Encabezado de subsección dentro de un filtro (ej. Tareas → Vencidas) */
 .nd-subhead {
-    font-size: 10.5px; font-weight: 800; letter-spacing: 0.09em;
-    text-transform: uppercase; color: #8A97AC;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.09em;
+    text-transform: uppercase; color: #475569;
     padding: 14px 6px 6px; margin: 0;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 .nd-list > .nd-subhead:first-child { padding-top: 4px; }
 
@@ -1402,17 +1402,26 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
     function _drawerMatch(n) {
         if (_dFiltro === 'tareas') return _ndIsTarea(n);
         if (_dFiltro === 'oportunidades') return _ndIsOpp(n);
-        if (_dFiltro === 'vencidas') return _ndIsVenc(n);
-        if (_dFiltro === 'general') return !_ndIsTarea(n) && !_ndIsOpp(n) && !_ndIsVenc(n);
+        if (_dFiltro === 'general') return !_ndIsTarea(n) && !_ndIsOpp(n);
         return true;
     }
 
-    // Subsección dentro de Tareas: Vencidas / Cambio de horario / Normales.
+    // Subsección dentro de Tareas: Vencidas → Generales → Editadas.
+    // Editadas: reprogramación de fecha/hora, reabiertas, nuevo participante,
+    // cambio de responsable.
     function _ndTareaSub(n) {
         if (_ndIsVenc(n)) return 'venc';
+        if (n.tipo === 'tarea_reprogramada' || n.tipo === 'tarea_participante') return 'editada';
         var t = (n.titulo || '') + ' ' + (n.mensaje || '');
-        if (n.tipo === 'tarea_reprogramada' || /reabier|volvi[oó] a abrir|cambi[oó] la (fecha|hora)|reprogram/i.test(t)) return 'cambio';
-        return 'normal';
+        if (/reabier|volvi[oó] a abrir|cambi[oó] la (fecha|hora)|reprogram|nuevo participante|agreg[oó].*participante|cambi[oó].*responsable|nuevo responsable|reasign/i.test(t)) return 'editada';
+        return 'general';
+    }
+
+    // Subsección dentro de General: Sistema → Grupo → Muro.
+    function _ndGeneralSub(n) {
+        if (n.tipo === 'mensaje_grupo') return 'grupo';
+        if (['muro_post', 'muro_mencion', 'respuesta'].indexOf(n.tipo) !== -1) return 'muro';
+        return 'sistema';   // catch-all (solicitudes, sistema, proyectos, prospectos…)
     }
 
     function _ndCleanMsg(s) {
@@ -1498,25 +1507,39 @@ body.ww-lite .nd-preview { backdrop-filter: none; -webkit-backdrop-filter: none;
 
         var html;
         if (_dFiltro === 'tareas') {
-            // Tareas se parte en 3 subsecciones: Vencidas / Cambio de horario /
-            // Normales. Dentro de cada una se agrupa en pilas como siempre.
-            var subDefs = [
+            html = _ndRenderSubsections(arr, _ndTareaSub, [
                 { key: 'venc', label: 'Vencidas' },
-                { key: 'cambio', label: 'Cambio de horario' },
-                { key: 'normal', label: 'Normales' }
-            ];
-            var subItems = { venc: [], cambio: [], normal: [] };
-            arr.forEach(function (n) { subItems[_ndTareaSub(n)].push(n); });
-            html = '';
-            subDefs.forEach(function (s) {
-                if (!subItems[s.key].length) return;
-                html += '<div class="nd-subhead">' + s.label + '</div>';
-                html += _ndRenderGroups(subItems[s.key]);
-            });
+                { key: 'general', label: 'Generales' },
+                { key: 'editada', label: 'Editadas' }
+            ]);
+        } else if (_dFiltro === 'general') {
+            html = _ndRenderSubsections(arr, _ndGeneralSub, [
+                { key: 'sistema', label: 'Sistema' },
+                { key: 'grupo', label: 'Grupo' },
+                { key: 'muro', label: 'Muro' }
+            ]);
         } else {
             html = _ndRenderGroups(arr);
         }
         list.innerHTML = html;
+    }
+
+    // Parte una lista en subsecciones con encabezado (orden = subDefs); dentro
+    // de cada una agrupa en pilas. classifier(n) → key de subsección.
+    function _ndRenderSubsections(arr, classifier, subDefs) {
+        var groups = {};
+        subDefs.forEach(function (s) { groups[s.key] = []; });
+        arr.forEach(function (n) {
+            var k = classifier(n);
+            (groups[k] || (groups[k] = [])).push(n);
+        });
+        var html = '';
+        subDefs.forEach(function (s) {
+            if (!groups[s.key] || !groups[s.key].length) return;
+            html += '<div class="nd-subhead">' + s.label + '</div>';
+            html += _ndRenderGroups(groups[s.key]);
+        });
+        return html;
     }
 
     // Agrupa una lista de notifs en pilas por clase (DRAWER_GROUPS),
