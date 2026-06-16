@@ -75,9 +75,18 @@
             .widget-overlay.is-page-mode .cal-card.cal-card--page {
                 margin: 8px 16px 16px !important;
                 border-radius: 20px !important;
+                /* Altura FIJA (no solo min-height): FullCalendar height:'100%'
+                   necesita una cadena de altura definida para llenar; con solo
+                   min-height el grid caía a alturas naturales (hueco abajo). */
+                height: calc(100vh - 24px) !important;
                 min-height: calc(100vh - 24px) !important;
+                max-height: calc(100vh - 24px) !important;
                 padding: 0 0 14px !important;
+                overflow: hidden !important;
             }
+            /* La cadena flex hasta el grid debe propagar altura definida */
+            .widget-overlay.is-page-mode .cal-card--page .cal-page-body { min-height: 0 !important; }
+            #fullCalendarRoot { height: 100%; }
             .widget-overlay.is-page-mode .cal-page-bar.cal-hdr {
                 border-top-left-radius: 20px;
                 border-top-right-radius: 20px;
