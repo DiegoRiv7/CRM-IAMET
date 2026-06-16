@@ -413,10 +413,8 @@
             /* Botón de modo ventana (reemplaza al + en el header) */
             .cal-win-btn{ width:36px; height:36px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.32); color:#fff; cursor:pointer; transition:background .15s, border-color .15s; }
             .cal-win-btn:hover{ background:rgba(255,255,255,0.26); border-color:rgba(255,255,255,0.5); }
-            /* Pantalla completa: el calendario cubre toda la pantalla (sobre la barra lateral) */
-            .widget-overlay.is-page-mode.cal-fs{ position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important; max-height:100vh !important; z-index:9999 !important; padding:0 !important; }
-            .widget-overlay.is-page-mode.cal-fs .cal-card.cal-card--page{ height:100vh !important; min-height:100vh !important; max-height:100vh !important; border-radius:0 !important; border:none !important; box-shadow:none !important; }
-            .widget-overlay.is-page-mode.cal-fs .cal-page-bar.cal-hdr{ border-radius:0 !important; }
+            .cal-win-btn--add{ background:rgba(255,255,255,0.92); border-color:rgba(255,255,255,0.92); color:#00875a; }
+            .cal-win-btn--add:hover{ background:#fff; border-color:#fff; color:#007a4d; }
             /* ── FABs (lupa + +) estilo Claude Design, en verde Mundial ── */
             .cal-fab-stack{ position:fixed; right:30px; bottom:30px; display:flex; flex-direction:column; align-items:flex-end; gap:16px; z-index:60; }
             .cal-fab{ width:56px; height:56px; border-radius:50%; background:linear-gradient(155deg,#00bd78 0%,#00a86b 55%,#007a4d 100%); color:#fff; display:grid; place-items:center; border:none; cursor:pointer; box-shadow:0 10px 26px rgba(0,120,70,.42),0 2px 6px rgba(0,120,70,.3); transition:transform .2s cubic-bezier(.34,1.56,.64,1),filter .15s; }
@@ -555,11 +553,10 @@
 
             {% comment %} ── ZONA CTA: nueva actividad (arriba-derecha) ── {% endcomment %}
             <div class="cal-hdr-cta">
-                {% comment %} El "+" se fue a los FABs de abajo. Aquí va el botón
-                de PANTALLA COMPLETA: expande el calendario a toda la pantalla
-                (y restaura). El icono cambia según el estado. {% endcomment %}
-                <button type="button" class="cal-win-btn" id="calFsToggle" onclick="calToggleFullscreen()" title="Pantalla completa" aria-label="Pantalla completa">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                {% comment %} Botón "+" para crear una nueva actividad (vuelve aquí
+                al header tras quitar el de pantalla completa). {% endcomment %}
+                <button type="button" class="cal-win-btn cal-win-btn--add" onclick="if(typeof window.calGlobalAbrirCrearActividad==='function')window.calGlobalAbrirCrearActividad()" title="Nueva actividad" aria-label="Nueva actividad">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
                 {% comment %}
                 Botón de cierre OCULTO: widget_stack (Esc) cierra el widget de
@@ -696,9 +693,6 @@
                     </button>
                 </div>
             </div>
-            <button type="button" class="cal-fab" onclick="if(typeof window.calGlobalAbrirCrearActividad==='function')window.calGlobalAbrirCrearActividad()" aria-label="Nueva actividad" title="Nueva actividad">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
         </div>
     </div>
 </div>
@@ -1146,31 +1140,6 @@
         if (typeof window._calOpenFull === 'function') setTimeout(function () { window._calOpenFull(id); }, 80);
     };
 
-    /* ═══ PANTALLA COMPLETA — expandir el calendario a toda la pantalla ═══
-       Toggle simple por clase .cal-fs en el overlay (position:fixed inset:0,
-       sobre todo, incluida la barra lateral). Re-render de la vista al cambiar
-       de tamaño. El look por defecto (flotante con márgenes) no cambia. */
-    function _calRerenderCurrent() {
-        setTimeout(function () {
-            if (_calViewMode === 'month') { if (typeof window.calRenderMonthDesign === 'function') window.calRenderMonthDesign(); }
-            else if (_calViewMode === 'week') { calRenderWeekView(_calWeekStart); }
-            else if (_calViewMode === 'day') { calRenderDayView(_calCurrentDay); }
-            else if (_calViewMode === 'tecnicos' && _calWeekStart) { calRenderTecnicosGrid(_calWeekStart); }
-        }, 60);
-    }
-    window.calToggleFullscreen = function () {
-        var cal = document.getElementById('widgetCalendarioMaster'); if (!cal) return;
-        var on = cal.classList.toggle('cal-fs');
-        var btn = document.getElementById('calFsToggle');
-        if (btn) {
-            btn.title = on ? 'Restaurar' : 'Pantalla completa';
-            // Icono: expandir (flechas afuera) ↔ contraer (flechas adentro)
-            btn.innerHTML = on
-                ? '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v3a2 2 0 0 1-2 2H4M15 3v3a2 2 0 0 0 2 2h3M9 21v-3a2 2 0 0 0-2-2H4M15 21v-3a2 2 0 0 1 2-2h3"/></svg>'
-                : '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
-        }
-        _calRerenderCurrent();
-    };
 
     /* ═══ SEMANA — render estilo Claude Design (reemplaza el render anterior) ═══ */
     function _calWeekLayout(evs, START, END) {

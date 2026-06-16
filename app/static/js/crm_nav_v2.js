@@ -220,8 +220,11 @@
     // restaurar el user vuelve exactamente al proyecto que tenía abierto.
     var CAL_SECTION_IDS = ['crmContentSection', 'tareasSection', 'proyectosSection', 'widgetProyectoDetalle', 'widgetCompras'];
     var SIDEBAR_BTN_SEL = '.island-nav-btn, .crm-sb-btn';
-    var CAL_CARD_PAGE_CSS = ';width:100%;height:auto;min-height:100vh;max-width:none;' +
-        'background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;';
+    // OJO: NO usamos min-height:100vh aquí — el card debe caber dentro del
+    // overlay con padding (margen en los 4 lados, incluido ABAJO). La clase
+    // .cal-card--page (que añadimos en pageize) trae el layout flotante real
+    // con !important; este inline solo da un fallback mínimo.
+    var CAL_CARD_PAGE_CSS = ';width:auto;height:auto;max-width:none;';
 
     function replaceUrl(qs) {
         try { window.history.replaceState({}, '', window.location.pathname + '?' + qs); } catch (e) { }
@@ -258,7 +261,10 @@
         ov.style.display = 'flex';
         ov.style.alignItems = 'stretch';
         ov.style.justifyContent = 'stretch';
-        if (card) card.style.cssText += CAL_CARD_PAGE_CSS;
+        // Añadir la clase --page para que apliquen las reglas de card flotante
+        // (mismas que en modo página nativo ?tab=calendario). Sin esto el card
+        // quedaba transparente/100vh y se comía el margen inferior.
+        if (card) { card.classList.add('cal-card--page'); card.style.cssText += CAL_CARD_PAGE_CSS; }
         calInline = true;
         window._crmNavCalInline = true;  // leído por el botón de cierre oculto del template
         replaceUrl('tab=calendario');
@@ -288,7 +294,10 @@
             var card = ov.querySelector('.cal-card');
             ov.style.cssText = (calSaved && calSaved.overlayCss) || '';
             ov.style.display = 'none';
-            if (card && calSaved) card.style.cssText = calSaved.cardCss;
+            if (card) {
+                card.classList.remove('cal-card--page');
+                if (calSaved) card.style.cssText = calSaved.cardCss;
+            }
         }
         if (calSaved) {
             Object.keys(calSaved.sections).forEach(function (id) {
