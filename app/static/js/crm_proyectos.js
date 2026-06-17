@@ -5562,9 +5562,12 @@
             ? '<span class="ptk-src ptk-src-opp">Oportunidad</span>'
             : '<span class="ptk-src ptk-src-proy">Proyecto</span>';
     }
-    function _tkRow(t) {
+    function _tkRow(t, kind) {
+        var ic = (kind === 'venc')
+            ? '<svg class="ptk-row-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+            : '';
         return '<button type="button" class="ptk-row" data-tid="' + t.id + '" data-src="' + (t.source || '') + '">' +
-            '<span class="ptk-row-title">' + _tkEsc(truncate(t.titulo || '(sin título)', 64)) + '</span>' +
+            '<span class="ptk-row-title">' + ic + '<span class="ptk-row-titletx">' + _tkEsc(truncate(t.titulo || '(sin título)', 62)) + '</span></span>' +
             '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' +
             '<span class="ptk-row-resp">' + _tkEsc(_tkResp(t)) + '</span>' +
             '<span class="ptk-row-fecha">' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</span>' +
@@ -5575,7 +5578,7 @@
         if (!arr.length) return '';
         return '<div class="ptk-sec ptk-sec-' + kind + '">' +
             '<div class="ptk-sec-head">' + label + '<span class="ptk-sec-count">' + arr.length + '</span></div>' +
-            arr.map(_tkRow).join('') +
+            arr.map(function (t) { return _tkRow(t, kind); }).join('') +
         '</div>';
     }
     function _tkAside(counts, proximas) {
@@ -5606,13 +5609,17 @@
         var openBtn = t.source === 'oportunidad'
             ? '<button type="button" class="ptk-open-btn" onclick="(function(){var m=document.getElementById(\'crmTaskDetailModal\');if(m){m.classList.add(\'z-elevated\');m.style.zIndex=\'10800\';}if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');})()">Abrir tarea</button>'
             : '';
+        var cat = t.source === 'oportunidad' ? 'Oportunidad' : 'Proyecto';
+        var prio = (typeof priorityLabel === 'function') ? priorityLabel(t.prioridad) : (t.prioridad || '—');
         box.innerHTML =
+            '<div class="ptk-preview-badges"><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' + _tkSrcBadge(t) + '</div>' +
             '<div class="ptk-preview-title">' + _tkEsc(t.titulo || '') + '</div>' +
-            '<div class="ptk-preview-badges">' + _tkSrcBadge(t) + '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></div>' +
             (t.descripcion ? '<div class="ptk-preview-desc">' + _tkEsc(t.descripcion) + '</div>' : '') +
             '<div class="ptk-preview-meta"><span>Responsable</span><b>' + _tkEsc(_tkResp(t)) + '</b></div>' +
-            '<div class="ptk-preview-meta"><span>Fecha límite</span><b>' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</b></div>' +
             (t.oportunidad_nombre ? '<div class="ptk-preview-meta"><span>Oportunidad</span><b>' + _tkEsc(t.oportunidad_nombre) + '</b></div>' : '') +
+            '<div class="ptk-preview-meta"><span>Fecha límite</span><b>' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</b></div>' +
+            '<div class="ptk-preview-meta"><span>Categoría</span><b>' + cat + '</b></div>' +
+            '<div class="ptk-preview-meta"><span>Prioridad</span><b>' + _tkEsc(prio || '—') + '</b></div>' +
             openBtn;
     }
     function _tkWire() {
