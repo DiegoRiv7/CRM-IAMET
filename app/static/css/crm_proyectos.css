@@ -1797,24 +1797,10 @@
    (búsqueda + Nueva) SIN marco y debajo el shell del cockpit (que ya trae su
    propio marco). Quitamos el cuadro blanco exterior del .proy-tab-pane. */
 #proyPane_tareas.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
-/* La "banda" superior (área de la card detrás del toolbar) se convierte en una
-   barra LIQUID GLASS de ancho completo: el toolbar se sangra con margen
-   negativo para cubrir el padding de la card (26px top / 36px lados) y queda
-   flush arriba. Búsqueda + Nueva centradas verticalmente (padding 16px). */
-#proyPane_tareas .proy-tcp-toolbar {
-  margin: -32px -36px 16px;
-  padding: 16px 36px;
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.10);
-}
-@media (max-width: 900px) {
-  #proyPane_tareas .proy-tcp-toolbar { margin: -24px -16px 14px; padding: 14px 16px; }
-}
-/* Modo Ligero: sin blur (perf) — la barra queda translúcida sólida. */
-body.ww-lite #proyPane_tareas .proy-tcp-toolbar { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(255,255,255,0.85); }
+/* Toolbar flotante (la card del detalle la transparenta el JS — _proyTareasBg —
+   con estilos inline para que se vea el estadio detrás, como la sección Tareas
+   real). Búsqueda pill glass + Nueva, centradas. */
+#proyPane_tareas .proy-tcp-toolbar { padding: 4px 0; }
 .proy-tcp-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .proy-tcp-search { flex: 1; display: flex; align-items: center; gap: 8px; max-width: 380px; background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0; border-radius: 999px; padding: 8px 14px; height: 36px; box-sizing: border-box; }
 .proy-tcp-search:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }

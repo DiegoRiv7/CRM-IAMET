@@ -1444,6 +1444,10 @@
         var activePane = el(paneId);
         if (activePane) activePane.style.display = '';
 
+        // Restaurar el fondo de la card cuando salimos de Tareas (renderTareas
+        // lo transparenta al entrar). Evita que otros tabs queden transparentes.
+        if (tabName !== 'tareas' && typeof window._proyTareasBg === 'function') window._proyTareasBg(false);
+
 
         // Cierra el dropdown "Más ▾" cuando se navega
         if (typeof _proyMoreMenuClose === 'function') _proyMoreMenuClose();
@@ -5956,10 +5960,36 @@
     };
     document.addEventListener('click', window._proyTcpSecHandler);
 
+    // AGRESIVO: transparenta por código (estilo inline, gana sobre cualquier
+    // CSS) la card del detalle + el tab-content cuando estamos en Tareas, para
+    // matar la "banda blanca" superior y que se vea el estadio detrás (como la
+    // sección Tareas real). active=false restaura los valores originales.
+    window._proyTareasBg = function (active) {
+        var shell = document.getElementById('proyTcpShell');
+        var card = shell ? shell.closest('.proy-detail-card') : document.querySelector('#widgetProyectoDetalle .proy-detail-card');
+        var content = shell ? shell.closest('.proy-tab-content') : null;
+        var page = document.getElementById('widgetProyectoDetalle');
+        [card, content, page].forEach(function (e2) {
+            if (!e2) return;
+            if (active) {
+                e2.style.setProperty('background', 'transparent', 'important');
+                e2.style.setProperty('background-image', 'none', 'important');
+            } else {
+                e2.style.removeProperty('background');
+                e2.style.removeProperty('background-image');
+            }
+        });
+        if (card) {
+            if (active) { card.style.setProperty('box-shadow', 'none', 'important'); card.style.setProperty('border', 'none', 'important'); }
+            else { card.style.removeProperty('box-shadow'); card.style.removeProperty('border'); }
+        }
+    };
+
     function renderTareas(projectId) {
         var list = el('proyTcpList');
         var panel = el('proyTcpDetail');
         if (!list) return;
+        window._proyTareasBg(true);
         _proyTcpSelectedId = null;
         list.innerHTML = '<div class="tcp-row-empty">Cargando…</div>';
         if (panel) panel.innerHTML = '';
