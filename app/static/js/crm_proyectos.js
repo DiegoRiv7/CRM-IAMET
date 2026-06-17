@@ -5879,10 +5879,17 @@
             oppVal = '<span class="muted">Sin oportunidad</span>';
         }
 
+        // Expandir → abre la ventana completa de la tarea. Solo para tareas de
+        // OPORTUNIDAD (modelo Tarea, que sí tiene ventana vía crmTaskVerDetalle);
+        // las de proyecto (ProyectoTarea) no tienen ventana → sin expandir.
+        var expandBtn = (t.source === 'oportunidad')
+            ? '<button class="tcp-detail-iconbtn" title="Expandir · abrir la tarea" onclick="proyTcpExpandir(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>'
+            : '';
         panel.innerHTML =
             '<div class="tcp-detail-head">' +
                 '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
                 '<div class="tcp-detail-actions">' +
+                    expandBtn +
                     '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="proyTcpCloseDetail()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
                 '</div>' +
             '</div>' +
@@ -5914,6 +5921,24 @@
     window.proyTcpAbrirOportunidad = function (oppId) {
         if (!oppId) return;
         if (typeof window.openDetalle === 'function') window.openDetalle(oppId, { asWindow: true });
+    };
+
+    // Expandir = abrir la ventana completa de la tarea (solo tareas de opp).
+    window.proyTcpExpandir = function (tid) {
+        if (typeof crmTaskVerDetalle !== 'function') return;
+        var m = document.getElementById('crmTaskDetailModal');
+        if (m) { m.classList.add('z-elevated'); m.style.zIndex = '10800'; }
+        crmTaskVerDetalle(tid);
+    };
+
+    // Búsqueda: filtra solo la LISTA (el resumen sigue contando todo el proyecto).
+    var _proyTcpQuery = '';
+    window.proyTcpBuscar = function (q) {
+        _proyTcpQuery = (q || '').toLowerCase().trim();
+        var arr = !_proyTcpQuery ? _proyTcpData : _proyTcpData.filter(function (t) {
+            return ((t.titulo || '') + ' ' + (t.oportunidad_nombre || '') + ' ' + (t.responsable || '') + ' ' + (t.creado_por || '')).toLowerCase().indexOf(_proyTcpQuery) !== -1;
+        });
+        _proyTcpRenderList(arr, new Date());
     };
 
     // Toggle de secciones colapsables (delegado, namespaced).
