@@ -5964,24 +5964,30 @@
     // CSS) la card del detalle + el tab-content cuando estamos en Tareas, para
     // matar la "banda blanca" superior y que se vea el estadio detrás (como la
     // sección Tareas real). active=false restaura los valores originales.
+    var _proyBgTouched = [];
     window._proyTareasBg = function (active) {
-        var shell = document.getElementById('proyTcpShell');
-        var card = shell ? shell.closest('.proy-detail-card') : document.querySelector('#widgetProyectoDetalle .proy-detail-card');
-        var content = shell ? shell.closest('.proy-tab-content') : null;
-        var page = document.getElementById('widgetProyectoDetalle');
-        [card, content, page].forEach(function (e2) {
-            if (!e2) return;
-            if (active) {
-                e2.style.setProperty('background', 'transparent', 'important');
-                e2.style.setProperty('background-image', 'none', 'important');
-            } else {
-                e2.style.removeProperty('background');
-                e2.style.removeProperty('background-image');
-            }
+        // Restaurar siempre lo previamente tocado.
+        _proyBgTouched.forEach(function (n) {
+            n.style.removeProperty('background');
+            n.style.removeProperty('background-image');
+            n.style.removeProperty('box-shadow');
+            n.style.removeProperty('border');
         });
-        if (card) {
-            if (active) { card.style.setProperty('box-shadow', 'none', 'important'); card.style.setProperty('border', 'none', 'important'); }
-            else { card.style.removeProperty('box-shadow'); card.style.removeProperty('border'); }
+        _proyBgTouched = [];
+        if (!active) return;
+        // Recorre TODOS los ancestros del shell hasta .crm-main (excluido) y los
+        // transparenta inline (gana sobre cualquier CSS) → muere la banda blanca
+        // y se ve el estadio (body::before). Los hermanos (header card, panel
+        // resumen) NO se tocan, conservan su fondo.
+        var node = document.getElementById('proyTcpShell');
+        node = node ? node.parentElement : null;
+        while (node && node !== document.body && !(node.classList && node.classList.contains('crm-main'))) {
+            node.style.setProperty('background', 'transparent', 'important');
+            node.style.setProperty('background-image', 'none', 'important');
+            node.style.setProperty('box-shadow', 'none', 'important');
+            node.style.setProperty('border', 'none', 'important');
+            _proyBgTouched.push(node);
+            node = node.parentElement;
         }
     };
 

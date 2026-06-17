@@ -811,10 +811,10 @@ body[data-theme="mundial"] .proy-v3-rag-text {
 
 /* Tareas del proyecto: la búsqueda flota como glass (no cuadro blanco sólido),
    igual que la barra del módulo de Tareas real. */
-body[data-theme="mundial"] .proy-tcp-search { background: rgba(255,255,255,0.12) !important; border-color: rgba(255,255,255,0.28) !important; }
+body[data-theme="mundial"] .proy-tcp-search { background: rgba(10,30,20,0.45) !important; border-color: rgba(255,255,255,0.45) !important; -webkit-backdrop-filter: blur(14px) !important; backdrop-filter: blur(14px) !important; }
 body[data-theme="mundial"] .proy-tcp-search input { color: #ffffff !important; }
-body[data-theme="mundial"] .proy-tcp-search input::placeholder { color: rgba(255,255,255,0.6) !important; }
-body[data-theme="mundial"] .proy-tcp-search svg { stroke: rgba(255,255,255,0.75) !important; }
+body[data-theme="mundial"] .proy-tcp-search input::placeholder { color: rgba(255,255,255,0.72) !important; }
+body[data-theme="mundial"] .proy-tcp-search svg { stroke: rgba(255,255,255,0.85) !important; }
 
 /* --- KPI strip: SÓLIDO (legibilidad prioritaria) --- */
 body[data-theme="mundial"] .proy-v3-kpi-strip {
