@@ -1444,9 +1444,22 @@
         var activePane = el(paneId);
         if (activePane) activePane.style.display = '';
 
-        // Restaurar el fondo de la card cuando salimos de Tareas (renderTareas
-        // lo transparenta al entrar). Evita que otros tabs queden transparentes.
-        if (tabName !== 'tareas' && typeof window._proyTareasBg === 'function') window._proyTareasBg(false);
+        // Fondo transparente "estadio" para los tabs que lo usan (Tareas y
+        // Programa de Obra). Restauramos siempre primero (mata residuos de
+        // otros tabs); Tareas lo re-aplica desde renderTareas. Para Programa
+        // de Obra lo aplicamos aquí, recorriendo los ancestros de su pane.
+        if (typeof window._proyTareasBg === 'function') {
+            if (tabName === 'programa-obra') {
+                // Empezamos desde pobContainer (hijo del pane) para que el
+                // recorrido incluya al propio pane y lo transparente inline
+                // con !important — igual que Tareas (cuya walk arranca en el
+                // padre del shell, que ES el pane). Necesario para ganar al
+                // tema mundial, que pinta .proy-tab-pane con !important.
+                window._proyTareasBg(true, 'pobContainer');
+            } else if (tabName !== 'tareas') {
+                window._proyTareasBg(false);
+            }
+        }
 
 
         // Cierra el dropdown "Más ▾" cuando se navega
@@ -6022,7 +6035,13 @@
     // matar la "banda blanca" superior y que se vea el estadio detrás (como la
     // sección Tareas real). active=false restaura los valores originales.
     var _proyBgTouched = [];
-    window._proyTareasBg = function (active) {
+    // Transparenta la cadena de ancestros de un elemento "shell" hasta
+    // .crm-main → muere la banda/card blanca y se ve el estadio.
+    // `active`     → aplicar (true) o sólo restaurar lo previo (false).
+    // `startId`    → id del elemento desde cuyo PADRE se empieza a recorrer.
+    //                Default 'proyTcpShell' (tab Tareas). El tab Programa de
+    //                Obra pasa 'proyPane_programa-obra' para compartir lógica.
+    window._proyTareasBg = function (active, startId) {
         // Restaurar siempre lo previamente tocado.
         _proyBgTouched.forEach(function (n) {
             n.style.removeProperty('background');
@@ -6036,7 +6055,7 @@
         // transparenta inline (gana sobre cualquier CSS) → muere la banda blanca
         // y se ve el estadio (body::before). Los hermanos (header card, panel
         // resumen) NO se tocan, conservan su fondo.
-        var node = document.getElementById('proyTcpShell');
+        var node = document.getElementById(startId || 'proyTcpShell');
         node = node ? node.parentElement : null;
         while (node && node !== document.body && !(node.classList && node.classList.contains('crm-main'))) {
             node.style.setProperty('background', 'transparent', 'important');
@@ -6047,6 +6066,10 @@
             node = node.parentElement;
         }
     };
+
+    // Accessor del detalle de proyecto cacheado, para otros módulos (p.ej.
+    // programa_obra.js lo lee para pre-llenar el PO con el de la oportunidad).
+    window.proyGetCachedDetail = function () { return _cachedProjectDetail; };
 
     function renderTareas(projectId) {
         var list = el('proyTcpList');

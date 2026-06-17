@@ -1797,6 +1797,12 @@
    (búsqueda + Nueva) SIN marco y debajo el shell del cockpit (que ya trae su
    propio marco). Quitamos el cuadro blanco exterior del .proy-tab-pane. */
 #proyPane_tareas.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+/* Programa de Obra: mismo tratamiento que Tareas. El pane no es card —
+   toolbar (título + "Nueva instalación") flota limpio sobre el estadio y la
+   lista de instalaciones trae sus propias cards blancas dentro. La cadena de
+   ancestros la transparenta el JS (_proyTareasBg con startId del pane). */
+#proyPane_programa-obra.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+#proyPane_programa-obra .proy-tab-header { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 12px; }
 /* Toolbar flotante (la card del detalle la transparenta el JS — _proyTareasBg —
    con estilos inline para que se vea el estadio detrás, como la sección Tareas
    real). Búsqueda pill glass + Nueva, centradas. */

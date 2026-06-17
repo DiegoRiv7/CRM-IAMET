@@ -6063,6 +6063,7 @@ class Instalacion(models.Model):
         ('extraordinaria', 'Extraordinaria'),
     ]
     ESTADO_CHOICES = [
+        ('tentativa', 'Tentativa'),
         ('programada', 'Programada'),
         ('en_curso', 'En curso'),
         ('completada', 'Completada'),

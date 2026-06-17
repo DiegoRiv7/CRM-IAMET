@@ -36,6 +36,7 @@
         s.id = 'pobStyles';
         s.textContent = [
             '.wop-pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.02em; }',
+            '.wop-pill-tent   { background:#FEF6E0; color:#92740E; }',
             '.wop-pill-prog   { background:#E0F2FE; color:#075985; }',
             '.wop-pill-curso  { background:#FEF3C7; color:#92400E; }',
             '.wop-pill-done   { background:#D1FAE5; color:#065F46; }',
@@ -62,6 +63,32 @@
             '.wop-btn-primary:hover { background:#0041a8; }',
             '.wop-btn-secondary { background:#F2F2F7; color:#1D1D1F; border:none; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.84rem; }',
             '.wop-btn-secondary:hover { background:#E5E5EA; }',
+
+            /* ── Composer Notion-like para Nueva/Editar instalación ── */
+            '.pob-modal { width:min(880px, 96vw); }',
+            '.pob-head { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-bottom:1px solid #F2F2F7; }',
+            '.pob-eyebrow { display:inline-flex; align-items:center; gap:6px; font-size:0.62rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#86868B; }',
+            '.pob-body { padding:6px 22px 18px; overflow-y:auto; display:grid; grid-template-columns:1.5fr 1fr; gap:0; }',
+            '.pob-main { padding-top:14px; padding-right:24px; }',
+            '.pob-side { border-left:1px solid #F2F2F7; padding:14px 0 0 22px; }',
+            '.pob-title-input { width:100%; border:none; outline:none; font-family:inherit; font-size:1.5rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.02em; padding:6px 0; resize:none; line-height:1.25; background:transparent; }',
+            '.pob-title-input::placeholder { color:#C7C7CC; font-weight:700; }',
+            /* fila meta inline tipo "etiqueta a la izquierda, control limpio a la derecha" */
+            '.pob-meta { display:flex; flex-direction:column; gap:2px; margin-top:14px; }',
+            '.pob-meta-row { display:grid; grid-template-columns:120px 1fr; align-items:center; gap:8px; padding:5px 0; border-radius:8px; }',
+            '.pob-meta-row:hover { background:#FAFAFC; }',
+            '.pob-meta-label { display:inline-flex; align-items:center; gap:7px; font-size:0.78rem; font-weight:600; color:#86868B; }',
+            '.pob-meta-label svg { color:#A1A1A6; }',
+            '.pob-input { width:100%; box-sizing:border-box; font-family:inherit; font-size:0.9rem; color:#1D1D1F; padding:6px 8px; border:1px solid transparent; border-radius:7px; outline:none; background:transparent; transition:border-color 0.15s, background 0.15s; }',
+            '.pob-input:hover { background:#F2F2F7; }',
+            '.pob-input:focus { background:#fff; border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
+            '.pob-input::placeholder { color:#C7C7CC; }',
+            '.pob-input-num { max-width:160px; }',
+            '.pob-notes { width:100%; box-sizing:border-box; min-height:64px; font-family:inherit; font-size:0.9rem; color:#1D1D1F; padding:10px 12px; border:1px solid #E5E5EA; border-radius:10px; outline:none; resize:vertical; background:#FBFBFD; transition:border-color 0.15s; }',
+            '.pob-notes:focus { border-color:#0052D4; background:#fff; box-shadow:0 0 0 3px rgba(0,82,212,0.10); }',
+            '.pob-section-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; margin:18px 0 8px; }',
+            '.pob-side-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; }',
+            '@media (max-width:720px){ .pob-body { grid-template-columns:1fr; } .pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:14px 0 0; margin-top:8px; } .pob-main { padding-right:0; } }',
         ].join('\n');
         (document.head || document.body).appendChild(s);
     })();
@@ -91,6 +118,7 @@
         if (estado === 'completada') return 'wop-pill wop-pill-done';
         if (estado === 'en_curso')   return 'wop-pill wop-pill-curso';
         if (estado === 'cancelada')  return 'wop-pill wop-pill-cancel';
+        if (estado === 'tentativa')  return 'wop-pill wop-pill-tent';
         return 'wop-pill wop-pill-prog';
     }
 
@@ -194,47 +222,92 @@
         if (document.getElementById('pobModalBackdrop')) return;
         var html =
             '<div class="wop-modal-backdrop" id="pobModalBackdrop">'
-          +   '<div class="wop-modal" style="width:min(820px, 96vw);">'
-          +     '<div class="wop-modal-head">'
-          +       '<h3 id="pobModalTitle">Instalación</h3>'
+          +   '<div class="wop-modal pob-modal">'
+          +     '<div class="pob-head">'
+          +       '<div class="pob-eyebrow">'
+          +         '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+          +         '<span id="pobModalTitle">Nueva instalación</span>'
+          +       '</div>'
           +       '<div style="display:flex;gap:8px;align-items:center;">'
           +         '<button type="button" id="pobBtnEliminar" class="wop-btn-secondary" style="background:#FFE3E3;color:#991B1B;" onclick="pobEliminar()">Eliminar</button>'
           +         '<button type="button" class="widget-close" onclick="pobCerrarModal()" style="font-size:1.4rem;">&times;</button>'
           +       '</div>'
           +     '</div>'
-          +     '<div class="wop-modal-body" style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px;">'
-          +       '<div id="pobFormCol">'
-          +         '<div class="wop-field"><label>Descripción del trabajo</label>'
-          +           '<textarea id="pobInstDescripcion" rows="2"></textarea></div>'
-          +         '<div class="wop-form-grid">'
-          +           '<div class="wop-field"><label>PO</label><input type="text" id="pobInstPo" maxlength="80"></div>'
-          +           '<div class="wop-field"><label>Cliente (texto)</label><input type="text" id="pobInstCliente" maxlength="200"></div>'
-          +           '<div class="wop-field"><label>Fecha programada</label><input type="date" id="pobInstFecha"></div>'
-          +           '<div class="wop-field"><label>Estado</label>'
-          +             '<select id="pobInstEstado">'
+          +     '<div class="wop-modal-body pob-body">'
+          +       '<div class="pob-main" id="pobFormCol">'
+          // ── Título grande = descripción del trabajo ──
+          +         '<textarea id="pobInstDescripcion" class="pob-title-input" rows="1" placeholder="Descripción del trabajo…"></textarea>'
+          // ── Meta inline (etiqueta + control limpio) ──
+          +         '<div class="pob-meta">'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+          +               'Fecha</span>'
+          +             '<input type="date" id="pobInstFecha" class="pob-input">'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +               'Estado</span>'
+          +             '<select id="pobInstEstado" class="pob-input">'
+          +               '<option value="tentativa">Tentativa</option>'
           +               '<option value="programada">Programada</option>'
           +               '<option value="en_curso">En curso</option>'
           +               '<option value="completada">Completada</option>'
           +               '<option value="cancelada">Cancelada</option>'
-          +             '</select></div>'
-          +           '<div class="wop-field"><label>Jornadas</label><input type="number" id="pobInstJornadas" min="1"></div>'
-          +           '<div class="wop-field"><label>Tipo</label>'
-          +             '<select id="pobInstJornadasTipo">'
-          +               '<option value="normal">Normal</option>'
-          +               '<option value="sabado">Sábado</option>'
-          +               '<option value="domingo">Domingo</option>'
-          +               '<option value="noche">Noche</option>'
-          +               '<option value="extraordinaria">Extraordinaria</option>'
-          +             '</select></div>'
-          +           '<div class="wop-field" style="grid-column:1 / -1;"><label>Personal (texto libre)</label>'
-          +             '<input type="text" id="pobInstPersonal" maxlength="200" placeholder="Ej. 1 SUPERVISOR Y 3 TÉCNICOS"></div>'
-          +           '<div class="wop-field"><label>Monto PO</label><input type="number" id="pobInstMonto" step="0.01"></div>'
-          +           '<div class="wop-field"><label>Utilidad</label><input type="number" id="pobInstUtilidad" step="0.01"></div>'
-          +           '<div class="wop-field" style="grid-column:1 / -1;"><label>Notas / observaciones</label>'
-          +             '<textarea id="pobInstNotas" rows="2"></textarea></div>'
+          +             '</select>'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+          +               'Cliente</span>'
+          +             '<input type="text" id="pobInstCliente" maxlength="200" class="pob-input" placeholder="Nombre del cliente">'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+          +               'PO</span>'
+          +             '<input type="text" id="pobInstPo" maxlength="80" class="pob-input" placeholder="Orden de compra">'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +               'Jornadas</span>'
+          +             '<div style="display:flex;align-items:center;gap:8px;">'
+          +               '<input type="number" id="pobInstJornadas" min="1" class="pob-input pob-input-num" style="max-width:80px;">'
+          +               '<select id="pobInstJornadasTipo" class="pob-input" style="max-width:180px;">'
+          +                 '<option value="normal">Normal</option>'
+          +                 '<option value="sabado">Sábado</option>'
+          +                 '<option value="domingo">Domingo</option>'
+          +                 '<option value="noche">Noche</option>'
+          +                 '<option value="extraordinaria">Extraordinaria</option>'
+          +               '</select>'
+          +             '</div>'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+          +               'Personal</span>'
+          +             '<input type="text" id="pobInstPersonal" maxlength="200" class="pob-input" placeholder="Ej. 1 SUPERVISOR Y 3 TÉCNICOS">'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+          +               'Monto PO</span>'
+          +             '<input type="number" id="pobInstMonto" step="0.01" class="pob-input pob-input-num" placeholder="0.00">'
+          +           '</div>'
+          +           '<div class="pob-meta-row">'
+          +             '<span class="pob-meta-label">'
+          +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
+          +               'Utilidad</span>'
+          +             '<input type="number" id="pobInstUtilidad" step="0.01" class="pob-input pob-input-num" placeholder="0.00">'
+          +           '</div>'
           +         '</div>'
+          // ── Notas / observaciones ──
+          +         '<div class="pob-section-label">Notas / observaciones</div>'
+          +         '<textarea id="pobInstNotas" class="pob-notes" placeholder="Personal asignado, hora, instrucciones…"></textarea>'
           +       '</div>'
-          +       '<div id="pobAsignCol" style="border-left:1px solid #E5E5EA;padding-left:18px;">'
+          +       '<div id="pobAsignCol" class="pob-side">'
           +         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
           +           '<h4 style="margin:0;font-size:0.92rem;font-weight:700;">Técnicos asignados</h4>'
           +           '<button type="button" id="pobBtnToggleAddAsig" class="wop-btn-secondary" onclick="pobToggleAddAsig()" style="font-size:0.74rem;padding:4px 8px;">+ Agregar</button>'
@@ -590,6 +663,18 @@
 
         var modal = document.getElementById('pobModalBackdrop');
         if (modal) modal.classList.add('open');
+
+        // Pre-llenado INMEDIATO del PO desde el detalle de proyecto ya cacheado
+        // (crm_proyectos.js → window.proyGetCachedDetail). Si la oportunidad
+        // ligada tiene po_number, lo ponemos sin esperar al fetch de defaults.
+        // Solo en modo crear y si el campo está vacío (no pisa nada escrito).
+        try {
+            var detail = (typeof window.proyGetCachedDetail === 'function') ? window.proyGetCachedDetail() : null;
+            if (detail && detail.oportunidad_po) {
+                var poElNow = document.getElementById('pobInstPo');
+                if (poElNow && !poElNow.value) poElNow.value = detail.oportunidad_po;
+            }
+        } catch (e) { /* silencioso */ }
 
         // Pre-llenar cliente / PO desde la oportunidad ligada al proyecto.
         fetch('/app/api/proyecto/' + pid + '/instalacion-defaults/', { credentials: 'same-origin' })

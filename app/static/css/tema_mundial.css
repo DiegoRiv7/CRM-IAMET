@@ -886,6 +886,27 @@ body[data-theme="mundial"] .proy-tab-header .proy-btn-primary {
     border: none !important;
 }
 
+/* --- Programa de Obra: pane sin card ni greca (como Tareas) --- */
+/* El pane lo transparenta el JS inline (_proyTareasBg) y aquí matamos la
+   greca del header para que el toolbar (título + "Nueva instalación") flote
+   limpio sobre el estadio. El pane en sí ya queda transparente por el inline
+   !important del walk; reforzamos por si el walk no corrió todavía. */
+body[data-theme="mundial"] #proyPane_programa-obra.proy-tab-pane {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+body[data-theme="mundial"] #proyPane_programa-obra .proy-tab-header {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+}
+body[data-theme="mundial"] #proyPane_programa-obra .proy-tab-header h3 {
+    color: #ffffff !important;
+}
+
 /* --- Diálogos de proyecto (Crear, Editar, etc.) --- */
 body[data-theme="mundial"] .proy-dialog-overlay {
     background: rgba(1, 12, 6, 0.70) !important;

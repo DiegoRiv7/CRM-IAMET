@@ -616,6 +616,9 @@ def _proyecto_to_dict(p, include_alerts=False):
         'oportunidad_etapa': opp.etapa_corta if opp else None,
         'oportunidad_etapa_color': opp.etapa_color if opp else None,
         'oportunidad_probabilidad': (opp.probabilidad_cierre or 0) if opp else 0,
+        # PO de la oportunidad ligada — lo usa el front (programa_obra.js) para
+        # pre-llenar el campo PO al crear una instalación nueva.
+        'oportunidad_po': (opp.po_number or '') if opp else '',
         'levantamientos_count': lev_count,
         'levantamiento_fase_max': lev_fase_max,
     }
