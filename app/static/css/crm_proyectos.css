@@ -1797,13 +1797,19 @@
    (búsqueda + Nueva) SIN marco y debajo el shell del cockpit (que ya trae su
    propio marco). Quitamos el cuadro blanco exterior del .proy-tab-pane. */
 #proyPane_tareas.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
-/* En el tab Tareas, TODA la card del detalle se vuelve transparente (se ve el
-   estadio detrás) y sin padding superior → la barra flota sin banda blanca. */
-.proy-detail-card.proy-detail--tareas {
+/* En el tab Tareas, TODA la cadena del detalle (page + card + tab-content) se
+   vuelve transparente (se ve el estadio detrás) y sin padding superior → la
+   barra flota sin banda blanca. Alta especificidad (#id + clase) para ganar. */
+#widgetProyectoDetalle.proy-detail--tareas,
+#widgetProyectoDetalle.proy-detail--tareas .proy-detail-card,
+#widgetProyectoDetalle.proy-detail--tareas .proy-tab-content {
   background: transparent !important;
+  background-image: none !important;
+}
+#widgetProyectoDetalle.proy-detail--tareas .proy-detail-card {
   box-shadow: none !important;
   border: none !important;
-  padding-top: 6px !important;
+  padding-top: 4px !important;
 }
 .proy-tcp-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .proy-tcp-search { flex: 1; display: flex; align-items: center; gap: 8px; max-width: 380px; background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0; border-radius: 999px; padding: 8px 14px; height: 36px; box-sizing: border-box; }
