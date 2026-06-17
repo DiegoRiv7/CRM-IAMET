@@ -65,7 +65,11 @@
             '.wop-btn-secondary:hover { background:#E5E5EA; }',
 
             /* ── Composer Notion-like para Nueva/Editar instalación ── */
-            '.pob-modal { width:min(880px, 96vw); }',
+            '.pob-modal { width:min(1080px, 96vw); }',
+            '.pob-empty { padding:56px 24px; text-align:center; }',
+            '.pob-empty-ic { margin:0 auto 8px; display:block; opacity:0.5; }',
+            '.pob-empty-title { font-weight:700; color:#1d1d1f; margin-bottom:4px; font-size:1rem; }',
+            '.pob-empty-sub { font-size:0.85rem; color:#86868B; }',
             '.pob-head { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-bottom:1px solid #F2F2F7; }',
             '.pob-eyebrow { display:inline-flex; align-items:center; gap:6px; font-size:0.62rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#86868B; }',
             '.pob-body { padding:6px 22px 18px; overflow-y:auto; display:grid; grid-template-columns:1.5fr 1fr; gap:0; }',
@@ -184,12 +188,10 @@
                 }
                 var inst = data.instalaciones || [];
                 if (!inst.length) {
-                    wrap.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#86868B;font-size:0.9rem;">'
-                        + '<div style="font-size:2.4rem;opacity:0.5;margin-bottom:8px;">'
-                        + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block;opacity:0.5;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>'
-                        + '</div>'
-                        + '<div style="font-weight:600;color:#1d1d1f;margin-bottom:4px;">Sin instalaciones aún</div>'
-                        + '<div style="font-size:0.8rem;">Da click en <b>+ Nueva instalación</b> para crear la primera.</div>'
+                    wrap.innerHTML = '<div class="pob-empty">'
+                        + '<svg class="pob-empty-ic" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>'
+                        + '<div class="pob-empty-title">Sin instalaciones aún</div>'
+                        + '<div class="pob-empty-sub">Da click en <b>+ Nueva instalación</b> para crear la primera.</div>'
                         + '</div>';
                     return;
                 }
