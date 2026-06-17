@@ -5885,11 +5885,11 @@
         }
 
         // Expandir → abre la ventana completa de la tarea. Solo para tareas de
-        // OPORTUNIDAD (modelo Tarea, que sí tiene ventana vía crmTaskVerDetalle);
-        // las de proyecto (ProyectoTarea) no tienen ventana → sin expandir.
-        var expandBtn = (t.source === 'oportunidad')
-            ? '<button class="tcp-detail-iconbtn" title="Expandir · abrir la tarea" onclick="proyTcpExpandir(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>'
-            : '';
+        // Expandir SIEMPRE. Las de oportunidad abren su ventana completa
+        // (crmTaskVerDetalle); las de proyecto, un overlay centrado con el mismo
+        // detalle ampliado (no comparten ids con Tarea, así que no se puede usar
+        // crmTaskVerDetalle para ellas).
+        var expandBtn = '<button class="tcp-detail-iconbtn" title="Ampliar tarea" onclick="proyTcpExpandir(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>';
         panel.innerHTML =
             '<div class="tcp-detail-head">' +
                 '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
@@ -5928,13 +5928,67 @@
         if (typeof window.openDetalle === 'function') window.openDetalle(oppId, { asWindow: true });
     };
 
-    // Expandir = abrir la ventana completa de la tarea (solo tareas de opp).
+    // Expandir: opp → ventana completa (crmTaskVerDetalle); proyecto → overlay
+    // centrado con el mismo detalle (las de proyecto no tienen ventana propia).
     window.proyTcpExpandir = function (tid) {
-        if (typeof crmTaskVerDetalle !== 'function') return;
-        var m = document.getElementById('crmTaskDetailModal');
-        if (m) { m.classList.add('z-elevated'); m.style.zIndex = '10800'; }
-        crmTaskVerDetalle(tid);
+        var t = _proyTcpData.find(function (x) { return x.id === tid; });
+        if (!t) return;
+        if (t.source === 'oportunidad' && typeof crmTaskVerDetalle === 'function') {
+            var m = document.getElementById('crmTaskDetailModal');
+            if (m) { m.classList.add('z-elevated'); m.style.zIndex = '10800'; }
+            crmTaskVerDetalle(tid);
+            return;
+        }
+        _proyTcpExpandOverlay(t);
     };
+
+    window.proyTcpCerrarExpand = function () {
+        var ov = document.getElementById('proyTcpExpandOv');
+        if (ov) ov.remove();
+    };
+
+    function _proyTcpExpandOverlay(t) {
+        proyTcpCerrarExpand();
+        var estadoCls = _proyTcpEstadoClass(t.estado);
+        var estadoLbl = _proyTcpEstadoLabel(t.estado).toUpperCase();
+        var resp = t.responsable || '';
+        var avColor = _proyTcpAvatarColor(resp), ini = _proyTcpInitials(resp);
+        var fechaIso = t.fecha_limite || '';
+        var vencida = false;
+        if (fechaIso) { try { vencida = new Date(fechaIso) < new Date() && t.estado !== 'completada'; } catch (_) {} }
+        var fechaTxt = _proyTcpFmtFecha(fechaIso);
+        var prio = t.prioridad === 'alta' ? 'Alta' : 'Normal';
+        var cat = t.oportunidad_tipo ? (t.oportunidad_tipo.charAt(0).toUpperCase() + t.oportunidad_tipo.slice(1)) : '—';
+        var clock = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+        var subs = t.subtareas || [];
+        var subtsHtml = subs.length
+            ? '<div class="tcp-subt-list">' + subs.map(function (s) { var dn = s.estado === 'completada'; return '<div class="tcp-subt-row' + (dn ? ' done' : '') + '"><span class="tcp-subt-check' + (dn ? ' done' : '') + '">' + (dn ? '✓' : '') + '</span><span class="tcp-subt-title">' + _proyTcpEsc(s.titulo || '') + '</span></div>'; }).join('') + '</div>'
+            : '<div class="tcp-subt-empty">Sin subtareas</div>';
+        var ov = document.createElement('div');
+        ov.id = 'proyTcpExpandOv';
+        ov.className = 'proy-tcp-expand-ov';
+        ov.onclick = function (e) { if (e.target === ov) proyTcpCerrarExpand(); };
+        ov.innerHTML =
+            '<div class="proy-tcp-expand-card">' +
+                '<div class="tcp-detail-head">' +
+                    '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                    '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="proyTcpCerrarExpand()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                '</div>' +
+                '<div class="tcp-detail-scroll">' +
+                    '<h1 class="tcp-detail-title">' + _proyTcpEsc(t.titulo || 'Sin título') + '</h1>' +
+                    (t.descripcion ? '<div class="tcp-detail-desc">' + _proyTcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>' : '<div class="tcp-detail-desc empty">Sin descripción.</div>') +
+                    '<div class="tcp-detail-meta">' +
+                        _proyTcpMetaRow('Responsable', resp ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _proyTcpEsc(resp) : '<span class="muted">Sin asignar</span>', 'user') +
+                        _proyTcpMetaRow('Oportunidad', t.oportunidad_nombre ? _proyTcpEsc(t.oportunidad_nombre) : '<span class="muted">Sin oportunidad</span>', 'briefcase') +
+                        _proyTcpMetaRow('Fecha límite', fechaIso ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + clock + ' ' + fechaTxt + '</span>' : '<span class="muted">Sin fecha</span>', 'calendar') +
+                        _proyTcpMetaRow('Categoría', cat, 'tag') +
+                        _proyTcpMetaRow('Prioridad', prio, 'flag') +
+                    '</div>' +
+                    '<div class="tcp-detail-subt-head">SUBTAREAS</div>' + subtsHtml +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(ov);
+    }
 
     // Búsqueda: filtra solo la LISTA (el resumen sigue contando todo el proyecto).
     var _proyTcpQuery = '';

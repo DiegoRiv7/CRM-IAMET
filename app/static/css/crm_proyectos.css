@@ -1801,6 +1801,11 @@
    con estilos inline para que se vea el estadio detrás, como la sección Tareas
    real). Búsqueda pill glass + Nueva, centradas. */
 #proyPane_tareas .proy-tcp-toolbar { padding: 4px 0; }
+/* Overlay "Ampliar" para tareas de proyecto (no tienen ventana propia). */
+.proy-tcp-expand-ov { position: fixed; inset: 0; z-index: 10900; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.proy-tcp-expand-card { width: min(560px, 94vw); max-height: 86vh; overflow: hidden; display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: 0 32px 80px rgba(0,0,0,0.45); }
+.proy-tcp-expand-card .tcp-detail-head { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+.proy-tcp-expand-card .tcp-detail-scroll { padding: 20px; overflow-y: auto; }
 .proy-tcp-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .proy-tcp-search { flex: 1; display: flex; align-items: center; gap: 8px; max-width: 380px; background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0; border-radius: 999px; padding: 8px 14px; height: 36px; box-sizing: border-box; }
 .proy-tcp-search:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
