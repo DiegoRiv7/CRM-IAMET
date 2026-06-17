@@ -1556,3 +1556,18 @@ body[data-theme="mundial"] .crm-tw-menu .crm-tw-menu-item.danger span {
 body[data-theme="mundial"] .crm-tw-menu button:hover {
     background: #F2F2F7 !important;
 }
+
+/* ── Dashboard de Reportes (tab=clientes): chart-cards sólidas ──
+   .ck-chart-card usa glass translúcido (rgba .72/.45 + blur 40px) pensado para
+   fondo claro; sobre la cancha del tema mundial se ven lavadas y las gráficas
+   quedan ilegibles. Las volvemos sólidas blancas con sombra limpia. */
+body[data-theme="mundial"] .ck-chart-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(15,23,42,0.08) !important;
+    box-shadow: 0 1px 3px rgba(20,50,100,0.06), 0 10px 30px rgba(20,50,100,0.10) !important;
+}
+body[data-theme="mundial"] .ck-chart-card:hover {
+    box-shadow: 0 2px 6px rgba(20,50,100,0.08), 0 16px 44px rgba(20,50,100,0.14) !important;
+}
