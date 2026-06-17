@@ -5546,48 +5546,124 @@
     //  RENDER: TAREAS
     // =========================================
 
+    // ── Vista de Tareas del proyecto (estilo sección Tareas) ───────────────
+    // Lista agrupada (Atrasadas/Hoy/Próximas/Sin fecha) + panel resumen del
+    // proyecto (Vencidas/Hoy/Hechas) con preview al hacer clic. Las tareas las
+    // da el endpoint /proyectos/<id>/tareas/ (tareas del proyecto + tareas —no
+    // actividades— de la oportunidad ligada).
+    var _proyTareasData = [];
+    function _tkEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function _tkToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function _tkDone(s) { return s === 'completed' || s === 'completada' || s === 'done'; }
+    function _tkCancel(s) { return s === 'cancelled' || s === 'cancelada' || s === 'canceled'; }
+    function _tkResp(t) { return t.asignado_a || t.asignado_a_nombre || t.asignado_nombre || 'Sin asignar'; }
+    function _tkSrcBadge(t) {
+        return t.source === 'oportunidad'
+            ? '<span class="ptk-src ptk-src-opp">Oportunidad</span>'
+            : '<span class="ptk-src ptk-src-proy">Proyecto</span>';
+    }
+    function _tkRow(t) {
+        return '<button type="button" class="ptk-row" data-tid="' + t.id + '" data-src="' + (t.source || '') + '">' +
+            '<span class="ptk-row-title">' + _tkEsc(truncate(t.titulo || '(sin título)', 64)) + '</span>' +
+            _tkSrcBadge(t) +
+            '<span class="ptk-row-resp">' + _tkEsc(_tkResp(t)) + '</span>' +
+            '<span class="ptk-row-fecha">' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</span>' +
+            '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' +
+        '</button>';
+    }
+    function _tkSection(label, arr, kind) {
+        if (!arr.length) return '';
+        return '<div class="ptk-sec ptk-sec-' + kind + '">' +
+            '<div class="ptk-sec-head">' + label + '<span class="ptk-sec-count">' + arr.length + '</span></div>' +
+            arr.map(_tkRow).join('') +
+        '</div>';
+    }
+    function _tkAside(counts, proximas) {
+        var cards = '<div class="ptk-cards">' +
+            '<div class="ptk-card ptk-card-venc"><div class="ptk-card-n">' + counts.vencidas + '</div><div class="ptk-card-l">Vencidas</div></div>' +
+            '<div class="ptk-card ptk-card-hoy"><div class="ptk-card-n">' + counts.hoy + '</div><div class="ptk-card-l">Hoy</div></div>' +
+            '<div class="ptk-card ptk-card-done"><div class="ptk-card-n">' + counts.hechas + '</div><div class="ptk-card-l">Hechas</div></div>' +
+        '</div>';
+        var prox = '<div class="ptk-aside-sub">Próximas<span class="ptk-aside-subn">' + proximas.length + '</span></div>';
+        if (proximas.length) {
+            prox += '<div class="ptk-prox">' + proximas.slice(0, 6).map(function (t) {
+                return '<button type="button" class="ptk-prox-item" data-tid="' + t.id + '" data-src="' + (t.source || '') + '">' +
+                    '<span class="ptk-prox-dot"></span>' +
+                    '<span class="ptk-prox-title">' + _tkEsc(truncate(t.titulo || '', 42)) + '</span>' +
+                    '<span class="ptk-prox-fecha">' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '') + '</span>' +
+                '</button>';
+            }).join('') + '</div>';
+        } else {
+            prox += '<div class="ptk-aside-empty">Nada próximo.</div>';
+        }
+        return '<div class="ptk-aside-head">Resumen del proyecto</div>' + cards + prox +
+            '<div class="ptk-preview" id="proyTareaPreview"><div class="ptk-preview-hint">Haz clic en una tarea para ver el detalle aquí.</div></div>';
+    }
+    function _tkPreview(id) {
+        var t = _proyTareasData.find(function (x) { return String(x.id) === String(id); });
+        var box = el('proyTareaPreview');
+        if (!t || !box) return;
+        var openBtn = t.source === 'oportunidad'
+            ? '<button type="button" class="ptk-open-btn" onclick="(function(){var m=document.getElementById(\'crmTaskDetailModal\');if(m){m.classList.add(\'z-elevated\');m.style.zIndex=\'10800\';}if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');})()">Abrir tarea</button>'
+            : '';
+        box.innerHTML =
+            '<div class="ptk-preview-title">' + _tkEsc(t.titulo || '') + '</div>' +
+            '<div class="ptk-preview-badges">' + _tkSrcBadge(t) + '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></div>' +
+            (t.descripcion ? '<div class="ptk-preview-desc">' + _tkEsc(t.descripcion) + '</div>' : '') +
+            '<div class="ptk-preview-meta"><span>Responsable</span><b>' + _tkEsc(_tkResp(t)) + '</b></div>' +
+            '<div class="ptk-preview-meta"><span>Fecha límite</span><b>' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</b></div>' +
+            (t.oportunidad_nombre ? '<div class="ptk-preview-meta"><span>Oportunidad</span><b>' + _tkEsc(t.oportunidad_nombre) + '</b></div>' : '') +
+            openBtn;
+    }
+    function _tkWire() {
+        var list = el('proyTareasList');
+        var aside = el('proyTareasResumen');
+        function bind(b) {
+            b.addEventListener('click', function () {
+                _tkPreview(b.getAttribute('data-tid'));
+                if (list) list.querySelectorAll('.ptk-row.active').forEach(function (x) { x.classList.remove('active'); });
+                if (b.classList.contains('ptk-row')) b.classList.add('active');
+            });
+        }
+        if (list) list.querySelectorAll('.ptk-row').forEach(bind);
+        if (aside) aside.querySelectorAll('.ptk-prox-item').forEach(bind);
+    }
+
     function renderTareas(projectId) {
-        var container = el('proyTareasBody');
-        if (!container) return;
+        var list = el('proyTareasList');
+        var aside = el('proyTareasResumen');
+        if (!list) return;
+        list.innerHTML = '<div class="ptk-empty">Cargando…</div>';
+        if (aside) aside.innerHTML = '';
 
-        container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
-
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function(resp) {
-            if (resp.ok || resp.success) {
-                var tasks = resp.data || [];
-                if (tasks.length === 0) {
-                    container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">No hay tareas registradas</td></tr>';
-                    return;
-                }
-
-                var html = '';
-                tasks.forEach(function(t) {
-                    var titleCell;
-                    var sourceBadge;
-                    if (t.source === 'oportunidad') {
-                        titleCell = '<span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="var m=document.getElementById(\'crmTaskDetailModal\');if(m){m.classList.add(\'z-elevated\');m.style.zIndex=\'10800\';}if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' + truncate(t.titulo, 40) + '</span>';
-                        sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#dbeafe;color:#2563eb;">CRM</span>';
-                    } else {
-                        titleCell = '<span style="font-weight:600;color:#1d1d1f;">' + truncate(t.titulo, 40) + '</span>';
-                        sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#f3e8ff;color:#7c3aed;">Proyecto</span>';
-                    }
-                    html += '<tr>' +
-                        '<td>' + titleCell + '</td>' +
-                        '<td>' + sourceBadge + '</td>' +
-                        '<td><span class="proy-badge ' + priorityClass(t.prioridad) + '">' + priorityLabel(t.prioridad) + '</span></td>' +
-                        '<td>' + (t.asignado_a || t.asignado_a_nombre || t.asignado_nombre || 'Sin asignar') + '</td>' +
-                        '<td>' + fmtDate(t.fecha_limite) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></td>' +
-                    '</tr>';
-                });
-
-                container.innerHTML = html;
-            } else {
-                container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">Error al cargar tareas</td></tr>';
-                console.error('Error cargando tareas:', resp.error);
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function (resp) {
+            if (!(resp.ok || resp.success)) {
+                list.innerHTML = '<div class="ptk-empty ptk-empty-err">Error al cargar tareas</div>';
+                return;
             }
-        }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            var tasks = resp.data || [];
+            _proyTareasData = tasks;
+            var today = _tkToday();
+            var g = { atrasadas: [], hoy: [], proximas: [], sinfecha: [] };
+            var counts = { vencidas: 0, hoy: 0, hechas: 0 };
+            tasks.forEach(function (t) {
+                if (_tkDone(t.status)) { counts.hechas++; return; }
+                if (_tkCancel(t.status)) return;
+                var d = (t.fecha_limite || '').slice(0, 10);
+                if (!d) { g.sinfecha.push(t); return; }
+                if (d < today) { g.atrasadas.push(t); counts.vencidas++; }
+                else if (d === today) { g.hoy.push(t); counts.hoy++; }
+                else { g.proximas.push(t); }
+            });
+            var html = _tkSection('Atrasadas', g.atrasadas, 'venc') +
+                _tkSection('Hoy', g.hoy, 'hoy') +
+                _tkSection('Próximas', g.proximas, 'prox') +
+                _tkSection('Sin fecha', g.sinfecha, 'sf');
+            list.innerHTML = html || '<div class="ptk-empty">No hay tareas registradas</div>';
+            if (aside) aside.innerHTML = _tkAside(counts, g.proximas);
+            _tkWire();
+        }).catch(function (err) {
+            list.innerHTML = '<div class="ptk-empty ptk-empty-err">Error de conexión</div>';
             console.error('Error de red cargando tareas:', err);
         });
     }

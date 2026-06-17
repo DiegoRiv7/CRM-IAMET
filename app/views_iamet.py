@@ -2403,9 +2403,10 @@ def api_tareas_proyecto_lista(request, proyecto_id):
         d['source'] = 'proyecto'
         items.append(d)
 
-    # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM)
+    # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM — NO Actividad).
     if proyecto.oportunidad_id:
         from .models import Tarea
+        opp_nombre = proyecto.oportunidad.oportunidad if proyecto.oportunidad_id else None
         tareas_crm = Tarea.objects.filter(
             oportunidad_id=proyecto.oportunidad_id
         ).select_related('asignado_a', 'creado_por')
@@ -2424,6 +2425,7 @@ def api_tareas_proyecto_lista(request, proyecto_id):
                 'status': estado_map.get(t.estado, 'pending'),
                 'asignado_a_nombre': resp_name,
                 'fecha_limite': _fmt(t.fecha_limite),
+                'oportunidad_nombre': opp_nombre,
             })
 
     return JsonResponse({'success': True, 'data': items})
