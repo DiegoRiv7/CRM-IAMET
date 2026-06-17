@@ -513,7 +513,10 @@ def _proyecto_overview(proyecto):
 
     counts = {
         'levantamientos': _safe_count(getattr(proyecto, 'levantamientos', None)),
-        'tareas_pendientes': _safe_count(proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled'])),
+        'tareas_pendientes': (
+            _safe_count(proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']))
+            + _safe_count(proyecto.tareas_iamet.exclude(estado__in=['completada', 'cancelada']))
+        ),
         'alertas': _safe_count(proyecto.alertas.filter(resuelta=False)),
         'ordenes_compra_activas': _safe_count(proyecto.ordenes_compra.exclude(status='cancelled')),
     }
@@ -981,7 +984,10 @@ def api_proyecto_detalle(request, proyecto_id):
         'utilidad_real': float(utilidad_real),
         'margen': float(margen),
         'alertas_pendientes': proyecto.alertas.filter(resuelta=False).count(),
-        'tareas_pendientes': proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count(),
+        'tareas_pendientes': (
+            proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count()
+            + proyecto.tareas_iamet.exclude(estado__in=['completada', 'cancelada']).count()
+        ),
         'ordenes_compra_activas': proyecto.ordenes_compra.exclude(status='cancelled').count(),
         # Gastado: OCs (no canceladas) + Gastos operativos (no rechazados)
         'gastado': gastado_total,
@@ -2407,41 +2413,64 @@ def api_tareas_proyecto_lista(request, proyecto_id):
     PT_PRIORIDAD = {'low': 'baja', 'medium': 'media', 'alta': 'alta',
                     'high': 'alta', 'critical': 'alta'}
 
+    from .models import Tarea
+
     items = []
 
-    # 1) Tareas propias del proyecto (ProyectoTarea)
-    tareas = proyecto.tareas_proyecto.select_related('asignado_a').all()
-    for t in tareas:
+    # 1) Tareas del proyecto = CRM Tareas ligadas vía proyecto_iamet (modelo
+    #    Tarea → abren su ventana completa). source 'proyecto'.
+    proy_tareas = Tarea.objects.filter(
+        proyecto_iamet=proyecto, tarea_padre__isnull=True
+    ).select_related('asignado_a', 'creado_por').prefetch_related('subtareas')
+    for t in proy_tareas:
+        subs = [{'id': s.id, 'titulo': s.titulo, 'estado': s.estado} for s in t.subtareas.all()]
         items.append({
             'id': t.id,
             'source': 'proyecto',
             'titulo': t.titulo,
             'descripcion': t.descripcion or '',
+            'estado': t.estado or 'pendiente',
+            'prioridad': t.prioridad or 'media',
+            'responsable': _nombre_usuario(t.asignado_a),
+            'creado_por': _nombre_usuario(t.creado_por),
+            'fecha_limite': _fmt(t.fecha_limite),
+            'fecha_completada': _fmt(t.fecha_completada),
+            'oportunidad_id': t.oportunidad_id,
+            'oportunidad_nombre': (t.oportunidad.oportunidad if t.oportunidad_id else ''),
+            'oportunidad_tipo': 'proyecto',
+            'subtareas': subs,
+        })
+
+    # 1b) Tareas LEGACY del proyecto (modelo simple ProyectoTarea) — se siguen
+    #     mostrando; abren el diálogo ligero (source 'proyecto-legacy').
+    for t in proyecto.tareas_proyecto.select_related('asignado_a').all():
+        items.append({
+            'id': t.id,
+            'source': 'proyecto-legacy',
+            'titulo': t.titulo,
+            'descripcion': t.descripcion or '',
             'estado': PT_ESTADO.get(t.status, 'pendiente'),
             'prioridad': PT_PRIORIDAD.get(t.prioridad, 'media'),
             'responsable': _nombre_usuario(t.asignado_a),
-            # ProyectoTarea no guarda creador → se deja vacío (fallback "—")
             'creado_por': '',
             'fecha_limite': _fmt(t.fecha_limite),
             'fecha_completada': _fmt(t.fecha_completada),
-            # Tareas de proyecto no cuelgan de una oportunidad concreta.
             'oportunidad_id': None,
             'oportunidad_nombre': '',
             'oportunidad_tipo': 'proyecto',
-            # ProyectoTarea no modela subtareas.
             'subtareas': [],
         })
 
     # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM — NO Actividad).
+    #    Excluye las que ya son del proyecto (proyecto_iamet) para no duplicar.
     if proyecto.oportunidad_id:
-        from .models import Tarea
         opp = proyecto.oportunidad
         opp_nombre = opp.oportunidad if opp else ''
         opp_tipo = getattr(opp, 'tipo_negociacion', '') if opp else ''
         opp_id = proyecto.oportunidad_id
         # Solo tareas raíz (no subtareas) — las subtareas van anidadas.
         tareas_crm = Tarea.objects.filter(
-            oportunidad_id=opp_id, tarea_padre__isnull=True
+            oportunidad_id=opp_id, tarea_padre__isnull=True, proyecto_iamet__isnull=True
         ).select_related('asignado_a', 'creado_por').prefetch_related('subtareas')
         for t in tareas_crm:
             subs = [{
@@ -2498,19 +2527,22 @@ def api_tarea_proyecto_crear(request):
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Usuario asignado no encontrado'}, status=404)
 
-    tarea = ProyectoTarea.objects.create(
-        proyecto=proyecto,
+    # Las tareas creadas en el proyecto ahora son CRM Tareas (modelo Tarea)
+    # ligadas vía proyecto_iamet → tienen su ventana completa (crmTaskVerDetalle).
+    from .models import Tarea
+    _PRIO_EN2ES = {'low': 'baja', 'medium': 'media', 'high': 'alta', 'critical': 'alta'}
+    tarea = Tarea.objects.create(
+        proyecto_iamet=proyecto,
+        creado_por=request.user,
         titulo=data.get('titulo', ''),
         descripcion=data.get('descripcion', ''),
-        status=data.get('status', 'pending'),
-        prioridad=data.get('prioridad', 'medium'),
+        estado='pendiente',
+        prioridad=_PRIO_EN2ES.get(data.get('prioridad'), 'media'),
         asignado_a=asignado_a,
         fecha_limite=_parse_date(data.get('fecha_limite')),
-        horas_estimadas=_dec(data.get('horas_estimadas')) if data.get('horas_estimadas') else None,
-        notas=data.get('notas', ''),
     )
 
-    return JsonResponse({'success': True, 'data': _tarea_to_dict(tarea)})
+    return JsonResponse({'success': True, 'data': {'id': tarea.id}})
 
 
 @login_required

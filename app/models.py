@@ -2390,6 +2390,18 @@ class Tarea(models.Model):
         verbose_name="Proyecto",
         related_name='tareas'
     )
+    # Proyecto del módulo IAMET (modelo moderno, distinto del 'proyecto' legacy
+    # de arriba). Permite que una Tarea —con su ventana completa
+    # (comentarios/participantes/completar)— viva dentro de un ProyectoIAMET.
+    # Las tareas creadas en el detalle del proyecto se guardan aquí.
+    proyecto_iamet = models.ForeignKey(
+        'ProyectoIAMET',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Proyecto IAMET",
+        related_name='tareas_iamet'
+    )
     creado_por = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

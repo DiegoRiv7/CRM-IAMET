@@ -5933,14 +5933,14 @@
     window.proyTcpExpandir = function (tid) {
         var t = _proyTcpData.find(function (x) { return x.id === tid; });
         if (!t) return;
-        if (t.source === 'oportunidad' && typeof crmTaskVerDetalle === 'function') {
+        // Tareas de proyecto (modelo Tarea) y de oportunidad → ventana completa.
+        if ((t.source === 'proyecto' || t.source === 'oportunidad') && typeof crmTaskVerDetalle === 'function') {
             var m = document.getElementById('crmTaskDetailModal');
             if (m) { m.classList.add('z-elevated'); m.style.zIndex = '10800'; }
             crmTaskVerDetalle(tid);
             return;
         }
-        // Tarea de proyecto: abrir el diálogo de tarea en modo VER/EDITAR
-        // (ventana real editable) en vez del overlay simple.
+        // Legacy (ProyectoTarea, modelo simple) → diálogo ligero ver/editar.
         if (typeof window.proyTareaEditar === 'function') window.proyTareaEditar(t);
         else _proyTcpExpandOverlay(t);
     };
