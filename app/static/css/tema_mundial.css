@@ -809,11 +809,12 @@ body[data-theme="mundial"] .proy-v3-rag-text {
     color: inherit !important;
 }
 
-/* Tareas del proyecto dentro de card blanca (texto oscuro). El header de
-   columnas lleva la greca azteca (vía el selector compartido de arriba) con
-   texto blanco y esquinas superiores redondeadas. */
-body[data-theme="mundial"] .ptk-cols-head { color: #ffffff !important; border-radius: 12px 12px 0 0 !important; }
-body[data-theme="mundial"] .ptk-cols-head > span { color: #ffffff !important; }
+/* Tareas del proyecto: la búsqueda flota como glass (no cuadro blanco sólido),
+   igual que la barra del módulo de Tareas real. */
+body[data-theme="mundial"] .proy-tcp-search { background: rgba(255,255,255,0.12) !important; border-color: rgba(255,255,255,0.28) !important; }
+body[data-theme="mundial"] .proy-tcp-search input { color: #ffffff !important; }
+body[data-theme="mundial"] .proy-tcp-search input::placeholder { color: rgba(255,255,255,0.6) !important; }
+body[data-theme="mundial"] .proy-tcp-search svg { stroke: rgba(255,255,255,0.75) !important; }
 
 /* --- KPI strip: SÓLIDO (legibilidad prioritaria) --- */
 body[data-theme="mundial"] .proy-v3-kpi-strip {
