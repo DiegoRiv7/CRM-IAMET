@@ -1433,7 +1433,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .proy-v3-dashboard-placeholder {
@@ -1494,10 +1494,10 @@
 }
 
 .proy-v3-kpi-cell {
-  padding: 14px 18px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
   min-width: 0;
 }
 .proy-v3-kpi-cell + .proy-v3-kpi-cell { border-left: 1px solid #f1f5f9; }
@@ -1515,7 +1515,7 @@
 .proy-v3-kpi-eyebrow svg { flex-shrink: 0; opacity: 0.85; }
 
 .proy-v3-kpi-value {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.015em;
   color: #0f172a;
@@ -1577,24 +1577,24 @@
    PROY-V3 — Dashboard pane (gauge avance, equipo, breakdown, mini-stats)
    ========================================================================== */
 
-.proy-v3-dash-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.proy-v3-dash-row { display: grid; grid-template-columns: 1fr; gap: 20px; }
 .proy-v3-dash-row--2col { grid-template-columns: 1fr 1fr; }
 @media (max-width: 900px) { .proy-v3-dash-row--2col { grid-template-columns: 1fr; } }
 
 .proy-v3-dash-card {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px 20px;
+  border-radius: 16px;
+  padding: 24px 26px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 .proy-v3-dash-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .proy-v3-dash-card-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.005em;
@@ -1610,7 +1610,7 @@
   align-items: flex-end;
   padding: 6px 0 4px;
 }
-.proy-v3-gauge { width: 100%; max-width: 240px; height: auto; display: block; }
+.proy-v3-gauge { width: 100%; max-width: 300px; height: auto; display: block; }
 .proy-v3-gauge-center {
   position: absolute;
   bottom: 4px;
@@ -1620,7 +1620,7 @@
   pointer-events: none;
 }
 .proy-v3-gauge-pct {
-  font-size: 30px;
+  font-size: 38px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #0f172a;
@@ -1749,17 +1749,17 @@
 .proy-v3-mini-stat {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 18px 18px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
 }
 .proy-v3-mini-stat-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: #eff6ff;
   color: #1d4ed8;
   display: inline-flex;
@@ -1769,7 +1769,7 @@
 }
 .proy-v3-mini-stat-text { min-width: 0; flex: 1; }
 .proy-v3-mini-stat-value {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.01em;

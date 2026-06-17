@@ -231,13 +231,14 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           <span>Portafolio</span>
         </button>
-        <span class="proy-v3-topbar-sep" aria-hidden="true">·</span>
-        <!-- Nombre del proyecto como breadcrumb clickable (también vuelve al
-             listado). Lo rellena renderProjectOverview / proyectosVerDetalle. -->
-        <button type="button" class="proy-v3-back proy-v3-crumb-name" id="proyV3CrumbName" onclick="proyectosVolverLista()" title="Volver al portafolio" style="background:transparent;border:none;cursor:pointer;font:inherit;color:inherit;padding:0;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Proyecto</button>
-        {% comment %} El chip de oportunidad se movió a la esquina superior derecha (junto a los avatares). Separador legacy oculto para no romper el JS que lo referencia. {% endcomment %}
+        {% comment %}
+        Breadcrumb con el nombre del proyecto REMOVIDO: era redundante con el
+        título grande de la tarjeta de abajo. Los IDs (proyV3CrumbName,
+        proyV3CrumbOppSep, proyV3ProjectId) quedan ocultos para no romper el JS
+        que aún los referencia (todos sus accesos son null-guarded igual).
+        {% endcomment %}
+        <button type="button" id="proyV3CrumbName" style="display:none;"></button>
         <span class="proy-v3-topbar-sep" aria-hidden="true" id="proyV3CrumbOppSep" style="display:none;">·</span>
-        <!-- legacy ID hidden — ya no se muestra en el topbar -->
         <span id="proyV3ProjectId" style="display:none;"></span>
       </div>
 
