@@ -65,7 +65,7 @@
             '.wop-btn-secondary:hover { background:#E5E5EA; }',
 
             /* ── Composer Notion-like para Nueva/Editar instalación ── */
-            '.pob-modal { width:min(1080px, 96vw); }',
+            '.pob-modal { width:min(1240px, 96vw); }',
             '.pob-empty { padding:56px 24px; text-align:center; }',
             '.pob-empty-ic { margin:0 auto 8px; display:block; opacity:0.5; }',
             '.pob-empty-title { font-weight:700; color:#1d1d1f; margin-bottom:4px; font-size:1rem; }',
@@ -78,8 +78,11 @@
             '.pob-title-input { width:100%; border:none; outline:none; font-family:inherit; font-size:1.5rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.02em; padding:6px 0; resize:none; line-height:1.25; background:transparent; }',
             '.pob-title-input::placeholder { color:#C7C7CC; font-weight:700; }',
             /* fila meta inline tipo "etiqueta a la izquierda, control limpio a la derecha" */
-            '.pob-meta { display:flex; flex-direction:column; gap:2px; margin-top:14px; }',
-            '.pob-meta-row { display:grid; grid-template-columns:120px 1fr; align-items:center; gap:8px; padding:5px 0; border-radius:8px; }',
+            '.pob-meta { display:grid; grid-template-columns:1fr 1fr; column-gap:34px; row-gap:2px; margin-top:16px; }',
+            '.pob-meta-row { display:grid; grid-template-columns:118px 1fr; align-items:center; gap:8px; padding:7px 0; border-radius:8px; }',
+            '.pob-meta-row--full { grid-column:1 / -1; }',
+            '.pob-meta-row .pob-input, .pob-meta-row select.pob-input { min-width:0; }',
+            '@media (max-width:980px){ .pob-meta { grid-template-columns:1fr; } }',
             '.pob-meta-row:hover { background:#FAFAFC; }',
             '.pob-meta-label { display:inline-flex; align-items:center; gap:7px; font-size:0.78rem; font-weight:600; color:#86868B; }',
             '.pob-meta-label svg { color:#A1A1A6; }',
@@ -271,7 +274,7 @@
           +               'PO</span>'
           +             '<input type="text" id="pobInstPo" maxlength="80" class="pob-input" placeholder="Orden de compra">'
           +           '</div>'
-          +           '<div class="pob-meta-row">'
+          +           '<div class="pob-meta-row pob-meta-row--full">'
           +             '<span class="pob-meta-label">'
           +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
           +               'Jornadas</span>'
@@ -286,7 +289,7 @@
           +               '</select>'
           +             '</div>'
           +           '</div>'
-          +           '<div class="pob-meta-row">'
+          +           '<div class="pob-meta-row pob-meta-row--full">'
           +             '<span class="pob-meta-label">'
           +               '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
           +               'Personal</span>'
