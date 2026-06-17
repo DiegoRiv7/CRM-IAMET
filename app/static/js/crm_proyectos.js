@@ -1444,6 +1444,12 @@
         var activePane = el(paneId);
         if (activePane) activePane.style.display = '';
 
+        // Tab Tareas: el detalle se vuelve TRANSPARENTE (igual que la sección
+        // Tareas real, flotando sobre el estadio) — sin la card clara ni la
+        // banda blanca superior. En los demás tabs se conserva la card.
+        var _detCard = document.querySelector('#widgetProyectoDetalle .proy-detail-card') || document.querySelector('.proy-detail-card');
+        if (_detCard) _detCard.classList.toggle('proy-detail--tareas', tabName === 'tareas');
+
         // Cierra el dropdown "Más ▾" cuando se navega
         if (typeof _proyMoreMenuClose === 'function') _proyMoreMenuClose();
 
