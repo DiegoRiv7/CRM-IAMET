@@ -6364,6 +6364,23 @@
         if (d) d.style.display = 'flex';
     };
 
+    // "Nueva Tarea" del proyecto → formulario CRM completo (crmTaskAbrirCrear),
+    // ligando la tarea al PROYECTO (proyecto_iamet) y a su OPORTUNIDAD, para que
+    // se vea en el proyecto, en la oportunidad y en el calendario.
+    window.proyNuevaTareaCRM = function () {
+        var oppId = (_cachedProjectDetail && _cachedProjectDetail.oportunidad_id) || null;
+        if (typeof window.crmTaskAbrirCrear === 'function') {
+            window.crmTaskAbrirCrear(oppId, { proyectoIametId: currentProjectId });
+        } else {
+            window.proyectosCrearTareaDialogo();
+        }
+    };
+    // Hook que llama crm_main.js (crmTaskCrear) para refrescar la lista del
+    // proyecto tras crear una tarea desde el formulario CRM.
+    window.proyRefrescarTareas = function () {
+        if (currentProjectId && typeof renderTareas === 'function') renderTareas(currentProjectId);
+    };
+
     // Abrir el diálogo en modo VER/EDITAR con los datos de la tarea de proyecto.
     window.proyTareaEditar = function (t) {
         if (!t) return;

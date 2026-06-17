@@ -1937,6 +1937,17 @@ def api_crear_tarea(request):
             except TodoItem.DoesNotExist:
                 return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
 
+        # Obtener Proyecto IAMET (modelo moderno) si se especificó — liga la
+        # tarea al detalle del proyecto (además de la oportunidad).
+        proyecto_iamet = None
+        proyecto_iamet_id = data.get('proyecto_iamet_id')
+        if proyecto_iamet_id:
+            try:
+                from .models import ProyectoIAMET
+                proyecto_iamet = ProyectoIAMET.objects.get(id=proyecto_iamet_id)
+            except Exception:
+                proyecto_iamet = None
+
         # Obtener tarea padre si se especificó (subtarea)
         tarea_padre = None
         if tarea_padre_id:
@@ -1960,6 +1971,7 @@ def api_crear_tarea(request):
             asignado_a=asignado_a,
             fecha_limite=fecha_limite_obj,
             proyecto=proyecto,
+            proyecto_iamet=proyecto_iamet,
             oportunidad=oportunidad,
             tarea_padre=tarea_padre,
         )

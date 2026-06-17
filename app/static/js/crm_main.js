@@ -10587,11 +10587,14 @@
         // ═══ MODAL CREAR TAREA ═══
         // ══════════════════════════════════
 
-        function crmTaskAbrirCrear(oppId) {
+        function crmTaskAbrirCrear(oppId, opts) {
             var modal = document.getElementById('crmCreateTaskModal');
             if (modal) {
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
+                // Liga opcional a un Proyecto IAMET (cuando se crea desde el
+                // detalle de un proyecto). Lo lee crmTaskCrear en el payload.
+                window._crmTaskProyectoIametId = (opts && opts.proyectoIametId) || null;
                 // Set oportunidad silently if provided
                 var oppIdEl = document.getElementById('crmTaskOppId');
                 if (oppIdEl) oppIdEl.value = oppId || '';
@@ -10630,6 +10633,7 @@
                 var el = document.getElementById(id); if (el) el.innerHTML = '';
             });
             // Reset state
+            window._crmTaskProyectoIametId = null;
             _crmTaskSelectedResp = null;
             _crmTaskSelectedParts = [];
             _crmTaskSelectedObs = [];
@@ -11061,6 +11065,7 @@
             if (_crmTaskSelectedObs.length > 0) payload.observadores = _crmTaskSelectedObs.map(function (u) { return u.id; });
             var oppIdEl = document.getElementById('crmTaskOppId');
             if (oppIdEl && oppIdEl.value) payload.oportunidad_id = oppIdEl.value;
+            if (window._crmTaskProyectoIametId) payload.proyecto_iamet_id = window._crmTaskProyectoIametId;
             var padreIdEl = document.getElementById('crmTaskPadreId');
             if (padreIdEl && padreIdEl.value) payload.tarea_padre_id = padreIdEl.value;
 
@@ -11097,6 +11102,8 @@
                         }
                         crmTaskCerrarCrear();
                         recargarTareasCRM();
+                        // Si se creó desde el detalle de un proyecto, refrescar su lista.
+                        if (typeof window.proyRefrescarTareas === 'function') window.proyRefrescarTareas();
                         showToast(padreId ? 'Subtarea creada exitosamente' : 'Tarea creada exitosamente', 'success');
                         // Refresh parent task detail if subtask was created
                         if (padreId && typeof crmTaskVerDetalle === 'function') {
