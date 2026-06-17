@@ -5546,131 +5546,407 @@
     //  RENDER: TAREAS
     // =========================================
 
-    // ── Vista de Tareas del proyecto (estilo sección Tareas) ───────────────
-    // Lista agrupada (Atrasadas/Hoy/Próximas/Sin fecha) + panel resumen del
-    // proyecto (Vencidas/Hoy/Hechas) con preview al hacer clic. Las tareas las
-    // da el endpoint /proyectos/<id>/tareas/ (tareas del proyecto + tareas —no
-    // actividades— de la oportunidad ligada).
-    var _proyTareasData = [];
-    function _tkEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-    function _tkToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-    function _tkDone(s) { return s === 'completed' || s === 'completada' || s === 'done'; }
-    function _tkCancel(s) { return s === 'cancelled' || s === 'cancelada' || s === 'canceled'; }
-    function _tkResp(t) { return t.asignado_a || t.asignado_a_nombre || t.asignado_nombre || 'Sin asignar'; }
-    function _tkSrcBadge(t) {
-        return t.source === 'oportunidad'
-            ? '<span class="ptk-src ptk-src-opp">Oportunidad</span>'
-            : '<span class="ptk-src ptk-src-proy">Proyecto</span>';
+    // ── Vista de Tareas del proyecto — COPIA FIEL del cockpit (.tcp-*) ──────
+    // Port namespaced (proyTcp / _proyTcp) del módulo real de Tareas
+    // (crm_main.js renderTareasCockpit/tcpSelectTask/_tcpRenderSummary), pero
+    // alimentado SOLO con las tareas de este proyecto (endpoint
+    // /proyectos/<id>/tareas/). Renderiza en #proyTcpList / #proyTcpDetail con
+    // su propio array (NO _crmAllTareas) y sus propios helpers privados, para no
+    // depender de internals de crm_main.js ni colisionar con sus IDs/globals.
+    // PROHIBIDO abrir/expandir la tarea: el detalle solo tiene botón Cerrar (X).
+    var _proyTcpData = [];
+    var _proyTcpSelectedId = null;
+    var _proyTcpCollapsed = {};
+
+    // — Helpers privados (copia de los _tcp* del módulo real) —
+    function _proyTcpEsc(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-    function _tkRow(t, kind) {
-        var ic = (kind === 'venc')
-            ? '<svg class="ptk-row-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-            : '';
-        return '<button type="button" class="ptk-row" data-tid="' + t.id + '" data-src="' + (t.source || '') + '">' +
-            '<span class="ptk-row-title">' + ic + '<span class="ptk-row-titletx">' + _tkEsc(truncate(t.titulo || '(sin título)', 62)) + '</span></span>' +
-            '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' +
-            '<span class="ptk-row-resp">' + _tkEsc(_tkResp(t)) + '</span>' +
-            '<span class="ptk-row-fecha">' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</span>' +
-            _tkSrcBadge(t) +
-        '</button>';
+    function _proyTcpAvatarColor(nombre) {
+        var colors = ['#E11D48','#DC2626','#F59E0B','#CA8A04','#16A34A','#0891B2','#2563EB','#7C3AED','#DB2777','#0EA5E9'];
+        var h = 0; var s = nombre || '?';
+        for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+        return colors[Math.abs(h) % colors.length];
     }
-    function _tkSection(label, arr, kind) {
-        if (!arr.length) return '';
-        return '<div class="ptk-sec ptk-sec-' + kind + '">' +
-            '<div class="ptk-sec-head">' + label + '<span class="ptk-sec-count">' + arr.length + '</span></div>' +
-            arr.map(function (t) { return _tkRow(t, kind); }).join('') +
-        '</div>';
+    function _proyTcpInitials(nombre) {
+        if (!nombre) return '?';
+        var parts = nombre.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return parts[0].substring(0, 2).toUpperCase();
     }
-    function _tkAside(counts, proximas) {
-        var cards = '<div class="ptk-cards">' +
-            '<div class="ptk-card ptk-card-venc"><div class="ptk-card-n">' + counts.vencidas + '</div><div class="ptk-card-l">Vencidas</div></div>' +
-            '<div class="ptk-card ptk-card-hoy"><div class="ptk-card-n">' + counts.hoy + '</div><div class="ptk-card-l">Hoy</div></div>' +
-            '<div class="ptk-card ptk-card-done"><div class="ptk-card-n">' + counts.hechas + '</div><div class="ptk-card-l">Hechas</div></div>' +
-        '</div>';
-        var prox = '<div class="ptk-aside-sub">Próximas<span class="ptk-aside-subn">' + proximas.length + '</span></div>';
-        if (proximas.length) {
-            prox += '<div class="ptk-prox">' + proximas.slice(0, 6).map(function (t) {
-                return '<button type="button" class="ptk-prox-item" data-tid="' + t.id + '" data-src="' + (t.source || '') + '">' +
-                    '<span class="ptk-prox-dot"></span>' +
-                    '<span class="ptk-prox-title">' + _tkEsc(truncate(t.titulo || '', 42)) + '</span>' +
-                    '<span class="ptk-prox-fecha">' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '') + '</span>' +
-                '</button>';
-            }).join('') + '</div>';
-        } else {
-            prox += '<div class="ptk-aside-empty">Nada próximo.</div>';
+    function _proyTcpFirstName(nombre) {
+        if (!nombre) return '';
+        return (nombre.trim().split(/\s+/)[0] || '').slice(0, 12);
+    }
+    function _proyTcpFmtFecha(iso) {
+        if (!iso) return 'Sin fecha';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        var hh = String(d.getHours()).padStart(2, '0');
+        var mm = String(d.getMinutes()).padStart(2, '0');
+        return d.getDate() + ' ' + MES[d.getMonth()] + ', ' + hh + ':' + mm;
+    }
+    function _proyTcpEstadoClass(estado) {
+        return (estado || 'pendiente').toLowerCase().replace(/\s+/g, '_');
+    }
+    function _proyTcpEstadoLabel(estado) {
+        var map = {
+            pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso',
+            completada: 'Completada', cancelada: 'Cancelada'
+        };
+        return map[estado] || (estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'Pendiente');
+    }
+    function _proyTcpRelativeWhen(fl, today, tomorrow) {
+        var ms = fl - new Date();
+        var absDays = Math.floor(Math.abs(ms) / 86400000);
+        if (fl < today) {
+            if (absDays === 0) return 'hoy';
+            if (absDays === 1) return 'ayer';
+            return 'hace ' + absDays + 'd';
         }
-        return '<div class="ptk-aside-head">Resumen del proyecto</div>' + cards + prox +
-            '<div class="ptk-preview" id="proyTareaPreview"><div class="ptk-preview-hint">Haz clic en una tarea para ver el detalle aquí.</div></div>';
-    }
-    function _tkPreview(id) {
-        var t = _proyTareasData.find(function (x) { return String(x.id) === String(id); });
-        var box = el('proyTareaPreview');
-        if (!t || !box) return;
-        var openBtn = t.source === 'oportunidad'
-            ? '<button type="button" class="ptk-open-btn" onclick="(function(){var m=document.getElementById(\'crmTaskDetailModal\');if(m){m.classList.add(\'z-elevated\');m.style.zIndex=\'10800\';}if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');})()">Abrir tarea</button>'
-            : '';
-        var cat = t.source === 'oportunidad' ? 'Oportunidad' : 'Proyecto';
-        var prio = (typeof priorityLabel === 'function') ? priorityLabel(t.prioridad) : (t.prioridad || '—');
-        box.innerHTML =
-            '<div class="ptk-preview-badges"><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' + _tkSrcBadge(t) + '</div>' +
-            '<div class="ptk-preview-title">' + _tkEsc(t.titulo || '') + '</div>' +
-            (t.descripcion ? '<div class="ptk-preview-desc">' + _tkEsc(t.descripcion) + '</div>' : '') +
-            '<div class="ptk-preview-meta"><span>Responsable</span><b>' + _tkEsc(_tkResp(t)) + '</b></div>' +
-            (t.oportunidad_nombre ? '<div class="ptk-preview-meta"><span>Oportunidad</span><b>' + _tkEsc(t.oportunidad_nombre) + '</b></div>' : '') +
-            '<div class="ptk-preview-meta"><span>Fecha límite</span><b>' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</b></div>' +
-            '<div class="ptk-preview-meta"><span>Categoría</span><b>' + cat + '</b></div>' +
-            '<div class="ptk-preview-meta"><span>Prioridad</span><b>' + _tkEsc(prio || '—') + '</b></div>' +
-            openBtn;
-    }
-    function _tkWire() {
-        var list = el('proyTareasList');
-        var aside = el('proyTareasResumen');
-        function bind(b) {
-            b.addEventListener('click', function () {
-                _tkPreview(b.getAttribute('data-tid'));
-                if (list) list.querySelectorAll('.ptk-row.active').forEach(function (x) { x.classList.remove('active'); });
-                if (b.classList.contains('ptk-row')) b.classList.add('active');
-            });
+        if (fl < tomorrow) {
+            var h = Math.round(ms / 3600000);
+            if (h <= 0) return 'hoy';
+            if (h === 1) return 'en 1h';
+            if (h < 24) return 'en ' + h + 'h';
+            return 'hoy';
         }
-        if (list) list.querySelectorAll('.ptk-row').forEach(bind);
-        if (aside) aside.querySelectorAll('.ptk-prox-item').forEach(bind);
+        var dd = Math.ceil(ms / 86400000);
+        if (dd === 1) return 'mañana';
+        if (dd <= 7) return 'en ' + dd + 'd';
+        var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        return fl.getDate() + ' ' + MES[fl.getMonth()];
     }
 
-    function renderTareas(projectId) {
-        var list = el('proyTareasList');
-        var aside = el('proyTareasResumen');
+    // — Fila de la lista (copia de _tcpRowHtml) —
+    function _proyTcpRowHtml(t, esAtrasada) {
+        var estadoCls = _proyTcpEstadoClass(t.estado);
+        var estadoLbl = _proyTcpEstadoLabel(t.estado).toUpperCase();
+        var resp = t.responsable || '';
+        var creador = t.creado_por || '';
+        var respTxt = _proyTcpFirstName(resp);
+        var creaTxt = _proyTcpFirstName(creador);
+        var oppNombre = t.oportunidad_nombre || '';
+        var oppId = t.oportunidad_id || '';
+        var doneCls = t.estado === 'completada' ? ' done' : '';
+        var atrCls = esAtrasada ? ' atrasada' : '';
+
+        var warnIcon = esAtrasada
+            ? '<span class="tcp-row-warn" title="Vencida"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="0" fill="#EF4444"/><path d="M12 9v4M12 17h.01" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>'
+            : '';
+
+        var oppCell = oppId
+            ? '<span class="tcp-row-opp linked" title="' + _proyTcpEsc(oppNombre) + '" onclick="event.stopPropagation();proyTcpAbrirOportunidad(' + oppId + ')">' + _proyTcpEsc(oppNombre || '—') + '</span>'
+            : '<span class="tcp-row-opp' + (oppNombre ? '' : ' empty') + '">' + _proyTcpEsc(oppNombre || '—') + '</span>';
+
+        var calSvg = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+        var fechaTxt = t.fecha_limite ? _proyTcpFmtFecha(t.fecha_limite) : '';
+        var fechaCell = fechaTxt
+            ? '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + calSvg + ' ' + fechaTxt + '</span>'
+            : '<span class="tcp-row-fecha" style="background:transparent;color:#CBD5E1;padding:0;">—</span>';
+
+        return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="proyTcpSelectTask(' + t.id + ')">' +
+            '<span class="tcp-row-tarea">' +
+                warnIcon +
+                '<span class="tcp-row-title">' + _proyTcpEsc(t.titulo || 'Sin título') + '</span>' +
+            '</span>' +
+            '<span class="tcp-row-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+            '<span class="tcp-row-resp' + (respTxt ? '' : ' empty') + '">' + _proyTcpEsc(respTxt || '—') + '</span>' +
+            '<span class="tcp-row-creador' + (creaTxt ? '' : ' empty') + '">' + _proyTcpEsc(creaTxt || '—') + '</span>' +
+            fechaCell +
+            oppCell +
+        '</div>';
+    }
+
+    // — Lista agrupada en secciones (copia de renderTareasCockpit) —
+    function _proyTcpRenderList(tareas, now) {
+        var list = el('proyTcpList');
         if (!list) return;
-        list.innerHTML = '<div class="ptk-empty">Cargando…</div>';
-        if (aside) aside.innerHTML = '';
+
+        var head = '<div class="tcp-col-head">' +
+            '<span>TAREA</span><span>ESTADO</span><span>RESPONSABLE</span>' +
+            '<span>CREADOR</span><span>FECHA LÍMITE</span><span>OPORTUNIDAD</span>' +
+        '</div>';
+
+        if (!tareas || tareas.length === 0) {
+            list.innerHTML = head + '<div class="tcp-row-empty">No hay tareas registradas en este proyecto.</div>';
+            return;
+        }
+
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+        var groups = { atrasadas: [], hoy: [], despues: [], completadas: [] };
+        tareas.forEach(function (t) {
+            if (t.estado === 'completada') { groups.completadas.push(t); return; }
+            if (!t.fecha_limite) { groups.despues.push(t); return; }
+            var fl = new Date(t.fecha_limite);
+            if (fl < today) groups.atrasadas.push(t);
+            else if (fl < tomorrow) groups.hoy.push(t);
+            else groups.despues.push(t);
+        });
+        if (_proyTcpCollapsed.completadas === undefined) _proyTcpCollapsed.completadas = true;
+
+        var DIAS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+        var MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+        var hoyLabel = DIAS[today.getDay()] + ' ' + today.getDate() + ' ' + MESES[today.getMonth()];
+
+        var secciones = [
+            { key: 'atrasadas',   label: 'ATRASADAS',   extra: '',                items: groups.atrasadas,   cls: 'atrasadas' },
+            { key: 'hoy',         label: 'HOY',         extra: ' · ' + hoyLabel,  items: groups.hoy,         cls: '' },
+            { key: 'despues',     label: 'MÁS TARDE',   extra: '',                items: groups.despues,     cls: '' },
+            { key: 'completadas', label: 'COMPLETADAS', extra: '',                items: groups.completadas, cls: 'completadas' }
+        ];
+
+        var html = head;
+        secciones.forEach(function (sec) {
+            if (sec.items.length === 0 && sec.key !== 'hoy') return;
+            var collapsed = _proyTcpCollapsed[sec.key] ? ' collapsed' : '';
+            html += '<div class="tcp-section-head ' + sec.cls + collapsed + '" data-proy-tcp-sec="' + sec.key + '">' +
+                '<svg class="tcp-sec-chev" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                '<span>' + sec.label + sec.extra + '</span>' +
+                '<span class="tcp-sec-count">' + sec.items.length + '</span>' +
+            '</div>';
+            html += '<div class="tcp-section-body">';
+            if (sec.items.length === 0) {
+                html += '<div style="padding:18px 24px;color:#94A3B8;font-size:12.5px;font-style:italic;">No hay tareas para hoy.</div>';
+            } else {
+                sec.items.forEach(function (t) { html += _proyTcpRowHtml(t, sec.key === 'atrasadas'); });
+            }
+            html += '</div>';
+        });
+        list.innerHTML = html;
+
+        if (_proyTcpSelectedId) {
+            var rowSel = list.querySelector('.tcp-row[data-tid="' + _proyTcpSelectedId + '"]');
+            if (rowSel) rowSel.classList.add('active');
+        } else {
+            _proyTcpRenderSummary(tareas, now);
+        }
+    }
+
+    // — Resumen del proyecto (copia de _tcpRenderSummary, sin saludo, scope=proyecto) —
+    function _proyTcpSummaryStat(key, num, label) {
+        var hasCls = num > 0 ? ' has-items' : '';
+        return '<div class="tcp-summary-stat ' + key + hasCls + '">' +
+            '<span class="tcp-summary-stat-num">' + num + '</span>' +
+            '<span class="tcp-summary-stat-lbl">' + label + '</span>' +
+        '</div>';
+    }
+    function _proyTcpUpcomingRow(t, fl, today, tomorrow) {
+        var overdue = fl < today;
+        var urgent = !overdue && fl < tomorrow;
+        var cls = overdue ? ' overdue' : (urgent ? ' urgent' : '');
+        var when = _proyTcpRelativeWhen(fl, today, tomorrow);
+        return '<div class="tcp-summary-up-row' + cls + '" onclick="proyTcpSelectTask(' + t.id + ')">' +
+            '<span class="tcp-summary-up-dot"></span>' +
+            '<span class="tcp-summary-up-title" title="' + _proyTcpEsc(t.titulo || '') + '">' + _proyTcpEsc(t.titulo || 'Sin título') + '</span>' +
+            '<span class="tcp-summary-up-when">' + when + '</span>' +
+        '</div>';
+    }
+    function _proyTcpRenderSummary(tareas, now) {
+        var panel = el('proyTcpDetail');
+        if (!panel) return;
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Scope = TODAS las tareas del proyecto (no solo "mías").
+        var vencidas = 0, hoy = 0, completadasHoy = 0, totalAbiertas = 0;
+        var proximasCandidatas = [];
+        (tareas || []).forEach(function (t) {
+            if (t.estado === 'completada') {
+                var fc = t.fecha_completada;
+                if (fc) {
+                    var d = new Date(fc);
+                    if (!isNaN(d.getTime()) && d >= today && d < tomorrow) completadasHoy++;
+                } else {
+                    completadasHoy++;
+                }
+                return;
+            }
+            if (t.estado === 'cancelada') return;
+            totalAbiertas++;
+            if (t.fecha_limite) {
+                var fl = new Date(t.fecha_limite);
+                if (!isNaN(fl.getTime())) {
+                    if (fl < today) vencidas++;
+                    else if (fl < tomorrow) hoy++;
+                    proximasCandidatas.push({ t: t, fl: fl });
+                }
+            }
+        });
+        proximasCandidatas.sort(function (a, b) { return a.fl - b.fl; });
+        var proximas = proximasCandidatas.slice(0, 4);
+
+        var subtexto;
+        if (totalAbiertas === 0) subtexto = 'No hay tareas pendientes en este proyecto.';
+        else if (vencidas > 0) subtexto = 'Hay <strong>' + vencidas + '</strong> tarea' + (vencidas === 1 ? '' : 's') + ' vencida' + (vencidas === 1 ? '' : 's') + ' que atender.';
+        else if (hoy > 0) subtexto = '<strong>' + hoy + '</strong> tarea' + (hoy === 1 ? '' : 's') + ' para hoy.';
+        else subtexto = 'Hay ' + totalAbiertas + ' tarea' + (totalAbiertas === 1 ? '' : 's') + ' abierta' + (totalAbiertas === 1 ? '' : 's') + '. Nada urgente.';
+
+        panel.innerHTML = '<div class="tcp-empty">' +
+            '<div class="tcp-summary-label">Resumen</div>' +
+            '<h2 class="tcp-summary-greeting">Resumen del proyecto</h2>' +
+            '<p class="tcp-summary-sub">' + subtexto + '</p>' +
+            '<div class="tcp-summary-row">' +
+                _proyTcpSummaryStat('vencidas', vencidas, 'Vencidas') +
+                _proyTcpSummaryStat('hoy', hoy, 'Hoy') +
+                _proyTcpSummaryStat('done', completadasHoy, 'Hechas hoy') +
+            '</div>' +
+            '<div class="tcp-summary-section">' +
+                '<div class="tcp-summary-sec-label">' +
+                    '<span>Próximas</span>' +
+                    (proximas.length > 0 ? '<span class="count">' + proximas.length + '</span>' : '') +
+                '</div>' +
+                (proximas.length > 0
+                    ? '<div class="tcp-summary-upcoming">' + proximas.map(function (x) { return _proyTcpUpcomingRow(x.t, x.fl, today, tomorrow); }).join('') + '</div>'
+                    : '<div class="tcp-summary-empty">Nada próximo en el calendario.</div>') +
+            '</div>' +
+            '<div style="flex:1;"></div>' +
+            '<div style="text-align:center;font-size:11.5px;color:#CBD5E1;padding:18px 0 2px;">' +
+                'Haz clic en una tarea para ver el detalle aquí.' +
+            '</div>' +
+        '</div>';
+    }
+
+    // — Meta row del detalle (copia de _tcpMetaRow) —
+    function _proyTcpMetaRow(label, valueHtml, icon) {
+        var icons = {
+            user:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+            briefcase: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+            calendar:  '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            tag:       '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>',
+            flag:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'
+        };
+        return '<div class="tcp-meta-row"><span class="tcp-meta-label">' + icons[icon] + label + '</span>' +
+               '<span class="tcp-meta-value">' + valueHtml + '</span></div>';
+    }
+
+    // — Selección de fila → panel de detalle (copia de tcpSelectTask, SIN expandir/abrir) —
+    window.proyTcpSelectTask = function (tid) {
+        _proyTcpSelectedId = tid;
+        document.querySelectorAll('#proyTcpList .tcp-row').forEach(function (r) { r.classList.remove('active'); });
+        var row = document.querySelector('#proyTcpList .tcp-row[data-tid="' + tid + '"]');
+        if (row) row.classList.add('active');
+
+        var t = _proyTcpData.find(function (x) { return x.id === tid; });
+        var panel = el('proyTcpDetail');
+        if (!panel || !t) return;
+
+        var estadoCls = _proyTcpEstadoClass(t.estado);
+        var estadoLbl = _proyTcpEstadoLabel(t.estado).toUpperCase();
+        var resp = t.responsable || '';
+        var avColor = _proyTcpAvatarColor(resp);
+        var ini = _proyTcpInitials(resp);
+        var fechaIso = t.fecha_limite || '';
+        var vencida = false;
+        if (fechaIso) {
+            try { vencida = new Date(fechaIso) < new Date() && t.estado !== 'completada'; } catch (_) {}
+        }
+        var fechaTxt = _proyTcpFmtFecha(fechaIso);
+        var prioLabel = t.prioridad === 'alta' ? 'Alta' : 'Normal';
+        var tipo = t.oportunidad_tipo || '';
+        var categoria = tipo ? (tipo.charAt(0).toUpperCase() + tipo.slice(1)) : '—';
+
+        var subtsHtml = '<div class="tcp-subt-empty">Sin subtareas</div>';
+        var subtHead = 'SUBTAREAS';
+        var subs = t.subtareas || [];
+        if (subs.length > 0) {
+            var doneN = subs.filter(function (s) { return s.estado === 'completada'; }).length;
+            subtHead = 'SUBTAREAS (' + doneN + '/' + subs.length + ')';
+            subtsHtml = '<div class="tcp-subt-list">' + subs.map(function (s) {
+                var dn = s.estado === 'completada';
+                return '<div class="tcp-subt-row' + (dn ? ' done' : '') + '">' +
+                    '<span class="tcp-subt-check' + (dn ? ' done' : '') + '">' + (dn ? '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '') + '</span>' +
+                    '<span class="tcp-subt-title">' + _proyTcpEsc(s.titulo || '') + '</span>' +
+                '</div>';
+            }).join('') + '</div>';
+        }
+
+        var descHtml = t.descripcion
+            ? '<div class="tcp-detail-desc">' + _proyTcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>'
+            : '<div class="tcp-detail-desc empty">Sin descripción.</div>';
+
+        var clockIcon = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+        var oppVal;
+        if (t.oportunidad_id && t.oportunidad_nombre) {
+            oppVal = '<span class="tcp-opp-link" onclick="proyTcpAbrirOportunidad(' + t.oportunidad_id + ')" title="Abrir oportunidad">' + _proyTcpEsc(t.oportunidad_nombre) + '</span>';
+        } else if (t.oportunidad_nombre) {
+            oppVal = _proyTcpEsc(t.oportunidad_nombre);
+        } else {
+            oppVal = '<span class="muted">Sin oportunidad</span>';
+        }
+
+        panel.innerHTML =
+            '<div class="tcp-detail-head">' +
+                '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                '<div class="tcp-detail-actions">' +
+                    '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="proyTcpCloseDetail()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="tcp-detail-scroll">' +
+                '<h1 class="tcp-detail-title">' + _proyTcpEsc(t.titulo || 'Sin título') + '</h1>' +
+                descHtml +
+                '<div class="tcp-detail-meta">' +
+                    _proyTcpMetaRow('Responsable', resp
+                        ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _proyTcpEsc(resp)
+                        : '<span class="muted">Sin asignar</span>', 'user') +
+                    _proyTcpMetaRow('Oportunidad', oppVal, 'briefcase') +
+                    _proyTcpMetaRow('Fecha límite', fechaIso
+                        ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + clockIcon + ' ' + fechaTxt + '</span>'
+                        : '<span class="muted">Sin fecha</span>', 'calendar') +
+                    _proyTcpMetaRow('Categoría', categoria, 'tag') +
+                    _proyTcpMetaRow('Prioridad', prioLabel, 'flag') +
+                '</div>' +
+                '<div class="tcp-detail-subt-head">' + subtHead + '</div>' +
+                subtsHtml +
+            '</div>';
+    };
+
+    window.proyTcpCloseDetail = function () {
+        _proyTcpSelectedId = null;
+        document.querySelectorAll('#proyTcpList .tcp-row').forEach(function (r) { r.classList.remove('active'); });
+        _proyTcpRenderSummary(_proyTcpData, new Date());
+    };
+
+    window.proyTcpAbrirOportunidad = function (oppId) {
+        if (!oppId) return;
+        if (typeof window.openDetalle === 'function') window.openDetalle(oppId, { asWindow: true });
+    };
+
+    // Toggle de secciones colapsables (delegado, namespaced).
+    if (window._proyTcpSecHandler) {
+        document.removeEventListener('click', window._proyTcpSecHandler);
+    }
+    window._proyTcpSecHandler = function (e) {
+        var head = e.target.closest && e.target.closest('#proyTcpList .tcp-section-head');
+        if (!head) return;
+        var key = head.dataset.proyTcpSec;
+        if (!key) return;
+        var isCol = head.classList.toggle('collapsed');
+        _proyTcpCollapsed[key] = isCol;
+    };
+    document.addEventListener('click', window._proyTcpSecHandler);
+
+    function renderTareas(projectId) {
+        var list = el('proyTcpList');
+        var panel = el('proyTcpDetail');
+        if (!list) return;
+        _proyTcpSelectedId = null;
+        list.innerHTML = '<div class="tcp-row-empty">Cargando…</div>';
+        if (panel) panel.innerHTML = '';
 
         _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function (resp) {
             if (!(resp.ok || resp.success)) {
-                list.innerHTML = '<div class="ptk-empty ptk-empty-err">Error al cargar tareas</div>';
+                list.innerHTML = '<div class="tcp-row-empty">Error al cargar tareas</div>';
                 return;
             }
-            var tasks = resp.data || [];
-            _proyTareasData = tasks;
-            var today = _tkToday();
-            var g = { atrasadas: [], hoy: [], proximas: [], sinfecha: [] };
-            var counts = { vencidas: 0, hoy: 0, hechas: 0 };
-            tasks.forEach(function (t) {
-                if (_tkDone(t.status)) { counts.hechas++; return; }
-                if (_tkCancel(t.status)) return;
-                var d = (t.fecha_limite || '').slice(0, 10);
-                if (!d) { g.sinfecha.push(t); return; }
-                if (d < today) { g.atrasadas.push(t); counts.vencidas++; }
-                else if (d === today) { g.hoy.push(t); counts.hoy++; }
-                else { g.proximas.push(t); }
-            });
-            var html = _tkSection('Atrasadas', g.atrasadas, 'venc') +
-                _tkSection('Hoy', g.hoy, 'hoy') +
-                _tkSection('Próximas', g.proximas, 'prox') +
-                _tkSection('Sin fecha', g.sinfecha, 'sf');
-            list.innerHTML = html || '<div class="ptk-empty">No hay tareas registradas</div>';
-            if (aside) aside.innerHTML = _tkAside(counts, g.proximas);
-            _tkWire();
+            _proyTcpData = resp.data || [];
+            _proyTcpRenderList(_proyTcpData, new Date());
         }).catch(function (err) {
-            list.innerHTML = '<div class="ptk-empty ptk-empty-err">Error de conexión</div>';
+            list.innerHTML = '<div class="tcp-row-empty">Error de conexión</div>';
             console.error('Error de red cargando tareas:', err);
         });
     }

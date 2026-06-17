@@ -846,28 +846,25 @@
       <!-- TAB: Tareas -->
       <div id="proyPane_tareas" class="proy-tab-pane" style="display:none;">
         {% comment %}
-        Tareas del proyecto — layout de 2 columnas estilo la sección Tareas:
-        IZQUIERDA: lista agrupada (Atrasadas / Hoy / Próximas / Sin fecha) con las
-        tareas del proyecto + las tareas (NO actividades) de la oportunidad ligada.
-        DERECHA: resumen del proyecto (Vencidas/Hoy/Hechas) + próximas + preview.
-        Todo lo pinta crm_proyectos.js → renderTareas (proyTareasList /
-        proyTareasResumen). El tbody legacy queda oculto por compatibilidad.
+        Tareas del proyecto — copia fiel del cockpit de la sección Tareas, pero
+        alimentada solo con las tareas de ESTE proyecto (ProyectoTarea + tareas
+        —no actividades— de la oportunidad ligada). Namespaced con #proyTcp* para
+        NO chocar con el módulo real (#tcpList/#tcpDetail). Reutiliza las clases
+        .tcp-* para que el look (greca, secciones, panel) sea idéntico.
+        Lo pinta crm_proyectos.js → renderTareas (proyTcpList / proyTcpDetail).
+        NO se permite abrir/expandir la tarea (solo cerrar el detalle).
         {% endcomment %}
-        <div class="ptk-wrap">
-          <div class="ptk-main">
-            <div class="ptk-main-head">
-              <h3 class="ptk-title">Tareas del Proyecto</h3>
-              <button class="proy-btn proy-btn-primary" onclick="proyectosCrearTareaDialogo()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                Nueva Tarea
-              </button>
-            </div>
-            <div class="ptk-cols-head">
-              <span>Tarea</span><span>Estado</span><span>Responsable</span><span>Fecha límite</span><span>Origen</span>
-            </div>
-            <div id="proyTareasList" class="ptk-list"></div>
-          </div>
-          <aside class="ptk-aside" id="proyTareasResumen"></aside>
+        <div class="proy-tcp-bar">
+          <button class="proy-btn proy-btn-primary" onclick="proyectosCrearTareaDialogo()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Nueva Tarea
+          </button>
+        </div>
+        <div class="tcp-shell" id="proyTcpShell">
+          <!-- LISTA (izquierda) — la cabecera greca .tcp-col-head la inyecta el JS -->
+          <div class="tcp-list" id="proyTcpList"></div>
+          <!-- DETALLE / RESUMEN (derecha) -->
+          <aside class="tcp-detail" id="proyTcpDetail"></aside>
         </div>
         <table style="display:none;"><tbody id="proyTareasBody"></tbody></table>
       </div>

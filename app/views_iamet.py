@@ -2395,37 +2395,75 @@ def api_tareas_proyecto_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    # 1) Tareas propias del proyecto
-    tareas = proyecto.tareas_proyecto.select_related('asignado_a').all()
+    def _nombre_usuario(u):
+        if not u:
+            return ''
+        return (u.first_name + ' ' + u.last_name).strip() or u.username
+
+    # Mapeos al shape que espera el cockpit (.tcp-*): estado en español
+    # (pendiente/en_progreso/completada/cancelada) y prioridad alta/media/baja.
+    PT_ESTADO = {'pending': 'pendiente', 'in_progress': 'en_progreso',
+                 'completed': 'completada', 'cancelled': 'cancelada'}
+    PT_PRIORIDAD = {'low': 'baja', 'medium': 'media', 'alta': 'alta',
+                    'high': 'alta', 'critical': 'alta'}
+
     items = []
+
+    # 1) Tareas propias del proyecto (ProyectoTarea)
+    tareas = proyecto.tareas_proyecto.select_related('asignado_a').all()
     for t in tareas:
-        d = _tarea_to_dict(t)
-        d['source'] = 'proyecto'
-        items.append(d)
+        items.append({
+            'id': t.id,
+            'source': 'proyecto',
+            'titulo': t.titulo,
+            'descripcion': t.descripcion or '',
+            'estado': PT_ESTADO.get(t.status, 'pendiente'),
+            'prioridad': PT_PRIORIDAD.get(t.prioridad, 'media'),
+            'responsable': _nombre_usuario(t.asignado_a),
+            # ProyectoTarea no guarda creador → se deja vacío (fallback "—")
+            'creado_por': '',
+            'fecha_limite': _fmt(t.fecha_limite),
+            'fecha_completada': _fmt(t.fecha_completada),
+            # Tareas de proyecto no cuelgan de una oportunidad concreta.
+            'oportunidad_id': None,
+            'oportunidad_nombre': '',
+            'oportunidad_tipo': 'proyecto',
+            # ProyectoTarea no modela subtareas.
+            'subtareas': [],
+        })
 
     # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM — NO Actividad).
     if proyecto.oportunidad_id:
         from .models import Tarea
-        opp_nombre = proyecto.oportunidad.oportunidad if proyecto.oportunidad_id else None
+        opp = proyecto.oportunidad
+        opp_nombre = opp.oportunidad if opp else ''
+        opp_tipo = getattr(opp, 'tipo_negociacion', '') if opp else ''
+        opp_id = proyecto.oportunidad_id
+        # Solo tareas raíz (no subtareas) — las subtareas van anidadas.
         tareas_crm = Tarea.objects.filter(
-            oportunidad_id=proyecto.oportunidad_id
-        ).select_related('asignado_a', 'creado_por')
-        prioridad_map = {'baja': 'low', 'media': 'medium', 'alta': 'high'}
-        estado_map = {'pendiente': 'pending', 'iniciada': 'in_progress', 'en_progreso': 'in_progress', 'completada': 'completed', 'cancelada': 'cancelled'}
+            oportunidad_id=opp_id, tarea_padre__isnull=True
+        ).select_related('asignado_a', 'creado_por').prefetch_related('subtareas')
         for t in tareas_crm:
-            resp_name = None
-            if t.asignado_a:
-                resp_name = (t.asignado_a.first_name + ' ' + t.asignado_a.last_name).strip() or t.asignado_a.username
+            subs = [{
+                'id': s.id,
+                'titulo': s.titulo,
+                'estado': s.estado,
+            } for s in t.subtareas.all()]
             items.append({
                 'id': t.id,
                 'source': 'oportunidad',
                 'titulo': t.titulo,
-                'descripcion': getattr(t, 'descripcion', ''),
-                'prioridad': prioridad_map.get(t.prioridad, 'medium'),
-                'status': estado_map.get(t.estado, 'pending'),
-                'asignado_a_nombre': resp_name,
+                'descripcion': t.descripcion or '',
+                'estado': t.estado or 'pendiente',
+                'prioridad': t.prioridad or 'media',
+                'responsable': _nombre_usuario(t.asignado_a),
+                'creado_por': _nombre_usuario(t.creado_por),
                 'fecha_limite': _fmt(t.fecha_limite),
+                'fecha_completada': _fmt(t.fecha_completada),
+                'oportunidad_id': opp_id,
                 'oportunidad_nombre': opp_nombre,
+                'oportunidad_tipo': opp_tipo,
+                'subtareas': subs,
             })
 
     return JsonResponse({'success': True, 'data': items})

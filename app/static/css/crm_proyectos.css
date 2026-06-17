@@ -1790,6 +1790,12 @@
 /* ============================================================================
    TAREAS DEL PROYECTO — lista agrupada + panel resumen (estilo sección Tareas)
    ============================================================================ */
+/* Copia fiel del cockpit de Tareas (clases .tcp-*) embebida en el tab del
+   proyecto. Barra de acción compacta + altura del shell acotada al tab
+   (el .tcp-shell global usa 100vh, demasiado alto aquí). */
+.proy-tcp-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+#proyPane_tareas .tcp-shell { height: calc(100vh - 280px); min-height: 380px; }
+
 /* El pane ES la card (white, base .proy-tab-pane). Dentro: lista de FILAS
    (estilo tabla, no tarjetas) + panel lateral separado por una línea. */
 .ptk-wrap { display: flex; gap: 0; align-items: stretch; }
