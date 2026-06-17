@@ -5939,7 +5939,10 @@
             crmTaskVerDetalle(tid);
             return;
         }
-        _proyTcpExpandOverlay(t);
+        // Tarea de proyecto: abrir el diálogo de tarea en modo VER/EDITAR
+        // (ventana real editable) en vez del overlay simple.
+        if (typeof window.proyTareaEditar === 'function') window.proyTareaEditar(t);
+        else _proyTcpExpandOverlay(t);
     };
 
     window.proyTcpCerrarExpand = function () {
@@ -6336,7 +6339,41 @@
         if (d) d.style.display = 'flex';
     };
 
+    // Estado de edición del diálogo de tarea de proyecto (null = modo crear).
+    var _proyEditTareaId = null;
+    var _PRIO_ES2EN = { alta: 'high', media: 'medium', baja: 'low' };
+
+    function _proyTareaDlgChrome(modo) {
+        var h = document.querySelector('#proyDialogoTarea .proy-dialog-header h3');
+        var b = document.querySelector('#proyDialogoTarea .proy-dialog-footer .proy-btn-primary');
+        if (h) h.textContent = (modo === 'edit') ? 'Editar Tarea' : 'Nueva Tarea';
+        if (b) b.textContent = (modo === 'edit') ? 'Guardar' : 'Crear Tarea';
+    }
+    function _proyTareaDlgClear() {
+        ['proyTareaTitulo', 'proyTareaDescripcion', 'proyTareaAsignado', 'proyTareaFecha'].forEach(function (id) {
+            var e2 = el(id); if (e2) e2.value = '';
+        });
+        if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = 'medium';
+    }
+
     window.proyectosCrearTareaDialogo = function() {
+        _proyEditTareaId = null;
+        _proyTareaDlgClear();
+        _proyTareaDlgChrome('crear');
+        var d = el('proyDialogoTarea');
+        if (d) d.style.display = 'flex';
+    };
+
+    // Abrir el diálogo en modo VER/EDITAR con los datos de la tarea de proyecto.
+    window.proyTareaEditar = function (t) {
+        if (!t) return;
+        _proyEditTareaId = t.id;
+        if (el('proyTareaTitulo')) el('proyTareaTitulo').value = t.titulo || '';
+        if (el('proyTareaDescripcion')) el('proyTareaDescripcion').value = t.descripcion || '';
+        if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = _PRIO_ES2EN[t.prioridad] || t.prioridad || 'medium';
+        if (el('proyTareaAsignado')) el('proyTareaAsignado').value = t.responsable || '';
+        if (el('proyTareaFecha')) el('proyTareaFecha').value = (t.fecha_limite || '').slice(0, 10);
+        _proyTareaDlgChrome('edit');
         var d = el('proyDialogoTarea');
         if (d) d.style.display = 'flex';
     };
@@ -6718,32 +6755,25 @@
 
         if (!title) return;
 
-        _fetch('/app/api/iamet/tareas/crear/', {
-            method: 'POST',
-            body: {
-                proyecto_id: currentProjectId,
-                titulo: title,
-                descripcion: desc,
-                prioridad: priority,
-                asignado_a: assignedTo,
-                fecha_limite: dueDate
-            }
-        }).then(function(resp) {
+        // Modo EDITAR: PATCH a la tarea de proyecto existente. Modo CREAR: POST.
+        var editing = _proyEditTareaId;
+        var url = editing ? ('/app/api/iamet/tareas/' + editing + '/actualizar/') : '/app/api/iamet/tareas/crear/';
+        var body = editing
+            ? { titulo: title, descripcion: desc, prioridad: priority, fecha_limite: dueDate }
+            : { proyecto_id: currentProjectId, titulo: title, descripcion: desc, prioridad: priority, asignado_a: assignedTo, fecha_limite: dueDate };
+
+        _fetch(url, { method: 'POST', body: body }).then(function(resp) {
             if (resp.ok || resp.success) {
                 proyectosCerrarDialogo('proyDialogoTarea');
-                // Clear form
-                if (el('proyTareaTitulo')) el('proyTareaTitulo').value = '';
-                if (el('proyTareaDescripcion')) el('proyTareaDescripcion').value = '';
-                if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = 'medium';
-                if (el('proyTareaAsignado')) el('proyTareaAsignado').value = '';
-                if (el('proyTareaFecha')) el('proyTareaFecha').value = '';
+                _proyEditTareaId = null;
+                _proyTareaDlgClear();
                 renderTareas(currentProjectId);
             } else {
-                alert('Error al crear tarea: ' + (resp.error || 'Error desconocido'));
+                alert('Error al guardar tarea: ' + (resp.error || 'Error desconocido'));
             }
         }).catch(function(err) {
-            alert('Error de conexion al crear tarea');
-            console.error('Error creando tarea:', err);
+            alert('Error de conexion al guardar tarea');
+            console.error('Error guardando tarea:', err);
         });
     };
 
