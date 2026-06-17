@@ -2667,23 +2667,44 @@ def api_desglose_facturacion(request):
 
         rows = sorted(acumulado.values(), key=lambda x: -x['monto'])
 
-        # Si hay filtro de vendedor activo, hacer match cliente→vendedor y
-        # dejar fuera los clientes que no le pertenecen a esos vendedores.
+        # Resolver el VENDEDOR de cada fila vía el cliente asignado en el sistema
+        # (Cliente.asignado_a). El Excel de facturación no trae vendedor, así que
+        # se deduce por match de nombre de cliente (con alias). Se hace para TODAS
+        # las filas para poder mostrar la columna "Vendedor".
+        all_clientes = list(Cliente.objects.select_related('asignado_a').all())
+        alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
+                     for a in AliasCliente.objects.all()}
+        for row in rows:
+            matches = _match_clientes_cobrado(row['nombre'], all_clientes, alias_map)
+            vid = None
+            vname = ''
+            for m in matches:
+                if m.asignado_a_id:
+                    vid = m.asignado_a_id
+                    vname = (m.asignado_a.get_full_name() or m.asignado_a.username) if m.asignado_a else ''
+                    break
+            row['vendedor_id'] = vid
+            row['vendedor'] = vname or 'Sin asignar'
+
+        # Filtro por vendedor: incluye a los COMPAÑEROS DE GRUPO del/los vendedor(es)
+        # seleccionado(s). Ej.: si seleccionas a Roberto y Diego está en su grupo,
+        # también aparecen los clientes asignados a Diego (y viceversa).
         if vendedores_ids:
-            all_clientes = list(Cliente.objects.select_related('asignado_a').all())
-            alias_map = {a.palabra_clave.upper().strip(): a.buscar_como.upper().strip()
-                         for a in AliasCliente.objects.all()}
-            filtered = []
-            for row in rows:
-                matches = _match_clientes_cobrado(row['nombre'], all_clientes, alias_map)
-                vid = None
-                for m in matches:
-                    if m.asignado_a_id:
-                        vid = m.asignado_a_id
-                        break
-                if vid in vendedores_ids:
-                    filtered.append(row)
-            rows = filtered
+            expanded = set()
+            show_all = False
+            for vid in vendedores_ids:
+                try:
+                    u = User.objects.get(id=vid)
+                except User.DoesNotExist:
+                    expanded.add(vid)
+                    continue
+                vis = get_usuarios_visibles_ids(u)  # None = supervisor global (ve todo)
+                if vis is None:
+                    show_all = True
+                    break
+                expanded |= set(vis)
+            if not show_all:
+                rows = [r for r in rows if r.get('vendedor_id') in expanded]
 
         total = sum(r['monto'] for r in rows)
         return JsonResponse({'ok': True, 'rows': rows, 'total': total})

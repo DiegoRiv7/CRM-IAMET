@@ -3223,8 +3223,8 @@
             var head = document.getElementById('ckDetalleHead');
             var tbody = document.getElementById('ckDetalleTbody');
             if (titulo) titulo.textContent = 'Desglose de Facturacion';
-            if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>RFC</th><th style="text-align:right">Monto Facturado</th>';
-            if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
+            if (head) head.innerHTML = '<th>#</th><th>Vendedor</th><th>Cliente</th><th>RFC</th><th style="text-align:right">Monto Facturado</th>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
             if (detalle) { detalle.style.display = 'block'; detalle.style.opacity = '0'; detalle.style.transition = 'opacity 0.2s'; setTimeout(function(){ detalle.style.opacity = '1'; }, 50); }
 
             var params = new URLSearchParams(window.location.search);
@@ -3235,16 +3235,19 @@
             fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio + _vq, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
-                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
-                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos</td></tr>'; return; }
+                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
+                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos</td></tr>'; return; }
                     var html = '';
                     resp.rows.forEach(function (r, i) {
+                        var vend = r.vendedor || 'Sin asignar';
+                        var vendColor = (vend === 'Sin asignar') ? '#9CA3AF' : '#334155';
                         html += '<tr><td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
+                            '<td style="font-weight:600;color:' + vendColor + ';">' + vend + '</td>' +
                             '<td style="font-weight:600;">' + (r.nombre || r.cliente || '—') + '</td>' +
                             '<td style="color:#8e8e93;font-size:0.8rem;">' + (r.rfc || '—') + '</td>' +
                             '<td style="text-align:right;font-weight:700;color:#059669;">$' + Number(r.monto || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
                     });
-                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="3" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">$' + Number(resp.total || 0).toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
+                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="4" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">$' + Number(resp.total || 0).toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
                     if (tbody) tbody.innerHTML = html;
                 })
                 .catch(function () { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#FF3B30;">Error de conexion</td></tr>'; });
