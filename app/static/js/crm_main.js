@@ -6704,6 +6704,12 @@
         setInterval(function() {
             if (document.hidden) return;
             if (window._crmTareasMode) return; // solo en vista CRM
+            // NO auto-refrescar el dashboard de Reportes (tab=clientes): ahí
+            // refreshCrmTable() llama loadAllClientesPanels() que re-renderiza las
+            // gráficas, puede resetear el modo (Oportunidades→Clientes) y cierra el
+            // KPI desglosado. El "gradient refresh" solo aplica a la tabla de
+            // oportunidades del workspace (avanzar los colores de vencimiento).
+            if (typeof currentTab !== 'undefined' && (currentTab === 'clientes' || currentTab === 'cli')) return;
             // Si hay drill-down (sub-tabla) activo en clientes, no clobber-ear el detalle.
             if (window._ckDetalleOpen) return;
             var tabActivo = document.querySelector('.crm-tab.active');
