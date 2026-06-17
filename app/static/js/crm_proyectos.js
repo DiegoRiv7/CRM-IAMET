@@ -896,12 +896,18 @@
         if (!chip) return;
         var oppId = chip.getAttribute('data-opp-id');
         if (!oppId) return;
+        // RÁPIDO: abrir la oportunidad como VENTANA flotante en sitio (igual que
+        // el footer de la tarjeta del kanban), sin recargar la página. El reload
+        // a /app/todos era lo que hacía sentir lento abrir la oportunidad.
+        if (typeof window.openDetalle === 'function') {
+            window.openDetalle(oppId, { asWindow: true });
+            return;
+        }
         if (typeof window.crmAbrirOportunidad === 'function') {
             window.crmAbrirOportunidad(oppId);
         } else if (typeof window.proyectosAbrirOportunidad === 'function') {
             window.proyectosAbrirOportunidad(oppId);
         } else {
-            // TODO: definir handler global para abrir oportunidad desde detalle de proyecto.
             window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + oppId;
         }
     };

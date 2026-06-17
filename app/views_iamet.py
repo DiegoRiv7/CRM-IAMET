@@ -621,6 +621,40 @@ def _proyecto_to_dict(p, include_alerts=False):
     return d
 
 
+def _proyecto_to_dict_lite(p):
+    """Serializer LIGERO para el listado/kanban: solo lo que pintan las tarjetas
+    (y la tabla legacy oculta). Evita los aggregates de facturas/gastos/
+    levantamientos/alertas — ~6 queries por proyecto — que el listado NO usa; el
+    detalle (api_proyecto_detalle) sigue usando _proyecto_to_dict completo.
+    Requiere qs.select_related('usuario', 'oportunidad')."""
+    opp = p.oportunidad if p.oportunidad_id else None
+    return {
+        'id': p.id,
+        'usuario_id': p.usuario_id,
+        'usuario_nombre': (p.usuario.first_name + ' ' + p.usuario.last_name).strip() or p.usuario.username,
+        'nombre': p.nombre,
+        'descripcion': p.descripcion,
+        'cliente_nombre': p.cliente_nombre,
+        'status': p.status,
+        'utilidad_presupuestada': float(p.utilidad_presupuestada),
+        'utilidad_real': 0.0,
+        'fecha_inicio': _fmt(p.fecha_inicio),
+        'fecha_fin': _fmt(p.fecha_fin),
+        'created_at': _fmt(p.created_at),
+        'updated_at': _fmt(p.updated_at),
+        'oportunidad_id': opp.id if opp else None,
+        'oportunidad_nombre': opp.oportunidad if opp else None,
+        'oportunidad_monto': float(opp.monto) if opp and opp.monto is not None else 0.0,
+        'oportunidad_producto': opp.producto if opp else None,
+        'oportunidad_etapa': opp.etapa_corta if opp else None,
+        'oportunidad_etapa_color': opp.etapa_color if opp else None,
+        'oportunidad_probabilidad': (opp.probabilidad_cierre or 0) if opp else 0,
+        'levantamientos_count': 0,
+        'levantamiento_fase_max': 0,
+        'alertas_pendientes': 0,
+    }
+
+
 def _partida_to_dict(p):
     return {
         'id': p.id,
@@ -871,8 +905,10 @@ def api_proyectos_lista(request):
         status_filter = request.GET.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
-        qs = qs.select_related('usuario')
-        proyectos = [_proyecto_to_dict(p, include_alerts=True) for p in qs]
+        # Listado/kanban: serializer ligero (sin los ~6 aggregates por proyecto)
+        # + select_related de la oportunidad para no caer en N+1.
+        qs = qs.select_related('usuario', 'oportunidad')
+        proyectos = [_proyecto_to_dict_lite(p) for p in qs]
         return JsonResponse({'ok': True, 'data': proyectos})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
