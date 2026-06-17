@@ -808,12 +808,8 @@ body[data-theme="mundial"] .proy-v3-rag-text {
     color: inherit !important;
 }
 
-/* --- Tareas del proyecto: títulos/encabezados sobre el estadio (transparente)
-   en claro. Las filas y el panel ya son cards blancas sólidas. --- */
-body[data-theme="mundial"] .ptk-title { color: #ffffff !important; text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
-body[data-theme="mundial"] .ptk-sec-head { color: rgba(255,255,255,0.88) !important; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-body[data-theme="mundial"] .ptk-sec-venc .ptk-sec-head { color: #fca5a5 !important; }
-body[data-theme="mundial"] .ptk-sec-hoy .ptk-sec-head { color: #93c5fd !important; }
+/* (Las Tareas del proyecto viven dentro de la card blanca del pane, así que el
+   texto es oscuro por defecto — sin overrides de mundial.) */
 
 /* --- KPI strip: SÓLIDO (legibilidad prioritaria) --- */
 body[data-theme="mundial"] .proy-v3-kpi-strip {

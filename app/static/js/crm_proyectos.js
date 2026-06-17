@@ -5565,10 +5565,10 @@
     function _tkRow(t) {
         return '<button type="button" class="ptk-row" data-tid="' + t.id + '" data-src="' + (t.source || '') + '">' +
             '<span class="ptk-row-title">' + _tkEsc(truncate(t.titulo || '(sin título)', 64)) + '</span>' +
-            _tkSrcBadge(t) +
+            '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' +
             '<span class="ptk-row-resp">' + _tkEsc(_tkResp(t)) + '</span>' +
             '<span class="ptk-row-fecha">' + (t.fecha_limite ? fmtDate(t.fecha_limite) : '—') + '</span>' +
-            '<span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' +
+            _tkSrcBadge(t) +
         '</button>';
     }
     function _tkSection(label, arr, kind) {
