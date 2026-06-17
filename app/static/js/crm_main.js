@@ -7186,6 +7186,8 @@
                     if (t.search_blob) return t.search_blob.indexOf(q) !== -1;
                     return (t.titulo || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.oportunidad_nombre || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.oportunidad_po || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.oportunidad_cliente || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.responsable || '').toLowerCase().indexOf(q) !== -1;
                 });
             }
@@ -7324,20 +7326,26 @@
                 return;
             }
 
-            // Agrupar en 3 secciones: ATRASADAS / HOY / MÁS TARDE
-            // (MÁS TARDE absorbe sin-fecha + esta-semana + futuras + completadas)
+            // Agrupar en 4 secciones: ATRASADAS / HOY / MÁS TARDE / COMPLETADAS
+            // Las completadas van en su propia sección AL FINAL (antes se mezclaban
+            // en "MÁS TARDE"), colapsada por defecto para no estorbar.
             var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-            var groups = { atrasadas: [], hoy: [], despues: [] };
+            var groups = { atrasadas: [], hoy: [], despues: [], completadas: [] };
 
             tareas.forEach(function(t) {
-                if (t.estado === 'completada') { groups.despues.push(t); return; }
+                if (t.estado === 'completada') { groups.completadas.push(t); return; }
                 if (!t.fecha_limite) { groups.despues.push(t); return; }
                 var fl = new Date(t.fecha_limite);
                 if (fl < today) groups.atrasadas.push(t);
                 else if (fl < tomorrow) groups.hoy.push(t);
                 else groups.despues.push(t);
             });
+            // Completadas: colapsada por defecto (solo la primera vez; respeta el
+            // toggle manual del usuario después).
+            if (_tcpCollapsedSections.completadas === undefined) {
+                _tcpCollapsedSections.completadas = true;
+            }
 
             var MES_HOY = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
             var hoyLabel = MES_HOY[today.getDay()] + ' ' + today.getDate() + ' ' + ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][today.getMonth()];
@@ -7346,6 +7354,7 @@
                 { key: 'atrasadas', label: 'ATRASADAS',   extra: '', items: groups.atrasadas, cls: 'atrasadas' },
                 { key: 'hoy',       label: 'HOY',         extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
                 { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues,   cls: '' },
+                { key: 'completadas', label: 'COMPLETADAS', extra: '', items: groups.completadas, cls: 'completadas' },
             ];
 
             // Cabecera de columnas sticky (siempre primera)

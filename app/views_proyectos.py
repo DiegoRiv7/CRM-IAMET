@@ -1398,6 +1398,9 @@ def api_tareas(request):
                     if tarea.oportunidad:
                         if tarea.oportunidad.oportunidad:
                             blob_parts.append(tarea.oportunidad.oportunidad)
+                        # PO de la oportunidad: permite buscar tareas por su PO.
+                        if getattr(tarea.oportunidad, 'po_number', ''):
+                            blob_parts.append(tarea.oportunidad.po_number)
                         if tarea.oportunidad.cliente and tarea.oportunidad.cliente.nombre_empresa:
                             blob_parts.append(tarea.oportunidad.cliente.nombre_empresa)
                     if tarea.asignado_a:
@@ -1433,6 +1436,7 @@ def api_tareas(request):
                     'proyecto_id': tarea.proyecto.id if tarea.proyecto else None,
                     'oportunidad_id': tarea.oportunidad.id if tarea.oportunidad else None,
                     'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else None,
+                    'oportunidad_po': (getattr(tarea.oportunidad, 'po_number', '') or None) if tarea.oportunidad else None,
                     'oportunidad_cliente': tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None,
                     'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
                     'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
