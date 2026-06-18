@@ -1461,6 +1461,10 @@
                 // fondo) pero conserva la tarjeta interna de la tabla, que es
                 // el startId y por eso la walk no la toca.
                 window._proyTareasBg(true, 'proyPartidasWrap');
+            } else if (tabName === 'levantamientos') {
+                // Mismo tratamiento que Partidas: transparenta el pane y
+                // conserva la card de la lista de levantamientos.
+                window._proyTareasBg(true, 'proyLevWrap');
             } else if (tabName !== 'tareas') {
                 window._proyTareasBg(false);
             }

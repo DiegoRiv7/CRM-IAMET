@@ -907,6 +907,31 @@ body[data-theme="mundial"] #proyPane_programa-obra .proy-tab-header {
 body[data-theme="mundial"] #proyPane_programa-obra .proy-tab-header h3 {
     color: #ffffff !important;
 }
+/* Partidas y Levantamientos: pane y header transparentes (mata el cuadro
+   blanco), título en blanco sobre el estadio. La tabla interna conserva su
+   card blanca. */
+body[data-theme="mundial"] #proyPane_partidasv4.proy-tab-pane,
+body[data-theme="mundial"] #proyPane_partidas.proy-tab-pane {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+body[data-theme="mundial"] #proyPane_partidasv4 .proy-tab-header,
+body[data-theme="mundial"] #proyPane_partidas .proy-tab-header {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+}
+body[data-theme="mundial"] #proyPane_partidasv4 .proy-tab-header h3,
+body[data-theme="mundial"] #proyPane_partidas .proy-tab-header h3 {
+    color: #ffffff !important;
+}
+body[data-theme="mundial"] #proyPane_partidasv4 #proyPartidasOrigen {
+    color: rgba(255,255,255,0.8) !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
 /* Empty state ("Sin instalaciones aún") legible sobre el estadio. */
 body[data-theme="mundial"] #proyPane_programa-obra .pob-empty-title {
     color: #ffffff !important;

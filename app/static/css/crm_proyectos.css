@@ -1803,6 +1803,14 @@
    ancestros la transparenta el JS (_proyTareasBg con startId del pane). */
 #proyPane_programa-obra.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
 #proyPane_programa-obra .proy-tab-header { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 12px; }
+/* Partidas y Levantamientos: mismo tratamiento. El pane deja de ser card
+   (padding:0 → la tabla abarca el mismo ancho que la tarjeta de encabezado
+   de arriba), el header flota sin greca, y la tabla interna conserva su card
+   blanca para legibilidad. */
+#proyPane_partidasv4.proy-tab-pane,
+#proyPane_partidas.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+#proyPane_partidasv4 .proy-tab-header,
+#proyPane_partidas .proy-tab-header { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 12px; }
 /* Toolbar flotante (la card del detalle la transparenta el JS — _proyTareasBg —
    con estilos inline para que se vea el estadio detrás, como la sección Tareas
    real). Búsqueda pill glass + Nueva, centradas. */
