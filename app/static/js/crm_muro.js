@@ -10,8 +10,35 @@
     function getCsrf() { var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
     window.getCsrf = getCsrf;
 
-    window.muroAbrir = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('active'); ov.classList.remove('closing'); muroCargar(); };
-    window.muroCerrar = function () { var ov = $m('widgetMuro'); if (!ov) return; ov.classList.add('closing'); setTimeout(function () { ov.classList.remove('active', 'closing', 'z-elevated'); }, 220); var btn = $m('btnMuro'); if (btn) btn.classList.remove('active'); };
+    window.muroAbrir = function () {
+        var ov = $m('widgetMuro'); if (!ov) return;
+        ov.classList.add('active'); ov.classList.remove('closing');
+        muroCargar();
+        // Abrir como VENTANA flotante (igual que Notificaciones): el sistema de
+        // ventanas la hace draggable/resizable/minimizable. Si no se puede
+        // (tope de ventanas → muestra el picker) queda como modal normal.
+        if (window.crmWidgetWindow && typeof window.crmWidgetWindow.windowize === 'function'
+            && !ov.classList.contains('ww-windowed')) {
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var w = Math.min(Math.round(vw * 0.72), 1100);
+            var h = Math.round(vh * 0.84);
+            var rect = { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
+            try { window.crmWidgetWindow.windowize(ov, rect); } catch (e) {}
+        }
+    };
+    window.muroCerrar = function () {
+        var ov = $m('widgetMuro'); if (!ov) return;
+        // Si está en modo ventana, devolverla a modal antes de ocultar (limpia
+        // las custom props --ww-* y la clase). El observer del sistema también
+        // lo haría al ocultarse, pero lo hacemos explícito para un cierre limpio.
+        if (ov.classList.contains('ww-windowed') && window.crmWidgetWindow
+            && typeof window.crmWidgetWindow.unwindowize === 'function') {
+            try { window.crmWidgetWindow.unwindowize(ov); } catch (e) {}
+        }
+        ov.classList.add('closing');
+        setTimeout(function () { ov.classList.remove('active', 'closing', 'z-elevated'); }, 220);
+        var btn = $m('btnMuro'); if (btn) btn.classList.remove('active');
+    };
 
     // Migrado a crmReady (Turbo-friendly).
     // Guard `_muroWired` evita duplicar el click listener del overlay
