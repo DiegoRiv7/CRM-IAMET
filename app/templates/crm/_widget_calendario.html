@@ -3306,8 +3306,11 @@
                     var horas = (c.hora_inicio || c.hora_fin)
                         ? (_calEscape(c.hora_inicio || '') + (c.hora_fin ? '–' + _calEscape(c.hora_fin) : ''))
                         : '';
-                    var tooltip = (c.proyecto || '') + (c.po ? ' (PO ' + c.po + ')' : '') + (horas ? ' · ' + (c.hora_inicio || '') + (c.hora_fin ? '–' + c.hora_fin : '') : '');
-                    html += '<div onclick="calOpenInstalacionFromGrid(' + c.instalacion_id + ')" title="' + _calEscape(tooltip) + '" '
+                    html += '<div data-grid-cell="1" onclick="calOpenInstalacionFromGrid(' + c.instalacion_id + ')" '
+                          + 'data-cli="' + _calEscape(c.cliente_nombre || '') + '" data-proy="' + _calEscape(c.proyecto || '') + '" '
+                          + 'data-po="' + _calEscape(c.po || '') + '" data-est="' + _calEscape(c.estado_label || '') + '" '
+                          + 'data-hi="' + _calEscape(c.hora_inicio || '') + '" data-hf="' + _calEscape(c.hora_fin || '') + '" '
+                          + 'data-fecha="' + _calEscape(iso) + '" data-color="' + color + '" '
                           + 'style="background:' + color + '15;border-left:3px solid ' + color + ';color:#1D1D1F;'
                           + 'padding:4px 6px;border-radius:5px;margin-bottom:3px;font-size:0.74rem;font-weight:600;'
                           + 'cursor:pointer;line-height:1.25;overflow:hidden;">'
@@ -3321,6 +3324,65 @@
         });
         html += '</tbody></table>';
         root.innerHTML = html;
+
+        // Hover preview en cada celda (mismo popover compartido del calendario).
+        root.querySelectorAll('[data-grid-cell]').forEach(function (el) {
+            el.addEventListener('mouseenter', function (e) {
+                clearTimeout(window._calHoverTimer);
+                var mx = e.clientX, my = e.clientY;
+                window._calHoverTimer = setTimeout(function () { _calGridShowPreview(el, { mouseX: mx, mouseY: my }); }, 320);
+            });
+            el.addEventListener('mouseleave', function () {
+                clearTimeout(window._calHoverTimer);
+                if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview();
+            });
+        });
+    }
+
+    // Preview de una celda del grid Técnico×Día (reusa #calHoverPopover).
+    function _calGridShowPreview(el, opts) {
+        opts = opts || {};
+        var pop = _ensureHoverPopover();
+        var cli = el.getAttribute('data-cli') || '—';
+        var proy = el.getAttribute('data-proy') || '';
+        var po = el.getAttribute('data-po') || '';
+        var est = el.getAttribute('data-est') || '';
+        var hi = el.getAttribute('data-hi') || '';
+        var hf = el.getAttribute('data-hf') || '';
+        var fechaISO = el.getAttribute('data-fecha') || '';
+        var color = el.getAttribute('data-color') || '#7C3AED';
+        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        var fechaStr = '';
+        var p = fechaISO.split('-');
+        if (p.length === 3) {
+            var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+            fechaStr = DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()];
+        }
+        if (hi || hf) fechaStr += (fechaStr ? ' · ' : '') + hi + (hf ? ' — ' + hf : '');
+        pop.innerHTML =
+            '<div class="cal-hover-head" style="background:linear-gradient(135deg,' + color + 'D9 0%,' + color + ' 100%);">' +
+            '  <span class="cal-hover-type">Instalación</span>' +
+            '</div>' +
+            '<div class="cal-hover-body">' +
+            '  <div class="cal-hover-title">' + _calEsc(cli || '—') + '</div>' +
+            (fechaStr ? '  <div class="cal-hover-when">' + _calEsc(fechaStr) + '</div>' : '') +
+            (proy ? '<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Proyecto</span><span class="cal-hover-meta-val">' + _calEsc(proy) + '</span></div>' : '') +
+            (po ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">PO</span><span class="cal-hover-meta-val">' + _calEsc(po) + '</span></div>' : '') +
+            (est ? '<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Estado</span><span class="cal-hover-meta-val">' + _calEsc(est) + '</span></div>' : '') +
+            '</div>';
+        pop.style.visibility = 'hidden';
+        pop.style.display = 'block';
+        var pW = pop.offsetWidth, pH = pop.offsetHeight;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var left = (opts.mouseX || 0) + 16, top = (opts.mouseY || 0) + 14;
+        if (left + pW + 8 > vw) left = (opts.mouseX || 0) - pW - 16;
+        if (left < 8) left = 8;
+        if (top + pH + 8 > vh) top = (opts.mouseY || 0) - pH - 14;
+        if (top < 8) top = 8;
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+        pop.style.visibility = '';
     }
 
     function _calEscape(s) {
@@ -3338,6 +3400,12 @@
             window.open('/admin/app/instalacion/' + instId + '/change/', '_blank');
         }
     };
+
+    // Invalida el cache del mes fetcheado para que el próximo cambio de vista
+    // (semana/día) vuelva a pedir datos al server. Lo usa programa_obra.js al
+    // guardar una instalación: si el usuario edita la hora estando en el grid
+    // de técnicos y luego cambia a semana, sin esto vería datos viejos.
+    window.calInvalidarCache = function () { _calLastFetchedMes = null; };
 
     window.calGlobalRefetch = function (userVal) {
         // Si estamos en la vista grid Técnico × Día, re-renderizar el grid.

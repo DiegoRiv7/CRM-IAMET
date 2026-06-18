@@ -606,22 +606,33 @@
         html +=   _statBlock('PERSONAL (TEXTO)', _esc(inst.personal || '') || '<span style="color:#C7C7CC;">—</span>');
         html += '</div>';
 
-        // ── Desglose horizontal de jornadas (cada día con su horario) ──
+        // ── Desglose de jornadas: banner resumen + chips compactos por día
+        //    (escala bien de 5 a 30+ jornadas; las horas son uniformes así que
+        //    van en el banner, no repetidas en cada chip). ──
         var _dias = inst.dias && inst.dias.length ? inst.dias : (inst.fecha ? [inst.fecha] : []);
         var _hi = inst.hora_inicio || '08:00';
         var _hf = inst.hora_fin || '17:00';
         if (_dias.length) {
+            var _mesesC = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            var _fchCorta = function (iso) { var p = String(iso).slice(0, 10).split('-'); if (p.length !== 3) return iso; return parseInt(p[2], 10) + ' ' + (_mesesC[parseInt(p[1], 10) - 1] || ''); };
+            var _rango = _dias.length > 1 ? (_fchCorta(_dias[0]) + ' → ' + _fchCorta(_dias[_dias.length - 1])) : _fchCorta(_dias[0]);
             html += '<div style="margin-bottom:18px;">';
-            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Desglose de jornadas · ' + _dias.length + ' día' + (_dias.length > 1 ? 's' : '') + ' · ' + _esc(_hi) + '–' + _esc(_hf) + '</div>';
-            html +=   '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Desglose de jornadas</div>';
+            // Banner resumen (total · horario · rango).
+            html +=   '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,#F5F3FF,#FBFAFF);border:1px solid #E9E5FF;border-radius:12px;padding:12px 16px;margin-bottom:10px;">';
+            html +=     '<div><div style="font-size:1.4rem;font-weight:800;color:#7C3AED;line-height:1;">' + _dias.length + '</div><div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:#8B5CF6;margin-top:2px;">jornada' + (_dias.length > 1 ? 's' : '') + '</div></div>';
+            html +=     '<div style="width:1px;height:34px;background:#E9E5FF;"></div>';
+            html +=     '<div style="display:inline-flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:700;color:#1D1D1F;"><svg width="15" height="15" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' + _esc(_hi) + '–' + _esc(_hf) + '</div>';
+            html +=     '<div style="width:1px;height:34px;background:#E9E5FF;"></div>';
+            html +=     '<div style="font-size:0.86rem;color:#4B5563;font-weight:600;">' + _esc(_rango) + '</div>';
+            html +=   '</div>';
+            // Chips por día (wrap; scroll si son muchas).
+            html +=   '<div style="display:flex;flex-wrap:wrap;gap:6px;max-height:152px;overflow-y:auto;">';
             _dias.forEach(function (diaISO, idx) {
-                html += '<div style="flex:0 0 auto;min-width:128px;background:#F9FAFB;border:1px solid #EEF0F3;border-left:3px solid #7C3AED;border-radius:10px;padding:10px 12px;">'
-                      +   '<div style="font-size:0.6rem;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#7C3AED;">Jornada ' + (idx + 1) + '</div>'
-                      +   '<div style="font-size:0.92rem;font-weight:700;color:#1D1D1F;margin-top:3px;">' + _esc(_fmtFecha(diaISO)) + '</div>'
-                      +   '<div style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:#4B5563;margin-top:4px;">'
-                      +     '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
-                      +     _esc(_hi) + '–' + _esc(_hf)
-                      +   '</div>'
+                html += '<div title="Jornada ' + (idx + 1) + ' · ' + _esc(_fmtFecha(diaISO)) + ' · ' + _esc(_hi) + '–' + _esc(_hf) + '" '
+                      + 'style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E9E5FF;border-radius:8px;padding:4px 9px 4px 5px;font-size:0.76rem;">'
+                      +   '<span style="min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;background:#7C3AED;color:#fff;border-radius:5px;font-size:0.62rem;font-weight:800;">' + (idx + 1) + '</span>'
+                      +   '<span style="font-weight:600;color:#1D1D1F;">' + _esc(_fchCorta(diaISO)) + '</span>'
                       + '</div>';
             });
             html +=   '</div>';
@@ -714,10 +725,23 @@
     };
 
     window.pobAbrirProyectoDesdeVista = function (proyectoId) {
+        if (!proyectoId) return;
         pobCerrarVista();
-        if (typeof window.proyectosVerDetalle === 'function') {
-            window.proyectosVerDetalle(proyectoId);
+        // Si el visor se abrió desde el calendario en modo página, hay que
+        // CERRAR el calendario (restaura la página) antes de mostrar el
+        // detalle del proyecto; si no, queda oculto detrás del overlay.
+        var calOv = document.getElementById('widgetCalendarioMaster');
+        if (calOv && calOv.classList.contains('is-page-mode') && typeof window.calendarioCerrar === 'function') {
+            try { window.calendarioCerrar(); } catch (e) { }
         }
+        try { localStorage.setItem('crmView', 'proyectos'); } catch (e) { }
+        var go = function () {
+            if (typeof window.proyectosVerDetalle === 'function') {
+                window.proyectosVerDetalle(proyectoId);
+            }
+        };
+        // Pequeño defer para dejar que el cierre del calendario restaure el DOM.
+        setTimeout(go, 30);
     };
 
     window.pobAbrirOppDesdeVista = function (oppId) {
@@ -1217,6 +1241,20 @@
         };
     }
 
+    // Refresca el calendario tras crear/editar/asignar una instalación, en
+    // CUALQUIER modo (Todas, Instalaciones, Técnicos), e invalida el cache del
+    // mes para que al cambiar a semana/día también se vean datos frescos.
+    // Solo actúa si el calendario está abierto (evita fetches innecesarios).
+    function _pobRefrescarCalendario() {
+        try {
+            var m = document.getElementById('widgetCalendarioMaster');
+            var abierto = m && (m.classList.contains('is-page-mode') || m.offsetParent !== null);
+            if (!abierto) return;
+            if (typeof window.calInvalidarCache === 'function') window.calInvalidarCache();
+            if (typeof window.calGlobalRefetch === 'function') window.calGlobalRefetch('all');
+        } catch (e) {}
+    }
+
     window.pobGuardarCambios = function () {
         var payload = _readForm();
         if (!payload.descripcion) {
@@ -1260,10 +1298,7 @@
                   if (typeof showToast === 'function') showToast(_pobCreatingMode ? 'Instalación creada' : 'Cambios guardados', 'success');
                   pobCerrarModal();
                   pobCargarLista();
-                  // Refresca el calendario si está visible.
-                  if (typeof window.calGlobalRefetch === 'function' && window._calCurrentSource === 'instalaciones') {
-                      try { window.calGlobalRefetch('all'); } catch (e) {}
-                  }
+                  _pobRefrescarCalendario();
               } else {
                   var err = (res.data && res.data.error) || 'No se pudo guardar.';
                   if (res.data && res.data.trace) {
@@ -1289,9 +1324,7 @@
             if (data && data.success) {
                 pobCerrarModal();
                 pobCargarLista();
-                if (typeof window.calGlobalRefetch === 'function' && window._calCurrentSource === 'instalaciones') {
-                    try { window.calGlobalRefetch('all'); } catch (e) {}
-                }
+                _pobRefrescarCalendario();
             } else if (typeof showToast === 'function') {
                 showToast('No se pudo eliminar.', 'error');
             }
@@ -1353,9 +1386,7 @@
                         }
                     });
                 pobToggleAddAsig(false);
-                if (typeof window.calGlobalRefetch === 'function' && (window._calCurrentSource === 'instalaciones' || window._calViewMode === 'tecnicos')) {
-                    try { window.calGlobalRefetch('all'); } catch (e) {}
-                }
+                _pobRefrescarCalendario();
                 if (typeof showToast === 'function') {
                     showToast(data.created ? 'Técnico asignado' : 'Ya estaba asignado', data.created ? 'success' : 'info');
                 }
@@ -1378,9 +1409,7 @@
                     _pobActiveInst.asignaciones = _pobActiveInst.asignaciones.filter(function (a) { return a.id !== asignacionId; });
                     _renderAsignaciones(_pobActiveInst.asignaciones);
                 }
-                if (typeof window.calGlobalRefetch === 'function' && (window._calCurrentSource === 'instalaciones' || window._calViewMode === 'tecnicos')) {
-                    try { window.calGlobalRefetch('all'); } catch (e) {}
-                }
+                _pobRefrescarCalendario();
             }
         });
     };
