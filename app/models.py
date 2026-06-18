@@ -2680,6 +2680,23 @@ class Actividad(models.Model):
 
     completada = models.BooleanField(default=False, verbose_name="Completada")
 
+    # Resultado de la actividad: texto libre + estatus, capturados al completar
+    # una Actividad genérica del calendario (no aplica a Tareas).
+    resultado = models.TextField(
+        blank=True, default='', verbose_name="Resultado de la actividad"
+    )
+    resultado_estatus = models.CharField(
+        max_length=30, blank=True, default='',
+        choices=[
+            ('exitosa', 'Exitosa'),
+            ('sin_exito', 'Sin éxito'),
+            ('seguimiento', 'Requiere seguimiento'),
+            ('reagendar', 'Reagendar'),
+            ('cancelada', 'Cancelada'),
+        ],
+        verbose_name="Estatus del resultado"
+    )
+
     # Agrupador opcional para actividades creadas como serie recurrente.
     # Cuando el usuario marca "Repetir" en el formulario, el backend crea
     # N Actividad reales (una por cada fecha) y todas comparten este UUID.
@@ -2994,6 +3011,39 @@ class ArchivoOportunidad(models.Model):
         help_text="'oc' si es OCC, 'factura' si es Factura de ingreso, '' si no aplica")
     monto_extraido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
         verbose_name="Monto extraído del PDF")
+
+    class Meta:
+        ordering = ['-fecha_subida']
+
+    def __str__(self):
+        return self.nombre_original
+
+    @property
+    def tamaño_formateado(self):
+        if self.tamaño < 1024:
+            return f"{self.tamaño} B"
+        elif self.tamaño < 1024 * 1024:
+            return f"{self.tamaño / 1024:.1f} KB"
+        elif self.tamaño < 1024 * 1024 * 1024:
+            return f"{self.tamaño / (1024 * 1024):.1f} MB"
+        return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
+
+
+class ArchivoActividad(models.Model):
+    """Archivos adjuntos al resultado de una Actividad genérica del
+    calendario. Versión simplificada de ArchivoOportunidad: se sube al
+    completar la actividad con su resultado."""
+    actividad = models.ForeignKey(
+        'Actividad', on_delete=models.CASCADE, related_name='resultado_archivos'
+    )
+    nombre_original = models.CharField(max_length=255)
+    archivo = models.FileField(upload_to='actividades/resultado/%Y/%m/', blank=True)
+    tipo_archivo = models.CharField(max_length=20, default='otro')
+    extension = models.CharField(max_length=10, blank=True)
+    tamaño = models.BigIntegerField(default=0)
+    mime_type = models.CharField(max_length=100, blank=True)
+    subido_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-fecha_subida']

@@ -2980,6 +2980,22 @@ def actividad_detail(request, pk):
         if actividad.oportunidad:
             opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
 
+        resultado_archivos = []
+        for a in actividad.resultado_archivos.all():
+            try:
+                url = a.archivo.url if a.archivo else ''
+            except Exception:
+                url = ''
+            resultado_archivos.append({
+                'id': a.id,
+                'nombre': a.nombre_original,
+                'url': url,
+                'tipo_archivo': a.tipo_archivo,
+                'extension': a.extension,
+                'tamaño': a.tamaño,
+                'tamaño_formateado': a.tamaño_formateado,
+            })
+
         return JsonResponse({
             'id': actividad.id,
             'title': actividad.titulo,
@@ -2993,6 +3009,9 @@ def actividad_detail(request, pk):
             'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
             'es_mio': actividad.creado_por_id == request.user.pk,
             'completada': actividad.completada,
+            'resultado': actividad.resultado,
+            'resultado_estatus': actividad.resultado_estatus,
+            'resultado_archivos': resultado_archivos,
         })
 
     elif request.method == 'PATCH':
@@ -3003,6 +3022,16 @@ def actividad_detail(request, pk):
         if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user) and not es_companero:
             return JsonResponse({'error': 'No tienes permiso para completar esta actividad.'}, status=403)
         data = json.loads(request.body)
+        # Guardar resultado / estatus (resultado de actividad genérica).
+        update_fields_resultado = []
+        if 'resultado' in data:
+            actividad.resultado = data.get('resultado') or ''
+            update_fields_resultado.append('resultado')
+        if 'resultado_estatus' in data:
+            actividad.resultado_estatus = data.get('resultado_estatus') or ''
+            update_fields_resultado.append('resultado_estatus')
+        if update_fields_resultado:
+            actividad.save(update_fields=update_fields_resultado)
         if 'completada' in data:
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
@@ -3125,6 +3154,88 @@ def actividad_detail(request, pk):
         return JsonResponse({'message': 'Actividad eliminada exitosamente'}, status=204)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+def _detectar_tipo_archivo(extension):
+    """Mapea una extensión a un tipo_archivo (mismo criterio que views_drive)."""
+    ext = (extension or '').lower()
+    if ext in ['pdf']:
+        return 'pdf'
+    elif ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']:
+        return 'imagen'
+    elif ext in ['doc', 'docx', 'txt', 'rtf', 'odt']:
+        return 'documento'
+    elif ext in ['xls', 'xlsx', 'csv', 'ods']:
+        return 'hoja_calculo'
+    elif ext in ['ppt', 'pptx', 'odp']:
+        return 'presentacion'
+    elif ext in ['mp4', 'avi', 'mov', 'wmv']:
+        return 'video'
+    elif ext in ['mp3', 'wav', 'aac', 'flac']:
+        return 'audio'
+    elif ext in ['zip', 'rar', '7z', 'tar', 'gz']:
+        return 'archivo_comprimido'
+    return 'otro'
+
+
+@csrf_exempt
+@login_required
+def actividad_resultado_archivo_upload(request, pk):
+    """Sube un archivo adjunto al resultado de una Actividad genérica.
+
+    Multipart: campo FormData `archivo` (un archivo por request). Mismo
+    enfoque CSRF/permiso que views_drive (`@csrf_exempt` + `@login_required`).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    from .models import ArchivoActividad
+    actividad = get_object_or_404(Actividad, pk=pk)
+
+    # Permisos: mismos que para completar la actividad (creador, participante,
+    # supervisor o compañero de grupo).
+    es_participante = actividad.participantes.filter(pk=request.user.pk).exists()
+    from .views_grupos import comparten_grupo
+    es_companero = comparten_grupo(request.user, actividad.creado_por) if actividad.creado_por != request.user else False
+    if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user) and not es_companero:
+        return JsonResponse({'error': 'No tienes permiso para esta actividad.'}, status=403)
+
+    archivo_file = request.FILES.get('archivo')
+    if not archivo_file:
+        return JsonResponse({'error': 'Archivo requerido'}, status=400)
+
+    extension = archivo_file.name.split('.')[-1].lower() if '.' in archivo_file.name else ''
+    tipo_archivo = _detectar_tipo_archivo(extension)
+    mime_type = getattr(archivo_file, 'content_type', '') or ''
+
+    a = ArchivoActividad.objects.create(
+        actividad=actividad,
+        nombre_original=archivo_file.name,
+        archivo=archivo_file,
+        tipo_archivo=tipo_archivo,
+        extension=extension,
+        tamaño=archivo_file.size,
+        mime_type=mime_type,
+        subido_por=request.user,
+    )
+
+    try:
+        url = a.archivo.url if a.archivo else ''
+    except Exception:
+        url = ''
+
+    return JsonResponse({
+        'ok': True,
+        'archivo': {
+            'id': a.id,
+            'nombre': a.nombre_original,
+            'url': url,
+            'tipo_archivo': a.tipo_archivo,
+            'extension': a.extension,
+            'tamaño': a.tamaño,
+            'tamaño_formateado': a.tamaño_formateado,
+        },
+    })
 
 
 @login_required

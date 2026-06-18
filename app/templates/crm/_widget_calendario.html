@@ -3798,11 +3798,15 @@
         var descText=evt.description||'';
         var descHtml=descText?descText.replace(/\n/g,'<br>'):'<span style="color:#AEAEB2;font-style:italic;">No hay descripción.</span>';
         if (descEl) descEl.innerHTML=descHtml;
+        // Ocultar sección Resultado por defecto; el fetch la rellena si aplica.
+        var resWrap=document.getElementById('woVerActResultadoWrap');
+        if (resWrap) resWrap.style.display='none';
         if (!esTarea) {
             fetch('/app/api/actividades/'+id+'/').then(function(r){return r.ok?r.json():null;}).then(function(d){
                 if (!d) return;
                 if (descEl) { var fresh=d.description||d.descripcion||''; descEl.innerHTML=fresh?fresh.replace(/\n/g,'<br>'):'<span style="color:#AEAEB2;font-style:italic;">No hay descripción.</span>'; }
                 evt.description=d.description||d.descripcion||'';
+                woVerActPintarResultado(d);
             }).catch(function(){});
         }
         var pc=document.getElementById('woVerActParticipantes');
@@ -3832,6 +3836,57 @@
             if (btnEliminar) btnEliminar.style.display = 'inline-flex';
         }
         document.getElementById('widgetOppVerActividad').style.display='flex';
+    };
+
+    // Pinta la sección de Resultado (solo lectura) en el visor de actividad.
+    // Se muestra solo si la actividad está completada y tiene resultado/estatus/archivos.
+    window.woVerActPintarResultado = function (d) {
+        var wrap=document.getElementById('woVerActResultadoWrap');
+        if (!wrap) return;
+        var texto=(d.resultado||'').trim();
+        var estatus=d.resultado_estatus||'';
+        var archivos=d.resultado_archivos||[];
+        var tieneResultado=!!(texto||estatus||(archivos&&archivos.length));
+        if (!d.completada || !tieneResultado) { wrap.style.display='none'; return; }
+        // Estatus como badge.
+        var estLabels={exitosa:'Exitosa',sin_exito:'Sin éxito',seguimiento:'Requiere seguimiento',reagendar:'Reagendar',cancelada:'Cancelada'};
+        var estColors={exitosa:'#34C759',sin_exito:'#FF3B30',seguimiento:'#FF9500',reagendar:'#0052D4',cancelada:'#8E8E93'};
+        var estEl=document.getElementById('woVerActResultadoEstatus');
+        if (estEl) {
+            if (estatus && estLabels[estatus]) {
+                var c=estColors[estatus]||'#86868B';
+                estEl.style.display='inline-flex';
+                estEl.innerHTML='<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:14px;font-size:0.75rem;font-weight:600;background:'+c+'1A;color:'+c+';">'+woEscape(estLabels[estatus])+'</span>';
+            } else { estEl.style.display='none'; estEl.innerHTML=''; }
+        }
+        var txtEl=document.getElementById('woVerActResultadoTexto');
+        if (txtEl) {
+            if (texto) { txtEl.style.display='block'; txtEl.textContent=texto; }
+            else { txtEl.style.display='none'; txtEl.textContent=''; }
+        }
+        var archEl=document.getElementById('woVerActResultadoArchivos');
+        if (archEl) {
+            archEl.innerHTML='';
+            (archivos||[]).forEach(function(a){
+                var url=a.url||'';
+                if (a.tipo_archivo==='imagen' && url) {
+                    var img=document.createElement('a');
+                    img.href=url; img.target='_blank'; img.rel='noopener';
+                    img.title=a.nombre||'';
+                    img.style.cssText='display:block;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid #E5E5EA;';
+                    img.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;">';
+                    archEl.appendChild(img);
+                } else {
+                    var chip=document.createElement('a');
+                    chip.href=url; chip.target='_blank'; chip.rel='noopener';
+                    chip.title=a.nombre||'';
+                    chip.style.cssText='display:inline-flex;align-items:center;gap:6px;background:#F2F2F7;border-radius:8px;padding:6px 10px;font-size:0.82rem;color:#0052D4;text-decoration:none;max-width:200px;';
+                    chip.innerHTML='<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+woEscape(a.nombre||'archivo')+'</span>';
+                    archEl.appendChild(chip);
+                }
+            });
+        }
+        wrap.style.display='block';
     };
 
     window.calEliminarActividad = function () {
