@@ -585,11 +585,11 @@
                         <div class="cal-filter-pop-sep"></div>
                         <div class="cal-filter-pop-lbl">Fuente</div>
                         <div class="cal-source-toggle" id="calSourceToggle" role="tablist" style="display:flex;gap:3px;background:#F2F2F7;padding:3px;border-radius:10px;margin-top:5px;">
-                            <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Calendario de actividades (default)">
+                            <button type="button" id="calSourceActividades" class="cal-source-btn cal-source-btn-active" role="tab" aria-selected="true" onclick="calSetSource('actividades')" title="Todas las actividades del calendario (incluye instalaciones en morado)">
                                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-                                Actividades
+                                Todas
                             </button>
-                            <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Calendario de instalaciones (Plan de Trabajo)">
+                            <button type="button" id="calSourceInstalaciones" class="cal-source-btn" role="tab" aria-selected="false" onclick="calSetSource('instalaciones')" title="Solo instalaciones (Plan de Trabajo)">
                                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M14.7 6.3a1 1 0 010 1.4l-7 7-3-3a1 1 0 011.4-1.4l1.6 1.6 5.6-5.6a1 1 0 011.4 0z"/><circle cx="12" cy="12" r="10"/></svg>
                                 Instalaciones
                             </button>
@@ -2936,7 +2936,44 @@
         }
     };
 
-    // Refetch en modo Instalaciones (Plan de Trabajo Bajanet).
+    // Instalaciones = MORADO en el calendario. Mapper compartido entre el modo
+    // "Todas" (withPrefix=true → "INSTALACIONES - <nombre>") y el modo
+    // "Instalaciones" (withPrefix=false → nombre normal).
+    var _CAL_INSTALACION_COLOR = '#7C3AED';
+    function _calMapInstalacion(inst, withPrefix) {
+        var start = inst.fecha ? inst.fecha + 'T08:00:00' : null;
+        var end   = inst.fecha ? inst.fecha + 'T17:00:00' : null;
+        var desc = (inst.po ? 'PO ' + inst.po + ' · ' : '')
+                 + (inst.personal || '')
+                 + (inst.observaciones ? '\n' + inst.observaciones : '');
+        var nombre = inst.titulo || '';
+        return {
+            id: 'inst-' + inst.id,
+            title: withPrefix ? ('INSTALACIONES - ' + nombre) : nombre,
+            start: start,
+            end: end,
+            description: desc,
+            color: _CAL_INSTALACION_COLOR,
+            editable: false,
+            extendedProps: {
+                source: 'instalacion',
+                instalacion_id: inst.id,
+                cliente: inst.cliente,
+                po: inst.po,
+                proyecto: inst.proyecto,
+                jornadas_count: inst.jornadas_count,
+                jornadas_tipo_label: inst.jornadas_tipo_label,
+                personal: inst.personal,
+                monto_po: inst.monto_po,
+                utilidad: inst.utilidad,
+                estado: inst.estado,
+                estado_label: inst.estado_label,
+                tipo_actividad: 'instalacion',
+            },
+        };
+    }
+
+    // Refetch en modo Instalaciones (Plan de Trabajo Bajanet). Sin prefijo.
     function _calRefetchInstalaciones() {
         var mes = _calCurrentMesParam();  // 'YYYY-MM'
         var partes = mes.split('-');
@@ -2948,35 +2985,7 @@
             .then(function (data) {
                 var instalaciones = (data && data.instalaciones) || [];
                 _globalEvents = instalaciones.map(function (inst) {
-                    var start = inst.fecha ? inst.fecha + 'T08:00:00' : null;
-                    var end   = inst.fecha ? inst.fecha + 'T17:00:00' : null;
-                    var desc = (inst.po ? 'PO ' + inst.po + ' · ' : '')
-                             + (inst.personal || '')
-                             + (inst.observaciones ? '\n' + inst.observaciones : '');
-                    return {
-                        id: 'inst-' + inst.id,
-                        title: inst.titulo,
-                        start: start,
-                        end: end,
-                        description: desc,
-                        color: inst.color || '#FF9500',
-                        editable: false,
-                        extendedProps: {
-                            source: 'instalacion',
-                            instalacion_id: inst.id,
-                            cliente: inst.cliente,
-                            po: inst.po,
-                            proyecto: inst.proyecto,
-                            jornadas_count: inst.jornadas_count,
-                            jornadas_tipo_label: inst.jornadas_tipo_label,
-                            personal: inst.personal,
-                            monto_po: inst.monto_po,
-                            utilidad: inst.utilidad,
-                            estado: inst.estado,
-                            estado_label: inst.estado_label,
-                            tipo_actividad: 'instalacion',
-                        },
-                    };
+                    return _calMapInstalacion(inst, false);
                 });
                 window._calAllEvents = _globalEvents.slice();
                 if (typeof calApplyFilter === 'function') calApplyFilter('all');
@@ -3150,13 +3159,19 @@
         var sep = qs ? '&' : '?';
         var actividadesUrl = '/app/api/actividades/' + qs + sep + 'mes=' + encodeURIComponent(mes);
         var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500';
+        // En modo "Todas" también traemos las instalaciones para mostrarlas
+        // junto al resto (en morado, con prefijo "INSTALACIONES - ").
+        var _instParts = mes.split('-');
+        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]);
         _calLastFetchedMes = mes;
         var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
         var pTareas = fetch(tareasUrl).then(function(r){return r.json();});
+        var pInstalaciones = fetch(instUrl,{credentials:'same-origin'}).then(function(r){return r.json();}).catch(function(){return {instalaciones:[]};});
 
-        Promise.all([pActividades,pTareas]).then(function(results){
+        Promise.all([pActividades,pTareas,pInstalaciones]).then(function(results){
             var actividades=results[0];
             var tareasData=results[1];
+            var instData=results[2]||{};
             var tareas=tareasData.tareas||tareasData.results||[];
             _globalEvents = actividades.map(function(e){
                 var evtColor = e.color || (e.opportunity ? '#0052D4' : '#1D1D1F');
@@ -3195,6 +3210,10 @@
                 var tEnd = _calToLocalISO(dEnd.toISOString());
                 _globalEvents.push({ id:'tarea-'+t.id, title:t.titulo, start:tStart, end:tEnd, color:'#FF9500', editable:false,
                     extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id, text:t.creado_por||''}, estado:t.estado } });
+            });
+            // Instalaciones (morado + prefijo "INSTALACIONES - ") mezcladas con todo.
+            (instData.instalaciones || []).forEach(function (inst) {
+                _globalEvents.push(_calMapInstalacion(inst, true));
             });
             window._calAllEvents = _globalEvents.slice();
             var sel=document.getElementById('calUserFilter');
@@ -3464,7 +3483,11 @@
         var idSet = {};
         ids.forEach(function(id){ idSet[id] = 1; });
         return allEvts.filter(function(ev){
-            var parts = (ev.extendedProps||{}).participants || [];
+            var _ep = ev.extendedProps || {};
+            // Instalaciones son org-wide (visibles para todos): no se filtran
+            // por el selector de usuario.
+            if (_ep.source === 'instalacion' || _ep.tipo_actividad === 'instalacion') return true;
+            var parts = _ep.participants || [];
             var isP = parts.some(function(p){ var pid = p.id || p.value; return pid != null && idSet[parseInt(pid,10)]; });
             var cr = (ev.extendedProps||{}).creado_por;
             var crId = cr ? (typeof cr === 'object' ? cr.id : parseInt(cr,10)) : null;
@@ -3606,6 +3629,10 @@
         var evt = _globalEvents.find(function (x) { return String(x.id) === String(id); });
         if (!evt) return;
         var ep = evt.extendedProps || {};
+        // Instalación → modal del Programa de Obra (igual que el eventClick de FC).
+        if ((ep.source === 'instalacion' || ep.tipo_actividad === 'instalacion') && ep.instalacion_id && typeof window.pobAbrirModal === 'function') {
+            window.pobAbrirModal(ep.instalacion_id); return;
+        }
         if (ep.evento && ep.evento.id && typeof window.eventoDetalleAbrir === 'function') {
             window.eventoDetalleAbrir(ep.evento.id); return;
         }
@@ -3633,13 +3660,16 @@
     }
 
     /* ─── Filtro de tipos (Tareas / Actividades / Eventos / Cursos) ─── */
-    window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true };
+    window._calTypeFilters = { tarea: true, actividad: true, evento: true, curso: true, instalacion: true };
     function _calClassifyType(ev) {
         // Solo es "Tarea" si el id viene con prefijo 'tarea-' (tareas reales).
         // El extendedProps.tipo_actividad puede ser 'tarea' como categoría visual
         // de una actividad del calendario, pero NO la hace una tarea real.
         if (String(ev.id || '').indexOf('tarea-') === 0) return 'tarea';
         var ep = ev.extendedProps || {};
+        // Instalaciones: categoría propia (no se apaga con el check de
+        // "Actividades"; su visibilidad la rige el toggle Fuente Todas/Instalaciones).
+        if (ep.source === 'instalacion' || ep.tipo_actividad === 'instalacion') return 'instalacion';
         if (ep.evento) return 'evento';
         if (ep.curso) return 'curso';
         return 'actividad';
