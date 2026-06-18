@@ -874,17 +874,94 @@
         <table style="display:none;"><tbody id="proyTareasBody"></tbody></table>
       </div>
 
-      <!-- TAB: Drive (archivos de la oportunidad vinculada) -->
+      <!-- TAB: Drive (archivos de la oportunidad vinculada). Pane transparente
+           (estadio detrás) con una card blanca interna (#proyDriveCard) que
+           reusa las clases globales .wo-drive-* / .drive-* del widget de
+           oportunidad. La walk _proyTareasBg arranca en #proyDriveCard, que
+           NO se transparenta (queda como tarjeta blanca de contenido). -->
       <div id="proyPane_drive" class="proy-tab-pane" style="display:none;">
-        <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <h3 id="proyDriveTitle">Drive</h3>
+        <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 id="proyDriveTitle" style="margin:0;">Drive</h3>
           <button type="button" id="proyDriveBackBtn" style="display:none;border:none;background:#F1F5F9;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#475569;" onclick="proyDriveNavBack()">
             &larr; Atrás
           </button>
         </div>
-        <div id="proyDriveContainer" style="padding:8px 0;">
-          <div style="text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>
+        <div id="proyDriveCard" style="background:#fff;border:1px solid #E5E5EA;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;position:relative;"
+             ondragenter="proyDriveDragEnter(event)" ondragover="proyDriveDragOver(event)" ondragleave="proyDriveDragLeave(event)" ondrop="proyDriveDrop(event)">
+          <input type="file" id="proyDriveFileInput" multiple style="display:none;" onchange="proyDriveHandleFiles(this.files)">
+
+          <!-- Toolbar: Nueva Carpeta / Subir Archivo + búsqueda + filtro tipo + toggle vista -->
+          <div id="proyDriveToolbar" class="wo-drive-toolbar">
+            <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+              <button type="button" id="proyDriveBtnNuevaCarpeta" class="wo-btn-new" onclick="proyDriveCrearCarpeta()" style="background:#fff;border:1px solid #E5E5EA;color:#1D1D1F;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg> Nueva Carpeta
+              </button>
+              <button type="button" id="proyDriveBtnSubirArchivo" class="wo-btn-new" onclick="document.getElementById('proyDriveFileInput').click()" style="background:#0052D4;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg> Subir Archivo
+              </button>
+            </div>
+            <div class="wo-drive-toolbar-search">
+              <svg width="16" height="16" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="proyDriveSearch" placeholder="Buscar archivos..." autocomplete="off">
+              <button type="button" id="proyDriveSearchClear" class="wo-drive-search-clear" title="Limpiar" aria-label="Limpiar búsqueda" style="display:none;">&times;</button>
+            </div>
+            <div class="wo-drive-toolbar-controls">
+              <label class="wo-drive-select-wrap" title="Filtrar por tipo">
+                <span class="wo-drive-select-label">Tipo</span>
+                <select id="proyDriveFilterTipo">
+                  <option value="todos">Todos</option>
+                  <option value="carpeta">Carpetas</option>
+                  <option value="pdf">PDF</option>
+                  <option value="img">Imágenes</option>
+                  <option value="excel">Excel/CSV</option>
+                  <option value="word">Word/Texto</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </label>
+              <div class="wo-drive-view-toggle" role="group" aria-label="Cambiar vista">
+                <button type="button" id="proyDriveViewGrid" class="wo-drive-view-btn is-active" title="Cuadrícula" aria-label="Vista cuadrícula">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button type="button" id="proyDriveViewList" class="wo-drive-view-btn" title="Lista" aria-label="Vista lista">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropzone + contenido -->
+          <div id="proyDriveDropzone" style="padding:1.25rem;position:relative;min-height:200px;">
+            <div id="proyDriveDragOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,82,212,0.06);border:3px dashed #0052D4;border-radius:12px;z-index:20;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none;">
+              <svg width="48" height="48" fill="none" stroke="#0052D4" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <div style="font-size:1rem;font-weight:700;color:#0052D4;">Suelta los archivos aquí</div>
+            </div>
+
+            <div id="proyDriveLoading" style="display:none;text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>
+
+            <div id="proyDriveEmpty" style="display:none;text-align:center;padding:48px 24px;color:#94A3B8;">
+              <svg width="56" height="56" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              <div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:4px;">Carpeta vacía</div>
+              <div style="font-size:0.85rem;">Sube archivos o crea carpetas aquí. Puedes arrastrar y soltar desde tu computadora.</div>
+            </div>
+
+            <div id="proyDriveNoMatch" style="display:none;text-align:center;padding:40px 24px;color:#94A3B8;">
+              <svg width="48" height="48" fill="none" stroke="#D1D1D6" stroke-width="1.4" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:4px;">Sin coincidencias</div>
+              <div style="font-size:0.85rem;">Ajusta tu búsqueda o filtro para ver más resultados.</div>
+            </div>
+
+            <div id="proyDriveGrid" class="wo-drive-grid drive-view-grid"></div>
+          </div>
         </div>
+        {% comment %}
+        Contenedor legado: lo mantenemos oculto por compatibilidad con código
+        que aún referencie #proyDriveContainer; el render ahora vive en
+        #proyDriveGrid + estados de arriba.
+        {% endcomment %}
+        <div id="proyDriveContainer" style="display:none;"></div>
       </div>
 
       <!-- TAB: Programa de Obra (Instalaciones del proyecto) -->

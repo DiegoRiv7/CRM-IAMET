@@ -1465,6 +1465,11 @@
                 // Mismo tratamiento que Partidas: transparenta el pane y
                 // conserva la card de la lista de levantamientos.
                 window._proyTareasBg(true, 'proyLevWrap');
+            } else if (tabName === 'drive') {
+                // Mismo patrón: transparenta el pane (mata el cuadro blanco) y
+                // conserva la card blanca interna del Drive (#proyDriveCard),
+                // que es el startId y por eso la walk no la toca.
+                window._proyTareasBg(true, 'proyDriveCard');
             } else if (tabName !== 'tareas') {
                 window._proyTareasBg(false);
             }
@@ -7558,81 +7563,321 @@
     window.proyGetCurrentProjectId = function() { return currentProjectId; };
 
     // ── Drive: archivos de la oportunidad vinculada ──────────────
+    // Espejo del gestor Drive del widget de oportunidad (funciones woDrive*),
+    // pero con namespace proyDrive* para no chocar con las globales. Reusa las
+    // clases globales .wo-drive-* / .drive-* (definidas por _widget_oportunidad
+    // y duplicadas en crm_proyectos.css para la página de levantamientos, donde
+    // ese widget no se incluye). Solo lee + sube contra el drive de la
+    // oportunidad vinculada; no renombra/elimina.
     var _driveOppId = null;
     var _driveParentStack = []; // stack de IDs de carpetas para "atrás"
+    var _proyDriveView = 'grid';
+    var _proyDriveFilterTipoVal = 'todos';
+    var _proyDriveSearchTerm = '';
+    var _proyDriveSearchTimer = null;
+    var _proyDriveDragCounter = 0;
+
+    function _proyDriveLoadPrefs() {
+        try {
+            var v = localStorage.getItem('_proy_drive_view');
+            if (v === 'grid' || v === 'list') _proyDriveView = v;
+            var t = localStorage.getItem('_proy_drive_filter_tipo');
+            if (t) _proyDriveFilterTipoVal = t;
+        } catch (e) { /* localStorage bloqueado: usa defaults */ }
+    }
+    function _proyDriveSavePrefs() {
+        try {
+            localStorage.setItem('_proy_drive_view', _proyDriveView);
+            localStorage.setItem('_proy_drive_filter_tipo', _proyDriveFilterTipoVal);
+        } catch (e) { /* ignore */ }
+    }
+
+    function _proyDriveTipoArchivo(a) {
+        var nombre = (a.nombre || a.nombre_original || '').toLowerCase();
+        var ext = (a.extension || nombre.split('.').pop() || '').toLowerCase().replace(/^\./, '');
+        if (ext === 'pdf') return 'pdf';
+        if (['jpg','jpeg','png','gif','webp','svg','heic','bmp','tiff'].indexOf(ext) >= 0) return 'img';
+        if (['xlsx','xls','csv'].indexOf(ext) >= 0) return 'excel';
+        if (['docx','doc','txt','md','rtf'].indexOf(ext) >= 0) return 'word';
+        return 'otros';
+    }
+
+    function _proyDriveFmtSize(bytes) {
+        if (!bytes || bytes <= 0) return '—';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function _proyDriveFileIcon(tipo, ext) {
+        var icons = {
+            'pdf': {color:'#DC2626', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>'},
+            'imagen': {color:'#8B5CF6', svg:'<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'},
+            'documento': {color:'#2563EB', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'},
+            'hoja_calculo': {color:'#16A34A', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="12" y1="9" x2="12" y2="21"/>'},
+            'presentacion': {color:'#EA580C', svg:'<path d="M2 3h20v14H2z"/><path d="M12 17v4"/><path d="M8 21h8"/>'},
+            'video': {color:'#7C3AED', svg:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>'},
+            'audio': {color:'#EC4899', svg:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'}
+        };
+        // Si el backend no da tipo_archivo, deducir por extensión.
+        if (!icons[tipo]) {
+            var e = (ext || '').toLowerCase();
+            if (e === 'pdf') tipo = 'pdf';
+            else if (['jpg','jpeg','png','gif','svg','webp'].indexOf(e) >= 0) tipo = 'imagen';
+            else if (['xls','xlsx','csv'].indexOf(e) >= 0) tipo = 'hoja_calculo';
+            else if (['doc','docx','txt'].indexOf(e) >= 0) tipo = 'documento';
+            else if (['ppt','pptx'].indexOf(e) >= 0) tipo = 'presentacion';
+        }
+        var def = {color:'#0052D4', svg:'<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'};
+        return icons[tipo] || def;
+    }
 
     function _renderDrive(projectId) {
-        var container = document.getElementById('proyDriveContainer');
-        if (!container) return;
-        container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>';
+        _proyDriveLoadPrefs();
+        _proyDriveSearchTerm = '';
         _driveParentStack = [];
         _updateDriveBackBtn();
+        _proyDriveBindToolbar();
+        _proyDriveSyncToolbarUI();
+        _proyDriveShowLoading();
 
         // Obtener detalle del proyecto para saber la oportunidad vinculada
         _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
             var data = resp.data || resp;
             _driveOppId = data.oportunidad_id || null;
             if (!_driveOppId) {
-                container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;">' +
-                    '<svg width="40" height="40" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
-                    '<div style="font-weight:600;margin-bottom:4px;">Sin oportunidad vinculada</div>' +
-                    '<div style="font-size:0.78rem;">Este proyecto no tiene una oportunidad asociada con archivos.</div></div>';
+                _proyDriveShowEmpty('Sin oportunidad vinculada', 'Este proyecto no tiene una oportunidad asociada con archivos.');
+                var tb = document.getElementById('proyDriveToolbar');
+                if (tb) tb.style.display = 'none';
                 return;
             }
+            var tb2 = document.getElementById('proyDriveToolbar');
+            if (tb2) tb2.style.display = '';
             _loadDriveFolder(null);
         }).catch(function() {
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#EF4444;">Error cargando proyecto</div>';
+            _proyDriveShowEmpty('Error', 'No se pudo cargar el proyecto.');
         });
     }
 
+    function _proyDriveEl(id) { return document.getElementById(id); }
+
+    function _proyDriveShowLoading() {
+        var l = _proyDriveEl('proyDriveLoading');
+        var e = _proyDriveEl('proyDriveEmpty');
+        var nm = _proyDriveEl('proyDriveNoMatch');
+        var g = _proyDriveEl('proyDriveGrid');
+        if (l) l.style.display = 'block';
+        if (e) e.style.display = 'none';
+        if (nm) nm.style.display = 'none';
+        if (g) { g.style.display = 'none'; g.innerHTML = ''; }
+    }
+
+    function _proyDriveShowEmpty(titulo, sub) {
+        var l = _proyDriveEl('proyDriveLoading');
+        var nm = _proyDriveEl('proyDriveNoMatch');
+        var g = _proyDriveEl('proyDriveGrid');
+        var e = _proyDriveEl('proyDriveEmpty');
+        if (l) l.style.display = 'none';
+        if (nm) nm.style.display = 'none';
+        if (g) { g.style.display = 'none'; g.innerHTML = ''; }
+        if (e) {
+            e.style.display = 'block';
+            if (titulo) {
+                e.innerHTML = '<svg width="56" height="56" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+                    '<div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:4px;">' + _esc(titulo) + '</div>' +
+                    '<div style="font-size:0.85rem;">' + _esc(sub || '') + '</div>';
+            }
+        }
+    }
+
     function _loadDriveFolder(parentId) {
-        var container = document.getElementById('proyDriveContainer');
-        if (!container || !_driveOppId) return;
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94A3B8;">Cargando...</div>';
+        if (!_driveOppId) return;
+        _proyDriveShowLoading();
         var url = '/app/api/oportunidad/' + _driveOppId + '/drive/';
         if (parentId) url += '?parent=' + parentId;
 
         _fetch(url).then(function(data) {
-            var items = (data.carpetas || []).concat(data.archivos || []);
-            if (items.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;">' +
-                    '<svg width="36" height="36" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
-                    '<div style="font-size:0.82rem;">Sin archivos en esta carpeta</div></div>';
+            var carpetas = data.carpetas || [];
+            var archivos = data.archivos || [];
+            var grid = _proyDriveEl('proyDriveGrid');
+            var loading = _proyDriveEl('proyDriveLoading');
+            if (loading) loading.style.display = 'none';
+            if (!grid) return;
+
+            if (!carpetas.length && !archivos.length) {
+                _proyDriveShowEmpty('Carpeta vacía', 'Sube archivos o crea carpetas aquí. Puedes arrastrar y soltar desde tu computadora.');
                 return;
             }
-
-            var html = '<div style="display:flex;flex-direction:column;gap:2px;">';
-            // Carpetas primero
-            (data.carpetas || []).forEach(function(c) {
-                html += '<div class="proy-drive-item" onclick="proyDriveOpenFolder(' + c.id + ')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
-                    '<svg width="20" height="20" fill="#FBBF24" stroke="#F59E0B" stroke-width="1" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
-                    '<span style="flex:1;font-size:0.85rem;font-weight:600;color:#1E293B;">' + _esc(c.nombre) + '</span>' +
-                    '<svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>' +
-                '</div>';
-            });
-            // Archivos
-            (data.archivos || []).forEach(function(a) {
-                var icon = _driveFileIcon(a.extension || a.tipo_archivo);
-                var size = a.tamaño ? _formatFileSize(a.tamaño) : '';
-                // El backend manda la URL correcta según la tabla de origen
-                // (ArchivoOportunidad → /oportunidad/.../drive/archivo/...,
-                //  ArchivoProyecto    → /proyecto/.../archivo/...).
-                // Reconstruirla aquí 404eaba los archivos de proyecto.
-                var streamUrl = a.url || ('/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/');
-                html += '<div class="proy-drive-item" onclick="window.open(\'' + streamUrl + '\',\'_blank\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
-                    icon +
-                    '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:0.85rem;font-weight:500;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(a.nombre) + '</div>' +
-                        (size ? '<div style="font-size:0.7rem;color:#94A3B8;">' + size + '</div>' : '') +
-                    '</div>' +
-                    '<a href="' + streamUrl + '?dl=1" onclick="event.stopPropagation()" style="padding:4px;color:#64748B;" title="Descargar"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
-                '</div>';
-            });
-            html += '</div>';
-            container.innerHTML = html;
+            var html = '';
+            carpetas.forEach(function(c) { html += _proyDriveRenderCarpeta(c); });
+            archivos.forEach(function(a) { html += _proyDriveRenderArchivo(a); });
+            grid.innerHTML = html;
+            grid.style.display = '';
+            _proyDriveAplicarVista();
+            _proyDriveAplicarFiltros();
         }).catch(function(err) {
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#EF4444;">Error: ' + (err.message || err) + '</div>';
+            _proyDriveShowEmpty('Error', (err && err.message) || 'No se pudieron cargar los archivos.');
         });
+    }
+
+    function _proyDriveRenderCarpeta(c) {
+        var nombreEsc = _esc(c.nombre);
+        var nombreLow = _esc((c.nombre || '').toLowerCase());
+        return '<div class="drive-item drive-item-carpeta" data-tipo="carpeta" data-nombre="' + nombreLow + '" onclick="proyDriveOpenFolder(' + c.id + ')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            '<div class="drive-item-inner" style="text-align:center;">' +
+            '<svg class="drive-icon" width="42" height="42" fill="#FFCF3A" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+            '<div class="drive-name" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nombreEsc + '</div>' +
+            '</div>' +
+            '<div class="drive-row-meta">' +
+                '<span class="drive-col-tipo">Carpeta</span>' +
+                '<span class="drive-col-size"></span>' +
+                '<span class="drive-col-fecha"></span>' +
+            '</div>' +
+            '<div class="drive-row-actions"></div>' +
+            '</div>';
+    }
+
+    function _proyDriveRenderArchivo(a) {
+        // El backend manda la URL correcta según la tabla de origen
+        // (ArchivoOportunidad → /oportunidad/.../drive/archivo/.../stream/).
+        var streamUrl = a.url || ('/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/');
+        var dlUrl = streamUrl + (streamUrl.indexOf('?') >= 0 ? '&dl=1' : '?dl=1');
+        var ext = (a.extension || (a.nombre || '').split('.').pop() || '');
+        var tipoArchivo = a.tipo_archivo || '';
+        var iconInfo = _proyDriveFileIcon(tipoArchivo, ext);
+        var iconColor = iconInfo.color;
+        var extLabel = (ext || '').toUpperCase();
+        var extBadge = extLabel ? '<span style="font-size:0.6rem;color:' + iconColor + ';font-weight:700;background:' + iconColor + '14;border-radius:3px;padding:1px 4px;">' + extLabel + '</span>' : '';
+        var nombre = _esc(a.nombre || a.nombre_original || '');
+        var nombreLow = _esc((a.nombre || a.nombre_original || '').toLowerCase());
+        var tipoFiltro = _proyDriveTipoArchivo(a);
+        var sizeTxt = _proyDriveFmtSize(a.tamaño);
+        var sUrlAttr = _esc(streamUrl);
+        var dlUrlAttr = _esc(dlUrl);
+        var accionesGrid = '<div class="drive-grid-actions" style="display:flex;gap:4px;justify-content:center;margin-top:0.3rem;position:relative;z-index:3;">' +
+            '<a href="' + sUrlAttr + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;">Ver</a>' +
+            '<a href="' + dlUrlAttr + '" onclick="event.stopPropagation();" style="font-size:0.65rem;color:#34C759;text-decoration:none;background:#F0FFF5;border-radius:4px;padding:2px 6px;">Descargar</a>' +
+            '</div>';
+        var accionesList = '<a href="' + sUrlAttr + '" target="_blank" rel="noopener" class="act-ver" onclick="event.stopPropagation();">Ver</a>' +
+            '<a href="' + dlUrlAttr + '" class="act-dl" onclick="event.stopPropagation();">Descargar</a>';
+        return '<div class="drive-item drive-item-archivo" data-tipo="' + tipoFiltro + '" data-nombre="' + nombreLow + '" onclick="window.open(\'' + sUrlAttr + '\',\'_blank\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            '<div class="drive-item-inner" style="text-align:center;">' +
+            '<svg class="drive-icon" width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;display:block;">' + iconInfo.svg + '</svg>' +
+            '<div class="drive-name" title="' + nombre + '" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:0.2rem;">' + nombre + '</div>' +
+            '<div class="drive-grid-meta" style="font-size:0.7rem;color:#9CA3AF;display:flex;align-items:center;justify-content:center;gap:4px;">' + extBadge + ' ' + sizeTxt + '</div>' +
+            accionesGrid +
+            '</div>' +
+            '<div class="drive-row-meta">' +
+                '<span class="drive-col-tipo">' + (extLabel || '—') + '</span>' +
+                '<span class="drive-col-size">' + sizeTxt + '</span>' +
+                '<span class="drive-col-fecha"></span>' +
+            '</div>' +
+            '<div class="drive-row-actions">' + accionesList + '</div>' +
+            '</div>';
+    }
+
+    // ── Vista (grid/list) + filtros (búsqueda + tipo) ──
+    function _proyDriveAplicarVista() {
+        var grid = _proyDriveEl('proyDriveGrid');
+        if (!grid) return;
+        grid.classList.remove('drive-view-grid', 'drive-view-list');
+        grid.classList.add(_proyDriveView === 'list' ? 'drive-view-list' : 'drive-view-grid');
+        var bGrid = _proyDriveEl('proyDriveViewGrid');
+        var bList = _proyDriveEl('proyDriveViewList');
+        if (bGrid) bGrid.classList.toggle('is-active', _proyDriveView === 'grid');
+        if (bList) bList.classList.toggle('is-active', _proyDriveView === 'list');
+    }
+
+    function _proyDriveAplicarFiltros() {
+        var grid = _proyDriveEl('proyDriveGrid');
+        var noMatch = _proyDriveEl('proyDriveNoMatch');
+        var emptyEl = _proyDriveEl('proyDriveEmpty');
+        if (!grid) return;
+        var items = grid.querySelectorAll('.drive-item');
+        if (!items.length) {
+            if (noMatch) noMatch.style.display = 'none';
+            return;
+        }
+        var term = (_proyDriveSearchTerm || '').trim().toLowerCase();
+        var filtro = _proyDriveFilterTipoVal || 'todos';
+        var visibles = 0;
+        items.forEach(function(it) {
+            var tipo = it.getAttribute('data-tipo') || 'otros';
+            var nombre = it.getAttribute('data-nombre') || '';
+            var matchTipo = (filtro === 'todos') || (tipo === filtro);
+            var matchTerm = !term || (nombre.indexOf(term) >= 0);
+            var ok = matchTipo && matchTerm;
+            it.style.display = ok ? '' : 'none';
+            if (ok) visibles++;
+        });
+        if (visibles === 0) {
+            if (noMatch) noMatch.style.display = 'block';
+            grid.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'none';
+        } else {
+            if (noMatch) noMatch.style.display = 'none';
+            grid.style.display = '';
+            if (emptyEl) emptyEl.style.display = 'none';
+        }
+    }
+
+    function _proyDriveBindToolbar() {
+        var search = _proyDriveEl('proyDriveSearch');
+        var clearBtn = _proyDriveEl('proyDriveSearchClear');
+        var sel = _proyDriveEl('proyDriveFilterTipo');
+        var bGrid = _proyDriveEl('proyDriveViewGrid');
+        var bList = _proyDriveEl('proyDriveViewList');
+        if (!search || search._proyBound) return;
+        search._proyBound = true;
+
+        search.addEventListener('input', function() {
+            _proyDriveSearchTerm = search.value || '';
+            if (clearBtn) clearBtn.style.display = _proyDriveSearchTerm ? '' : 'none';
+            if (_proyDriveSearchTimer) clearTimeout(_proyDriveSearchTimer);
+            _proyDriveSearchTimer = setTimeout(_proyDriveAplicarFiltros, 150);
+        });
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                search.value = '';
+                _proyDriveSearchTerm = '';
+                clearBtn.style.display = 'none';
+                _proyDriveAplicarFiltros();
+                search.focus();
+            });
+        }
+        if (sel) {
+            sel.addEventListener('change', function() {
+                _proyDriveFilterTipoVal = sel.value || 'todos';
+                _proyDriveSavePrefs();
+                _proyDriveAplicarFiltros();
+            });
+        }
+        if (bGrid) {
+            bGrid.addEventListener('click', function() {
+                _proyDriveView = 'grid';
+                _proyDriveSavePrefs();
+                _proyDriveAplicarVista();
+            });
+        }
+        if (bList) {
+            bList.addEventListener('click', function() {
+                _proyDriveView = 'list';
+                _proyDriveSavePrefs();
+                _proyDriveAplicarVista();
+            });
+        }
+    }
+
+    function _proyDriveSyncToolbarUI() {
+        var sel = _proyDriveEl('proyDriveFilterTipo');
+        if (sel) sel.value = _proyDriveFilterTipoVal;
+        var search = _proyDriveEl('proyDriveSearch');
+        if (search) {
+            search.value = _proyDriveSearchTerm || '';
+            var clearBtn = _proyDriveEl('proyDriveSearchClear');
+            if (clearBtn) clearBtn.style.display = (search.value ? '' : 'none');
+        }
+        _proyDriveAplicarVista();
     }
 
     window.proyDriveOpenFolder = function(folderId) {
@@ -7653,21 +7898,96 @@
         if (btn) btn.style.display = _driveParentStack.length > 0 ? '' : 'none';
     }
 
-    function _driveFileIcon(ext) {
-        var color = '#64748B';
-        if (['pdf'].indexOf(ext) !== -1) color = '#EF4444';
-        else if (['doc','docx','txt'].indexOf(ext) !== -1) color = '#3B82F6';
-        else if (['xls','xlsx','csv'].indexOf(ext) !== -1) color = '#10B981';
-        else if (['jpg','jpeg','png','gif','svg','webp'].indexOf(ext) !== -1) color = '#8B5CF6';
-        else if (['ppt','pptx'].indexOf(ext) !== -1) color = '#F59E0B';
-        return '<svg width="20" height="20" fill="none" stroke="' + color + '" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    function _proyDriveCurrentFolder() {
+        return _driveParentStack.length > 0 ? _driveParentStack[_driveParentStack.length - 1] : null;
     }
 
-    function _formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
-        return (bytes / 1048576).toFixed(1) + ' MB';
-    }
+    // ── Crear carpeta (POST drive/) ──
+    window.proyDriveCrearCarpeta = function() {
+        if (!_driveOppId) return;
+        var nombre = window.prompt('Nombre de la nueva carpeta:', '');
+        if (!nombre || !nombre.trim()) return;
+        var payload = { nombre: nombre.trim() };
+        var parentId = _proyDriveCurrentFolder();
+        if (parentId) payload.parent_id = parentId;
+        _fetch('/app/api/oportunidad/' + _driveOppId + '/drive/', {
+            method: 'POST',
+            body: payload
+        }).then(function() {
+            _loadDriveFolder(_proyDriveCurrentFolder());
+        }).catch(function() {
+            if (typeof showToast === 'function') showToast('No se pudo crear la carpeta', 'error');
+        });
+    };
+
+    // ── Subir archivos (POST drive/archivos/, FormData) ──
+    window.proyDriveHandleFiles = function(files) {
+        if (!files || !files.length || !_driveOppId) return;
+        var loading = _proyDriveEl('proyDriveLoading');
+        if (loading) loading.style.display = 'block';
+        var fileList = Array.prototype.slice.call(files);
+        var parentId = _proyDriveCurrentFolder();
+        var errores = [];
+
+        function subirSiguiente(idx) {
+            if (idx >= fileList.length) {
+                var inp = _proyDriveEl('proyDriveFileInput');
+                if (inp) inp.value = '';
+                if (errores.length && typeof showToast === 'function') showToast(errores.join(' · '), 'error');
+                _loadDriveFolder(parentId);
+                return;
+            }
+            var formData = new FormData();
+            formData.append('archivo', fileList[idx]);
+            if (parentId) formData.append('carpeta_id', parentId);
+            _fetch('/app/api/oportunidad/' + _driveOppId + '/drive/archivos/', {
+                method: 'POST',
+                body: formData
+            }).then(function(res) {
+                if (res && res.error) errores.push(fileList[idx].name + ': ' + res.error);
+                subirSiguiente(idx + 1);
+            }).catch(function(e) {
+                errores.push(fileList[idx].name + ': ' + (e && e.message ? e.message : 'error'));
+                subirSiguiente(idx + 1);
+            });
+        }
+        subirSiguiente(0);
+    };
+
+    // ── Drag & drop ──
+    window.proyDriveDragEnter = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!_driveOppId) return;
+        _proyDriveDragCounter++;
+        var ov = _proyDriveEl('proyDriveDragOverlay');
+        if (ov) ov.style.display = 'flex';
+    };
+    window.proyDriveDragOver = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    window.proyDriveDragLeave = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _proyDriveDragCounter--;
+        if (_proyDriveDragCounter <= 0) {
+            _proyDriveDragCounter = 0;
+            var ov = _proyDriveEl('proyDriveDragOverlay');
+            if (ov) ov.style.display = 'none';
+        }
+    };
+    window.proyDriveDrop = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _proyDriveDragCounter = 0;
+        var ov = _proyDriveEl('proyDriveDragOverlay');
+        if (ov) ov.style.display = 'none';
+        if (!_driveOppId) return;
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            window.proyDriveHandleFiles(e.dataTransfer.files);
+        }
+    };
 
     // ═════════════════════════════════════════════════════════════
     //  OC: menú contextual (Editar / Eliminar)
