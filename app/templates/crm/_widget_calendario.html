@@ -3303,12 +3303,17 @@
                 cellEntries.forEach(function (c) {
                     var color = _calClienteColor(c.cliente_nombre);
                     var label = _calEscape(c.cliente_nombre || '—');
-                    var tooltip = (c.proyecto || '') + (c.po ? ' (PO ' + c.po + ')' : '');
+                    var horas = (c.hora_inicio || c.hora_fin)
+                        ? (_calEscape(c.hora_inicio || '') + (c.hora_fin ? '–' + _calEscape(c.hora_fin) : ''))
+                        : '';
+                    var tooltip = (c.proyecto || '') + (c.po ? ' (PO ' + c.po + ')' : '') + (horas ? ' · ' + (c.hora_inicio || '') + (c.hora_fin ? '–' + c.hora_fin : '') : '');
                     html += '<div onclick="calOpenInstalacionFromGrid(' + c.instalacion_id + ')" title="' + _calEscape(tooltip) + '" '
                           + 'style="background:' + color + '15;border-left:3px solid ' + color + ';color:#1D1D1F;'
                           + 'padding:4px 6px;border-radius:5px;margin-bottom:3px;font-size:0.74rem;font-weight:600;'
-                          + 'cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
-                          + label + '</div>';
+                          + 'cursor:pointer;line-height:1.25;overflow:hidden;">'
+                          + '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + label + '</div>'
+                          + (horas ? '<div style="font-size:0.66rem;font-weight:600;color:#6B7280;">' + horas + '</div>' : '')
+                          + '</div>';
                 });
                 html += '</td>';
             });

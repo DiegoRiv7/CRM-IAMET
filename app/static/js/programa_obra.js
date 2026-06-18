@@ -352,8 +352,8 @@
           +             '</div>'
           +             '<div class="pob-meta-row">'
           +               '<span class="pob-meta-label">'
-          +                 '<button type="button" id="pobJornadasCfgBtn" title="Configurar días de las jornadas" style="border:none;background:transparent;padding:0;margin:0;cursor:pointer;display:inline-flex;color:inherit;">'
-          +                   '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 '<button type="button" id="pobJornadasCfgBtn" title="Configurar días de las jornadas (clic)" style="border:none;background:rgba(0,82,212,0.1);padding:3px;margin:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;color:#0052D4;transition:background 0.15s,box-shadow 0.15s;box-shadow:0 0 0 1px rgba(0,82,212,0.18);" onmouseover="this.style.background=\'rgba(0,82,212,0.18)\'" onmouseout="this.style.background=\'rgba(0,82,212,0.1)\'">'
+          +                   '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
           +                 '</button>'
           +                 'Jornadas</span>'
           +               '<div style="display:flex;align-items:center;gap:8px;position:relative;">'
@@ -536,7 +536,7 @@
         if (document.getElementById('pobViewerBackdrop')) return;
         var html =
             '<div class="wop-modal-backdrop" id="pobViewerBackdrop">'
-          +   '<div class="wop-modal" style="width:min(640px, 96vw);">'
+          +   '<div class="wop-modal" style="width:min(920px, 96vw);">'
           +     '<div class="wop-modal-head" style="background:linear-gradient(135deg,#FF9500 0%,#FFB047 100%);padding:18px;border-bottom:none;">'
           +       '<div style="flex:1;min-width:0;color:#fff;">'
           +         '<div style="font-size:0.66rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;margin-bottom:4px;">'
@@ -605,6 +605,28 @@
         html +=   _statBlock('JORNADAS', _esc(String(inst.jornadas_count || 1)) + ' <span style="color:#86868B;font-size:0.8rem;">' + _esc(inst.jornadas_tipo_label || '') + '</span>');
         html +=   _statBlock('PERSONAL (TEXTO)', _esc(inst.personal || '') || '<span style="color:#C7C7CC;">—</span>');
         html += '</div>';
+
+        // ── Desglose horizontal de jornadas (cada día con su horario) ──
+        var _dias = inst.dias && inst.dias.length ? inst.dias : (inst.fecha ? [inst.fecha] : []);
+        var _hi = inst.hora_inicio || '08:00';
+        var _hf = inst.hora_fin || '17:00';
+        if (_dias.length) {
+            html += '<div style="margin-bottom:18px;">';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Desglose de jornadas · ' + _dias.length + ' día' + (_dias.length > 1 ? 's' : '') + ' · ' + _esc(_hi) + '–' + _esc(_hf) + '</div>';
+            html +=   '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">';
+            _dias.forEach(function (diaISO, idx) {
+                html += '<div style="flex:0 0 auto;min-width:128px;background:#F9FAFB;border:1px solid #EEF0F3;border-left:3px solid #7C3AED;border-radius:10px;padding:10px 12px;">'
+                      +   '<div style="font-size:0.6rem;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#7C3AED;">Jornada ' + (idx + 1) + '</div>'
+                      +   '<div style="font-size:0.92rem;font-weight:700;color:#1D1D1F;margin-top:3px;">' + _esc(_fmtFecha(diaISO)) + '</div>'
+                      +   '<div style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:#4B5563;margin-top:4px;">'
+                      +     '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+                      +     _esc(_hi) + '–' + _esc(_hf)
+                      +   '</div>'
+                      + '</div>';
+            });
+            html +=   '</div>';
+            html += '</div>';
+        }
 
         // ── Proyecto ligado (click abre widget) ──
         if (inst.proyecto_id) {

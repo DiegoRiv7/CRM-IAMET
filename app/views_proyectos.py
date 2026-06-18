@@ -6576,29 +6576,47 @@ def api_grid_tecnicos(request):
         'color': t.color or '',
     } for t in tecnicos_qs]
 
-    asignaciones_qs = (
-        InstalacionAsignacion.objects
-        .filter(fecha__range=(start, end), tecnico__in=tecnicos_qs)
-        .select_related('instalacion', 'tecnico')
-        .order_by('fecha', 'tecnico__nombre')
+    tecnico_ids_visibles = set(t['id'] for t in tecnicos_data)
+
+    # Derivamos las celdas de las INSTALACIONES (no de asignaciones sueltas):
+    # cada instalación ocupa TODOS sus días (duración completa) con SUS horas,
+    # para que el técnico aparezca en todas las jornadas del programa.
+    # Buffer en el límite inferior por instalaciones que iniciaron antes pero
+    # se extienden al rango visible.
+    inst_qs = (
+        Instalacion.objects
+        .filter(fecha_programada__range=(start - timedelta(days=45), end))
+        .prefetch_related('asignaciones')
     )
 
     celdas = []
-    for a in asignaciones_qs:
-        inst = a.instalacion
-        celdas.append({
-            'tecnico_id': a.tecnico_id,
-            'fecha': a.fecha.isoformat(),
-            'instalacion_id': inst.id,
-            'cliente_nombre': inst.cliente_nombre,
-            'proyecto': inst.proyecto,
-            'po': inst.po,
-            'estado': inst.estado,
-            'estado_label': inst.get_estado_display(),
-            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
-            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
-            'notas': a.notas,
-        })
+    for inst in inst_qs:
+        dias_inst = [d for d in _instalacion_dias_asignados(inst) if start <= d <= end]
+        if not dias_inst:
+            continue
+        # Técnicos asignados a esta instalación (visibles en el grid).
+        tec_ids = set(a.tecnico_id for a in inst.asignaciones.all()) & tecnico_ids_visibles
+        if not tec_ids:
+            continue
+        hi = inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '08:00'
+        hf = inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '17:00'
+        estado_label = inst.get_estado_display()
+        for d in dias_inst:
+            d_iso = d.isoformat()
+            for tid in tec_ids:
+                celdas.append({
+                    'tecnico_id': tid,
+                    'fecha': d_iso,
+                    'instalacion_id': inst.id,
+                    'cliente_nombre': inst.cliente_nombre,
+                    'proyecto': inst.proyecto,
+                    'po': inst.po,
+                    'estado': inst.estado,
+                    'estado_label': estado_label,
+                    'hora_inicio': hi,
+                    'hora_fin': hf,
+                    'notas': '',
+                })
 
     return JsonResponse({
         'success': True,
@@ -6730,6 +6748,8 @@ def _instalacion_to_full_dict(inst):
         'hora_inicio': inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '',
         'hora_fin': inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '',
         'dias_personalizados': inst.dias_personalizados or None,
+        # Lista de todos los días que ocupa (para el desglose de jornadas).
+        'dias': [d.isoformat() for d in _instalacion_dias_asignados(inst)],
         'fecha_tentativa_texto': inst.fecha_tentativa_texto,
         'jornadas_count': inst.jornadas_count,
         'jornadas_tipo': inst.jornadas_tipo,
