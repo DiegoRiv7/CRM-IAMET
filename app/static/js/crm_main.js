@@ -4281,7 +4281,12 @@
             var url = '/app/api/crm-table-data/?tab=' + currentTab + '&mes=' + currentMes + '&anio=' + currentAnio;
             if (vendedores) url += '&vendedores=' + vendedores;
             fetch(url)
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    // Si el server respondió 504/HTML, NO parsear como JSON
+                    // (rompía con "Unexpected token '<'"); aborta limpio.
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(function (data) {
                     var tbody = document.getElementById('crmTbody');
                     if (!tbody) return;

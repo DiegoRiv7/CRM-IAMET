@@ -14,7 +14,11 @@ services:
       - db
     environment:
       DB_HOST: db
-    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --timeout 240
+    # 1 solo worker (default) serializaba TODAS las requests → en cada carga
+    # el navegador dispara ~10 fetches y se encolaban tras el más lento,
+    # provocando 504 hasta en imágenes estáticas. gthread = varios slots
+    # concurrentes con poca RAM (ideal para vistas I/O-bound contra MySQL).
+    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 8 --worker-class gthread --timeout 240 --max-requests 1000 --max-requests-jitter 200
     deploy:
       resources:
         limits:

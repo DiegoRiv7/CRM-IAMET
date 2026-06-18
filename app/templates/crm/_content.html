@@ -1530,7 +1530,7 @@
      explícitos (clientes/Reportes, prospectos, ideas, marketing,
      calendario) el server-render manda — este script ocultaba el
      dashboard de Reportes cuando crmView quedó en 'tareas'. -->
-<script>(function(){try{var u=new URL(window.location.href);var t=u.searchParams.get('tab');if(t&&t!=='crm'&&t!=='todos')return;}catch(e){}var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t2=document.getElementById('tareasSection');if(t2)t2.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}})();</script>
+<script>(function(){try{var u=new URL(window.location.href);var t=u.searchParams.get('tab');if(t&&t!=='crm'&&t!=='todos'){document.documentElement.classList.remove('crm-init-alt');return;}}catch(e){}var v=localStorage.getItem('crmView');if(v==='tareas'||v==='proyectos'){var c=document.getElementById('crmContentSection');if(c)c.style.display='none';if(v==='tareas'){var t2=document.getElementById('tareasSection');if(t2)t2.classList.add('active');}if(v==='proyectos'){var p=document.getElementById('proyectosSection');if(p)p.classList.add('active');}}document.documentElement.classList.remove('crm-init-alt');})();</script>
 
 {% if tab_activo == 'crm' %}
 <!-- ═══════════════════════════════════════════════════════════

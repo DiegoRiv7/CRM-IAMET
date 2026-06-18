@@ -63,6 +63,31 @@
     document.documentElement.classList.add('adm-initial-hide');
 </script>
 {% endif %}
+{% comment %}
+Anti-FOUC para la vista guardada (Proyectos / Tareas): sin esto, el
+server pinta primero el CRM clásico (Oportunidades) y el script de
+_content.html cambia de vista DESPUÉS del primer paint → flash. Aquí, en
+el <head> y de forma síncrona, ocultamos #crmContentSection antes del
+primer paint si la vista guardada es proyectos/tareas. La regla NO usa
+!important para que el JS de cambio de vista (display inline) gane luego;
+además _content.html quita la clase en cuanto aplica la vista.
+{% endcomment %}
+<style>
+    html.crm-init-alt #crmContentSection { display: none; }
+</style>
+<script>
+    (function () {
+        try {
+            var u = new URL(window.location.href);
+            var t = u.searchParams.get('tab');
+            if (t && t !== 'crm' && t !== 'todos') return;
+            var v = localStorage.getItem('crmView');
+            if (v === 'tareas' || v === 'proyectos') {
+                document.documentElement.classList.add('crm-init-alt');
+            }
+        } catch (e) { }
+    })();
+</script>
 {% endblock %}
 {% block content %}
 
