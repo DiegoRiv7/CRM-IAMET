@@ -72,10 +72,13 @@
             '.pob-empty-sub { font-size:0.85rem; color:#86868B; }',
             '.pob-head { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-bottom:1px solid #F2F2F7; }',
             '.pob-eyebrow { display:inline-flex; align-items:center; gap:6px; font-size:0.62rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#86868B; }',
-            '.pob-body { padding:6px 22px 18px; overflow-y:auto; display:grid; grid-template-columns:1.5fr 1fr; gap:0; }',
-            '.pob-main { padding-top:14px; padding-right:24px; }',
-            '.pob-side { border-left:1px solid #F2F2F7; padding:14px 0 0 22px; }',
-            '.pob-title-input { width:100%; border:none; outline:none; font-family:inherit; font-size:1.5rem; font-weight:700; color:#1D1D1F; letter-spacing:-0.02em; padding:6px 0; resize:none; line-height:1.25; background:transparent; }',
+            // Canvas full-width estilo composer de oportunidad (sin columna
+            // lateral): título grande, pills en fila, notas, y los técnicos como
+            // sección a todo el ancho debajo.
+            '.pob-body { padding:8px 40px 26px; overflow-y:auto; display:block; }',
+            '.pob-main { padding-top:16px; }',
+            '.pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:20px 0 0; margin-top:22px; }',
+            '.pob-title-input { width:100%; border:none; outline:none; font-family:inherit; font-size:1.95rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.025em; padding:6px 0; resize:none; line-height:1.2; background:transparent; }',
             '.pob-title-input::placeholder { color:#C7C7CC; font-weight:700; }',
             /* fila meta inline tipo "etiqueta a la izquierda, control limpio a la derecha" */
             // Meta estilo composer de oportunidad: pills redondeados que fluyen

@@ -315,6 +315,7 @@ body[data-theme="mundial"] .wn-ctw-header,
 body[data-theme="mundial"] .muro-card-header,
 body[data-theme="mundial"] .tcp-col-head,
 body[data-theme="mundial"] .ptk-cols-head,
+body[data-theme="mundial"] .pob-head,
 body[data-theme="mundial"] .crm-tw-header,
 body[data-theme="mundial"] .crm-ctw-header {
     background-color: #5c0f17 !important;
@@ -919,6 +920,11 @@ body[data-theme="mundial"] #proyPane_programa-obra .pob-empty-ic {
     stroke: rgba(255,255,255,0.75) !important;
     opacity: 0.8 !important;
 }
+/* Header greca del modal de instalación: texto/íconos en blanco. */
+body[data-theme="mundial"] .pob-eyebrow { color: #ffffff !important; }
+body[data-theme="mundial"] .pob-eyebrow svg { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="mundial"] .pob-head .widget-close { color: rgba(255,255,255,0.9) !important; }
+body[data-theme="mundial"] .pob-head .widget-close:hover { background: rgba(255,255,255,0.16) !important; }
 
 /* --- Diálogos de proyecto (Crear, Editar, etc.) --- */
 body[data-theme="mundial"] .proy-dialog-overlay {
