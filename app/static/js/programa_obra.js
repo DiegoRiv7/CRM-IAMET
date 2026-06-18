@@ -235,7 +235,7 @@
         if (document.getElementById('pobModalBackdrop')) return;
         var html =
             '<div class="wop-modal-backdrop" id="pobModalBackdrop">'
-          +   '<div class="wop-modal pob-modal">'
+          +   '<div class="wop-modal pob-modal" style="width:min(1180px, 96vw); max-width:96vw;">'
           +     '<div class="pob-head">'
           +       '<div class="pob-eyebrow">'
           +         '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
