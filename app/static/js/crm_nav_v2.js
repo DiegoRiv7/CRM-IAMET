@@ -124,7 +124,18 @@
         busy = true;
         setLoading(true, cfg.ids);
 
-        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'crm-nav-v2' } })
+        // Timeout duro: si el server tarda (504/saturación) NO dejamos el
+        // botón congelado en "Aplicando…" para siempre. Abortamos a los 18s y
+        // recuperamos la UI en el .catch (sin recargar hacia la misma URL
+        // lenta, que sólo provoca otro 504).
+        var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var _timedOut = false;
+        var _to = setTimeout(function () {
+            _timedOut = true;
+            if (_ac) { try { _ac.abort(); } catch (e) {} }
+        }, 18000);
+
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'crm-nav-v2' }, signal: _ac ? _ac.signal : undefined })
             .then(function (r) {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 return r.text();
@@ -183,12 +194,28 @@
                     console.error('[crmNavV2] after-swap:', e);
                 }
 
+                clearTimeout(_to);
                 setLoading(false, cfg.ids);
                 busy = false;
             })
             .catch(function (err) {
-                console.error('[crmNavV2] swap falló, recargando:', err);
+                clearTimeout(_to);
                 busy = false;
+                setLoading(false, cfg.ids);
+                if (_timedOut || (err && err.name === 'AbortError')) {
+                    // El server no respondió a tiempo. Recargar hacia la misma
+                    // URL lenta sólo encadenaría otro timeout → mejor avisar y
+                    // dejar la vista actual usable.
+                    console.warn('[crmNavV2] period-apply timeout (server lento):', url);
+                    if (typeof window.crmToast === 'function') {
+                        window.crmToast('El servidor tardó demasiado. Intenta de nuevo en un momento.', 'error');
+                    } else if (typeof window.showNotification === 'function') {
+                        window.showNotification('El servidor tardó demasiado. Intenta de nuevo.', 'error');
+                    }
+                    return;
+                }
+                // Otros errores (sesión expirada, fragmento inválido): recarga real.
+                console.error('[crmNavV2] swap falló, recargando:', err);
                 hardReload(url);
             });
 

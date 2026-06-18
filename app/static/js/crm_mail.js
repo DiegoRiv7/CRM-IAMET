@@ -1661,8 +1661,12 @@
         }
 
         function _mailPollUnreadCount() {
-            fetch('/app/api/mail/auto-sync/')
-                .then(function (r) { return r.json(); })
+            // Sin polling con la pestaña oculta (perf: no saturar al server).
+            if (document.hidden) return;
+            var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 15000);
+            fetch('/app/api/mail/auto-sync/', { signal: _ac ? _ac.signal : undefined })
+                .then(function (r) { clearTimeout(_to); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                 .then(function (data) {
                     if (!data.ok) return;
 

@@ -965,6 +965,9 @@
   var _bgPollInterval = null;
   function _startBgPoll() {
     _bgPollInterval = setInterval(function(){
+      // No malgastar requests si la pestaña no está visible (perf: evita
+      // saturar al server con polls de fondo cuando nadie está viendo).
+      if(document.hidden) return;
       if(document.getElementById('widgetGrupo').classList.contains('active')) return;
       _misGrupos.forEach(function(g){
         if(g.id === _grupoActualId) return; // ya lo cubre el poll principal
@@ -976,7 +979,7 @@
             if(d.no_leidos>0){var b=document.getElementById('grupoBadge');if(b)b.style.display='';}
           }).catch(function(){});
       });
-    }, 10000);
+    }, 30000);
   }
   _startBgPoll();
 
@@ -987,7 +990,13 @@
   }
 
   /* ── Badge global (topbar) ──────────────────── */
+  var _badgeTopbarBusy = false;
   function _actualizarBadgeTopbar() {
+    // Sin polling con la pestaña oculta; y no encimar rondas (cada ronda hace
+    // 1 fetch por grupo → evita acumular requests si el server va lento).
+    if(document.hidden || _badgeTopbarBusy) return;
+    if(!_misGrupos.length) return;
+    _badgeTopbarBusy = true;
     var total = 0;
     var pendientes = _misGrupos.length;
     _misGrupos.forEach(function(g){
@@ -999,8 +1008,9 @@
           if(pendientes === 0) {
             var badge = document.getElementById('grupoBadge');
             if(badge) badge.style.display = total > 0 ? '' : 'none';
+            _badgeTopbarBusy = false;
           }
-        }).catch(function(){ pendientes--; });
+        }).catch(function(){ pendientes--; if(pendientes <= 0) _badgeTopbarBusy = false; });
     });
   }
 

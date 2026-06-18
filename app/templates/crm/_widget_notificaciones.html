@@ -1304,9 +1304,20 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
     }
 
     /* ═══ Load ═══ */
+    var _notifLoadBusy = false;
     function _load() {
-        fetch('/app/api/obtener-notificaciones/')
-            .then(r => r.json())
+        // Sin polling con la pestaña oculta y sin encimar rondas (perf).
+        if (document.hidden || _notifLoadBusy) return;
+        _notifLoadBusy = true;
+        var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 15000);
+        fetch('/app/api/obtener-notificaciones/', { signal: _ac ? _ac.signal : undefined })
+            .then(r => {
+                // Si el server respondió error (504 → página HTML), NO intentar
+                // parsear como JSON (rompía con "Unexpected token '<'").
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
             .then(data => {
                 if (data.success) {
                     _nData = data.notifications;
@@ -1329,7 +1340,8 @@ body.ww-lite .nd-stack-items .nd-card { background: #fff; }
                     }
                 }
             })
-            .catch(err => console.error('Notif load error:', err));
+            .catch(err => console.error('Notif load error:', err))
+            .finally(() => { clearTimeout(_to); _notifLoadBusy = false; });
     }
 
     function _showMacOSToast(n) {
