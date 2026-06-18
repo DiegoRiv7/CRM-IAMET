@@ -576,7 +576,7 @@
                         <div class="cal-filter-pop-lbl">Mostrar</div>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="tarea" checked><span class="cal-filter-dot" style="background:#FF9500;"></span><span>Tareas</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="actividad" checked><span class="cal-filter-dot" style="background:#0052D4;"></span><span>Actividades</span></label>
-                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="evento" checked><span class="cal-filter-dot" style="background:#8B5CF6;"></span><span>Eventos</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="instalacion" checked><span class="cal-filter-dot" style="background:#7C3AED;"></span><span>Instalaciones</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="curso" checked><span class="cal-filter-dot" style="background:#10B981;"></span><span>Cursos</span></label>
                         {% comment %}
                         Fuente del calendario (antes era un toggle aparte en el
@@ -3025,6 +3025,19 @@
     // "Todas" (withPrefix=true → "INSTALACIONES - <nombre>") y el modo
     // "Instalaciones" (withPrefix=false → nombre normal).
     var _CAL_INSTALACION_COLOR = '#7C3AED';
+    // Color de instalación según ESTADO (mismo mapa en el grid de técnicos y
+    // en el desglose de jornadas de programa_obra.js).
+    function _calEstadoColor(estado) {
+        switch (estado) {
+            case 'completada': return '#16A34A'; // verde
+            case 'cancelada':  return '#EF4444'; // rojo
+            case 'en_curso':   return '#1D1D1F'; // negro
+            case 'tentativa':  return '#EC4899'; // rosado
+            case 'programada':
+            default:           return '#7C3AED'; // morado
+        }
+    }
+    window._calEstadoColor = _calEstadoColor;
     // Devuelve UN evento por cada día asignado de la instalación (duración
     // completa). El backend ya calcula `inst.dias` (lista ISO) según jornadas
     // y tipo de jornada; si no viene, cae a la fecha única.
@@ -3047,7 +3060,7 @@
                 start: diaISO + 'T' + horaIni + ':00',
                 end: diaISO + 'T' + horaFin + ':00',
                 description: desc,
-                color: _CAL_INSTALACION_COLOR,
+                color: _calEstadoColor(inst.estado),
                 editable: true,
                 extendedProps: {
                     source: 'instalacion',
@@ -3301,7 +3314,7 @@
                 var cellEntries = byKey[t.id + '|' + iso] || [];
                 html += '<td style="border-bottom:1px solid #F2F2F7;border-right:1px solid #F7F7FA;padding:4px;vertical-align:top;height:54px;background:' + rowBg + ';">';
                 cellEntries.forEach(function (c) {
-                    var color = _calClienteColor(c.cliente_nombre);
+                    var color = _calEstadoColor(c.estado);
                     var label = _calEscape(c.cliente_nombre || '—');
                     var horas = (c.hora_inicio || c.hora_fin)
                         ? (_calEscape(c.hora_inicio || '') + (c.hora_fin ? '–' + _calEscape(c.hora_fin) : ''))

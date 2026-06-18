@@ -567,6 +567,18 @@
         });
     }
 
+    // Color por estado (mismo mapa que el calendario: window._calEstadoColor).
+    function _pobEstadoColor(estado) {
+        switch (estado) {
+            case 'completada': return '#16A34A'; // verde
+            case 'cancelada':  return '#EF4444'; // rojo
+            case 'en_curso':   return '#1D1D1F'; // negro
+            case 'tentativa':  return '#EC4899'; // rosado
+            case 'programada':
+            default:           return '#7C3AED'; // morado
+        }
+    }
+
     function _renderViewerBody(inst) {
         var body = document.getElementById('pobViewBody');
         if (!body) return;
@@ -606,33 +618,24 @@
         html +=   _statBlock('PERSONAL (TEXTO)', _esc(inst.personal || '') || '<span style="color:#C7C7CC;">—</span>');
         html += '</div>';
 
-        // ── Desglose de jornadas: banner resumen + chips compactos por día
-        //    (escala bien de 5 a 30+ jornadas; las horas son uniformes así que
-        //    van en el banner, no repetidas en cada chip). ──
+        // ── Desglose de jornadas: tarjeta rectangular (esquinas redondeadas)
+        //    por día, en fila con scroll horizontal. Acento por ESTADO. ──
         var _dias = inst.dias && inst.dias.length ? inst.dias : (inst.fecha ? [inst.fecha] : []);
         var _hi = inst.hora_inicio || '08:00';
         var _hf = inst.hora_fin || '17:00';
         if (_dias.length) {
-            var _mesesC = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-            var _fchCorta = function (iso) { var p = String(iso).slice(0, 10).split('-'); if (p.length !== 3) return iso; return parseInt(p[2], 10) + ' ' + (_mesesC[parseInt(p[1], 10) - 1] || ''); };
-            var _rango = _dias.length > 1 ? (_fchCorta(_dias[0]) + ' → ' + _fchCorta(_dias[_dias.length - 1])) : _fchCorta(_dias[0]);
+            var _estColor = _pobEstadoColor(inst.estado);
             html += '<div style="margin-bottom:18px;">';
-            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Desglose de jornadas</div>';
-            // Banner resumen (total · horario · rango).
-            html +=   '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,#F5F3FF,#FBFAFF);border:1px solid #E9E5FF;border-radius:12px;padding:12px 16px;margin-bottom:10px;">';
-            html +=     '<div><div style="font-size:1.4rem;font-weight:800;color:#7C3AED;line-height:1;">' + _dias.length + '</div><div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:#8B5CF6;margin-top:2px;">jornada' + (_dias.length > 1 ? 's' : '') + '</div></div>';
-            html +=     '<div style="width:1px;height:34px;background:#E9E5FF;"></div>';
-            html +=     '<div style="display:inline-flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:700;color:#1D1D1F;"><svg width="15" height="15" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' + _esc(_hi) + '–' + _esc(_hf) + '</div>';
-            html +=     '<div style="width:1px;height:34px;background:#E9E5FF;"></div>';
-            html +=     '<div style="font-size:0.86rem;color:#4B5563;font-weight:600;">' + _esc(_rango) + '</div>';
-            html +=   '</div>';
-            // Chips por día (wrap; scroll si son muchas).
-            html +=   '<div style="display:flex;flex-wrap:wrap;gap:6px;max-height:152px;overflow-y:auto;">';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Desglose de jornadas · ' + _dias.length + ' día' + (_dias.length > 1 ? 's' : '') + ' · ' + _esc(_hi) + '–' + _esc(_hf) + '</div>';
+            html +=   '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">';
             _dias.forEach(function (diaISO, idx) {
-                html += '<div title="Jornada ' + (idx + 1) + ' · ' + _esc(_fmtFecha(diaISO)) + ' · ' + _esc(_hi) + '–' + _esc(_hf) + '" '
-                      + 'style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #E9E5FF;border-radius:8px;padding:4px 9px 4px 5px;font-size:0.76rem;">'
-                      +   '<span style="min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;background:#7C3AED;color:#fff;border-radius:5px;font-size:0.62rem;font-weight:800;">' + (idx + 1) + '</span>'
-                      +   '<span style="font-weight:600;color:#1D1D1F;">' + _esc(_fchCorta(diaISO)) + '</span>'
+                html += '<div style="flex:0 0 auto;min-width:142px;background:#FAFAFB;border:1px solid #EEF0F3;border-left:4px solid ' + _estColor + ';border-radius:14px;padding:12px 14px;">'
+                      +   '<div style="font-size:0.58rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:' + _estColor + ';">Jornada ' + (idx + 1) + '</div>'
+                      +   '<div style="font-size:0.95rem;font-weight:700;color:#1D1D1F;margin-top:4px;">' + _esc(_fmtFecha(diaISO)) + '</div>'
+                      +   '<div style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#4B5563;margin-top:5px;font-weight:600;">'
+                      +     '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+                      +     _esc(_hi) + '–' + _esc(_hf)
+                      +   '</div>'
                       + '</div>';
             });
             html +=   '</div>';
