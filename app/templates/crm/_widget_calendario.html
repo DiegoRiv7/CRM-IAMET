@@ -2940,37 +2940,47 @@
     // "Todas" (withPrefix=true → "INSTALACIONES - <nombre>") y el modo
     // "Instalaciones" (withPrefix=false → nombre normal).
     var _CAL_INSTALACION_COLOR = '#7C3AED';
+    // Devuelve UN evento por cada día asignado de la instalación (duración
+    // completa). El backend ya calcula `inst.dias` (lista ISO) según jornadas
+    // y tipo de jornada; si no viene, cae a la fecha única.
     function _calMapInstalacion(inst, withPrefix) {
-        var start = inst.fecha ? inst.fecha + 'T08:00:00' : null;
-        var end   = inst.fecha ? inst.fecha + 'T17:00:00' : null;
         var desc = (inst.po ? 'PO ' + inst.po + ' · ' : '')
                  + (inst.personal || '')
                  + (inst.observaciones ? '\n' + inst.observaciones : '');
         var nombre = inst.titulo || '';
-        return {
-            id: 'inst-' + inst.id,
-            title: withPrefix ? ('INSTALACIONES - ' + nombre) : nombre,
-            start: start,
-            end: end,
-            description: desc,
-            color: _CAL_INSTALACION_COLOR,
-            editable: false,
-            extendedProps: {
-                source: 'instalacion',
-                instalacion_id: inst.id,
-                cliente: inst.cliente,
-                po: inst.po,
-                proyecto: inst.proyecto,
-                jornadas_count: inst.jornadas_count,
-                jornadas_tipo_label: inst.jornadas_tipo_label,
-                personal: inst.personal,
-                monto_po: inst.monto_po,
-                utilidad: inst.utilidad,
-                estado: inst.estado,
-                estado_label: inst.estado_label,
-                tipo_actividad: 'instalacion',
-            },
-        };
+        var base = withPrefix ? ('INSTALACIONES - ' + nombre) : nombre;
+        var dias = (inst.dias && inst.dias.length) ? inst.dias : (inst.fecha ? [inst.fecha] : []);
+        var total = dias.length;
+        return dias.map(function (diaISO, idx) {
+            // Con varios días anexamos "(día X/N)" para la visibilidad operativa.
+            var titulo = (total > 1) ? (base + ' (día ' + (idx + 1) + '/' + total + ')') : base;
+            return {
+                id: 'inst-' + inst.id + (total > 1 ? ('-d' + idx) : ''),
+                title: titulo,
+                start: diaISO + 'T08:00:00',
+                end: diaISO + 'T17:00:00',
+                description: desc,
+                color: _CAL_INSTALACION_COLOR,
+                editable: false,
+                extendedProps: {
+                    source: 'instalacion',
+                    instalacion_id: inst.id,
+                    cliente: inst.cliente,
+                    po: inst.po,
+                    proyecto: inst.proyecto,
+                    jornadas_count: inst.jornadas_count,
+                    jornadas_tipo_label: inst.jornadas_tipo_label,
+                    personal: inst.personal,
+                    monto_po: inst.monto_po,
+                    utilidad: inst.utilidad,
+                    estado: inst.estado,
+                    estado_label: inst.estado_label,
+                    tipo_actividad: 'instalacion',
+                    dia_index: idx + 1,
+                    dias_total: total,
+                },
+            };
+        });
     }
 
     // Refetch en modo Instalaciones (Plan de Trabajo Bajanet). Sin prefijo.
@@ -2984,8 +2994,10 @@
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 var instalaciones = (data && data.instalaciones) || [];
-                _globalEvents = instalaciones.map(function (inst) {
-                    return _calMapInstalacion(inst, false);
+                _globalEvents = [];
+                instalaciones.forEach(function (inst) {
+                    // _calMapInstalacion devuelve un evento por día asignado.
+                    _globalEvents = _globalEvents.concat(_calMapInstalacion(inst, false));
                 });
                 window._calAllEvents = _globalEvents.slice();
                 if (typeof calApplyFilter === 'function') calApplyFilter('all');
@@ -3211,9 +3223,10 @@
                 _globalEvents.push({ id:'tarea-'+t.id, title:t.titulo, start:tStart, end:tEnd, color:'#FF9500', editable:false,
                     extendedProps:{ tipo_actividad:'tarea', tarea_id:t.id, participants:tParticipants, creado_por:{id:t.creado_por_id, text:t.creado_por||''}, estado:t.estado } });
             });
-            // Instalaciones (morado + prefijo "INSTALACIONES - ") mezcladas con todo.
+            // Instalaciones (morado + prefijo "INSTALACIONES - ") mezcladas con
+            // todo. Un evento por día asignado (duración completa).
             (instData.instalaciones || []).forEach(function (inst) {
-                _globalEvents.push(_calMapInstalacion(inst, true));
+                _calMapInstalacion(inst, true).forEach(function (ev) { _globalEvents.push(ev); });
             });
             window._calAllEvents = _globalEvents.slice();
             var sel=document.getElementById('calUserFilter');

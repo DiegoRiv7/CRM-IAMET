@@ -6344,11 +6344,38 @@ def api_gantt_actividad_archivo_detalle(request, archivo_id):
 from .models import Instalacion, Tecnico, InstalacionAsignacion
 
 
+def _instalacion_dias_asignados(inst):
+    """Lista de fechas (date) que ocupa una instalación en el calendario,
+    según su duración (jornadas_count) y tipo de jornada:
+      - tipo 'sabado'/'domingo'  → días corridos (incluye fin de semana).
+      - 'normal'/'noche'/'extraordinaria' → solo días hábiles (lun–vie).
+    Devuelve [] si no tiene fecha programada."""
+    from datetime import timedelta
+    if not inst.fecha_programada:
+        return []
+    total = max(1, inst.jornadas_count or 1)
+    incluir_finde = inst.jornadas_tipo in ('sabado', 'domingo')
+    dias = []
+    cursor = inst.fecha_programada
+    guard = 0  # tope de seguridad por si jornadas_count es absurdo
+    while len(dias) < total and guard < 400:
+        guard += 1
+        es_finde = cursor.weekday() >= 5  # 5=sáb, 6=dom
+        if (not incluir_finde) and es_finde:
+            cursor += timedelta(days=1)
+            continue
+        dias.append(cursor)
+        cursor += timedelta(days=1)
+    return dias
+
+
 def _instalacion_to_dict(inst):
     """Serializa una Instalacion al formato que entiende el calendario.
     Casi idéntico al shape de Actividad — el JS lo renderiza con
     `data-source="instalacion"` para pintarla con color distinto."""
     fecha = inst.fecha_programada.isoformat() if inst.fecha_programada else None
+    _dias = _instalacion_dias_asignados(inst)
+    dias_iso = [d.isoformat() for d in _dias]
     return {
         'id': inst.id,
         'source': 'instalacion',
@@ -6357,8 +6384,10 @@ def _instalacion_to_dict(inst):
         'po': inst.po,
         'proyecto': inst.proyecto,
         'fecha': fecha,
+        # Todos los días que ocupa la instalación (duración completa).
+        'dias': dias_iso,
         'fecha_inicio': fecha,
-        'fecha_fin': fecha,
+        'fecha_fin': dias_iso[-1] if dias_iso else fecha,
         'all_day': True,
         'jornadas_count': inst.jornadas_count,
         'jornadas_tipo': inst.jornadas_tipo,
@@ -6398,25 +6427,31 @@ def api_instalaciones_calendario(request):
     anio_raw = (request.GET.get('anio') or '').strip()
 
     from datetime import date, timedelta
+    rango_start = None
+    rango_end = None
     if start_raw and end_raw:
         try:
-            start = date.fromisoformat(start_raw)
-            end = date.fromisoformat(end_raw)
-            qs = qs.filter(fecha_programada__range=(start, end))
+            rango_start = date.fromisoformat(start_raw)
+            rango_end = date.fromisoformat(end_raw)
         except ValueError:
             pass
     elif mes_raw and anio_raw:
         try:
             mes = int(mes_raw)
             anio = int(anio_raw)
-            start = date(anio, mes, 1)
+            rango_start = date(anio, mes, 1)
             if mes == 12:
-                end = date(anio + 1, 1, 1) - timedelta(days=1)
+                rango_end = date(anio + 1, 1, 1) - timedelta(days=1)
             else:
-                end = date(anio, mes + 1, 1) - timedelta(days=1)
-            qs = qs.filter(fecha_programada__range=(start, end))
+                rango_end = date(anio, mes + 1, 1) - timedelta(days=1)
         except (ValueError, TypeError):
             pass
+
+    if rango_start and rango_end:
+        # Ampliamos el límite inferior: una instalación que inició antes del
+        # rango puede extenderse hasta dentro de él por su duración. El
+        # post-filtro de abajo descarta las que no tocan el rango.
+        qs = qs.filter(fecha_programada__range=(rango_start - timedelta(days=45), rango_end))
 
     # Filtros opcionales adicionales.
     estado = (request.GET.get('estado') or '').strip()
@@ -6432,9 +6467,18 @@ def api_instalaciones_calendario(request):
 
     qs = qs.select_related('cliente', 'oportunidad', 'creado_por').order_by('fecha_programada', 'cliente_nombre')
 
+    items = [_instalacion_to_dict(i) for i in qs]
+    # Si hay rango, conservar solo las instalaciones cuya duración toca el
+    # rango visible (alguno de sus días cae dentro de [start, end]).
+    if rango_start and rango_end:
+        s_iso = rango_start.isoformat()
+        e_iso = rango_end.isoformat()
+        items = [it for it in items
+                 if any(s_iso <= d <= e_iso for d in (it.get('dias') or []))]
+
     return JsonResponse({
         'success': True,
-        'instalaciones': [_instalacion_to_dict(i) for i in qs],
+        'instalaciones': items,
     })
 
 
