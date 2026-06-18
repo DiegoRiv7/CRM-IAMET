@@ -77,7 +77,9 @@
             // sección a todo el ancho debajo.
             '.pob-body { padding:8px 40px 26px; overflow-y:auto; display:block; }',
             '.pob-main { padding-top:16px; }',
-            '.pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:20px 0 0; margin-top:22px; }',
+            '.pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:16px 0 0; margin-top:16px; }',
+            // Botón cerrar más visible (círculo sólido) sobre la greca/cabecera.
+            '.pob-head .pob-close { width:34px; height:34px; }',
             // Descripción: caja grande enmarcada, cómoda para escribir.
             '.pob-title-input { width:100%; box-sizing:border-box; border:1px solid #E5E5EA; border-radius:14px; outline:none; font-family:inherit; font-size:1.5rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.02em; padding:16px 18px; resize:vertical; line-height:1.25; min-height:76px; background:#fff; transition:border-color 0.15s, box-shadow 0.15s; }',
             '.pob-title-input:focus { border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
@@ -270,7 +272,7 @@
           +       '</div>'
           +       '<div style="display:flex;gap:8px;align-items:center;">'
           +         '<button type="button" id="pobBtnEliminar" class="wop-btn-secondary" style="background:#FFE3E3;color:#991B1B;" onclick="pobEliminar()">Eliminar</button>'
-          +         '<button type="button" class="widget-close" onclick="pobCerrarModal()" style="font-size:1.4rem;">&times;</button>'
+          +         '<button type="button" class="widget-close pob-close" onclick="pobCerrarModal()" aria-label="Cerrar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
           +       '</div>'
           +     '</div>'
           +     '<div class="wop-modal-body pob-body">'
@@ -865,9 +867,13 @@
         var box = document.getElementById('pobCreateUsersBox');
         var btnToggle = document.getElementById('pobBtnToggleAddAsig');
         var addForm = document.getElementById('pobAddAsigForm');
+        var lst = document.getElementById('pobAsignList');
         if (box) box.style.display = esCrear ? '' : 'none';
         if (btnToggle) btnToggle.style.display = esCrear ? 'none' : '';
         if (addForm && esCrear) addForm.style.display = 'none';
+        // La lista de asignaciones programadas ("Sin asignaciones aún") sólo
+        // tiene sentido en EDITAR; en CREAR los técnicos se eligen arriba.
+        if (lst) lst.style.display = esCrear ? 'none' : '';
     }
 
     function _pobRenderUserResults(results) {

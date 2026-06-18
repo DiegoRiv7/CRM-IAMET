@@ -923,8 +923,8 @@ body[data-theme="mundial"] #proyPane_programa-obra .pob-empty-ic {
 /* Header greca del modal de instalación: texto/íconos en blanco. */
 body[data-theme="mundial"] .pob-eyebrow { color: #ffffff !important; }
 body[data-theme="mundial"] .pob-eyebrow svg { color: rgba(255,255,255,0.85) !important; }
-body[data-theme="mundial"] .pob-head .widget-close { color: rgba(255,255,255,0.9) !important; }
-body[data-theme="mundial"] .pob-head .widget-close:hover { background: rgba(255,255,255,0.16) !important; }
+body[data-theme="mundial"] .pob-head .widget-close { color: #fff !important; background: rgba(255,255,255,0.22) !important; }
+body[data-theme="mundial"] .pob-head .widget-close:hover { background: rgba(255,255,255,0.38) !important; }
 
 /* --- Diálogos de proyecto (Crear, Editar, etc.) --- */
 body[data-theme="mundial"] .proy-dialog-overlay {
