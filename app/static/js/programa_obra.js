@@ -101,8 +101,11 @@
             '.pob-meta-label svg { color:#A1A1A6; }',
             '.pob-meta-row .pob-input { width:auto; min-width:54px; max-width:190px; border:none !important; background:transparent !important; padding:0; font-weight:600; color:#1D1D1F; }',
             '.pob-meta-row .pob-input::placeholder { font-weight:500; color:#B6B6BC; }',
-            '#pobInstCliente, #pobInstPersonal { min-width:118px; max-width:170px; }',
+            '#pobInstCliente { min-width:118px; max-width:170px; }',
             '#pobInstPo { min-width:96px; }',
+            // El pill de Personal crece para aprovechar el ancho sobrante de su fila.
+            '.pob-meta-grow { flex:1 1 280px; }',
+            '.pob-meta-grow .pob-input { flex:1; min-width:120px; max-width:none; }',
             '.pob-input { width:100%; box-sizing:border-box; font-family:inherit; font-size:0.9rem; color:#1D1D1F; padding:6px 8px; border:1px solid transparent; border-radius:7px; outline:none; background:transparent; transition:border-color 0.15s, background 0.15s; }',
             '.pob-input:hover { background:#F2F2F7; }',
             '.pob-input:focus { background:#fff; border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
@@ -354,7 +357,7 @@
           +                 '</div>'
           +               '</div>'
           +             '</div>'
-          +             '<div class="pob-meta-row">'
+          +             '<div class="pob-meta-row pob-meta-grow">'
           +               '<span class="pob-meta-label">'
           +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
           +                 'Personal</span>'

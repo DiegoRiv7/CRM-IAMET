@@ -1456,6 +1456,11 @@
                 // padre del shell, que ES el pane). Necesario para ganar al
                 // tema mundial, que pinta .proy-tab-pane con !important.
                 window._proyTareasBg(true, 'pobContainer');
+            } else if (tabName === 'partidasv4') {
+                // Mismo patrón: transparenta el pane (mata el cuadro blanco de
+                // fondo) pero conserva la tarjeta interna de la tabla, que es
+                // el startId y por eso la walk no la toca.
+                window._proyTareasBg(true, 'proyPartidasWrap');
             } else if (tabName !== 'tareas') {
                 window._proyTareasBg(false);
             }
@@ -1645,14 +1650,19 @@
     // =========================================
 
     window.proyectosPartidaMenuToggle = function(btn) {
-        // Remove any existing menu
+        var existing = document.getElementById('proyPartidaContextMenu');
         _closePartidaMenu();
+        // Toggle: si el men\u00FA abierto era de ESTE bot\u00F3n, s\u00F3lo cerrarlo.
+        if (existing && existing._ownerBtn === btn) return;
 
         var item = JSON.parse(decodeURIComponent(btn.getAttribute('data-partida')));
 
         var menu = document.createElement('div');
         menu.id = 'proyPartidaContextMenu';
-        menu.style.cssText = 'position:absolute;right:0;top:100%;z-index:10600;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:6px 0;min-width:190px;animation:fadeIn 0.12s ease;';
+        menu._ownerBtn = btn;
+        // position:fixed + append al body \u2192 el overflow de la tabla NO lo
+        // recorta (antes el men\u00FA quedaba oculto y "no volv\u00EDa a abrir").
+        menu.style.cssText = 'position:fixed;z-index:12050;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:6px 0;min-width:190px;animation:fadeIn 0.12s ease;';
 
         var menuItems = [
             { icon: '\uD83D\uDCDD', label: 'Editar', color: '#1d1d1f', action: 'edit' },
@@ -1668,10 +1678,18 @@
             '</button>';
         });
         menu.innerHTML = menuHtml;
+        document.body.appendChild(menu);
 
-        // Position relative to button
-        btn.parentElement.style.position = 'relative';
-        btn.parentElement.appendChild(menu);
+        // Posici\u00F3n fija calculada desde el bot\u00F3n (alineado a su derecha, abre
+        // hacia abajo; si no cabe, hacia arriba).
+        var r = btn.getBoundingClientRect();
+        var mw = menu.offsetWidth, mh = menu.offsetHeight;
+        var left = Math.min(r.right - mw, window.innerWidth - mw - 8);
+        if (left < 8) left = 8;
+        var top = r.bottom + 4;
+        if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - 4 - mh);
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
 
         // Bind actions
         menu.querySelectorAll('.proy-ctx-menu-item').forEach(function(menuBtn) {
