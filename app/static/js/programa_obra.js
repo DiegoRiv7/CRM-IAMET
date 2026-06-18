@@ -78,7 +78,9 @@
             '.pob-body { padding:8px 40px 26px; overflow-y:auto; display:block; }',
             '.pob-main { padding-top:16px; }',
             '.pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:20px 0 0; margin-top:22px; }',
-            '.pob-title-input { width:100%; border:none; outline:none; font-family:inherit; font-size:1.95rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.025em; padding:6px 0; resize:none; line-height:1.2; background:transparent; }',
+            // Descripción: caja grande enmarcada, cómoda para escribir.
+            '.pob-title-input { width:100%; box-sizing:border-box; border:1px solid #E5E5EA; border-radius:14px; outline:none; font-family:inherit; font-size:1.5rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.02em; padding:16px 18px; resize:vertical; line-height:1.25; min-height:76px; background:#fff; transition:border-color 0.15s, box-shadow 0.15s; }',
+            '.pob-title-input:focus { border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
             '.pob-title-input::placeholder { color:#C7C7CC; font-weight:700; }',
             /* fila meta inline tipo "etiqueta a la izquierda, control limpio a la derecha" */
             // Meta estilo composer de oportunidad: pills redondeados que fluyen
@@ -104,8 +106,28 @@
             '.pob-input:focus { background:#fff; border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
             '.pob-input::placeholder { color:#C7C7CC; }',
             '.pob-input-num { max-width:160px; }',
-            '.pob-notes { width:100%; box-sizing:border-box; min-height:64px; font-family:inherit; font-size:0.9rem; color:#1D1D1F; padding:10px 12px; border:1px solid #E5E5EA; border-radius:10px; outline:none; resize:vertical; background:#FBFBFD; transition:border-color 0.15s; }',
+            '.pob-notes { width:100%; box-sizing:border-box; min-height:120px; font-family:inherit; font-size:0.92rem; line-height:1.45; color:#1D1D1F; padding:14px 16px; border:1px solid #E5E5EA; border-radius:12px; outline:none; resize:vertical; background:#FBFBFD; transition:border-color 0.15s; }',
             '.pob-notes:focus { border-color:#0052D4; background:#fff; box-shadow:0 0 0 3px rgba(0,82,212,0.10); }',
+            // Dropdown personalizado (Estado, tipo de jornada): botón limpio en el
+            // pill + menú blanco sólido flotante.
+            '.pob-dd { position:relative; display:inline-flex; }',
+            '.pob-dd-native { display:none !important; }',
+            '.pob-dd-btn { display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; font-family:inherit; font-size:0.9rem; font-weight:600; color:#1D1D1F; cursor:pointer; padding:0; white-space:nowrap; }',
+            '.pob-dd-chev { color:#86868B; transition:transform 0.15s; flex-shrink:0; }',
+            '.pob-dd-btn.open .pob-dd-chev { transform:rotate(180deg); }',
+            '.pob-dd-menu { position:fixed; z-index:12000; background:#fff; border:1px solid #E5E5EA; border-radius:12px; box-shadow:0 16px 40px rgba(15,23,42,0.18); padding:6px; min-width:150px; max-height:300px; overflow-y:auto; animation:pobDdIn 0.12s ease; }',
+            '@keyframes pobDdIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }',
+            '.pob-dd-item { display:flex; align-items:center; gap:8px; padding:9px 14px 9px 8px; border-radius:8px; font-size:0.88rem; font-weight:500; color:#1D1D1F; cursor:pointer; white-space:nowrap; }',
+            '.pob-dd-item:hover { background:#F2F2F7; }',
+            '.pob-dd-item.sel { font-weight:700; }',
+            '.pob-dd-check { width:15px; display:inline-flex; align-items:center; justify-content:center; color:#0052D4; opacity:0; flex-shrink:0; }',
+            '.pob-dd-item.sel .pob-dd-check { opacity:1; }',
+            // Buscador de técnicos: caja con lupa.
+            '.pob-search { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #E5E5EA; border-radius:10px; padding:9px 12px; transition:border-color 0.15s, box-shadow 0.15s; }',
+            '.pob-search:focus-within { border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
+            '.pob-search-ic { color:#A1A1A6; flex-shrink:0; }',
+            '.pob-search input { flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:0.88rem; color:#1D1D1F; }',
+            '.pob-search input::placeholder { color:#B6B6BC; }',
             '.pob-section-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; margin:18px 0 8px; }',
             '.pob-side-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; }',
             '@media (max-width:720px){ .pob-body { grid-template-columns:1fr; } .pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:14px 0 0; margin-top:8px; } .pob-main { padding-right:0; } }',
@@ -253,10 +275,13 @@
           +     '</div>'
           +     '<div class="wop-modal-body pob-body">'
           +       '<div class="pob-main" id="pobFormCol">'
-          // ── Título grande = descripción del trabajo ──
-          +         '<textarea id="pobInstDescripcion" class="pob-title-input" rows="1" placeholder="Descripción del trabajo…"></textarea>'
+          // ── Descripción del trabajo: caja grande y cómoda ──
+          +         '<div class="pob-group">'
+          +           '<div class="pob-group-label">Descripción del trabajo</div>'
+          +           '<textarea id="pobInstDescripcion" class="pob-title-input" rows="2" placeholder="¿Qué se va a instalar? Describe el trabajo…"></textarea>'
+          +         '</div>'
           // ── Grupos lógicos de meta (orden de llenado) ──
-          // 1) Cliente y orden de compra
+          // 1) Cliente y orden de compra (incluye montos)
           +         '<div class="pob-group">'
           +           '<div class="pob-group-label">Cliente y orden de compra</div>'
           +           '<div class="pob-meta">'
@@ -272,51 +297,6 @@
           +                 'PO</span>'
           +               '<input type="text" id="pobInstPo" maxlength="80" class="pob-input" placeholder="Orden de compra">'
           +             '</div>'
-          +           '</div>'
-          +         '</div>'
-          // 2) Programación (cuándo + tipo de jornada)
-          +         '<div class="pob-group">'
-          +           '<div class="pob-group-label">Programación</div>'
-          +           '<div class="pob-meta">'
-          +             '<div class="pob-meta-row">'
-          +               '<span class="pob-meta-label">'
-          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
-          +                 'Fecha</span>'
-          +               '<input type="date" id="pobInstFecha" class="pob-input">'
-          +             '</div>'
-          +             '<div class="pob-meta-row">'
-          +               '<span class="pob-meta-label">'
-          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
-          +                 'Estado</span>'
-          +               '<select id="pobInstEstado" class="pob-input">'
-          +                 '<option value="tentativa">Tentativa</option>'
-          +                 '<option value="programada">Programada</option>'
-          +                 '<option value="en_curso">En curso</option>'
-          +                 '<option value="completada">Completada</option>'
-          +                 '<option value="cancelada">Cancelada</option>'
-          +               '</select>'
-          +             '</div>'
-          +             '<div class="pob-meta-row">'
-          +               '<span class="pob-meta-label">'
-          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
-          +                 'Jornadas</span>'
-          +               '<div style="display:flex;align-items:center;gap:8px;">'
-          +                 '<input type="number" id="pobInstJornadas" min="1" class="pob-input pob-input-num" style="max-width:48px;">'
-          +                 '<select id="pobInstJornadasTipo" class="pob-input" style="max-width:170px;">'
-          +                   '<option value="normal">Normal</option>'
-          +                   '<option value="sabado">Sábado</option>'
-          +                   '<option value="domingo">Domingo</option>'
-          +                   '<option value="noche">Noche</option>'
-          +                   '<option value="extraordinaria">Extraordinaria</option>'
-          +                 '</select>'
-          +               '</div>'
-          +             '</div>'
-          +           '</div>'
-          +         '</div>'
-          // 3) Costos (monto + utilidad)
-          +         '<div class="pob-group">'
-          +           '<div class="pob-group-label">Costos</div>'
-          +           '<div class="pob-meta">'
           +             '<div class="pob-meta-row">'
           +               '<span class="pob-meta-label">'
           +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
@@ -331,10 +311,47 @@
           +             '</div>'
           +           '</div>'
           +         '</div>'
-          // 4) Personal (descripción libre del equipo)
+          // 2) Programación (cuándo + jornada + personal)
           +         '<div class="pob-group">'
-          +           '<div class="pob-group-label">Personal</div>'
+          +           '<div class="pob-group-label">Programación</div>'
           +           '<div class="pob-meta">'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+          +                 'Fecha</span>'
+          +               '<input type="date" id="pobInstFecha" class="pob-input">'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 'Estado</span>'
+          +               '<div class="pob-dd">'
+          +                 '<select id="pobInstEstado" class="pob-input">'
+          +                   '<option value="tentativa">Tentativa</option>'
+          +                   '<option value="programada">Programada</option>'
+          +                   '<option value="en_curso">En curso</option>'
+          +                   '<option value="completada">Completada</option>'
+          +                   '<option value="cancelada">Cancelada</option>'
+          +                 '</select>'
+          +               '</div>'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 'Jornadas</span>'
+          +               '<div style="display:flex;align-items:center;gap:8px;">'
+          +                 '<input type="number" id="pobInstJornadas" min="1" class="pob-input pob-input-num" style="max-width:48px;">'
+          +                 '<div class="pob-dd">'
+          +                   '<select id="pobInstJornadasTipo" class="pob-input">'
+          +                     '<option value="normal">Normal</option>'
+          +                     '<option value="sabado">Sábado</option>'
+          +                     '<option value="domingo">Domingo</option>'
+          +                     '<option value="noche">Noche</option>'
+          +                     '<option value="extraordinaria">Extraordinaria</option>'
+          +                   '</select>'
+          +                 '</div>'
+          +               '</div>'
+          +             '</div>'
           +             '<div class="pob-meta-row">'
           +               '<span class="pob-meta-label">'
           +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
@@ -343,9 +360,11 @@
           +             '</div>'
           +           '</div>'
           +         '</div>'
-          // ── Notas / observaciones ──
-          +         '<div class="pob-section-label">Notas / observaciones</div>'
-          +         '<textarea id="pobInstNotas" class="pob-notes" placeholder="Personal asignado, hora, instrucciones…"></textarea>'
+          // ── Notas / observaciones (más amplias) ──
+          +         '<div class="pob-group">'
+          +           '<div class="pob-group-label">Notas / observaciones</div>'
+          +           '<textarea id="pobInstNotas" class="pob-notes" placeholder="Hora, instrucciones especiales, accesos, material…"></textarea>'
+          +         '</div>'
           +       '</div>'
           +       '<div id="pobAsignCol" class="pob-side">'
           +         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
@@ -358,7 +377,10 @@
           +           '<div style="font-size:0.7rem;color:#86868B;margin-bottom:6px;">'
           +             'Selecciona técnicos del CRM. Se les creará la instalación en su calendario (fecha programada).'
           +           '</div>'
-          +           '<input type="text" id="pobUserSearch" placeholder="Buscar usuario..." class="wop-search-input" autocomplete="off" style="font-size:0.84rem;">'
+          +           '<div class="pob-search">'
+          +             '<svg class="pob-search-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+          +             '<input type="text" id="pobUserSearch" placeholder="Buscar técnico por nombre…" autocomplete="off">'
+          +           '</div>'
           +           '<div id="pobUserResults" style="margin-top:6px;max-height:160px;overflow-y:auto;"></div>'
           +           '<div style="font-size:0.66rem;color:#86868B;margin-top:8px;text-transform:uppercase;letter-spacing:0.04em;font-weight:700;">Seleccionados</div>'
           +           '<div id="pobUserChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:24px;"></div>'
@@ -393,6 +415,86 @@
         var div = document.createElement('div');
         div.innerHTML = html;
         document.body.appendChild(div.firstChild);
+        pobInitDropdowns();
+    }
+
+    // Convierte los <select> marcados con wrapper .pob-dd en dropdowns
+    // personalizados (botón + menú blanco sólido), sin perder el <select>
+    // nativo como fuente de valor (lo lee/escribe el resto del código).
+    function pobInitDropdowns() {
+        var wraps = document.querySelectorAll('.pob-dd');
+        Array.prototype.forEach.call(wraps, function (wrap) {
+            if (wrap._ddInit) return;
+            var sel = wrap.querySelector('select');
+            if (!sel) return;
+            wrap._ddInit = true;
+            sel.classList.add('pob-dd-native');
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pob-dd-btn';
+            var val = document.createElement('span');
+            val.className = 'pob-dd-val';
+            btn.appendChild(val);
+            btn.insertAdjacentHTML('beforeend', '<svg class="pob-dd-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>');
+            wrap.insertBefore(btn, sel);
+
+            function syncLabel() {
+                var opt = sel.options[sel.selectedIndex];
+                val.textContent = opt ? opt.text : '';
+            }
+            syncLabel();
+            sel.addEventListener('change', syncLabel);
+
+            var menu = null;
+            function close() {
+                if (!menu) return;
+                menu.remove(); menu = null;
+                btn.classList.remove('open');
+                document.removeEventListener('mousedown', onDoc, true);
+                window.removeEventListener('resize', close, true);
+                window.removeEventListener('scroll', close, true);
+            }
+            function onDoc(e) {
+                if (menu && !menu.contains(e.target) && !btn.contains(e.target)) close();
+            }
+            function open() {
+                menu = document.createElement('div');
+                menu.className = 'pob-dd-menu';
+                Array.prototype.forEach.call(sel.options, function (o, i) {
+                    var item = document.createElement('div');
+                    item.className = 'pob-dd-item' + (i === sel.selectedIndex ? ' sel' : '');
+                    item.innerHTML = '<span class="pob-dd-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>' + o.text + '</span>';
+                    item.addEventListener('mousedown', function (ev) {
+                        ev.preventDefault();
+                        sel.value = o.value;
+                        sel.dispatchEvent(new Event('change', { bubbles: true }));
+                        close();
+                    });
+                    menu.appendChild(item);
+                });
+                document.body.appendChild(menu);
+                var r = btn.getBoundingClientRect();
+                menu.style.top = (r.bottom + 6) + 'px';
+                menu.style.left = r.left + 'px';
+                menu.style.minWidth = Math.max(r.width, 150) + 'px';
+                // Si se sale por abajo, ábrelo hacia arriba.
+                var mh = menu.offsetHeight;
+                if (r.bottom + 6 + mh > window.innerHeight - 8) {
+                    menu.style.top = Math.max(8, r.top - 6 - mh) + 'px';
+                }
+                btn.classList.add('open');
+                setTimeout(function () {
+                    document.addEventListener('mousedown', onDoc, true);
+                    window.addEventListener('resize', close, true);
+                    window.addEventListener('scroll', close, true);
+                }, 0);
+            }
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (menu) { close(); } else { open(); }
+            });
+        });
     }
 
     // ─── Widget de VISTA amigable (modo lectura) ─────────────────────
@@ -579,7 +681,12 @@
     var _pobUserSearchDebounce = null;
 
     function _fillForm(inst) {
-        var f = function (id, val) { var el = document.getElementById(id); if (el) el.value = val == null ? '' : val; };
+        var f = function (id, val) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.value = val == null ? '' : val;
+            if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+        };
         f('pobInstDescripcion', inst.descripcion);
         f('pobInstPo', inst.po);
         f('pobInstCliente', inst.cliente_nombre);
