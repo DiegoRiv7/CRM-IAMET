@@ -77,7 +77,7 @@
             // sección a todo el ancho debajo.
             '.pob-body { padding:8px 40px 26px; overflow-y:auto; display:block; }',
             '.pob-main { padding-top:16px; }',
-            '.pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:16px 0 0; margin-top:16px; }',
+            '.pob-side { border-left:none; border-top:none; padding:0; margin-top:14px; }',
             // Botón cerrar más visible (círculo sólido) sobre la greca/cabecera.
             '.pob-head .pob-close { width:34px; height:34px; }',
             // Descripción: caja grande enmarcada, cómoda para escribir.
@@ -369,8 +369,8 @@
           +         '</div>'
           +       '</div>'
           +       '<div id="pobAsignCol" class="pob-side">'
-          +         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-          +           '<h4 style="margin:0;font-size:0.92rem;font-weight:700;">Técnicos asignados</h4>'
+          +         '<div id="pobAsignHeader" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+          +           '<div class="pob-group-label" style="margin:0;">Técnicos asignados</div>'
           +           '<button type="button" id="pobBtnToggleAddAsig" class="wop-btn-secondary" onclick="pobToggleAddAsig()" style="font-size:0.74rem;padding:4px 8px;">+ Agregar</button>'
           +         '</div>'
 
@@ -868,12 +868,16 @@
         var btnToggle = document.getElementById('pobBtnToggleAddAsig');
         var addForm = document.getElementById('pobAddAsigForm');
         var lst = document.getElementById('pobAsignList');
+        var hdr = document.getElementById('pobAsignHeader');
         if (box) box.style.display = esCrear ? '' : 'none';
         if (btnToggle) btnToggle.style.display = esCrear ? 'none' : '';
         if (addForm && esCrear) addForm.style.display = 'none';
         // La lista de asignaciones programadas ("Sin asignaciones aún") sólo
         // tiene sentido en EDITAR; en CREAR los técnicos se eligen arriba.
         if (lst) lst.style.display = esCrear ? 'none' : '';
+        // El encabezado "Técnicos asignados" es redundante en CREAR (la caja
+        // gris ya lo explica) → se oculta para pegar el selector a las notas.
+        if (hdr) hdr.style.display = esCrear ? 'none' : '';
     }
 
     function _pobRenderUserResults(results) {
