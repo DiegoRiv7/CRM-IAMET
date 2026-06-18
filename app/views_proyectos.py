@@ -6349,8 +6349,22 @@ def _instalacion_dias_asignados(inst):
     según su duración (jornadas_count) y tipo de jornada:
       - tipo 'sabado'/'domingo'  → días corridos (incluye fin de semana).
       - 'normal'/'noche'/'extraordinaria' → solo días hábiles (lun–vie).
-    Devuelve [] si no tiene fecha programada."""
-    from datetime import timedelta
+    Devuelve [] si no tiene fecha programada.
+
+    Si la instalación tiene `dias_personalizados` (modo "Elegir días"), esa
+    lista manda: se parsea, se ordena y se devuelve tal cual, ignorando la
+    lógica de días consecutivos."""
+    from datetime import timedelta, date as _date
+    personalizados = getattr(inst, 'dias_personalizados', None)
+    if personalizados and isinstance(personalizados, (list, tuple)):
+        parsed = []
+        for d in personalizados:
+            try:
+                parsed.append(_date.fromisoformat(str(d)[:10]))
+            except (ValueError, TypeError):
+                continue
+        if parsed:
+            return sorted(parsed)
     if not inst.fecha_programada:
         return []
     total = max(1, inst.jornadas_count or 1)
@@ -6384,6 +6398,9 @@ def _instalacion_to_dict(inst):
         'po': inst.po,
         'proyecto': inst.proyecto,
         'fecha': fecha,
+        'hora_inicio': inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else None,
+        'hora_fin': inst.hora_fin.strftime('%H:%M') if inst.hora_fin else None,
+        'dias_personalizados': inst.dias_personalizados or None,
         # Todos los días que ocupa la instalación (duración completa).
         'dias': dias_iso,
         'fecha_inicio': fecha,
@@ -6597,6 +6614,43 @@ def api_grid_tecnicos(request):
 # bloque "Proyecto ligado" + bloque "Programa de Obra (Instalaciones)".
 # ─────────────────────────────────────────────────────────────────────
 
+def _parse_hora(raw):
+    """Convierte 'HH:MM' (o 'HH:MM:SS') → datetime.time. None si vacío/inválido.
+    Tolerante: nunca levanta excepción."""
+    if not raw:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    try:
+        from datetime import time as _time
+        parts = s.split(':')
+        h = int(parts[0])
+        m = int(parts[1]) if len(parts) > 1 else 0
+        if 0 <= h <= 23 and 0 <= m <= 59:
+            return _time(hour=h, minute=m)
+    except (ValueError, IndexError, TypeError):
+        pass
+    return None
+
+
+def _parse_dias_personalizados(raw):
+    """Convierte una lista de strings ISO de fechas → lista de strings ISO
+    normalizada y ordenada, o None si vacío/no-lista. Tolerante."""
+    if not raw or not isinstance(raw, (list, tuple)):
+        return None
+    from datetime import date as _date
+    fechas = []
+    for d in raw:
+        try:
+            fechas.append(_date.fromisoformat(str(d)[:10]))
+        except (ValueError, TypeError):
+            continue
+    if not fechas:
+        return None
+    return [d.isoformat() for d in sorted(fechas)]
+
+
 def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
     """Helper (NO es view, NO va con @login_required): convierte un body
     JSON del modal en kwargs para Instalacion.
@@ -6624,10 +6678,17 @@ def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
         except (InvalidOperation, ValueError):
             return Decimal(default)
 
+    hora_inicio = _parse_hora(data.get('hora_inicio'))
+    hora_fin = _parse_hora(data.get('hora_fin'))
+    dias_personalizados = _parse_dias_personalizados(data.get('dias_personalizados'))
+
     kwargs = {
         'po': (data.get('po') or po_default or '').strip()[:80],
         'proyecto': descripcion[:400],
         'fecha_programada': fecha_programada,
+        'hora_inicio': hora_inicio,
+        'hora_fin': hora_fin,
+        'dias_personalizados': dias_personalizados,
         'fecha_tentativa_texto': (data.get('fecha_tentativa_texto') or '').strip()[:120],
         'jornadas_count': int(data.get('jornadas_count') or 1),
         'jornadas_tipo': (data.get('jornadas_tipo') or 'normal'),
@@ -6666,6 +6727,9 @@ def _instalacion_to_full_dict(inst):
         'descripcion': inst.proyecto,
         'cliente_nombre': inst.cliente_nombre,
         'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
+        'hora_inicio': inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '',
+        'hora_fin': inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '',
+        'dias_personalizados': inst.dias_personalizados or None,
         'fecha_tentativa_texto': inst.fecha_tentativa_texto,
         'jornadas_count': inst.jornadas_count,
         'jornadas_tipo': inst.jornadas_tipo,
@@ -6885,6 +6949,51 @@ def api_instalacion_detalle(request, instalacion_id):
         return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
 
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_instalacion_reagendar(request, instalacion_id):
+    """PATCH /app/api/instalacion/<id>/reagendar/ — reagenda por drag&drop.
+
+    Body JSON con CUALQUIERA de:
+        {fecha (YYYY-MM-DD), hora_inicio ("HH:MM"), hora_fin ("HH:MM"),
+         dias_personalizados (list|null)}
+    Sólo actualiza los campos presentes en el body. A diferencia del PATCH
+    completo (api_instalacion_detalle), NO exige descripción — es un movimiento
+    ligero del calendario.
+    """
+    if request.method != 'PATCH':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    inst = get_object_or_404(Instalacion, pk=instalacion_id)
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, AttributeError):
+        data = {}
+
+    from datetime import date as _date
+
+    if 'fecha' in data:
+        fecha_raw = (data.get('fecha') or '').strip()
+        if fecha_raw:
+            try:
+                inst.fecha_programada = _date.fromisoformat(fecha_raw)
+            except ValueError:
+                return JsonResponse({'success': False, 'error': 'Fecha inválida (usa YYYY-MM-DD).'}, status=400)
+        else:
+            inst.fecha_programada = None
+
+    if 'hora_inicio' in data:
+        inst.hora_inicio = _parse_hora(data.get('hora_inicio'))
+
+    if 'hora_fin' in data:
+        inst.hora_fin = _parse_hora(data.get('hora_fin'))
+
+    if 'dias_personalizados' in data:
+        inst.dias_personalizados = _parse_dias_personalizados(data.get('dias_personalizados'))
+
+    inst.save()
+    return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
 
 
 @login_required

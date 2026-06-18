@@ -307,6 +307,7 @@ urlpatterns = [
     path('api/proyecto/<int:proyecto_id>/instalaciones/', views_proyectos.api_proyecto_instalaciones, name='api_proyecto_instalaciones'),
     path('api/proyecto/<int:proyecto_id>/instalacion-defaults/', views_proyectos.api_proyecto_instalacion_defaults, name='api_proyecto_instalacion_defaults'),
     path('api/instalacion/<int:instalacion_id>/', views_proyectos.api_instalacion_detalle, name='api_instalacion_detalle'),
+    path('api/instalacion/<int:instalacion_id>/reagendar/', views_proyectos.api_instalacion_reagendar, name='api_instalacion_reagendar'),
     path('api/instalacion/<int:instalacion_id>/asignaciones/', views_proyectos.api_instalacion_asignaciones, name='api_instalacion_asignaciones'),
     path('api/instalacion/<int:instalacion_id>/asignaciones/<int:asignacion_id>/', views_proyectos.api_instalacion_asignacion_detalle, name='api_instalacion_asignacion_detalle'),
     path('api/tecnicos/', views_proyectos.api_tecnicos_list, name='api_tecnicos_list'),

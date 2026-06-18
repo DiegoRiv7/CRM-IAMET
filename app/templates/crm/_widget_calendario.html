@@ -403,6 +403,7 @@
             .cmd-cell:nth-child(7n){ border-right:none; }
             .cmd-cell:hover{ background:rgba(10,116,240,.035); }
             .cmd-cell.out{ background:#f4f5f3; }
+            .cmd-cell.cmd-cell-drop{ background:rgba(124,58,237,.12); box-shadow:inset 0 0 0 2px #7C3AED; }
             .cmd-cell.out .cmd-num{ color:#aeb4bd; }
             /* + del header oculto: lo reemplazan los FABs abajo-derecha (diseño) */
             .cal-hdr-cta .crm-facet-new.cal-fab { display:none !important; }
@@ -977,7 +978,11 @@
         var recurIcon = esRec
             ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.85;"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>'
             : '';
-        return '<button class="cmd-ev cmd-ev-box" data-evt-id="' + safeId + '" style="background:' + color + '14;border:1px solid ' + color + '40;border-left:3px solid ' + color + ';' + op + '" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">' +
+        // Las instalaciones se pueden arrastrar entre días (reagendar). Las
+        // actividades/tareas siguen siendo solo-click en la vista Mes.
+        var esInst = (ep && ep.source === 'instalacion');
+        var dragAttr = esInst ? ' draggable="true" data-inst-drag="1"' : '';
+        return '<button class="cmd-ev cmd-ev-box" data-evt-id="' + safeId + '"' + dragAttr + ' style="background:' + color + '14;border:1px solid ' + color + '40;border-left:3px solid ' + color + ';' + op + (esInst ? 'cursor:grab;' : '') + '" onclick="event.stopPropagation();_calOpenFull(\'' + safeId + '\')">' +
             '<span class="cmd-box-dot" style="background:' + color + ';"></span>' +
             '<span class="cmd-ev-title" style="color:' + color + ';' + st + '">' + titleEsc + '</span>' +
             recurIcon +
@@ -1042,7 +1047,60 @@
         html += '</div></div>';
         root.innerHTML = html;
         _calMonthBindHover();
+        _calMonthBindInstDrag();
     };
+
+    // Drag&drop nativo (HTML5) de instalaciones entre días en la vista Mes.
+    // Solo aplica a pills con data-inst-drag="1"; las actividades/tareas no
+    // son arrastrables aquí. El día destino se toma de la celda con data-date.
+    var _calMonthDragId = null;
+    function _calMonthBindInstDrag() {
+        var root = document.getElementById('calMonthDesign'); if (!root) return;
+        root.querySelectorAll('.cmd-ev[data-inst-drag="1"]').forEach(function (el) {
+            if (el._calInstDragBound) return; el._calInstDragBound = true;
+            el.addEventListener('dragstart', function (e) {
+                _calMonthDragId = el.getAttribute('data-evt-id');
+                el.style.opacity = '0.5';
+                if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', _calMonthDragId); } catch (er) {} }
+            });
+            el.addEventListener('dragend', function () { el.style.opacity = ''; });
+        });
+        root.querySelectorAll('.cmd-cell[onclick]').forEach(function (cell) {
+            if (cell._calInstDropBound) return; cell._calInstDropBound = true;
+            // data-date no estaba en el HTML; lo derivamos del onclick (la 'k').
+            cell.addEventListener('dragover', function (e) {
+                if (!_calMonthDragId) return;
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                cell.classList.add('cmd-cell-drop');
+            });
+            cell.addEventListener('dragleave', function () { cell.classList.remove('cmd-cell-drop'); });
+            cell.addEventListener('drop', function (e) {
+                cell.classList.remove('cmd-cell-drop');
+                if (!_calMonthDragId) return;
+                e.preventDefault();
+                var fechaISO = _calMonthCellDate(cell);
+                if (!fechaISO) { _calMonthDragId = null; return; }
+                var stored = (window._calAllEvents || _globalEvents || []).find(function (x) { return String(x.id) === String(_calMonthDragId); });
+                _calMonthDragId = null;
+                if (!stored) return;
+                var ep = stored.extendedProps || {};
+                if (ep.source !== 'instalacion') return;
+                // Mes = solo cambio de fecha (sin hora). newStart a medianoche.
+                var dt = _calInstParseISODate(fechaISO);
+                if (!dt) return;
+                _calReagendarInstalacion(ep, dt, false, null, function () {
+                    if (typeof window.calRenderMonthDesign === 'function') window.calRenderMonthDesign();
+                });
+            });
+        });
+    }
+    // Extrae la fecha 'YYYY-MM-DD' de una celda del mes (del atributo onclick).
+    function _calMonthCellDate(cell) {
+        var oc = cell.getAttribute('onclick') || '';
+        var m = oc.match(/'(\d{4}-\d{2}-\d{2})'/);
+        return m ? m[1] : null;
+    }
 
     /* ═══ FAB de búsqueda (lupa) — filtra eventos del calendario ═══ */
     function _calSearchOutside(e) {
@@ -1338,6 +1396,15 @@
         var newEnd = new Date(drag.origEndMs + deltaMs);
         var startStr = _cwdLocalIso(newStart), endStr = _cwdLocalIso(newEnd);
         var stored = drag.stored, ep = stored.extendedProps || {};
+        // Instalaciones: reagendar vía endpoint propio (con hora — vista semana).
+        // No hacemos update optimista aquí; el refetch repinta todos los días.
+        // En error, re-render de la semana restaura la posición original.
+        if (ep.source === 'instalacion') {
+            _calReagendarInstalacion(ep, newStart, true, null, function () {
+                calRenderWeekView(_calWeekStart);
+            });
+            return;
+        }
         var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [, ''])[1];
         // Optimista: actualiza local + re-render, luego PUT.
         stored.start = startStr; stored.end = endStr;
@@ -1457,6 +1524,16 @@
                         var ev = info.event;
                         var stored = _globalEvents.find(function (x) { return String(x.id) === String(ev.id); });
                         if (!stored || (stored.extendedProps || {}).tipo_actividad === 'tarea') { info.revert(); return; }
+                        var epDrop = stored.extendedProps || {};
+                        // Instalaciones: reagendar vía endpoint propio (NO el de
+                        // actividades). No revertimos: el refetch repinta todos
+                        // los días de la instalación.
+                        if (epDrop.source === 'instalacion') {
+                            var dropStart = ev.start || (ev.startStr ? new Date(ev.startStr) : null);
+                            var withTime = !ev.allDay;
+                            _calReagendarInstalacion(epDrop, dropStart, withTime, null, function () { info.revert(); });
+                            return;
+                        }
                         var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
                         var ep = stored.extendedProps;
                         fetch('/app/api/actividades/' + ev.id + '/', {
@@ -2811,6 +2888,14 @@
         var pad = function(n){return String(n).padStart(2,'0');};
         function localIso(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
         var ep = drag.stored.extendedProps || {};
+        // Instalaciones: reagendar (cambio de hora — vista día). En error
+        // revertimos la card a su posición original.
+        if (ep.source === 'instalacion') {
+            _calReagendarInstalacion(ep, newStart, true, null, function () {
+                drag.card.style.top = drag.startTop + 'px';
+            });
+            return;
+        }
         var csrf = (function(){ var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; })();
         console.log('[cal-drag-day] PUT new dates', localIso(newStart), localIso(newEnd));
         fetch('/app/api/actividades/' + drag.evtId + '/', {
@@ -2951,17 +3036,19 @@
         var base = withPrefix ? ('INSTALACIONES - ' + nombre) : nombre;
         var dias = (inst.dias && inst.dias.length) ? inst.dias : (inst.fecha ? [inst.fecha] : []);
         var total = dias.length;
+        var horaIni = inst.hora_inicio || '08:00';
+        var horaFin = inst.hora_fin || '17:00';
         return dias.map(function (diaISO, idx) {
             // Con varios días anexamos "(día X/N)" para la visibilidad operativa.
             var titulo = (total > 1) ? (base + ' (día ' + (idx + 1) + '/' + total + ')') : base;
             return {
                 id: 'inst-' + inst.id + (total > 1 ? ('-d' + idx) : ''),
                 title: titulo,
-                start: diaISO + 'T08:00:00',
-                end: diaISO + 'T17:00:00',
+                start: diaISO + 'T' + horaIni + ':00',
+                end: diaISO + 'T' + horaFin + ':00',
                 description: desc,
                 color: _CAL_INSTALACION_COLOR,
-                editable: false,
+                editable: true,
                 extendedProps: {
                     source: 'instalacion',
                     instalacion_id: inst.id,
@@ -2978,6 +3065,12 @@
                     tipo_actividad: 'instalacion',
                     dia_index: idx + 1,
                     dias_total: total,
+                    // Datos que necesita el drag-reschedule (algoritmo client-side).
+                    fecha_programada: inst.fecha,
+                    fecha_dia: diaISO,
+                    hora_inicio: horaIni,
+                    hora_fin: horaFin,
+                    dias_personalizados: inst.dias_personalizados || null,
                 },
             };
         });
@@ -3012,6 +3105,104 @@
                 window._calAllEvents = [];
                 if (typeof calApplyFilter === 'function') calApplyFilter('all');
             });
+    }
+
+    // ── Reagendar instalación por drag&drop ──────────────────────────
+    // Dada la propiedad extendedProps del evento arrastrado (que representa
+    // UN día de la instalación) y la nueva fecha/hora del drop, calcula el
+    // delta en días y arma el body para PATCH /api/instalacion/<id>/reagendar/.
+    //   newStart : Date (o null) — inicio del drop. En month es a medianoche;
+    //              en week/day trae la hora real.
+    //   withTime : true si el drop cambia la hora (vistas week/day).
+    // Devuelve una Promise. onOk/onErr son callbacks opcionales.
+    function _calInstParseISODate(iso) {
+        // 'YYYY-MM-DD' → Date local a medianoche (sin desfase de zona).
+        if (!iso) return null;
+        var p = String(iso).slice(0, 10).split('-');
+        if (p.length !== 3) return null;
+        return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    }
+    function _calInstFmtISO(d) {
+        var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+    function _calInstFmtHM(d) {
+        var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+    // Reagenda la instalación. `ep` = extendedProps del evento (día arrastrado);
+    // `newStart` = Date del drop; `withTime` = aplicar hora.
+    function _calReagendarInstalacion(ep, newStart, withTime, onOk, onErr) {
+        if (!ep || !ep.instalacion_id) { if (onErr) onErr(); return; }
+        // El evento arrastrado corresponde al día `ep.fecha_dia`. delta =
+        // (fecha del drop) - (fecha original de ESTE día), en días enteros.
+        var origDayDate = _calInstParseISODate(ep.fecha_dia);
+        var dropDate = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate());
+        var deltaDays = 0;
+        if (origDayDate) {
+            deltaDays = Math.round((dropDate.getTime() - origDayDate.getTime()) / 86400000);
+        }
+        var body = {};
+        // Nueva fecha base = fecha_programada original desplazada por el delta.
+        var baseDate = _calInstParseISODate(ep.fecha_programada) || origDayDate;
+        if (baseDate) {
+            var nuevaBase = new Date(baseDate.getTime());
+            nuevaBase.setDate(nuevaBase.getDate() + deltaDays);
+            body.fecha = _calInstFmtISO(nuevaBase);
+        }
+        // Días personalizados: desplazar cada uno por el mismo delta.
+        if (Array.isArray(ep.dias_personalizados) && ep.dias_personalizados.length) {
+            body.dias_personalizados = ep.dias_personalizados.map(function (iso) {
+                var d = _calInstParseISODate(iso);
+                if (!d) return iso;
+                d.setDate(d.getDate() + deltaDays);
+                return _calInstFmtISO(d);
+            });
+        }
+        // En week/day el drop también cambia la hora: recalcula inicio y
+        // conserva la duración para el fin.
+        if (withTime) {
+            var nuevaIni = _calInstFmtHM(newStart);
+            body.hora_inicio = nuevaIni;
+            var oldIni = ep.hora_inicio || '08:00';
+            var oldFin = ep.hora_fin || '17:00';
+            var durMin = (_calHMtoMin(oldFin) - _calHMtoMin(oldIni));
+            if (isNaN(durMin) || durMin <= 0) durMin = 540; // 9h por defecto
+            var finMin = _calHMtoMin(nuevaIni) + durMin;
+            if (finMin > 1439) finMin = 1439;
+            body.hora_fin = _calMinToHM(finMin);
+        }
+        var csrf = (typeof getCsrf === 'function') ? getCsrf() : (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [,''])[1];
+        return fetch('/app/api/instalacion/' + ep.instalacion_id + '/reagendar/', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        }).then(function (r) { return r.json(); }).then(function (res) {
+            if (res && res.success) {
+                // Repinta todos los días de la instalación. calGlobalRefetch
+                // enruta solo según _calCurrentSource (instalaciones-only vs
+                // 'all'/actividades, que también incluye instalaciones).
+                if (typeof calGlobalRefetch === 'function') {
+                    var _uf = document.getElementById('calUserFilter');
+                    calGlobalRefetch(_uf ? _uf.value : 'all');
+                } else if (typeof _calRefetchInstalaciones === 'function') {
+                    _calRefetchInstalaciones();
+                }
+                if (onOk) onOk();
+            } else {
+                if (onErr) onErr();
+            }
+        }).catch(function () { if (onErr) onErr(); });
+    }
+    function _calHMtoMin(hm) {
+        var p = String(hm || '').split(':');
+        return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+    }
+    function _calMinToHM(min) {
+        var h = Math.floor(min / 60), m = min % 60;
+        var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return p(h) + ':' + p(m);
     }
 
     // ── Grid Técnico × Día (vista alterna en modo Instalaciones) ──

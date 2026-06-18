@@ -6130,6 +6130,13 @@ class Instalacion(models.Model):
         help_text='Texto libre: ej. "1 SUPERVISOR Y 3 TECNICOS"',
     )
     fecha_programada = models.DateField(null=True, blank=True, verbose_name='Fecha')
+    hora_inicio = models.TimeField(null=True, blank=True, verbose_name='Hora de inicio')
+    hora_fin = models.TimeField(null=True, blank=True, verbose_name='Hora de fin')
+    dias_personalizados = models.JSONField(
+        null=True, blank=True, default=None,
+        verbose_name='Días personalizados (ISO)',
+        help_text="Lista de fechas ISO si las jornadas NO son consecutivas; None = consecutivas auto.",
+    )
     fecha_tentativa_texto = models.CharField(
         max_length=120, blank=True, default='',
         help_text='Cuando no hay fecha exacta. Ej: "JULIO", "SABADO 23 MAYO".',

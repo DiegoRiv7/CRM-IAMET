@@ -329,6 +329,16 @@
           +             '<div class="pob-meta-row">'
           +               '<span class="pob-meta-label">'
           +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 'Horario</span>'
+          +               '<div style="display:flex;align-items:center;gap:6px;">'
+          +                 '<input type="time" id="pobInstHoraInicio" class="pob-input" style="max-width:110px;">'
+          +                 '<span style="color:#86868B;">–</span>'
+          +                 '<input type="time" id="pobInstHoraFin" class="pob-input" style="max-width:110px;">'
+          +               '</div>'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
           +                 'Estado</span>'
           +               '<div class="pob-dd">'
           +                 '<select id="pobInstEstado" class="pob-input">'
@@ -342,9 +352,11 @@
           +             '</div>'
           +             '<div class="pob-meta-row">'
           +               '<span class="pob-meta-label">'
-          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 '<button type="button" id="pobJornadasCfgBtn" title="Configurar días de las jornadas" style="border:none;background:transparent;padding:0;margin:0;cursor:pointer;display:inline-flex;color:inherit;">'
+          +                   '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 '</button>'
           +                 'Jornadas</span>'
-          +               '<div style="display:flex;align-items:center;gap:8px;">'
+          +               '<div style="display:flex;align-items:center;gap:8px;position:relative;">'
           +                 '<input type="number" id="pobInstJornadas" min="1" class="pob-input pob-input-num" style="max-width:48px;">'
           +                 '<div class="pob-dd">'
           +                   '<select id="pobInstJornadasTipo" class="pob-input">'
@@ -355,6 +367,7 @@
           +                     '<option value="extraordinaria">Extraordinaria</option>'
           +                   '</select>'
           +                 '</div>'
+          +                 '<span id="pobJornadasCfgBadge" style="display:none;font-size:0.68rem;font-weight:700;color:#0052D4;background:#E8F0FE;border-radius:6px;padding:2px 7px;white-space:nowrap;">Días elegidos</span>'
           +               '</div>'
           +             '</div>'
           +             '<div class="pob-meta-row pob-meta-grow">'
@@ -421,6 +434,22 @@
         div.innerHTML = html;
         document.body.appendChild(div.firstChild);
         pobInitDropdowns();
+
+        // Configurador de días de las jornadas (popover del reloj).
+        var cfgBtn = document.getElementById('pobJornadasCfgBtn');
+        if (cfgBtn) cfgBtn.onclick = window.pobToggleJornadasCfg;
+        // Al cambiar la cantidad de jornadas, re-renderiza el popover (más/menos
+        // filas) y recorta los días personalizados si sobran.
+        var jornInp = document.getElementById('pobInstJornadas');
+        if (jornInp) {
+            jornInp.addEventListener('input', function () {
+                if (Array.isArray(_pobDiasPersonalizados)) {
+                    var n = _pobJornadasNum();
+                    if (_pobDiasPersonalizados.length > n) _pobDiasPersonalizados = _pobDiasPersonalizados.slice(0, n);
+                }
+                _pobSyncJornadasCfgUI();
+            });
+        }
     }
 
     // Convierte los <select> marcados con wrapper .pob-dd en dropdowns
@@ -685,6 +714,161 @@
                                     // de datos para pobToggleUser sin JSON-en-onclick.
     var _pobUserSearchDebounce = null;
 
+    // ── Configurador de días de las jornadas ──────────────────────────
+    // null  → modo "Seguidas" (días consecutivos auto, comportamiento previo)
+    // array → modo "Elegir días": lista de fechas ISO, una por jornada.
+    var _pobDiasPersonalizados = null;
+    var _pobJornadasCfgOpen = false;
+
+    // Calcula las N fechas consecutivas (mismo criterio que el backend) a
+    // partir de la fecha base y el tipo de jornada — semilla para "Elegir días".
+    function _pobDiasConsecutivos(fechaIso, n, tipo) {
+        var out = [];
+        if (!fechaIso) return out;
+        var incluirFinde = (tipo === 'sabado' || tipo === 'domingo');
+        var base = new Date(fechaIso + 'T00:00:00');
+        if (isNaN(base.getTime())) return out;
+        var cursor = new Date(base);
+        var guard = 0;
+        while (out.length < n && guard < 400) {
+            guard++;
+            var dow = cursor.getDay(); // 0=dom, 6=sáb
+            var esFinde = (dow === 0 || dow === 6);
+            if (!incluirFinde && esFinde) {
+                cursor.setDate(cursor.getDate() + 1);
+                continue;
+            }
+            out.push(_pobIsoDate(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return out;
+    }
+
+    function _pobIsoDate(d) {
+        var y = d.getFullYear();
+        var m = ('0' + (d.getMonth() + 1)).slice(-2);
+        var day = ('0' + d.getDate()).slice(-2);
+        return y + '-' + m + '-' + day;
+    }
+
+    function _pobJornadasNum() {
+        var el = document.getElementById('pobInstJornadas');
+        var n = parseInt((el && el.value) || '1', 10);
+        return (isNaN(n) || n < 1) ? 1 : n;
+    }
+
+    // Refleja el estado del configurador en la UI (badge + popover si abierto).
+    function _pobSyncJornadasCfgUI() {
+        var badge = document.getElementById('pobJornadasCfgBadge');
+        if (badge) badge.style.display = (_pobDiasPersonalizados && _pobDiasPersonalizados.length) ? '' : 'none';
+        if (_pobJornadasCfgOpen) _pobRenderJornadasCfgPopover();
+    }
+
+    function _pobCloseJornadasCfg() {
+        _pobJornadasCfgOpen = false;
+        var pop = document.getElementById('pobJornadasCfgPop');
+        if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+        document.removeEventListener('mousedown', _pobJornadasCfgOutside, true);
+    }
+
+    function _pobJornadasCfgOutside(ev) {
+        var pop = document.getElementById('pobJornadasCfgPop');
+        var btn = document.getElementById('pobJornadasCfgBtn');
+        if (!pop) return;
+        if (pop.contains(ev.target) || (btn && btn.contains(ev.target))) return;
+        _pobCloseJornadasCfg();
+    }
+
+    window.pobToggleJornadasCfg = function () {
+        if (_pobJornadasCfgOpen) { _pobCloseJornadasCfg(); return; }
+        _pobJornadasCfgOpen = true;
+        _pobRenderJornadasCfgPopover();
+        setTimeout(function () {
+            document.addEventListener('mousedown', _pobJornadasCfgOutside, true);
+        }, 0);
+    };
+
+    function _pobRenderJornadasCfgPopover() {
+        var btn = document.getElementById('pobJornadasCfgBtn');
+        if (!btn) return;
+        var pop = document.getElementById('pobJornadasCfgPop');
+        if (!pop) {
+            pop = document.createElement('div');
+            pop.id = 'pobJornadasCfgPop';
+            pop.className = 'pob-dd-menu';
+            pop.style.padding = '12px';
+            pop.style.minWidth = '230px';
+            document.body.appendChild(pop);
+        }
+        var elegir = !!(_pobDiasPersonalizados && _pobDiasPersonalizados.length);
+        var n = _pobJornadasNum();
+
+        // Semilla de fechas: lo ya elegido, completado/recortado a N con
+        // consecutivos a partir de la fecha del form.
+        var fechaBase = (document.getElementById('pobInstFecha') || {}).value || '';
+        var tipo = (document.getElementById('pobInstJornadasTipo') || {}).value || 'normal';
+        var seed = (_pobDiasPersonalizados || []).slice(0, n);
+        if (seed.length < n) {
+            var cons = _pobDiasConsecutivos(fechaBase, n, tipo);
+            for (var i = seed.length; i < n; i++) seed.push(cons[i] || '');
+        }
+
+        var rows = '';
+        if (elegir) {
+            for (var j = 0; j < n; j++) {
+                rows += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+                      +   '<span style="font-size:0.72rem;color:#86868B;font-weight:700;width:64px;flex-shrink:0;">Jornada ' + (j + 1) + '</span>'
+                      +   '<input type="date" class="pob-input pob-jcfg-day" data-idx="' + j + '" value="' + (seed[j] || '') + '" style="flex:1;">'
+                      + '</div>';
+            }
+        }
+
+        pop.innerHTML =
+            '<div style="font-size:0.72rem;font-weight:700;color:#1D1D1F;margin-bottom:8px;">Días de las jornadas</div>'
+          + '<div style="display:flex;gap:4px;background:#F2F2F7;border-radius:8px;padding:3px;margin-bottom:' + (elegir ? '10px' : '0') + ';">'
+          +   '<button type="button" class="pob-jcfg-mode" data-mode="seguidas" style="flex:1;border:none;border-radius:6px;padding:6px 8px;font-size:0.78rem;font-weight:600;cursor:pointer;'
+          +     (elegir ? 'background:transparent;color:#86868B;' : 'background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(0,0,0,0.12);') + '">Seguidas</button>'
+          +   '<button type="button" class="pob-jcfg-mode" data-mode="elegir" style="flex:1;border:none;border-radius:6px;padding:6px 8px;font-size:0.78rem;font-weight:600;cursor:pointer;'
+          +     (elegir ? 'background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(0,0,0,0.12);' : 'background:transparent;color:#86868B;') + '">Elegir días</button>'
+          + '</div>'
+          + rows;
+
+        // Posición: anclado bajo el botón del reloj.
+        var r = btn.getBoundingClientRect();
+        pop.style.position = 'fixed';
+        pop.style.top = (r.bottom + 6) + 'px';
+        pop.style.left = Math.max(8, r.left) + 'px';
+
+        Array.prototype.forEach.call(pop.querySelectorAll('.pob-jcfg-mode'), function (b) {
+            b.onclick = function () {
+                if (b.getAttribute('data-mode') === 'elegir') {
+                    // Al activar "Elegir días", siembra con los consecutivos.
+                    _pobDiasPersonalizados = _pobDiasConsecutivos(fechaBase, _pobJornadasNum(), tipo);
+                    if (!_pobDiasPersonalizados.length) _pobDiasPersonalizados = [];
+                } else {
+                    _pobDiasPersonalizados = null;
+                }
+                _pobSyncJornadasCfgUI();
+            };
+        });
+        Array.prototype.forEach.call(pop.querySelectorAll('.pob-jcfg-day'), function (inp) {
+            inp.onchange = function () {
+                var idx = parseInt(inp.getAttribute('data-idx'), 10);
+                if (!Array.isArray(_pobDiasPersonalizados)) _pobDiasPersonalizados = [];
+                _pobDiasPersonalizados[idx] = inp.value || '';
+                var badge = document.getElementById('pobJornadasCfgBadge');
+                if (badge) badge.style.display = (_pobDiasPersonalizados.some(function (x) { return !!x; })) ? '' : 'none';
+            };
+        });
+    }
+
+    // Devuelve la lista limpia (sin vacíos) o null para el payload.
+    function _pobDiasPersonalizadosPayload() {
+        if (!_pobDiasPersonalizados) return null;
+        var clean = _pobDiasPersonalizados.filter(function (x) { return !!x; });
+        return clean.length ? clean : null;
+    }
+
     function _fillForm(inst) {
         var f = function (id, val) {
             var el = document.getElementById(id);
@@ -696,6 +880,8 @@
         f('pobInstPo', inst.po);
         f('pobInstCliente', inst.cliente_nombre);
         f('pobInstFecha', inst.fecha);
+        f('pobInstHoraInicio', inst.hora_inicio || '');
+        f('pobInstHoraFin', inst.hora_fin || '');
         f('pobInstEstado', inst.estado || 'programada');
         f('pobInstJornadas', inst.jornadas_count || 1);
         f('pobInstJornadasTipo', inst.jornadas_tipo || 'normal');
@@ -703,6 +889,12 @@
         f('pobInstMonto', inst.monto_po);
         f('pobInstUtilidad', inst.utilidad);
         f('pobInstNotas', inst.notas);
+
+        // Restaura el configurador de jornadas (días personalizados).
+        _pobCloseJornadasCfg();
+        var dp = inst.dias_personalizados;
+        _pobDiasPersonalizados = (Array.isArray(dp) && dp.length) ? dp.slice() : null;
+        _pobSyncJornadasCfgUI();
     }
 
     function _renderAsignaciones(asignaciones) {
@@ -805,8 +997,9 @@
         if (btnDel) btnDel.style.display = 'none';
         _fillForm({
             descripcion: '', po: '', cliente_nombre: '', fecha: '',
+            hora_inicio: '08:00', hora_fin: '17:00',
             estado: 'programada', jornadas_count: 1, jornadas_tipo: 'normal',
-            personal: '', monto_po: '', utilidad: '', notas: '',
+            personal: '', monto_po: '', utilidad: '', notas: '', dias_personalizados: null,
         });
         _renderAsignaciones([]);
         _pobAplicarUiModoCrear(true);
@@ -978,6 +1171,8 @@
         _pobUserSearchResults = {};
         var addForm = document.getElementById('pobAddAsigForm');
         if (addForm) addForm.style.display = 'none';
+        _pobCloseJornadasCfg();
+        _pobDiasPersonalizados = null;
     };
 
     function _readForm() {
@@ -987,6 +1182,8 @@
             po: v('pobInstPo').trim(),
             cliente_nombre: v('pobInstCliente').trim(),
             fecha: v('pobInstFecha'),
+            hora_inicio: v('pobInstHoraInicio'),
+            hora_fin: v('pobInstHoraFin'),
             estado: v('pobInstEstado'),
             jornadas_count: parseInt(v('pobInstJornadas') || '1', 10),
             jornadas_tipo: v('pobInstJornadasTipo'),
@@ -994,6 +1191,7 @@
             monto_po: v('pobInstMonto') || '0',
             utilidad: v('pobInstUtilidad') || '0',
             notas: v('pobInstNotas').trim(),
+            dias_personalizados: _pobDiasPersonalizadosPayload(),
         };
     }
 
