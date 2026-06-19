@@ -3533,116 +3533,86 @@
              + '</div>';
     }
 
+    // Vista Equipo = AGENDA agrupada por día (no rejilla). Cada día una
+    // sección; dentro, las actividades/tareas/instalaciones de TODOS los
+    // seleccionados ordenadas por hora, cada renglón con su dueño y tipo.
+    // Escala a cualquier densidad (sólo scrollea) y se lee como feed operativo.
     function _calBuildEquipoGridDOM(root, data, weekStart) {
         var usuarios = data.usuarios || [];
         var dias = data.dias || [];
         var celdas = data.celdas || [];
 
-        // Indexar celdas por (user_id, fecha) y ordenar cada grupo por hora.
-        var byKey = {};
-        celdas.forEach(function (c) {
-            var k = c.user_id + '|' + c.fecha;
-            if (!byKey[k]) byKey[k] = [];
-            byKey[k].push(c);
-        });
-        Object.keys(byKey).forEach(function (k) {
-            byKey[k].sort(function (a, b) { return String(a.hora_inicio || '').localeCompare(String(b.hora_inicio || '')); });
-        });
-        _calEquipoByKey = byKey;
-        _calEquipoUserName = {};
-        usuarios.forEach(function (u) { _calEquipoUserName[u.id] = u.nombre; });
+        var usersById = {};
+        usuarios.forEach(function (u) { usersById[u.id] = u; });
 
-        if (!usuarios.length) {
-            root.innerHTML = '<div style="padding:32px;text-align:center;color:#86868B;font-size:0.88rem;">'
+        if (!celdas.length) {
+            root.innerHTML = '<div style="padding:40px;text-align:center;color:#86868B;font-size:0.9rem;">'
                 + 'Nadie tiene actividades, tareas ni instalaciones esta semana.<br>'
-                + '<span style="font-size:0.78rem;">Cambia de semana con las flechas o selecciona usuarios en el filtro.</span>'
+                + '<span style="font-size:0.8rem;">Cambia de semana con las flechas o ajusta el filtro de personas.</span>'
                 + '</div>';
             return;
         }
 
+        // Agrupar por día.
+        var byDay = {};
+        celdas.forEach(function (c) { (byDay[c.fecha] = byDay[c.fecha] || []).push(c); });
+
         var hoyISO = _calFmtDateISO(new Date());
+        var DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
         var TIPO_LABEL = { actividad: 'Actividad', tarea: 'Tarea', instalacion: 'Instalación' };
 
-        var html = '';
-        html += '<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:0.78rem;table-layout:fixed;">';
-        // Header
-        html += '<thead><tr>';
-        html += '<th style="position:sticky;left:0;z-index:3;background:#FAFAFC;border-bottom:1px solid #E5E5EA;border-right:1px solid #E5E5EA;padding:10px 12px;text-align:left;color:#1D1D1F;font-weight:700;width:160px;">Persona</th>';
+        var html = '<div style="max-width:880px;margin:0 auto;padding:10px 16px 48px;">';
         dias.forEach(function (iso) {
-            var parts = iso.split('-');
-            var dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-            var isHoy = iso === hoyISO;
-            var bg = isHoy ? '#FFF6E5' : '#FAFAFC';
-            html += '<th style="background:' + bg + ';border-bottom:1px solid #E5E5EA;padding:8px 6px;text-align:center;font-weight:600;color:#1D1D1F;">';
-            html += '<div style="font-size:0.7rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;">' + _CAL_TEC_DAYS_ES[dt.getDay()].slice(0, 3) + '</div>';
-            html += '<div style="font-size:0.95rem;font-weight:700;' + (isHoy ? 'color:#FF9500;' : '') + '">' + dt.getDate() + '</div>';
-            html += '<div style="font-size:0.66rem;color:#86868B;">' + _CAL_TEC_MONTHS_ES[dt.getMonth()] + '</div>';
-            html += '</th>';
-        });
-        html += '</tr></thead>';
-
-        // Rows
-        html += '<tbody>';
-        usuarios.forEach(function (u, rowIdx) {
-            var rowBg = rowIdx % 2 === 0 ? '#FFF' : '#FAFAFC';
-            html += '<tr>';
-            html += '<td style="position:sticky;left:0;z-index:1;background:' + rowBg + ';border-bottom:1px solid #F2F2F7;border-right:1px solid #E5E5EA;padding:8px 12px;color:#1D1D1F;">';
-            html += '<div style="display:flex;align-items:center;gap:8px;">';
-            if (u.avatar_url) {
-                html += '<img src="' + _calEscape(u.avatar_url) + '" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">';
-            } else {
-                html += '<span style="width:26px;height:26px;border-radius:50%;background:#E5E5EA;color:#6B7280;font-size:0.68rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' + _calEscape(_calEquipoInitials(u.nombre)) + '</span>';
-            }
-            html += '<div style="min-width:0;">';
-            html += '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _calEscape(u.nombre) + '</div>';
-            if (u.rol_label) {
-                html += '<div style="font-size:0.66rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _calEscape(u.rol_label) + '</div>';
-            }
-            html += '</div></div>';
-            html += '</td>';
-            dias.forEach(function (iso) {
-                var cellEntries = byKey[u.id + '|' + iso] || [];
-                var total = cellEntries.length;
-                // Tinte de densidad: la celda se oscurece según la carga.
-                var densBg = total >= 6 ? 'rgba(124,58,237,0.08)' : (total >= 3 ? 'rgba(124,58,237,0.035)' : rowBg);
-                html += '<td style="position:relative;border-bottom:1px solid #F2F2F7;border-right:1px solid #F7F7FA;padding:4px;vertical-align:top;height:54px;background:' + densBg + ';">';
-                // Badge de carga (cuántos en total ese día) — lectura de un vistazo.
-                if (total > 1) {
-                    html += '<span style="position:absolute;top:3px;right:4px;z-index:2;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#EDE9FE;color:#6D28D9;font-size:0.6rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1;pointer-events:none;">' + total + '</span>';
-                }
-                cellEntries.slice(0, _CAL_EQUIPO_CAP).forEach(function (c) {
-                    html += _calEquipoChipHtml(c, iso);
-                });
-                if (total > _CAL_EQUIPO_CAP) {
-                    html += '<button type="button" data-eq-more="1" data-eq-user="' + u.id + '" data-eq-fecha="' + iso + '" '
-                          + 'style="display:block;width:100%;text-align:left;border:none;background:#F2F2F7;color:#4B5563;border-radius:5px;padding:3px 7px;font-size:0.68rem;font-weight:700;cursor:pointer;">'
-                          + '+' + (total - _CAL_EQUIPO_CAP) + ' más' + '</button>';
-                }
-                html += '</td>';
+            var items = (byDay[iso] || []).slice();
+            if (!items.length) return;  // agenda limpia: días vacíos no aparecen
+            items.sort(function (a, b) {
+                var ha = String(a.hora_inicio || ''), hb = String(b.hora_inicio || '');
+                if (ha !== hb) return ha.localeCompare(hb);
+                return String((usersById[a.user_id] || {}).nombre || '').localeCompare(String((usersById[b.user_id] || {}).nombre || ''));
             });
-            html += '</tr>';
+            var p = iso.split('-');
+            var dt = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+            var isHoy = iso === hoyISO;
+            // Header del día (sticky).
+            html += '<div style="position:sticky;top:0;z-index:2;background:rgba(255,255,255,0.94);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:baseline;gap:10px;padding:12px 2px 8px;margin-top:6px;border-bottom:1px solid #F2F2F7;">';
+            html += '<span style="font-size:1.05rem;font-weight:800;color:' + (isHoy ? '#FF9500' : '#1D1D1F') + ';">' + DIAS[dt.getDay()] + ' ' + dt.getDate() + '</span>';
+            html += '<span style="font-size:0.76rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;">' + MESES[dt.getMonth()] + (isHoy ? ' · Hoy' : '') + '</span>';
+            html += '<span style="margin-left:auto;font-size:0.72rem;font-weight:700;color:#6B7280;background:#F2F2F7;padding:2px 10px;border-radius:20px;">' + items.length + '</span>';
+            html += '</div>';
+            html += '<div style="padding-top:8px;">';
+            items.forEach(function (c) {
+                var u = usersById[c.user_id] || {};
+                var color = c.color || '#7C3AED';
+                var horas = (c.hora_inicio || c.hora_fin)
+                    ? (_calEscape(c.hora_inicio || '') + (c.hora_fin && c.hora_fin !== c.hora_inicio ? '–' + _calEscape(c.hora_fin) : ''))
+                    : '—';
+                var done = c.completada ? 'opacity:0.55;text-decoration:line-through;' : '';
+                var idAttr = c.tipo === 'instalacion' ? ('inst:' + c.instalacion_id)
+                           : (c.tipo === 'tarea' ? ('tarea:' + c.tarea_id) : ('act:' + c.actividad_id));
+                var ownerAv = u.avatar_url
+                    ? '<img src="' + _calEscape(u.avatar_url) + '" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+                    : '<span style="width:24px;height:24px;border-radius:50%;background:#E5E5EA;color:#6B7280;font-size:0.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' + _calEscape(_calEquipoInitials(u.nombre || '')) + '</span>';
+                html += '<button type="button" data-eq-row2="' + _calEscape(c.tipo + '|' + idAttr.split(':')[1]) + '" '
+                      + 'style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:none;border-left:3px solid ' + color + ';background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(15,23,42,0.05);padding:9px 14px;margin-bottom:6px;cursor:pointer;transition:background 0.12s,box-shadow 0.12s;" '
+                      + 'onmouseover="this.style.background=\'#F9FAFB\';this.style.boxShadow=\'0 2px 8px rgba(15,23,42,0.09)\'" onmouseout="this.style.background=\'#fff\';this.style.boxShadow=\'0 1px 2px rgba(15,23,42,0.05)\'">'
+                      + '<span style="min-width:94px;font-size:0.78rem;font-weight:700;color:#1D1D1F;white-space:nowrap;">' + horas + '</span>'
+                      + ownerAv
+                      + '<span style="flex-shrink:0;max-width:150px;font-size:0.82rem;font-weight:600;color:#4B5563;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _calEscape(u.nombre || '') + '</span>'
+                      + '<span style="flex:1;min-width:0;font-size:0.9rem;font-weight:600;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + done + '">' + _calEscape(c.titulo || '—') + '</span>'
+                      + '<span style="font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#fff;background:' + color + ';padding:2px 8px;border-radius:20px;flex-shrink:0;">' + _calEscape(TIPO_LABEL[c.tipo] || '') + '</span>'
+                      + '</button>';
+            });
+            html += '</div>';
         });
-        html += '</tbody></table>';
+        html += '</div>';
         root.innerHTML = html;
 
-        // Click: routea por tipo. Hover: preview compartido.
-        root.querySelectorAll('[data-grid-cell]').forEach(function (el) {
-            el.addEventListener('click', function () { _calEquipoCellClick(el); });
-            el.addEventListener('mouseenter', function (e) {
-                clearTimeout(window._calHoverTimer);
-                var mx = e.clientX, my = e.clientY;
-                window._calHoverTimer = setTimeout(function () { _calEquipoShowPreview(el, { mouseX: mx, mouseY: my }); }, 320);
-            });
-            el.addEventListener('mouseleave', function () {
-                clearTimeout(window._calHoverTimer);
-                if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview();
-            });
-        });
-        // "+N más" → panel de detalle del día (lista completa de esa persona/día).
-        root.querySelectorAll('[data-eq-more]').forEach(function (el) {
-            el.addEventListener('click', function (e) {
-                e.stopPropagation();
-                _calEquipoOpenDayDetail(parseInt(el.getAttribute('data-eq-user'), 10), el.getAttribute('data-eq-fecha'));
+        root.querySelectorAll('[data-eq-row2]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var raw = b.getAttribute('data-eq-row2') || '';
+                var ix = raw.indexOf('|');
+                _calEquipoRoute(raw.slice(0, ix), raw.slice(ix + 1));
             });
         });
     }
