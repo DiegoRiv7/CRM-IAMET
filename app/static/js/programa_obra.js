@@ -1316,22 +1316,73 @@
           });
     };
 
+    // ── Widget de confirmación de borrado (reemplaza al confirm() nativo) ──
+    function _pobEnsureConfirm() {
+        if (document.getElementById('pobConfirmBackdrop')) return;
+        var html =
+            '<div class="wop-modal-backdrop" id="pobConfirmBackdrop" style="z-index:12100;">'
+          +   '<div class="wop-modal" style="width:min(420px, 94vw);">'
+          +     '<div style="padding:26px 26px 18px;text-align:center;">'
+          +       '<div style="width:54px;height:54px;border-radius:50%;background:#FEE2E2;color:#DC2626;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'
+          +         '<svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+          +       '</div>'
+          +       '<h3 id="pobConfirmTitle" style="margin:0 0 8px;font-size:1.12rem;font-weight:700;color:#1D1D1F;">Eliminar instalación</h3>'
+          +       '<p id="pobConfirmMsg" style="margin:0;font-size:0.9rem;line-height:1.5;color:#6B7280;"></p>'
+          +     '</div>'
+          +     '<div style="display:flex;gap:10px;padding:0 22px 22px;">'
+          +       '<button type="button" id="pobConfirmCancel" style="flex:1;padding:11px;border:1px solid #E5E5EA;background:#fff;color:#1D1D1F;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;">Cancelar</button>'
+          +       '<button type="button" id="pobConfirmOk" style="flex:1;padding:11px;border:none;background:#DC2626;color:#fff;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Eliminar</button>'
+          +     '</div>'
+          +   '</div>'
+          + '</div>';
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        document.body.appendChild(div.firstChild);
+        document.getElementById('pobConfirmBackdrop').addEventListener('click', function (e) {
+            if (e.target === this) _pobConfirmClose();
+        });
+        document.getElementById('pobConfirmCancel').addEventListener('click', _pobConfirmClose);
+    }
+    function _pobConfirmClose() {
+        var b = document.getElementById('pobConfirmBackdrop');
+        if (b) b.classList.remove('open');
+    }
+    // _pobConfirm(msg, onOk) — muestra el diálogo; ejecuta onOk si confirman.
+    function _pobConfirm(msg, onOk) {
+        _pobEnsureConfirm();
+        document.getElementById('pobConfirmMsg').textContent = msg;
+        var okBtn = document.getElementById('pobConfirmOk');
+        // Clonar para limpiar handlers previos.
+        var fresh = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(fresh, okBtn);
+        fresh.addEventListener('click', function () {
+            _pobConfirmClose();
+            if (typeof onOk === 'function') onOk();
+        });
+        document.getElementById('pobConfirmBackdrop').classList.add('open');
+    }
+
     window.pobEliminar = function () {
         if (!_pobActiveInst || !_pobActiveInst.id) return;
-        if (!confirm('¿Eliminar esta instalación del Programa de Obra? Se quitan también las asignaciones de técnicos.')) return;
-        fetch('/app/api/instalacion/' + _pobActiveInst.id + '/', {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': _csrf() },
-        }).then(function (r) { return r.json(); }).then(function (data) {
-            if (data && data.success) {
-                pobCerrarModal();
-                pobCargarLista();
-                _pobRefrescarCalendario();
-            } else if (typeof showToast === 'function') {
-                showToast('No se pudo eliminar.', 'error');
+        _pobConfirm(
+            '¿Eliminar esta instalación del Programa de Obra? Se quitan también las asignaciones de técnicos. Esta acción no se puede deshacer.',
+            function () {
+                fetch('/app/api/instalacion/' + _pobActiveInst.id + '/', {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': _csrf() },
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data && data.success) {
+                        pobCerrarModal();
+                        pobCargarLista();
+                        _pobRefrescarCalendario();
+                        if (typeof showToast === 'function') showToast('Instalación eliminada', 'success');
+                    } else if (typeof showToast === 'function') {
+                        showToast('No se pudo eliminar.', 'error');
+                    }
+                });
             }
-        });
+        );
     };
 
     window.pobToggleAddAsig = function (forceVisible) {
