@@ -1,5 +1,10 @@
 <!-- ═══ MURO EMPRESARIAL ═══ -->
-<div class="widget-overlay" id="widgetMuro" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde sidebar Muro -->
+{% comment %}data-windowable: el sistema de ventanas (widget_window.js) lo convierte
+en ventana flotante (resize, mover, minimizar/maximizar, dock) — igual que
+Notificaciones. data-ww-drag-windowize: arrastrar el header lo windowiza si quedó
+como modal. El botón de cerrar lleva data-widget-close para que se le inyecten los
+controles [— □ ×].{% endcomment %}
+<div class="widget-overlay" id="widgetMuro" data-windowable="1" data-ww-drag-windowize="1" data-widget-title="Muro" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde sidebar Muro -->
     <div class="muro-card">
         <!-- Header -->
         <div class="muro-card-header">
@@ -19,7 +24,7 @@
                 <button class="muro-filter-btn" data-filtro="anuncios" onclick="muroSetFilter('anuncios',this)">📢 Anuncios</button>
                 <button class="muro-filter-btn" data-filtro="mios" onclick="muroSetFilter('mios',this)">Mis posts</button>
             </div>
-            <button onclick="muroCerrar()" class="muro-close-btn">&times;</button>
+            <button type="button" onclick="muroCerrar()" class="muro-close-btn" data-widget-close>&times;</button>
         </div>
 
         <!-- Body -->

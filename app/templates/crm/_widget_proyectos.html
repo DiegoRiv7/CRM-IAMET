@@ -1,6 +1,110 @@
 <!-- ═══════════════════════════════════════════════════════════════
      SECCION PROYECTOS (inline, como tareas)
      ═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Espaciado como Oportunidades: empezar más arriba y con menos margen ──
+   El listado de Proyectos tenía un toolbar alto (min-height:48 + padding 14) y
+   el board envuelto con padding lateral de 24px, lo que empujaba el kanban
+   hacia abajo y adentro. Lo apretamos AGRESIVO con !important (los valores
+   inline del HTML solo se vencen con !important). */
+#proyectosSection #proyListTopbar {
+  padding: 6px 14px !important;
+  min-height: 0 !important;
+  margin-bottom: 0 !important;
+}
+#proyTabPrograma { padding: 0 0 10px !important; }
+/* Margen lateral afinado para igualar a Oportunidades (que mete el board en
+   .crm-content 1rem + #crmViewKanban 14px). 12px deja las columnas a la misma
+   altura visual que opps. El exceso original era el padding 24px de
+   #proyTabPrograma, ya en 0. */
+#proyectosSection { padding-left: 14px !important; padding-right: 14px !important; max-width: 100% !important; }
+/* Alinear Filtro/Ordenar (izq) y Buscar/+Nuevo (der) con el borde de la 1ª y
+   última columna: el board arranca a ~2px del contenido (padding de
+   .crm-kanban-board), así que los lados del toolbar van al mismo 2px. */
+#proyectosSection .proy-topbar-left { left: 2px !important; }
+#proyectosSection .proy-topbar-right { right: 2px !important; }
+/* El board pegado al toolbar y más alto (menos recorte inferior). */
+#proyKanbanBoard {
+  padding-top: 2px !important;
+  height: calc(100vh - 104px) !important;
+}
+/* Columnas IDÉNTICAS a las de Oportunidades (mismo glass oscuro sutil del tema
+   mundial). Lo forzamos explícito porque algo en la cascada le estaba dejando
+   a Proyectos el borde gris claro pronunciado de la base (#E2E8F0) en vez del
+   borde sutil del tema. !important + ID gana siempre. */
+#proyKanbanBoard .crm-kanban-col {
+  background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(0,20,10,0.14) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+/* El toolbar debe quedar por ENCIMA del board: si no, el strip de color de una
+   tarjeta (z-index propio) se encima sobre el dropdown de Filtro (la "línea
+   morada" sobre las opciones). Elevamos su contexto de apilamiento. */
+#proyListTopbar { position: relative; z-index: 40; }
+/* Filtro estilo Oportunidades — popover de 2 niveles (.pf-*).
+   El contenido .pf-* usa texto oscuro sobre blanco, así que forzamos fondo
+   sólido claro: el tema "mundial" pinta .proy-facet-menu oscuro y volvía
+   ilegibles las opciones. !important + ID para ganarle al tema. */
+#proyFilterMenu {
+  padding:6px; min-width:208px; max-height:70vh; overflow-y:auto;
+  background:#ffffff !important;
+  border:1px solid #E5E7EB !important;
+  box-shadow:0 16px 44px rgba(15,23,42,0.20) !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  z-index:10600 !important;
+}
+/* El menú de Ordenar comparte el problema de apilamiento — mismo z alto. */
+#proySortMenu { z-index:10600 !important; }
+.pf-head { font-size:0.66rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#94A3B8; padding:6px 10px 8px; }
+.pf-dim { display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:none; background:transparent; padding:8px 10px; border-radius:8px; font-size:0.82rem; font-weight:500; color:#1C1C1E; cursor:pointer; transition:background .12s; }
+.pf-dim:hover { background:#F1F5F9; }
+.pf-dim-badge { background:#2563EB; color:#fff; font-size:0.66rem; font-weight:700; border-radius:999px; padding:1px 7px; }
+.pf-clear-all { width:100%; text-align:center; border:none; background:transparent; color:#DC2626; font-size:0.82rem; font-weight:600; padding:10px; cursor:pointer; margin-top:4px; border-top:1px solid #F1F5F9; }
+.pf-back { display:inline-flex; align-items:center; border:none; background:transparent; color:#2563EB; font-size:0.85rem; font-weight:700; padding:6px 8px 10px; cursor:pointer; }
+.pf-search { display:flex; align-items:center; gap:7px; border:1px solid #E2E8F0; border-radius:10px; padding:7px 11px; margin:0 4px 8px; background:#fff; }
+.pf-search:focus-within { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
+.pf-search input { border:none; outline:none; background:transparent; font-size:0.85rem; color:#1C1C1E; width:100%; }
+.pf-list { max-height:300px; overflow-y:auto; padding:0 2px; }
+.pf-opt { display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:none; background:transparent; padding:7px 10px; border-radius:8px; font-size:0.82rem; font-weight:500; color:#1C1C1E; cursor:pointer; transition:background .1s; }
+.pf-opt:hover { background:#F4F6F9; }
+.pf-opt.on { background:#EAF1FE; }
+.pf-dot { width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+.pf-opt-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pf-check { opacity:0; flex:0 0 auto; }
+.pf-opt.on .pf-check { opacity:1; }
+.pf-empty { padding:18px; text-align:center; color:#A0AAB8; font-size:0.82rem; }
+.pf-range { display:flex; align-items:center; gap:8px; padding:0 6px 4px; }
+.proyf-input { width:100%; box-sizing:border-box; border:1px solid #E2E8F0; border-radius:9px; padding:8px 10px; font-size:0.85rem; color:#1C1C1E; background:#fff; outline:none; }
+.proyf-input:focus { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
+.proyf-dash { color:#94A3B8; }
+.pf-actions { display:flex; gap:8px; padding:12px 6px 4px; }
+.pf-clear { flex:1; padding:9px; border:1px solid #E2E8F0; border-radius:10px; background:#fff; color:#475569; font-size:0.85rem; font-weight:600; cursor:pointer; }
+.pf-clear:hover { background:#F8FAFC; }
+.pf-apply { flex:1.4; padding:9px; border:none; border-radius:10px; background:#2563EB; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; }
+.pf-apply:hover { opacity:.9; }
+/* ── Popover de Periodo (Mes/Año), estilo Oportunidades ── */
+#proyPeriodMenu {
+  right:0; left:auto; min-width:340px; padding:8px;
+  background:#ffffff !important; border:1px solid #E5E7EB !important;
+  box-shadow:0 16px 44px rgba(15,23,42,0.20) !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  z-index:10600 !important;
+}
+.pp-cols { display:flex; gap:6px; }
+.pp-col { flex:1; min-width:0; }
+.pp-col-head { font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#94A3B8; padding:6px 10px 6px; }
+.pp-list { max-height:248px; overflow-y:auto; }
+.pp-opt { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; text-align:left; border:none; background:transparent; padding:7px 10px; border-radius:8px; font-size:0.82rem; font-weight:500; color:#1C1C1E; cursor:pointer; transition:background .1s; }
+.pp-opt:hover { background:#F4F6F9; }
+.pp-opt.on { background:#EAF1FE; color:#1D4ED8; font-weight:600; }
+.pp-ck { flex:0 0 auto; }
+.pp-actions { display:flex; gap:8px; padding:10px 4px 2px; border-top:1px solid #F1F5F9; margin-top:6px; }
+.pp-reset { flex:1; padding:9px; border:1px solid #E2E8F0; border-radius:10px; background:#fff; color:#475569; font-size:0.82rem; font-weight:600; cursor:pointer; }
+.pp-reset:hover { background:#F8FAFC; }
+.pp-apply { flex:1.5; padding:9px; border:none; border-radius:10px; background:#2563EB; color:#fff; font-size:0.82rem; font-weight:700; cursor:pointer; }
+.pp-apply:hover { opacity:.9; }
+</style>
 <div class="proyectos-section" id="proyectosSection">
 
   <!-- Topbar del listado: [Filtro][Ordenar] · cápsula "Proyectos" · [Buscar][+ Nuevo].
@@ -13,29 +117,13 @@
     <div class="proy-topbar-side proy-topbar-left" id="proyTopbarLeft">
       <!-- Filtro dropdown -->
       <div class="proy-facet-wrap" style="position:relative;">
-        <button type="button" class="proy-facet-btn" id="proyFilterBtn" onclick="proyFilterMenuToggle(event)">
+        <button type="button" class="proy-facet-btn" id="proyFilterBtn" onclick="proyFilterOpen(event)">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
           <span id="proyFilterLabel">Filtro</span>
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </button>
-        <div class="proy-facet-menu" id="proyFilterMenu" style="display:none;">
-          <div class="proy-facet-item" data-filter="todos" onclick="proyFilterPick('todos','Todos')">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-            Todos
-          </div>
-          <div class="proy-facet-item" data-filter="active" onclick="proyFilterPick('active','Activos')">
-            <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="10 8 16 12 10 16"/></svg>
-            Activos
-          </div>
-          <div class="proy-facet-item" data-filter="completed" onclick="proyFilterPick('completed','Completados')">
-            <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Completados
-          </div>
-          <div class="proy-facet-item" data-filter="planning" onclick="proyFilterPick('planning','Planificación')">
-            <svg width="14" height="14" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            Planificación
-          </div>
-        </div>
+        <!-- El contenido del menú lo arma proyectos_v2.js (facet de 2 niveles). -->
+        <div class="proy-facet-menu" id="proyFilterMenu" style="display:none;"></div>
       </div>
 
       <!-- Ordenar dropdown -->
@@ -52,6 +140,7 @@
           <div class="proy-facet-item" onclick="proySortPick('monto_asc','Menor monto')">Menor monto</div>
         </div>
       </div>
+
     </div>
 
     <div class="proy-tabs">
@@ -59,6 +148,16 @@
     </div>
 
     <div class="proy-topbar-side proy-topbar-right" id="proyTopbarRight">
+      <!-- Periodo (Mes · Año) — multi-select como Oportunidades. Default: mes y
+           año actuales. El menú lo arma proyectos_v2.js (proyPeriod*). -->
+      <div class="proy-facet-wrap" style="position:relative;">
+        <button type="button" class="proy-facet-btn" id="proyPeriodBtn" onclick="proyPeriodToggle(event)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span id="proyPeriodLabel">Periodo</span>
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="proy-facet-menu" id="proyPeriodMenu" style="display:none;"></div>
+      </div>
       <div class="proy-search-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="proy-search-icon">
           <circle cx="11" cy="11" r="7"/>
@@ -74,8 +173,13 @@
        (Dashboard / Financiero) controlados por proySetMainTab; se eliminaron
        porque esos modos se viven ahora en el Dashboard global. -->
   <div id="proyTabPrograma" style="padding:0 24px 20px;">
-    <!-- Lista de proyectos (estilo CRM list-row, sin color-logic) -->
-    <div id="proyListView">
+    <!-- Vista KANBAN (default) — mismo formato que el kanban de Oportunidades.
+         Las tarjetas las pinta proyectos_v2.js (proyKanbanRender). -->
+    <div class="crm-kanban-board" id="proyKanbanBoard" style="height:calc(100vh - 150px);"></div>
+
+    <!-- Lista de proyectos (estilo CRM list-row, sin color-logic) — oculta por
+         default; se alterna con el toggle de vista. -->
+    <div id="proyListView" style="display:none;">
       <div class="crm-list-head">
         <div class="crm-list-hcell" style="flex:2.6;padding-left:22px;">PROYECTO / CLIENTE</div>
         <div class="crm-list-hcell" style="flex:1;">MONTO</div>
@@ -127,16 +231,14 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           <span>Portafolio</span>
         </button>
-        <span class="proy-v3-topbar-sep" aria-hidden="true">·</span>
-        <!-- Nombre del proyecto como breadcrumb clickable (también vuelve al
-             listado). Lo rellena renderProjectOverview / proyectosVerDetalle. -->
-        <button type="button" class="proy-v3-back proy-v3-crumb-name" id="proyV3CrumbName" onclick="proyectosVolverLista()" title="Volver al portafolio" style="background:transparent;border:none;cursor:pointer;font:inherit;color:inherit;padding:0;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Proyecto</button>
+        {% comment %}
+        Breadcrumb con el nombre del proyecto REMOVIDO: era redundante con el
+        título grande de la tarjeta de abajo. Los IDs (proyV3CrumbName,
+        proyV3CrumbOppSep, proyV3ProjectId) quedan ocultos para no romper el JS
+        que aún los referencia (todos sus accesos son null-guarded igual).
+        {% endcomment %}
+        <button type="button" id="proyV3CrumbName" style="display:none;"></button>
         <span class="proy-v3-topbar-sep" aria-hidden="true" id="proyV3CrumbOppSep" style="display:none;">·</span>
-        <a href="#" class="proy-v3-opp-link" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)" title="Abrir oportunidad ligada">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <span id="proyDetailOppText">—</span>
-        </a>
-        <!-- legacy ID hidden — ya no se muestra en el topbar -->
         <span id="proyV3ProjectId" style="display:none;"></span>
       </div>
 
@@ -189,6 +291,12 @@
       </div>
 
       <div class="proy-v3-topbar-right">
+        <!-- Oportunidad ligada — chip en la esquina superior derecha, antes de
+             los avatares. Clic abre la oportunidad. IDs intactos (JS los usa). -->
+        <a href="#" class="proy-v3-opp-pill" id="proyDetailOppChip" style="display:none;" onclick="proyDetailAbrirOportunidad(event)" title="Abrir oportunidad ligada">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span id="proyDetailOppText">—</span>
+        </a>
         <div class="proy-v3-avatars" id="proyV2AvatarStack"></div>
         <div class="proy-v3-add-member-wrap" style="position:relative;">
           <button class="proy-v3-add-member" type="button" aria-label="Agregar miembro" title="Agregar miembro" onclick="proyDetailAgregarMiembro(event)">
@@ -441,7 +549,7 @@
             </button>
           </div>
         </div>
-        <div class="lev-list-wrap">
+        <div id="proyLevWrap" class="lev-list-wrap">
           <table class="lev-list-table">
             <thead>
               <tr>
@@ -484,7 +592,7 @@
             </button>
           </div>
         </div>
-        <div class="proy-partidas-table-wrap" style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:12px;background:#fff;">
+        <div id="proyPartidasWrap" class="proy-partidas-table-wrap" style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:12px;background:#fff;">
           <table class="proy-partidas-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
             <thead>
               <tr style="background:#F8F9FB;color:#48484A;text-align:left;border-bottom:1px solid rgba(0,0,0,0.06);">
@@ -737,53 +845,131 @@
 
       <!-- TAB: Tareas -->
       <div id="proyPane_tareas" class="proy-tab-pane" style="display:none;">
-        <div class="proy-tab-header">
-          <h3>Tareas del Proyecto</h3>
-          <div class="proy-tab-actions">
-            <button class="proy-btn proy-btn-primary" onclick="proyectosCrearTareaDialogo()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Nueva Tarea
-            </button>
+        {% comment %}
+        Tareas del proyecto — copia fiel del cockpit de la sección Tareas, pero
+        alimentada solo con las tareas de ESTE proyecto (ProyectoTarea + tareas
+        —no actividades— de la oportunidad ligada). Namespaced con #proyTcp* para
+        NO chocar con el módulo real (#tcpList/#tcpDetail). Reutiliza las clases
+        .tcp-* para que el look (greca, secciones, panel) sea idéntico.
+        Lo pinta crm_proyectos.js → renderTareas (proyTcpList / proyTcpDetail).
+        El detalle de una tarea de OPORTUNIDAD se puede expandir a su ventana
+        completa (crmTaskVerDetalle); las de proyecto solo muestran el detalle.
+        {% endcomment %}
+        <div class="proy-tcp-toolbar">
+          <div class="proy-tcp-search">
+            <svg width="13" height="13" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" id="proyTcpSearch" placeholder="Buscar título, oportunidad, responsable…" oninput="proyTcpBuscar(this.value)">
           </div>
+          <button class="proy-tcp-new" onclick="proyNuevaTareaCRM()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Nueva Tarea
+          </button>
         </div>
-        <div class="proy-table-wrap">
-          <table class="proy-table">
-            <thead>
-              <tr>
-                <th>Titulo</th>
-                <th>Origen</th>
-                <th>Prioridad</th>
-                <th>Asignado</th>
-                <th>Fecha Limite</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="proyTareasBody"></tbody>
-          </table>
+        <div class="tcp-shell" id="proyTcpShell">
+          <!-- LISTA (izquierda) — la cabecera greca .tcp-col-head la inyecta el JS -->
+          <div class="tcp-list" id="proyTcpList"></div>
+          <!-- DETALLE / RESUMEN (derecha) -->
+          <aside class="tcp-detail" id="proyTcpDetail"></aside>
         </div>
+        <table style="display:none;"><tbody id="proyTareasBody"></tbody></table>
       </div>
 
-      <!-- TAB: Drive (archivos de la oportunidad vinculada) -->
+      <!-- TAB: Drive (archivos de la oportunidad vinculada). Pane transparente
+           (estadio detrás) con una card blanca interna (#proyDriveCard) que
+           reusa las clases globales .wo-drive-* / .drive-* del widget de
+           oportunidad. La walk _proyTareasBg arranca en #proyDriveCard, que
+           NO se transparenta (queda como tarjeta blanca de contenido). -->
       <div id="proyPane_drive" class="proy-tab-pane" style="display:none;">
-        <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <h3 id="proyDriveTitle">Drive</h3>
+        <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 id="proyDriveTitle" style="margin:0;">Drive</h3>
           <button type="button" id="proyDriveBackBtn" style="display:none;border:none;background:#F1F5F9;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#475569;" onclick="proyDriveNavBack()">
             &larr; Atrás
           </button>
         </div>
-        <div id="proyDriveContainer" style="padding:8px 0;">
-          <div style="text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>
+        <div id="proyDriveCard" style="background:#fff;border:1px solid #E5E5EA;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;position:relative;"
+             ondragenter="proyDriveDragEnter(event)" ondragover="proyDriveDragOver(event)" ondragleave="proyDriveDragLeave(event)" ondrop="proyDriveDrop(event)">
+          <input type="file" id="proyDriveFileInput" multiple style="display:none;" onchange="proyDriveHandleFiles(this.files)">
+
+          <!-- Toolbar: Nueva Carpeta / Subir Archivo + búsqueda + filtro tipo + toggle vista -->
+          <div id="proyDriveToolbar" class="wo-drive-toolbar">
+            <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+              <button type="button" id="proyDriveBtnNuevaCarpeta" class="wo-btn-new" onclick="proyDriveCrearCarpeta()" style="background:#fff;border:1px solid #E5E5EA;color:#1D1D1F;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg> Nueva Carpeta
+              </button>
+              <button type="button" id="proyDriveBtnSubirArchivo" class="wo-btn-new" onclick="document.getElementById('proyDriveFileInput').click()" style="background:#0052D4;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg> Subir Archivo
+              </button>
+            </div>
+            <div class="wo-drive-toolbar-search">
+              <svg width="16" height="16" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="proyDriveSearch" placeholder="Buscar archivos..." autocomplete="off">
+              <button type="button" id="proyDriveSearchClear" class="wo-drive-search-clear" title="Limpiar" aria-label="Limpiar búsqueda" style="display:none;">&times;</button>
+            </div>
+            <div class="wo-drive-toolbar-controls">
+              <label class="wo-drive-select-wrap" title="Filtrar por tipo">
+                <span class="wo-drive-select-label">Tipo</span>
+                <select id="proyDriveFilterTipo">
+                  <option value="todos">Todos</option>
+                  <option value="carpeta">Carpetas</option>
+                  <option value="pdf">PDF</option>
+                  <option value="img">Imágenes</option>
+                  <option value="excel">Excel/CSV</option>
+                  <option value="word">Word/Texto</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </label>
+              <div class="wo-drive-view-toggle" role="group" aria-label="Cambiar vista">
+                <button type="button" id="proyDriveViewGrid" class="wo-drive-view-btn is-active" title="Cuadrícula" aria-label="Vista cuadrícula">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button type="button" id="proyDriveViewList" class="wo-drive-view-btn" title="Lista" aria-label="Vista lista">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropzone + contenido -->
+          <div id="proyDriveDropzone" style="padding:1.25rem;position:relative;min-height:200px;">
+            <div id="proyDriveDragOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,82,212,0.06);border:3px dashed #0052D4;border-radius:12px;z-index:20;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none;">
+              <svg width="48" height="48" fill="none" stroke="#0052D4" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <div style="font-size:1rem;font-weight:700;color:#0052D4;">Suelta los archivos aquí</div>
+            </div>
+
+            <div id="proyDriveLoading" style="display:none;text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>
+
+            <div id="proyDriveEmpty" style="display:none;text-align:center;padding:48px 24px;color:#94A3B8;">
+              <svg width="56" height="56" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              <div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:4px;">Carpeta vacía</div>
+              <div style="font-size:0.85rem;">Sube archivos o crea carpetas aquí. Puedes arrastrar y soltar desde tu computadora.</div>
+            </div>
+
+            <div id="proyDriveNoMatch" style="display:none;text-align:center;padding:40px 24px;color:#94A3B8;">
+              <svg width="48" height="48" fill="none" stroke="#D1D1D6" stroke-width="1.4" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:4px;">Sin coincidencias</div>
+              <div style="font-size:0.85rem;">Ajusta tu búsqueda o filtro para ver más resultados.</div>
+            </div>
+
+            <div id="proyDriveGrid" class="wo-drive-grid drive-view-grid"></div>
+          </div>
         </div>
+        {% comment %}
+        Contenedor legado: lo mantenemos oculto por compatibilidad con código
+        que aún referencie #proyDriveContainer; el render ahora vive en
+        #proyDriveGrid + estados de arriba.
+        {% endcomment %}
+        <div id="proyDriveContainer" style="display:none;"></div>
       </div>
 
       <!-- TAB: Programa de Obra (Instalaciones del proyecto) -->
       <div id="proyPane_programa-obra" class="proy-tab-pane" style="display:none;">
         <div class="proy-tab-header" style="display:flex;align-items:center;justify-content:space-between;">
           <h3>Programa de Obra</h3>
-          <button type="button" id="pobBtnNueva" class="wop-btn-primary" onclick="pobAbrirNueva()" style="display:inline-flex;align-items:center;gap:6px;">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button type="button" id="pobBtnNueva" class="proy-tcp-new" onclick="pobAbrirNueva()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
             Nueva instalación
           </button>
         </div>
@@ -1040,6 +1226,10 @@
       <div class="proy-field">
         <label for="proyTareaTitulo">Titulo</label>
         <input type="text" id="proyTareaTitulo" class="proy-input" placeholder="Titulo de la tarea">
+      </div>
+      <div class="proy-field">
+        <label for="proyTareaDescripcion">Descripcion</label>
+        <textarea id="proyTareaDescripcion" class="proy-input" rows="3" placeholder="Descripcion de la tarea"></textarea>
       </div>
       <div class="proy-field-row">
         <div class="proy-field">

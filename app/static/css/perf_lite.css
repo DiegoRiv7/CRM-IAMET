@@ -1,0 +1,264 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   perf_lite.css — MODO LIGERO para máquinas viejas / con GPU integrada.
+
+   Activado por perf_mode.js añadiendo la clase `body.ww-lite` (manual,
+   auto por hardware, o auto-dinámico cuando la página "sufre"). Apaga los
+   efectos CAROS de repintado/compositing que ahogan a las gráficas
+   integradas de ~2014 (Intel HD/Iris) — SIN quitar funcionalidad:
+
+     · backdrop-filter: blur()  → el efecto más caro en GPU vieja.
+     · filter: brightness()     → recompone TODAS las ventanas de fondo
+                                   en cada frame del arrastre.
+     · box-shadow grandes       → repintado lento al mover/redimensionar.
+     · transiciones/animaciones → instantáneas (cero jank de animación).
+
+   Todo vive bajo `body.ww-lite`: en modo normal este archivo no hace nada.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Cero backdrop-filter (el más caro) ──
+   Scoped a los contenedores de ventanas + CRM/tareas; no global para no
+   afectar superficies que dependan del desenfoque fuera de estos módulos. */
+body.ww-lite .ww-card,
+body.ww-lite #wwDock,
+body.ww-lite .ww-dock-chip,
+body.ww-lite .ww-snap-ghost,
+body.ww-lite .ww-mc-backdrop,
+body.ww-lite .ww-mc-card,
+body.ww-lite .ww-window-picker,
+body.ww-lite .widget-overlay,
+body.ww-lite .crm-task-modal-overlay,
+body.ww-lite .crm-task-modal,
+body.ww-lite .crm-main,
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-postit,
+body.ww-lite .idea-card,
+body.ww-lite .tareas-card,
+body.ww-lite .tcp-card,
+body.ww-lite .crm-kanban-head,
+body.ww-lite .tareas-cal-col-head {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 2. Sin brightness en ventanas de fondo ──
+   Era el mayor costo durante el arrastre (recompone cada ventana). La
+   ventana activa ya queda al frente por z-index; un borde sutil basta. */
+body.ww-lite .ww-windowed:not(.ww-focused) .ww-card {
+    filter: none !important;
+}
+
+/* ── 3. Sombras suaves → borde fino (mismo "flota" visual, repintado barato) ── */
+body.ww-lite .ww-card {
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+}
+body.ww-lite .ww-dock-chip,
+body.ww-lite .ww-snap-ghost,
+body.ww-lite .ww-window-picker {
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.14) !important;
+}
+
+/* ── 4. Animaciones instantáneas ──
+   Las del modo ventana (windowize/minimize/restore/FLIP) y el velo de
+   fondo. El JS tiene fallback por setTimeout, así que cerrar/minimizar
+   sigue funcionando aunque no haya transitionend. */
+body.ww-lite .ww-card,
+body.ww-lite .ww-dock-chip,
+body.ww-lite #wwDock,
+body.ww-lite .ww-mc-card,
+body.ww-lite .ww-mc-backdrop {
+    transition: none !important;
+    animation: none !important;
+}
+body.ww-lite::after,
+body.ww-lite::before {
+    transition: none !important;
+}
+
+/* ── 5. CRM + Tareas: apagar las animaciones más visibles (hover/transform) ──
+   En máquinas viejas, los transform/scale en hover de las tarjetas son
+   las que más se "sienten". Las dejamos sin transición (cambio instantáneo,
+   no se rompe ningún estado). Scoped a las cards de estos módulos. */
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-postit,
+body.ww-lite .idea-card,
+body.ww-lite .tareas-card,
+body.ww-lite .tcp-card,
+body.ww-lite .crm-list-row,
+body.ww-lite .proy-detail-card,
+body.ww-lite .crm-kanban-card:hover,
+body.ww-lite .crm-postit:hover {
+    transition: none !important;
+    animation: none !important;
+}
+body.ww-lite .crm-kanban-card:hover,
+body.ww-lite .crm-postit:hover,
+body.ww-lite .idea-card:hover,
+body.ww-lite .tareas-card:hover,
+body.ww-lite .crm-list-row:hover {
+    transform: none !important;
+}
+
+/* ── 6. La foto de la cancha del Tema Mundial: sin parallax/efectos extra
+   (se queda la imagen fija, ya es barata). Aquí solo aseguramos que el
+   ::before del fondo no lleve filtros costosos si algún día se agregan. */
+body.ww-lite[data-theme="mundial"]::before {
+    filter: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   "LOOK 2015" — aplanado agresivo de CRM / Ideas / Prospección /
+   Oportunidades / Proyectos. Todo bajo body.ww-lite (en modo normal, nada).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 7. MATAR animaciones INFINITAS (el mayor costo oculto) ──
+   Pulsos de urgencia que repintan SIN PARAR en cada tarjeta vencida —
+   con un kanban lleno son decenas de repintados por segundo. En ligero
+   la tarjeta se queda roja FIJA (misma señal visual, cero costo). */
+body.ww-lite .crm-list-strip,
+body.ww-lite .crm-postit,
+body.ww-lite .crm-postit-strip,
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-list-row,
+body.ww-lite .crm-alert-icon,
+body.ww-lite .dashi-live-dot,
+body.ww-lite [class*="heat"],
+body.ww-lite [class*="illuminate"],
+body.ww-lite [class*="pulse"],
+body.ww-lite [class*="-live"],
+body.ww-lite .proy-v2-pulse,
+body.ww-lite .asist-orb,
+body.ww-lite .asist-orb-ring,
+body.ww-lite .asist-orb-core {
+    animation: none !important;
+}
+
+/* ── 8. Sombras → planas (separación con borde fino) en TODAS las
+   superficies de estos módulos. Las sombras suaves son lo que más
+   cuesta repintar al hacer scroll con muchas tarjetas. ── */
+body.ww-lite .crm-kanban-col,
+body.ww-lite .crm-kanban-card,
+body.ww-lite .crm-postit,
+body.ww-lite .crm-list-row,
+body.ww-lite .crm-card,
+body.ww-lite .idea-card,
+body.ww-lite .tareas-card,
+body.ww-lite .tcp-card,
+body.ww-lite .wo-card,
+body.ww-lite .wo-quick-card,
+body.ww-lite .widget-card,
+body.ww-lite .widget-card-lg,
+body.ww-lite .proy-detail-card,
+body.ww-lite .proy-v3-kpi-strip,
+body.ww-lite .proy-v3-dash-card,
+body.ww-lite .proy-tab-pane,
+body.ww-lite #proyListView .crm-list-row {
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.10) !important;
+}
+
+/* ── 9. Cero transiciones/animaciones de entrada en el contenido de
+   estos módulos (cambios instantáneos = sin jank de animación). Scoped a
+   los contenedores principales para no tocar timers que dependan de
+   transitionend fuera del CRM. ── */
+body.ww-lite .crm-content .crm-kanban-card,
+body.ww-lite .crm-content .crm-postit,
+body.ww-lite .crm-content .crm-list-row,
+body.ww-lite .crm-content .idea-card,
+body.ww-lite .crm-content .wo-info-item,
+body.ww-lite .opp-v2 .wo-card,
+body.ww-lite .opp-v2 .wo-info-item,
+body.ww-lite .opp-v2 .wo-pipeline-stage,
+body.ww-lite #widgetProspecto .wo-card,
+body.ww-lite #widgetIdea .idea-detail-card,
+body.ww-lite #widgetProyectoDetalle .proy-tab-pane,
+body.ww-lite #widgetProyectoDetalle .proy-v3-dash-card {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ── 10. Sin transform en hover de pills/tabs de estos módulos
+   (el "levantar" en hover repinta; en ligero, sin movimiento). ── */
+body.ww-lite .wo-pipeline-stage:hover,
+body.ww-lite .proy-v3-topbar-tab:hover,
+body.ww-lite .crm-tab:hover,
+body.ww-lite .crm-kanban-card:hover,
+body.ww-lite .crm-postit:hover {
+    transform: none !important;
+}
+
+/* ── 11. CLAVE para el arrastre fluido de oportunidades/prospecto/idea ──
+   Estas ventanas NO son iframe (son DOM en la página). Cualquier
+   backdrop-filter ADENTRO crea una sub-capa que re-evalúa lo que tiene
+   detrás en CADA frame al mover la ventana → el arrastre se arrastra.
+   El iframe de tarea no sufre esto porque está aislado en su documento.
+   En ligero matamos TODO backdrop-filter dentro del contenido de la
+   ventana → mover = composite puro de UNA capa, igual de fluido que el
+   iframe. (Scoped a las ventanas, no global.) */
+body.ww-lite .opp-v2 *,
+body.ww-lite #widgetDetalle *,
+body.ww-lite #widgetProspecto *,
+body.ww-lite #widgetIdea *,
+body.ww-lite #widgetClienteOportunidades *,
+body.ww-lite .crm-task-modal * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 12. Durante el arrastre, promover TODAS las ventanas a su propia
+   capa GPU (como los iframes). Así, al solaparse, la zona que se
+   descubre se recompone de su capa (barato) en vez de repintar el DOM
+   pesado de la ventana de atrás. Solo durante el drag → sin costo de
+   memoria en reposo. */
+body.ww-dragging .ww-windowed:not(.ww-minimized) .ww-card {
+    will-change: transform;
+}
+
+/* ── 13. Quitar el ORBE del asistente en las ventanas (lite) ──
+   Sus anillos usan transform → cada uno es una SUB-CAPA dentro de la
+   ventana, lo que impide tratar la ventana como una capa plana única al
+   arrastrar. En ligero se oculta (el asistente sigue disponible desde
+   su acceso global). */
+body.ww-lite .wo-asist-btn-title,
+body.ww-lite .asist-orb {
+    display: none !important;
+}
+
+/* ── 14. Aislar el layout de cada ventana (contain:layout) ──
+   Aísla el recálculo de layout de la ventana del resto del documento, sin
+   recortar (NO usamos 'paint' para no cortar popovers que escapen del
+   card, como los pickers de etapa/fecha). Bajo riesgo, ayuda a que mover
+   una ventana no toque el layout de lo demás. */
+body.ww-lite .ww-windowed:not(.ww-minimized) .ww-card {
+    contain: layout;
+}
+
+/* ── CROSSFADE de cambio de modo ──
+   Clase TRANSITORIA (no bajo ww-lite): perf_mode.js la pone ~460ms al
+   alternar modo para que sombras/blur/brillo aparezcan/desaparezcan con
+   transición — sobre todo al SUBIR a completo, que no sea "de golpe". */
+body.ww-fx-fade .ww-card,
+body.ww-fx-fade .crm-kanban-col,
+body.ww-fx-fade .crm-kanban-card,
+body.ww-fx-fade .crm-postit,
+body.ww-fx-fade .idea-card,
+body.ww-fx-fade .tareas-card,
+body.ww-fx-fade .tcp-card,
+body.ww-fx-fade .wo-card,
+body.ww-fx-fade .widget-card,
+body.ww-fx-fade .widget-card-lg,
+body.ww-fx-fade .crm-list-row,
+body.ww-fx-fade .proy-detail-card,
+body.ww-fx-fade .proy-v3-dash-card {
+    transition: box-shadow .42s ease, filter .42s ease, background-color .42s ease,
+                -webkit-backdrop-filter .42s ease, backdrop-filter .42s ease !important;
+}
+
+/* ── 15. Aplanar SUB-CAPAS dentro del contenido de la ventana ──
+   Cualquier hijo con will-change / filter / transform propio crea su
+   capa y encarece mover la ventana. En ligero los neutralizamos para
+   que la ventana sea UNA sola capa lisa (lo que hace fluido al iframe). */
+body.ww-lite .opp-v2 .wo-content *,
+body.ww-lite #widgetProspecto .wo-content *,
+body.ww-lite #widgetIdea .idea-detail-card * {
+    will-change: auto !important;
+    filter: none !important;
+}

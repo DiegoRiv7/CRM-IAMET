@@ -20,6 +20,7 @@ from . import views_ideas
 from . import views_asistente
 from . import views_asistente_ideas
 from . import views_asistente_prospeccion
+from . import views_widget_pages
 from . import views_asistente_oportunidades
 from . import views_asistente_calendario
 from . import views_sync
@@ -200,6 +201,10 @@ urlpatterns = [
     path('api/admin/contactos/', views.api_admin_contactos, name='api_admin_contactos'),
     path('api/admin/metas/', views.api_admin_metas, name='api_admin_metas'),
     path('api/admin/permisos/<int:user_id>/', views.api_admin_permisos, name='api_admin_permisos'),
+    path('api/admin/perf/stats/', views.api_admin_perf_stats, name='api_admin_perf_stats'),
+
+    # ── Telemetría Modo Ligero ────────────────────────────────────────────────
+    path('api/perf/evento/', views.api_perf_evento, name='api_perf_evento'),
 
     # ── APIs Marketing Hub ────────────────────────────────────────────────────
     path('api/marketing/recursos/', views_marketing.api_marketing_recursos_list, name='api_marketing_recursos_list'),
@@ -288,11 +293,13 @@ urlpatterns = [
     path('api/programacion/disponibilidad/', views.api_programacion_disponibilidad, name='api_programacion_disponibilidad'),
     path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
     path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),
+    path('api/actividades/<int:pk>/resultado/archivos/', views.actividad_resultado_archivo_upload, name='actividad_resultado_archivo_upload'),
     path('api/calendario/usuarios-con-eventos/', views.api_calendario_usuarios_con_eventos, name='api_calendario_usuarios_con_eventos'),
     path('api/calendario/seleccionables-responsable/', views.api_calendario_seleccionables_responsable, name='api_calendario_seleccionables_responsable'),
     # Calendario de Instalaciones (toggle alternativo en el header del calendario).
     path('api/calendario/instalaciones/', views_proyectos.api_instalaciones_calendario, name='api_instalaciones_calendario'),
     path('api/calendario/instalaciones/grid/', views_proyectos.api_grid_tecnicos, name='api_grid_tecnicos'),
+    path('api/calendario/equipo/grid/', views_proyectos.api_grid_equipo, name='api_grid_equipo'),
     # 'proyectos-ligados' (no 'proyectos') para no chocar con la ruta histórica
     # /api/oportunidad/<id>/proyectos/ que usa ProyectoOportunidadLink (sugerencias automáticas).
     path('api/oportunidad/<int:oportunidad_id>/proyectos-ligados/', views_proyectos.api_oportunidad_proyectos_ligados, name='api_oportunidad_proyectos_ligados'),
@@ -301,6 +308,7 @@ urlpatterns = [
     path('api/proyecto/<int:proyecto_id>/instalaciones/', views_proyectos.api_proyecto_instalaciones, name='api_proyecto_instalaciones'),
     path('api/proyecto/<int:proyecto_id>/instalacion-defaults/', views_proyectos.api_proyecto_instalacion_defaults, name='api_proyecto_instalacion_defaults'),
     path('api/instalacion/<int:instalacion_id>/', views_proyectos.api_instalacion_detalle, name='api_instalacion_detalle'),
+    path('api/instalacion/<int:instalacion_id>/reagendar/', views_proyectos.api_instalacion_reagendar, name='api_instalacion_reagendar'),
     path('api/instalacion/<int:instalacion_id>/asignaciones/', views_proyectos.api_instalacion_asignaciones, name='api_instalacion_asignaciones'),
     path('api/instalacion/<int:instalacion_id>/asignaciones/<int:asignacion_id>/', views_proyectos.api_instalacion_asignacion_detalle, name='api_instalacion_asignacion_detalle'),
     path('api/tecnicos/', views_proyectos.api_tecnicos_list, name='api_tecnicos_list'),
@@ -348,6 +356,13 @@ urlpatterns = [
     path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
     # Página oculta (sin link en el menú) para administrar el fondo del tema Mundial.
     path('config/fondo-mundial/', views.fondo_mundial_admin, name='fondo_mundial_admin'),
+
+    # Páginas standalone de widgets (cuerpo de ventanas-iframe — ver views_widget_pages)
+    path('widget/drive/<int:oportunidad_id>/', views_widget_pages.widget_drive_page, name='widget_drive_page'),
+    path('widget/prospecto/<int:prospecto_id>/', views_widget_pages.widget_prospecto_page, name='widget_prospecto_page'),
+    path('widget/idea/<int:idea_id>/', views_widget_pages.widget_idea_page, name='widget_idea_page'),
+    path('widget/actividad/idea/<int:idea_id>/', views_widget_pages.widget_actividad_idea_page, name='widget_actividad_idea_page'),
+    path('widget/tarea/<int:tarea_id>/', views_widget_pages.widget_tarea_page, name='widget_tarea_page'),
     path('api/perfil/solicitar-cambio/', views.api_solicitar_cambio_perfil, name='api_solicitar_cambio_perfil'),
     path('api/perfil/procesar-solicitud/<int:solicitud_id>/', views.api_procesar_solicitud_perfil, name='api_procesar_solicitud_perfil'),
 

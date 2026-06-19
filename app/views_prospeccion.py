@@ -316,19 +316,28 @@ def api_crear_prospecto(request):
         except Contacto.DoesNotExist:
             pass
 
-    # Asignación: por defecto el creador. Si viene `usuario_id` y el caller
-    # es supervisor o administrador, se respeta esa asignación.
+    # Asignación: por defecto el creador ("Asignar a mí"). Si viene `usuario_id`
+    # se respeta la asignación según permisos:
+    #   - Supervisores / administradores → pueden asignar a CUALQUIER usuario.
+    #   - Usuarios normales (vendedor/ingeniero) → solo a miembros de su grupo
+    #     (validado con get_usuarios_visibles_ids; self siempre permitido).
     asignar_a = request.user
     es_sup_o_admin = is_supervisor(request.user) or is_administrador(request.user)
     usuario_id = data.get('usuario_id')
-    asignacion_externa = False  # supervisor/admin asigna a OTRO vendedor
-    if usuario_id and es_sup_o_admin:
+    asignacion_externa = False  # se asigna a OTRO usuario (no al creador)
+    if usuario_id:
         from django.contrib.auth.models import User
         try:
-            asignar_a = User.objects.get(id=int(usuario_id))
+            target = User.objects.get(id=int(usuario_id))
         except (User.DoesNotExist, ValueError, TypeError):
             return JsonResponse({'success': False, 'error': 'Usuario asignado no encontrado'}, status=400)
-        if asignar_a.id != request.user.id:
+        if target.id != request.user.id:
+            if not es_sup_o_admin:
+                # Usuario normal: el destino debe estar en su grupo.
+                visibles = get_usuarios_visibles_ids(request.user)
+                if visibles is not None and target.id not in visibles:
+                    return JsonResponse({'success': False, 'error': 'Solo puedes asignar a miembros de tu grupo'}, status=403)
+            asignar_a = target
             asignacion_externa = True
 
     # Si supervisor/admin asigna a otro vendedor, EXIGIR actividad inicial.

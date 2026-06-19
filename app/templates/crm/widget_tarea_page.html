@@ -1,0 +1,158 @@
+{% load static %}{% load l10n %}<!DOCTYPE html>
+{% comment %}
+Detalle de TAREA como página (cuerpo de una ventana-iframe) — multi-tarea.
+La lógica del modal vive en crm_main.js (crmTaskVerDetalle y compañía),
+que ya tiene precedente de cargar en páginas sin el DOM completo del CRM
+(p.ej. /app/reportes/) gracias a sus null-guards. Se incluye también
+_widget_oportunidad.html: el modal usa sus satélites (drive, actividad)
+y helpers compartidos.
+{% endcomment %}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tarea</title>
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260616-tw-tray-align">
+    <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260615-tw-menu">
+    <style>
+        body[data-theme="mundial"]::before { display: none !important; }
+        html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
+        /* El modal de tarea ES la página: sin backdrop ni centrado.
+           El cierre vive en la X de la ventana padre. */
+        #crmTaskDetailModal {
+            display: flex !important;
+            position: static !important;
+            inset: auto !important;
+            background: transparent !important;
+            width: 100vw; height: 100vh;
+            padding: 0 !important;
+            backdrop-filter: none !important;
+        }
+        #crmTaskDetailModal > * {
+            width: 100% !important;
+            max-width: none !important;
+            height: 100vh !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+        #crmTaskDetailModal .crm-tw-icon-btn[onclick*="CerrarModal"] { display: none !important; }
+        /* El marco de la ventana ya aporta la barra greca con el título y los
+           controles [— □ ×]. El header del widget se DE-GRECA → tira de
+           acciones CLARA (breadcrumb / link / 3-puntos / historial), sin
+           duplicar la greca (la 'segunda barra' del screenshot). */
+        #crmTaskDetailModal .crm-tw-header {
+            background: #ffffff !important;
+            background-image: none !important;
+            border-bottom: 1px solid rgba(15,23,42,0.08) !important;
+            border-radius: 0 !important;
+        }
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn svg,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-crumb-pill,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-cliente-crumb,
+        #crmTaskDetailModal .crm-tw-header .crm-tw-chev {
+            color: #475569 !important;
+        }
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn:hover {
+            background: #F1F5F9 !important;
+        }
+        #crmTaskDetailModal .crm-tw-header .crm-tw-icon-btn:hover svg {
+            color: #1E293B !important;
+        }
+        #crmTaskDetailModal .crm-tw-header-divider { background: rgba(15,23,42,0.1) !important; }
+    </style>
+    <script>
+        /* Shims de los globals del CRM home. _CRM_CONFIG mínimo ANTES de
+           crm_main.js (lo lee al evaluar); tabActivo 'widget' evita los
+           switches de vista por default. */
+        var _CRM_CONFIG = {
+            vendedoresFilter: '',
+            tabActivo: 'widget',
+            mesFiltro: '',
+            anioFiltro: '',
+            usuarioNombre: '{{ request.user.get_full_name|default:request.user.username|escapejs }}',
+            usuarioAvatar: '{{ request.user.userprofile.get_avatar_url|default:""|escapejs }}',
+            userId: parseInt("{{ request.user.id|unlocalize }}") || -1,
+            isSuperuser: "{{ request.user.is_superuser|yesno:'true,false' }}" === "true",
+            esSupervisor: "{{ es_supervisor|yesno:'true,false' }}" === "true",
+            esAdministrador: "{{ es_administrador|yesno:'true,false' }}" === "true",
+            esIngeniero: "{{ es_ingeniero|yesno:'true,false' }}" === "true",
+            etapasPipeline: [],
+        };
+        window._CRM_CONFIG = _CRM_CONFIG;
+        window.crmReady = function (fn) {
+            if (document.readyState !== 'loading') { try { fn(); } catch (e) { } }
+            else document.addEventListener('DOMContentLoaded', function () { try { fn(); } catch (e) { } });
+        };
+        window.crmDataBus = window.crmDataBus || {
+            on: function () { return function () { }; },
+            emit: function () { },
+        };
+        window.getCsrf = window.getCsrf || function () {
+            var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+            return v ? v.pop() : '';
+        };
+        window.showToast = window.showToast || function (msg) { try { console.log('[toast]', msg); } catch (e) { } };
+    </script>
+</head>
+<body data-theme="{{ request.user.userprofile.theme|default:'mundial' }}">
+    <form style="display:none;">{% csrf_token %}</form>
+    {% include "crm/_widget_tarea_detalle.html" %}
+    {% include "crm/_widget_oportunidad.html" %}
+    <script src="{% static 'js/widget_toast.js' %}?v=20260603-toast-global"></script>
+    <script src="{% static 'js/crm_main.js' %}?v=20260618-table-okguard"></script>
+    <script>
+        (function () {
+            // Drive desde esta tarea: el iframe no puede poner ventanas en el
+            // escritorio del padre → se lo delega. Devuelve true para que
+            // crmTaskAbrirDrive NO abra el overlay modal dentro del iframe.
+            window._taskDriveAsWindow = function (oppId) {
+                if (!oppId) return false;
+                try {
+                    window.parent.postMessage({ type: 'open-task-drive', oppId: oppId }, window.location.origin);
+                    return true;
+                } catch (e) { return false; }
+            };
+            // Esta página NO incluye el widget de notificaciones (vive en el
+            // escritorio padre). crm_main.js llama notifLoad() tras completar /
+            // aplazar / comentar la tarea; aquí ese notifLoad reenvía la orden al
+            // padre por postMessage para que su cajón retire al instante la notif
+            // de vencimiento (el server ya la borró en el save). Sin esto el
+            // usuario tenía que cerrar y reabrir las notificaciones para verlo.
+            window.notifLoad = function () {
+                try {
+                    window.parent.postMessage({ type: 'notif-refresh' }, window.location.origin);
+                } catch (e) { }
+            };
+            function boot() {
+                try {
+                    if (typeof window.crmTaskVerDetalle === 'function') {
+                        window.crmTaskVerDetalle({{ tarea_id|unlocalize }});
+                    } else {
+                        document.body.innerHTML = '<div style="padding:2rem;color:#FF3B30;font-size:0.9rem;">crmTaskVerDetalle no disponible</div>';
+                    }
+                } catch (e) {
+                    document.body.innerHTML = '<div style="padding:2rem;color:#FF3B30;font-size:0.9rem;">No se pudo cargar la tarea: ' + (e && e.message) + '</div>';
+                }
+            }
+            // crm_main hace su wireup en crmReady (DOMContentLoaded aquí);
+            // abrimos la tarea un tick después para que ya esté cableado.
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 50); });
+            } else { setTimeout(boot, 50); }
+            // Subir el título real al marco de la ventana padre ("Tarea — X").
+            var _ttl = 0;
+            var _ttlTimer = setInterval(function () {
+                _ttl++;
+                var el = document.getElementById('crm-task-titulo');
+                var txt = el && (el.textContent || '').trim();
+                if (txt) {
+                    try { window.parent.postMessage({ type: 'widget-title', title: 'Tarea — ' + txt }, window.location.origin); } catch (e) { }
+                    clearInterval(_ttlTimer);
+                } else if (_ttl > 60) { clearInterval(_ttlTimer); }
+            }, 200);
+        })();
+    </script>
+</body>
+</html>

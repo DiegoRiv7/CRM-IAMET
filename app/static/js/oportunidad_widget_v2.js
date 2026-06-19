@@ -110,6 +110,53 @@
     function isWindowed(inst) { return inst.root.classList.contains('ww-windowed'); }
     function isMinimized(inst) { return inst.root.classList.contains('ww-minimized'); }
 
+    /* ── Sub-widgets como VENTANA cuando la opp está en ventana ─────
+       Drive, Conversación, Actividad y Todas-las-tareas son overlays
+       SINGLETON del legacy: abiertos desde una opp windowizada tapaban
+       TODO el escritorio (modal fullscreen sobre las demás ventanas).
+       Regla: si la opp que los abre está en ventana, el sub-widget
+       también — en cascada junto a ella. Al cerrarse, widget_window lo
+       regresa a modal (el estado ventana no persiste), así el flujo
+       modal clásico queda intacto cuando la opp es modal. Se llama
+       DESPUÉS del opener legacy (que ya lo dejó visible). */
+    function openSubWindowed(inst, overlayId) {
+        if (!inst || !isWindowed(inst)) return;          // modo modal clásico
+        var ww = window.crmWidgetWindow;
+        if (!ww || typeof ww.windowize !== 'function') return;
+        var ov = document.getElementById(overlayId);
+        if (!ov || !ov.classList.contains('widget-overlay')) return;
+        if (ov.classList.contains('ww-windowed')) {
+            // Ya está en ventana (p.ej. el drive de OTRA opp): el opener
+            // legacy ya re-apuntó su contenido al nuevo foco — solo
+            // traerla al frente.
+            if (window.crmWidgetStack) {
+                window.crmWidgetStack.remove(ov);
+                window.crmWidgetStack.push(ov);
+            }
+            return;
+        }
+        try { ww.enhance(ov); } catch (e) { }
+        var r = null;
+        try {
+            var card = inst.root.querySelector('.ww-card') || inst.root.firstElementChild;
+            var b = card ? card.getBoundingClientRect() : null;
+            var vw = window.innerWidth, vh = window.innerHeight;
+            // Formularios compactos: ventana a la medida del contenido —
+            // con el tamaño genérico quedaban como sábana blanca vacía.
+            var pref = {
+                widgetOppCrearActividad: { w: 620, h: 560 },
+                widgetOppVerActividad: { w: 640, h: 600 },
+                widgetTodasTareas: { w: 780, h: 680 },
+            }[overlayId] || null;
+            var w = Math.min(pref ? pref.w : Math.min(Math.round(vw * 0.46), 880), vw - 24);
+            var h = Math.min(pref ? pref.h : Math.min(Math.round(vh * 0.74), 740), vh - 24);
+            var x = b ? Math.round(Math.min(b.left + 56, vw - w - 12)) : Math.round((vw - w) / 2);
+            var y = b ? Math.round(Math.min(b.top + 56, vh - h - 12)) : Math.round((vh - h) / 2);
+            r = { x: Math.max(8, x), y: Math.max(8, y), w: w, h: h };
+        } catch (e) { r = null; }
+        ww.windowize(ov, r);
+    }
+
     function bringFront(inst) {
         if (window.crmWidgetStack) {
             window.crmWidgetStack.remove(inst.root);
@@ -252,17 +299,30 @@
                 setFocus(inst);
                 if (inst.actividadId && typeof window.woVerActividad === 'function') {
                     window.woVerActividad(inst.actividadId);
+                    openSubWindowed(inst, 'widgetOppVerActividad');
                 } else if (typeof window.woAbrirWidgetCrearActividad === 'function') {
                     window.woAbrirWidgetCrearActividad();
+                    openSubWindowed(inst, 'widgetOppCrearActividad');
                 }
                 break;
             case 'abrir-drive':
                 setFocus(inst);
-                if (typeof window.woAbrirGestorDrive === 'function') window.woAbrirGestorDrive();
+                if (isWindowed(inst)) {
+                    // Multi-drive real: una ventana-iframe POR oportunidad
+                    // (página standalone /app/widget/drive/<id>/ — el
+                    // singleton legacy se instancia gratis dentro del
+                    // iframe, mismo truco que el cotizador).
+                    openDriveWindow(inst);
+                } else if (typeof window.woAbrirGestorDrive === 'function') {
+                    window.woAbrirGestorDrive();
+                }
                 break;
             case 'abrir-conversacion':
                 setFocus(inst);
-                if (typeof window.woAbrirGestorConversacion === 'function') window.woAbrirGestorConversacion();
+                if (typeof window.woAbrirGestorConversacion === 'function') {
+                    window.woAbrirGestorConversacion();
+                    openSubWindowed(inst, 'widgetOppConversacion');
+                }
                 break;
             case 'abrir-asistente':
                 setFocus(inst);
@@ -291,7 +351,8 @@
 
     /* ── Apertura / política de instancias ────────────────────────── */
 
-    function open(oppId) {
+    function open(oppId, opts) {
+        opts = opts || {};
         var id = parseInt(String(oppId).replace(/[^\d]/g, ''), 10);
         if (!id || isNaN(id)) return;
 
@@ -302,6 +363,11 @@
         if (same) {
             same.root.classList.remove('ww-minimized');  // restaura del dock si aplica
             same.root.style.display = 'flex';
+            // Si nos piden ventana (p.ej. desde una notificación) y está como
+            // modal, acomodarla como ventana con el rect dado (cabe a la izq).
+            if (opts.asWindow && opts.rect && !isWindowed(same) && window.crmWidgetWindow) {
+                try { window.crmWidgetWindow.windowize(same.root, opts.rect); } catch (e) { }
+            }
             bringFront(same);
             load(same, id);
             return;
@@ -327,19 +393,31 @@
                 });
                 target.root.style.display = 'flex';
                 // Si ya hay ventanas abiertas, la nueva nace como ventana en
-                // cascada (no como modal que taparía a las demás).
-                if (others.length && window.crmWidgetWindow) {
+                // cascada (no como modal que taparía a las demás). Con
+                // opts.asWindow (p.ej. abierta desde el buscador) SIEMPRE
+                // nace como ventana flotante, para que aparezca sobre la
+                // sección actual (tareas, ideas, etc.) sin taparla entera.
+                if ((others.length || opts.asWindow) && window.crmWidgetWindow) {
                     var vw = window.innerWidth, vh = window.innerHeight;
                     var w = Math.min(Math.round(vw * 0.62), 1150);
                     var h = Math.round(vh * 0.8);
                     var n = others.length;
-                    window.crmWidgetWindow.windowize(target.root, {
+                    // opts.rect (p.ej. abierta desde una notificación con el
+                    // cajón abierto) fija una posición/tamaño explícitos para
+                    // que la ventana quepa A LA IZQUIERDA del cajón, sin taparlo.
+                    window.crmWidgetWindow.windowize(target.root, opts.rect || {
                         x: Math.max(10, Math.min(40 + n * 38, vw - w - 16)),
                         y: Math.max(8, Math.min(28 + n * 34, vh - h - 12)),
                         w: w, h: h,
                     });
                 }
             }
+        }
+
+        // asWindow + rect explícito sobre una instancia REUSADA como modal
+        // (no recién creada) → convertirla a ventana acomodada a la izquierda.
+        if (opts.asWindow && opts.rect && target && !isWindowed(target) && !isMinimized(target) && window.crmWidgetWindow) {
+            try { window.crmWidgetWindow.windowize(target.root, opts.rect); } catch (e) { }
         }
 
         load(target, id);
@@ -388,7 +466,11 @@
                 // Proyectos Bitrix24: abrir el Drive automáticamente.
                 if (data.tipo_negociacion === 'bitrix_proyecto') {
                     setTimeout(function () {
-                        if (typeof window.woAbrirGestorDrive === 'function') window.woAbrirGestorDrive();
+                        if (isWindowed(inst)) {
+                            openDriveWindow(inst);
+                        } else if (typeof window.woAbrirGestorDrive === 'function') {
+                            window.woAbrirGestorDrive();
+                        }
                     }, 150);
                 }
             })
@@ -1061,7 +1143,10 @@
                     btn.textContent = 'Ver todas (' + tareas.length + ')';
                     btn.addEventListener('click', function () {
                         setFocus(inst);
-                        if (typeof window.woAbrirTodasTareas === 'function') window.woAbrirTodasTareas(oppId);
+                        if (typeof window.woAbrirTodasTareas === 'function') {
+                            window.woAbrirTodasTareas(oppId);
+                            openSubWindowed(inst, 'widgetTodasTareas');
+                        }
                     });
                     more.appendChild(btn);
                     container.appendChild(more);
@@ -1274,7 +1359,7 @@
 
     var cotWindows = {};  // key -> overlay
 
-    function openCotWindow(key, src, titulo, inst) {
+    function openCotWindow(key, src, titulo, inst, opts) {
         var existing = cotWindows[key];
         if (existing && document.body.contains(existing)) {
             existing.classList.remove('ww-minimized');
@@ -1314,12 +1399,18 @@
         }
         // Si la opp está en modo ventana, el cotizador también nace como
         // ventana (encimada con offset) para no tapar a las demás.
-        if (inst && isWindowed(inst) && window.crmWidgetWindow) {
+        // opts.forceWindow: nace como ventana sin opp ligada (p.ej. las
+        // ventanas de prospecto que abre prospecto_windows.js).
+        if (((inst && isWindowed(inst)) || (opts && opts.forceWindow)) && window.crmWidgetWindow) {
             var vw = window.innerWidth, vh = window.innerHeight;
-            var w = Math.min(Math.round(vw * 0.72), 1400);
-            var h = Math.round(vh * 0.86);
+            var w = (opts && opts.w)
+                ? Math.min(opts.w, vw - 24)
+                : Math.min(Math.round(vw * ((opts && opts.wf) || 0.72)), (opts && opts.maxw) || 1400);
+            var h = (opts && opts.h)
+                ? Math.min(opts.h, vh - 24)
+                : Math.round(vh * ((opts && opts.hf) || 0.86));
             var n = Object.keys(cotWindows).length;
-            window.crmWidgetWindow.windowize(ov, {
+            window.crmWidgetWindow.windowize(ov, (opts && opts.rect) || {
                 x: Math.max(8, Math.min(60 + n * 30, vw - w - 12)),
                 y: Math.max(6, Math.min(20 + n * 26, vh - h - 8)),
                 w: w, h: h,
@@ -1338,9 +1429,15 @@
             if (window.crmWidgetStack) window.crmWidgetStack.remove(ov);
             ov.remove();
         }, 200);
-        // Refrescar la opp ligada (lista de cotizaciones) + kanban.
-        if (inst && alive(inst) && isVisible(inst)) load(inst, inst.oppId);
-        if (window.crmDataBus && inst) window.crmDataBus.emit('oportunidad', 'update', inst ? inst.oppId : null);
+        // Refrescar la opp ligada (lista de cotizaciones) + kanban — SOLO
+        // al cerrar un cotizador (pudo crear/editar una cotización). Las
+        // ventanas de drive no cambian la card de la opp: recargarla hacía
+        // un flash de "Cargando oportunidad" gratuito al cerrar el drive.
+        var esCotizador = String(key).indexOf('drive:') !== 0;
+        if (esCotizador) {
+            if (inst && alive(inst) && isVisible(inst)) load(inst, inst.oppId);
+            if (window.crmDataBus && inst) window.crmDataBus.emit('oportunidad', 'update', inst ? inst.oppId : null);
+        }
     }
 
     function openCotizadorV2(oppId, inst) {
@@ -1359,8 +1456,60 @@
         openCotWindow('cot:' + id, '/app/cotizacion/' + id + '/editar/?widget_mode=1', 'Editar cotización #' + id, inst || null);
     }
 
+    // Infraestructura de ventanas-iframe expuesta para otros módulos
+    // (prospecto_windows.js la usa para el multi-prospecto).
+    window.crmIframeWindow = {
+        open: openCotWindow,
+        close: closeCotWindow,
+        get: function (key) { return cotWindows[key] || null; },
+        // Descriptores reabribles de las ventanas-iframe ABIERTAS (no
+        // minimizadas-fantasma): {key, src, title}. Lo usa window_session.js
+        // para el snapshot de restauración tras reload.
+        list: function () {
+            var out = [];
+            for (var key in cotWindows) {
+                var ov = cotWindows[key];
+                if (!ov || !document.body.contains(ov)) continue;
+                var ifr = ov.querySelector('iframe');
+                var t = ov.querySelector('[data-cot-title]');
+                if (ifr && ifr.src) {
+                    out.push({
+                        key: key,
+                        src: ifr.getAttribute('src') || ifr.src,
+                        title: (t && t.textContent) || ov.getAttribute('data-widget-title') || '',
+                    });
+                }
+            }
+            return out;
+        },
+    };
+
+    // Drive como ventana-iframe (key 'drive:<oppId>'): reabre/trae al
+    // frente si ya existe — un drive POR oportunidad, simultáneos.
+    function openDriveWindow(inst) {
+        var titulo = 'Drive — ' + ((inst.data && inst.data.oportunidad) || ('Oportunidad #' + inst.oppId));
+        openCotWindow('drive:' + inst.oppId, '/app/widget/drive/' + inst.oppId + '/', titulo, inst,
+            { wf: 0.5, maxw: 980, hf: 0.8 });
+    }
+
     // El iframe del cotizador postea 'cotizacion-created' al guardar:
     // identificar QUÉ ventana lo envió (e.source) y refrescar su opp.
+    // Las páginas-iframe (idea/prospecto) postean su título real al cargar
+    // — el marco nace con título genérico porque al click no lo conocemos.
+    window.addEventListener('message', function (e) {
+        if (!e.data || e.data.type !== 'widget-title' || !e.data.title) return;
+        for (var key in cotWindows) {
+            var ov = cotWindows[key];
+            if (!ov || !document.body.contains(ov)) continue;
+            var ifr = ov.querySelector('iframe');
+            if (ifr && ifr.contentWindow === e.source) {
+                var t = ov.querySelector('[data-cot-title]');
+                if (t) t.textContent = String(e.data.title).slice(0, 120);
+                return;
+            }
+        }
+    });
+
     window.addEventListener('message', function (e) {
         if (!e.data || e.data.type !== 'cotizacion-created') return;
         for (var key in cotWindows) {
@@ -1452,8 +1601,8 @@
     // Globals: este script carga DESPUÉS de crm_main.js, así que gana la
     // asignación. Si el takeover está apagado, delega al legacy.
     var legacyOpenDetalle = window.openDetalle;
-    window.openDetalle = function (oppId) {
-        if (takeoverActive()) return open(oppId);
+    window.openDetalle = function (oppId, opts) {
+        if (takeoverActive()) return open(oppId, opts);
         if (typeof legacyOpenDetalle === 'function') return legacyOpenDetalle(oppId);
     };
     var legacyOpenCotizador = window.openCotizador;

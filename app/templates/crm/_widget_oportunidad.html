@@ -486,6 +486,15 @@ matarían los bindings posteriores del mismo try-block. El markup original
                 </button>
             </div>
 
+            <!-- Resultado de la actividad (solo lectura, visible si completada con resultado) -->
+            <div id="woVerActResultadoWrap" style="display:none;margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;">
+                <div style="font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.5rem;text-transform:uppercase;">
+                    Resultado</div>
+                <div id="woVerActResultadoEstatus" style="display:none;margin-bottom:0.6rem;"></div>
+                <div id="woVerActResultadoTexto" style="font-size:0.95rem;color:#1D1D1F;line-height:1.5;white-space:pre-wrap;margin-bottom:0.6rem;"></div>
+                <div id="woVerActResultadoArchivos" style="display:flex;flex-wrap:wrap;gap:0.5rem;"></div>
+            </div>
+
             <!-- Estado + Botones -->
             <div id="woVerActAcciones"
                 style="margin-top:0.5rem;padding-top:1rem;border-top:1px dashed #E5E5EA;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
@@ -516,6 +525,66 @@ matarían los bindings posteriores del mismo try-block. El markup original
                         Eliminar
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ WIDGET: RESULTADO DE ACTIVIDAD (al completar Actividad genérica) ═══ -->
+<div class="widget-overlay" id="widgetOppActResultado" style="z-index:var(--z-widget-top, 10050);display:none;">
+    <div class="widget-card widget-card-md"
+        style="width:520px;max-width:95vw;background:#fff;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.18);position:relative;">
+        <div id="woActResDropOverlay"
+            style="display:none;position:absolute;inset:0;background:rgba(0,82,212,0.06);border:3px dashed #0052D4;border-radius:12px;z-index:50;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none;">
+            <svg width="40" height="40" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span style="color:#0052D4;font-weight:600;font-size:0.95rem;">Suelta los archivos aquí</span>
+        </div>
+        <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;max-height:80vh;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <h3 style="margin:0;font-size:1.2rem;font-weight:700;color:#1D1D1F;">Resultado de la actividad</h3>
+                <button type="button" onclick="woActResCerrar()" title="Cancelar"
+                    style="background:#F2F2F7;border:none;border-radius:50%;width:30px;height:30px;font-size:1.4rem;line-height:1;cursor:pointer;color:#86868B;">&times;</button>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Estatus</label>
+                <select id="woActResEstatus"
+                    style="width:100%;padding:0.6rem 0.75rem;border:1px solid #E5E5EA;border-radius:8px;font-size:0.9rem;color:#1D1D1F;background:#fff;">
+                    <option value="">— Sin estatus —</option>
+                    <option value="exitosa">Exitosa</option>
+                    <option value="sin_exito">Sin éxito</option>
+                    <option value="seguimiento">Requiere seguimiento</option>
+                    <option value="reagendar">Reagendar</option>
+                    <option value="cancelada">Cancelada</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Resultado</label>
+                <textarea id="woActResTexto" rows="4" placeholder="Describe el resultado de la actividad (opcional)…"
+                    style="width:100%;padding:0.6rem 0.75rem;border:1px solid #E5E5EA;border-radius:8px;font-size:0.9rem;color:#1D1D1F;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:#86868B;margin-bottom:0.35rem;text-transform:uppercase;">Archivos</label>
+                <div id="woActResDrop" onclick="document.getElementById('woActResFileInput').click()"
+                    style="border:2px dashed #D1D1D6;border-radius:10px;padding:1rem;text-align:center;cursor:pointer;color:#86868B;font-size:0.85rem;transition:border-color 0.15s,background 0.15s;"
+                    onmouseenter="this.style.borderColor='#0052D4'" onmouseleave="this.style.borderColor='#D1D1D6'">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <div>Haz clic, arrastra archivos o pega una captura (Ctrl/Cmd+V)</div>
+                </div>
+                <input type="file" id="woActResFileInput" multiple style="display:none;" onchange="woActResHandleFiles(this.files)">
+                <div id="woActResLista" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.6rem;"></div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.5rem;border-top:1px dashed #E5E5EA;">
+                <button type="button" onclick="woActResCerrar()"
+                    style="background:#E5E5EA;color:#1D1D1F;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:600;font-size:0.85rem;cursor:pointer;">Cancelar</button>
+                <button type="button" id="woActResGuardarBtn" onclick="woActResGuardar()"
+                    style="background:#34C759;color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    Guardar
+                </button>
             </div>
         </div>
     </div>
@@ -3083,30 +3152,211 @@ matarían los bindings posteriores del mismo try-block. El markup original
         };
         // ────────────────────────────────────────────────────────────────────
 
+        // ════════ DIÁLOGO DE RESULTADO DE ACTIVIDAD (Actividad genérica) ════════
+        window._woActResActId = null;       // Actividad en curso de completar
+        window._woActResUploading = 0;      // nº de subidas en vuelo
+        window._woActResArchivos = [];      // archivos ya subidos {id,nombre,url,...}
+
+        function woActResCsrf() {
+            var el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : '';
+        }
+
+        window.woActResAbrir = function (actId) {
+            window._woActResActId = actId;
+            window._woActResArchivos = [];
+            window._woActResUploading = 0;
+            var sel = document.getElementById('woActResEstatus');
+            var txt = document.getElementById('woActResTexto');
+            var lista = document.getElementById('woActResLista');
+            if (sel) sel.value = '';
+            if (txt) txt.value = '';
+            if (lista) lista.innerHTML = '';
+            var inp = document.getElementById('woActResFileInput');
+            if (inp) inp.value = '';
+            var ov = document.getElementById('widgetOppActResultado');
+            if (ov) ov.style.display = 'flex';
+        };
+
+        window.woActResCerrar = function () {
+            // Cancelar: cierra el diálogo y regresa al visor (NO completa).
+            var ov = document.getElementById('widgetOppActResultado');
+            if (ov) ov.style.display = 'none';
+        };
+
+        function woActResRenderArchivo(arch, pendingEl) {
+            // Si pendingEl existe, lo reemplaza (estaba en estado "subiendo").
+            var lista = document.getElementById('woActResLista');
+            if (!lista) return;
+            var isImg = arch.tipo_archivo === 'imagen';
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#F2F2F7;border-radius:8px;padding:6px 10px;font-size:0.82rem;color:#1D1D1F;';
+            var thumb = '';
+            if (isImg && arch.url) {
+                thumb = '<img src="' + arch.url + '" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0;">';
+            } else {
+                thumb = '<svg width="20" height="20" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+            }
+            row.innerHTML = thumb +
+                '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (arch.nombre || '') + '</span>' +
+                '<span style="color:#86868B;font-size:0.75rem;">' + (arch.tamaño_formateado || '') + '</span>';
+            if (pendingEl && pendingEl.parentNode) {
+                pendingEl.parentNode.replaceChild(row, pendingEl);
+            } else {
+                lista.appendChild(row);
+            }
+        }
+
+        function woActResAddPending(nombre) {
+            var lista = document.getElementById('woActResLista');
+            if (!lista) return null;
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#F2F2F7;border-radius:8px;padding:6px 10px;font-size:0.82rem;color:#86868B;';
+            row.innerHTML = '<svg width="16" height="16" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>' +
+                '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Subiendo ' + (nombre || 'archivo') + '…</span>';
+            lista.appendChild(row);
+            return row;
+        }
+
+        function woActResUploadOne(file) {
+            if (!window._woActResActId) return;
+            var pendingEl = woActResAddPending(file.name);
+            window._woActResUploading++;
+            var fd = new FormData();
+            fd.append('archivo', file, file.name);
+            fetch('/app/api/actividades/' + window._woActResActId + '/resultado/archivos/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': woActResCsrf() },
+                body: fd
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                window._woActResUploading--;
+                if (res && res.ok && res.archivo) {
+                    window._woActResArchivos.push(res.archivo);
+                    woActResRenderArchivo(res.archivo, pendingEl);
+                } else if (pendingEl) {
+                    pendingEl.style.color = '#FF3B30';
+                    pendingEl.innerHTML = '<span>Error al subir ' + (file.name || '') + '</span>';
+                }
+            }).catch(function () {
+                window._woActResUploading--;
+                if (pendingEl) {
+                    pendingEl.style.color = '#FF3B30';
+                    pendingEl.innerHTML = '<span>Error al subir ' + (file.name || '') + '</span>';
+                }
+            });
+        }
+
+        window.woActResHandleFiles = function (files) {
+            if (!files) return;
+            for (var i = 0; i < files.length; i++) {
+                woActResUploadOne(files[i]);
+            }
+        };
+
+        window.woActResGuardar = function () {
+            if (!window._woActResActId) return;
+            var actId = window._woActResActId;
+            var btn = document.getElementById('woActResGuardarBtn');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+            var estatus = document.getElementById('woActResEstatus');
+            var texto = document.getElementById('woActResTexto');
+            var payload = {
+                completada: true,
+                resultado: texto ? texto.value : '',
+                resultado_estatus: estatus ? estatus.value : ''
+            };
+            fetch('/app/api/actividades/' + actId + '/', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': woActResCsrf() },
+                body: JSON.stringify(payload)
+            }).then(function (r) { return r.json(); }).then(function (res) {
+                if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+                if (res && res.error) { console.error(res.error); return; }
+                // Actualizar badge y ocultar botón Completar en el visor.
+                var badge = document.getElementById('woVerActEstadoBadge');
+                if (badge) {
+                    badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
+                    badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
+                }
+                var bC = document.getElementById('woVerActBtnCompletar');
+                if (bC) bC.style.display = 'none';
+                if (typeof calGlobalRefetch === 'function') setTimeout(calGlobalRefetch, 200);
+                // Cerrar diálogo y visor.
+                var ov = document.getElementById('widgetOppActResultado');
+                if (ov) ov.style.display = 'none';
+                var visor = document.getElementById('widgetOppVerActividad');
+                if (visor) visor.style.display = 'none';
+                // Si hay oportunidad ligada, abrirla para agendar la próxima actividad.
+                if (window._calCurrentOppId && typeof window.openDetalle === 'function') {
+                    window.openDetalle(window._calCurrentOppId);
+                }
+                window._woActResActId = null;
+            }).catch(function (err) {
+                if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+                console.error(err);
+            });
+        };
+
+        // Drag & drop + paste sobre el diálogo de resultado.
+        (function () {
+            var ov = document.getElementById('widgetOppActResultado');
+            if (!ov) return;
+            var overlay = document.getElementById('woActResDropOverlay');
+            var dragDepth = 0;
+            ov.addEventListener('dragenter', function (e) {
+                e.preventDefault(); dragDepth++;
+                if (overlay) overlay.style.display = 'flex';
+            });
+            ov.addEventListener('dragover', function (e) { e.preventDefault(); });
+            ov.addEventListener('dragleave', function (e) {
+                e.preventDefault(); dragDepth--;
+                if (dragDepth <= 0 && overlay) { overlay.style.display = 'none'; dragDepth = 0; }
+            });
+            ov.addEventListener('drop', function (e) {
+                e.preventDefault(); dragDepth = 0;
+                if (overlay) overlay.style.display = 'none';
+                if (ov.style.display === 'none') return;
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+                    woActResHandleFiles(e.dataTransfer.files);
+                }
+            });
+            // Pegar capturas (Ctrl/Cmd+V) cuando el diálogo está abierto.
+            document.addEventListener('paste', function (e) {
+                if (ov.style.display === 'none') return;
+                if (!e.clipboardData || !e.clipboardData.items) return;
+                var items = e.clipboardData.items;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].type && items[i].type.indexOf('image') === 0) {
+                        var blob = items[i].getAsFile();
+                        if (blob) {
+                            var ext = (blob.type.split('/')[1] || 'png');
+                            var ts = new Date().getTime();
+                            var fname = 'captura_' + ts + '.' + ext;
+                            var f;
+                            try {
+                                f = new File([blob], fname, { type: blob.type });
+                            } catch (err) {
+                                f = blob; f.name = fname;
+                            }
+                            woActResUploadOne(f);
+                            e.preventDefault();
+                        }
+                    }
+                }
+            });
+        })();
+        // ════════════════════════════════════════════════════════════════════
+
         window.woCompletarActividad = function () {
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
 
             // Caso 2: actividad genérica del calendario (no tarea-opp).
             // Cuando el modal fue abierto desde el calendario para una
             // Actividad sin TareaOportunidad ligada, _woCurrentViewingTaskId
-            // queda en null y usamos PATCH al endpoint de actividades.
+            // queda en null. En lugar de completar directo, abrimos el
+            // diálogo de Resultado donde el usuario captura texto/estatus/archivos.
             if (!_woCurrentViewingTaskId && window._woCurrentViewingActividadId) {
-                var actId = window._woCurrentViewingActividadId;
-                fetch('/app/api/actividades/' + actId + '/', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                    body: JSON.stringify({ completada: true })
-                }).then(function (r) { return r.json(); }).then(function (res) {
-                    if (res.error) { console.error(res.error); return; }
-                    var badge = document.getElementById('woVerActEstadoBadge');
-                    if (badge) {
-                        badge.innerHTML = '<svg width="14" height="14" fill="none" stroke="#34C759" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Completada';
-                        badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(52,199,89,0.1);color:#34C759;';
-                    }
-                    var bC = document.getElementById('woVerActBtnCompletar');
-                    if (bC) bC.style.display = 'none';
-                    if (typeof calGlobalRefetch === 'function') setTimeout(calGlobalRefetch, 200);
-                }).catch(function (err) { console.error(err); });
+                woActResAbrir(window._woCurrentViewingActividadId);
                 return;
             }
 

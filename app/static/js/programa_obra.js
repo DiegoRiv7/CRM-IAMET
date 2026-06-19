@@ -36,6 +36,7 @@
         s.id = 'pobStyles';
         s.textContent = [
             '.wop-pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.02em; }',
+            '.wop-pill-tent   { background:#FEF6E0; color:#92740E; }',
             '.wop-pill-prog   { background:#E0F2FE; color:#075985; }',
             '.wop-pill-curso  { background:#FEF3C7; color:#92400E; }',
             '.wop-pill-done   { background:#D1FAE5; color:#065F46; }',
@@ -62,6 +63,79 @@
             '.wop-btn-primary:hover { background:#0041a8; }',
             '.wop-btn-secondary { background:#F2F2F7; color:#1D1D1F; border:none; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.84rem; }',
             '.wop-btn-secondary:hover { background:#E5E5EA; }',
+
+            /* ── Composer Notion-like para Nueva/Editar instalación ── */
+            '.pob-modal { width:min(1240px, 96vw); }',
+            '.pob-empty { padding:56px 24px; text-align:center; }',
+            '.pob-empty-ic { margin:0 auto 8px; display:block; opacity:0.5; }',
+            '.pob-empty-title { font-weight:700; color:#1d1d1f; margin-bottom:4px; font-size:1rem; }',
+            '.pob-empty-sub { font-size:0.85rem; color:#86868B; }',
+            '.pob-head { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-bottom:1px solid #F2F2F7; }',
+            '.pob-eyebrow { display:inline-flex; align-items:center; gap:6px; font-size:0.62rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#86868B; }',
+            // Canvas full-width estilo composer de oportunidad (sin columna
+            // lateral): título grande, pills en fila, notas, y los técnicos como
+            // sección a todo el ancho debajo.
+            '.pob-body { padding:8px 40px 26px; overflow-y:auto; display:block; }',
+            '.pob-main { padding-top:16px; }',
+            '.pob-side { border-left:none; border-top:none; padding:0; margin-top:14px; }',
+            // Botón cerrar más visible (círculo sólido) sobre la greca/cabecera.
+            '.pob-head .pob-close { width:34px; height:34px; }',
+            // Descripción: caja grande enmarcada, cómoda para escribir.
+            '.pob-title-input { width:100%; box-sizing:border-box; border:1px solid #E5E5EA; border-radius:14px; outline:none; font-family:inherit; font-size:1.5rem; font-weight:800; color:#1D1D1F; letter-spacing:-0.02em; padding:16px 18px; resize:vertical; line-height:1.25; min-height:76px; background:#fff; transition:border-color 0.15s, box-shadow 0.15s; }',
+            '.pob-title-input:focus { border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
+            '.pob-title-input::placeholder { color:#C7C7CC; font-weight:700; }',
+            /* fila meta inline tipo "etiqueta a la izquierda, control limpio a la derecha" */
+            // Meta estilo composer de oportunidad: pills redondeados que fluyen
+            // en una fila (icono + label + control inline borderless).
+            // Grupos lógicos: etiqueta tenue + fila de pills. El orden guía el
+            // llenado (cliente → cuándo → costos → personal).
+            '.pob-group { margin-top:22px; }',
+            '.pob-group-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; margin-bottom:9px; }',
+            '.pob-group .pob-meta { margin-top:0; }',
+            '.pob-meta { display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px; margin-top:18px; }',
+            '.pob-meta-row { display:inline-flex; align-items:center; gap:8px; padding:8px 15px; border:1px solid #E5E5EA; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(15,23,42,0.04); transition:border-color 0.15s, box-shadow 0.15s; }',
+            '.pob-meta-row:hover { border-color:#CFCFD4; box-shadow:0 2px 8px rgba(15,23,42,0.07); }',
+            '.pob-meta-row:focus-within { border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
+            '.pob-meta-row--full { flex-basis:100%; }',
+            '.pob-meta-label { display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:700; color:#6B7280; white-space:nowrap; }',
+            '.pob-meta-label svg { color:#A1A1A6; }',
+            '.pob-meta-row .pob-input { width:auto; min-width:54px; max-width:190px; border:none !important; background:transparent !important; padding:0; font-weight:600; color:#1D1D1F; }',
+            '.pob-meta-row .pob-input::placeholder { font-weight:500; color:#B6B6BC; }',
+            '#pobInstCliente { min-width:118px; max-width:170px; }',
+            '#pobInstPo { min-width:96px; }',
+            // El pill de Personal crece para aprovechar el ancho sobrante de su fila.
+            '.pob-meta-grow { flex:1 1 280px; }',
+            '.pob-meta-grow .pob-input { flex:1; min-width:120px; max-width:none; }',
+            '.pob-input { width:100%; box-sizing:border-box; font-family:inherit; font-size:0.9rem; color:#1D1D1F; padding:6px 8px; border:1px solid transparent; border-radius:7px; outline:none; background:transparent; transition:border-color 0.15s, background 0.15s; }',
+            '.pob-input:hover { background:#F2F2F7; }',
+            '.pob-input:focus { background:#fff; border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
+            '.pob-input::placeholder { color:#C7C7CC; }',
+            '.pob-input-num { max-width:160px; }',
+            '.pob-notes { width:100%; box-sizing:border-box; min-height:120px; font-family:inherit; font-size:0.92rem; line-height:1.45; color:#1D1D1F; padding:14px 16px; border:1px solid #E5E5EA; border-radius:12px; outline:none; resize:vertical; background:#FBFBFD; transition:border-color 0.15s; }',
+            '.pob-notes:focus { border-color:#0052D4; background:#fff; box-shadow:0 0 0 3px rgba(0,82,212,0.10); }',
+            // Dropdown personalizado (Estado, tipo de jornada): botón limpio en el
+            // pill + menú blanco sólido flotante.
+            '.pob-dd { position:relative; display:inline-flex; }',
+            '.pob-dd-native { display:none !important; }',
+            '.pob-dd-btn { display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; font-family:inherit; font-size:0.9rem; font-weight:600; color:#1D1D1F; cursor:pointer; padding:0; white-space:nowrap; }',
+            '.pob-dd-chev { color:#86868B; transition:transform 0.15s; flex-shrink:0; }',
+            '.pob-dd-btn.open .pob-dd-chev { transform:rotate(180deg); }',
+            '.pob-dd-menu { position:fixed; z-index:12000; background:#fff; border:1px solid #E5E5EA; border-radius:12px; box-shadow:0 16px 40px rgba(15,23,42,0.18); padding:6px; min-width:150px; max-height:300px; overflow-y:auto; animation:pobDdIn 0.12s ease; }',
+            '@keyframes pobDdIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }',
+            '.pob-dd-item { display:flex; align-items:center; gap:8px; padding:9px 14px 9px 8px; border-radius:8px; font-size:0.88rem; font-weight:500; color:#1D1D1F; cursor:pointer; white-space:nowrap; }',
+            '.pob-dd-item:hover { background:#F2F2F7; }',
+            '.pob-dd-item.sel { font-weight:700; }',
+            '.pob-dd-check { width:15px; display:inline-flex; align-items:center; justify-content:center; color:#0052D4; opacity:0; flex-shrink:0; }',
+            '.pob-dd-item.sel .pob-dd-check { opacity:1; }',
+            // Buscador de técnicos: caja con lupa.
+            '.pob-search { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #E5E5EA; border-radius:10px; padding:9px 12px; transition:border-color 0.15s, box-shadow 0.15s; }',
+            '.pob-search:focus-within { border-color:#0052D4; box-shadow:0 0 0 3px rgba(0,82,212,0.12); }',
+            '.pob-search-ic { color:#A1A1A6; flex-shrink:0; }',
+            '.pob-search input { flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:0.88rem; color:#1D1D1F; }',
+            '.pob-search input::placeholder { color:#B6B6BC; }',
+            '.pob-section-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; margin:18px 0 8px; }',
+            '.pob-side-label { font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#86868B; }',
+            '@media (max-width:720px){ .pob-body { grid-template-columns:1fr; } .pob-side { border-left:none; border-top:1px solid #F2F2F7; padding:14px 0 0; margin-top:8px; } .pob-main { padding-right:0; } }',
         ].join('\n');
         (document.head || document.body).appendChild(s);
     })();
@@ -91,6 +165,7 @@
         if (estado === 'completada') return 'wop-pill wop-pill-done';
         if (estado === 'en_curso')   return 'wop-pill wop-pill-curso';
         if (estado === 'cancelada')  return 'wop-pill wop-pill-cancel';
+        if (estado === 'tentativa')  return 'wop-pill wop-pill-tent';
         return 'wop-pill wop-pill-prog';
     }
 
@@ -156,12 +231,10 @@
                 }
                 var inst = data.instalaciones || [];
                 if (!inst.length) {
-                    wrap.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#86868B;font-size:0.9rem;">'
-                        + '<div style="font-size:2.4rem;opacity:0.5;margin-bottom:8px;">'
-                        + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block;opacity:0.5;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>'
-                        + '</div>'
-                        + '<div style="font-weight:600;color:#1d1d1f;margin-bottom:4px;">Sin instalaciones aún</div>'
-                        + '<div style="font-size:0.8rem;">Da click en <b>+ Nueva instalación</b> para crear la primera.</div>'
+                    wrap.innerHTML = '<div class="pob-empty">'
+                        + '<svg class="pob-empty-ic" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>'
+                        + '<div class="pob-empty-title">Sin instalaciones aún</div>'
+                        + '<div class="pob-empty-sub">Da click en <b>+ Nueva instalación</b> para crear la primera.</div>'
                         + '</div>';
                     return;
                 }
@@ -194,49 +267,126 @@
         if (document.getElementById('pobModalBackdrop')) return;
         var html =
             '<div class="wop-modal-backdrop" id="pobModalBackdrop">'
-          +   '<div class="wop-modal" style="width:min(820px, 96vw);">'
-          +     '<div class="wop-modal-head">'
-          +       '<h3 id="pobModalTitle">Instalación</h3>'
+          +   '<div class="wop-modal pob-modal" style="width:min(1180px, 96vw); max-width:96vw;">'
+          +     '<div class="pob-head">'
+          +       '<div class="pob-eyebrow">'
+          +         '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+          +         '<span id="pobModalTitle">Nueva instalación</span>'
+          +       '</div>'
           +       '<div style="display:flex;gap:8px;align-items:center;">'
           +         '<button type="button" id="pobBtnEliminar" class="wop-btn-secondary" style="background:#FFE3E3;color:#991B1B;" onclick="pobEliminar()">Eliminar</button>'
-          +         '<button type="button" class="widget-close" onclick="pobCerrarModal()" style="font-size:1.4rem;">&times;</button>'
+          +         '<button type="button" class="widget-close pob-close" onclick="pobCerrarModal()" aria-label="Cerrar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
           +       '</div>'
           +     '</div>'
-          +     '<div class="wop-modal-body" style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px;">'
-          +       '<div id="pobFormCol">'
-          +         '<div class="wop-field"><label>Descripción del trabajo</label>'
-          +           '<textarea id="pobInstDescripcion" rows="2"></textarea></div>'
-          +         '<div class="wop-form-grid">'
-          +           '<div class="wop-field"><label>PO</label><input type="text" id="pobInstPo" maxlength="80"></div>'
-          +           '<div class="wop-field"><label>Cliente (texto)</label><input type="text" id="pobInstCliente" maxlength="200"></div>'
-          +           '<div class="wop-field"><label>Fecha programada</label><input type="date" id="pobInstFecha"></div>'
-          +           '<div class="wop-field"><label>Estado</label>'
-          +             '<select id="pobInstEstado">'
-          +               '<option value="programada">Programada</option>'
-          +               '<option value="en_curso">En curso</option>'
-          +               '<option value="completada">Completada</option>'
-          +               '<option value="cancelada">Cancelada</option>'
-          +             '</select></div>'
-          +           '<div class="wop-field"><label>Jornadas</label><input type="number" id="pobInstJornadas" min="1"></div>'
-          +           '<div class="wop-field"><label>Tipo</label>'
-          +             '<select id="pobInstJornadasTipo">'
-          +               '<option value="normal">Normal</option>'
-          +               '<option value="sabado">Sábado</option>'
-          +               '<option value="domingo">Domingo</option>'
-          +               '<option value="noche">Noche</option>'
-          +               '<option value="extraordinaria">Extraordinaria</option>'
-          +             '</select></div>'
-          +           '<div class="wop-field" style="grid-column:1 / -1;"><label>Personal (texto libre)</label>'
-          +             '<input type="text" id="pobInstPersonal" maxlength="200" placeholder="Ej. 1 SUPERVISOR Y 3 TÉCNICOS"></div>'
-          +           '<div class="wop-field"><label>Monto PO</label><input type="number" id="pobInstMonto" step="0.01"></div>'
-          +           '<div class="wop-field"><label>Utilidad</label><input type="number" id="pobInstUtilidad" step="0.01"></div>'
-          +           '<div class="wop-field" style="grid-column:1 / -1;"><label>Notas / observaciones</label>'
-          +             '<textarea id="pobInstNotas" rows="2"></textarea></div>'
+          +     '<div class="wop-modal-body pob-body">'
+          +       '<div class="pob-main" id="pobFormCol">'
+          // ── Descripción del trabajo: caja grande y cómoda ──
+          +         '<div class="pob-group">'
+          +           '<div class="pob-group-label">Descripción del trabajo</div>'
+          +           '<textarea id="pobInstDescripcion" class="pob-title-input" rows="2" placeholder="¿Qué se va a instalar? Describe el trabajo…"></textarea>'
+          +         '</div>'
+          // ── Grupos lógicos de meta (orden de llenado) ──
+          // 1) Cliente y orden de compra (incluye montos)
+          +         '<div class="pob-group">'
+          +           '<div class="pob-group-label">Cliente y orden de compra</div>'
+          +           '<div class="pob-meta">'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+          +                 'Cliente</span>'
+          +               '<input type="text" id="pobInstCliente" maxlength="200" class="pob-input" placeholder="Nombre del cliente">'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+          +                 'PO</span>'
+          +               '<input type="text" id="pobInstPo" maxlength="80" class="pob-input" placeholder="Orden de compra">'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+          +                 'Monto PO</span>'
+          +               '<input type="number" id="pobInstMonto" step="0.01" class="pob-input pob-input-num" placeholder="0.00">'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
+          +                 'Utilidad</span>'
+          +               '<input type="number" id="pobInstUtilidad" step="0.01" class="pob-input pob-input-num" placeholder="0.00">'
+          +             '</div>'
+          +           '</div>'
+          +         '</div>'
+          // 2) Programación (cuándo + jornada + personal)
+          +         '<div class="pob-group">'
+          +           '<div class="pob-group-label">Programación</div>'
+          +           '<div class="pob-meta">'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+          +                 'Fecha</span>'
+          +               '<input type="date" id="pobInstFecha" class="pob-input">'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 'Horario</span>'
+          +               '<div style="display:flex;align-items:center;gap:6px;">'
+          +                 '<input type="time" id="pobInstHoraInicio" class="pob-input" style="max-width:110px;">'
+          +                 '<span style="color:#86868B;">–</span>'
+          +                 '<input type="time" id="pobInstHoraFin" class="pob-input" style="max-width:110px;">'
+          +               '</div>'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 'Estado</span>'
+          +               '<div class="pob-dd">'
+          +                 '<select id="pobInstEstado" class="pob-input">'
+          +                   '<option value="tentativa">Tentativa</option>'
+          +                   '<option value="programada">Programada</option>'
+          +                   '<option value="en_curso">En curso</option>'
+          +                   '<option value="completada">Completada</option>'
+          +                   '<option value="cancelada">Cancelada</option>'
+          +                 '</select>'
+          +               '</div>'
+          +             '</div>'
+          +             '<div class="pob-meta-row">'
+          +               '<span class="pob-meta-label">'
+          +                 '<button type="button" id="pobJornadasCfgBtn" title="Configurar días de las jornadas (clic)" style="border:none;background:rgba(0,82,212,0.1);padding:3px;margin:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;color:#0052D4;transition:background 0.15s,box-shadow 0.15s;box-shadow:0 0 0 1px rgba(0,82,212,0.18);" onmouseover="this.style.background=\'rgba(0,82,212,0.18)\'" onmouseout="this.style.background=\'rgba(0,82,212,0.1)\'">'
+          +                   '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+          +                 '</button>'
+          +                 'Jornadas</span>'
+          +               '<div style="display:flex;align-items:center;gap:8px;position:relative;">'
+          +                 '<input type="number" id="pobInstJornadas" min="1" class="pob-input pob-input-num" style="max-width:48px;">'
+          +                 '<div class="pob-dd">'
+          +                   '<select id="pobInstJornadasTipo" class="pob-input">'
+          +                     '<option value="normal">Normal</option>'
+          +                     '<option value="sabado">Sábado</option>'
+          +                     '<option value="domingo">Domingo</option>'
+          +                     '<option value="noche">Noche</option>'
+          +                     '<option value="extraordinaria">Extraordinaria</option>'
+          +                   '</select>'
+          +                 '</div>'
+          +                 '<span id="pobJornadasCfgBadge" style="display:none;font-size:0.68rem;font-weight:700;color:#0052D4;background:#E8F0FE;border-radius:6px;padding:2px 7px;white-space:nowrap;">Días elegidos</span>'
+          +               '</div>'
+          +             '</div>'
+          +             '<div class="pob-meta-row pob-meta-grow">'
+          +               '<span class="pob-meta-label">'
+          +                 '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+          +                 'Personal</span>'
+          +               '<input type="text" id="pobInstPersonal" maxlength="200" class="pob-input" placeholder="Ej. 1 SUPERVISOR Y 3 TÉCNICOS">'
+          +             '</div>'
+          +           '</div>'
+          +         '</div>'
+          // ── Notas / observaciones (más amplias) ──
+          +         '<div class="pob-group">'
+          +           '<div class="pob-group-label">Notas / observaciones</div>'
+          +           '<textarea id="pobInstNotas" class="pob-notes" placeholder="Hora, instrucciones especiales, accesos, material…"></textarea>'
           +         '</div>'
           +       '</div>'
-          +       '<div id="pobAsignCol" style="border-left:1px solid #E5E5EA;padding-left:18px;">'
-          +         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-          +           '<h4 style="margin:0;font-size:0.92rem;font-weight:700;">Técnicos asignados</h4>'
+          +       '<div id="pobAsignCol" class="pob-side">'
+          +         '<div id="pobAsignHeader" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+          +           '<div class="pob-group-label" style="margin:0;">Técnicos asignados</div>'
           +           '<button type="button" id="pobBtnToggleAddAsig" class="wop-btn-secondary" onclick="pobToggleAddAsig()" style="font-size:0.74rem;padding:4px 8px;">+ Agregar</button>'
           +         '</div>'
 
@@ -245,7 +395,10 @@
           +           '<div style="font-size:0.7rem;color:#86868B;margin-bottom:6px;">'
           +             'Selecciona técnicos del CRM. Se les creará la instalación en su calendario (fecha programada).'
           +           '</div>'
-          +           '<input type="text" id="pobUserSearch" placeholder="Buscar usuario..." class="wop-search-input" autocomplete="off" style="font-size:0.84rem;">'
+          +           '<div class="pob-search">'
+          +             '<svg class="pob-search-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+          +             '<input type="text" id="pobUserSearch" placeholder="Buscar técnico por nombre…" autocomplete="off">'
+          +           '</div>'
           +           '<div id="pobUserResults" style="margin-top:6px;max-height:160px;overflow-y:auto;"></div>'
           +           '<div style="font-size:0.66rem;color:#86868B;margin-top:8px;text-transform:uppercase;letter-spacing:0.04em;font-weight:700;">Seleccionados</div>'
           +           '<div id="pobUserChips" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:24px;"></div>'
@@ -280,6 +433,102 @@
         var div = document.createElement('div');
         div.innerHTML = html;
         document.body.appendChild(div.firstChild);
+        pobInitDropdowns();
+
+        // Configurador de días de las jornadas (popover del reloj).
+        var cfgBtn = document.getElementById('pobJornadasCfgBtn');
+        if (cfgBtn) cfgBtn.onclick = window.pobToggleJornadasCfg;
+        // Al cambiar la cantidad de jornadas, re-renderiza el popover (más/menos
+        // filas) y recorta los días personalizados si sobran.
+        var jornInp = document.getElementById('pobInstJornadas');
+        if (jornInp) {
+            jornInp.addEventListener('input', function () {
+                if (Array.isArray(_pobDiasPersonalizados)) {
+                    var n = _pobJornadasNum();
+                    if (_pobDiasPersonalizados.length > n) _pobDiasPersonalizados = _pobDiasPersonalizados.slice(0, n);
+                }
+                _pobSyncJornadasCfgUI();
+            });
+        }
+    }
+
+    // Convierte los <select> marcados con wrapper .pob-dd en dropdowns
+    // personalizados (botón + menú blanco sólido), sin perder el <select>
+    // nativo como fuente de valor (lo lee/escribe el resto del código).
+    function pobInitDropdowns() {
+        var wraps = document.querySelectorAll('.pob-dd');
+        Array.prototype.forEach.call(wraps, function (wrap) {
+            if (wrap._ddInit) return;
+            var sel = wrap.querySelector('select');
+            if (!sel) return;
+            wrap._ddInit = true;
+            sel.classList.add('pob-dd-native');
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pob-dd-btn';
+            var val = document.createElement('span');
+            val.className = 'pob-dd-val';
+            btn.appendChild(val);
+            btn.insertAdjacentHTML('beforeend', '<svg class="pob-dd-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>');
+            wrap.insertBefore(btn, sel);
+
+            function syncLabel() {
+                var opt = sel.options[sel.selectedIndex];
+                val.textContent = opt ? opt.text : '';
+            }
+            syncLabel();
+            sel.addEventListener('change', syncLabel);
+
+            var menu = null;
+            function close() {
+                if (!menu) return;
+                menu.remove(); menu = null;
+                btn.classList.remove('open');
+                document.removeEventListener('mousedown', onDoc, true);
+                window.removeEventListener('resize', close, true);
+                window.removeEventListener('scroll', close, true);
+            }
+            function onDoc(e) {
+                if (menu && !menu.contains(e.target) && !btn.contains(e.target)) close();
+            }
+            function open() {
+                menu = document.createElement('div');
+                menu.className = 'pob-dd-menu';
+                Array.prototype.forEach.call(sel.options, function (o, i) {
+                    var item = document.createElement('div');
+                    item.className = 'pob-dd-item' + (i === sel.selectedIndex ? ' sel' : '');
+                    item.innerHTML = '<span class="pob-dd-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>' + o.text + '</span>';
+                    item.addEventListener('mousedown', function (ev) {
+                        ev.preventDefault();
+                        sel.value = o.value;
+                        sel.dispatchEvent(new Event('change', { bubbles: true }));
+                        close();
+                    });
+                    menu.appendChild(item);
+                });
+                document.body.appendChild(menu);
+                var r = btn.getBoundingClientRect();
+                menu.style.top = (r.bottom + 6) + 'px';
+                menu.style.left = r.left + 'px';
+                menu.style.minWidth = Math.max(r.width, 150) + 'px';
+                // Si se sale por abajo, ábrelo hacia arriba.
+                var mh = menu.offsetHeight;
+                if (r.bottom + 6 + mh > window.innerHeight - 8) {
+                    menu.style.top = Math.max(8, r.top - 6 - mh) + 'px';
+                }
+                btn.classList.add('open');
+                setTimeout(function () {
+                    document.addEventListener('mousedown', onDoc, true);
+                    window.addEventListener('resize', close, true);
+                    window.addEventListener('scroll', close, true);
+                }, 0);
+            }
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (menu) { close(); } else { open(); }
+            });
+        });
     }
 
     // ─── Widget de VISTA amigable (modo lectura) ─────────────────────
@@ -287,7 +536,7 @@
         if (document.getElementById('pobViewerBackdrop')) return;
         var html =
             '<div class="wop-modal-backdrop" id="pobViewerBackdrop">'
-          +   '<div class="wop-modal" style="width:min(640px, 96vw);">'
+          +   '<div class="wop-modal" style="width:min(920px, 96vw);">'
           +     '<div class="wop-modal-head" style="background:linear-gradient(135deg,#FF9500 0%,#FFB047 100%);padding:18px;border-bottom:none;">'
           +       '<div style="flex:1;min-width:0;color:#fff;">'
           +         '<div style="font-size:0.66rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;margin-bottom:4px;">'
@@ -316,6 +565,18 @@
             pobCerrarVista();
             pobAbrirEditar(id);
         });
+    }
+
+    // Color por estado (mismo mapa que el calendario: window._calEstadoColor).
+    function _pobEstadoColor(estado) {
+        switch (estado) {
+            case 'completada': return '#16A34A'; // verde
+            case 'cancelada':  return '#EF4444'; // rojo
+            case 'en_curso':   return '#1D1D1F'; // negro
+            case 'tentativa':  return '#EC4899'; // rosado
+            case 'programada':
+            default:           return '#7C3AED'; // morado
+        }
     }
 
     function _renderViewerBody(inst) {
@@ -356,6 +617,30 @@
         html +=   _statBlock('JORNADAS', _esc(String(inst.jornadas_count || 1)) + ' <span style="color:#86868B;font-size:0.8rem;">' + _esc(inst.jornadas_tipo_label || '') + '</span>');
         html +=   _statBlock('PERSONAL (TEXTO)', _esc(inst.personal || '') || '<span style="color:#C7C7CC;">—</span>');
         html += '</div>';
+
+        // ── Desglose de jornadas: tarjeta rectangular (esquinas redondeadas)
+        //    por día, en fila con scroll horizontal. Acento por ESTADO. ──
+        var _dias = inst.dias && inst.dias.length ? inst.dias : (inst.fecha ? [inst.fecha] : []);
+        var _hi = inst.hora_inicio || '08:00';
+        var _hf = inst.hora_fin || '17:00';
+        if (_dias.length) {
+            var _estColor = _pobEstadoColor(inst.estado);
+            html += '<div style="margin-bottom:18px;">';
+            html +=   '<div style="font-size:0.66rem;font-weight:700;color:#86868B;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Desglose de jornadas · ' + _dias.length + ' día' + (_dias.length > 1 ? 's' : '') + ' · ' + _esc(_hi) + '–' + _esc(_hf) + '</div>';
+            html +=   '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">';
+            _dias.forEach(function (diaISO, idx) {
+                html += '<div style="flex:0 0 auto;min-width:142px;background:#FAFAFB;border:1px solid #EEF0F3;border-left:4px solid ' + _estColor + ';border-radius:14px;padding:12px 14px;">'
+                      +   '<div style="font-size:0.58rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:' + _estColor + ';">Jornada ' + (idx + 1) + '</div>'
+                      +   '<div style="font-size:0.95rem;font-weight:700;color:#1D1D1F;margin-top:4px;">' + _esc(_fmtFecha(diaISO)) + '</div>'
+                      +   '<div style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#4B5563;margin-top:5px;font-weight:600;">'
+                      +     '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+                      +     _esc(_hi) + '–' + _esc(_hf)
+                      +   '</div>'
+                      + '</div>';
+            });
+            html +=   '</div>';
+            html += '</div>';
+        }
 
         // ── Proyecto ligado (click abre widget) ──
         if (inst.proyecto_id) {
@@ -443,10 +728,23 @@
     };
 
     window.pobAbrirProyectoDesdeVista = function (proyectoId) {
+        if (!proyectoId) return;
         pobCerrarVista();
-        if (typeof window.proyectosVerDetalle === 'function') {
-            window.proyectosVerDetalle(proyectoId);
+        // Si el visor se abrió desde el calendario en modo página, hay que
+        // CERRAR el calendario (restaura la página) antes de mostrar el
+        // detalle del proyecto; si no, queda oculto detrás del overlay.
+        var calOv = document.getElementById('widgetCalendarioMaster');
+        if (calOv && calOv.classList.contains('is-page-mode') && typeof window.calendarioCerrar === 'function') {
+            try { window.calendarioCerrar(); } catch (e) { }
         }
+        try { localStorage.setItem('crmView', 'proyectos'); } catch (e) { }
+        var go = function () {
+            if (typeof window.proyectosVerDetalle === 'function') {
+                window.proyectosVerDetalle(proyectoId);
+            }
+        };
+        // Pequeño defer para dejar que el cierre del calendario restaure el DOM.
+        setTimeout(go, 30);
     };
 
     window.pobAbrirOppDesdeVista = function (oppId) {
@@ -465,12 +763,174 @@
                                     // de datos para pobToggleUser sin JSON-en-onclick.
     var _pobUserSearchDebounce = null;
 
+    // ── Configurador de días de las jornadas ──────────────────────────
+    // null  → modo "Seguidas" (días consecutivos auto, comportamiento previo)
+    // array → modo "Elegir días": lista de fechas ISO, una por jornada.
+    var _pobDiasPersonalizados = null;
+    var _pobJornadasCfgOpen = false;
+
+    // Calcula las N fechas consecutivas (mismo criterio que el backend) a
+    // partir de la fecha base y el tipo de jornada — semilla para "Elegir días".
+    function _pobDiasConsecutivos(fechaIso, n, tipo) {
+        var out = [];
+        if (!fechaIso) return out;
+        var incluirFinde = (tipo === 'sabado' || tipo === 'domingo');
+        var base = new Date(fechaIso + 'T00:00:00');
+        if (isNaN(base.getTime())) return out;
+        var cursor = new Date(base);
+        var guard = 0;
+        while (out.length < n && guard < 400) {
+            guard++;
+            var dow = cursor.getDay(); // 0=dom, 6=sáb
+            var esFinde = (dow === 0 || dow === 6);
+            if (!incluirFinde && esFinde) {
+                cursor.setDate(cursor.getDate() + 1);
+                continue;
+            }
+            out.push(_pobIsoDate(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return out;
+    }
+
+    function _pobIsoDate(d) {
+        var y = d.getFullYear();
+        var m = ('0' + (d.getMonth() + 1)).slice(-2);
+        var day = ('0' + d.getDate()).slice(-2);
+        return y + '-' + m + '-' + day;
+    }
+
+    function _pobJornadasNum() {
+        var el = document.getElementById('pobInstJornadas');
+        var n = parseInt((el && el.value) || '1', 10);
+        return (isNaN(n) || n < 1) ? 1 : n;
+    }
+
+    // Refleja el estado del configurador en la UI (badge + popover si abierto).
+    function _pobSyncJornadasCfgUI() {
+        var badge = document.getElementById('pobJornadasCfgBadge');
+        if (badge) badge.style.display = (_pobDiasPersonalizados && _pobDiasPersonalizados.length) ? '' : 'none';
+        if (_pobJornadasCfgOpen) _pobRenderJornadasCfgPopover();
+    }
+
+    function _pobCloseJornadasCfg() {
+        _pobJornadasCfgOpen = false;
+        var pop = document.getElementById('pobJornadasCfgPop');
+        if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+        document.removeEventListener('mousedown', _pobJornadasCfgOutside, true);
+    }
+
+    function _pobJornadasCfgOutside(ev) {
+        var pop = document.getElementById('pobJornadasCfgPop');
+        var btn = document.getElementById('pobJornadasCfgBtn');
+        if (!pop) return;
+        if (pop.contains(ev.target) || (btn && btn.contains(ev.target))) return;
+        _pobCloseJornadasCfg();
+    }
+
+    window.pobToggleJornadasCfg = function () {
+        if (_pobJornadasCfgOpen) { _pobCloseJornadasCfg(); return; }
+        _pobJornadasCfgOpen = true;
+        _pobRenderJornadasCfgPopover();
+        setTimeout(function () {
+            document.addEventListener('mousedown', _pobJornadasCfgOutside, true);
+        }, 0);
+    };
+
+    function _pobRenderJornadasCfgPopover() {
+        var btn = document.getElementById('pobJornadasCfgBtn');
+        if (!btn) return;
+        var pop = document.getElementById('pobJornadasCfgPop');
+        if (!pop) {
+            pop = document.createElement('div');
+            pop.id = 'pobJornadasCfgPop';
+            pop.className = 'pob-dd-menu';
+            pop.style.padding = '12px';
+            pop.style.minWidth = '230px';
+            document.body.appendChild(pop);
+        }
+        var elegir = !!(_pobDiasPersonalizados && _pobDiasPersonalizados.length);
+        var n = _pobJornadasNum();
+
+        // Semilla de fechas: lo ya elegido, completado/recortado a N con
+        // consecutivos a partir de la fecha del form.
+        var fechaBase = (document.getElementById('pobInstFecha') || {}).value || '';
+        var tipo = (document.getElementById('pobInstJornadasTipo') || {}).value || 'normal';
+        var seed = (_pobDiasPersonalizados || []).slice(0, n);
+        if (seed.length < n) {
+            var cons = _pobDiasConsecutivos(fechaBase, n, tipo);
+            for (var i = seed.length; i < n; i++) seed.push(cons[i] || '');
+        }
+
+        var rows = '';
+        if (elegir) {
+            for (var j = 0; j < n; j++) {
+                rows += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+                      +   '<span style="font-size:0.72rem;color:#86868B;font-weight:700;width:64px;flex-shrink:0;">Jornada ' + (j + 1) + '</span>'
+                      +   '<input type="date" class="pob-input pob-jcfg-day" data-idx="' + j + '" value="' + (seed[j] || '') + '" style="flex:1;">'
+                      + '</div>';
+            }
+        }
+
+        pop.innerHTML =
+            '<div style="font-size:0.72rem;font-weight:700;color:#1D1D1F;margin-bottom:8px;">Días de las jornadas</div>'
+          + '<div style="display:flex;gap:4px;background:#F2F2F7;border-radius:8px;padding:3px;margin-bottom:' + (elegir ? '10px' : '0') + ';">'
+          +   '<button type="button" class="pob-jcfg-mode" data-mode="seguidas" style="flex:1;border:none;border-radius:6px;padding:6px 8px;font-size:0.78rem;font-weight:600;cursor:pointer;'
+          +     (elegir ? 'background:transparent;color:#86868B;' : 'background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(0,0,0,0.12);') + '">Seguidas</button>'
+          +   '<button type="button" class="pob-jcfg-mode" data-mode="elegir" style="flex:1;border:none;border-radius:6px;padding:6px 8px;font-size:0.78rem;font-weight:600;cursor:pointer;'
+          +     (elegir ? 'background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(0,0,0,0.12);' : 'background:transparent;color:#86868B;') + '">Elegir días</button>'
+          + '</div>'
+          + rows;
+
+        // Posición: anclado bajo el botón del reloj.
+        var r = btn.getBoundingClientRect();
+        pop.style.position = 'fixed';
+        pop.style.top = (r.bottom + 6) + 'px';
+        pop.style.left = Math.max(8, r.left) + 'px';
+
+        Array.prototype.forEach.call(pop.querySelectorAll('.pob-jcfg-mode'), function (b) {
+            b.onclick = function () {
+                if (b.getAttribute('data-mode') === 'elegir') {
+                    // Al activar "Elegir días", siembra con los consecutivos.
+                    _pobDiasPersonalizados = _pobDiasConsecutivos(fechaBase, _pobJornadasNum(), tipo);
+                    if (!_pobDiasPersonalizados.length) _pobDiasPersonalizados = [];
+                } else {
+                    _pobDiasPersonalizados = null;
+                }
+                _pobSyncJornadasCfgUI();
+            };
+        });
+        Array.prototype.forEach.call(pop.querySelectorAll('.pob-jcfg-day'), function (inp) {
+            inp.onchange = function () {
+                var idx = parseInt(inp.getAttribute('data-idx'), 10);
+                if (!Array.isArray(_pobDiasPersonalizados)) _pobDiasPersonalizados = [];
+                _pobDiasPersonalizados[idx] = inp.value || '';
+                var badge = document.getElementById('pobJornadasCfgBadge');
+                if (badge) badge.style.display = (_pobDiasPersonalizados.some(function (x) { return !!x; })) ? '' : 'none';
+            };
+        });
+    }
+
+    // Devuelve la lista limpia (sin vacíos) o null para el payload.
+    function _pobDiasPersonalizadosPayload() {
+        if (!_pobDiasPersonalizados) return null;
+        var clean = _pobDiasPersonalizados.filter(function (x) { return !!x; });
+        return clean.length ? clean : null;
+    }
+
     function _fillForm(inst) {
-        var f = function (id, val) { var el = document.getElementById(id); if (el) el.value = val == null ? '' : val; };
+        var f = function (id, val) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.value = val == null ? '' : val;
+            if (el.tagName === 'SELECT') el.dispatchEvent(new Event('change', { bubbles: true }));
+        };
         f('pobInstDescripcion', inst.descripcion);
         f('pobInstPo', inst.po);
         f('pobInstCliente', inst.cliente_nombre);
         f('pobInstFecha', inst.fecha);
+        f('pobInstHoraInicio', inst.hora_inicio || '');
+        f('pobInstHoraFin', inst.hora_fin || '');
         f('pobInstEstado', inst.estado || 'programada');
         f('pobInstJornadas', inst.jornadas_count || 1);
         f('pobInstJornadasTipo', inst.jornadas_tipo || 'normal');
@@ -478,6 +938,12 @@
         f('pobInstMonto', inst.monto_po);
         f('pobInstUtilidad', inst.utilidad);
         f('pobInstNotas', inst.notas);
+
+        // Restaura el configurador de jornadas (días personalizados).
+        _pobCloseJornadasCfg();
+        var dp = inst.dias_personalizados;
+        _pobDiasPersonalizados = (Array.isArray(dp) && dp.length) ? dp.slice() : null;
+        _pobSyncJornadasCfgUI();
     }
 
     function _renderAsignaciones(asignaciones) {
@@ -580,8 +1046,9 @@
         if (btnDel) btnDel.style.display = 'none';
         _fillForm({
             descripcion: '', po: '', cliente_nombre: '', fecha: '',
+            hora_inicio: '08:00', hora_fin: '17:00',
             estado: 'programada', jornadas_count: 1, jornadas_tipo: 'normal',
-            personal: '', monto_po: '', utilidad: '', notas: '',
+            personal: '', monto_po: '', utilidad: '', notas: '', dias_personalizados: null,
         });
         _renderAsignaciones([]);
         _pobAplicarUiModoCrear(true);
@@ -590,6 +1057,18 @@
 
         var modal = document.getElementById('pobModalBackdrop');
         if (modal) modal.classList.add('open');
+
+        // Pre-llenado INMEDIATO del PO desde el detalle de proyecto ya cacheado
+        // (crm_proyectos.js → window.proyGetCachedDetail). Si la oportunidad
+        // ligada tiene po_number, lo ponemos sin esperar al fetch de defaults.
+        // Solo en modo crear y si el campo está vacío (no pisa nada escrito).
+        try {
+            var detail = (typeof window.proyGetCachedDetail === 'function') ? window.proyGetCachedDetail() : null;
+            if (detail && detail.oportunidad_po) {
+                var poElNow = document.getElementById('pobInstPo');
+                if (poElNow && !poElNow.value) poElNow.value = detail.oportunidad_po;
+            }
+        } catch (e) { /* silencioso */ }
 
         // Pre-llenar cliente / PO desde la oportunidad ligada al proyecto.
         fetch('/app/api/proyecto/' + pid + '/instalacion-defaults/', { credentials: 'same-origin' })
@@ -633,9 +1112,17 @@
         var box = document.getElementById('pobCreateUsersBox');
         var btnToggle = document.getElementById('pobBtnToggleAddAsig');
         var addForm = document.getElementById('pobAddAsigForm');
+        var lst = document.getElementById('pobAsignList');
+        var hdr = document.getElementById('pobAsignHeader');
         if (box) box.style.display = esCrear ? '' : 'none';
         if (btnToggle) btnToggle.style.display = esCrear ? 'none' : '';
         if (addForm && esCrear) addForm.style.display = 'none';
+        // La lista de asignaciones programadas ("Sin asignaciones aún") sólo
+        // tiene sentido en EDITAR; en CREAR los técnicos se eligen arriba.
+        if (lst) lst.style.display = esCrear ? 'none' : '';
+        // El encabezado "Técnicos asignados" es redundante en CREAR (la caja
+        // gris ya lo explica) → se oculta para pegar el selector a las notas.
+        if (hdr) hdr.style.display = esCrear ? 'none' : '';
     }
 
     function _pobRenderUserResults(results) {
@@ -733,6 +1220,8 @@
         _pobUserSearchResults = {};
         var addForm = document.getElementById('pobAddAsigForm');
         if (addForm) addForm.style.display = 'none';
+        _pobCloseJornadasCfg();
+        _pobDiasPersonalizados = null;
     };
 
     function _readForm() {
@@ -742,6 +1231,8 @@
             po: v('pobInstPo').trim(),
             cliente_nombre: v('pobInstCliente').trim(),
             fecha: v('pobInstFecha'),
+            hora_inicio: v('pobInstHoraInicio'),
+            hora_fin: v('pobInstHoraFin'),
             estado: v('pobInstEstado'),
             jornadas_count: parseInt(v('pobInstJornadas') || '1', 10),
             jornadas_tipo: v('pobInstJornadasTipo'),
@@ -749,7 +1240,22 @@
             monto_po: v('pobInstMonto') || '0',
             utilidad: v('pobInstUtilidad') || '0',
             notas: v('pobInstNotas').trim(),
+            dias_personalizados: _pobDiasPersonalizadosPayload(),
         };
+    }
+
+    // Refresca el calendario tras crear/editar/asignar una instalación, en
+    // CUALQUIER modo (Todas, Instalaciones, Técnicos), e invalida el cache del
+    // mes para que al cambiar a semana/día también se vean datos frescos.
+    // Solo actúa si el calendario está abierto (evita fetches innecesarios).
+    function _pobRefrescarCalendario() {
+        try {
+            var m = document.getElementById('widgetCalendarioMaster');
+            var abierto = m && (m.classList.contains('is-page-mode') || m.offsetParent !== null);
+            if (!abierto) return;
+            if (typeof window.calInvalidarCache === 'function') window.calInvalidarCache();
+            if (typeof window.calGlobalRefetch === 'function') window.calGlobalRefetch('all');
+        } catch (e) {}
     }
 
     window.pobGuardarCambios = function () {
@@ -795,10 +1301,7 @@
                   if (typeof showToast === 'function') showToast(_pobCreatingMode ? 'Instalación creada' : 'Cambios guardados', 'success');
                   pobCerrarModal();
                   pobCargarLista();
-                  // Refresca el calendario si está visible.
-                  if (typeof window.calGlobalRefetch === 'function' && window._calCurrentSource === 'instalaciones') {
-                      try { window.calGlobalRefetch('all'); } catch (e) {}
-                  }
+                  _pobRefrescarCalendario();
               } else {
                   var err = (res.data && res.data.error) || 'No se pudo guardar.';
                   if (res.data && res.data.trace) {
@@ -813,24 +1316,73 @@
           });
     };
 
+    // ── Widget de confirmación de borrado (reemplaza al confirm() nativo) ──
+    function _pobEnsureConfirm() {
+        if (document.getElementById('pobConfirmBackdrop')) return;
+        var html =
+            '<div class="wop-modal-backdrop" id="pobConfirmBackdrop" style="z-index:12100;">'
+          +   '<div class="wop-modal" style="width:min(420px, 94vw);">'
+          +     '<div style="padding:26px 26px 18px;text-align:center;">'
+          +       '<div style="width:54px;height:54px;border-radius:50%;background:#FEE2E2;color:#DC2626;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'
+          +         '<svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+          +       '</div>'
+          +       '<h3 id="pobConfirmTitle" style="margin:0 0 8px;font-size:1.12rem;font-weight:700;color:#1D1D1F;">Eliminar instalación</h3>'
+          +       '<p id="pobConfirmMsg" style="margin:0;font-size:0.9rem;line-height:1.5;color:#6B7280;"></p>'
+          +     '</div>'
+          +     '<div style="display:flex;gap:10px;padding:0 22px 22px;">'
+          +       '<button type="button" id="pobConfirmCancel" style="flex:1;padding:11px;border:1px solid #E5E5EA;background:#fff;color:#1D1D1F;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;">Cancelar</button>'
+          +       '<button type="button" id="pobConfirmOk" style="flex:1;padding:11px;border:none;background:#DC2626;color:#fff;border-radius:10px;font-weight:700;font-size:0.9rem;cursor:pointer;">Eliminar</button>'
+          +     '</div>'
+          +   '</div>'
+          + '</div>';
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        document.body.appendChild(div.firstChild);
+        document.getElementById('pobConfirmBackdrop').addEventListener('click', function (e) {
+            if (e.target === this) _pobConfirmClose();
+        });
+        document.getElementById('pobConfirmCancel').addEventListener('click', _pobConfirmClose);
+    }
+    function _pobConfirmClose() {
+        var b = document.getElementById('pobConfirmBackdrop');
+        if (b) b.classList.remove('open');
+    }
+    // _pobConfirm(msg, onOk) — muestra el diálogo; ejecuta onOk si confirman.
+    function _pobConfirm(msg, onOk) {
+        _pobEnsureConfirm();
+        document.getElementById('pobConfirmMsg').textContent = msg;
+        var okBtn = document.getElementById('pobConfirmOk');
+        // Clonar para limpiar handlers previos.
+        var fresh = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(fresh, okBtn);
+        fresh.addEventListener('click', function () {
+            _pobConfirmClose();
+            if (typeof onOk === 'function') onOk();
+        });
+        document.getElementById('pobConfirmBackdrop').classList.add('open');
+    }
+
     window.pobEliminar = function () {
         if (!_pobActiveInst || !_pobActiveInst.id) return;
-        if (!confirm('¿Eliminar esta instalación del Programa de Obra? Se quitan también las asignaciones de técnicos.')) return;
-        fetch('/app/api/instalacion/' + _pobActiveInst.id + '/', {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': _csrf() },
-        }).then(function (r) { return r.json(); }).then(function (data) {
-            if (data && data.success) {
-                pobCerrarModal();
-                pobCargarLista();
-                if (typeof window.calGlobalRefetch === 'function' && window._calCurrentSource === 'instalaciones') {
-                    try { window.calGlobalRefetch('all'); } catch (e) {}
-                }
-            } else if (typeof showToast === 'function') {
-                showToast('No se pudo eliminar.', 'error');
+        _pobConfirm(
+            '¿Eliminar esta instalación del Programa de Obra? Se quitan también las asignaciones de técnicos. Esta acción no se puede deshacer.',
+            function () {
+                fetch('/app/api/instalacion/' + _pobActiveInst.id + '/', {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': _csrf() },
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data && data.success) {
+                        pobCerrarModal();
+                        pobCargarLista();
+                        _pobRefrescarCalendario();
+                        if (typeof showToast === 'function') showToast('Instalación eliminada', 'success');
+                    } else if (typeof showToast === 'function') {
+                        showToast('No se pudo eliminar.', 'error');
+                    }
+                });
             }
-        });
+        );
     };
 
     window.pobToggleAddAsig = function (forceVisible) {
@@ -888,9 +1440,7 @@
                         }
                     });
                 pobToggleAddAsig(false);
-                if (typeof window.calGlobalRefetch === 'function' && (window._calCurrentSource === 'instalaciones' || window._calViewMode === 'tecnicos')) {
-                    try { window.calGlobalRefetch('all'); } catch (e) {}
-                }
+                _pobRefrescarCalendario();
                 if (typeof showToast === 'function') {
                     showToast(data.created ? 'Técnico asignado' : 'Ya estaba asignado', data.created ? 'success' : 'info');
                 }
@@ -913,9 +1463,7 @@
                     _pobActiveInst.asignaciones = _pobActiveInst.asignaciones.filter(function (a) { return a.id !== asignacionId; });
                     _renderAsignaciones(_pobActiveInst.asignaciones);
                 }
-                if (typeof window.calGlobalRefetch === 'function' && (window._calCurrentSource === 'instalaciones' || window._calViewMode === 'tecnicos')) {
-                    try { window.calGlobalRefetch('all'); } catch (e) {}
-                }
+                _pobRefrescarCalendario();
             }
         });
     };

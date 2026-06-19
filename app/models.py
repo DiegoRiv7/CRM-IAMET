@@ -70,6 +70,11 @@ class UserProfile(models.Model):
     # (mantiene su vista de oportunidades). Los ingenieros y supervisores
     # acceden siempre, sin necesidad de este flag.
     puede_levantamiento = models.BooleanField(default=False, verbose_name="Puede iniciar Levantamientos")
+    # Permiso granular para crear prospectos (ClientePotencial) sin ser supervisor.
+    # Independiente del rol — un vendedor con este flag puede crear prospectos y
+    # asignárselos a sí mismo o a miembros de su grupo. Se administra desde el
+    # panel admin → Permisos. Supervisores y administradores pueden siempre.
+    puede_crear_prospecto = models.BooleanField(default=False, verbose_name="Puede crear Prospectos")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")
@@ -1635,6 +1640,8 @@ class Notificacion(models.Model):
         ('tarea_por_vencer', 'Tarea por vencer'),
         ('actividad_vencida', 'Actividad vencida'),
         ('actividad_por_vencer', 'Actividad por vencer'),
+        ('actividad_opp_vencida', 'Actividad de oportunidad vencida'),
+        ('actividad_opp_por_vencer', 'Actividad de oportunidad por vencer'),
         ('rendimiento_bajo', 'Bajo rendimiento de usuario'),
         # Importantes
         ('tarea_reprogramada', 'Tarea reprogramada'),
@@ -1799,8 +1806,9 @@ class Notificacion(models.Model):
         # Actividades del calendario
         if t in ('actividad_vencida', 'actividad_por_vencer'):
             return '/app/home/?open_calendario=1'
-        # Oportunidades
-        if t in ('mencion', 'comentario_oportunidad', 'oportunidad_mensaje') and oid:
+        # Oportunidades (incluye actividades programadas de la opp vencidas/por vencer)
+        if t in ('mencion', 'comentario_oportunidad', 'oportunidad_mensaje',
+                 'actividad_opp_vencida', 'actividad_opp_por_vencer') and oid:
             return f'/app/home/?open_opp={oid}'
         # Equipo
         if t in ('muro_post', 'muro_mencion', 'respuesta'):
@@ -2382,6 +2390,18 @@ class Tarea(models.Model):
         verbose_name="Proyecto",
         related_name='tareas'
     )
+    # Proyecto del módulo IAMET (modelo moderno, distinto del 'proyecto' legacy
+    # de arriba). Permite que una Tarea —con su ventana completa
+    # (comentarios/participantes/completar)— viva dentro de un ProyectoIAMET.
+    # Las tareas creadas en el detalle del proyecto se guardan aquí.
+    proyecto_iamet = models.ForeignKey(
+        'ProyectoIAMET',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Proyecto IAMET",
+        related_name='tareas_iamet'
+    )
     creado_por = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -2659,6 +2679,23 @@ class Actividad(models.Model):
     )
 
     completada = models.BooleanField(default=False, verbose_name="Completada")
+
+    # Resultado de la actividad: texto libre + estatus, capturados al completar
+    # una Actividad genérica del calendario (no aplica a Tareas).
+    resultado = models.TextField(
+        blank=True, default='', verbose_name="Resultado de la actividad"
+    )
+    resultado_estatus = models.CharField(
+        max_length=30, blank=True, default='',
+        choices=[
+            ('exitosa', 'Exitosa'),
+            ('sin_exito', 'Sin éxito'),
+            ('seguimiento', 'Requiere seguimiento'),
+            ('reagendar', 'Reagendar'),
+            ('cancelada', 'Cancelada'),
+        ],
+        verbose_name="Estatus del resultado"
+    )
 
     # Agrupador opcional para actividades creadas como serie recurrente.
     # Cuando el usuario marca "Repetir" en el formulario, el backend crea
@@ -2974,6 +3011,39 @@ class ArchivoOportunidad(models.Model):
         help_text="'oc' si es OCC, 'factura' si es Factura de ingreso, '' si no aplica")
     monto_extraido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
         verbose_name="Monto extraído del PDF")
+
+    class Meta:
+        ordering = ['-fecha_subida']
+
+    def __str__(self):
+        return self.nombre_original
+
+    @property
+    def tamaño_formateado(self):
+        if self.tamaño < 1024:
+            return f"{self.tamaño} B"
+        elif self.tamaño < 1024 * 1024:
+            return f"{self.tamaño / 1024:.1f} KB"
+        elif self.tamaño < 1024 * 1024 * 1024:
+            return f"{self.tamaño / (1024 * 1024):.1f} MB"
+        return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
+
+
+class ArchivoActividad(models.Model):
+    """Archivos adjuntos al resultado de una Actividad genérica del
+    calendario. Versión simplificada de ArchivoOportunidad: se sube al
+    completar la actividad con su resultado."""
+    actividad = models.ForeignKey(
+        'Actividad', on_delete=models.CASCADE, related_name='resultado_archivos'
+    )
+    nombre_original = models.CharField(max_length=255)
+    archivo = models.FileField(upload_to='actividades/resultado/%Y/%m/', blank=True)
+    tipo_archivo = models.CharField(max_length=20, default='otro')
+    extension = models.CharField(max_length=10, blank=True)
+    tamaño = models.BigIntegerField(default=0)
+    mime_type = models.CharField(max_length=100, blank=True)
+    subido_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-fecha_subida']
@@ -6043,6 +6113,7 @@ class Instalacion(models.Model):
         ('extraordinaria', 'Extraordinaria'),
     ]
     ESTADO_CHOICES = [
+        ('tentativa', 'Tentativa'),
         ('programada', 'Programada'),
         ('en_curso', 'En curso'),
         ('completada', 'Completada'),
@@ -6059,6 +6130,13 @@ class Instalacion(models.Model):
         help_text='Texto libre: ej. "1 SUPERVISOR Y 3 TECNICOS"',
     )
     fecha_programada = models.DateField(null=True, blank=True, verbose_name='Fecha')
+    hora_inicio = models.TimeField(null=True, blank=True, verbose_name='Hora de inicio')
+    hora_fin = models.TimeField(null=True, blank=True, verbose_name='Hora de fin')
+    dias_personalizados = models.JSONField(
+        null=True, blank=True, default=None,
+        verbose_name='Días personalizados (ISO)',
+        help_text="Lista de fechas ISO si las jornadas NO son consecutivas; None = consecutivas auto.",
+    )
     fecha_tentativa_texto = models.CharField(
         max_length=120, blank=True, default='',
         help_text='Cuando no hay fecha exacta. Ej: "JULIO", "SABADO 23 MAYO".',
@@ -6396,3 +6474,48 @@ class CrmCambio(models.Model):
 
     def __str__(self):
         return f'{self.entidad}#{self.objeto_id} {self.accion}'
+
+
+class PerfEvent(models.Model):
+    """Telemetría del Modo Ligero (ver perf_mode.js / perf_lite.css).
+
+    Cada vez que el modo se ASIENTA por decisión automática (el benchmark
+    de carga baja a ligero, el controlador adaptativo baja por jank
+    sostenido, o un probe sube de vuelta a completo) o el usuario lo
+    cambia a mano, el cliente manda un evento ligero a
+    /app/api/perf/evento/. Sirve para que supervisores vean en el panel
+    qué equipos batallan, cuántos corren en ligero y por qué — sin tocar
+    nada de la experiencia del usuario.
+
+    Es telemetría de bajo volumen (solo cambios asentados, no por frame).
+    Las filas viejas se purgan oportunistamente desde el endpoint (>60d).
+    """
+    MODOS = [('lite', 'Ligero'), ('full', 'Completo')]
+    MOTIVOS = [
+        ('benchmark', 'Benchmark de carga'),    # equipo lento detectado al cargar
+        ('dynamic', 'Jank sostenido'),          # bajó por carga durante la sesión
+        ('probe_up', 'Carga liberada'),         # subió a completo tras un probe
+        ('static', 'Señal del equipo'),         # reduced-motion / RAM baja
+        ('manual_lite', 'Manual · ligero'),
+        ('manual_full', 'Manual · completo'),
+        ('manual_auto', 'Manual · automático'),
+    ]
+
+    usuario = models.ForeignKey(User, null=True, blank=True,
+                                on_delete=models.SET_NULL, related_name='perf_eventos')
+    modo = models.CharField(max_length=8, choices=MODOS)
+    motivo = models.CharField(max_length=16, choices=MOTIVOS)
+    fps = models.FloatField(null=True, blank=True)             # FPS promedio medido
+    cores = models.IntegerField(null=True, blank=True)         # hardwareConcurrency
+    device_memory = models.FloatField(null=True, blank=True)   # GB (Chrome); null en Safari
+    pantalla = models.CharField(max_length=24, blank=True, default='')  # ej. "1920x1080@2"
+    user_agent = models.CharField(max_length=300, blank=True, default='')
+    ts = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Evento de rendimiento'
+        verbose_name_plural = 'Eventos de rendimiento'
+        ordering = ['-ts']
+
+    def __str__(self):
+        return f'{self.modo}/{self.motivo} @ {self.ts:%Y-%m-%d %H:%M}'

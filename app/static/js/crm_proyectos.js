@@ -896,12 +896,18 @@
         if (!chip) return;
         var oppId = chip.getAttribute('data-opp-id');
         if (!oppId) return;
+        // RÁPIDO: abrir la oportunidad como VENTANA flotante en sitio (igual que
+        // el footer de la tarjeta del kanban), sin recargar la página. El reload
+        // a /app/todos era lo que hacía sentir lento abrir la oportunidad.
+        if (typeof window.openDetalle === 'function') {
+            window.openDetalle(oppId, { asWindow: true });
+            return;
+        }
         if (typeof window.crmAbrirOportunidad === 'function') {
             window.crmAbrirOportunidad(oppId);
         } else if (typeof window.proyectosAbrirOportunidad === 'function') {
             window.proyectosAbrirOportunidad(oppId);
         } else {
-            // TODO: definir handler global para abrir oportunidad desde detalle de proyecto.
             window.location.href = '/app/todos/?tab=crm&mes=todos&open_opp=' + oppId;
         }
     };
@@ -1131,7 +1137,11 @@
 
     function renderProjectCards(projects) {
         // Nombre histórico para compatibilidad; delega al nuevo renderer
-        return renderProjectsTable(projects);
+        var r = renderProjectsTable(projects);
+        // Hook para el Kanban (proyectos_v2.js): se re-renderiza con los MISMOS
+        // datos filtrados/ordenados que la lista, en cada carga/filtro/búsqueda.
+        try { if (window.proyKanbanRender) window.proyKanbanRender(projects); } catch (e) { }
+        return r;
     }
 
     function renderProjectsTable(projects) {
@@ -1434,6 +1444,38 @@
         var activePane = el(paneId);
         if (activePane) activePane.style.display = '';
 
+        // Fondo transparente "estadio" para los tabs que lo usan (Tareas y
+        // Programa de Obra). Restauramos siempre primero (mata residuos de
+        // otros tabs); Tareas lo re-aplica desde renderTareas. Para Programa
+        // de Obra lo aplicamos aquí, recorriendo los ancestros de su pane.
+        if (typeof window._proyTareasBg === 'function') {
+            if (tabName === 'programa-obra') {
+                // Empezamos desde pobContainer (hijo del pane) para que el
+                // recorrido incluya al propio pane y lo transparente inline
+                // con !important — igual que Tareas (cuya walk arranca en el
+                // padre del shell, que ES el pane). Necesario para ganar al
+                // tema mundial, que pinta .proy-tab-pane con !important.
+                window._proyTareasBg(true, 'pobContainer');
+            } else if (tabName === 'partidasv4') {
+                // Mismo patrón: transparenta el pane (mata el cuadro blanco de
+                // fondo) pero conserva la tarjeta interna de la tabla, que es
+                // el startId y por eso la walk no la toca.
+                window._proyTareasBg(true, 'proyPartidasWrap');
+            } else if (tabName === 'levantamientos') {
+                // Mismo tratamiento que Partidas: transparenta el pane y
+                // conserva la card de la lista de levantamientos.
+                window._proyTareasBg(true, 'proyLevWrap');
+            } else if (tabName === 'drive') {
+                // Mismo patrón: transparenta el pane (mata el cuadro blanco) y
+                // conserva la card blanca interna del Drive (#proyDriveCard),
+                // que es el startId y por eso la walk no la toca.
+                window._proyTareasBg(true, 'proyDriveCard');
+            } else if (tabName !== 'tareas') {
+                window._proyTareasBg(false);
+            }
+        }
+
+
         // Cierra el dropdown "Más ▾" cuando se navega
         if (typeof _proyMoreMenuClose === 'function') _proyMoreMenuClose();
 
@@ -1617,14 +1659,19 @@
     // =========================================
 
     window.proyectosPartidaMenuToggle = function(btn) {
-        // Remove any existing menu
+        var existing = document.getElementById('proyPartidaContextMenu');
         _closePartidaMenu();
+        // Toggle: si el men\u00FA abierto era de ESTE bot\u00F3n, s\u00F3lo cerrarlo.
+        if (existing && existing._ownerBtn === btn) return;
 
         var item = JSON.parse(decodeURIComponent(btn.getAttribute('data-partida')));
 
         var menu = document.createElement('div');
         menu.id = 'proyPartidaContextMenu';
-        menu.style.cssText = 'position:absolute;right:0;top:100%;z-index:10600;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:6px 0;min-width:190px;animation:fadeIn 0.12s ease;';
+        menu._ownerBtn = btn;
+        // position:fixed + append al body \u2192 el overflow de la tabla NO lo
+        // recorta (antes el men\u00FA quedaba oculto y "no volv\u00EDa a abrir").
+        menu.style.cssText = 'position:fixed;z-index:12050;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:6px 0;min-width:190px;animation:fadeIn 0.12s ease;';
 
         var menuItems = [
             { icon: '\uD83D\uDCDD', label: 'Editar', color: '#1d1d1f', action: 'edit' },
@@ -1640,10 +1687,18 @@
             '</button>';
         });
         menu.innerHTML = menuHtml;
+        document.body.appendChild(menu);
 
-        // Position relative to button
-        btn.parentElement.style.position = 'relative';
-        btn.parentElement.appendChild(menu);
+        // Posici\u00F3n fija calculada desde el bot\u00F3n (alineado a su derecha, abre
+        // hacia abajo; si no cabe, hacia arriba).
+        var r = btn.getBoundingClientRect();
+        var mw = menu.offsetWidth, mh = menu.offsetHeight;
+        var left = Math.min(r.right - mw, window.innerWidth - mw - 8);
+        if (left < 8) left = 8;
+        var top = r.bottom + 4;
+        if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - 4 - mh);
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
 
         // Bind actions
         menu.querySelectorAll('.proy-ctx-menu-item').forEach(function(menuBtn) {
@@ -5536,48 +5591,531 @@
     //  RENDER: TAREAS
     // =========================================
 
-    function renderTareas(projectId) {
-        var container = el('proyTareasBody');
-        if (!container) return;
+    // ── Vista de Tareas del proyecto — COPIA FIEL del cockpit (.tcp-*) ──────
+    // Port namespaced (proyTcp / _proyTcp) del módulo real de Tareas
+    // (crm_main.js renderTareasCockpit/tcpSelectTask/_tcpRenderSummary), pero
+    // alimentado SOLO con las tareas de este proyecto (endpoint
+    // /proyectos/<id>/tareas/). Renderiza en #proyTcpList / #proyTcpDetail con
+    // su propio array (NO _crmAllTareas) y sus propios helpers privados, para no
+    // depender de internals de crm_main.js ni colisionar con sus IDs/globals.
+    // PROHIBIDO abrir/expandir la tarea: el detalle solo tiene botón Cerrar (X).
+    var _proyTcpData = [];
+    var _proyTcpSelectedId = null;
+    var _proyTcpCollapsed = {};
 
-        container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">Cargando...</td></tr>';
+    // — Helpers privados (copia de los _tcp* del módulo real) —
+    function _proyTcpEsc(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function _proyTcpAvatarColor(nombre) {
+        var colors = ['#E11D48','#DC2626','#F59E0B','#CA8A04','#16A34A','#0891B2','#2563EB','#7C3AED','#DB2777','#0EA5E9'];
+        var h = 0; var s = nombre || '?';
+        for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+        return colors[Math.abs(h) % colors.length];
+    }
+    function _proyTcpInitials(nombre) {
+        if (!nombre) return '?';
+        var parts = nombre.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+    function _proyTcpFirstName(nombre) {
+        if (!nombre) return '';
+        return (nombre.trim().split(/\s+/)[0] || '').slice(0, 12);
+    }
+    function _proyTcpFmtFecha(iso) {
+        if (!iso) return 'Sin fecha';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        var hh = String(d.getHours()).padStart(2, '0');
+        var mm = String(d.getMinutes()).padStart(2, '0');
+        return d.getDate() + ' ' + MES[d.getMonth()] + ', ' + hh + ':' + mm;
+    }
+    function _proyTcpEstadoClass(estado) {
+        return (estado || 'pendiente').toLowerCase().replace(/\s+/g, '_');
+    }
+    function _proyTcpEstadoLabel(estado) {
+        var map = {
+            pendiente: 'Pendiente', iniciada: 'Iniciada', en_progreso: 'En progreso',
+            completada: 'Completada', cancelada: 'Cancelada'
+        };
+        return map[estado] || (estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'Pendiente');
+    }
+    function _proyTcpRelativeWhen(fl, today, tomorrow) {
+        var ms = fl - new Date();
+        var absDays = Math.floor(Math.abs(ms) / 86400000);
+        if (fl < today) {
+            if (absDays === 0) return 'hoy';
+            if (absDays === 1) return 'ayer';
+            return 'hace ' + absDays + 'd';
+        }
+        if (fl < tomorrow) {
+            var h = Math.round(ms / 3600000);
+            if (h <= 0) return 'hoy';
+            if (h === 1) return 'en 1h';
+            if (h < 24) return 'en ' + h + 'h';
+            return 'hoy';
+        }
+        var dd = Math.ceil(ms / 86400000);
+        if (dd === 1) return 'mañana';
+        if (dd <= 7) return 'en ' + dd + 'd';
+        var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        return fl.getDate() + ' ' + MES[fl.getMonth()];
+    }
 
-        _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function(resp) {
-            if (resp.ok || resp.success) {
-                var tasks = resp.data || [];
-                if (tasks.length === 0) {
-                    container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8e8e93">No hay tareas registradas</td></tr>';
-                    return;
-                }
+    // — Fila de la lista (copia de _tcpRowHtml) —
+    function _proyTcpRowHtml(t, esAtrasada) {
+        var estadoCls = _proyTcpEstadoClass(t.estado);
+        var estadoLbl = _proyTcpEstadoLabel(t.estado).toUpperCase();
+        var resp = t.responsable || '';
+        var creador = t.creado_por || '';
+        var respTxt = _proyTcpFirstName(resp);
+        var creaTxt = _proyTcpFirstName(creador);
+        var oppNombre = t.oportunidad_nombre || '';
+        var oppId = t.oportunidad_id || '';
+        var doneCls = t.estado === 'completada' ? ' done' : '';
+        var atrCls = esAtrasada ? ' atrasada' : '';
 
-                var html = '';
-                tasks.forEach(function(t) {
-                    var titleCell;
-                    var sourceBadge;
-                    if (t.source === 'oportunidad') {
-                        titleCell = '<span style="color:#007aff;cursor:pointer;font-weight:600;" onclick="var m=document.getElementById(\'crmTaskDetailModal\');if(m){m.classList.add(\'z-elevated\');m.style.zIndex=\'10800\';}if(typeof crmTaskVerDetalle===\'function\')crmTaskVerDetalle(' + t.id + ');">' + truncate(t.titulo, 40) + '</span>';
-                        sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#dbeafe;color:#2563eb;">CRM</span>';
-                    } else {
-                        titleCell = '<span style="font-weight:600;color:#1d1d1f;">' + truncate(t.titulo, 40) + '</span>';
-                        sourceBadge = '<span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.68rem;font-weight:600;background:#f3e8ff;color:#7c3aed;">Proyecto</span>';
-                    }
-                    html += '<tr>' +
-                        '<td>' + titleCell + '</td>' +
-                        '<td>' + sourceBadge + '</td>' +
-                        '<td><span class="proy-badge ' + priorityClass(t.prioridad) + '">' + priorityLabel(t.prioridad) + '</span></td>' +
-                        '<td>' + (t.asignado_a || t.asignado_a_nombre || t.asignado_nombre || 'Sin asignar') + '</td>' +
-                        '<td>' + fmtDate(t.fecha_limite) + '</td>' +
-                        '<td><span class="proy-badge ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></td>' +
-                    '</tr>';
-                });
+        var warnIcon = esAtrasada
+            ? '<span class="tcp-row-warn" title="Vencida"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="0" fill="#EF4444"/><path d="M12 9v4M12 17h.01" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>'
+            : '';
 
-                container.innerHTML = html;
+        var oppCell = oppId
+            ? '<span class="tcp-row-opp linked" title="' + _proyTcpEsc(oppNombre) + '" onclick="event.stopPropagation();proyTcpAbrirOportunidad(' + oppId + ')">' + _proyTcpEsc(oppNombre || '—') + '</span>'
+            : '<span class="tcp-row-opp' + (oppNombre ? '' : ' empty') + '">' + _proyTcpEsc(oppNombre || '—') + '</span>';
+
+        var calSvg = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+        var fechaTxt = t.fecha_limite ? _proyTcpFmtFecha(t.fecha_limite) : '';
+        var fechaCell = fechaTxt
+            ? '<span class="tcp-row-fecha' + (esAtrasada ? ' atrasada' : '') + '">' + calSvg + ' ' + fechaTxt + '</span>'
+            : '<span class="tcp-row-fecha" style="background:transparent;color:#CBD5E1;padding:0;">—</span>';
+
+        return '<div class="tcp-row' + doneCls + atrCls + '" data-tid="' + t.id + '" onclick="proyTcpSelectTask(' + t.id + ')">' +
+            '<span class="tcp-row-tarea">' +
+                warnIcon +
+                '<span class="tcp-row-title">' + _proyTcpEsc(t.titulo || 'Sin título') + '</span>' +
+            '</span>' +
+            '<span class="tcp-row-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+            '<span class="tcp-row-resp' + (respTxt ? '' : ' empty') + '">' + _proyTcpEsc(respTxt || '—') + '</span>' +
+            '<span class="tcp-row-creador' + (creaTxt ? '' : ' empty') + '">' + _proyTcpEsc(creaTxt || '—') + '</span>' +
+            fechaCell +
+            oppCell +
+        '</div>';
+    }
+
+    // — Lista agrupada en secciones (copia de renderTareasCockpit) —
+    function _proyTcpRenderList(tareas, now) {
+        var list = el('proyTcpList');
+        if (!list) return;
+
+        var head = '<div class="tcp-col-head">' +
+            '<span>TAREA</span><span>ESTADO</span><span>RESPONSABLE</span>' +
+            '<span>CREADOR</span><span>FECHA LÍMITE</span><span>OPORTUNIDAD</span>' +
+        '</div>';
+
+        if (!tareas || tareas.length === 0) {
+            list.innerHTML = head + '<div class="tcp-row-empty">No hay tareas registradas en este proyecto.</div>';
+            return;
+        }
+
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+        var groups = { atrasadas: [], hoy: [], despues: [], completadas: [] };
+        tareas.forEach(function (t) {
+            if (t.estado === 'completada') { groups.completadas.push(t); return; }
+            if (!t.fecha_limite) { groups.despues.push(t); return; }
+            var fl = new Date(t.fecha_limite);
+            if (fl < today) groups.atrasadas.push(t);
+            else if (fl < tomorrow) groups.hoy.push(t);
+            else groups.despues.push(t);
+        });
+        if (_proyTcpCollapsed.completadas === undefined) _proyTcpCollapsed.completadas = true;
+
+        var DIAS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+        var MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+        var hoyLabel = DIAS[today.getDay()] + ' ' + today.getDate() + ' ' + MESES[today.getMonth()];
+
+        var secciones = [
+            { key: 'atrasadas',   label: 'ATRASADAS',   extra: '',                items: groups.atrasadas,   cls: 'atrasadas' },
+            { key: 'hoy',         label: 'HOY',         extra: ' · ' + hoyLabel,  items: groups.hoy,         cls: '' },
+            { key: 'despues',     label: 'MÁS TARDE',   extra: '',                items: groups.despues,     cls: '' },
+            { key: 'completadas', label: 'COMPLETADAS', extra: '',                items: groups.completadas, cls: 'completadas' }
+        ];
+
+        var html = head;
+        secciones.forEach(function (sec) {
+            if (sec.items.length === 0 && sec.key !== 'hoy') return;
+            var collapsed = _proyTcpCollapsed[sec.key] ? ' collapsed' : '';
+            html += '<div class="tcp-section-head ' + sec.cls + collapsed + '" data-proy-tcp-sec="' + sec.key + '">' +
+                '<svg class="tcp-sec-chev" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                '<span>' + sec.label + sec.extra + '</span>' +
+                '<span class="tcp-sec-count">' + sec.items.length + '</span>' +
+            '</div>';
+            html += '<div class="tcp-section-body">';
+            if (sec.items.length === 0) {
+                html += '<div style="padding:18px 24px;color:#94A3B8;font-size:12.5px;font-style:italic;">No hay tareas para hoy.</div>';
             } else {
-                container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">Error al cargar tareas</td></tr>';
-                console.error('Error cargando tareas:', resp.error);
+                sec.items.forEach(function (t) { html += _proyTcpRowHtml(t, sec.key === 'atrasadas'); });
             }
-        }).catch(function(err) {
-            container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444">Error de conexion</td></tr>';
+            html += '</div>';
+        });
+        list.innerHTML = html;
+
+        if (_proyTcpSelectedId) {
+            var rowSel = list.querySelector('.tcp-row[data-tid="' + _proyTcpSelectedId + '"]');
+            if (rowSel) rowSel.classList.add('active');
+        } else {
+            _proyTcpRenderSummary(tareas, now);
+        }
+    }
+
+    // — Resumen del proyecto (copia de _tcpRenderSummary, sin saludo, scope=proyecto) —
+    function _proyTcpSummaryStat(key, num, label) {
+        var hasCls = num > 0 ? ' has-items' : '';
+        return '<div class="tcp-summary-stat ' + key + hasCls + '">' +
+            '<span class="tcp-summary-stat-num">' + num + '</span>' +
+            '<span class="tcp-summary-stat-lbl">' + label + '</span>' +
+        '</div>';
+    }
+    function _proyTcpUpcomingRow(t, fl, today, tomorrow) {
+        var overdue = fl < today;
+        var urgent = !overdue && fl < tomorrow;
+        var cls = overdue ? ' overdue' : (urgent ? ' urgent' : '');
+        var when = _proyTcpRelativeWhen(fl, today, tomorrow);
+        return '<div class="tcp-summary-up-row' + cls + '" onclick="proyTcpSelectTask(' + t.id + ')">' +
+            '<span class="tcp-summary-up-dot"></span>' +
+            '<span class="tcp-summary-up-title" title="' + _proyTcpEsc(t.titulo || '') + '">' + _proyTcpEsc(t.titulo || 'Sin título') + '</span>' +
+            '<span class="tcp-summary-up-when">' + when + '</span>' +
+        '</div>';
+    }
+    function _proyTcpRenderSummary(tareas, now) {
+        var panel = el('proyTcpDetail');
+        if (!panel) return;
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Scope = TODAS las tareas del proyecto (no solo "mías").
+        var vencidas = 0, hoy = 0, completadasHoy = 0, totalAbiertas = 0;
+        var proximasCandidatas = [];
+        (tareas || []).forEach(function (t) {
+            if (t.estado === 'completada') {
+                var fc = t.fecha_completada;
+                if (fc) {
+                    var d = new Date(fc);
+                    if (!isNaN(d.getTime()) && d >= today && d < tomorrow) completadasHoy++;
+                } else {
+                    completadasHoy++;
+                }
+                return;
+            }
+            if (t.estado === 'cancelada') return;
+            totalAbiertas++;
+            if (t.fecha_limite) {
+                var fl = new Date(t.fecha_limite);
+                if (!isNaN(fl.getTime())) {
+                    if (fl < today) vencidas++;
+                    else if (fl < tomorrow) hoy++;
+                    proximasCandidatas.push({ t: t, fl: fl });
+                }
+            }
+        });
+        proximasCandidatas.sort(function (a, b) { return a.fl - b.fl; });
+        var proximas = proximasCandidatas.slice(0, 4);
+
+        var subtexto;
+        if (totalAbiertas === 0) subtexto = 'No hay tareas pendientes en este proyecto.';
+        else if (vencidas > 0) subtexto = 'Hay <strong>' + vencidas + '</strong> tarea' + (vencidas === 1 ? '' : 's') + ' vencida' + (vencidas === 1 ? '' : 's') + ' que atender.';
+        else if (hoy > 0) subtexto = '<strong>' + hoy + '</strong> tarea' + (hoy === 1 ? '' : 's') + ' para hoy.';
+        else subtexto = 'Hay ' + totalAbiertas + ' tarea' + (totalAbiertas === 1 ? '' : 's') + ' abierta' + (totalAbiertas === 1 ? '' : 's') + '. Nada urgente.';
+
+        panel.innerHTML = '<div class="tcp-empty">' +
+            '<div class="tcp-summary-label">Resumen</div>' +
+            '<h2 class="tcp-summary-greeting">Resumen del proyecto</h2>' +
+            '<p class="tcp-summary-sub">' + subtexto + '</p>' +
+            '<div class="tcp-summary-row">' +
+                _proyTcpSummaryStat('vencidas', vencidas, 'Vencidas') +
+                _proyTcpSummaryStat('hoy', hoy, 'Hoy') +
+                _proyTcpSummaryStat('done', completadasHoy, 'Hechas hoy') +
+            '</div>' +
+            '<div class="tcp-summary-section">' +
+                '<div class="tcp-summary-sec-label">' +
+                    '<span>Próximas</span>' +
+                    (proximas.length > 0 ? '<span class="count">' + proximas.length + '</span>' : '') +
+                '</div>' +
+                (proximas.length > 0
+                    ? '<div class="tcp-summary-upcoming">' + proximas.map(function (x) { return _proyTcpUpcomingRow(x.t, x.fl, today, tomorrow); }).join('') + '</div>'
+                    : '<div class="tcp-summary-empty">Nada próximo en el calendario.</div>') +
+            '</div>' +
+            '<div style="flex:1;"></div>' +
+            '<div style="text-align:center;font-size:11.5px;color:#CBD5E1;padding:18px 0 2px;">' +
+                'Haz clic en una tarea para ver el detalle aquí.' +
+            '</div>' +
+        '</div>';
+    }
+
+    // — Meta row del detalle (copia de _tcpMetaRow) —
+    function _proyTcpMetaRow(label, valueHtml, icon) {
+        var icons = {
+            user:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+            briefcase: '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+            calendar:  '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            tag:       '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>',
+            flag:      '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'
+        };
+        return '<div class="tcp-meta-row"><span class="tcp-meta-label">' + icons[icon] + label + '</span>' +
+               '<span class="tcp-meta-value">' + valueHtml + '</span></div>';
+    }
+
+    // — Selección de fila → panel de detalle (copia de tcpSelectTask, SIN expandir/abrir) —
+    window.proyTcpSelectTask = function (tid) {
+        _proyTcpSelectedId = tid;
+        document.querySelectorAll('#proyTcpList .tcp-row').forEach(function (r) { r.classList.remove('active'); });
+        var row = document.querySelector('#proyTcpList .tcp-row[data-tid="' + tid + '"]');
+        if (row) row.classList.add('active');
+
+        var t = _proyTcpData.find(function (x) { return x.id === tid; });
+        var panel = el('proyTcpDetail');
+        if (!panel || !t) return;
+
+        var estadoCls = _proyTcpEstadoClass(t.estado);
+        var estadoLbl = _proyTcpEstadoLabel(t.estado).toUpperCase();
+        var resp = t.responsable || '';
+        var avColor = _proyTcpAvatarColor(resp);
+        var ini = _proyTcpInitials(resp);
+        var fechaIso = t.fecha_limite || '';
+        var vencida = false;
+        if (fechaIso) {
+            try { vencida = new Date(fechaIso) < new Date() && t.estado !== 'completada'; } catch (_) {}
+        }
+        var fechaTxt = _proyTcpFmtFecha(fechaIso);
+        var prioLabel = t.prioridad === 'alta' ? 'Alta' : 'Normal';
+        var tipo = t.oportunidad_tipo || '';
+        var categoria = tipo ? (tipo.charAt(0).toUpperCase() + tipo.slice(1)) : '—';
+
+        var subtsHtml = '<div class="tcp-subt-empty">Sin subtareas</div>';
+        var subtHead = 'SUBTAREAS';
+        var subs = t.subtareas || [];
+        if (subs.length > 0) {
+            var doneN = subs.filter(function (s) { return s.estado === 'completada'; }).length;
+            subtHead = 'SUBTAREAS (' + doneN + '/' + subs.length + ')';
+            subtsHtml = '<div class="tcp-subt-list">' + subs.map(function (s) {
+                var dn = s.estado === 'completada';
+                return '<div class="tcp-subt-row' + (dn ? ' done' : '') + '">' +
+                    '<span class="tcp-subt-check' + (dn ? ' done' : '') + '">' + (dn ? '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '') + '</span>' +
+                    '<span class="tcp-subt-title">' + _proyTcpEsc(s.titulo || '') + '</span>' +
+                '</div>';
+            }).join('') + '</div>';
+        }
+
+        var descHtml = t.descripcion
+            ? '<div class="tcp-detail-desc">' + _proyTcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>'
+            : '<div class="tcp-detail-desc empty">Sin descripción.</div>';
+
+        var clockIcon = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+        var oppVal;
+        if (t.oportunidad_id && t.oportunidad_nombre) {
+            oppVal = '<span class="tcp-opp-link" onclick="proyTcpAbrirOportunidad(' + t.oportunidad_id + ')" title="Abrir oportunidad">' + _proyTcpEsc(t.oportunidad_nombre) + '</span>';
+        } else if (t.oportunidad_nombre) {
+            oppVal = _proyTcpEsc(t.oportunidad_nombre);
+        } else {
+            oppVal = '<span class="muted">Sin oportunidad</span>';
+        }
+
+        // Expandir → abre la ventana completa de la tarea. Solo para tareas de
+        // Expandir SIEMPRE. Las de oportunidad abren su ventana completa
+        // (crmTaskVerDetalle); las de proyecto, un overlay centrado con el mismo
+        // detalle ampliado (no comparten ids con Tarea, así que no se puede usar
+        // crmTaskVerDetalle para ellas).
+        var expandBtn = '<button class="tcp-detail-iconbtn" title="Ampliar tarea" onclick="proyTcpExpandir(' + t.id + ')"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>';
+        panel.innerHTML =
+            '<div class="tcp-detail-head">' +
+                '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                '<div class="tcp-detail-actions">' +
+                    expandBtn +
+                    '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="proyTcpCloseDetail()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="tcp-detail-scroll">' +
+                '<h1 class="tcp-detail-title">' + _proyTcpEsc(t.titulo || 'Sin título') + '</h1>' +
+                descHtml +
+                '<div class="tcp-detail-meta">' +
+                    _proyTcpMetaRow('Responsable', resp
+                        ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _proyTcpEsc(resp)
+                        : '<span class="muted">Sin asignar</span>', 'user') +
+                    _proyTcpMetaRow('Oportunidad', oppVal, 'briefcase') +
+                    _proyTcpMetaRow('Fecha límite', fechaIso
+                        ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + clockIcon + ' ' + fechaTxt + '</span>'
+                        : '<span class="muted">Sin fecha</span>', 'calendar') +
+                    _proyTcpMetaRow('Categoría', categoria, 'tag') +
+                    _proyTcpMetaRow('Prioridad', prioLabel, 'flag') +
+                '</div>' +
+                '<div class="tcp-detail-subt-head">' + subtHead + '</div>' +
+                subtsHtml +
+            '</div>';
+    };
+
+    window.proyTcpCloseDetail = function () {
+        _proyTcpSelectedId = null;
+        document.querySelectorAll('#proyTcpList .tcp-row').forEach(function (r) { r.classList.remove('active'); });
+        _proyTcpRenderSummary(_proyTcpData, new Date());
+    };
+
+    window.proyTcpAbrirOportunidad = function (oppId) {
+        if (!oppId) return;
+        if (typeof window.openDetalle === 'function') window.openDetalle(oppId, { asWindow: true });
+    };
+
+    // Expandir: opp → ventana completa (crmTaskVerDetalle); proyecto → overlay
+    // centrado con el mismo detalle (las de proyecto no tienen ventana propia).
+    window.proyTcpExpandir = function (tid) {
+        var t = _proyTcpData.find(function (x) { return x.id === tid; });
+        if (!t) return;
+        // Tareas de proyecto (modelo Tarea) y de oportunidad → ventana completa.
+        if ((t.source === 'proyecto' || t.source === 'oportunidad') && typeof crmTaskVerDetalle === 'function') {
+            var m = document.getElementById('crmTaskDetailModal');
+            if (m) { m.classList.add('z-elevated'); m.style.zIndex = '10800'; }
+            crmTaskVerDetalle(tid);
+            return;
+        }
+        // Legacy (ProyectoTarea, modelo simple) → diálogo ligero ver/editar.
+        if (typeof window.proyTareaEditar === 'function') window.proyTareaEditar(t);
+        else _proyTcpExpandOverlay(t);
+    };
+
+    window.proyTcpCerrarExpand = function () {
+        var ov = document.getElementById('proyTcpExpandOv');
+        if (ov) ov.remove();
+    };
+
+    function _proyTcpExpandOverlay(t) {
+        proyTcpCerrarExpand();
+        var estadoCls = _proyTcpEstadoClass(t.estado);
+        var estadoLbl = _proyTcpEstadoLabel(t.estado).toUpperCase();
+        var resp = t.responsable || '';
+        var avColor = _proyTcpAvatarColor(resp), ini = _proyTcpInitials(resp);
+        var fechaIso = t.fecha_limite || '';
+        var vencida = false;
+        if (fechaIso) { try { vencida = new Date(fechaIso) < new Date() && t.estado !== 'completada'; } catch (_) {} }
+        var fechaTxt = _proyTcpFmtFecha(fechaIso);
+        var prio = t.prioridad === 'alta' ? 'Alta' : 'Normal';
+        var cat = t.oportunidad_tipo ? (t.oportunidad_tipo.charAt(0).toUpperCase() + t.oportunidad_tipo.slice(1)) : '—';
+        var clock = '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+        var subs = t.subtareas || [];
+        var subtsHtml = subs.length
+            ? '<div class="tcp-subt-list">' + subs.map(function (s) { var dn = s.estado === 'completada'; return '<div class="tcp-subt-row' + (dn ? ' done' : '') + '"><span class="tcp-subt-check' + (dn ? ' done' : '') + '">' + (dn ? '✓' : '') + '</span><span class="tcp-subt-title">' + _proyTcpEsc(s.titulo || '') + '</span></div>'; }).join('') + '</div>'
+            : '<div class="tcp-subt-empty">Sin subtareas</div>';
+        var ov = document.createElement('div');
+        ov.id = 'proyTcpExpandOv';
+        ov.className = 'proy-tcp-expand-ov';
+        ov.onclick = function (e) { if (e.target === ov) proyTcpCerrarExpand(); };
+        ov.innerHTML =
+            '<div class="proy-tcp-expand-card">' +
+                '<div class="tcp-detail-head">' +
+                    '<span class="tcp-detail-estado ' + estadoCls + '">' + estadoLbl + '</span>' +
+                    '<button class="tcp-detail-iconbtn" title="Cerrar" onclick="proyTcpCerrarExpand()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                '</div>' +
+                '<div class="tcp-detail-scroll">' +
+                    '<h1 class="tcp-detail-title">' + _proyTcpEsc(t.titulo || 'Sin título') + '</h1>' +
+                    (t.descripcion ? '<div class="tcp-detail-desc">' + _proyTcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>' : '<div class="tcp-detail-desc empty">Sin descripción.</div>') +
+                    '<div class="tcp-detail-meta">' +
+                        _proyTcpMetaRow('Responsable', resp ? '<span class="tcp-mini-avatar" style="background:' + avColor + '">' + ini + '</span>' + _proyTcpEsc(resp) : '<span class="muted">Sin asignar</span>', 'user') +
+                        _proyTcpMetaRow('Oportunidad', t.oportunidad_nombre ? _proyTcpEsc(t.oportunidad_nombre) : '<span class="muted">Sin oportunidad</span>', 'briefcase') +
+                        _proyTcpMetaRow('Fecha límite', fechaIso ? '<span class="tcp-pill-fecha' + (vencida ? '' : ' normal') + '">' + clock + ' ' + fechaTxt + '</span>' : '<span class="muted">Sin fecha</span>', 'calendar') +
+                        _proyTcpMetaRow('Categoría', cat, 'tag') +
+                        _proyTcpMetaRow('Prioridad', prio, 'flag') +
+                    '</div>' +
+                    '<div class="tcp-detail-subt-head">SUBTAREAS</div>' + subtsHtml +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(ov);
+    }
+
+    // Búsqueda: filtra solo la LISTA (el resumen sigue contando todo el proyecto).
+    var _proyTcpQuery = '';
+    window.proyTcpBuscar = function (q) {
+        _proyTcpQuery = (q || '').toLowerCase().trim();
+        var arr = !_proyTcpQuery ? _proyTcpData : _proyTcpData.filter(function (t) {
+            return ((t.titulo || '') + ' ' + (t.oportunidad_nombre || '') + ' ' + (t.responsable || '') + ' ' + (t.creado_por || '')).toLowerCase().indexOf(_proyTcpQuery) !== -1;
+        });
+        _proyTcpRenderList(arr, new Date());
+    };
+
+    // Toggle de secciones colapsables (delegado, namespaced).
+    if (window._proyTcpSecHandler) {
+        document.removeEventListener('click', window._proyTcpSecHandler);
+    }
+    window._proyTcpSecHandler = function (e) {
+        var head = e.target.closest && e.target.closest('#proyTcpList .tcp-section-head');
+        if (!head) return;
+        var key = head.dataset.proyTcpSec;
+        if (!key) return;
+        var isCol = head.classList.toggle('collapsed');
+        _proyTcpCollapsed[key] = isCol;
+    };
+    document.addEventListener('click', window._proyTcpSecHandler);
+
+    // AGRESIVO: transparenta por código (estilo inline, gana sobre cualquier
+    // CSS) la card del detalle + el tab-content cuando estamos en Tareas, para
+    // matar la "banda blanca" superior y que se vea el estadio detrás (como la
+    // sección Tareas real). active=false restaura los valores originales.
+    var _proyBgTouched = [];
+    // Transparenta la cadena de ancestros de un elemento "shell" hasta
+    // .crm-main → muere la banda/card blanca y se ve el estadio.
+    // `active`     → aplicar (true) o sólo restaurar lo previo (false).
+    // `startId`    → id del elemento desde cuyo PADRE se empieza a recorrer.
+    //                Default 'proyTcpShell' (tab Tareas). El tab Programa de
+    //                Obra pasa 'proyPane_programa-obra' para compartir lógica.
+    window._proyTareasBg = function (active, startId) {
+        // Restaurar siempre lo previamente tocado.
+        _proyBgTouched.forEach(function (n) {
+            n.style.removeProperty('background');
+            n.style.removeProperty('background-image');
+            n.style.removeProperty('box-shadow');
+            n.style.removeProperty('border');
+        });
+        _proyBgTouched = [];
+        if (!active) return;
+        // Recorre TODOS los ancestros del shell hasta .crm-main (excluido) y los
+        // transparenta inline (gana sobre cualquier CSS) → muere la banda blanca
+        // y se ve el estadio (body::before). Los hermanos (header card, panel
+        // resumen) NO se tocan, conservan su fondo.
+        var node = document.getElementById(startId || 'proyTcpShell');
+        node = node ? node.parentElement : null;
+        while (node && node !== document.body && !(node.classList && node.classList.contains('crm-main'))) {
+            node.style.setProperty('background', 'transparent', 'important');
+            node.style.setProperty('background-image', 'none', 'important');
+            node.style.setProperty('box-shadow', 'none', 'important');
+            node.style.setProperty('border', 'none', 'important');
+            _proyBgTouched.push(node);
+            node = node.parentElement;
+        }
+    };
+
+    // Accessor del detalle de proyecto cacheado, para otros módulos (p.ej.
+    // programa_obra.js lo lee para pre-llenar el PO con el de la oportunidad).
+    window.proyGetCachedDetail = function () { return _cachedProjectDetail; };
+
+    function renderTareas(projectId) {
+        var list = el('proyTcpList');
+        var panel = el('proyTcpDetail');
+        if (!list) return;
+        window._proyTareasBg(true);
+        _proyTcpSelectedId = null;
+        list.innerHTML = '<div class="tcp-row-empty">Cargando…</div>';
+        if (panel) panel.innerHTML = '';
+
+        _fetch('/app/api/iamet/proyectos/' + projectId + '/tareas/').then(function (resp) {
+            if (!(resp.ok || resp.success)) {
+                list.innerHTML = '<div class="tcp-row-empty">Error al cargar tareas</div>';
+                return;
+            }
+            _proyTcpData = resp.data || [];
+            _proyTcpRenderList(_proyTcpData, new Date());
+        }).catch(function (err) {
+            list.innerHTML = '<div class="tcp-row-empty">Error de conexión</div>';
             console.error('Error de red cargando tareas:', err);
         });
     }
@@ -5851,7 +6389,58 @@
         if (d) d.style.display = 'flex';
     };
 
+    // Estado de edición del diálogo de tarea de proyecto (null = modo crear).
+    var _proyEditTareaId = null;
+    var _PRIO_ES2EN = { alta: 'high', media: 'medium', baja: 'low' };
+
+    function _proyTareaDlgChrome(modo) {
+        var h = document.querySelector('#proyDialogoTarea .proy-dialog-header h3');
+        var b = document.querySelector('#proyDialogoTarea .proy-dialog-footer .proy-btn-primary');
+        if (h) h.textContent = (modo === 'edit') ? 'Editar Tarea' : 'Nueva Tarea';
+        if (b) b.textContent = (modo === 'edit') ? 'Guardar' : 'Crear Tarea';
+    }
+    function _proyTareaDlgClear() {
+        ['proyTareaTitulo', 'proyTareaDescripcion', 'proyTareaAsignado', 'proyTareaFecha'].forEach(function (id) {
+            var e2 = el(id); if (e2) e2.value = '';
+        });
+        if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = 'medium';
+    }
+
     window.proyectosCrearTareaDialogo = function() {
+        _proyEditTareaId = null;
+        _proyTareaDlgClear();
+        _proyTareaDlgChrome('crear');
+        var d = el('proyDialogoTarea');
+        if (d) d.style.display = 'flex';
+    };
+
+    // "Nueva Tarea" del proyecto → formulario CRM completo (crmTaskAbrirCrear),
+    // ligando la tarea al PROYECTO (proyecto_iamet) y a su OPORTUNIDAD, para que
+    // se vea en el proyecto, en la oportunidad y en el calendario.
+    window.proyNuevaTareaCRM = function () {
+        var oppId = (_cachedProjectDetail && _cachedProjectDetail.oportunidad_id) || null;
+        if (typeof window.crmTaskAbrirCrear === 'function') {
+            window.crmTaskAbrirCrear(oppId, { proyectoIametId: currentProjectId });
+        } else {
+            window.proyectosCrearTareaDialogo();
+        }
+    };
+    // Hook que llama crm_main.js (crmTaskCrear) para refrescar la lista del
+    // proyecto tras crear una tarea desde el formulario CRM.
+    window.proyRefrescarTareas = function () {
+        if (currentProjectId && typeof renderTareas === 'function') renderTareas(currentProjectId);
+    };
+
+    // Abrir el diálogo en modo VER/EDITAR con los datos de la tarea de proyecto.
+    window.proyTareaEditar = function (t) {
+        if (!t) return;
+        _proyEditTareaId = t.id;
+        if (el('proyTareaTitulo')) el('proyTareaTitulo').value = t.titulo || '';
+        if (el('proyTareaDescripcion')) el('proyTareaDescripcion').value = t.descripcion || '';
+        if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = _PRIO_ES2EN[t.prioridad] || t.prioridad || 'medium';
+        if (el('proyTareaAsignado')) el('proyTareaAsignado').value = t.responsable || '';
+        if (el('proyTareaFecha')) el('proyTareaFecha').value = (t.fecha_limite || '').slice(0, 10);
+        _proyTareaDlgChrome('edit');
         var d = el('proyDialogoTarea');
         if (d) d.style.display = 'flex';
     };
@@ -6233,32 +6822,25 @@
 
         if (!title) return;
 
-        _fetch('/app/api/iamet/tareas/crear/', {
-            method: 'POST',
-            body: {
-                proyecto_id: currentProjectId,
-                titulo: title,
-                descripcion: desc,
-                prioridad: priority,
-                asignado_a: assignedTo,
-                fecha_limite: dueDate
-            }
-        }).then(function(resp) {
+        // Modo EDITAR: PATCH a la tarea de proyecto existente. Modo CREAR: POST.
+        var editing = _proyEditTareaId;
+        var url = editing ? ('/app/api/iamet/tareas/' + editing + '/actualizar/') : '/app/api/iamet/tareas/crear/';
+        var body = editing
+            ? { titulo: title, descripcion: desc, prioridad: priority, fecha_limite: dueDate }
+            : { proyecto_id: currentProjectId, titulo: title, descripcion: desc, prioridad: priority, asignado_a: assignedTo, fecha_limite: dueDate };
+
+        _fetch(url, { method: 'POST', body: body }).then(function(resp) {
             if (resp.ok || resp.success) {
                 proyectosCerrarDialogo('proyDialogoTarea');
-                // Clear form
-                if (el('proyTareaTitulo')) el('proyTareaTitulo').value = '';
-                if (el('proyTareaDescripcion')) el('proyTareaDescripcion').value = '';
-                if (el('proyTareaPrioridad')) el('proyTareaPrioridad').value = 'medium';
-                if (el('proyTareaAsignado')) el('proyTareaAsignado').value = '';
-                if (el('proyTareaFecha')) el('proyTareaFecha').value = '';
+                _proyEditTareaId = null;
+                _proyTareaDlgClear();
                 renderTareas(currentProjectId);
             } else {
-                alert('Error al crear tarea: ' + (resp.error || 'Error desconocido'));
+                alert('Error al guardar tarea: ' + (resp.error || 'Error desconocido'));
             }
         }).catch(function(err) {
-            alert('Error de conexion al crear tarea');
-            console.error('Error creando tarea:', err);
+            alert('Error de conexion al guardar tarea');
+            console.error('Error guardando tarea:', err);
         });
     };
 
@@ -6981,81 +7563,321 @@
     window.proyGetCurrentProjectId = function() { return currentProjectId; };
 
     // ── Drive: archivos de la oportunidad vinculada ──────────────
+    // Espejo del gestor Drive del widget de oportunidad (funciones woDrive*),
+    // pero con namespace proyDrive* para no chocar con las globales. Reusa las
+    // clases globales .wo-drive-* / .drive-* (definidas por _widget_oportunidad
+    // y duplicadas en crm_proyectos.css para la página de levantamientos, donde
+    // ese widget no se incluye). Solo lee + sube contra el drive de la
+    // oportunidad vinculada; no renombra/elimina.
     var _driveOppId = null;
     var _driveParentStack = []; // stack de IDs de carpetas para "atrás"
+    var _proyDriveView = 'grid';
+    var _proyDriveFilterTipoVal = 'todos';
+    var _proyDriveSearchTerm = '';
+    var _proyDriveSearchTimer = null;
+    var _proyDriveDragCounter = 0;
+
+    function _proyDriveLoadPrefs() {
+        try {
+            var v = localStorage.getItem('_proy_drive_view');
+            if (v === 'grid' || v === 'list') _proyDriveView = v;
+            var t = localStorage.getItem('_proy_drive_filter_tipo');
+            if (t) _proyDriveFilterTipoVal = t;
+        } catch (e) { /* localStorage bloqueado: usa defaults */ }
+    }
+    function _proyDriveSavePrefs() {
+        try {
+            localStorage.setItem('_proy_drive_view', _proyDriveView);
+            localStorage.setItem('_proy_drive_filter_tipo', _proyDriveFilterTipoVal);
+        } catch (e) { /* ignore */ }
+    }
+
+    function _proyDriveTipoArchivo(a) {
+        var nombre = (a.nombre || a.nombre_original || '').toLowerCase();
+        var ext = (a.extension || nombre.split('.').pop() || '').toLowerCase().replace(/^\./, '');
+        if (ext === 'pdf') return 'pdf';
+        if (['jpg','jpeg','png','gif','webp','svg','heic','bmp','tiff'].indexOf(ext) >= 0) return 'img';
+        if (['xlsx','xls','csv'].indexOf(ext) >= 0) return 'excel';
+        if (['docx','doc','txt','md','rtf'].indexOf(ext) >= 0) return 'word';
+        return 'otros';
+    }
+
+    function _proyDriveFmtSize(bytes) {
+        if (!bytes || bytes <= 0) return '—';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function _proyDriveFileIcon(tipo, ext) {
+        var icons = {
+            'pdf': {color:'#DC2626', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>'},
+            'imagen': {color:'#8B5CF6', svg:'<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'},
+            'documento': {color:'#2563EB', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'},
+            'hoja_calculo': {color:'#16A34A', svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="12" y1="9" x2="12" y2="21"/>'},
+            'presentacion': {color:'#EA580C', svg:'<path d="M2 3h20v14H2z"/><path d="M12 17v4"/><path d="M8 21h8"/>'},
+            'video': {color:'#7C3AED', svg:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>'},
+            'audio': {color:'#EC4899', svg:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'}
+        };
+        // Si el backend no da tipo_archivo, deducir por extensión.
+        if (!icons[tipo]) {
+            var e = (ext || '').toLowerCase();
+            if (e === 'pdf') tipo = 'pdf';
+            else if (['jpg','jpeg','png','gif','svg','webp'].indexOf(e) >= 0) tipo = 'imagen';
+            else if (['xls','xlsx','csv'].indexOf(e) >= 0) tipo = 'hoja_calculo';
+            else if (['doc','docx','txt'].indexOf(e) >= 0) tipo = 'documento';
+            else if (['ppt','pptx'].indexOf(e) >= 0) tipo = 'presentacion';
+        }
+        var def = {color:'#0052D4', svg:'<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'};
+        return icons[tipo] || def;
+    }
 
     function _renderDrive(projectId) {
-        var container = document.getElementById('proyDriveContainer');
-        if (!container) return;
-        container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;font-size:0.85rem;">Cargando...</div>';
+        _proyDriveLoadPrefs();
+        _proyDriveSearchTerm = '';
         _driveParentStack = [];
         _updateDriveBackBtn();
+        _proyDriveBindToolbar();
+        _proyDriveSyncToolbarUI();
+        _proyDriveShowLoading();
 
         // Obtener detalle del proyecto para saber la oportunidad vinculada
         _fetch('/app/api/iamet/proyectos/' + projectId + '/').then(function(resp) {
             var data = resp.data || resp;
             _driveOppId = data.oportunidad_id || null;
             if (!_driveOppId) {
-                container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;">' +
-                    '<svg width="40" height="40" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
-                    '<div style="font-weight:600;margin-bottom:4px;">Sin oportunidad vinculada</div>' +
-                    '<div style="font-size:0.78rem;">Este proyecto no tiene una oportunidad asociada con archivos.</div></div>';
+                _proyDriveShowEmpty('Sin oportunidad vinculada', 'Este proyecto no tiene una oportunidad asociada con archivos.');
+                var tb = document.getElementById('proyDriveToolbar');
+                if (tb) tb.style.display = 'none';
                 return;
             }
+            var tb2 = document.getElementById('proyDriveToolbar');
+            if (tb2) tb2.style.display = '';
             _loadDriveFolder(null);
         }).catch(function() {
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#EF4444;">Error cargando proyecto</div>';
+            _proyDriveShowEmpty('Error', 'No se pudo cargar el proyecto.');
         });
     }
 
+    function _proyDriveEl(id) { return document.getElementById(id); }
+
+    function _proyDriveShowLoading() {
+        var l = _proyDriveEl('proyDriveLoading');
+        var e = _proyDriveEl('proyDriveEmpty');
+        var nm = _proyDriveEl('proyDriveNoMatch');
+        var g = _proyDriveEl('proyDriveGrid');
+        if (l) l.style.display = 'block';
+        if (e) e.style.display = 'none';
+        if (nm) nm.style.display = 'none';
+        if (g) { g.style.display = 'none'; g.innerHTML = ''; }
+    }
+
+    function _proyDriveShowEmpty(titulo, sub) {
+        var l = _proyDriveEl('proyDriveLoading');
+        var nm = _proyDriveEl('proyDriveNoMatch');
+        var g = _proyDriveEl('proyDriveGrid');
+        var e = _proyDriveEl('proyDriveEmpty');
+        if (l) l.style.display = 'none';
+        if (nm) nm.style.display = 'none';
+        if (g) { g.style.display = 'none'; g.innerHTML = ''; }
+        if (e) {
+            e.style.display = 'block';
+            if (titulo) {
+                e.innerHTML = '<svg width="56" height="56" fill="none" stroke="#D1D1D6" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+                    '<div style="font-size:1rem;font-weight:600;color:#1D1D1F;margin-bottom:4px;">' + _esc(titulo) + '</div>' +
+                    '<div style="font-size:0.85rem;">' + _esc(sub || '') + '</div>';
+            }
+        }
+    }
+
     function _loadDriveFolder(parentId) {
-        var container = document.getElementById('proyDriveContainer');
-        if (!container || !_driveOppId) return;
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:#94A3B8;">Cargando...</div>';
+        if (!_driveOppId) return;
+        _proyDriveShowLoading();
         var url = '/app/api/oportunidad/' + _driveOppId + '/drive/';
         if (parentId) url += '?parent=' + parentId;
 
         _fetch(url).then(function(data) {
-            var items = (data.carpetas || []).concat(data.archivos || []);
-            if (items.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;">' +
-                    '<svg width="36" height="36" fill="none" stroke="#CBD5E1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
-                    '<div style="font-size:0.82rem;">Sin archivos en esta carpeta</div></div>';
+            var carpetas = data.carpetas || [];
+            var archivos = data.archivos || [];
+            var grid = _proyDriveEl('proyDriveGrid');
+            var loading = _proyDriveEl('proyDriveLoading');
+            if (loading) loading.style.display = 'none';
+            if (!grid) return;
+
+            if (!carpetas.length && !archivos.length) {
+                _proyDriveShowEmpty('Carpeta vacía', 'Sube archivos o crea carpetas aquí. Puedes arrastrar y soltar desde tu computadora.');
                 return;
             }
-
-            var html = '<div style="display:flex;flex-direction:column;gap:2px;">';
-            // Carpetas primero
-            (data.carpetas || []).forEach(function(c) {
-                html += '<div class="proy-drive-item" onclick="proyDriveOpenFolder(' + c.id + ')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
-                    '<svg width="20" height="20" fill="#FBBF24" stroke="#F59E0B" stroke-width="1" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
-                    '<span style="flex:1;font-size:0.85rem;font-weight:600;color:#1E293B;">' + _esc(c.nombre) + '</span>' +
-                    '<svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>' +
-                '</div>';
-            });
-            // Archivos
-            (data.archivos || []).forEach(function(a) {
-                var icon = _driveFileIcon(a.extension || a.tipo_archivo);
-                var size = a.tamaño ? _formatFileSize(a.tamaño) : '';
-                // El backend manda la URL correcta según la tabla de origen
-                // (ArchivoOportunidad → /oportunidad/.../drive/archivo/...,
-                //  ArchivoProyecto    → /proyecto/.../archivo/...).
-                // Reconstruirla aquí 404eaba los archivos de proyecto.
-                var streamUrl = a.url || ('/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/');
-                html += '<div class="proy-drive-item" onclick="window.open(\'' + streamUrl + '\',\'_blank\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.1s;" onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'">' +
-                    icon +
-                    '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:0.85rem;font-weight:500;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(a.nombre) + '</div>' +
-                        (size ? '<div style="font-size:0.7rem;color:#94A3B8;">' + size + '</div>' : '') +
-                    '</div>' +
-                    '<a href="' + streamUrl + '?dl=1" onclick="event.stopPropagation()" style="padding:4px;color:#64748B;" title="Descargar"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
-                '</div>';
-            });
-            html += '</div>';
-            container.innerHTML = html;
+            var html = '';
+            carpetas.forEach(function(c) { html += _proyDriveRenderCarpeta(c); });
+            archivos.forEach(function(a) { html += _proyDriveRenderArchivo(a); });
+            grid.innerHTML = html;
+            grid.style.display = '';
+            _proyDriveAplicarVista();
+            _proyDriveAplicarFiltros();
         }).catch(function(err) {
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#EF4444;">Error: ' + (err.message || err) + '</div>';
+            _proyDriveShowEmpty('Error', (err && err.message) || 'No se pudieron cargar los archivos.');
         });
+    }
+
+    function _proyDriveRenderCarpeta(c) {
+        var nombreEsc = _esc(c.nombre);
+        var nombreLow = _esc((c.nombre || '').toLowerCase());
+        return '<div class="drive-item drive-item-carpeta" data-tipo="carpeta" data-nombre="' + nombreLow + '" onclick="proyDriveOpenFolder(' + c.id + ')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;cursor:pointer;position:relative;transition:all 0.2s;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            '<div class="drive-item-inner" style="text-align:center;">' +
+            '<svg class="drive-icon" width="42" height="42" fill="#FFCF3A" stroke="none" viewBox="0 0 24 24" style="margin:0.5rem auto;display:block;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' +
+            '<div class="drive-name" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nombreEsc + '</div>' +
+            '</div>' +
+            '<div class="drive-row-meta">' +
+                '<span class="drive-col-tipo">Carpeta</span>' +
+                '<span class="drive-col-size"></span>' +
+                '<span class="drive-col-fecha"></span>' +
+            '</div>' +
+            '<div class="drive-row-actions"></div>' +
+            '</div>';
+    }
+
+    function _proyDriveRenderArchivo(a) {
+        // El backend manda la URL correcta según la tabla de origen
+        // (ArchivoOportunidad → /oportunidad/.../drive/archivo/.../stream/).
+        var streamUrl = a.url || ('/app/api/oportunidad/' + _driveOppId + '/drive/archivo/' + a.id + '/stream/');
+        var dlUrl = streamUrl + (streamUrl.indexOf('?') >= 0 ? '&dl=1' : '?dl=1');
+        var ext = (a.extension || (a.nombre || '').split('.').pop() || '');
+        var tipoArchivo = a.tipo_archivo || '';
+        var iconInfo = _proyDriveFileIcon(tipoArchivo, ext);
+        var iconColor = iconInfo.color;
+        var extLabel = (ext || '').toUpperCase();
+        var extBadge = extLabel ? '<span style="font-size:0.6rem;color:' + iconColor + ';font-weight:700;background:' + iconColor + '14;border-radius:3px;padding:1px 4px;">' + extLabel + '</span>' : '';
+        var nombre = _esc(a.nombre || a.nombre_original || '');
+        var nombreLow = _esc((a.nombre || a.nombre_original || '').toLowerCase());
+        var tipoFiltro = _proyDriveTipoArchivo(a);
+        var sizeTxt = _proyDriveFmtSize(a.tamaño);
+        var sUrlAttr = _esc(streamUrl);
+        var dlUrlAttr = _esc(dlUrl);
+        var accionesGrid = '<div class="drive-grid-actions" style="display:flex;gap:4px;justify-content:center;margin-top:0.3rem;position:relative;z-index:3;">' +
+            '<a href="' + sUrlAttr + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="font-size:0.65rem;color:#0052D4;text-decoration:none;background:#F0F5FF;border-radius:4px;padding:2px 6px;">Ver</a>' +
+            '<a href="' + dlUrlAttr + '" onclick="event.stopPropagation();" style="font-size:0.65rem;color:#34C759;text-decoration:none;background:#F0FFF5;border-radius:4px;padding:2px 6px;">Descargar</a>' +
+            '</div>';
+        var accionesList = '<a href="' + sUrlAttr + '" target="_blank" rel="noopener" class="act-ver" onclick="event.stopPropagation();">Ver</a>' +
+            '<a href="' + dlUrlAttr + '" class="act-dl" onclick="event.stopPropagation();">Descargar</a>';
+        return '<div class="drive-item drive-item-archivo" data-tipo="' + tipoFiltro + '" data-nombre="' + nombreLow + '" onclick="window.open(\'' + sUrlAttr + '\',\'_blank\')" style="background:#fff;border:1px solid #E5E5EA;border-radius:12px;padding:0.75rem;position:relative;transition:all 0.2s;cursor:pointer;" onmouseenter="this.style.borderColor=\'#C7C7CC\'" onmouseleave="this.style.borderColor=\'#E5E5EA\'">' +
+            '<div class="drive-item-inner" style="text-align:center;">' +
+            '<svg class="drive-icon" width="42" height="42" fill="none" stroke="' + iconColor + '" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0.5rem auto;display:block;">' + iconInfo.svg + '</svg>' +
+            '<div class="drive-name" title="' + nombre + '" style="font-size:0.8rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:0.2rem;">' + nombre + '</div>' +
+            '<div class="drive-grid-meta" style="font-size:0.7rem;color:#9CA3AF;display:flex;align-items:center;justify-content:center;gap:4px;">' + extBadge + ' ' + sizeTxt + '</div>' +
+            accionesGrid +
+            '</div>' +
+            '<div class="drive-row-meta">' +
+                '<span class="drive-col-tipo">' + (extLabel || '—') + '</span>' +
+                '<span class="drive-col-size">' + sizeTxt + '</span>' +
+                '<span class="drive-col-fecha"></span>' +
+            '</div>' +
+            '<div class="drive-row-actions">' + accionesList + '</div>' +
+            '</div>';
+    }
+
+    // ── Vista (grid/list) + filtros (búsqueda + tipo) ──
+    function _proyDriveAplicarVista() {
+        var grid = _proyDriveEl('proyDriveGrid');
+        if (!grid) return;
+        grid.classList.remove('drive-view-grid', 'drive-view-list');
+        grid.classList.add(_proyDriveView === 'list' ? 'drive-view-list' : 'drive-view-grid');
+        var bGrid = _proyDriveEl('proyDriveViewGrid');
+        var bList = _proyDriveEl('proyDriveViewList');
+        if (bGrid) bGrid.classList.toggle('is-active', _proyDriveView === 'grid');
+        if (bList) bList.classList.toggle('is-active', _proyDriveView === 'list');
+    }
+
+    function _proyDriveAplicarFiltros() {
+        var grid = _proyDriveEl('proyDriveGrid');
+        var noMatch = _proyDriveEl('proyDriveNoMatch');
+        var emptyEl = _proyDriveEl('proyDriveEmpty');
+        if (!grid) return;
+        var items = grid.querySelectorAll('.drive-item');
+        if (!items.length) {
+            if (noMatch) noMatch.style.display = 'none';
+            return;
+        }
+        var term = (_proyDriveSearchTerm || '').trim().toLowerCase();
+        var filtro = _proyDriveFilterTipoVal || 'todos';
+        var visibles = 0;
+        items.forEach(function(it) {
+            var tipo = it.getAttribute('data-tipo') || 'otros';
+            var nombre = it.getAttribute('data-nombre') || '';
+            var matchTipo = (filtro === 'todos') || (tipo === filtro);
+            var matchTerm = !term || (nombre.indexOf(term) >= 0);
+            var ok = matchTipo && matchTerm;
+            it.style.display = ok ? '' : 'none';
+            if (ok) visibles++;
+        });
+        if (visibles === 0) {
+            if (noMatch) noMatch.style.display = 'block';
+            grid.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'none';
+        } else {
+            if (noMatch) noMatch.style.display = 'none';
+            grid.style.display = '';
+            if (emptyEl) emptyEl.style.display = 'none';
+        }
+    }
+
+    function _proyDriveBindToolbar() {
+        var search = _proyDriveEl('proyDriveSearch');
+        var clearBtn = _proyDriveEl('proyDriveSearchClear');
+        var sel = _proyDriveEl('proyDriveFilterTipo');
+        var bGrid = _proyDriveEl('proyDriveViewGrid');
+        var bList = _proyDriveEl('proyDriveViewList');
+        if (!search || search._proyBound) return;
+        search._proyBound = true;
+
+        search.addEventListener('input', function() {
+            _proyDriveSearchTerm = search.value || '';
+            if (clearBtn) clearBtn.style.display = _proyDriveSearchTerm ? '' : 'none';
+            if (_proyDriveSearchTimer) clearTimeout(_proyDriveSearchTimer);
+            _proyDriveSearchTimer = setTimeout(_proyDriveAplicarFiltros, 150);
+        });
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                search.value = '';
+                _proyDriveSearchTerm = '';
+                clearBtn.style.display = 'none';
+                _proyDriveAplicarFiltros();
+                search.focus();
+            });
+        }
+        if (sel) {
+            sel.addEventListener('change', function() {
+                _proyDriveFilterTipoVal = sel.value || 'todos';
+                _proyDriveSavePrefs();
+                _proyDriveAplicarFiltros();
+            });
+        }
+        if (bGrid) {
+            bGrid.addEventListener('click', function() {
+                _proyDriveView = 'grid';
+                _proyDriveSavePrefs();
+                _proyDriveAplicarVista();
+            });
+        }
+        if (bList) {
+            bList.addEventListener('click', function() {
+                _proyDriveView = 'list';
+                _proyDriveSavePrefs();
+                _proyDriveAplicarVista();
+            });
+        }
+    }
+
+    function _proyDriveSyncToolbarUI() {
+        var sel = _proyDriveEl('proyDriveFilterTipo');
+        if (sel) sel.value = _proyDriveFilterTipoVal;
+        var search = _proyDriveEl('proyDriveSearch');
+        if (search) {
+            search.value = _proyDriveSearchTerm || '';
+            var clearBtn = _proyDriveEl('proyDriveSearchClear');
+            if (clearBtn) clearBtn.style.display = (search.value ? '' : 'none');
+        }
+        _proyDriveAplicarVista();
     }
 
     window.proyDriveOpenFolder = function(folderId) {
@@ -7076,21 +7898,96 @@
         if (btn) btn.style.display = _driveParentStack.length > 0 ? '' : 'none';
     }
 
-    function _driveFileIcon(ext) {
-        var color = '#64748B';
-        if (['pdf'].indexOf(ext) !== -1) color = '#EF4444';
-        else if (['doc','docx','txt'].indexOf(ext) !== -1) color = '#3B82F6';
-        else if (['xls','xlsx','csv'].indexOf(ext) !== -1) color = '#10B981';
-        else if (['jpg','jpeg','png','gif','svg','webp'].indexOf(ext) !== -1) color = '#8B5CF6';
-        else if (['ppt','pptx'].indexOf(ext) !== -1) color = '#F59E0B';
-        return '<svg width="20" height="20" fill="none" stroke="' + color + '" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    function _proyDriveCurrentFolder() {
+        return _driveParentStack.length > 0 ? _driveParentStack[_driveParentStack.length - 1] : null;
     }
 
-    function _formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
-        return (bytes / 1048576).toFixed(1) + ' MB';
-    }
+    // ── Crear carpeta (POST drive/) ──
+    window.proyDriveCrearCarpeta = function() {
+        if (!_driveOppId) return;
+        var nombre = window.prompt('Nombre de la nueva carpeta:', '');
+        if (!nombre || !nombre.trim()) return;
+        var payload = { nombre: nombre.trim() };
+        var parentId = _proyDriveCurrentFolder();
+        if (parentId) payload.parent_id = parentId;
+        _fetch('/app/api/oportunidad/' + _driveOppId + '/drive/', {
+            method: 'POST',
+            body: payload
+        }).then(function() {
+            _loadDriveFolder(_proyDriveCurrentFolder());
+        }).catch(function() {
+            if (typeof showToast === 'function') showToast('No se pudo crear la carpeta', 'error');
+        });
+    };
+
+    // ── Subir archivos (POST drive/archivos/, FormData) ──
+    window.proyDriveHandleFiles = function(files) {
+        if (!files || !files.length || !_driveOppId) return;
+        var loading = _proyDriveEl('proyDriveLoading');
+        if (loading) loading.style.display = 'block';
+        var fileList = Array.prototype.slice.call(files);
+        var parentId = _proyDriveCurrentFolder();
+        var errores = [];
+
+        function subirSiguiente(idx) {
+            if (idx >= fileList.length) {
+                var inp = _proyDriveEl('proyDriveFileInput');
+                if (inp) inp.value = '';
+                if (errores.length && typeof showToast === 'function') showToast(errores.join(' · '), 'error');
+                _loadDriveFolder(parentId);
+                return;
+            }
+            var formData = new FormData();
+            formData.append('archivo', fileList[idx]);
+            if (parentId) formData.append('carpeta_id', parentId);
+            _fetch('/app/api/oportunidad/' + _driveOppId + '/drive/archivos/', {
+                method: 'POST',
+                body: formData
+            }).then(function(res) {
+                if (res && res.error) errores.push(fileList[idx].name + ': ' + res.error);
+                subirSiguiente(idx + 1);
+            }).catch(function(e) {
+                errores.push(fileList[idx].name + ': ' + (e && e.message ? e.message : 'error'));
+                subirSiguiente(idx + 1);
+            });
+        }
+        subirSiguiente(0);
+    };
+
+    // ── Drag & drop ──
+    window.proyDriveDragEnter = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!_driveOppId) return;
+        _proyDriveDragCounter++;
+        var ov = _proyDriveEl('proyDriveDragOverlay');
+        if (ov) ov.style.display = 'flex';
+    };
+    window.proyDriveDragOver = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    window.proyDriveDragLeave = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _proyDriveDragCounter--;
+        if (_proyDriveDragCounter <= 0) {
+            _proyDriveDragCounter = 0;
+            var ov = _proyDriveEl('proyDriveDragOverlay');
+            if (ov) ov.style.display = 'none';
+        }
+    };
+    window.proyDriveDrop = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _proyDriveDragCounter = 0;
+        var ov = _proyDriveEl('proyDriveDragOverlay');
+        if (ov) ov.style.display = 'none';
+        if (!_driveOppId) return;
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            window.proyDriveHandleFiles(e.dataTransfer.files);
+        }
+    };
 
     // ═════════════════════════════════════════════════════════════
     //  OC: menú contextual (Editar / Eliminar)

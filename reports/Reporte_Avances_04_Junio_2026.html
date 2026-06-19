@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET - 04 de Junio</title>
+    <style>
+        :root {
+            --primary: #0052D4;
+            --secondary: #6B7280;
+            --success: #059669;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --dark: #1D1D1F;
+            --light: #F9FAFB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 20px;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); letter-spacing: -0.02em; }
+        .header-meta { text-align: right; font-size: 13px; color: var(--secondary); }
+        h2 { font-size: 19px; margin-top: 25px; border-left: 4px solid var(--primary); padding-left: 15px; color: var(--dark); margin-bottom: 15px; }
+        .achievement-box { background: rgba(0, 82, 212, 0.04); border: 1px solid rgba(0, 82, 212, 0.1); padding: 15px 20px; border-radius: 10px; margin: 15px 0; }
+        .achievement-title { font-weight: 700; color: var(--primary); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; }
+        .achievement-title svg { margin-right: 10px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 10px; display: inline-block; vertical-align: middle; }
+        .badge-nuevo { background: #dcfce7; color: #166534; }
+        .badge-mejora { background: #fef3c7; color: #92400e; }
+        .badge-fix { background: #fee2e2; color: #991b1b; }
+        .badge-infra { background: #e0e7ff; color: #3730a3; }
+        .badge-deploy { background: #ddd6fe; color: #5b21b6; }
+        .badge-perf { background: #cffafe; color: #155e75; }
+        .update-item { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f8f8f8; }
+        .update-item:last-child { border-bottom: none; }
+        .update-title { font-weight: 700; font-size: 15px; color: var(--dark); }
+        .update-desc { margin-top: 3px; font-size: 13.5px; color: #4b5563; padding-left: 5px; }
+        .stats-row { display: flex; gap: 12px; margin: 15px 0; }
+        .stat-card { flex: 1; background: var(--light); border-radius: 8px; padding: 12px 15px; text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }
+        .btn-pdf { position: absolute; top: 15px; right: 15px; background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0,82,212,0.2); }
+        .btn-pdf:hover { background: #0041a8; }
+        .callout {
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .callout strong { color: var(--dark); }
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .feature-list div { padding-left: 14px; position: relative; }
+        .feature-list div::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 7px;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .quote-box {
+            background: #fef9c3;
+            border-left: 4px solid #ca8a04;
+            padding: 14px 18px;
+            margin: 18px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13.5px;
+            color: #713f12;
+            font-style: italic;
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .report-container { box-shadow: none; max-width: 100%; padding: 15px 30px; margin: 0; }
+            .btn-pdf { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <button class="btn-pdf" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7l-5-5-5 5m5-5v12"/></svg>
+        Descargar PDF
+    </button>
+
+    <div class="header">
+        <div>
+            <h1>Reporte de Avances CRM IAMET</h1>
+            <p style="margin-top: 3px; color: var(--secondary); font-weight: 600; font-size: 15px;">Diego Jafet Rivera Cordova</p>
+            <p style="margin: 0; font-size: 13px; color: var(--secondary);">CRM IAMET</p>
+        </div>
+        <div class="header-meta">
+            <p>Fecha: 04 de Junio, 2026</p>
+            <p>Periodo: 04 Junio (1 dia)</p>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; margin-bottom: 10px;">Hoy se hizo el <strong>trabajo más invisible y a la vez más importante</strong> del proceso: empezar a <strong>ordenar, limpiar y dejar el sistema listo</strong> para que el siguiente desarrollador lo encuentre entendible. No hay features nuevas para mostrar al equipo de ventas — pero el repositorio ahora se ve limpio al abrirlo, los archivos enormes están marcados como "no tocar" con instrucciones claras de dónde ir, y se sentaron las reglas que el sucesor tiene que seguir. Es exactamente el tipo de trabajo que <em>parece que nada pasó</em> pero que protege años de inversión.</p>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">23</div>
+            <div class="stat-label">Commits del dia</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Archivos nuevos vacios listos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">7</div>
+            <div class="stat-label">Archivos marcados "no tocar"</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">41</div>
+            <div class="stat-label">Archivos reorganizados</div>
+        </div>
+    </div>
+
+    <div class="achievement-box">
+        <div class="achievement-title">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"></path></svg>
+            Hito del Día: Arranque del Plan de Handoff (Fase 6)
+        </div>
+        <p style="font-size: 13.5px; margin: 0;">El CRM IAMET es un sistema vivo que tiene <strong>2 años de evolución</strong> en un solo desarrollador. Sin un proceso de entrega cuidado, el siguiente programador tarda meses en entender qué hace cada cosa — y muchas veces termina <em>rehaciendo todo desde cero</em> por pura frustración. Hoy se arrancó formalmente el <strong>plan que previene exactamente eso</strong>. Tres etapas hechas en una sola jornada: el repositorio quedó <strong>limpio</strong> (sin archivos viejos sueltos), se estableció una <strong>regla clara para futuras modificaciones</strong> (lo nuevo va a archivos nuevos, lo viejo se respeta), y se atacaron <strong>varias trampas peligrosas</strong> que podrían explotar en producción si nadie las conoce.</p>
+    </div>
+
+    <h2>1. El Proyecto se Ve Limpio al Abrirlo</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Antes, al hacer <code>git clone</code> del proyecto, el desarrollador veía <strong>una raíz saturada</strong>: 41 reportes HTML acumulados, imágenes sueltas, archivos de notas viejas, configuraciones legacy nunca usadas. Hoy todo eso quedó en su lugar correcto y solo se ven los archivos vigentes.</p>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Limpieza</span>
+        <span class="update-title">Borrado de archivos legacy verificados</span>
+        <div class="update-desc">8 archivos eliminados que ya no servían: una nota vieja del 20 de marzo, una configuración de servidor que nunca se usó en producción, un tablero que estaba comentado desde mayo, un script de pruebas, y 4 comandos de inicialización ya ejecutados. Cada borrado se validó antes contra todo el código del proyecto para no llevarse algo en uso.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-mejora">Orden</span>
+        <span class="update-title">Carpetas nuevas con propósito claro</span>
+        <div class="feature-list" style="padding-left: 5px;">
+            <div><strong>reports/</strong> — los 41 reportes de avances ya no saturan la raíz.</div>
+            <div><strong>docs/</strong> — especificaciones técnicas separadas del código.</div>
+            <div><strong>app/static/images/</strong> — logos en su carpeta correcta.</div>
+        </div>
+    </div>
+
+    <h2>2. Una Regla Clara para Quien Venga Después</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">El CRM tiene varios archivos enormes que crecieron con el tiempo: el principal es de <strong>11,500 líneas en uno solo</strong>. Refactorizarlos hoy sería arriesgado (podrían romperse cosas que funcionan). Pero dejarlos sin reglas significa que el sucesor seguirá agregando más líneas encima del mismo monstruo. <strong>La solución intermedia es la "Regla Boy Scout":</strong> los archivos viejos se "congelan" tal cual están, y todo código nuevo va a archivos nuevos pequeños. Con el tiempo, el sistema se va modularizando naturalmente.</p>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">9 archivos nuevos vacíos esperando código futuro</span>
+        <div class="update-desc">Se crearon 5 archivos para frontend (<code>crm_kanban_v2.js</code>, <code>crm_tareas_v2.js</code>, <code>crm_clientes_v2.js</code>, <code>crm_features_misc.js</code>, <code>proyectos_v2.js</code>) y 4 para backend (<code>views_v2/crm_v2.py</code>, <code>views_v2/proyectos_v2.py</code>, <code>views_v2/api_v2.py</code>, más el módulo). Cada uno trae al inicio un comentario claro de qué dominio cubre y cuándo se debe usar. Hoy están vacíos — esperan el primer feature que llegue.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Nuevo</span>
+        <span class="update-title">7 archivos enormes marcados con cartel de "no tocar"</span>
+        <div class="update-desc">Cada uno de los 7 archivos legacy (<code>crm_main.js</code>, <code>crm_proyectos.js</code>, <code>crm_levantamiento.js</code>, <code>gantt_programa_obra.js</code>, <code>views_crm.py</code>, <code>views_proyectos.py</code>, <code>views_iamet.py</code>) ahora <strong>abre con un encabezado visible</strong> que dice "este archivo está congelado, no agregues código aquí, ve a <em>tal otro archivo</em> según lo que vayas a hacer". Es imposible confundirse al abrirlos.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-nuevo">Guía</span>
+        <span class="update-title">Dos guías cortas para el sucesor</span>
+        <div class="update-desc"><code>app/static/js/README.md</code> y <code>app/views_v2/README.md</code> explican en una página cada uno: qué archivos son viejos y se respetan, cuáles son nuevos y reciben código nuevo, qué convenciones seguir, y un ejemplo concreto de cómo agregar un endpoint o una función. El sucesor lo lee en 5 minutos y sabe cómo empezar.</div>
+    </div>
+
+    <h2>3. Trampas Peligrosas Documentadas</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Un sistema en producción tiene "trampas escondidas" — configuraciones críticas que si alguien toca sin saber, rompe todo. Estas trampas viven en la cabeza del desarrollador original. Hoy se documentaron las más peligrosas dentro del código mismo, donde es imposible no verlas.</p>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Seguridad</span>
+        <span class="update-title">Warnings visibles en configuración sensible</span>
+        <div class="update-desc">En <code>settings.py</code> ahora hay dos bloques de advertencia bien visibles: uno sobre la <strong>clave de seguridad</strong> (si no está en el archivo <code>.env</code> de producción, Django usa un valor inseguro público), y otro sobre el <strong>modo DEBUG</strong> (si queda en True en producción, el sistema acumula memoria y muestra detalles internos en cada error). Incluyen el comando exacto para verificar que estén bien configurados en el servidor.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Seguridad</span>
+        <span class="update-title">Warning gigante sobre el volumen de archivos del Drive</span>
+        <div class="update-desc">El archivo <code>docker-compose.yml</code> ahora explica con detalle qué pasa si alguien quita la línea <code>external: true</code> del volumen de archivos: 10,000 archivos (<strong>9.9 GB</strong> de PDFs, facturas, evidencias) dejan de ser visibles para el contenedor. Los archivos no se pierden, pero el sistema parece roto. Esa es la trampa más cara del proyecto — ahora está documentada en el código.</div>
+    </div>
+
+    <h2>4. Optimizaciones Pequeñas con Impacto Real</h2>
+
+    <div class="update-item">
+        <span class="badge badge-perf">Performance</span>
+        <span class="update-title">Índices en base de datos para búsquedas frecuentes</span>
+        <div class="update-desc">Se agregaron índices a dos campos que se buscan constantemente al armar proyectos (<strong>número de parte</strong> y <strong>marca</strong> en el catálogo de partidas). Beneficio: conforme crezca el catálogo, las búsquedas no se ralentizan. Es el tipo de optimización que <em>previene</em> el problema antes de que llegue.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-fix">Limpieza</span>
+        <span class="update-title">9 mensajes de debug olvidados eliminados</span>
+        <div class="update-desc">Quedaron 9 <code>print()</code> de depuración en código de producción que llevaban semanas imprimiendo cosas como "DEBUG: Usuario es supervisor". Eliminados. También 2 bloques de manejo de errores con <code>print</code> reemplazados por <strong>logger estructurado</strong> en la generación de PDFs (errores de WeasyPrint ahora quedan en logs apropiados, no en stdout).</div>
+    </div>
+
+    <h2>5. Navegación Más Rápida (Enfoque Mixto)</h2>
+
+    <p style="font-size: 13.5px; color: #4b5563; margin-bottom: 12px;">Se experimentó con una técnica moderna de navegación (Turbo Drive) para que cambiar entre secciones del CRM se sintiera <em>instantáneo</em>. La realidad: <strong>funciona excelente en secciones simples</strong> (como el Calendario) pero genera problemas en secciones con muchos gráficos (como el Dashboard). En lugar de forzar la tecnología en todos lados, se tomó una <strong>decisión pragmática</strong>:</p>
+
+    <div class="feature-list" style="padding-left: 5px;">
+        <div>✓ <strong>Calendario</strong> → navegación instantánea (Turbo)</div>
+        <div>✓ <strong>Pre-carga al pasar el cursor</strong> sobre los enlaces</div>
+        <div>○ <strong>Dashboard</strong> → recarga limpia tradicional (sin bugs)</div>
+        <div>○ <strong>CRM principal</strong> → recarga limpia tradicional</div>
+    </div>
+
+    <div class="callout">
+        <strong>Por qué es la decisión correcta:</strong> Sistemas profesionales como Salesforce o Hubspot también hacen recarga completa en sus dashboards pesados. La velocidad percibida en navegación está bien siempre que no haya "comportamientos raros". Mejor sólido que fancy.
+    </div>
+
+    <h2>6. ¿Por Qué Este Trabajo Importa?</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">El Sistema Sobrevive al Cambio de Dueño</span>
+        <div class="update-desc">Lo más caro que puede pasarle a un CRM interno es que un nuevo desarrollador decida "rehacerlo desde cero" porque no entiende el código existente. Eso significa <strong>tirar 2 años de inversión</strong>. Lo de hoy hace que el sucesor encuentre un sistema con instrucciones claras desde el día 1, en lugar de un laberinto sin documentar.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Cada Feature Futura es Más Barata</span>
+        <div class="update-desc">Con la regla "código nuevo va a archivos nuevos", el sucesor (y cualquier dev en los próximos años) <strong>no acumula deuda técnica</strong>. Cada nueva funcionalidad se agrega en su lugar correcto, con scope claro, fácil de probar. A los 6 meses el sistema está más limpio, no más sucio.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Impacto</span>
+        <span class="update-title">Sin Sorpresas en Producción</span>
+        <div class="update-desc">Las trampas peligrosas (clave de seguridad, modo DEBUG, volumen de archivos) están ahora <strong>imposibles de pasar por alto</strong>. Cualquier dev nuevo que abra esos archivos ve un warning de advertencia en pantalla. Eso previene incidentes que pueden costar horas de downtime.</div>
+    </div>
+
+    <h2>7. Próximos Pasos</h2>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Documentación de Servidor</span>
+        <div class="update-desc">Una buena parte del conocimiento operacional del sistema vive en el servidor: las variables sensibles, los procesos programados (cron), las configuraciones de Nginx, los certificados SSL, la estrategia de backups. Toda esa información se va a documentar en un archivo dedicado <code>SERVIDOR.md</code> que el sucesor pueda leer antes de tocar nada en producción.</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">README Principal y Guía de Deploy</span>
+        <div class="update-desc">Crear los tres documentos que faltan: un <code>README.md</code> que explique en una página qué es el proyecto y cómo arrancarlo localmente, un <code>DEPLOYMENT.md</code> con el procedimiento paso a paso para subir cambios a producción, y un <code>DECISIONES.md</code> que explique las decisiones arquitectónicas importantes (por qué hay modelos paralelos, por qué se usa vanilla JS en lugar de un framework, etc.).</div>
+    </div>
+
+    <div class="update-item">
+        <span class="badge badge-infra">Pendiente</span>
+        <span class="update-title">Validar Todo en Pruebas Antes del Merge a Producción</span>
+        <div class="update-desc">Todo lo de hoy está aplicado en el <strong>ambiente de pruebas</strong>. Hay que validar uno a uno los flujos críticos (login, navegación entre tabs, abrir oportunidades, crear tareas, etc.) antes del merge a producción. Es trabajo de "puntería fina" — no es interesante, pero es indispensable.</div>
+    </div>
+
+    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: var(--secondary);">
+        <p>Desarrollado por Diego Jafet Rivera Cordova &middot; 04 de Junio, 2026</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1398,6 +1398,9 @@ def api_tareas(request):
                     if tarea.oportunidad:
                         if tarea.oportunidad.oportunidad:
                             blob_parts.append(tarea.oportunidad.oportunidad)
+                        # PO de la oportunidad: permite buscar tareas por su PO.
+                        if getattr(tarea.oportunidad, 'po_number', ''):
+                            blob_parts.append(tarea.oportunidad.po_number)
                         if tarea.oportunidad.cliente and tarea.oportunidad.cliente.nombre_empresa:
                             blob_parts.append(tarea.oportunidad.cliente.nombre_empresa)
                     if tarea.asignado_a:
@@ -1433,6 +1436,7 @@ def api_tareas(request):
                     'proyecto_id': tarea.proyecto.id if tarea.proyecto else None,
                     'oportunidad_id': tarea.oportunidad.id if tarea.oportunidad else None,
                     'oportunidad_nombre': tarea.oportunidad.oportunidad if tarea.oportunidad else None,
+                    'oportunidad_po': (getattr(tarea.oportunidad, 'po_number', '') or None) if tarea.oportunidad else None,
                     'oportunidad_cliente': tarea.oportunidad.cliente.nombre_empresa if tarea.oportunidad and tarea.oportunidad.cliente else None,
                     'oportunidad_tipo': tarea.oportunidad.tipo_negociacion if tarea.oportunidad else None,
                     'oportunidad_etapa': tarea.oportunidad.etapa_corta if tarea.oportunidad else None,
@@ -1933,6 +1937,17 @@ def api_crear_tarea(request):
             except TodoItem.DoesNotExist:
                 return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
 
+        # Obtener Proyecto IAMET (modelo moderno) si se especificó — liga la
+        # tarea al detalle del proyecto (además de la oportunidad).
+        proyecto_iamet = None
+        proyecto_iamet_id = data.get('proyecto_iamet_id')
+        if proyecto_iamet_id:
+            try:
+                from .models import ProyectoIAMET
+                proyecto_iamet = ProyectoIAMET.objects.get(id=proyecto_iamet_id)
+            except Exception:
+                proyecto_iamet = None
+
         # Obtener tarea padre si se especificó (subtarea)
         tarea_padre = None
         if tarea_padre_id:
@@ -1956,6 +1971,7 @@ def api_crear_tarea(request):
             asignado_a=asignado_a,
             fecha_limite=fecha_limite_obj,
             proyecto=proyecto,
+            proyecto_iamet=proyecto_iamet,
             oportunidad=oportunidad,
             tarea_padre=tarea_padre,
         )
@@ -2563,9 +2579,16 @@ def actividad_list_create(request):
                 except Exception:
                     pass
 
-            # Filtro por mes (YYYY-MM)
+            # Búsqueda de texto (búsqueda potente del calendario): cuando hay
+            # ?q=, filtra por título/descripción en TODAS las fechas e ignora
+            # el filtro de mes (para encontrar actividades fuera del mes visible).
+            q_param = request.GET.get('q', '').strip()
+            if q_param:
+                actividades = actividades.filter(Q(titulo__icontains=q_param) | Q(descripcion__icontains=q_param))
+
+            # Filtro por mes (YYYY-MM) — se omite cuando hay búsqueda de texto.
             mes_param = request.GET.get('mes', '').strip()
-            if mes_param:
+            if mes_param and not q_param:
                 try:
                     from datetime import datetime as _dt
                     year, month = int(mes_param[:4]), int(mes_param[5:7])
@@ -2957,6 +2980,22 @@ def actividad_detail(request, pk):
         if actividad.oportunidad:
             opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
 
+        resultado_archivos = []
+        for a in actividad.resultado_archivos.all():
+            try:
+                url = a.archivo.url if a.archivo else ''
+            except Exception:
+                url = ''
+            resultado_archivos.append({
+                'id': a.id,
+                'nombre': a.nombre_original,
+                'url': url,
+                'tipo_archivo': a.tipo_archivo,
+                'extension': a.extension,
+                'tamaño': a.tamaño,
+                'tamaño_formateado': a.tamaño_formateado,
+            })
+
         return JsonResponse({
             'id': actividad.id,
             'title': actividad.titulo,
@@ -2970,6 +3009,9 @@ def actividad_detail(request, pk):
             'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username},
             'es_mio': actividad.creado_por_id == request.user.pk,
             'completada': actividad.completada,
+            'resultado': actividad.resultado,
+            'resultado_estatus': actividad.resultado_estatus,
+            'resultado_archivos': resultado_archivos,
         })
 
     elif request.method == 'PATCH':
@@ -2980,6 +3022,16 @@ def actividad_detail(request, pk):
         if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user) and not es_companero:
             return JsonResponse({'error': 'No tienes permiso para completar esta actividad.'}, status=403)
         data = json.loads(request.body)
+        # Guardar resultado / estatus (resultado de actividad genérica).
+        update_fields_resultado = []
+        if 'resultado' in data:
+            actividad.resultado = data.get('resultado') or ''
+            update_fields_resultado.append('resultado')
+        if 'resultado_estatus' in data:
+            actividad.resultado_estatus = data.get('resultado_estatus') or ''
+            update_fields_resultado.append('resultado_estatus')
+        if update_fields_resultado:
+            actividad.save(update_fields=update_fields_resultado)
         if 'completada' in data:
             actividad.completada = data['completada']
             actividad.save(update_fields=['completada'])
@@ -3102,6 +3154,88 @@ def actividad_detail(request, pk):
         return JsonResponse({'message': 'Actividad eliminada exitosamente'}, status=204)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+def _detectar_tipo_archivo(extension):
+    """Mapea una extensión a un tipo_archivo (mismo criterio que views_drive)."""
+    ext = (extension or '').lower()
+    if ext in ['pdf']:
+        return 'pdf'
+    elif ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']:
+        return 'imagen'
+    elif ext in ['doc', 'docx', 'txt', 'rtf', 'odt']:
+        return 'documento'
+    elif ext in ['xls', 'xlsx', 'csv', 'ods']:
+        return 'hoja_calculo'
+    elif ext in ['ppt', 'pptx', 'odp']:
+        return 'presentacion'
+    elif ext in ['mp4', 'avi', 'mov', 'wmv']:
+        return 'video'
+    elif ext in ['mp3', 'wav', 'aac', 'flac']:
+        return 'audio'
+    elif ext in ['zip', 'rar', '7z', 'tar', 'gz']:
+        return 'archivo_comprimido'
+    return 'otro'
+
+
+@csrf_exempt
+@login_required
+def actividad_resultado_archivo_upload(request, pk):
+    """Sube un archivo adjunto al resultado de una Actividad genérica.
+
+    Multipart: campo FormData `archivo` (un archivo por request). Mismo
+    enfoque CSRF/permiso que views_drive (`@csrf_exempt` + `@login_required`).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    from .models import ArchivoActividad
+    actividad = get_object_or_404(Actividad, pk=pk)
+
+    # Permisos: mismos que para completar la actividad (creador, participante,
+    # supervisor o compañero de grupo).
+    es_participante = actividad.participantes.filter(pk=request.user.pk).exists()
+    from .views_grupos import comparten_grupo
+    es_companero = comparten_grupo(request.user, actividad.creado_por) if actividad.creado_por != request.user else False
+    if actividad.creado_por != request.user and not es_participante and not is_supervisor(request.user) and not es_companero:
+        return JsonResponse({'error': 'No tienes permiso para esta actividad.'}, status=403)
+
+    archivo_file = request.FILES.get('archivo')
+    if not archivo_file:
+        return JsonResponse({'error': 'Archivo requerido'}, status=400)
+
+    extension = archivo_file.name.split('.')[-1].lower() if '.' in archivo_file.name else ''
+    tipo_archivo = _detectar_tipo_archivo(extension)
+    mime_type = getattr(archivo_file, 'content_type', '') or ''
+
+    a = ArchivoActividad.objects.create(
+        actividad=actividad,
+        nombre_original=archivo_file.name,
+        archivo=archivo_file,
+        tipo_archivo=tipo_archivo,
+        extension=extension,
+        tamaño=archivo_file.size,
+        mime_type=mime_type,
+        subido_por=request.user,
+    )
+
+    try:
+        url = a.archivo.url if a.archivo else ''
+    except Exception:
+        url = ''
+
+    return JsonResponse({
+        'ok': True,
+        'archivo': {
+            'id': a.id,
+            'nombre': a.nombre_original,
+            'url': url,
+            'tipo_archivo': a.tipo_archivo,
+            'extension': a.extension,
+            'tamaño': a.tamaño,
+            'tamaño_formateado': a.tamaño_formateado,
+        },
+    })
 
 
 @login_required
@@ -6210,11 +6344,52 @@ def api_gantt_actividad_archivo_detalle(request, archivo_id):
 from .models import Instalacion, Tecnico, InstalacionAsignacion
 
 
+def _instalacion_dias_asignados(inst):
+    """Lista de fechas (date) que ocupa una instalación en el calendario,
+    según su duración (jornadas_count) y tipo de jornada:
+      - tipo 'sabado'/'domingo'  → días corridos (incluye fin de semana).
+      - 'normal'/'noche'/'extraordinaria' → solo días hábiles (lun–vie).
+    Devuelve [] si no tiene fecha programada.
+
+    Si la instalación tiene `dias_personalizados` (modo "Elegir días"), esa
+    lista manda: se parsea, se ordena y se devuelve tal cual, ignorando la
+    lógica de días consecutivos."""
+    from datetime import timedelta, date as _date
+    personalizados = getattr(inst, 'dias_personalizados', None)
+    if personalizados and isinstance(personalizados, (list, tuple)):
+        parsed = []
+        for d in personalizados:
+            try:
+                parsed.append(_date.fromisoformat(str(d)[:10]))
+            except (ValueError, TypeError):
+                continue
+        if parsed:
+            return sorted(parsed)
+    if not inst.fecha_programada:
+        return []
+    total = max(1, inst.jornadas_count or 1)
+    incluir_finde = inst.jornadas_tipo in ('sabado', 'domingo')
+    dias = []
+    cursor = inst.fecha_programada
+    guard = 0  # tope de seguridad por si jornadas_count es absurdo
+    while len(dias) < total and guard < 400:
+        guard += 1
+        es_finde = cursor.weekday() >= 5  # 5=sáb, 6=dom
+        if (not incluir_finde) and es_finde:
+            cursor += timedelta(days=1)
+            continue
+        dias.append(cursor)
+        cursor += timedelta(days=1)
+    return dias
+
+
 def _instalacion_to_dict(inst):
     """Serializa una Instalacion al formato que entiende el calendario.
     Casi idéntico al shape de Actividad — el JS lo renderiza con
     `data-source="instalacion"` para pintarla con color distinto."""
     fecha = inst.fecha_programada.isoformat() if inst.fecha_programada else None
+    _dias = _instalacion_dias_asignados(inst)
+    dias_iso = [d.isoformat() for d in _dias]
     return {
         'id': inst.id,
         'source': 'instalacion',
@@ -6223,8 +6398,13 @@ def _instalacion_to_dict(inst):
         'po': inst.po,
         'proyecto': inst.proyecto,
         'fecha': fecha,
+        'hora_inicio': inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else None,
+        'hora_fin': inst.hora_fin.strftime('%H:%M') if inst.hora_fin else None,
+        'dias_personalizados': inst.dias_personalizados or None,
+        # Todos los días que ocupa la instalación (duración completa).
+        'dias': dias_iso,
         'fecha_inicio': fecha,
-        'fecha_fin': fecha,
+        'fecha_fin': dias_iso[-1] if dias_iso else fecha,
         'all_day': True,
         'jornadas_count': inst.jornadas_count,
         'jornadas_tipo': inst.jornadas_tipo,
@@ -6264,25 +6444,31 @@ def api_instalaciones_calendario(request):
     anio_raw = (request.GET.get('anio') or '').strip()
 
     from datetime import date, timedelta
+    rango_start = None
+    rango_end = None
     if start_raw and end_raw:
         try:
-            start = date.fromisoformat(start_raw)
-            end = date.fromisoformat(end_raw)
-            qs = qs.filter(fecha_programada__range=(start, end))
+            rango_start = date.fromisoformat(start_raw)
+            rango_end = date.fromisoformat(end_raw)
         except ValueError:
             pass
     elif mes_raw and anio_raw:
         try:
             mes = int(mes_raw)
             anio = int(anio_raw)
-            start = date(anio, mes, 1)
+            rango_start = date(anio, mes, 1)
             if mes == 12:
-                end = date(anio + 1, 1, 1) - timedelta(days=1)
+                rango_end = date(anio + 1, 1, 1) - timedelta(days=1)
             else:
-                end = date(anio, mes + 1, 1) - timedelta(days=1)
-            qs = qs.filter(fecha_programada__range=(start, end))
+                rango_end = date(anio, mes + 1, 1) - timedelta(days=1)
         except (ValueError, TypeError):
             pass
+
+    if rango_start and rango_end:
+        # Ampliamos el límite inferior: una instalación que inició antes del
+        # rango puede extenderse hasta dentro de él por su duración. El
+        # post-filtro de abajo descarta las que no tocan el rango.
+        qs = qs.filter(fecha_programada__range=(rango_start - timedelta(days=45), rango_end))
 
     # Filtros opcionales adicionales.
     estado = (request.GET.get('estado') or '').strip()
@@ -6298,9 +6484,18 @@ def api_instalaciones_calendario(request):
 
     qs = qs.select_related('cliente', 'oportunidad', 'creado_por').order_by('fecha_programada', 'cliente_nombre')
 
+    items = [_instalacion_to_dict(i) for i in qs]
+    # Si hay rango, conservar solo las instalaciones cuya duración toca el
+    # rango visible (alguno de sus días cae dentro de [start, end]).
+    if rango_start and rango_end:
+        s_iso = rango_start.isoformat()
+        e_iso = rango_end.isoformat()
+        items = [it for it in items
+                 if any(s_iso <= d <= e_iso for d in (it.get('dias') or []))]
+
     return JsonResponse({
         'success': True,
-        'instalaciones': [_instalacion_to_dict(i) for i in qs],
+        'instalaciones': items,
     })
 
 
@@ -6381,29 +6576,47 @@ def api_grid_tecnicos(request):
         'color': t.color or '',
     } for t in tecnicos_qs]
 
-    asignaciones_qs = (
-        InstalacionAsignacion.objects
-        .filter(fecha__range=(start, end), tecnico__in=tecnicos_qs)
-        .select_related('instalacion', 'tecnico')
-        .order_by('fecha', 'tecnico__nombre')
+    tecnico_ids_visibles = set(t['id'] for t in tecnicos_data)
+
+    # Derivamos las celdas de las INSTALACIONES (no de asignaciones sueltas):
+    # cada instalación ocupa TODOS sus días (duración completa) con SUS horas,
+    # para que el técnico aparezca en todas las jornadas del programa.
+    # Buffer en el límite inferior por instalaciones que iniciaron antes pero
+    # se extienden al rango visible.
+    inst_qs = (
+        Instalacion.objects
+        .filter(fecha_programada__range=(start - timedelta(days=45), end))
+        .prefetch_related('asignaciones')
     )
 
     celdas = []
-    for a in asignaciones_qs:
-        inst = a.instalacion
-        celdas.append({
-            'tecnico_id': a.tecnico_id,
-            'fecha': a.fecha.isoformat(),
-            'instalacion_id': inst.id,
-            'cliente_nombre': inst.cliente_nombre,
-            'proyecto': inst.proyecto,
-            'po': inst.po,
-            'estado': inst.estado,
-            'estado_label': inst.get_estado_display(),
-            'hora_inicio': a.hora_inicio.strftime('%H:%M') if a.hora_inicio else '',
-            'hora_fin': a.hora_fin.strftime('%H:%M') if a.hora_fin else '',
-            'notas': a.notas,
-        })
+    for inst in inst_qs:
+        dias_inst = [d for d in _instalacion_dias_asignados(inst) if start <= d <= end]
+        if not dias_inst:
+            continue
+        # Técnicos asignados a esta instalación (visibles en el grid).
+        tec_ids = set(a.tecnico_id for a in inst.asignaciones.all()) & tecnico_ids_visibles
+        if not tec_ids:
+            continue
+        hi = inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '08:00'
+        hf = inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '17:00'
+        estado_label = inst.get_estado_display()
+        for d in dias_inst:
+            d_iso = d.isoformat()
+            for tid in tec_ids:
+                celdas.append({
+                    'tecnico_id': tid,
+                    'fecha': d_iso,
+                    'instalacion_id': inst.id,
+                    'cliente_nombre': inst.cliente_nombre,
+                    'proyecto': inst.proyecto,
+                    'po': inst.po,
+                    'estado': inst.estado,
+                    'estado_label': estado_label,
+                    'hora_inicio': hi,
+                    'hora_fin': hf,
+                    'notas': '',
+                })
 
     return JsonResponse({
         'success': True,
@@ -6414,10 +6627,295 @@ def api_grid_tecnicos(request):
     })
 
 
+def _equipo_estado_color(estado):
+    """Color por ESTADO de instalación — mismo mapa que el frontend
+    `_calEstadoColor` (mantener sincronizado)."""
+    return {
+        'completada': '#16A34A',
+        'cancelada': '#EF4444',
+        'en_curso': '#1D1D1F',
+        'tentativa': '#EC4899',
+    }.get(estado, '#7C3AED')  # programada / else → morado
+
+
+@login_required
+def api_grid_equipo(request):
+    """GET /app/api/calendario/equipo/grid/
+
+    Matriz Persona (User) × Día. A diferencia del grid de Técnicos (solo
+    instalaciones), cada celda agrega TODO lo que esa persona tiene ese día
+    en su calendario: Actividades + Tareas + Instalaciones del Programa de
+    Obra. Pensado para ver de un vistazo la semana de 5–8 empleados.
+
+    Params:
+        ?start=YYYY-MM-DD&end=YYYY-MM-DD  (rango inclusivo; default: semana
+                                           en curso lunes–domingo)
+        ?user_ids=1,2,3                   (opcional; si viene, esas son las
+                                           filas. Si no, se derivan los Users
+                                           con alguna actividad/tarea/
+                                           instalación en el rango).
+
+    Respuesta:
+      {
+        "success": true,
+        "rango": {"start": "...", "end": "..."},
+        "dias": ["2026-06-15", ...],
+        "usuarios": [{"id", "nombre", "avatar_url"|null, "rol_label"}],
+        "celdas": [{
+          "user_id", "fecha", "tipo": "actividad"|"tarea"|"instalacion",
+          "titulo", "hora_inicio", "hora_fin", "color",
+          "actividad_id"?, "tarea_id"?, "instalacion_id"?,
+          "cliente_nombre"?, "po"?, "proyecto"?, "estado"?, "completada"?
+        }]
+      }
+    """
+    from datetime import date, timedelta
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    start_raw = (request.GET.get('start') or '').strip()
+    end_raw = (request.GET.get('end') or '').strip()
+
+    if start_raw and end_raw:
+        try:
+            start = date.fromisoformat(start_raw)
+            end = date.fromisoformat(end_raw)
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Fechas inválidas'}, status=400)
+    else:
+        hoy = date.today()
+        start = hoy - timedelta(days=hoy.weekday())  # lunes
+        end = start + timedelta(days=6)              # domingo
+
+    if end < start:
+        return JsonResponse({'success': False, 'error': 'end < start'}, status=400)
+
+    dias = []
+    cursor = start
+    while cursor <= end:
+        dias.append(cursor.isoformat())
+        cursor += timedelta(days=1)
+    dias_set = set(dias)
+
+    # ── Filas pedidas explícitamente (user_ids) ──
+    user_ids_raw = (request.GET.get('user_ids') or '').strip()
+    requested_ids = None
+    if user_ids_raw:
+        requested_ids = set()
+        for tok in user_ids_raw.split(','):
+            tok = tok.strip()
+            if tok.isdigit():
+                requested_ids.add(int(tok))
+        if not requested_ids:
+            requested_ids = None
+
+    # ── 1) ACTIVIDADES en el rango (participante O creador) ──
+    # Filtramos por la fecha (date) de fecha_inicio dentro del rango.
+    acts_qs = (
+        Actividad.objects
+        .filter(fecha_inicio__date__range=(start, end))
+        .select_related('oportunidad', 'creado_por')
+        .prefetch_related('participantes')
+    )
+
+    # ── 2) TAREAS en el rango (asignado_a / participantes / observadores) ──
+    tareas_qs = (
+        Tarea.objects
+        .filter(fecha_limite__date__range=(start, end))
+        .select_related('asignado_a')
+        .prefetch_related('participantes', 'observadores')
+    )
+
+    # ── 3) INSTALACIONES (buffer inferior por multi-día) ──
+    inst_qs = (
+        Instalacion.objects
+        .filter(fecha_programada__range=(start - timedelta(days=45), end))
+        .prefetch_related('asignaciones__tecnico')
+    )
+
+    # Cada celda se acumula por user_id; los users involucrados se descubren
+    # aquí para el caso "Todos" (sin user_ids).
+    celdas = []
+    involved_user_ids = set()
+
+    def _emit(uid, cell):
+        if requested_ids is not None and uid not in requested_ids:
+            return
+        cell['user_id'] = uid
+        celdas.append(cell)
+        involved_user_ids.add(uid)
+
+    # ── Actividades ──
+    for act in acts_qs:
+        d_iso = act.fecha_inicio.date().isoformat()
+        hi = act.fecha_inicio.strftime('%H:%M') if act.fecha_inicio else ''
+        hf = act.fecha_fin.strftime('%H:%M') if act.fecha_fin else ''
+        color = act.color or ('#0052D4' if act.oportunidad_id else '#1D1D1F')
+        # Users a los que aplica: participantes ∪ {creador}.
+        uids = set(p.id for p in act.participantes.all())
+        if act.creado_por_id:
+            uids.add(act.creado_por_id)
+        base = {
+            'fecha': d_iso,
+            'tipo': 'actividad',
+            'titulo': act.titulo or '(sin título)',
+            'hora_inicio': hi,
+            'hora_fin': hf,
+            'color': color,
+            'actividad_id': act.id,
+            'completada': bool(act.completada),
+            'evento': bool(act.evento_id),
+            'curso': bool(act.curso_id),
+        }
+        for uid in uids:
+            _emit(uid, dict(base))
+
+    # ── Tareas ──
+    for t in tareas_qs:
+        if not t.fecha_limite:
+            continue
+        d_iso = t.fecha_limite.date().isoformat()
+        # Si quedó en 00:00 (deadline sin hora real), tratarla como fin de día.
+        if t.fecha_limite.hour == 0 and t.fecha_limite.minute == 0:
+            hi = hf = '23:59'
+        else:
+            hi = hf = t.fecha_limite.strftime('%H:%M')
+        uids = set()
+        if t.asignado_a_id:
+            uids.add(t.asignado_a_id)
+        for p in t.participantes.all():
+            uids.add(p.id)
+        for o in t.observadores.all():
+            uids.add(o.id)
+        base = {
+            'fecha': d_iso,
+            'tipo': 'tarea',
+            'titulo': t.titulo or '(sin título)',
+            'hora_inicio': hi,
+            'hora_fin': hf,
+            'color': '#FF9500',
+            'tarea_id': t.id,
+            'estado': t.estado,
+            'completada': t.estado == 'completada',
+        }
+        for uid in uids:
+            _emit(uid, dict(base))
+
+    # ── Instalaciones (vía Tecnico.usuario asignado) ──
+    for inst in inst_qs:
+        dias_inst = [d for d in _instalacion_dias_asignados(inst)
+                     if d.isoformat() in dias_set]
+        if not dias_inst:
+            continue
+        # Users ligados: cada asignación → tecnico → usuario (si existe).
+        uids = set()
+        for a in inst.asignaciones.all():
+            tec = a.tecnico
+            if tec and tec.usuario_id:
+                uids.add(tec.usuario_id)
+        if not uids:
+            continue
+        hi = inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '08:00'
+        hf = inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '17:00'
+        color = _equipo_estado_color(inst.estado)
+        titulo = inst.proyecto or inst.cliente_nombre or 'Instalación'
+        for d in dias_inst:
+            d_iso = d.isoformat()
+            base = {
+                'fecha': d_iso,
+                'tipo': 'instalacion',
+                'titulo': titulo,
+                'hora_inicio': hi,
+                'hora_fin': hf,
+                'color': color,
+                'instalacion_id': inst.id,
+                'estado': inst.estado,
+                'cliente_nombre': inst.cliente_nombre,
+                'po': inst.po,
+                'proyecto': inst.proyecto,
+            }
+            for uid in uids:
+                _emit(uid, dict(base))
+
+    # ── Construir la lista de filas (usuarios) ──
+    if requested_ids is not None:
+        row_ids = requested_ids
+    else:
+        row_ids = involved_user_ids
+
+    usuarios = []
+    if row_ids:
+        users_qs = User.objects.filter(id__in=row_ids).select_related('userprofile')
+        for u in users_qs:
+            nombre = u.get_full_name() or u.username
+            avatar_url = None
+            rol_label = ''
+            perfil = getattr(u, 'userprofile', None)
+            if perfil is not None:
+                try:
+                    avatar_url = perfil.get_avatar_url()
+                except Exception:
+                    avatar_url = None
+                rol_label = (getattr(perfil, 'puesto', '') or '').strip()
+            usuarios.append({
+                'id': u.id,
+                'nombre': nombre,
+                'avatar_url': avatar_url,
+                'rol_label': rol_label,
+            })
+        usuarios.sort(key=lambda x: (x['nombre'] or '').lower())
+
+    return JsonResponse({
+        'success': True,
+        'rango': {'start': start.isoformat(), 'end': end.isoformat()},
+        'dias': dias,
+        'usuarios': usuarios,
+        'celdas': celdas,
+    })
+
+
 # ─────────────────────────────────────────────────────────────────────
 # Endpoints para el widget de oportunidad pipeline Proyecto:
 # bloque "Proyecto ligado" + bloque "Programa de Obra (Instalaciones)".
 # ─────────────────────────────────────────────────────────────────────
+
+def _parse_hora(raw):
+    """Convierte 'HH:MM' (o 'HH:MM:SS') → datetime.time. None si vacío/inválido.
+    Tolerante: nunca levanta excepción."""
+    if not raw:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    try:
+        from datetime import time as _time
+        parts = s.split(':')
+        h = int(parts[0])
+        m = int(parts[1]) if len(parts) > 1 else 0
+        if 0 <= h <= 23 and 0 <= m <= 59:
+            return _time(hour=h, minute=m)
+    except (ValueError, IndexError, TypeError):
+        pass
+    return None
+
+
+def _parse_dias_personalizados(raw):
+    """Convierte una lista de strings ISO de fechas → lista de strings ISO
+    normalizada y ordenada, o None si vacío/no-lista. Tolerante."""
+    if not raw or not isinstance(raw, (list, tuple)):
+        return None
+    from datetime import date as _date
+    fechas = []
+    for d in raw:
+        try:
+            fechas.append(_date.fromisoformat(str(d)[:10]))
+        except (ValueError, TypeError):
+            continue
+    if not fechas:
+        return None
+    return [d.isoformat() for d in sorted(fechas)]
+
 
 def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
     """Helper (NO es view, NO va con @login_required): convierte un body
@@ -6446,10 +6944,17 @@ def _instalacion_payload_to_kwargs(data, cliente_default=None, po_default=''):
         except (InvalidOperation, ValueError):
             return Decimal(default)
 
+    hora_inicio = _parse_hora(data.get('hora_inicio'))
+    hora_fin = _parse_hora(data.get('hora_fin'))
+    dias_personalizados = _parse_dias_personalizados(data.get('dias_personalizados'))
+
     kwargs = {
         'po': (data.get('po') or po_default or '').strip()[:80],
         'proyecto': descripcion[:400],
         'fecha_programada': fecha_programada,
+        'hora_inicio': hora_inicio,
+        'hora_fin': hora_fin,
+        'dias_personalizados': dias_personalizados,
         'fecha_tentativa_texto': (data.get('fecha_tentativa_texto') or '').strip()[:120],
         'jornadas_count': int(data.get('jornadas_count') or 1),
         'jornadas_tipo': (data.get('jornadas_tipo') or 'normal'),
@@ -6488,6 +6993,11 @@ def _instalacion_to_full_dict(inst):
         'descripcion': inst.proyecto,
         'cliente_nombre': inst.cliente_nombre,
         'fecha': inst.fecha_programada.isoformat() if inst.fecha_programada else '',
+        'hora_inicio': inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '',
+        'hora_fin': inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '',
+        'dias_personalizados': inst.dias_personalizados or None,
+        # Lista de todos los días que ocupa (para el desglose de jornadas).
+        'dias': [d.isoformat() for d in _instalacion_dias_asignados(inst)],
         'fecha_tentativa_texto': inst.fecha_tentativa_texto,
         'jornadas_count': inst.jornadas_count,
         'jornadas_tipo': inst.jornadas_tipo,
@@ -6707,6 +7217,51 @@ def api_instalacion_detalle(request, instalacion_id):
         return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
 
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_instalacion_reagendar(request, instalacion_id):
+    """PATCH /app/api/instalacion/<id>/reagendar/ — reagenda por drag&drop.
+
+    Body JSON con CUALQUIERA de:
+        {fecha (YYYY-MM-DD), hora_inicio ("HH:MM"), hora_fin ("HH:MM"),
+         dias_personalizados (list|null)}
+    Sólo actualiza los campos presentes en el body. A diferencia del PATCH
+    completo (api_instalacion_detalle), NO exige descripción — es un movimiento
+    ligero del calendario.
+    """
+    if request.method != 'PATCH':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    inst = get_object_or_404(Instalacion, pk=instalacion_id)
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (ValueError, AttributeError):
+        data = {}
+
+    from datetime import date as _date
+
+    if 'fecha' in data:
+        fecha_raw = (data.get('fecha') or '').strip()
+        if fecha_raw:
+            try:
+                inst.fecha_programada = _date.fromisoformat(fecha_raw)
+            except ValueError:
+                return JsonResponse({'success': False, 'error': 'Fecha inválida (usa YYYY-MM-DD).'}, status=400)
+        else:
+            inst.fecha_programada = None
+
+    if 'hora_inicio' in data:
+        inst.hora_inicio = _parse_hora(data.get('hora_inicio'))
+
+    if 'hora_fin' in data:
+        inst.hora_fin = _parse_hora(data.get('hora_fin'))
+
+    if 'dias_personalizados' in data:
+        inst.dias_personalizados = _parse_dias_personalizados(data.get('dias_personalizados'))
+
+    inst.save()
+    return JsonResponse({'success': True, 'instalacion': _instalacion_to_full_dict(inst)})
 
 
 @login_required

@@ -531,6 +531,9 @@
 
     /* ─── Detalle de idea ─── */
     function openIdeaDetail(ideaId) {
+        // Hook ventanas (prospecto_windows.js): si ya hay una idea abierta
+        // en ventana, la nueva abre como ventana-iframe propia.
+        if (window._ideaWindowPolicy && window._ideaWindowPolicy(ideaId)) return;
         var ov = document.getElementById('widgetIdea');
         if (!ov) return;
         document.getElementById('ideaLoading').style.display = '';
@@ -544,9 +547,11 @@
                 return;
             }
             STATE.currentIdea = res.data.idea;
+            window._currentIdeaId = res.data.idea.id;  // leído por el hook de ventanas
             renderIdeaDetail();
         });
     }
+    window.openIdeaDetail = openIdeaDetail;  // boot de la página-iframe (widget_idea_page)
     // Refetch + re-render del detalle de una idea sin abrir/cerrar el
     // overlay. Usado por el asistente AI de ideas para reflejar el
     // resumen recién insertado en bitácora.
@@ -980,6 +985,8 @@
         document.getElementById('wiCnvClienteList').style.display = 'none';
         document.getElementById('wiCnvOk').disabled = true;
         ov.style.display = 'flex';
+        // Hook ventanas: cascada si la idea está windowizada.
+        if (typeof window._ideaWindowizeConvertir === 'function') window._ideaWindowizeConvertir(ov);
         setTimeout(function () { document.getElementById('wiCnvClienteSearch').focus(); }, 30);
     }
     function cerrarConvertir() {
@@ -1539,6 +1546,9 @@
     }
 
     /* ─── Boot ─── */
+    // Export para la página-iframe (widget_idea_page): allá no hay kanban
+    // (boot() aborta) pero el detalle SÍ necesita su wiring de eventos.
+    window._ideasWireDetail = function () { try { wireDetailEvents(); } catch (e) { } };
     function boot() {
         if (!document.getElementById('ideasKanbanBoard')) return;
         if (window._ideasBooted) return;

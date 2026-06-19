@@ -1,0 +1,115 @@
+{% load static %}{% load l10n %}<!DOCTYPE html>
+{% comment %}
+Composer de actividad LIGADO A UNA IDEA, como página (cuerpo de una
+ventana-iframe). Permite N composers simultáneos — uno por idea — sin
+pelear por el singleton widgetGlobalCrearActividad del padre.
+Incluye _widget_oportunidad.html (helpers wact*) y _widget_calendario.html
+(el composer). El patch que inyecta `idea` en el POST de actividades se
+hace inline (es un wrap de fetch de 4 líneas — no requiere crm_ideas.js).
+Al cerrarse el composer (guardar o cancelar) postea
+'actividad-composer-done' y el padre cierra esta ventana y avisa a la
+ventana de la idea para que refresque.
+{% endcomment %}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nueva actividad</title>
+    <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20260612-composer-page">
+    <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260615-tw-menu">
+    <style>
+        body[data-theme="mundial"]::before { display: none !important; }
+        /* Layout fijo a la medida de la ventana: sin scrollbar fantasma
+           (el gutter blanco a la derecha) ni colchón del body. */
+        html, body { overflow: hidden; }
+        html, body { margin: 0; padding: 0; background: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif; }
+        /* El composer ES la página: sin backdrop, ocupa todo el iframe. */
+        #widgetGlobalCrearActividad {
+            display: flex !important;
+            position: static !important;
+            inset: auto !important;
+            background: transparent !important;
+            width: 100vw; min-height: 100vh;
+            padding: 0 !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+        }
+        /* El marco de la ventana ya es el header ("Nueva actividad"):
+           el wact-header interno duplicaba la greca. El cierre vive en
+           Cancelar / Guardar / la X del marco. */
+        #widgetGlobalCrearActividad .wact-header { display: none !important; }
+        #widgetGlobalCrearActividad .wact-shell {
+            width: 100% !important;
+            max-width: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            min-height: 100vh;
+        }
+    </style>
+    <script>
+        window.crmReady = function (fn) {
+            if (document.readyState !== 'loading') { try { fn(); } catch (e) { } }
+            else document.addEventListener('DOMContentLoaded', function () { try { fn(); } catch (e) { } });
+        };
+        window.crmDataBus = window.crmDataBus || {
+            on: function () { return function () { }; },
+            emit: function () { },
+        };
+        window.getCsrf = window.getCsrf || function () {
+            var v = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+            return v ? v.pop() : '';
+        };
+        window.showToast = window.showToast || function (msg) { try { console.log('[toast]', msg); } catch (e) { } };
+    </script>
+</head>
+<body data-theme="{{ request.user.userprofile.theme|default:'mundial' }}">
+    <form style="display:none;">{% csrf_token %}</form>
+    {% include "crm/_widget_oportunidad.html" %}
+    {% include "crm/_widget_calendario.html" %}
+    <script>
+        (function () {
+            var IDEA_ID = {{ idea_id|unlocalize }};
+            // Patch: inyectar `idea` en el POST de actividades (mismo efecto
+            // que patchCalActividadSubmit de crm_ideas.js, aquí inline).
+            var origFetch = window.fetch;
+            window.fetch = function (url, opts) {
+                if (typeof url === 'string'
+                    && url.indexOf('/app/api/actividades/') !== -1
+                    && opts && opts.method === 'POST') {
+                    try {
+                        var body = JSON.parse(opts.body || '{}');
+                        body.idea = IDEA_ID;
+                        opts.body = JSON.stringify(body);
+                    } catch (e) { /* ignore */ }
+                }
+                return origFetch.apply(this, arguments);
+            };
+
+            function boot() {
+                try {
+                    if (typeof window.calGlobalAbrirCrearActividad === 'function') {
+                        window.calGlobalAbrirCrearActividad();
+                    }
+                    var ov = document.getElementById('widgetGlobalCrearActividad');
+                    if (!ov) return;
+                    // Cerró (guardó o canceló) → avisar al padre.
+                    var obs = new MutationObserver(function () {
+                        if (window.getComputedStyle(ov).display === 'none') {
+                            obs.disconnect();
+                            try {
+                                window.parent.postMessage({ type: 'actividad-composer-done', ideaId: IDEA_ID }, window.location.origin);
+                            } catch (e) { }
+                        }
+                    });
+                    obs.observe(ov, { attributes: true, attributeFilter: ['style', 'class'] });
+                } catch (e) {
+                    document.body.innerHTML = '<div style="padding:2rem;color:#FF3B30;font-size:0.9rem;">No se pudo cargar el composer: ' + (e && e.message) + '</div>';
+                }
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+            else boot();
+        })();
+    </script>
+</body>
+</html>

@@ -124,7 +124,18 @@
         busy = true;
         setLoading(true, cfg.ids);
 
-        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'crm-nav-v2' } })
+        // Timeout duro: si el server tarda (504/saturación) NO dejamos el
+        // botón congelado en "Aplicando…" para siempre. Abortamos a los 18s y
+        // recuperamos la UI en el .catch (sin recargar hacia la misma URL
+        // lenta, que sólo provoca otro 504).
+        var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var _timedOut = false;
+        var _to = setTimeout(function () {
+            _timedOut = true;
+            if (_ac) { try { _ac.abort(); } catch (e) {} }
+        }, 18000);
+
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'crm-nav-v2' }, signal: _ac ? _ac.signal : undefined })
             .then(function (r) {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 return r.text();
@@ -183,12 +194,28 @@
                     console.error('[crmNavV2] after-swap:', e);
                 }
 
+                clearTimeout(_to);
                 setLoading(false, cfg.ids);
                 busy = false;
             })
             .catch(function (err) {
-                console.error('[crmNavV2] swap falló, recargando:', err);
+                clearTimeout(_to);
                 busy = false;
+                setLoading(false, cfg.ids);
+                if (_timedOut || (err && err.name === 'AbortError')) {
+                    // El server no respondió a tiempo. Recargar hacia la misma
+                    // URL lenta sólo encadenaría otro timeout → mejor avisar y
+                    // dejar la vista actual usable.
+                    console.warn('[crmNavV2] period-apply timeout (server lento):', url);
+                    if (typeof window.crmToast === 'function') {
+                        window.crmToast('El servidor tardó demasiado. Intenta de nuevo en un momento.', 'error');
+                    } else if (typeof window.showNotification === 'function') {
+                        window.showNotification('El servidor tardó demasiado. Intenta de nuevo.', 'error');
+                    }
+                    return;
+                }
+                // Otros errores (sesión expirada, fragmento inválido): recarga real.
+                console.error('[crmNavV2] swap falló, recargando:', err);
                 hardReload(url);
             });
 
@@ -220,8 +247,11 @@
     // restaurar el user vuelve exactamente al proyecto que tenía abierto.
     var CAL_SECTION_IDS = ['crmContentSection', 'tareasSection', 'proyectosSection', 'widgetProyectoDetalle', 'widgetCompras'];
     var SIDEBAR_BTN_SEL = '.island-nav-btn, .crm-sb-btn';
-    var CAL_CARD_PAGE_CSS = ';width:100%;height:auto;min-height:100vh;max-width:none;' +
-        'background:transparent;border-radius:0;border:none;box-shadow:none;overflow:visible;';
+    // OJO: NO usamos min-height:100vh aquí — el card debe caber dentro del
+    // overlay con padding (margen en los 4 lados, incluido ABAJO). La clase
+    // .cal-card--page (que añadimos en pageize) trae el layout flotante real
+    // con !important; este inline solo da un fallback mínimo.
+    var CAL_CARD_PAGE_CSS = ';width:auto;height:auto;max-width:none;';
 
     function replaceUrl(qs) {
         try { window.history.replaceState({}, '', window.location.pathname + '?' + qs); } catch (e) { }
@@ -258,7 +288,10 @@
         ov.style.display = 'flex';
         ov.style.alignItems = 'stretch';
         ov.style.justifyContent = 'stretch';
-        if (card) card.style.cssText += CAL_CARD_PAGE_CSS;
+        // Añadir la clase --page para que apliquen las reglas de card flotante
+        // (mismas que en modo página nativo ?tab=calendario). Sin esto el card
+        // quedaba transparente/100vh y se comía el margen inferior.
+        if (card) { card.classList.add('cal-card--page'); card.style.cssText += CAL_CARD_PAGE_CSS; }
         calInline = true;
         window._crmNavCalInline = true;  // leído por el botón de cierre oculto del template
         replaceUrl('tab=calendario');
@@ -288,7 +321,10 @@
             var card = ov.querySelector('.cal-card');
             ov.style.cssText = (calSaved && calSaved.overlayCss) || '';
             ov.style.display = 'none';
-            if (card && calSaved) card.style.cssText = calSaved.cardCss;
+            if (card) {
+                card.classList.remove('cal-card--page');
+                if (calSaved) card.style.cssText = calSaved.cardCss;
+            }
         }
         if (calSaved) {
             Object.keys(calSaved.sections).forEach(function (id) {
@@ -464,6 +500,10 @@
 
     function dashPrewarm() {
         if (dashWarmed || dashInline || calInline) return;
+        // Modo Ligero: NO precargar el dashboard en background — es trabajo
+        // (fetches + render) que el equipo viejo no pidió. Reportes igual
+        // carga al entrar; solo se pierde el "ya estaba caliente".
+        if (document.body.classList.contains('ww-lite')) return;
         if (document.visibilityState === 'hidden') return;
         if (PAGE_TAB !== 'crm') return;
         if (!document.getElementById('ckDashRoot')) return;

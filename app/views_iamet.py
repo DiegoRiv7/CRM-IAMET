@@ -513,7 +513,10 @@ def _proyecto_overview(proyecto):
 
     counts = {
         'levantamientos': _safe_count(getattr(proyecto, 'levantamientos', None)),
-        'tareas_pendientes': _safe_count(proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled'])),
+        'tareas_pendientes': (
+            _safe_count(proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']))
+            + _safe_count(proyecto.tareas_iamet.exclude(estado__in=['completada', 'cancelada']))
+        ),
         'alertas': _safe_count(proyecto.alertas.filter(resuelta=False)),
         'ordenes_compra_activas': _safe_count(proyecto.ordenes_compra.exclude(status='cancelled')),
     }
@@ -612,12 +615,50 @@ def _proyecto_to_dict(p, include_alerts=False):
         'oportunidad_producto': opp.producto if opp else None,
         'oportunidad_etapa': opp.etapa_corta if opp else None,
         'oportunidad_etapa_color': opp.etapa_color if opp else None,
+        'oportunidad_probabilidad': (opp.probabilidad_cierre or 0) if opp else 0,
+        # PO de la oportunidad ligada — lo usa el front (programa_obra.js) para
+        # pre-llenar el campo PO al crear una instalación nueva.
+        'oportunidad_po': (opp.po_number or '') if opp else '',
         'levantamientos_count': lev_count,
         'levantamiento_fase_max': lev_fase_max,
     }
     if include_alerts:
         d['alertas_pendientes'] = p.alertas.filter(resuelta=False).count()
     return d
+
+
+def _proyecto_to_dict_lite(p):
+    """Serializer LIGERO para el listado/kanban: solo lo que pintan las tarjetas
+    (y la tabla legacy oculta). Evita los aggregates de facturas/gastos/
+    levantamientos/alertas — ~6 queries por proyecto — que el listado NO usa; el
+    detalle (api_proyecto_detalle) sigue usando _proyecto_to_dict completo.
+    Requiere qs.select_related('usuario', 'oportunidad')."""
+    opp = p.oportunidad if p.oportunidad_id else None
+    return {
+        'id': p.id,
+        'usuario_id': p.usuario_id,
+        'usuario_nombre': (p.usuario.first_name + ' ' + p.usuario.last_name).strip() or p.usuario.username,
+        'nombre': p.nombre,
+        'descripcion': p.descripcion,
+        'cliente_nombre': p.cliente_nombre,
+        'status': p.status,
+        'utilidad_presupuestada': float(p.utilidad_presupuestada),
+        'utilidad_real': 0.0,
+        'fecha_inicio': _fmt(p.fecha_inicio),
+        'fecha_fin': _fmt(p.fecha_fin),
+        'created_at': _fmt(p.created_at),
+        'updated_at': _fmt(p.updated_at),
+        'oportunidad_id': opp.id if opp else None,
+        'oportunidad_nombre': opp.oportunidad if opp else None,
+        'oportunidad_monto': float(opp.monto) if opp and opp.monto is not None else 0.0,
+        'oportunidad_producto': opp.producto if opp else None,
+        'oportunidad_etapa': opp.etapa_corta if opp else None,
+        'oportunidad_etapa_color': opp.etapa_color if opp else None,
+        'oportunidad_probabilidad': (opp.probabilidad_cierre or 0) if opp else 0,
+        'levantamientos_count': 0,
+        'levantamiento_fase_max': 0,
+        'alertas_pendientes': 0,
+    }
 
 
 def _partida_to_dict(p):
@@ -870,8 +911,10 @@ def api_proyectos_lista(request):
         status_filter = request.GET.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
-        qs = qs.select_related('usuario')
-        proyectos = [_proyecto_to_dict(p, include_alerts=True) for p in qs]
+        # Listado/kanban: serializer ligero (sin los ~6 aggregates por proyecto)
+        # + select_related de la oportunidad para no caer en N+1.
+        qs = qs.select_related('usuario', 'oportunidad')
+        proyectos = [_proyecto_to_dict_lite(p) for p in qs]
         return JsonResponse({'ok': True, 'data': proyectos})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
@@ -944,7 +987,10 @@ def api_proyecto_detalle(request, proyecto_id):
         'utilidad_real': float(utilidad_real),
         'margen': float(margen),
         'alertas_pendientes': proyecto.alertas.filter(resuelta=False).count(),
-        'tareas_pendientes': proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count(),
+        'tareas_pendientes': (
+            proyecto.tareas_proyecto.exclude(status__in=['completed', 'cancelled']).count()
+            + proyecto.tareas_iamet.exclude(estado__in=['completada', 'cancelada']).count()
+        ),
         'ordenes_compra_activas': proyecto.ordenes_compra.exclude(status='cancelled').count(),
         # Gastado: OCs (no canceladas) + Gastos operativos (no rechazados)
         'gastado': gastado_total,
@@ -2358,35 +2404,98 @@ def api_tareas_proyecto_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    # 1) Tareas propias del proyecto
-    tareas = proyecto.tareas_proyecto.select_related('asignado_a').all()
-    items = []
-    for t in tareas:
-        d = _tarea_to_dict(t)
-        d['source'] = 'proyecto'
-        items.append(d)
+    def _nombre_usuario(u):
+        if not u:
+            return ''
+        return (u.first_name + ' ' + u.last_name).strip() or u.username
 
-    # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM)
+    # Mapeos al shape que espera el cockpit (.tcp-*): estado en español
+    # (pendiente/en_progreso/completada/cancelada) y prioridad alta/media/baja.
+    PT_ESTADO = {'pending': 'pendiente', 'in_progress': 'en_progreso',
+                 'completed': 'completada', 'cancelled': 'cancelada'}
+    PT_PRIORIDAD = {'low': 'baja', 'medium': 'media', 'alta': 'alta',
+                    'high': 'alta', 'critical': 'alta'}
+
+    from .models import Tarea
+
+    items = []
+
+    # 1) Tareas del proyecto = CRM Tareas ligadas vía proyecto_iamet (modelo
+    #    Tarea → abren su ventana completa). source 'proyecto'.
+    proy_tareas = Tarea.objects.filter(
+        proyecto_iamet=proyecto, tarea_padre__isnull=True
+    ).select_related('asignado_a', 'creado_por').prefetch_related('subtareas')
+    for t in proy_tareas:
+        subs = [{'id': s.id, 'titulo': s.titulo, 'estado': s.estado} for s in t.subtareas.all()]
+        items.append({
+            'id': t.id,
+            'source': 'proyecto',
+            'titulo': t.titulo,
+            'descripcion': t.descripcion or '',
+            'estado': t.estado or 'pendiente',
+            'prioridad': t.prioridad or 'media',
+            'responsable': _nombre_usuario(t.asignado_a),
+            'creado_por': _nombre_usuario(t.creado_por),
+            'fecha_limite': _fmt(t.fecha_limite),
+            'fecha_completada': _fmt(t.fecha_completada),
+            'oportunidad_id': t.oportunidad_id,
+            'oportunidad_nombre': (t.oportunidad.oportunidad if t.oportunidad_id else ''),
+            'oportunidad_tipo': 'proyecto',
+            'subtareas': subs,
+        })
+
+    # 1b) Tareas LEGACY del proyecto (modelo simple ProyectoTarea) — se siguen
+    #     mostrando; abren el diálogo ligero (source 'proyecto-legacy').
+    for t in proyecto.tareas_proyecto.select_related('asignado_a').all():
+        items.append({
+            'id': t.id,
+            'source': 'proyecto-legacy',
+            'titulo': t.titulo,
+            'descripcion': t.descripcion or '',
+            'estado': PT_ESTADO.get(t.status, 'pendiente'),
+            'prioridad': PT_PRIORIDAD.get(t.prioridad, 'media'),
+            'responsable': _nombre_usuario(t.asignado_a),
+            'creado_por': '',
+            'fecha_limite': _fmt(t.fecha_limite),
+            'fecha_completada': _fmt(t.fecha_completada),
+            'oportunidad_id': None,
+            'oportunidad_nombre': '',
+            'oportunidad_tipo': 'proyecto',
+            'subtareas': [],
+        })
+
+    # 2) Tareas de la oportunidad vinculada (modelo Tarea del CRM — NO Actividad).
+    #    Excluye las que ya son del proyecto (proyecto_iamet) para no duplicar.
     if proyecto.oportunidad_id:
-        from .models import Tarea
+        opp = proyecto.oportunidad
+        opp_nombre = opp.oportunidad if opp else ''
+        opp_tipo = getattr(opp, 'tipo_negociacion', '') if opp else ''
+        opp_id = proyecto.oportunidad_id
+        # Solo tareas raíz (no subtareas) — las subtareas van anidadas.
         tareas_crm = Tarea.objects.filter(
-            oportunidad_id=proyecto.oportunidad_id
-        ).select_related('asignado_a', 'creado_por')
-        prioridad_map = {'baja': 'low', 'media': 'medium', 'alta': 'high'}
-        estado_map = {'pendiente': 'pending', 'iniciada': 'in_progress', 'en_progreso': 'in_progress', 'completada': 'completed', 'cancelada': 'cancelled'}
+            oportunidad_id=opp_id, tarea_padre__isnull=True, proyecto_iamet__isnull=True
+        ).select_related('asignado_a', 'creado_por').prefetch_related('subtareas')
         for t in tareas_crm:
-            resp_name = None
-            if t.asignado_a:
-                resp_name = (t.asignado_a.first_name + ' ' + t.asignado_a.last_name).strip() or t.asignado_a.username
+            subs = [{
+                'id': s.id,
+                'titulo': s.titulo,
+                'estado': s.estado,
+            } for s in t.subtareas.all()]
             items.append({
                 'id': t.id,
                 'source': 'oportunidad',
                 'titulo': t.titulo,
-                'descripcion': getattr(t, 'descripcion', ''),
-                'prioridad': prioridad_map.get(t.prioridad, 'medium'),
-                'status': estado_map.get(t.estado, 'pending'),
-                'asignado_a_nombre': resp_name,
+                'descripcion': t.descripcion or '',
+                'estado': t.estado or 'pendiente',
+                'prioridad': t.prioridad or 'media',
+                'responsable': _nombre_usuario(t.asignado_a),
+                'creado_por': _nombre_usuario(t.creado_por),
                 'fecha_limite': _fmt(t.fecha_limite),
+                'fecha_completada': _fmt(t.fecha_completada),
+                'oportunidad_id': opp_id,
+                'oportunidad_nombre': opp_nombre,
+                'oportunidad_tipo': opp_tipo,
+                'subtareas': subs,
             })
 
     return JsonResponse({'success': True, 'data': items})
@@ -2421,19 +2530,22 @@ def api_tarea_proyecto_crear(request):
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Usuario asignado no encontrado'}, status=404)
 
-    tarea = ProyectoTarea.objects.create(
-        proyecto=proyecto,
+    # Las tareas creadas en el proyecto ahora son CRM Tareas (modelo Tarea)
+    # ligadas vía proyecto_iamet → tienen su ventana completa (crmTaskVerDetalle).
+    from .models import Tarea
+    _PRIO_EN2ES = {'low': 'baja', 'medium': 'media', 'high': 'alta', 'critical': 'alta'}
+    tarea = Tarea.objects.create(
+        proyecto_iamet=proyecto,
+        creado_por=request.user,
         titulo=data.get('titulo', ''),
         descripcion=data.get('descripcion', ''),
-        status=data.get('status', 'pending'),
-        prioridad=data.get('prioridad', 'medium'),
+        estado='pendiente',
+        prioridad=_PRIO_EN2ES.get(data.get('prioridad'), 'media'),
         asignado_a=asignado_a,
         fecha_limite=_parse_date(data.get('fecha_limite')),
-        horas_estimadas=_dec(data.get('horas_estimadas')) if data.get('horas_estimadas') else None,
-        notas=data.get('notas', ''),
     )
 
-    return JsonResponse({'success': True, 'data': _tarea_to_dict(tarea)})
+    return JsonResponse({'success': True, 'data': {'id': tarea.id}})
 
 
 @login_required

@@ -10,8 +10,11 @@ tareas, calendario, drive) se refresca sin código nuevo.
 Registrado desde AppConfig.ready() (app/apps.py). Cada handler está
 blindado: un fallo al loggear JAMÁS debe romper el save original.
 """
+from datetime import timedelta
+
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 from .models import (
     CrmCambio,
@@ -66,6 +69,38 @@ def _accion(created):
     return 'create' if created else 'update'
 
 
+# ── Reconciliación de notificaciones de vencimiento ────────────────────
+# Las notifs "vencida" / "por vencer" las CREA el cron (procesar_vencimientos)
+# pero nadie las BORRABA al completar/aplazar el item → quedaban fantasma.
+# Aquí, en cada save del item, recalculamos su estado y borramos las notifs
+# de vencimiento que ya no aplican. Así, en cuanto el usuario completa o
+# reagenda una tarea/actividad, su notif desaparece (el cliente la ve irse
+# vía el CrmCambio de 'tarea'/'tarea-opp'/'actividad' que ya emitimos).
+# Debe coincidir con el --umbral-minutos default del cron.
+_UMBRAL_VENC_MIN = 10
+
+
+def _reconciliar_venc(tipo_vencida, tipo_por_vencer, base_qs, activo, fecha):
+    """Borra las notifs de vencimiento que ya no corresponden al estado actual.
+
+    base_qs: Notificacion ya filtrado al objeto (p.ej. por tarea_id).
+    activo:  el objeto sigue en un estado que puede vencer (no completado).
+    fecha:   fecha_limite / fecha_fin vigente (o None).
+    """
+    try:
+        now = timezone.now()
+        umbral = now + timedelta(minutes=_UMBRAL_VENC_MIN)
+        vencida = bool(activo and fecha and fecha < now)
+        por_vencer = bool(activo and fecha and not vencida and fecha <= umbral)
+        if not vencida:
+            base_qs.filter(tipo=tipo_vencida).delete()
+        if not por_vencer:
+            base_qs.filter(tipo=tipo_por_vencer).delete()
+    except Exception:
+        # Nunca romper el save original por la reconciliación.
+        pass
+
+
 # ── Oportunidades ──────────────────────────────────────────────────────
 
 @receiver(post_save, sender=TodoItem)
@@ -83,6 +118,12 @@ def _opp_delete(sender, instance, **kw):
 @receiver(post_save, sender=TareaOportunidad)
 def _tarea_opp_save(sender, instance, created, **kw):
     _log('tarea-opp', instance, _accion(created), _opp_extra(instance))
+    activo = instance.estado in ('pendiente', 'en_progreso')
+    _reconciliar_venc(
+        'actividad_vencida', 'actividad_por_vencer',
+        Notificacion.objects.filter(tarea_opp=instance),
+        activo, getattr(instance, 'fecha_limite', None),
+    )
 
 
 @receiver(post_delete, sender=TareaOportunidad)
@@ -93,6 +134,12 @@ def _tarea_opp_delete(sender, instance, **kw):
 @receiver(post_save, sender=Tarea)
 def _tarea_save(sender, instance, created, **kw):
     _log('tarea', instance, _accion(created), _opp_extra(instance))
+    activo = instance.estado in ('pendiente', 'iniciada', 'en_progreso')
+    _reconciliar_venc(
+        'tarea_vencida', 'tarea_por_vencer',
+        Notificacion.objects.filter(tarea_id=instance.id),
+        activo, getattr(instance, 'fecha_limite', None),
+    )
 
 
 @receiver(post_delete, sender=Tarea)
@@ -105,6 +152,20 @@ def _tarea_delete(sender, instance, **kw):
 @receiver(post_save, sender=Actividad)
 def _actividad_save(sender, instance, created, **kw):
     _log('actividad', instance, _accion(created), _opp_extra(instance))
+    # Las notifs de actividad-de-oportunidad se identifican por opp + el
+    # título de la actividad embebido en el mensaje (mismo criterio que el
+    # cron). Solo reconciliamos si la actividad tiene oportunidad y título.
+    titulo = (getattr(instance, 'titulo', '') or '').strip()
+    if instance.oportunidad_id and titulo:
+        activo = not instance.completada
+        _reconciliar_venc(
+            'actividad_opp_vencida', 'actividad_opp_por_vencer',
+            Notificacion.objects.filter(
+                oportunidad_id=instance.oportunidad_id,
+                mensaje__icontains='"%s"' % titulo,
+            ),
+            activo, getattr(instance, 'fecha_fin', None),
+        )
 
 
 @receiver(post_delete, sender=Actividad)

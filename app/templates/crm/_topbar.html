@@ -116,7 +116,7 @@
                 </button>
                 {% endif %}
                 <button type="button" class="island-nav-btn" id="btnNotificaciones"
-                    onclick="document.getElementById('widgetNotificaciones').classList.add('active'); document.body.style.overflow='hidden'; if(window.notifLoad)window.notifLoad();"
+                    onclick="if(window.notifDrawerToggle){window.notifDrawerToggle();}else{document.getElementById('widgetNotificaciones').classList.add('active'); if(window.notifLoad)window.notifLoad();}"
                     title="Notificaciones" style="padding:0 9px;font-size:1rem;position:relative;">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>

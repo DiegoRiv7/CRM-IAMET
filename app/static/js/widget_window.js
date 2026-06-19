@@ -31,6 +31,11 @@
     'use strict';
 
     var MAX_WINDOWS = 4;
+    // En Modo Ligero el tope baja a 3: menos ventanas simultáneas = menos
+    // capas/compositing/memoria en equipos viejos → más fluido.
+    function maxWindows() {
+        return document.body.classList.contains('ww-lite') ? 3 : MAX_WINDOWS;
+    }
     var MIN_W = 380;
     var MIN_H = 260;
     var SNAP = 14;          // px de tolerancia para "imantar" a los bordes
@@ -136,7 +141,7 @@
 
     function countWindows() {
         var n = 0;
-        document.querySelectorAll('.widget-overlay.ww-windowed').forEach(function (el) {
+        document.querySelectorAll('.ww-windowed').forEach(function (el) {
             if (isVisible(el)) n++;
         });
         return n;
@@ -184,7 +189,7 @@
 
     function windowize(overlay, rect) {
         if (overlay.classList.contains('ww-windowed')) return true;
-        if (countWindows() >= MAX_WINDOWS) {
+        if (countWindows() >= maxWindows()) {
             // En lugar de un toast huérfano, abrir el selector visual
             // estilo Mission Control: el usuario elige cuál cerrar
             // para que la nueva tome su lugar. Si cancela, la ventana
@@ -270,7 +275,7 @@
         // del stack vía MutationObserver, igual que nosotros). Usar
         // el DOM + z-index garantiza que vemos el estado real ahora.
         var candidates = Array.prototype.slice.call(
-            document.querySelectorAll('.widget-overlay.ww-windowed:not(.ww-minimized)')
+            document.querySelectorAll('.ww-windowed:not(.ww-minimized)')
         ).filter(isVisible);
         candidates.sort(function (a, b) {
             var za = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
@@ -278,7 +283,7 @@
             return zb - za;
         });
         var focused = candidates[0] || null;
-        document.querySelectorAll('.widget-overlay.ww-focused').forEach(function (el) {
+        document.querySelectorAll('.ww-focused').forEach(function (el) {
             if (el !== focused) el.classList.remove('ww-focused');
         });
         if (focused && !focused.classList.contains('ww-focused')) {
@@ -402,8 +407,8 @@
 
     function restoreFromDock(overlay) {
         var s = st(overlay);
-        if (s.windowed && countWindows() >= MAX_WINDOWS) {
-            notify('Máximo ' + MAX_WINDOWS + ' ventanas abiertas a la vez');
+        if (s.windowed && countWindows() >= maxWindows()) {
+            notify('Máximo ' + maxWindows() + ' ventanas abiertas a la vez');
             return;
         }
         // Capturar rect del chip ANTES de removerlo — el destino visual
@@ -578,7 +583,7 @@
 
     function activeWindows() {
         return Array.prototype.slice.call(
-            document.querySelectorAll('.widget-overlay.ww-windowed:not(.ww-minimized)')
+            document.querySelectorAll('.ww-windowed:not(.ww-minimized)')
         ).filter(isVisible);
     }
 
@@ -807,10 +812,24 @@
             mode: mode,
             startX: ev.clientX,
             startY: ev.clientY,
+            curDx: 0,
+            curDy: 0,
             startRect: {
                 x: s.rect.x, y: s.rect.y, w: s.rect.w, h: s.rect.h,
             },
         };
+        // MOVER: promover la card a su propia capa GPU y arrastrar con
+        // transform (solo composita). Sin esto, mover actualizaba left/top
+        // en cada frame → layout+paint del contenido (la oportunidad, con
+        // DOM rico, se arrastraba lentísimo). El iframe de tarea ya era su
+        // propia capa, por eso ése sí iba fluido.
+        if (mode === 'move' && card) {
+            card.style.willChange = 'transform';
+            card.style.transition = 'none';
+            // Pre-promover a capa GPU YA (translate3d nulo): la rasterización
+            // pesada ocurre una vez al iniciar, no en el primer frame del move.
+            card.style.transform = 'translate3d(0,0,0)';
+        }
         addShield(cursor);
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp, { once: true });
@@ -826,8 +845,17 @@
         var r = { x: s0.x, y: s0.y, w: s0.w, h: s0.h };
 
         if (dragState.mode === 'move') {
-            r.x = s0.x + dx;
-            r.y = s0.y + dy;
+            // Mover = solo transform (composite). NO tocar left/top aquí:
+            // eso forzaría layout+paint del contenido en cada frame. La
+            // posición real se fija en onPointerUp.
+            dragState.curDx = dx;
+            dragState.curDy = dy;
+            var mcard = getCard(dragState.overlay);
+            // translate3d (no translate 2D): fuerza compositing por GPU en
+            // TODO navegador, incluido WebKit viejo (Mac 2015 Safari) donde
+            // translate 2D puede caer en CPU → arrastre lento de ventanas
+            // con DOM pesado como la oportunidad.
+            if (mcard) mcard.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
             // Snap visual: si el puntero entra en una zona, mostrar
             // el ghost. La aplicación real ocurre en onPointerUp.
             var zone = snapZoneFor(ev.clientX, ev.clientY);
@@ -837,6 +865,7 @@
             } else {
                 hideSnapGhost();
             }
+            return;  // no applyRect durante el move
         } else {
             // Resize por esquina: 'nw' | 'ne' | 'sw' | 'se'
             var dir = dragState.mode;
@@ -870,18 +899,30 @@
         if (dragState) {
             var s = st(dragState.overlay);
             if (dragState.mode === 'move') {
-                if (snapTarget) {
-                    // Aplicar snap rect con animación FLIP suave.
-                    var card = getCard(dragState.overlay);
-                    var fromRect = card ? card.getBoundingClientRect() : null;
-                    applyRect(dragState.overlay, {
-                        x: snapTarget.x, y: snapTarget.y,
-                        w: snapTarget.w, h: snapTarget.h,
-                    });
-                    if (fromRect) flipAnimate(card, fromRect, 240);
-                } else if (s.rect) {
-                    applyRect(dragState.overlay, snapToEdges(s.rect));
+                var card = getCard(dragState.overlay);
+                // Capturar la posición VISUAL actual (con el transform del
+                // drag aplicado) ANTES de limpiar, para un FLIP sin saltos.
+                var fromRect = card ? card.getBoundingClientRect() : null;
+                if (card) {
+                    card.style.transform = '';
+                    card.style.willChange = '';
+                    card.style.transition = '';
                 }
+                var s0 = dragState.startRect;
+                var finalRect;
+                if (snapTarget) {
+                    finalRect = { x: snapTarget.x, y: snapTarget.y, w: snapTarget.w, h: snapTarget.h };
+                } else {
+                    finalRect = snapToEdges({
+                        x: s0.x + dragState.curDx, y: s0.y + dragState.curDy,
+                        w: s0.w, h: s0.h,
+                    });
+                }
+                applyRect(dragState.overlay, finalRect);
+                // FLIP solo si hay snap (o imán de borde) que mueva la card
+                // respecto a donde está; si soltaste libre, fromRect≈final →
+                // sin animación, sin parpadeo.
+                if (fromRect) flipAnimate(card, fromRect, snapTarget ? 240 : 0);
             }
             lastDragEnd = Date.now();
         }
@@ -918,7 +959,7 @@
         if (ev.button !== 0) return;
         var card = ev.target.closest('.ww-card');
         if (!card) return;
-        var overlay = card.closest('.widget-overlay');
+        var overlay = card.closest('.widget-overlay, [data-ww-enhanced]');
         if (!overlay) return;
 
         if (overlay.classList.contains('ww-windowed')) bringToFront(overlay);
@@ -932,11 +973,18 @@
             return;
         }
 
-        // 2) Franja superior → mover (solo en modo ventana)
-        if (!overlay.classList.contains('ww-windowed')) return;
+        // 2) Franja superior → mover.
         if (ev.target.closest(INTERACTIVE)) return;
-        var top = card.getBoundingClientRect().top;
-        if (ev.clientY - top > DRAG_STRIP) return;
+        var cr = card.getBoundingClientRect();
+        if (ev.clientY - cr.top > DRAG_STRIP) return;
+        if (!overlay.classList.contains('ww-windowed')) {
+            // Por defecto, un widget NO-ventana no se arrastra. Pero si el
+            // overlay opta con data-ww-drag-windowize (p.ej. el cajón de
+            // notificaciones), arrastrar desde arriba lo CONVIERTE en ventana
+            // en su posición/forma actual y arranca el movimiento (estilo macOS).
+            if (!overlay.hasAttribute('data-ww-drag-windowize')) return;
+            if (!windowize(overlay, { x: cr.left, y: cr.top, w: cr.width, h: cr.height })) return;
+        }
         startInteraction(overlay, 'move', ev, 'grabbing');
     }
 
@@ -944,7 +992,7 @@
     function onDblClick(ev) {
         var card = ev.target.closest('.ww-card');
         if (!card) return;
-        var overlay = card.closest('.widget-overlay');
+        var overlay = card.closest('.widget-overlay, [data-ww-enhanced]');
         if (!overlay || !overlay.classList.contains('ww-windowed')) return;
         if (ev.target.closest(INTERACTIVE)) return;
         if (ev.clientY - card.getBoundingClientRect().top > DRAG_STRIP) return;
@@ -1014,7 +1062,9 @@
             var el = document.getElementById(id);
             if (el && el.classList.contains('widget-overlay')) enhance(el);
         });
-        document.querySelectorAll('.widget-overlay[data-windowable]').forEach(enhance);
+        // Cualquier overlay marcado — incluye modales fuera de .widget-overlay
+        // (p.ej. el detalle de tarea, .crm-task-modal-overlay).
+        document.querySelectorAll('[data-windowable]').forEach(enhance);
     }
 
     /* ── Mission Control: click en zona vacía ─────────────────────── */
@@ -1024,10 +1074,20 @@
     // kanban, filas de lista, etc. (el click ahí tiene su propio
     // handler que abre detalle/edita).
     var MC_CRM_CARDS = '.kanban-card, .crm-row, .crm-card, tr[data-opp-id], ' +
-        '[data-opp-id], [data-card-id], [data-action]';
+        '[data-opp-id], [data-card-id], [data-action], ' +
+        // Kanbans de Ideas y Prospección + filas de listas genéricas:
+        // click ahí ABRE el detalle, nunca debe disparar Mission Control.
+        '.idea-card, [data-idea-id], [data-prospecto-id], ' +
+        '.crm-kanban-card, .crm-postit, .crm-list-row';
 
     function onGlobalClickForMC(ev) {
         if (ev.button !== 0) return;
+        // El target ya NO está en el DOM: el handler propio del elemento lo
+        // reemplazó en este mismo click (p.ej. clicar la descripción de una
+        // tarea la convierte en textarea — descEl.replaceWith). Sin esto,
+        // closest() falla sobre el nodo huérfano y MC se activa como si
+        // fuera el fondo.
+        if (ev.target && ev.target.nodeType === 1 && !ev.target.isConnected) return;
         // Suprimir clicks sintéticos justo después de un drag/resize
         // que terminó sin moverse (el browser sigue disparando click
         // aunque el pointerdown haya hecho preventDefault).
@@ -1039,8 +1099,12 @@
         // propio comportamiento). El shield se incluye por defensa:
         // en algunos browsers el target del click se determina al
         // pointerdown, cuando el shield aún cubría el viewport.
+        // [data-ww-enhanced] / .ww-windowed cubre los modales que NO son
+        // .widget-overlay (p.ej. el detalle de tarea, .crm-task-modal-overlay):
+        // sin esto, clicar DENTRO de una ventana de tarea activaba Mission
+        // Control como si fuera el fondo.
         if (ev.target.closest(
-            '.widget-overlay, #wwDock, .ww-snap-ghost, .ww-mc-hint, .ww-drag-shield'
+            '.widget-overlay, [data-ww-enhanced], .ww-windowed, #wwDock, .ww-snap-ghost, .ww-mc-hint, .ww-drag-shield'
         )) {
             return;
         }
@@ -1084,7 +1148,7 @@
             setTimeout(function () {
                 var ae = document.activeElement;
                 if (ae && ae.tagName === 'IFRAME') {
-                    var ov = ae.closest('.widget-overlay.ww-windowed');
+                    var ov = ae.closest('.ww-windowed');
                     if (ov) bringToFront(ov);
                 }
             }, 0);
@@ -1093,7 +1157,7 @@
         // está activo, recalcular las posiciones de salida para que
         // sigan ocultas correctamente tras el resize.
         window.addEventListener('resize', function () {
-            document.querySelectorAll('.widget-overlay.ww-windowed').forEach(function (el) {
+            document.querySelectorAll('.ww-windowed').forEach(function (el) {
                 var s = st(el);
                 if (s.rect) applyRect(el, s.rect);
             });
@@ -1125,6 +1189,10 @@
         unwindowize: unwindowize,
         minimize: minimize,
         enhance: enhance,
+        // ensureDock: el contenedor #wwDock (lo crea si falta). Lo reusa
+        // window_session.js para sus chips perezosos de restauración —
+        // así comparten el mismo dock y estilos.
+        ensureDock: ensureDock,
         missionControl: {
             activate: activateMissionControl,
             deactivate: deactivateMissionControl,

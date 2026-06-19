@@ -1259,12 +1259,39 @@
   flex-shrink: 0;
 }
 
-/* Variante minimal: layout vertical (título arriba, meta line abajo). */
+/* Variante minimal: tarjeta blanca estilo Apple (título arriba, meta abajo).
+   Antes el título/meta flotaban transparentes sobre el fondo (en mundial se
+   leía mal). Ahora viven dentro de una card limpia, consistente con los panes. */
 .proy-v3-header.proy-v3-header--minimal {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 30px rgba(15, 23, 42, 0.06);
 }
-.proy-v3-header--minimal .proy-v3-name { margin-bottom: 8px; }
+.proy-v3-header--minimal .proy-v3-name { margin-bottom: 10px; }
+
+/* Chip de oportunidad en la esquina superior derecha (junto a los avatares). */
+.proy-v3-opp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.proy-v3-opp-pill:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+.proy-v3-opp-pill svg { color: #2563eb; flex-shrink: 0; }
+.proy-v3-opp-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 .proy-v3-meta-line {
   display: flex;
@@ -1406,7 +1433,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .proy-v3-dashboard-placeholder {
@@ -1449,7 +1476,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   overflow: hidden;
-  margin-bottom: 22px;
+  margin-bottom: 0;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   flex-shrink: 0;
 }
@@ -1467,10 +1494,10 @@
 }
 
 .proy-v3-kpi-cell {
-  padding: 14px 18px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
   min-width: 0;
 }
 .proy-v3-kpi-cell + .proy-v3-kpi-cell { border-left: 1px solid #f1f5f9; }
@@ -1488,7 +1515,7 @@
 .proy-v3-kpi-eyebrow svg { flex-shrink: 0; opacity: 0.85; }
 
 .proy-v3-kpi-value {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.015em;
   color: #0f172a;
@@ -1550,24 +1577,24 @@
    PROY-V3 — Dashboard pane (gauge avance, equipo, breakdown, mini-stats)
    ========================================================================== */
 
-.proy-v3-dash-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.proy-v3-dash-row { display: grid; grid-template-columns: 1fr; gap: 20px; }
 .proy-v3-dash-row--2col { grid-template-columns: 1fr 1fr; }
 @media (max-width: 900px) { .proy-v3-dash-row--2col { grid-template-columns: 1fr; } }
 
 .proy-v3-dash-card {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px 20px;
+  border-radius: 16px;
+  padding: 24px 26px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 .proy-v3-dash-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .proy-v3-dash-card-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.005em;
@@ -1583,7 +1610,7 @@
   align-items: flex-end;
   padding: 6px 0 4px;
 }
-.proy-v3-gauge { width: 100%; max-width: 240px; height: auto; display: block; }
+.proy-v3-gauge { width: 100%; max-width: 300px; height: auto; display: block; }
 .proy-v3-gauge-center {
   position: absolute;
   bottom: 4px;
@@ -1593,7 +1620,7 @@
   pointer-events: none;
 }
 .proy-v3-gauge-pct {
-  font-size: 30px;
+  font-size: 38px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #0f172a;
@@ -1722,17 +1749,17 @@
 .proy-v3-mini-stat {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 18px 18px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
 }
 .proy-v3-mini-stat-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: #eff6ff;
   color: #1d4ed8;
   display: inline-flex;
@@ -1742,7 +1769,7 @@
 }
 .proy-v3-mini-stat-text { min-width: 0; flex: 1; }
 .proy-v3-mini-stat-value {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.01em;
@@ -1758,6 +1785,244 @@
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* ============================================================================
+   TAREAS DEL PROYECTO — lista agrupada + panel resumen (estilo sección Tareas)
+   ============================================================================ */
+/* Copia fiel del cockpit de Tareas (clases .tcp-*) embebida en el tab del
+   proyecto. Barra de acción compacta + altura del shell acotada al tab
+   (el .tcp-shell global usa 100vh, demasiado alto aquí). */
+/* El pane NO es card: igual que la sección Tareas, arriba va un toolbar
+   (búsqueda + Nueva) SIN marco y debajo el shell del cockpit (que ya trae su
+   propio marco). Quitamos el cuadro blanco exterior del .proy-tab-pane. */
+#proyPane_tareas.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+/* Programa de Obra: mismo tratamiento que Tareas. El pane no es card —
+   toolbar (título + "Nueva instalación") flota limpio sobre el estadio y la
+   lista de instalaciones trae sus propias cards blancas dentro. La cadena de
+   ancestros la transparenta el JS (_proyTareasBg con startId del pane). */
+#proyPane_programa-obra.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+#proyPane_programa-obra .proy-tab-header { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 12px; }
+/* Partidas y Levantamientos: mismo tratamiento. El pane deja de ser card
+   (padding:0 → la tabla abarca el mismo ancho que la tarjeta de encabezado
+   de arriba), el header flota sin greca, y la tabla interna conserva su card
+   blanca para legibilidad. */
+#proyPane_partidasv4.proy-tab-pane,
+#proyPane_partidas.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+#proyPane_partidasv4 .proy-tab-header,
+#proyPane_partidas .proy-tab-header { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 12px; }
+/* Drive: mismo tratamiento. El pane deja de ser card (transparente sobre el
+   estadio) y la card interna #proyDriveCard conserva su fondo blanco. La walk
+   _proyTareasBg arranca en #proyDriveCard, que por eso no se transparenta. */
+#proyPane_drive.proy-tab-pane { background: transparent; border: none; box-shadow: none; padding: 0; }
+#proyPane_drive .proy-tab-header { background: transparent; border: none; box-shadow: none; padding: 0; margin-bottom: 12px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Drive del proyecto — copia de las clases .wo-drive-* / .drive-* del widget
+   de oportunidad (_widget_oportunidad.html). Se duplican aquí porque ese
+   widget NO se incluye en la página de levantamientos (levantamientos_app.html)
+   donde el Drive del proyecto también vive; en crm_home.html ambas definiciones
+   coexisten sin conflicto (idénticas). NO renombrar clases.
+   ══════════════════════════════════════════════════════════════════════════ */
+.wo-btn-new {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border: none; border-radius: 8px; padding: 0.45rem 0.85rem;
+    font-size: 0.82rem; font-weight: 600; color: #fff; cursor: pointer;
+    transition: filter 0.15s, background 0.15s;
+}
+.wo-btn-new:hover { filter: brightness(0.96); }
+
+.wo-drive-toolbar {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.65rem 1rem; background: #fff;
+    border-bottom: 1px solid #E5E5EA; flex-wrap: wrap;
+}
+.wo-drive-toolbar-search {
+    flex: 1 1 200px; min-width: 160px;
+    display: flex; align-items: center; gap: 0.5rem;
+    background: #F2F2F7; border: 1px solid transparent; border-radius: 8px;
+    padding: 0.4rem 0.65rem; transition: border-color 0.15s, background 0.15s;
+}
+.wo-drive-toolbar-search:focus-within {
+    background: #fff; border-color: #0052D4; box-shadow: 0 0 0 3px rgba(0,82,212,0.12);
+}
+.wo-drive-toolbar-search input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-size: 0.85rem; color: #1D1D1F; min-width: 0;
+}
+.wo-drive-toolbar-search input::placeholder { color: #86868B; }
+.wo-drive-search-clear {
+    background: none; border: none; color: #86868B; font-size: 1.1rem;
+    line-height: 1; cursor: pointer; padding: 0 4px; border-radius: 4px;
+}
+.wo-drive-search-clear:hover { background: rgba(0,0,0,0.06); color: #1D1D1F; }
+.wo-drive-toolbar-controls { display: flex; align-items: center; gap: 0.5rem; }
+.wo-drive-select-wrap {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: #fff; border: 1px solid #E5E5EA; border-radius: 8px;
+    padding: 0.3rem 0.55rem; cursor: pointer; transition: border-color 0.15s;
+}
+.wo-drive-select-wrap:hover { border-color: #C7C7CC; }
+.wo-drive-select-label {
+    font-size: 0.72rem; color: #86868B; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.02em;
+}
+.wo-drive-select-wrap select {
+    border: none; outline: none; background: transparent; font-size: 0.82rem;
+    color: #1D1D1F; font-weight: 500; cursor: pointer; padding-right: 2px;
+}
+.wo-drive-view-toggle {
+    display: inline-flex; background: #F2F2F7; border-radius: 8px; padding: 2px; gap: 2px;
+}
+.wo-drive-view-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer; color: #86868B;
+    padding: 5px 9px; border-radius: 6px; transition: background 0.15s, color 0.15s;
+}
+.wo-drive-view-btn:hover { color: #1D1D1F; }
+.wo-drive-view-btn.is-active { background: #fff; color: #0052D4; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+.wo-drive-grid.drive-view-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem;
+}
+.wo-drive-grid.drive-view-grid .drive-row-meta { display: none; }
+.wo-drive-grid.drive-view-grid .drive-row-actions { display: none; }
+
+.wo-drive-grid.drive-view-list { display: flex; flex-direction: column; gap: 2px; }
+.wo-drive-grid.drive-view-list .drive-item {
+    display: flex !important; align-items: center; gap: 0.65rem;
+    padding: 0.5rem 0.75rem !important; text-align: left !important;
+    background: #fff; border: 1px solid #E5E5EA; border-radius: 8px !important;
+    transition: background 0.12s, border-color 0.12s;
+}
+.wo-drive-grid.drive-view-list .drive-item:hover { background: #F9FAFB; border-color: #C7C7CC; }
+.wo-drive-grid.drive-view-list .drive-item-inner {
+    display: flex; align-items: center; gap: 0.65rem; flex: 1; min-width: 0;
+    text-align: left; margin: 0 !important; padding: 0 !important;
+}
+.wo-drive-grid.drive-view-list .drive-icon {
+    width: 24px !important; height: 24px !important; margin: 0 !important; flex-shrink: 0;
+}
+.wo-drive-grid.drive-view-list .drive-name {
+    flex: 1; min-width: 0; margin: 0 !important; text-align: left !important;
+    font-size: 0.85rem !important; font-weight: 500 !important;
+}
+.wo-drive-grid.drive-view-list .drive-grid-meta { display: none !important; }
+.wo-drive-grid.drive-view-list .drive-grid-actions { display: none !important; }
+.wo-drive-grid.drive-view-list .drive-row-meta {
+    display: flex; align-items: center; gap: 0.85rem; flex-shrink: 0;
+    font-size: 0.72rem; color: #86868B;
+}
+.wo-drive-grid.drive-view-list .drive-row-meta > span { display: inline-block; }
+.wo-drive-grid.drive-view-list .drive-row-meta .drive-col-tipo { min-width: 48px; text-align: right; font-weight: 600; }
+.wo-drive-grid.drive-view-list .drive-row-meta .drive-col-size { min-width: 70px; text-align: right; }
+.wo-drive-grid.drive-view-list .drive-row-meta .drive-col-fecha { min-width: 90px; text-align: right; }
+.wo-drive-grid.drive-view-list .drive-row-actions {
+    display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0;
+}
+.wo-drive-grid.drive-view-list .drive-item:hover .drive-row-actions { opacity: 1; }
+.wo-drive-grid.drive-view-list .drive-row-actions a,
+.wo-drive-grid.drive-view-list .drive-row-actions button {
+    font-size: 0.7rem; text-decoration: none; padding: 3px 8px; border-radius: 5px;
+    cursor: pointer; background: #F2F2F7; border: none; color: #1D1D1F;
+}
+.wo-drive-grid.drive-view-list .drive-row-actions a.act-ver { color: #0052D4; background: #F0F5FF; }
+.wo-drive-grid.drive-view-list .drive-row-actions a.act-dl { color: #34C759; background: #F0FFF5; }
+
+@media (max-width: 720px) {
+    .wo-drive-grid.drive-view-list .drive-col-fecha { display: none; }
+}
+@media (max-width: 560px) {
+    .wo-drive-grid.drive-view-list .drive-col-size { display: none; }
+    .wo-drive-grid.drive-view-list .drive-row-actions { opacity: 1; }
+}
+/* Toolbar flotante (la card del detalle la transparenta el JS — _proyTareasBg —
+   con estilos inline para que se vea el estadio detrás, como la sección Tareas
+   real). Búsqueda pill glass + Nueva, centradas. */
+#proyPane_tareas .proy-tcp-toolbar { padding: 4px 0; }
+/* Overlay "Ampliar" para tareas de proyecto (no tienen ventana propia). */
+.proy-tcp-expand-ov { position: fixed; inset: 0; z-index: 10900; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.proy-tcp-expand-card { width: min(560px, 94vw); max-height: 86vh; overflow: hidden; display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: 0 32px 80px rgba(0,0,0,0.45); }
+.proy-tcp-expand-card .tcp-detail-head { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+.proy-tcp-expand-card .tcp-detail-scroll { padding: 20px; overflow-y: auto; }
+.proy-tcp-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.proy-tcp-search { flex: 1; display: flex; align-items: center; gap: 8px; max-width: 380px; background: rgba(255,255,255,0.92); border: 1px solid #e2e8f0; border-radius: 999px; padding: 8px 14px; height: 36px; box-sizing: border-box; }
+.proy-tcp-search:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.proy-tcp-search input { border: none; outline: none; background: transparent; font: inherit; font-size: 13px; color: #1c1c1e; width: 100%; }
+.proy-tcp-search input::placeholder { color: #94a3b8; }
+.proy-tcp-new { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; margin-left: auto; background: var(--proy-wm-accent, #00a86b); border: none; border-radius: 999px; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background .15s ease; box-shadow: 0 2px 8px rgba(0,168,107,0.30); }
+.proy-tcp-new:hover { background: var(--proy-wm-accent-hover, #008a55); }
+/* Altura acotada al tab dejando margen abajo (toolbar + topbar + header arriba). */
+#proyPane_tareas .tcp-shell { height: calc(100vh - 300px); min-height: 340px; margin-bottom: 16px; }
+
+/* El pane ES la card (white, base .proy-tab-pane). Dentro: lista de FILAS
+   (estilo tabla, no tarjetas) + panel lateral separado por una línea. */
+.ptk-wrap { display: flex; gap: 0; align-items: stretch; }
+.ptk-main { flex: 1; min-width: 0; padding-right: 22px; }
+.ptk-main-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.ptk-title { margin: 0; font-size: 17px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; }
+.ptk-cols-head { display: grid; grid-template-columns: minmax(0,1fr) 110px 130px 116px 120px; gap: 12px; padding: 12px 14px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; background: #f8fafc; border: 1px solid #eef2f6; border-radius: 12px 12px 0 0; }
+.ptk-list { display: flex; flex-direction: column; }
+.ptk-empty { text-align: center; padding: 48px 20px; color: #94a3b8; font-size: 13px; }
+.ptk-empty-err { color: #ef4444; }
+
+.ptk-sec { display: flex; flex-direction: column; }
+.ptk-sec-head { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; padding: 14px 12px 6px; }
+.ptk-sec-count { background: #f1f5f9; color: #475569; border-radius: 999px; padding: 1px 8px; font-size: 10.5px; font-weight: 700; }
+.ptk-sec-venc .ptk-sec-head { color: #dc2626; }
+.ptk-sec-venc .ptk-sec-count { background: #fee2e2; color: #dc2626; }
+.ptk-sec-hoy .ptk-sec-head { color: #2563eb; }
+.ptk-sec-hoy .ptk-sec-count { background: #dbeafe; color: #2563eb; }
+
+.ptk-row { display: grid; grid-template-columns: minmax(0,1fr) 110px 130px 116px 120px; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: none; border-bottom: 1px solid #f3f5f8; padding: 11px 14px; cursor: pointer; font: inherit; transition: background .1s; }
+.ptk-row:hover { background: #f8fafc; }
+.ptk-row.active { background: #f1f7ff; }
+.ptk-sec-venc .ptk-row { box-shadow: inset 3px 0 0 #dc2626; }
+.ptk-row-title { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.ptk-row-ic { flex-shrink: 0; }
+.ptk-row-titletx { font-size: 13px; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ptk-row-resp, .ptk-row-fecha { font-size: 12px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ptk-sec-venc .ptk-row-fecha { color: #dc2626; font-weight: 600; }
+.ptk-src { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; justify-self: start; }
+.ptk-src-opp { background: #eff6ff; color: #2563eb; }
+.ptk-src-proy { background: #f3e8ff; color: #7c3aed; }
+
+/* Panel lateral DENTRO de la misma card (separado por línea, sin fondo propio) */
+.ptk-aside { width: 296px; flex-shrink: 0; padding-left: 22px; border-left: 1px solid #eef2f6; }
+.ptk-aside-head { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; margin-bottom: 12px; }
+.ptk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.ptk-card { border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid #eef2f6; }
+.ptk-card-n { font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1; font-variant-numeric: tabular-nums; }
+.ptk-card-l { margin-top: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+.ptk-card-venc { background: #fef2f2; border-color: #fee2e2; } .ptk-card-venc .ptk-card-n { color: #dc2626; }
+.ptk-card-hoy { background: #eff6ff; border-color: #dbeafe; } .ptk-card-hoy .ptk-card-n { color: #2563eb; }
+.ptk-card-done { background: #f0fdf4; border-color: #dcfce7; } .ptk-card-done .ptk-card-n { color: #16a34a; }
+.ptk-aside-sub { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; margin: 4px 0 8px; }
+.ptk-aside-subn { background: #f1f5f9; color: #475569; border-radius: 999px; padding: 1px 7px; font-size: 10.5px; }
+.ptk-prox { display: flex; flex-direction: column; gap: 2px; }
+.ptk-prox-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: transparent; border: none; border-radius: 8px; padding: 8px; cursor: pointer; font: inherit; transition: background .1s; }
+.ptk-prox-item:hover { background: #f4f6f9; }
+.ptk-prox-dot { width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
+.ptk-prox-title { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ptk-prox-fecha { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+.ptk-aside-empty { padding: 14px; text-align: center; color: #94a3b8; font-size: 12px; }
+.ptk-preview { margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 14px; }
+.ptk-preview-hint { color: #94a3b8; font-size: 12px; text-align: center; padding: 14px 8px; }
+.ptk-preview-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.ptk-preview-badges { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.ptk-preview-desc { font-size: 12.5px; color: #475569; line-height: 1.5; margin-bottom: 10px; }
+.ptk-preview-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; padding: 5px 0; border-top: 1px solid #f6f8fa; }
+.ptk-preview-meta span { color: #94a3b8; } .ptk-preview-meta b { color: #1e293b; font-weight: 600; text-align: right; }
+.ptk-open-btn { margin-top: 12px; width: 100%; padding: 9px; border: none; border-radius: 10px; background: #2563eb; color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.ptk-open-btn:hover { background: #1d4ed8; }
+
+@media (max-width: 1100px) {
+  .ptk-wrap { flex-direction: column; }
+  .ptk-main { padding-right: 0; }
+  .ptk-aside { width: 100%; padding-left: 0; border-left: none; border-top: 1px solid #eef2f6; padding-top: 16px; margin-top: 16px; }
+  .ptk-cols-head, .ptk-row { grid-template-columns: minmax(0,1fr) 96px 110px; }
+  .ptk-cols-head span:nth-child(4), .ptk-cols-head span:nth-child(5) { display: none; }
+  .ptk-row-resp, .ptk-row > .ptk-src { display: none; }
 }
 
 /* ---------- Tab System ---------- */
@@ -2962,14 +3227,16 @@ select.proy-info-input {
 
 /* Botones facet (Filtro / Ordenar) */
 #proyectosSection .proy-facet-btn {
-  padding: 7px 13px;
+  /* Mismas dimensiones que el .crm-facet-btn de Oportunidades (compacto). */
+  height: 30px;
+  padding: 0 12px;
   background: var(--proy-wm-card);
   border: 1px solid var(--proy-wm-border-strong);
   border-style: solid;
-  border-radius: var(--proy-wm-radius-sm);
+  border-radius: 8px;
   font-family: var(--proy-wm-font);
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--proy-wm-text-2);
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -2991,12 +3258,13 @@ select.proy-info-input {
 /* Input de búsqueda */
 #proyectosSection .proy-search,
 #proyectosSection .proy-topbar-right .proy-search {
-  padding: 8px 14px 8px 34px;
+  height: 30px;
+  padding: 0 12px 0 32px;
   background: var(--proy-wm-card);
   border: 1px solid var(--proy-wm-border-strong);
-  border-radius: var(--proy-wm-radius-sm);
+  border-radius: 8px;
   font-family: var(--proy-wm-font);
-  font-size: 13px;
+  font-size: 0.72rem;
   color: var(--proy-wm-text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -3014,12 +3282,13 @@ select.proy-info-input {
 /* Botón "+ Nuevo proyecto" en topbar derecho */
 #proyectosSection .proy-topbar-right .proy-btn-new,
 #proyectosSection .proy-btn-new {
-  padding: 8px 16px;
+  height: 30px;
+  padding: 0 14px;
   background: var(--proy-wm-accent);
   border: none;
-  border-radius: var(--proy-wm-radius-sm);
+  border-radius: 8px;
   font-family: var(--proy-wm-font);
-  font-size: 13px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #ffffff;
   box-shadow: none;

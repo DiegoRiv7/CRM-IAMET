@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}?v=20260611-topbar-2rows">
+<link rel="stylesheet" href="{% static 'css/crm_proyectos.css' %}?v=20260618-drive">
 <link rel="stylesheet" href="{% static 'css/crm_levantamiento.css' %}?v=20260506-vol-actions">
 <link rel="stylesheet" href="{% static 'css/crm_volumetria.css' %}?v=20260507-mxn-highlight">
 <link rel="stylesheet" href="{% static 'css/control_v2.css' %}?v=20260608-grow-back">
@@ -63,6 +63,31 @@
     document.documentElement.classList.add('adm-initial-hide');
 </script>
 {% endif %}
+{% comment %}
+Anti-FOUC para la vista guardada (Proyectos / Tareas): sin esto, el
+server pinta primero el CRM clásico (Oportunidades) y el script de
+_content.html cambia de vista DESPUÉS del primer paint → flash. Aquí, en
+el <head> y de forma síncrona, ocultamos #crmContentSection antes del
+primer paint si la vista guardada es proyectos/tareas. La regla NO usa
+!important para que el JS de cambio de vista (display inline) gane luego;
+además _content.html quita la clase en cuanto aplica la vista.
+{% endcomment %}
+<style>
+    html.crm-init-alt #crmContentSection { display: none; }
+</style>
+<script>
+    (function () {
+        try {
+            var u = new URL(window.location.href);
+            var t = u.searchParams.get('tab');
+            if (t && t !== 'crm' && t !== 'todos') return;
+            var v = localStorage.getItem('crmView');
+            if (v === 'tareas' || v === 'proyectos') {
+                document.documentElement.classList.add('crm-init-alt');
+            }
+        } catch (e) { }
+    })();
+</script>
 {% endblock %}
 {% block content %}
 
@@ -149,9 +174,10 @@ dobles, posibles SyntaxErrors.
 {% if es_administrador %}{% include "crm/_scripts_compras.html" %}{% endif %}
 {% include "crm/_scripts_muro.html" %}
 {% include "crm/_scripts_mail.html" %}
-<script src="{% static 'js/crm_proyectos.js' %}?v=20260611-fix-detalle-huerfano" data-turbo-eval="false"></script>
-<script src="{% static 'js/programa_obra.js' %}?v=20260602-fix-tab-refetch" data-turbo-eval="false"></script>
-<script src="{% static 'js/gantt_programa_obra.js' %}?v=20260508-revert-gantt" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_proyectos.js' %}?v=20260618-drive" data-turbo-eval="false"></script>
+<script src="{% static 'js/proyectos_v2.js' %}?v=20260616-period-pill-neutral" data-turbo-eval="false"></script>
+<script src="{% static 'js/programa_obra.js' %}?v=20260619-pob-delwidget" data-turbo-eval="false"></script>
+<script src="{% static 'js/gantt_programa_obra.js' %}?v=20260617-pob-composer" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_volumetria.js' %}?v=20260507-fix-data-loss" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_levantamiento.js' %}?v=20260612-foto-fix2" data-turbo-eval="false"></script>
 {% if es_ingeniero %}
@@ -164,8 +190,8 @@ dobles, posibles SyntaxErrors.
 <script src="{% static 'js/crm_asistente.js' %}?v=20260521-cal-chat" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_asistente_oportunidades.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_asistente_calendario.js' %}?v=20260521-cal-chat" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_prospeccion.js' %}?v=20260520-prosp-resp" data-turbo-eval="false"></script>
-<script src="{% static 'js/crm_prospectos_kanban.js' %}?v=20260610-pk-spa" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_prospeccion.js' %}?v=20260612-act-hook" data-turbo-eval="false"></script>
+<script src="{% static 'js/crm_prospectos_kanban.js' %}?v=20260616-pk-add-deleg" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_campanas.js' %}" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_control_v2.js' %}?v=20260608-grow-back" data-turbo-eval="false"></script>
 <script src="{% static 'js/crm_control_material_v2.js' %}?v=20260608-control-material-1" data-turbo-eval="false"></script>

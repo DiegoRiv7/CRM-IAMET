@@ -73,8 +73,10 @@
                             </div>
                         </div>
 
-                        {% if es_supervisor or es_administrador %}
-                        <!-- Pill "Asignar a" — solo supervisores/administradores -->
+                        {% comment %} Pill "Asignar a" — disponible para TODOS los usuarios.
+                           Supervisores/admins pueden asignar a cualquiera; los usuarios
+                           normales solo a miembros de su grupo (la lista se filtra en el
+                           backend con ?ambito=grupo y se valida al crear). {% endcomment %}
                         <div class="wn-ctw-popwrap">
                             <button type="button" class="wn-ctw-pill-meta" id="wpAsignadoBtn" data-me-id="{{ user.id }}" onclick="wpOpenPop('asignado', event)" title="Asignar el prospecto a un vendedor">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -87,11 +89,10 @@
                                 <div id="wpAsigList" style="max-height:240px;overflow-y:auto;margin-top:8px;border-top:1px solid #F1F5F9;padding-top:8px;"></div>
                             </div>
                         </div>
-                        {% endif %}
                     </div>
 
-                    {% if es_supervisor or es_administrador %}
-                    <!-- Bloque "Actividad inicial" — visible cuando se asigna a OTRO vendedor -->
+                    {% comment %} Bloque "Actividad inicial" — visible cuando se asigna a
+                       OTRO usuario (cualquiera, no solo supervisores). {% endcomment %}
                     <div class="wn-ctw-actinit" id="wpActInitBlock" style="display:none;margin-top:14px;padding:14px 16px;background:linear-gradient(180deg,#F7F9FF 0%,#FFFFFF 100%);border:1px solid #DBE4FF;border-radius:14px;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                             <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;">
@@ -157,7 +158,6 @@
                         }
                         .wp-ai-chip.active svg { stroke: #fff; }
                     </style>
-                    {% endif %}
 
                     <!-- Notas (opcional) -->
                     <textarea class="wn-ctw-desc" id="wpfComentarios" placeholder="Añade contexto de la prospección, siguientes pasos o notas…" rows="4"></textarea>
@@ -473,7 +473,7 @@
                 var meId = (asigBtnRef && asigBtnRef.getAttribute('data-me-id')) || '';
                 var asignadoId = (asigEl && asigEl.value) ? parseInt(asigEl.value) : (meId ? parseInt(meId) : null);
                 if (!asignadoId) {
-                    alert('Selecciona un vendedor en "Asignar a" antes de crear el prospecto.');
+                    _wpToast('Selecciona un vendedor en "Asignar a" antes de crear el prospecto.', false);
                     btn.disabled = false; btn.textContent = 'Guardar prospecto';
                     return;
                 }
@@ -490,21 +490,17 @@
                         // Cerrar todo el composer y notificar
                         var w = document.getElementById('widgetNuevoProspecto');
                         if (w) { w.classList.add('closing'); setTimeout(function(){ w.classList.remove('active','closing'); }, 220); }
-                        var toast = document.getElementById('widgetToast');
-                        if (toast) {
-                            toast.textContent = 'Prospecto "' + nombre + '" creado en Panel Admin → Prospectos';
-                            toast.classList.add('show');
-                            setTimeout(function() { toast.classList.remove('show'); }, 3500);
-                        }
+                        _wpToast('Prospecto "' + nombre + '" creado correctamente', true);
                         // Refrescar listado del panel admin si está visible
                         if (typeof window.loadProspectos === 'function') {
                             try { window.loadProspectos(); } catch(_){}
                         }
                     } else {
-                        alert((res && res.error) || 'Error al crear prospecto');
+                        // Error in-app (antes era un alert del navegador "No autorizado")
+                        _wpToast((res && res.error) || 'Error al crear prospecto', false);
                     }
                     btn.disabled = false; btn.textContent = 'Guardar prospecto';
-                }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar prospecto'; });
+                }).catch(function(){ _wpToast('Error de red al crear el prospecto', false); btn.disabled = false; btn.textContent = 'Guardar prospecto'; });
                 return;
             }
 
@@ -525,7 +521,7 @@
                     _wpRefreshReadyState();
                     _wpCloseAllPops();
                 } else {
-                    alert(res.error || 'Error al crear cliente');
+                    _wpToast(res.error || 'Error al crear cliente', false);
                 }
                 btn.disabled = false; btn.textContent = 'Guardar cliente';
             }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar cliente'; });
@@ -567,7 +563,7 @@
                     _updateContactoLabel();
                     _wpCloseAllPops();
                 } else {
-                    alert(res.error || 'Error al crear contacto');
+                    _wpToast(res.error || 'Error al crear contacto', false);
                 }
                 btn.disabled = false; btn.textContent = 'Guardar contacto';
             }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar contacto'; });
@@ -707,8 +703,8 @@
             if (actBlock && actBlock.style.display !== 'none') {
                 var actTipo = (document.getElementById('wpfActInitTipo') || {}).value || '';
                 var actFecha = (document.getElementById('wpfActInitFecha') || {}).value || '';
-                if (!actTipo) { alert('Selecciona el tipo de actividad inicial (Visita, Llamada, …).'); return; }
-                if (!actFecha) { alert('Selecciona una fecha para la actividad inicial.'); return; }
+                if (!actTipo) { _wpToast('Selecciona el tipo de actividad inicial (Visita, Llamada, …).', false); return; }
+                if (!actFecha) { _wpToast('Selecciona una fecha para la actividad inicial.', false); return; }
                 actInicial = { tipo: actTipo, fecha_programada: actFecha };
             }
 
@@ -773,13 +769,8 @@
                     if (typeof window.recargarProspectosKanban === 'function') window.recargarProspectosKanban();
                     if (typeof window._recargarProspectosCliente === 'function') window._recargarProspectosCliente();
 
-                    // Toast
-                    var toast = document.getElementById('widgetToast');
-                    if (toast) {
-                        toast.textContent = 'Prospecto "' + data.nombre + '" creado exitosamente';
-                        toast.classList.add('show');
-                        setTimeout(function() { toast.classList.remove('show'); }, 3000);
-                    }
+                    // Toast de confirmación in-app
+                    _wpToast('Prospecto "' + data.nombre + '" creado exitosamente', true);
 
                     // Abrir widget del prospecto automáticamente tras crear.
                     // Ya no marcamos "_pendienteProspectoSinActividad" porque
@@ -808,7 +799,7 @@
                         window._prospeccionProductoContext = null;
                     }
                 } else {
-                    alert(data.error || 'Error al crear prospecto');
+                    _wpToast(data.error || 'Error al crear prospecto', false);
                 }
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = _origSubmit;
@@ -872,6 +863,17 @@
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
+        // Mensaje in-app abajo (toast verde = ok, rojo = error). Reemplaza los
+        // alert() del navegador (ej. "No autorizado") por un aviso del sistema.
+        function _wpToast(msg, ok) {
+            var toast = document.getElementById('widgetToast');
+            if (!toast) { return; }
+            toast.textContent = msg;
+            toast.classList.remove('success', 'error', 'show');
+            toast.classList.add(ok === false ? 'error' : 'success');
+            clearTimeout(_wpToast._t);
+            _wpToast._t = setTimeout(function () { toast.classList.remove('success', 'error'); }, 3500);
+        }
         function _wpInitials(u) {
             var fn = (u.first_name || '').trim();
             var ln = (u.last_name || '').trim();
@@ -914,8 +916,10 @@
             var list = document.getElementById('wpAsigList');
             if (list) list.innerHTML = '<div style="padding:14px;color:#86868B;font-size:0.78rem;text-align:center;">Cargando vendedores…</div>';
             _wpVendedoresLoading = true;
-            console.log('[NuevoProspecto] Cargando vendedores desde /app/api/admin/usuarios/');
-            fetch('/app/api/admin/usuarios/', { credentials: 'same-origin' })
+            console.log('[NuevoProspecto] Cargando vendedores desde /app/api/admin/usuarios/?ambito=grupo');
+            // ?ambito=grupo: el backend limita la lista al grupo del usuario cuando
+            // NO es supervisor/admin; para supervisores/admins devuelve todos.
+            fetch('/app/api/admin/usuarios/?ambito=grupo', { credentials: 'same-origin' })
                 .then(function(r) {
                     console.log('[NuevoProspecto] HTTP', r.status, r.statusText);
                     if (!r.ok) throw new Error('HTTP ' + r.status);

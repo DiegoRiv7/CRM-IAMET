@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 12 de Junio 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0A2540; /* Azul Profundo */
+            --primary-accent: #0055CC;
+            --accent-bg: #F6F9FC;
+            --success: #008A00;
+            --text-main: #2D3A4B;
+            --text-muted: #697386;
+            --border: #E6EBF1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7FAFC;
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 60px 20px;
+        }
+
+        .report-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(10,37,64,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-title h1 {
+            font-family: 'Roboto', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-bottom: 2px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .header-meta {
+            text-align: right;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+        }
+
+        .meta-date {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* ═══════ STATS GRID ═══════ */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-bottom: 1px solid var(--border);
+            background: var(--accent-bg);
+        }
+
+        .stat-box {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+        }
+        .stat-box:last-child { border-right: none; }
+
+        .stat-val {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            display: block;
+        }
+
+        .stat-lbl {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ═══════ MAIN CONTENT ═══════ */
+        .content {
+            padding: 50px 60px;
+        }
+
+        .summary {
+            font-size: 16px;
+            color: var(--text-main);
+            margin-bottom: 40px;
+            padding-left: 20px;
+            border-left: 3px solid var(--primary-accent);
+        }
+
+        section {
+            margin-bottom: 45px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* ═══════ INFOGRAPHIC BLOCKS ═══════ */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 22px;
+            transition: all 0.2s ease;
+        }
+        .card:hover { border-color: var(--primary-accent); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        .card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+        }
+
+        .card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .card-full {
+            grid-column: 1 / -1;
+            background-color: var(--accent-bg);
+        }
+
+        /* ═══════ LIST STYLE ═══════ */
+        .item-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .item {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-accent);
+            border-radius: 50%;
+            margin-top: 8px;
+            flex-shrink: 0;
+        }
+
+        .item-info b { font-size: 14px; color: var(--primary); display: block; margin-bottom: 2px; }
+        .item-info span { font-size: 13px; color: var(--text-muted); }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 30px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .btn-pdf {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-pdf:hover { background: var(--primary-accent); }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-container { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-pdf { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .stats { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-container { padding-bottom: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <header>
+        <div class="header-title">
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Evolución de Sistema de Ventanas y App de Campo</p>
+        </div>
+        <div class="header-meta">
+            <div class="meta-label">RESUMEN DEL DÍA</div>
+            <div class="meta-date">12 JUNIO 2026</div>
+        </div>
+    </header>
+
+    <div class="stats">
+        <div class="stat-box">
+            <span class="stat-val">4</span>
+            <span class="stat-lbl">Ventanas Activas</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-val">100%</span>
+            <span class="stat-lbl">Estabilidad</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-val">3</span>
+            <span class="stat-lbl">Módulos Web</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-val">iOS/Web</span>
+            <span class="stat-lbl">Multiplataforma</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="summary">
+            Hoy logramos un hito en la <strong>productividad multitarea</strong> del CRM, extendiendo el sistema de ventanas a los módulos de Tareas e Ideas, mientras fortalecemos la herramienta de campo para ingenieros con nuevas funciones multimedia.
+        </div>
+
+        <section>
+            <div class="section-label">Sistema de Ventanas (Multitarea)</div>
+            <div class="feature-grid">
+                <div class="card">
+                    <h3>✅ Tareas e Ideas</h3>
+                    <p>Ahora las tareas y las ideas se abren en ventanas flotantes. Esto permite editar múltiples pendientes al mismo tiempo sin salir del tablero actual.</p>
+                </div>
+                <div class="card">
+                    <h3>📂 Centros de Archivos (Multi-Drive)</h3>
+                    <p>Cada oportunidad ahora gestiona su propio Drive en una ventana independiente, permitiendo comparar documentos entre negocios de forma fluida.</p>
+                </div>
+                <div class="card card-full">
+                    <h3>🧠 Gestión Inteligente de Foco</h3>
+                    <p>Implementamos un selector dinámico estilo "Mission Control" que organiza las ventanas automáticamente cuando el usuario tiene demasiadas abiertas, priorizando la ventana activa.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">App de Levantamientos (Ingeniería)</div>
+            <div class="item-list">
+                <div class="item">
+                    <div class="dot"></div>
+                    <div class="item-info">
+                        <b>Pie de Foto y Leyendas</b>
+                        <span>Los ingenieros ahora pueden añadir comentarios y descripciones a cada foto ANTES de enviarla al servidor, mejorando la documentación técnica.</span>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="dot"></div>
+                    <div class="item-info">
+                        <b>Búsqueda de Proyectos Recuperada</b>
+                        <span>Restauramos la funcionalidad de búsqueda en la app móvil, permitiendo localizar proyectos específicos para levantamientos de forma instantánea.</span>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="dot"></div>
+                    <div class="item-info">
+                        <b>Carga de Evidencias Segura</b>
+                        <span>Eliminamos el error crítico que causaba el envío de archivos vacíos (0 bytes) en condiciones de baja señal, asegurando la integridad de la información.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Refinamiento y Estabilidad</div>
+            <div class="card card-full" style="background: white;">
+                <p style="font-size: 13.5px; color: var(--text-main);">
+                    Se optimizaron los tiempos de carga en el tablero de Prospección mediante la implementación de filtros "in-place" y un bus de datos que sincroniza los cursores entre usuarios sin generar tráfico innecesario en el servidor.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="footer-copy">
+            <strong>Diego Jafet Rivera Cordova</strong><br>
+            CRM IAMET &middot; 2026
+        </div>
+        <button class="btn-pdf" onclick="window.print()">DESCARGAR PDF</button>
+    </footer>
+</div>
+
+</body>
+</html>

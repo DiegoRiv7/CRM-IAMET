@@ -3223,8 +3223,8 @@
             var head = document.getElementById('ckDetalleHead');
             var tbody = document.getElementById('ckDetalleTbody');
             if (titulo) titulo.textContent = 'Desglose de Facturacion';
-            if (head) head.innerHTML = '<th>#</th><th>Cliente</th><th>RFC</th><th style="text-align:right">Monto Facturado</th>';
-            if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
+            if (head) head.innerHTML = '<th>#</th><th>Vendedor</th><th>Cliente</th><th>RFC</th><th style="text-align:right">Monto Facturado</th>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93;">Cargando...</td></tr>';
             if (detalle) { detalle.style.display = 'block'; detalle.style.opacity = '0'; detalle.style.transition = 'opacity 0.2s'; setTimeout(function(){ detalle.style.opacity = '1'; }, 50); }
 
             var params = new URLSearchParams(window.location.search);
@@ -3235,16 +3235,19 @@
             fetch('/app/api/desglose-facturacion/?mes=' + mes + '&anio=' + anio + _vq, { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (resp) {
-                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
-                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos</td></tr>'; return; }
+                    if (!resp.ok) { if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#FF3B30;">' + (resp.error || 'Error') + '</td></tr>'; return; }
+                    if (!resp.rows || resp.rows.length === 0) { if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#8e8e93;">No hay datos</td></tr>'; return; }
                     var html = '';
                     resp.rows.forEach(function (r, i) {
+                        var vend = r.vendedor || 'Sin asignar';
+                        var vendColor = (vend === 'Sin asignar') ? '#9CA3AF' : '#334155';
                         html += '<tr><td style="color:#8e8e93;font-size:0.75rem;">' + (i + 1) + '</td>' +
+                            '<td style="font-weight:600;color:' + vendColor + ';">' + vend + '</td>' +
                             '<td style="font-weight:600;">' + (r.nombre || r.cliente || '—') + '</td>' +
                             '<td style="color:#8e8e93;font-size:0.8rem;">' + (r.rfc || '—') + '</td>' +
                             '<td style="text-align:right;font-weight:700;color:#059669;">$' + Number(r.monto || 0).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
                     });
-                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="3" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">$' + Number(resp.total || 0).toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
+                    html += '<tr style="background:#F5F5F7;font-weight:700;"><td colspan="4" style="text-align:right;padding:10px 14px;">Total</td><td style="text-align:right;padding:10px 14px;color:#059669;">$' + Number(resp.total || 0).toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
                     if (tbody) tbody.innerHTML = html;
                 })
                 .catch(function () { if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#FF3B30;">Error de conexion</td></tr>'; });
@@ -4278,7 +4281,12 @@
             var url = '/app/api/crm-table-data/?tab=' + currentTab + '&mes=' + currentMes + '&anio=' + currentAnio;
             if (vendedores) url += '&vendedores=' + vendedores;
             fetch(url)
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    // Si el server respondió 504/HTML, NO parsear como JSON
+                    // (rompía con "Unexpected token '<'"); aborta limpio.
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(function (data) {
                     var tbody = document.getElementById('crmTbody');
                     if (!tbody) return;
@@ -4484,6 +4492,13 @@
                 if (typeof currentOppId !== 'undefined' && currentOppId && typeof openDetalle === 'function') {
                     openDetalle(currentOppId);
                 }
+            }
+            // Una tarea abierta en ventana-iframe (widget_tarea_page) se completó/
+            // aplazó/reabrió → el iframe nos pide refrescar las notificaciones del
+            // escritorio para que su notif de vencimiento (ya borrada en el server)
+            // desaparezca al instante del cajón abierto, sin esperar el poll.
+            if (e.data && e.data.type === 'notif-refresh') {
+                if (typeof window.notifLoad === 'function') window.notifLoad();
             }
         });
 
@@ -6464,6 +6479,7 @@
         var _crmAllTareas = [];
         var _crmCurrentFilter = 'pendientes';
         var _crmTareasCache = {};  // cache por estado (solo pendientes)
+        var _crmTareasFetching = false;  // guard: evita fetches duplicados en vuelo
         var _crmPage = 1;
         var _crmTotalPages = 1;
         var _crmTotalTareas = 0;
@@ -6693,6 +6709,12 @@
         setInterval(function() {
             if (document.hidden) return;
             if (window._crmTareasMode) return; // solo en vista CRM
+            // NO auto-refrescar el dashboard de Reportes (tab=clientes): ahí
+            // refreshCrmTable() llama loadAllClientesPanels() que re-renderiza las
+            // gráficas, puede resetear el modo (Oportunidades→Clientes) y cierra el
+            // KPI desglosado. El "gradient refresh" solo aplica a la tabla de
+            // oportunidades del workspace (avanzar los colores de vencimiento).
+            if (typeof currentTab !== 'undefined' && (currentTab === 'clientes' || currentTab === 'cli')) return;
             // Si hay drill-down (sub-tabla) activo en clientes, no clobber-ear el detalle.
             if (window._ckDetalleOpen) return;
             var tabActivo = document.querySelector('.crm-tab.active');
@@ -6807,6 +6829,15 @@
                 return;
             }
 
+            // Guard anti-duplicado: en una recarga, Turbo emite turbo:load
+            // ADEMÁS de DOMContentLoaded → el wireup (y esta función) corren
+            // dos veces y disparaban 4 fetches (2 por llamada). Si ya hay un
+            // fetch en vuelo, no lanzar otro: el que está corriendo pinta al
+            // terminar. Las recargas tras mutación ocurren después (sin fetch
+            // en vuelo), así que no se bloquean.
+            if (_crmTareasFetching) return;
+            _crmTareasFetching = true;
+
             var grid = document.getElementById('tareasCardsGrid');
             if (grid) grid.innerHTML = '<div class="tareas-empty-card">Cargando tareas...</div>';
 
@@ -6818,6 +6849,7 @@
                 fetch('/app/api/tareas/?estado=completadas&page=1&page_size=100').then(function(r){ return r.ok ? r.json() : { success:false, tareas:[] }; }).catch(function(){ return { success:false, tareas:[] }; })
             ])
                 .then(function (results) {
+                    _crmTareasFetching = false;
                     var data = results[0];
                     var dataCompl = results[1] || { tareas: [] };
                     if (data.success && Array.isArray(data.tareas)) {
@@ -6838,6 +6870,7 @@
                     }
                 })
                 .catch(function (err) {
+                    _crmTareasFetching = false;
                     console.error('[Tareas] Error:', err);
                     if (grid) grid.innerHTML = '<div class="tareas-empty-card">Error: ' + err.message + '</div>';
                 });
@@ -6876,23 +6909,37 @@
         // crm_main.js para tener openDetalle, pero NO deben restaurar el sidebar
         // — el server-render ya marcó el botón correcto. Sin este guard se veía
         // doble-active (ej. Reportes + Tareas ambos azules en /app/reportes/).
-        var _isCrmHome = window.location.pathname.indexOf('/app/todos') === 0
-                      || window.location.pathname === '/app/'
-                      || window.location.pathname === '/app';
+        // OJO: el CRM home se sirve en /app/home/ (principal) Y /app/todos/
+        // (alias histórico). Faltaba /app/home → en una recarga F5 en
+        // /app/home/ este guard daba false y se SALTABA toda la restauración
+        // de vista (Tareas/Proyectos quedaban vacíos hasta volver a dar clic).
+        // Alineado con el mismo check de _sidebar.html.
+        var _path = window.location.pathname;
+        var _isCrmHome = _path.indexOf('/app/home') === 0
+                      || _path.indexOf('/app/todos') === 0
+                      || _path === '/app/'
+                      || _path === '/app';
         if (!_isCrmHome) {
             // No-op: no restaurar nada del CRM en páginas externas.
         } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
             window._crmTareasMode = true;
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            // ACTIVAR la sección igual que el clic en el botón Tareas
+            // (switchCrmView oculta el CRM y marca tareasSection .active). Antes
+            // solo se marcaba el botón → en una recarga F5 la sección no quedaba
+            // bien activada y se veía vacía hasta volver a dar clic. Solo corre
+            // en este branch (reload-en-tareas), NO en cada carga → sin costo.
+            if (typeof switchCrmView === 'function') switchCrmView('tareas');
             var btnTareasInit = document.getElementById('btnTareas');
             if (btnTareasInit) btnTareasInit.classList.add('active');
-            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
+            // Sin reset de caché aquí: en una recarga el caché ya está vacío,
+            // y resetearlo en el 2º dispatch (turbo:load) podía descartar el
+            // resultado del fetch ya completado → fetch extra. El guard
+            // _crmTareasFetching de cargarTareasCRM evita los duplicados.
             cargarTareasCRM();
         } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
-            document.querySelectorAll('.island-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+            if (typeof switchCrmView === 'function') switchCrmView('proyectos');
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
-            // btnNegociacion ahora es un boton cuadrado con SVG + — no tocar su contenido
             if (typeof proyectosInit === 'function') proyectosInit();
         }
 
@@ -7153,6 +7200,8 @@
                     if (t.search_blob) return t.search_blob.indexOf(q) !== -1;
                     return (t.titulo || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.oportunidad_nombre || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.oportunidad_po || '').toLowerCase().indexOf(q) !== -1 ||
+                           (t.oportunidad_cliente || '').toLowerCase().indexOf(q) !== -1 ||
                            (t.responsable || '').toLowerCase().indexOf(q) !== -1;
                 });
             }
@@ -7291,20 +7340,26 @@
                 return;
             }
 
-            // Agrupar en 3 secciones: ATRASADAS / HOY / MÁS TARDE
-            // (MÁS TARDE absorbe sin-fecha + esta-semana + futuras + completadas)
+            // Agrupar en 4 secciones: ATRASADAS / HOY / MÁS TARDE / COMPLETADAS
+            // Las completadas van en su propia sección AL FINAL (antes se mezclaban
+            // en "MÁS TARDE"), colapsada por defecto para no estorbar.
             var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-            var groups = { atrasadas: [], hoy: [], despues: [] };
+            var groups = { atrasadas: [], hoy: [], despues: [], completadas: [] };
 
             tareas.forEach(function(t) {
-                if (t.estado === 'completada') { groups.despues.push(t); return; }
+                if (t.estado === 'completada') { groups.completadas.push(t); return; }
                 if (!t.fecha_limite) { groups.despues.push(t); return; }
                 var fl = new Date(t.fecha_limite);
                 if (fl < today) groups.atrasadas.push(t);
                 else if (fl < tomorrow) groups.hoy.push(t);
                 else groups.despues.push(t);
             });
+            // Completadas: colapsada por defecto (solo la primera vez; respeta el
+            // toggle manual del usuario después).
+            if (_tcpCollapsedSections.completadas === undefined) {
+                _tcpCollapsedSections.completadas = true;
+            }
 
             var MES_HOY = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
             var hoyLabel = MES_HOY[today.getDay()] + ' ' + today.getDate() + ' ' + ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][today.getMonth()];
@@ -7313,6 +7368,7 @@
                 { key: 'atrasadas', label: 'ATRASADAS',   extra: '', items: groups.atrasadas, cls: 'atrasadas' },
                 { key: 'hoy',       label: 'HOY',         extra: ' · ' + hoyLabel, items: groups.hoy, cls: '' },
                 { key: 'despues',   label: 'MÁS TARDE',   extra: '', items: groups.despues,   cls: '' },
+                { key: 'completadas', label: 'COMPLETADAS', extra: '', items: groups.completadas, cls: 'completadas' },
             ];
 
             // Cabecera de columnas sticky (siempre primera)
@@ -8907,7 +8963,12 @@
                 var _cur = _CRM_CONFIG.userId;
                 var _su = _CRM_CONFIG.isSuperuser;
                 var _crId = (tarea.creado_por_data && tarea.creado_por_data.id) ? tarea.creado_por_data.id : null;
-                menuEliminar.style.display = (_su || (_cur && _crId && _cur === _crId)) ? 'flex' : 'none';
+                var _puedeEliminar = !!(_su || (_cur && _crId && _cur === _crId));
+                menuEliminar.style.display = _puedeEliminar ? 'flex' : 'none';
+                // Si "Eliminar" es la única acción del menú y está oculta, el
+                // botón de 3-puntos abría una caja vacía → ocultarlo.
+                var _menuWrap = document.getElementById('crmTaskMenuBtn');
+                if (_menuWrap) _menuWrap.style.display = _puedeEliminar ? '' : 'none';
             }
 
             // Subtareas O Tarea padre (mutuamente excluyentes)
@@ -8959,19 +9020,14 @@
                         }).join('') + '</div>';
                     }
                     if (total === 0) {
-                        var emptyState =
-                            '<div class="crm-tw-empty" onclick="crmTaskCrearSubtarea()" role="button">' +
-                                '<span class="crm-tw-empty-ico"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
-                                '<span class="crm-tw-empty-title">Añadir subtarea</span>' +
-                                '<span class="crm-tw-empty-hint">Divide la tarea en pasos</span>' +
-                            '</div>';
-                        subtareasSection.innerHTML = headHtml + emptyState;
+                        // Sin subtareas: ocultamos toda la sección (el botón "Añadir
+                        // subtarea" se movió al icono junto al @ del comentario, para
+                        // ganar espacio). Sólo se muestra cuando ya hay subtareas.
+                        subtareasSection.innerHTML = '';
                     } else {
-                        var addBtn = '<button type="button" class="crm-tw-subtarea-add" onclick="crmTaskCrearSubtarea()">' +
-                            '<span class="crm-tw-subtarea-add-ico"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>' +
-                            '<span>Añadir subtarea</span>' +
-                        '</button>';
-                        subtareasSection.innerHTML = headHtml + listHtml + addBtn;
+                        // Con subtareas: header + progreso + lista (sin el botón
+                        // "Añadir subtarea"; crear va desde la barra de comentarios).
+                        subtareasSection.innerHTML = headHtml + listHtml;
                     }
                 }
             }
@@ -9006,6 +9062,12 @@
         }
 
         function crmTaskVerDetalle(tareaId) {
+            // Política multi-tarea (prospecto_windows.js): si el modal ya está
+            // VISIBLE+EN VENTANA mostrando OTRA tarea, abrir la nueva como
+            // ventana-iframe propia. Guard al inicio para que TODO punto de
+            // entrada (inline onclick + llamadas locales del closure como
+            // tcpExpandir/tcpToggleCheck) pase por la política.
+            if (typeof window._taskWindowPolicy === 'function' && window._taskWindowPolicy(tareaId)) return;
             _crmCurrentTaskId = tareaId;
             window._crmCurrentTaskId = tareaId;  // expone para el modal de historial
             _crmTaskCurrentOppId = null;
@@ -9167,6 +9229,18 @@
         var _crmTaskEdits = {};
         var _crmTaskOriginal = {};
         var _crmTaskLastData = null;
+        // Cambios PENDIENTES de participantes/observadores (no se guardan hasta
+        // que el usuario da "Guardar"; "Cancelar" los descarta). add = usuarios
+        // por añadir {id,nombre,avatar_url}; remove = ids por quitar.
+        var _crmTaskInvPending = { participantes: { add: [], remove: [] }, observadores: { add: [], remove: [] } };
+        function _crmTaskResetInvPending() {
+            _crmTaskInvPending = { participantes: { add: [], remove: [] }, observadores: { add: [], remove: [] } };
+        }
+        function _crmTaskHasPendingInv() {
+            var p = _crmTaskInvPending;
+            return (p.participantes.add.length + p.participantes.remove.length +
+                    p.observadores.add.length + p.observadores.remove.length) > 0;
+        }
 
         function crmTaskShowSaveBar() {
             var bar = document.getElementById('crmTaskSaveBar');
@@ -9176,43 +9250,15 @@
             var bar = document.getElementById('crmTaskSaveBar');
             if (bar) bar.style.display = 'none';
             _crmTaskEdits = {};
+            _crmTaskResetInvPending();
         }
 
         function crmTaskRenderEditUI(tarea) {
             _crmTaskLastData = tarea;
             crmTaskHideSaveBar();
 
-            function crmTaskRenderSbList(containerId, people, grupo, bgColor) {
-                var cont = document.getElementById(containerId);
-                if (!cont) return;
-                if (!people.length) {
-                    cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
-                    return;
-                }
-                var _curUid = _CRM_CONFIG.userId;
-                cont.innerHTML = people.map(function (p) {
-                    var avInner = p.avatar_url
-                        ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
-                        : crmTaskGetInitials(p.nombre);
-                    // Mostrar X (quitar) si:
-                    //   • el usuario actual tiene permiso pleno (creador/superuser), o
-                    //   • es ingeniero y el target es él mismo (quitarse).
-                    var canRemoveThis = _crmTaskCanEdit ||
-                        (_crmTaskIsIngeniero && p.id === _curUid);
-                    var rm = canRemoveThis
-                        ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + grupo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
-                        : '';
-                    return '<div class="crm-tw-sb-row" title="' + p.nombre + '">' +
-                        '<div class="crm-tw-sb-row-left">' +
-                            '<span style="width:22px;height:22px;border-radius:50%;background:' + bgColor + ';color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
-                            '<span class="crm-tw-sb-row-name">' + p.nombre + '</span>' +
-                        '</div>' +
-                        rm +
-                    '</div>';
-                }).join('');
-            }
-            crmTaskRenderSbList('crm-task-participantes-container', tarea.participantes || [], 'participantes', '#6366F1');
-            crmTaskRenderSbList('crm-task-observadores-container', tarea.observadores || [], 'observadores', '#8B5CF6');
+            _crmRenderInvList('participantes');
+            _crmRenderInvList('observadores');
 
             // Responsable: clickeable si tiene edición plena O si es ingeniero
             // que actualmente está asignado a la tarea (puede quitarse o cambiar).
@@ -9356,7 +9402,12 @@
                         var nombre = u.nombre_completo || u.nombre || u.username || ''; div.textContent = nombre;
                         div.addEventListener('mouseenter', function () { div.style.background = '#F3F4F6'; });
                         div.addEventListener('mouseleave', function () { div.style.background = ''; });
-                        div.addEventListener('click', function () {
+                        div.addEventListener('click', function (e) {
+                            // stopPropagation: el item es descendiente de respContainer
+                            // y abajo le re-asignamos respContainer.onclick = editar; sin
+                            // esto el mismo click burbujea y REABRE el buscador, así que
+                            // el nombre nuevo "no se mostraba" (volvía a la lista).
+                            if (e) { e.stopPropagation(); e.preventDefault(); }
                             _crmTaskEdits.asignado_a = u.id;
                             _crmTaskEdits.asignado_a_nombre = nombre;
                             _crmTaskEdits.asignado_a_avatar = u.avatar_url || null;
@@ -9379,6 +9430,49 @@
             buscarResp('');
         }
 
+        // Render de la lista de participantes/observadores fusionando los datos
+        // del server (_crmTaskLastData) con los cambios PENDIENTES (_crmTaskInvPending).
+        function _crmRenderInvList(tipo) {
+            var containerId = tipo === 'participantes' ? 'crm-task-participantes-container' : 'crm-task-observadores-container';
+            var bgColor = tipo === 'participantes' ? '#6366F1' : '#8B5CF6';
+            var cont = document.getElementById(containerId);
+            if (!cont) return;
+            var base = (_crmTaskLastData && _crmTaskLastData[tipo]) || [];
+            var pend = _crmTaskInvPending[tipo] || { add: [], remove: [] };
+            // efectivos = base (sin los marcados para quitar) + pendientes de añadir
+            var people = base.filter(function (p) { return pend.remove.indexOf(p.id) === -1; })
+                .map(function (p) { return { id: p.id, nombre: p.nombre, avatar_url: p.avatar_url, _pending: false }; });
+            pend.add.forEach(function (p) {
+                if (people.some(function (x) { return x.id === p.id; })) return;
+                people.push({ id: p.id, nombre: p.nombre, avatar_url: p.avatar_url, _pending: true });
+            });
+            if (!people.length) {
+                cont.innerHTML = '<span class="crm-tw-sb-empty">Ninguno</span>';
+                return;
+            }
+            var _curUid = _CRM_CONFIG.userId;
+            cont.innerHTML = people.map(function (p) {
+                var avInner = p.avatar_url
+                    ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+                    : crmTaskGetInitials(p.nombre);
+                // Quitar permitido si: permiso pleno, o ingeniero quitándose, o es un pendiente.
+                var canRemoveThis = _crmTaskCanEdit || (_crmTaskIsIngeniero && p.id === _curUid) || p._pending;
+                var rm = canRemoveThis
+                    ? '<button type="button" class="crm-tw-sb-row-remove" onclick="event.stopPropagation();crmTaskRemoverInvolucrado(\'' + tipo + '\',' + p.id + ')" title="Quitar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+                    : '';
+                var pendTag = p._pending
+                    ? '<span style="font-size:9px;font-weight:700;color:#0052D4;background:#E8F0FE;border-radius:4px;padding:1px 5px;margin-left:6px;flex-shrink:0;">nuevo</span>'
+                    : '';
+                return '<div class="crm-tw-sb-row" title="' + p.nombre + '"' + (p._pending ? ' style="opacity:0.92;"' : '') + '>' +
+                    '<div class="crm-tw-sb-row-left">' +
+                        '<span style="width:22px;height:22px;border-radius:50%;background:' + bgColor + ';color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + avInner + '</span>' +
+                        '<span class="crm-tw-sb-row-name">' + p.nombre + '</span>' + pendTag +
+                    '</div>' +
+                    rm +
+                '</div>';
+            }).join('');
+        }
+
         function crmTaskAgregarInvolucrado(tipo) {
             var existing = document.getElementById('crmTaskInvSW'); if (existing) existing.remove();
             var cid = tipo === 'participantes' ? 'crm-task-participantes-container' : 'crm-task-observadores-container';
@@ -9398,10 +9492,20 @@
                         var nombre = u.nombre_completo || u.nombre || u.username || ''; div.textContent = nombre;
                         div.addEventListener('mouseenter', function () { div.style.background = '#F3F4F6'; });
                         div.addEventListener('mouseleave', function () { div.style.background = ''; });
-                        div.addEventListener('click', function () {
-                            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' }, body: JSON.stringify({ user_id: u.id, action: 'add', tipo: tipo }) })
-                                .then(function (r) { return r.json(); }).then(function (d) { wrap.remove(); if (d.success) { crmTaskVerDetalle(_crmCurrentTaskId); } else { showToast(d.error || 'Error', 'error'); } });
+                        div.addEventListener('click', function (e) {
+                            if (e) { e.stopPropagation(); e.preventDefault(); }
+                            // STAGED: no se guarda hasta "Guardar". Lo metemos a pendientes.
+                            var pend = _crmTaskInvPending[tipo];
+                            var ri = pend.remove.indexOf(u.id); if (ri !== -1) pend.remove.splice(ri, 1);
+                            var base = (_crmTaskLastData && _crmTaskLastData[tipo]) || [];
+                            var yaBase = base.some(function (x) { return x.id === u.id; });
+                            var yaPend = pend.add.some(function (x) { return x.id === u.id; });
+                            if (!yaBase && !yaPend) {
+                                pend.add.push({ id: u.id, nombre: nombre, avatar_url: u.avatar_url || null });
+                            }
+                            wrap.remove();
+                            crmTaskShowSaveBar();
+                            _crmRenderInvList(tipo);
                         });
                         dd.appendChild(div);
                     }); dd.style.display = 'block';
@@ -9413,12 +9517,66 @@
         }
 
         function crmTaskRemoverInvolucrado(tipo, userId) {
-            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-            fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' }, body: JSON.stringify({ user_id: userId, action: 'remove', tipo: tipo }) })
-                .then(function (r) { return r.json(); }).then(function (d) { if (d.success) { crmTaskVerDetalle(_crmCurrentTaskId); } else { showToast(d.error || 'Error', 'error'); } });
+            // STAGED: si era un pendiente de añadir lo quitamos de add; si es uno
+            // existente lo marcamos para quitar. Nada se guarda hasta "Guardar".
+            var pend = _crmTaskInvPending[tipo]; if (!pend) return;
+            var idx = -1;
+            for (var i = 0; i < pend.add.length; i++) { if (pend.add[i].id === userId) { idx = i; break; } }
+            if (idx !== -1) { pend.add.splice(idx, 1); }
+            else if (pend.remove.indexOf(userId) === -1) { pend.remove.push(userId); }
+            crmTaskShowSaveBar();
+            _crmRenderInvList(tipo);
+        }
+
+        // Confirma en el server los cambios pendientes de participantes/observadores.
+        function _crmCommitInvolucrados(csrf) {
+            var calls = [];
+            ['participantes', 'observadores'].forEach(function (tipo) {
+                var pend = _crmTaskInvPending[tipo];
+                pend.add.forEach(function (p) {
+                    calls.push(fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify({ user_id: p.id, action: 'add', tipo: tipo }) }));
+                });
+                pend.remove.forEach(function (id) {
+                    calls.push(fetch('/app/api/tarea/' + _crmCurrentTaskId + '/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify({ user_id: id, action: 'remove', tipo: tipo }) }));
+                });
+            });
+            return Promise.all(calls);
+        }
+
+        // Guardado cuando hay cambios de involucrados: confirma involucrados +
+        // (opcional) campos, y re-carga el detalle para reflejar todo consistente.
+        function _crmTaskDoGuardarConInvolucrados(razon) {
+            var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            var csrf = csrfEl ? csrfEl.value : '';
+            var fieldKeys = ['titulo', 'descripcion', 'fecha_limite', 'asignado_a', 'cliente_id'];
+            var hasFields = fieldKeys.some(function (k) { return k in _crmTaskEdits; });
+            _crmCommitInvolucrados(csrf).then(function () {
+                if (!hasFields) return { success: true };
+                var payload = {};
+                if (_crmTaskEdits.titulo) payload.titulo = _crmTaskEdits.titulo;
+                if ('descripcion' in _crmTaskEdits) payload.descripcion = _crmTaskEdits.descripcion;
+                if ('fecha_limite' in _crmTaskEdits) payload.fecha_limite = _crmTaskEdits.fecha_limite;
+                if ('asignado_a' in _crmTaskEdits) payload.asignado_a = _crmTaskEdits.asignado_a;
+                if ('cliente_id' in _crmTaskEdits) payload.cliente_id = _crmTaskEdits.cliente_id;
+                if (razon) payload.razon_reprogramacion = razon;
+                return fetch('/app/api/tarea/' + _crmCurrentTaskId + '/actualizar/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify(payload) }).then(function (r) { return r.json(); });
+            }).then(function (d) {
+                if (d && d.success) {
+                    crmTaskHideSaveBar();
+                    showToast('Tarea actualizada', 'success');
+                    crmTaskVerDetalle(_crmCurrentTaskId);  // re-fetch: refleja involucrados + campos
+                    if (window._crmTareasMode) recargarTareasCRM();
+                    if (typeof notifLoad === 'function') notifLoad();
+                } else {
+                    showToast((d && d.error) || 'Error al guardar', 'error');
+                }
+            }).catch(function () { showToast('Error de conexion', 'error'); });
         }
 
         function _crmTaskDoGuardar(razon) {
+            // Si hay cambios pendientes de participantes/observadores, usamos el
+            // flujo que los confirma y re-carga el detalle (consistente).
+            if (_crmTaskHasPendingInv()) { _crmTaskDoGuardarConInvolucrados(razon); return; }
             var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
             var payload = {};
             if (_crmTaskEdits.titulo) payload.titulo = _crmTaskEdits.titulo;
@@ -9448,13 +9606,18 @@
                         crmTaskRenderData(_crmTaskLastData);
                         showToast('Tarea actualizada', 'success');
                         if (window._crmTareasMode) recargarTareasCRM();
+                        // Si se aplazó la fecha, su notif de vencimiento ya no
+                        // aplica (el server la borró) → refrescar notificaciones.
+                        if (typeof notifLoad === 'function') notifLoad();
                     } else { showToast(d.error || 'Error al guardar', 'error'); }
                 }).catch(function () { showToast('Error de conexion', 'error'); });
         }
 
         function crmTaskGuardar() {
             if (!_crmCurrentTaskId) return;
-            if (Object.keys(_crmTaskEdits).length === 0) return;
+            // Nada que guardar si no hay ni ediciones de campos ni cambios de
+            // participantes/observadores pendientes.
+            if (Object.keys(_crmTaskEdits).length === 0 && !_crmTaskHasPendingInv()) return;
 
             // Si el responsable (no creador, no superuser) cambia la fecha_limite, pedir razón
             var curId = _CRM_CONFIG.userId;
@@ -9899,6 +10062,7 @@
                     if (overlay) overlay.style.display = 'none';
                     if (data.success) {
                         showToast('Tarea reabierta', 'success');
+                        if (typeof notifLoad === 'function') notifLoad();
                         // Limpiar caché y recargar tabla para que aparezca en pendientes
                         _crmTareasCache = {};
                         if (window._crmTareasMode) cargarTareasCRM(_crmCurrentFilter);
@@ -9936,6 +10100,11 @@
         // ── Abrir drive desde tarea ──
         function crmTaskAbrirDrive() {
             if (!_crmTaskCurrentOppId) return;
+            // Si la tarea está en VENTANA (o dentro de un iframe de tarea), el
+            // drive abre como VENTANA propia (prospecto_windows / la página
+            // iframe lo manejan). Si devuelve true, no abrimos el modal.
+            if (typeof window._taskDriveAsWindow === 'function' &&
+                window._taskDriveAsWindow(_crmTaskCurrentOppId)) return;
             if (typeof woSetCurrentOppId === 'function') woSetCurrentOppId(_crmTaskCurrentOppId);
             // Elevar por encima del modal de tarea: el drive es CAPA 2 (10200)
             // y el modal CAPA 4 (10400) — sin esto el drive abre DETRÁS.
@@ -10199,8 +10368,24 @@
                 _crmFilesAdd(e.dataTransfer.files);
             });
         }
-        var fileInput = document.getElementById('crm-task-file-input');
-        if (fileInput) { fileInput.addEventListener('change', function () { _crmFilesAdd(this.files); this.value = ''; }); }
+        // Selección de archivos ("selecciona"): el change se delega a nivel
+        // document UNA sola vez y llama al _crmFilesAdd vigente (expuesto en
+        // window cada crmReady). Antes el listener se ataba a la instancia del
+        // input y, al re-ejecutarse crmReady (turbo:load) o reabrir el modal,
+        // quedaba huérfano/duplicado: el primero en disparar hacía this.value=''
+        // y borraba los archivos antes de que el handler vigente los leyera, así
+        // que "selecciona" no adjuntaba nada (el drag-drop sí, porque va sobre el
+        // form, no sobre el input). La delegación es inmune a esos recreados.
+        window._crmTaskFilesAdd = _crmFilesAdd;
+        if (!window._crmTaskFileChangeDelegated) {
+            window._crmTaskFileChangeDelegated = true;
+            document.addEventListener('change', function (e) {
+                var t = e.target;
+                if (!t || t.id !== 'crm-task-file-input' || !t.files || !t.files.length) return;
+                if (typeof window._crmTaskFilesAdd === 'function') window._crmTaskFilesAdd(t.files);
+                t.value = '';
+            });
+        }
 
         // Allow drop on textarea + comment form — show drop zone hint while dragging
         var commentInput = document.getElementById('crm-task-comment-input');
@@ -10407,11 +10592,14 @@
         // ═══ MODAL CREAR TAREA ═══
         // ══════════════════════════════════
 
-        function crmTaskAbrirCrear(oppId) {
+        function crmTaskAbrirCrear(oppId, opts) {
             var modal = document.getElementById('crmCreateTaskModal');
             if (modal) {
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
+                // Liga opcional a un Proyecto IAMET (cuando se crea desde el
+                // detalle de un proyecto). Lo lee crmTaskCrear en el payload.
+                window._crmTaskProyectoIametId = (opts && opts.proyectoIametId) || null;
                 // Set oportunidad silently if provided
                 var oppIdEl = document.getElementById('crmTaskOppId');
                 if (oppIdEl) oppIdEl.value = oppId || '';
@@ -10450,6 +10638,7 @@
                 var el = document.getElementById(id); if (el) el.innerHTML = '';
             });
             // Reset state
+            window._crmTaskProyectoIametId = null;
             _crmTaskSelectedResp = null;
             _crmTaskSelectedParts = [];
             _crmTaskSelectedObs = [];
@@ -10881,6 +11070,7 @@
             if (_crmTaskSelectedObs.length > 0) payload.observadores = _crmTaskSelectedObs.map(function (u) { return u.id; });
             var oppIdEl = document.getElementById('crmTaskOppId');
             if (oppIdEl && oppIdEl.value) payload.oportunidad_id = oppIdEl.value;
+            if (window._crmTaskProyectoIametId) payload.proyecto_iamet_id = window._crmTaskProyectoIametId;
             var padreIdEl = document.getElementById('crmTaskPadreId');
             if (padreIdEl && padreIdEl.value) payload.tarea_padre_id = padreIdEl.value;
 
@@ -10917,6 +11107,8 @@
                         }
                         crmTaskCerrarCrear();
                         recargarTareasCRM();
+                        // Si se creó desde el detalle de un proyecto, refrescar su lista.
+                        if (typeof window.proyRefrescarTareas === 'function') window.proyRefrescarTareas();
                         showToast(padreId ? 'Subtarea creada exitosamente' : 'Tarea creada exitosamente', 'success');
                         // Refresh parent task detail if subtask was created
                         if (padreId && typeof crmTaskVerDetalle === 'function') {

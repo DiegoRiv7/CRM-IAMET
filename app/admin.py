@@ -432,3 +432,16 @@ class InstalacionAsignacionAdmin(admin.ModelAdmin):
     autocomplete_fields = ('instalacion', 'tecnico')
     date_hierarchy = 'fecha'
     ordering = ('-fecha', 'tecnico__nombre')
+
+
+from .models import PerfEvent
+
+
+@admin.register(PerfEvent)
+class PerfEventAdmin(admin.ModelAdmin):
+    list_display = ('ts', 'usuario', 'modo', 'motivo', 'fps', 'cores', 'device_memory', 'pantalla')
+    list_filter = ('modo', 'motivo', 'ts')
+    search_fields = ('usuario__username', 'usuario__first_name', 'usuario__last_name', 'user_agent')
+    date_hierarchy = 'ts'
+    ordering = ('-ts',)
+    readonly_fields = ('ts',)

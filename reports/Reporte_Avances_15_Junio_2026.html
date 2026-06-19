@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 15 de Junio 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px; /* Asegurar espacio suficiente para alineación */
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 17px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card-icon { font-size: 28px; margin-bottom: 12px; }
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ PERFORMANCE BADGE ═══════ */
+        .perf-badge {
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .perf-val { font-size: 24px; font-weight: 800; color: var(--success); }
+        .perf-text { font-size: 14px; font-weight: 600; }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .btn-all-page:hover { 
+            background: var(--primary-accent); 
+            transform: scale(1.05); 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page, .btn-pdf { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .perf-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card-full { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Semanales</h1>
+            <p>Enfoque en Rendimiento Inteligente y UX Profesional</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">ACTUALIZACIÓN AL</div>
+            <div class="date-value">15 JUNIO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">Modo Rendimiento</span>
+            <span class="summary-lbl">Se ajusta a tu PC</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Notificaciones</span>
+            <span class="summary-lbl">Nuevo panel lateral</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Búsqueda Rápida</span>
+            <span class="summary-lbl">Resultados instantáneos</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Guardado de Sesión</span>
+            <span class="summary-lbl">No pierdes tus ventanas</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Hoy implementamos una <strong>infraestructura de telemetría</strong> que permite al CRM adaptarse a la potencia del hardware de cada usuario, asegurando una experiencia fluida incluso en equipos con recursos limitados.
+        </div>
+
+        <!-- ═══════ MILESTONE: PERFORMANCE ═══════ -->
+        <div class="section-title">Hito Principal: Optimización Adaptativa</div>
+        <div class="perf-badge">
+            <div class="perf-val">60 FPS</div>
+            <div class="perf-text">El sistema ahora detecta la velocidad de renderizado y ajusta los efectos visuales para mantener la fluidez máxima en todo momento.</div>
+        </div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 40px;">⚡</div>
+                <div>
+                    <h3>Modo de Alto Rendimiento / Ligero</h3>
+                    <p>Detección automática por benchmark real de fotogramas. En equipos pesados o durante multitarea intensa, el CRM simplifica capas y activa aceleración por GPU (3D) para eliminar cualquier rastro de lentitud.</p>
+                </div>
+            </div>
+
+            <!-- ═══════ UX TOOLS ═══════ -->
+            <div class="section-title" style="grid-column: 1 / -1; margin-top: 20px;">Herramientas y Experiencia de Usuario</div>
+
+            <div class="card">
+                <div class="card-icon">🔔</div>
+                <h3>Centro de Notificaciones V3</h3>
+                <p>Nuevo cajón lateral derecho inspirado en macOS. Organiza alertas en 4 secciones (Tareas, Oportunidades, Vencidas y General) con efecto "Liquid Glass" y previsualizaciones inteligentes.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">🔍</div>
+                <h3>Buscador Spotlight-Style</h3>
+                <p>Rediseño minimalista de la búsqueda global. Los resultados se presentan en una sola columna limpia y se abren directamente en ventanas de trabajo sin recargar la página actual.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">📅</div>
+                <h3>Calendario Profesional (Apple-Design)</h3>
+                <p>La vista mensual ha sido rediseñada para ser más modular. Celdas limpias, márgenes balanceados y una navegación más intuitiva para la gestión de equipos técnicos.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">💾</div>
+                <h3>Persistencia de Sesión (F5)</h3>
+                <p>Las ventanas de trabajo y tareas abiertas ahora se memorizan de forma "perezosa". Al recargar la página, el sistema restaura los chips minimizados y el estado de la última sesión.</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>

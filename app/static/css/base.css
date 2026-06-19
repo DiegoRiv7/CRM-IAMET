@@ -742,8 +742,8 @@ html[data-theme="perla"] div .apple-card:hover {
 }
 
 .spotlight-v2 .spotlight-container {
-    max-width: 720px;
-    border-radius: 18px;
+    max-width: 760px;
+    border-radius: 20px;
     background: rgba(255, 255, 255, 0.98);
     border: 1px solid rgba(226, 232, 240, 0.8);
     box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.30),
@@ -754,8 +754,8 @@ html[data-theme="perla"] div .apple-card:hover {
 
 /* ── Search bar ── */
 .spotlight-v2 .spotlight-search-box {
-    padding: 16px 18px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+    padding: 20px 22px;
+    border-bottom: none;
     background: #fff;
     display: flex;
     align-items: center;
@@ -764,30 +764,31 @@ html[data-theme="perla"] div .apple-card:hover {
 
 .spotlight-v2 .spotlight-icon {
     color: #94A3B8;
-    margin-right: 10px;
+    margin-right: 12px;
     opacity: 1;
 }
+.spotlight-v2 .spotlight-icon svg { width: 21px; height: 21px; }
 
 .spotlight-v2 #spotlight-input {
-    font-size: 16px;
+    font-size: 21px;
     font-weight: 500;
     color: #0F172A;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
 }
 
 .spotlight-v2 #spotlight-input::placeholder {
-    color: #94A3B8;
+    color: #B6C0CE;
     font-weight: 400;
 }
 
 .spotlight-v2 .spotlight-shortcut {
     background: #F1F5F9;
-    color: #64748B;
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    padding: 3px 7px;
-    font-size: 10.5px;
-    font-weight: 600;
+    color: #94A3B8;
+    border: 1px solid #E8EDF3;
+    border-radius: 7px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 500;
     letter-spacing: 0.02em;
     font-family: 'SF Mono', ui-monospace, Menlo, monospace;
 }
@@ -830,23 +831,23 @@ html[data-theme="perla"] div .apple-card:hover {
 /* ── Scopes chips bar ── */
 .spotlight-v2 .sp-scopes {
     display: flex;
-    gap: 6px;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-    background: #F8FAFC;
+    gap: 7px;
+    padding: 2px 20px 14px;
+    border-bottom: 1px solid #EEF2F7;
+    background: #fff;
     overflow-x: auto;
     scrollbar-width: none;
 }
 .spotlight-v2 .sp-scopes::-webkit-scrollbar { display: none; }
 
 .spotlight-v2 .sp-chip {
-    background: transparent;
+    background: #F1F5F9;
     border: 1px solid transparent;
     color: #64748B;
-    padding: 5px 12px;
+    padding: 6px 14px;
     border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 500;
     letter-spacing: -0.01em;
     cursor: pointer;
     white-space: nowrap;
@@ -854,14 +855,14 @@ html[data-theme="perla"] div .apple-card:hover {
     font-family: inherit;
 }
 .spotlight-v2 .sp-chip:hover {
-    background: #F1F5F9;
+    background: #E6EBF1;
     color: #334155;
 }
 .spotlight-v2 .sp-chip.active {
-    background: #EFF6FF;
-    color: #1D4ED8;
-    border-color: #BFDBFE;
-    box-shadow: 0 1px 2px rgba(29, 78, 216, 0.08);
+    background: #1C1C1E;
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 /* ── Results container ── */
@@ -877,12 +878,12 @@ html[data-theme="perla"] div .apple-card:hover {
 
 /* ── Section header ── */
 .spotlight-v2 .sp-section-header {
-    padding: 12px 18px 4px;
+    padding: 14px 20px 6px;
     font-size: 10.5px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    color: #94A3B8;
+    color: #A2ADBC;
     background: transparent;
     display: flex;
     align-items: center;
@@ -902,26 +903,28 @@ html[data-theme="perla"] div .apple-card:hover {
 .spotlight-v2 .sp-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 18px;
+    gap: 13px;
+    margin: 1px 8px;
+    padding: 9px 12px;
+    border-radius: 12px;
     cursor: pointer;
     border: none;
-    border-left: 2px solid transparent;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition: background 0.12s ease;
 }
-.spotlight-v2 .sp-item:hover,
+.spotlight-v2 .sp-item:hover {
+    background: #F4F6F9;
+}
 .spotlight-v2 .sp-item.selected {
-    background: #F8FAFC;
-    border-left-color: #2563EB;
+    background: #EAF1FE;
 }
 .spotlight-v2 .sp-item.selected .sp-title {
-    color: #2563EB;
+    color: #1D4ED8;
 }
 
 .spotlight-v2 .sp-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -963,10 +966,11 @@ html[data-theme="perla"] div .apple-card:hover {
     min-width: 0;
 }
 
+.spotlight-v2 .sp-row1 { margin-bottom: 2px; }
 .spotlight-v2 .sp-title {
-    font-size: 13.5px;
+    font-size: 14.5px;
     font-weight: 600;
-    color: #0F172A;
+    color: #1C1C1E;
     letter-spacing: -0.01em;
     white-space: nowrap;
     overflow: hidden;
@@ -1022,10 +1026,18 @@ html[data-theme="perla"] div .apple-card:hover {
     white-space: nowrap;
 }
 
+/* ── Aside (lado derecho de la fila): avatar del responsable ── */
+.spotlight-v2 .sp-aside {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
 /* ── Avatar ── */
 .spotlight-v2 .sp-avatar {
-    width: 18px;
-    height: 18px;
+    width: 23px;
+    height: 23px;
     border-radius: 50%;
     overflow: hidden;
     display: inline-flex;
@@ -1035,7 +1047,7 @@ html[data-theme="perla"] div .apple-card:hover {
     font-size: 9.5px;
     font-weight: 700;
     color: #fff;
-    background: linear-gradient(135deg, #64748B, #475569);
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
     letter-spacing: 0.01em;
 }
 .spotlight-v2 .sp-avatar img {

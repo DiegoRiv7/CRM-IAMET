@@ -50,6 +50,14 @@ def api_admin_usuarios(request):
 
     if request.method == 'GET':
         usuarios = User.objects.select_related('userprofile').all().order_by('first_name', 'last_name')
+        # ?ambito=grupo: limita la lista a los usuarios del grupo del solicitante
+        # cuando NO es supervisor ni administrador (un usuario normal solo puede
+        # asignar prospectos a miembros de su grupo). Supervisores/admins ven todos.
+        if request.GET.get('ambito') == 'grupo' and not (is_supervisor(request.user) or is_administrador(request.user)):
+            from .views_grupos import get_usuarios_visibles_ids
+            visibles = get_usuarios_visibles_ids(request.user)
+            if visibles is not None:
+                usuarios = usuarios.filter(id__in=visibles)
         data = []
         for u in usuarios:
             grupos = [g.name for g in u.groups.all()]
@@ -70,6 +78,7 @@ def api_admin_usuarios(request):
                 'rol': getattr(profile, 'rol', 'vendedor') if profile else 'vendedor',
                 'can_manage_marketing': getattr(profile, 'can_manage_marketing', False) if profile else False,
                 'puede_levantamiento': getattr(profile, 'puede_levantamiento', False) if profile else False,
+                'puede_crear_prospecto': getattr(profile, 'puede_crear_prospecto', False) if profile else False,
             })
         return JsonResponse({'usuarios': data})
 
@@ -392,6 +401,12 @@ def api_admin_permisos(request, user_id):
         profile.puede_levantamiento = bool(data['puede_levantamiento'])
         profile.save(update_fields=['puede_levantamiento'])
         response_data['puede_levantamiento'] = profile.puede_levantamiento
+
+    if 'puede_crear_prospecto' in data:
+        profile, _ = UserProfile.objects.get_or_create(user=usuario)
+        profile.puede_crear_prospecto = bool(data['puede_crear_prospecto'])
+        profile.save(update_fields=['puede_crear_prospecto'])
+        response_data['puede_crear_prospecto'] = profile.puede_crear_prospecto
 
     return JsonResponse(response_data)
 
@@ -2266,11 +2281,16 @@ def api_admin_alias_clientes(request):
 
 @login_required
 def api_admin_prospectos(request):
-    """GET: lista todos los ClientePotencial. POST: crea uno (nombre + asignado_a)."""
-    if not is_supervisor(request.user):
-        return JsonResponse({'error': 'No autorizado'}, status=403)
+    """GET: lista todos los ClientePotencial (solo supervisores/admins).
+    POST: crea uno (nombre + asignado_a). Pueden crear: supervisores,
+    administradores, o usuarios con el permiso UserProfile.puede_crear_prospecto.
+    """
+    es_sup_o_admin = is_supervisor(request.user) or is_administrador(request.user)
 
     if request.method == 'GET':
+        # El listado completo sigue siendo solo para supervisores/admins.
+        if not es_sup_o_admin:
+            return JsonResponse({'error': 'No autorizado'}, status=403)
         qs = (
             ClientePotencial.objects
             .select_related('asignado_a')
@@ -2291,6 +2311,12 @@ def api_admin_prospectos(request):
         return JsonResponse({'prospectos': data})
 
     if request.method == 'POST':
+        # Permiso para crear: supervisores/admins, o el flag puede_crear_prospecto.
+        profile = getattr(request.user, 'userprofile', None)
+        puede_crear = es_sup_o_admin or bool(getattr(profile, 'puede_crear_prospecto', False))
+        if not puede_crear:
+            return JsonResponse({'error': 'No tienes permiso para crear prospectos. Pídele a un administrador que te lo habilite.'}, status=403)
+
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
@@ -2309,6 +2335,13 @@ def api_admin_prospectos(request):
             vendedor = User.objects.get(id=asignado_id)
         except User.DoesNotExist:
             return JsonResponse({'error': 'Vendedor no encontrado'}, status=404)
+
+        # Usuario normal: solo puede asignar a sí mismo o a miembros de su grupo.
+        if not es_sup_o_admin and vendedor.id != request.user.id:
+            from .views_grupos import get_usuarios_visibles_ids
+            visibles = get_usuarios_visibles_ids(request.user)
+            if visibles is not None and vendedor.id not in visibles:
+                return JsonResponse({'error': 'Solo puedes asignar a miembros de tu grupo'}, status=403)
 
         potencial = ClientePotencial.objects.create(
             nombre=nombre,
@@ -2366,3 +2399,164 @@ def api_admin_prospecto_detalle(request, potencial_id):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Telemetría del Modo Ligero (perf_mode.js → PerfEvent)
+# ──────────────────────────────────────────────────────────────────────
+
+def _navegador_corto(ua):
+    """Etiqueta corta de navegador/OS desde el User-Agent (para la tabla)."""
+    ua = ua or ''
+    u = ua.lower()
+    # Navegador (orden importa: Edge/Chrome contienen 'safari', etc.)
+    if 'edg/' in u or 'edge' in u:        nav = 'Edge'
+    elif 'opr/' in u or 'opera' in u:     nav = 'Opera'
+    elif 'firefox' in u:                  nav = 'Firefox'
+    elif 'chrome' in u or 'crios' in u:   nav = 'Chrome'
+    elif 'safari' in u:                   nav = 'Safari'
+    else:                                 nav = 'Otro'
+    # Sistema operativo
+    if 'mac os x' in u or 'macintosh' in u: so = 'macOS'
+    elif 'windows' in u:                    so = 'Windows'
+    elif 'iphone' in u or 'ipad' in u:      so = 'iOS'
+    elif 'android' in u:                    so = 'Android'
+    elif 'linux' in u:                      so = 'Linux'
+    else:                                   so = ''
+    return f'{nav} · {so}' if so else nav
+
+
+@login_required
+@require_POST
+def api_perf_evento(request):
+    """Recibe un evento de Modo Ligero del cliente (perf_mode.js).
+
+    Ligero y a prueba de fallos: cualquier dato malo se descarta sin
+    romper. Solo registra cambios ASENTADOS de modo (no por frame).
+    """
+    from .models import PerfEvent
+    try:
+        data = json.loads(request.body or '{}')
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False}, status=400)
+
+    modo = data.get('modo')
+    motivo = data.get('motivo')
+    modos_validos = {c[0] for c in PerfEvent.MODOS}
+    motivos_validos = {c[0] for c in PerfEvent.MOTIVOS}
+    if modo not in modos_validos or motivo not in motivos_validos:
+        return JsonResponse({'ok': False, 'error': 'modo/motivo inválido'}, status=400)
+
+    def _num(v, cast):
+        try:
+            return cast(v)
+        except (TypeError, ValueError):
+            return None
+
+    PerfEvent.objects.create(
+        usuario=request.user if request.user.is_authenticated else None,
+        modo=modo,
+        motivo=motivo,
+        fps=_num(data.get('fps'), float),
+        cores=_num(data.get('cores'), int),
+        device_memory=_num(data.get('device_memory'), float),
+        pantalla=str(data.get('pantalla') or '')[:24],
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:300],
+    )
+
+    # Purga oportunista de filas viejas (>60 días) — barato, sin cron.
+    try:
+        corte = timezone.now() - timedelta(days=60)
+        PerfEvent.objects.filter(ts__lt=corte).delete()
+    except Exception:
+        pass
+
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def api_admin_perf_stats(request):
+    """Agregados de telemetría de Modo Ligero para el panel (supervisores)."""
+    if not is_supervisor(request.user):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    from .models import PerfEvent
+
+    try:
+        dias = int(request.GET.get('dias', 30))
+    except (TypeError, ValueError):
+        dias = 30
+    dias = max(1, min(dias, 120))
+    desde = timezone.now() - timedelta(days=dias)
+
+    qs = PerfEvent.objects.filter(ts__gte=desde).select_related('usuario')
+
+    # Conteos por modo y por motivo.
+    por_modo = {'lite': 0, 'full': 0}
+    por_motivo = {}
+    for modo, n in qs.values_list('modo').annotate(n=Count('id')):
+        por_modo[modo] = n
+    for motivo, n in qs.values('motivo').annotate(n=Count('id')).values_list('motivo', 'n'):
+        por_motivo[motivo] = n
+
+    # Último estado conocido por usuario (qué equipos corren en ligero hoy).
+    por_navegador = {}
+    ultimos = {}
+    for ev in qs.order_by('-ts'):
+        uid = ev.usuario_id or 0
+        if uid in ultimos:
+            continue
+        ultimos[uid] = ev
+
+    equipos = []
+    lite_ahora = 0
+    for uid, ev in ultimos.items():
+        if ev.modo == 'lite':
+            lite_ahora += 1
+        nombre = '—'
+        if ev.usuario:
+            nombre = (ev.usuario.get_full_name() or ev.usuario.username)
+        nav = _navegador_corto(ev.user_agent)
+        por_navegador[nav] = por_navegador.get(nav, 0) + 1
+        equipos.append({
+            'usuario': nombre,
+            'modo': ev.modo,
+            'motivo': ev.get_motivo_display(),
+            'motivo_key': ev.motivo,
+            'fps': round(ev.fps, 1) if ev.fps is not None else None,
+            'cores': ev.cores,
+            'ram': ev.device_memory,
+            'navegador': nav,
+            'pantalla': ev.pantalla,
+            'ts': timezone.localtime(ev.ts).strftime('%d/%m %H:%M'),
+        })
+    equipos.sort(key=lambda e: (e['modo'] != 'lite', e['usuario'].lower()))
+
+    # Eventos recientes (timeline corta).
+    recientes = []
+    for ev in qs.order_by('-ts')[:40]:
+        nombre = '—'
+        if ev.usuario:
+            nombre = (ev.usuario.get_full_name() or ev.usuario.username)
+        recientes.append({
+            'usuario': nombre,
+            'modo': ev.modo,
+            'motivo': ev.get_motivo_display(),
+            'motivo_key': ev.motivo,
+            'fps': round(ev.fps, 1) if ev.fps is not None else None,
+            'navegador': _navegador_corto(ev.user_agent),
+            'ts': timezone.localtime(ev.ts).strftime('%d/%m %H:%M'),
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'dias': dias,
+        'total': qs.count(),
+        'por_modo': por_modo,
+        'por_motivo': por_motivo,
+        'por_navegador': por_navegador,
+        'lite_ahora': lite_ahora,
+        'equipos_total': len(equipos),
+        'equipos': equipos,
+        'recientes': recientes,
+    })

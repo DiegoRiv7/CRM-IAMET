@@ -98,6 +98,34 @@
 <!-- macOS Style Toasts Container -->
 <div id="macostToastContainer" style="position:fixed; top:20px; right:20px; z-index:10800; /* CAPA TOP */ display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
 
+<!-- ═══ CENTRO DE NOTIFICACIONES (cajón derecho, estilo macOS) — Fase 1 ═══
+     Reemplaza al modal gigante como UI principal. Se abre desde la campana
+     o asomando el mouse al borde derecho. Minimalista + agrupado + filtros. -->
+<div id="notifEdgeHandle" title="Notificaciones" onclick="window.notifDrawerPeekToggle()" aria-hidden="true"></div>
+{% comment %}data-windowable: el sistema de ventanas (widget_window.js) inyecta los
+controles minimizar/maximizar junto a la X y permite sacarlo como ventana flotante
+y mandarlo al dock. La X cierra (data-widget-close).{% endcomment %}
+<div id="notifDrawer" class="nd-drawer" data-windowable="1" data-ww-drag-windowize="1" data-widget-title="Notificaciones">
+    <div class="nd-shell">
+        <div class="nd-head">
+            <span class="nd-head-title">Notificaciones</span>
+            <div class="nd-head-actions">
+                <button class="nd-ghost" data-widget-close onclick="window.notifDrawerClose()" title="Cerrar">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="nd-chips" id="notifDrawerChips">
+            <button class="nd-chip active" data-d="tareas" onclick="notifDrawerFiltro('tareas',this)">Tareas</button>
+            <button class="nd-chip" data-d="oportunidades" onclick="notifDrawerFiltro('oportunidades',this)">Oportunidades</button>
+            <button class="nd-chip" data-d="general" onclick="notifDrawerFiltro('general',this)">General</button>
+        </div>
+        <div class="nd-list" id="notifDrawerList"></div>
+    </div>
+</div>
+<!-- Preview al pasar el cursor (a la izquierda del cajón) -->
+<div id="ndPreview" class="nd-preview" aria-hidden="true"></div>
+
 <style>
 /* ═══ macOS Toasts ═══ */
 .macos-toast {
@@ -573,6 +601,208 @@
     .notif-v2-item { padding: 12px 16px; }
     .notif-v2-date-group { padding: 12px 16px 6px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   CENTRO DE NOTIFICACIONES — cajón derecho estilo macOS (Fase 1)
+   ════════════════════════════════════════════════════════════════════ */
+#notifEdgeHandle {
+    position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+    width: 5px; height: 56px; border-radius: 7px 0 0 7px;
+    background: rgba(100,116,139,0.26); z-index: 10650; cursor: pointer;
+    transition: background .15s ease, width .15s ease;
+}
+#notifEdgeHandle:hover { background: rgba(37,99,235,0.65); width: 7px; }
+
+/* Overlay = capa passthrough (no bloquea la página). La tarjeta flota dentro
+   y es la que se ve; así el sistema de ventanas puede sacarla como ventana
+   flotante (maximizar) o mandarla al dock (minimizar). */
+.nd-drawer {
+    position: fixed; inset: 0; z-index: 10700; pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+}
+.nd-shell {
+    display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;
+    /* SÓLIDO (igual que Modo Ligero) — sin translucidez ni blur: no se ve la
+       página detrás y no hay "pop" de color al animar. Más liviano también. */
+    background: #F4F6FA;
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 26px;
+    box-shadow: 0 28px 80px rgba(15,23,42,0.28), 0 8px 24px rgba(15,23,42,0.14);
+}
+/* Modo CAJÓN (no ventana): anclado a la derecha, con slide-in. Cuando el
+   sistema de ventanas lo "maximiza" (.ww-windowed), estas reglas se apagan y
+   la ventana se posiciona libre con --ww-x/y/w/h. */
+.nd-drawer:not(.ww-windowed) .nd-shell {
+    position: fixed; top: 14px; right: 14px; bottom: 14px;
+    width: 392px; max-width: 92vw;
+    transform: translateX(calc(100% + 28px));
+    transition: transform .30s cubic-bezier(.32,.72,0,1);
+}
+.nd-drawer:not(.ww-windowed).open .nd-shell { transform: translateX(0); }
+body.ww-lite .nd-shell { backdrop-filter: none; -webkit-backdrop-filter: none; background: #F4F6FA; }
+
+/* Durante la animación, promover a su capa (will-change). El panel ya es
+   sólido siempre, así que no hay cambio de color de entrada/salida. */
+.nd-drawer.nd-sliding .nd-shell {
+    background: #F4F6FA;
+    will-change: transform;
+}
+
+.nd-head { display: flex; align-items: center; padding: 18px 18px 10px; gap: 8px; }
+.nd-head-title { font-size: 1.18rem; font-weight: 700; color: #0F172A; letter-spacing: -0.02em; flex: 1; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+.nd-head-actions { display: flex; align-items: center; gap: 8px; }
+/* La X imita a .ww-btn (los controles minimizar/maximizar que inyecta el
+   sistema de ventanas a su lado) para que el grupo [— □ ×] se vea uniforme. */
+.nd-ghost {
+    width: 30px; height: 30px; border: none; background: #F2F2F7;
+    border-radius: 50%; color: #86868B; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; transition: all .15s;
+    flex-shrink: 0;
+}
+.nd-ghost:hover { background: #E8E8ED; color: #1D1D1F; }
+
+/* Chips: ENVUELVEN para que se vean todos (Oportunidades incluida) */
+.nd-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 2px 16px 14px; }
+/* En modo ventana (más ancho) los chips van centrados. */
+.nd-drawer.ww-windowed .nd-chips { justify-content: center; }
+.nd-chip {
+    flex: 0 0 auto; background: #fff; border: 1px solid rgba(15,23,42,0.07);
+    color: #475569; padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: all .15s; font-family: inherit;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.08);
+}
+.nd-chip:hover { background: #fff; color: #1C1C1E; box-shadow: 0 4px 12px rgba(15,23,42,0.13); }
+.nd-chip.active {
+    background: #111317; color: #fff; border-color: transparent; font-weight: 700;
+    box-shadow: 0 5px 16px rgba(15,23,42,0.30);
+}
+body.ww-lite .nd-chip { background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,0.1); }
+body.ww-lite .nd-chip.active { background: #111317; box-shadow: 0 2px 8px rgba(15,23,42,0.3); }
+
+/* Encabezado de subsección dentro de un filtro (ej. Tareas → Vencidas) */
+.nd-subhead {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.09em;
+    text-transform: uppercase; color: #475569;
+    padding: 14px 6px 6px; margin: 0;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+.nd-list > .nd-subhead:first-child { padding-top: 4px; }
+
+.nd-list { flex: 1; overflow-y: auto; padding: 4px 14px 28px; }
+.nd-list::-webkit-scrollbar { width: 5px; }
+.nd-list::-webkit-scrollbar-thumb { background: rgba(148,163,184,.4); border-radius: 3px; }
+
+/* Cada notificación = widget de vidrio líquido, flotante y separado */
+.nd-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 14px; border-radius: 20px; cursor: pointer;
+    background: #fff; margin-bottom: 12px;
+    border: 1px solid rgba(15,23,42,0.06);
+    box-shadow: 0 6px 22px rgba(15,23,42,0.10);
+    transition: background .14s, transform .08s, box-shadow .14s;
+}
+.nd-card:hover { background: #fff; box-shadow: 0 10px 28px rgba(15,23,42,0.14); }
+.nd-card:active { transform: scale(0.99); }
+.nd-card.nd-unread { background: #fff; }
+body.ww-lite .nd-card { backdrop-filter: none; -webkit-backdrop-filter: none; background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,0.08); }
+.nd-ic { width: 36px; height: 36px; border-radius: 12px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
+.nd-ic svg { width: 17px; height: 17px; }
+.nd-ic.pr-critical { background: rgba(254,202,202,0.85); } .nd-ic.pr-critical svg { stroke: #DC2626; }
+.nd-ic.pr-important { background: rgba(253,230,138,0.85); } .nd-ic.pr-important svg { stroke: #D97706; }
+.nd-ic.pr-info { background: rgba(191,210,255,0.85); } .nd-ic.pr-info svg { stroke: #3B82F6; }
+.nd-bd { flex: 1; min-width: 0; }
+.nd-title {
+    font-size: 13.5px; font-weight: 600; color: #1C1C1E; line-height: 1.32;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.nd-msg { font-size: 12px; color: #475569; font-weight: 500; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nd-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
+.nd-time { font-size: 11px; color: #94A3B8; white-space: nowrap; }
+.nd-dot { width: 8px; height: 8px; border-radius: 50%; background: #2563EB; }
+.nd-count { display: inline-block; background: #E2E8F0; color: #475569; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 0 7px; margin-left: 2px; vertical-align: middle; }
+
+.nd-actions { display: flex; gap: 6px; margin-top: 9px; }
+.nd-act { flex: 1; padding: 6px; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.nd-act-ok { background: #16A34A; color: #fff; } .nd-act-ok:hover { background: #15803D; }
+.nd-act-no { background: #EF4444; color: #fff; } .nd-act-no:hover { background: #DC2626; }
+
+/* Pila (stack) agrupada estilo Apple — widget de vidrio líquido */
+.nd-stack { margin-bottom: 12px; }
+.nd-stack-head {
+    display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px;
+    border-radius: 20px; cursor: pointer; background: #fff;
+    border: 1px solid rgba(15,23,42,0.06); position: relative;
+    box-shadow: 0 6px 22px rgba(15,23,42,0.10);
+    transition: background .14s, box-shadow .14s;
+}
+.nd-stack-head:hover { background: #fff; box-shadow: 0 10px 28px rgba(15,23,42,0.14); }
+.nd-stack.nd-unread .nd-stack-head { background: #fff; }
+/* efecto pila: dos láminas escalonadas debajo cuando está colapsado */
+.nd-stack:not(.open) .nd-stack-head::before,
+.nd-stack:not(.open) .nd-stack-head::after {
+    content: ''; position: absolute; left: 10px; right: 10px; bottom: -5px; height: 14px;
+    background: #fff; border: 1px solid rgba(15,23,42,0.05);
+    border-radius: 0 0 18px 18px; z-index: -1;
+}
+.nd-stack:not(.open) .nd-stack-head::after { left: 16px; right: 16px; bottom: -10px; opacity: .6; }
+.nd-chev { color: #94A3B8; transition: transform .18s; flex: 0 0 auto; }
+.nd-stack.open .nd-chev { transform: rotate(180deg); }
+/* Al expandir, los sub-items van en un panel sólido (igual que Modo Ligero). */
+.nd-stack-items { display: none; }
+.nd-stack.open .nd-stack-items {
+    display: block; margin-top: 8px; padding: 7px 6px;
+    background: rgba(241,243,247,0.9); border-radius: 18px;
+    border: 1px solid rgba(15,23,42,0.05);
+}
+.nd-stack-items .nd-card {
+    background: #fff; border: 1px solid rgba(15,23,42,0.06);
+    box-shadow: 0 3px 12px rgba(15,23,42,0.08); margin-bottom: 7px;
+    padding: 10px 11px; border-radius: 14px;
+}
+.nd-stack-items .nd-card:last-child { margin-bottom: 0; }
+.nd-stack-items .nd-card:hover { background: #fff; }
+body.ww-lite .nd-stack-items .nd-card { background: #fff; }
+
+/* Desvanecer una notif al completar/aplazar su tarea: la tarjeta se
+   funde y colapsa para que las de abajo suban suave, sin recargar el
+   cajón ni cerrar la pila expandida. En Modo Ligero NO se usa (el JS
+   reconstruye al instante). */
+@keyframes nd-card-out {
+    0%   { opacity: 1; transform: none; max-height: 120px; }
+    55%  { opacity: 0; transform: translateX(12px); max-height: 120px; }
+    100% { opacity: 0; transform: translateX(12px);
+           max-height: 0; margin-top: 0; margin-bottom: 0;
+           padding-top: 0; padding-bottom: 0; border-width: 0; }
+}
+.nd-card.nd-removing {
+    overflow: hidden; pointer-events: none;
+    animation: nd-card-out .34s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+/* Preview al pasar el cursor — popover sólido a la izquierda del cajón */
+.nd-preview {
+    position: fixed; z-index: 10720; width: 320px; max-width: 42vw;
+    background: #fff;
+    border: 1px solid rgba(15,23,42,0.08); border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(15,23,42,0.22);
+    padding: 14px 16px; opacity: 0; transform: translateX(8px); pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+}
+.nd-preview.show { opacity: 1; transform: translateX(0); }
+.nd-preview-title { font-size: 13.5px; font-weight: 700; color: #0F172A; margin-bottom: 6px; line-height: 1.3; }
+.nd-preview-msg { font-size: 12.5px; color: #334155; line-height: 1.5; white-space: normal; }
+.nd-preview-meta { margin-top: 10px; font-size: 11px; color: #94A3B8; }
+
+.nd-empty { text-align: center; color: #94A3B8; padding: 64px 20px; font-size: 14px; font-weight: 600; }
+.nd-empty svg { display: block; margin: 0 auto 12px; }
+.nd-empty-sub { font-size: 12px; font-weight: 400; margin-top: 4px; color: #A2ADBC; }
+@keyframes notif-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 480px) {
+    .nd-drawer:not(.ww-windowed) .nd-shell { left: 10px; right: 10px; top: 10px; bottom: 10px; width: auto; max-width: none; border-radius: 22px; }
+    #notifEdgeHandle { display: none; }
+}
 </style>
 
 <script>
@@ -586,12 +816,17 @@
     let _firstLoadDone = false;
 
     /* ═══ Priority & Category Maps ═══ */
-    const PRIORITY_CRITICAL = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'rendimiento_bajo'];
+    const PRIORITY_CRITICAL = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'actividad_opp_vencida', 'actividad_opp_por_vencer', 'rendimiento_bajo'];
     const PRIORITY_IMPORTANT = ['tarea_reprogramada', 'tarea_asignada', 'tarea_opp_asignada', 'mencion', 'muro_mencion', 'tarea_mencion', 'solicitud_cambio_perfil'];
     const PRIORITY_INFO = ['tarea_participante', 'tarea_observador', 'comentario_oportunidad', 'tarea_comentario', 'tarea_opp_comentario', 'oportunidad_mensaje', 'muro_post', 'respuesta', 'sistema', 'proyecto_agregado', 'programacion_proyecto', 'mensaje_grupo'];
 
-    const CAT_TAREAS = ['tarea_vencida', 'tarea_por_vencer', 'tarea_asignada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada', 'actividad_vencida', 'actividad_por_vencer', 'tarea_opp_asignada', 'tarea_opp_comentario', 'programacion_proyecto'];
-    const CAT_OPPS = ['comentario_oportunidad', 'oportunidad_mensaje'];
+    // Nota: actividad_vencida/actividad_por_vencer (vencimientos del panel
+    // TAREAS de la oportunidad, modelo TareaOportunidad) y actividad_opp_*
+    // (panel ACTIVIDAD PROGRAMADA) NO son Tareas: viven dentro de la
+    // oportunidad → cuentan/clasifican como Oportunidades (ver CAT_OPPS y el
+    // early-return de _ndIsTarea).
+    const CAT_TAREAS = ['tarea_vencida', 'tarea_por_vencer', 'tarea_asignada', 'tarea_participante', 'tarea_observador', 'tarea_mencion', 'tarea_comentario', 'tarea_reprogramada', 'tarea_opp_asignada', 'tarea_opp_comentario', 'programacion_proyecto'];
+    const CAT_OPPS = ['comentario_oportunidad', 'oportunidad_mensaje', 'actividad_vencida', 'actividad_por_vencer', 'actividad_opp_vencida', 'actividad_opp_por_vencer'];
     const CAT_EQUIPO = ['muro_post', 'muro_mencion', 'mencion', 'respuesta', 'proyecto_agregado', 'mensaje_grupo'];
     const CAT_ADMIN = ['rendimiento_bajo', 'solicitud_cambio_perfil', 'tarea_reprogramada', 'sistema'];
 
@@ -600,6 +835,8 @@
         'actividad_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
         'tarea_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
         'actividad_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+        'actividad_opp_vencida': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 14v3" /><path d="M12 19v.5"/></svg>',
+        'actividad_opp_por_vencer': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         'rendimiento_bajo': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
         'tarea_reprogramada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         'tarea_asignada': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>',
@@ -733,6 +970,9 @@
 
     /* ═══ Render ═══ */
     function _render() {
+        // El cajón derecho (UI principal) se refresca con cada cambio de datos.
+        try { _renderDrawer(); } catch (e) { }
+
         const container = document.getElementById('notifListContainer');
         if (!container) return;
 
@@ -1064,9 +1304,20 @@
     }
 
     /* ═══ Load ═══ */
+    var _notifLoadBusy = false;
     function _load() {
-        fetch('/app/api/obtener-notificaciones/')
-            .then(r => r.json())
+        // Sin polling con la pestaña oculta y sin encimar rondas (perf).
+        if (document.hidden || _notifLoadBusy) return;
+        _notifLoadBusy = true;
+        var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var _to = setTimeout(function () { if (_ac) { try { _ac.abort(); } catch (e) {} } }, 15000);
+        fetch('/app/api/obtener-notificaciones/', { signal: _ac ? _ac.signal : undefined })
+            .then(r => {
+                // Si el server respondió error (504 → página HTML), NO intentar
+                // parsear como JSON (rompía con "Unexpected token '<'").
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
             .then(data => {
                 if (data.success) {
                     _nData = data.notifications;
@@ -1089,7 +1340,8 @@
                     }
                 }
             })
-            .catch(err => console.error('Notif load error:', err));
+            .catch(err => console.error('Notif load error:', err))
+            .finally(() => { clearTimeout(_to); _notifLoadBusy = false; });
     }
 
     function _showMacOSToast(n) {
@@ -1142,6 +1394,567 @@
         if (btn) btn.classList.add('active');
         _nFiltro = cat;
         _render();
+    };
+
+    /* ════════════════════════════════════════════════════════════════
+       CENTRO DE NOTIFICACIONES — cajón derecho (Fase 1)
+       Reusa _nData, ICONS, _timeAgo, _getPriority y los handlers globales
+       (notifHandleClick / notifQuickAction / procesarSolicitudPerfil).
+       Render propio: minimalista + agrupado por "tipo de cosa" estilo Apple.
+       ════════════════════════════════════════════════════════════════ */
+    var _dFiltro = 'tareas';     // por defecto: notificaciones de tareas
+    var _drawerPinned = false;   // true = se queda abierto (campana o abrió algo)
+    var _drawerLeaveT = null;    // timer de auto-cierre al salir el cursor
+    var _slideT = null;          // timer para quitar .nd-sliding (panel sólido al animar)
+
+    // Buckets de agrupación por CLASE de notificación (no por entidad),
+    // como las pilas del Centro de Notificaciones de macOS.
+    var DRAWER_GROUPS = [
+        { key: 'vencidas',    label: 'Vencimientos',     tipos: ['tarea_vencida','actividad_vencida','tarea_por_vencer','actividad_por_vencer','actividad_opp_vencida','actividad_opp_por_vencer'] },
+        { key: 'asignadas',   label: 'Asignaciones',     tipos: ['tarea_asignada','tarea_opp_asignada','prospecto_asignado','proyecto_agregado','programacion_proyecto','tarea_participante','tarea_observador'] },
+        { key: 'menciones',   label: 'Menciones',        tipos: ['mencion','muro_mencion','tarea_mencion'] },
+        { key: 'comentarios', label: 'Comentarios',      tipos: ['comentario_oportunidad','tarea_comentario','tarea_opp_comentario','oportunidad_mensaje','respuesta'] },
+        { key: 'reprog',      label: 'Reprogramaciones', tipos: ['tarea_reprogramada'] },
+        { key: 'muro',        label: 'Equipo & Muro',    tipos: ['muro_post','mensaje_grupo'] },
+        { key: 'cert',        label: 'Certificaciones',  tipos: ['certificacion_por_vencer','certificacion_vencida'] },
+        { key: 'sistema',     label: 'Sistema',          tipos: ['solicitud_cambio_perfil','rendimiento_bajo','sistema'] }
+    ];
+    function _ndGroupOf(tipo) {
+        for (var i = 0; i < DRAWER_GROUPS.length; i++) {
+            if (DRAWER_GROUPS[i].tipos.indexOf(tipo) !== -1) return DRAWER_GROUPS[i];
+        }
+        return { key: 'otras', label: 'Otras', tipos: [] };
+    }
+
+    function _ndEsc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+    }
+
+    // ── 4 secciones del cajón (enrutado por TIPO + ENTIDAD ligada) ──
+    // Clave: una notificación se clasifica por la cosa a la que apunta, no solo
+    // por su 'tipo'. Así "Tarea reabierta" (que llega como tipo genérico pero
+    // trae tarea_id) cae en Tareas, no en General.
+    var F_VENCIDAS = ['tarea_vencida', 'actividad_vencida', 'tarea_por_vencer', 'actividad_por_vencer', 'certificacion_vencida', 'certificacion_por_vencer'];
+    // Actividades de oportunidad (ambos paneles): viven dentro de la opp →
+    // sección Oportunidades, subsección "Actividades". actividad_* trae
+    // tarea_opp_id, así que hay que excluirlas explícitamente de _ndIsTarea.
+    var F_OPP_ACTIVIDAD = ['actividad_opp_vencida', 'actividad_opp_por_vencer', 'actividad_vencida', 'actividad_por_vencer'];
+    var F_OPP_TIPOS = ['comentario_oportunidad', 'oportunidad_mensaje', 'mencion'].concat(F_OPP_ACTIVIDAD);
+
+    function _ndIsVenc(n) { return F_VENCIDAS.indexOf(n.tipo) !== -1; }
+    function _ndIsTarea(n) {
+        // Las actividades de oportunidad NO son Tareas aunque traigan
+        // tarea_opp_id (su hogar es la oportunidad, no la sección Tareas).
+        if (F_OPP_ACTIVIDAD.indexOf(n.tipo) !== -1) return false;
+        // CAT_TAREAS ya cubre asignadas/menciones/comentarios/reprogramadas/
+        // vencidas de tarea; el tarea_id/tarea_opp_id atrapa el resto
+        // (reabiertas y cualquier cosa ligada a una tarea aunque sea 'sistema').
+        return CAT_TAREAS.indexOf(n.tipo) !== -1 || !!n.tarea_id || !!n.tarea_opp_id;
+    }
+    function _ndIsOpp(n) {
+        if (_ndIsTarea(n)) return false;               // una tarea de opp es de Tareas
+        return F_OPP_TIPOS.indexOf(n.tipo) !== -1 || !!n.oportunidad_id;
+    }
+
+    function _drawerMatch(n) {
+        if (_dFiltro === 'tareas') return _ndIsTarea(n);
+        if (_dFiltro === 'oportunidades') return _ndIsOpp(n);
+        if (_dFiltro === 'general') return !_ndIsTarea(n) && !_ndIsOpp(n);
+        return true;
+    }
+
+    // Subsección dentro de Tareas: Vencidas → Generales → Editadas.
+    // Editadas: reprogramación de fecha/hora, reabiertas, nuevo participante,
+    // cambio de responsable.
+    function _ndTareaSub(n) {
+        if (_ndIsVenc(n)) return 'venc';
+        if (n.tipo === 'tarea_reprogramada' || n.tipo === 'tarea_participante') return 'editada';
+        var t = (n.titulo || '') + ' ' + (n.mensaje || '');
+        if (/reabier|volvi[oó] a abrir|cambi[oó] la (fecha|hora)|reprogram|nuevo participante|agreg[oó].*participante|cambi[oó].*responsable|nuevo responsable|reasign/i.test(t)) return 'editada';
+        return 'general';
+    }
+
+    // Subsección dentro de Oportunidades: Comentarios → Actividades.
+    function _ndOppSub(n) {
+        if (F_OPP_ACTIVIDAD.indexOf(n.tipo) !== -1) return 'actividades';
+        return 'comentarios';   // comentarios, mensajes, menciones, etc.
+    }
+
+    // Subsección dentro de General: Sistema → Grupo → Muro.
+    function _ndGeneralSub(n) {
+        if (n.tipo === 'mensaje_grupo') return 'grupo';
+        if (['muro_post', 'muro_mencion', 'respuesta'].indexOf(n.tipo) !== -1) return 'muro';
+        return 'sistema';   // catch-all (solicitudes, sistema, proyectos, prospectos…)
+    }
+
+    function _ndCleanMsg(s) {
+        return _ndEsc(String(s || '').replace(/^sistema\s+/i, '').trim());
+    }
+
+    function _ndCard(n) {
+        var pr = _getPriority(n.tipo);
+        var icon = ICONS[n.tipo] || ICONS['sistema'] || '';
+        var title = _ndEsc(n.titulo || '');
+        var msg = _ndCleanMsg(n.mensaje);
+        var unread = n.leida ? '' : ' nd-unread';
+        var dot = n.leida ? '' : '<span class="nd-dot"></span>';
+
+        // Solicitud de cambio de perfil: acciones inline (no navega).
+        if (n.tipo === 'solicitud_cambio_perfil' && n.solicitud_perfil_data) {
+            var sid = n.solicitud_perfil_data.id;
+            return '<div class="nd-card pr-' + pr + unread + '" data-nid="' + n.id + '">' +
+                '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
+                '<div class="nd-bd">' +
+                    '<div class="nd-title">' + (title || msg) + '</div>' +
+                    (title && msg ? '<div class="nd-msg">' + msg + '</div>' : '') +
+                    '<div class="nd-actions">' +
+                        '<button class="nd-act nd-act-ok" onclick="event.stopPropagation(); procesarSolicitudPerfil(' + sid + ', true, ' + n.id + ')">Aprobar</button>' +
+                        '<button class="nd-act nd-act-no" onclick="event.stopPropagation(); procesarSolicitudPerfil(' + sid + ', false, ' + n.id + ')">Rechazar</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="nd-meta"><span class="nd-time">' + _timeAgo(n.fecha) + '</span>' + dot + '</div>' +
+            '</div>';
+        }
+
+        // Clic SIEMPRE abre la entidad como VENTANA y NO cierra el cajón
+        // (queda abierto detrás, fijado). Ver window.notifOpenItem.
+        return '<div class="nd-card pr-' + pr + unread + '" data-nid="' + n.id + '" onclick="window.notifOpenItem(' + n.id + ')">' +
+            '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
+            '<div class="nd-bd">' +
+                '<div class="nd-title">' + (title || msg) + '</div>' +
+                (title && msg ? '<div class="nd-msg">' + msg + '</div>' : '') +
+            '</div>' +
+            '<div class="nd-meta"><span class="nd-time">' + _timeAgo(n.fecha) + '</span>' + dot + '</div>' +
+        '</div>';
+    }
+
+    function _ndStack(grp, items) {
+        var pr = _getPriority(items[0].tipo);
+        var icon = ICONS[items[0].tipo] || ICONS['sistema'] || '';
+        var unreadN = items.filter(function (x) { return !x.leida; }).length;
+        var preview = _ndCleanMsg(items[0].titulo || items[0].mensaje);
+        var sub = items.map(_ndCard).join('');
+        return '<div class="nd-stack' + (unreadN ? ' nd-unread' : '') + '" data-stackkey="' + grp.key + '">' +
+            '<div class="nd-stack-head" data-nid="' + items[0].id + '" onclick="this.parentNode.classList.toggle(\'open\')">' +
+                '<div class="nd-ic pr-' + pr + '">' + icon + '</div>' +
+                '<div class="nd-bd">' +
+                    '<div class="nd-title">' + _ndEsc(grp.label) + '<span class="nd-count">' + items.length + '</span></div>' +
+                    '<div class="nd-msg">' + preview + '</div>' +
+                '</div>' +
+                '<div class="nd-meta">' +
+                    '<span class="nd-time">' + _timeAgo(items[0].fecha) + '</span>' +
+                    '<svg class="nd-chev" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                '</div>' +
+            '</div>' +
+            '<div class="nd-stack-items">' + sub + '</div>' +
+        '</div>';
+    }
+
+    // ── Render con animación de salida + preservación de pilas abiertas ──
+    // _renderDrawer es el punto de entrada "inteligente": si el ÚNICO cambio
+    // respecto a lo que ya está en pantalla es que SE QUITARON tarjetas
+    // (completar/aplazar una tarea), las funde una a una y luego repinta;
+    // así la pila "Vencidas" que tenías abierta no se cierra ni parpadea.
+    // Cualquier otro cambio (altas, reordenamiento, cambio de filtro, primera
+    // carga) o Modo Ligero → repinta al instante (_renderDrawerNow).
+    var _NDREMOVE_MS = 340;
+    var _ndAnimT = null;
+
+    function _ndCaptureOpen() {
+        var s = {};
+        var list = document.getElementById('notifDrawerList');
+        if (list) list.querySelectorAll('.nd-stack.open[data-stackkey]').forEach(function (el) {
+            s[el.getAttribute('data-stackkey')] = 1;
+        });
+        return s;
+    }
+
+    function _renderDrawer() {
+        var list = document.getElementById('notifDrawerList');
+        if (!list) return;
+        var arr = _sortNotifs(_nData.filter(_drawerMatch).slice());
+
+        var lite = document.body.classList.contains('ww-lite') || !_firstLoadDone;
+        if (!lite) {
+            // ¿Solo se quitaron tarjetas? Detecta nids en el DOM que ya no están.
+            var newIds = {};
+            arr.forEach(function (n) { newIds[n.id] = 1; });
+            var domCards = list.querySelectorAll('.nd-card[data-nid]');
+            var domIds = {}, removed = [];
+            domCards.forEach(function (el) {
+                var id = el.getAttribute('data-nid');
+                domIds[id] = 1;
+                if (!newIds[id]) removed.push(el);
+            });
+            var anyAdded = false;
+            for (var k in newIds) { if (!domIds[k]) { anyAdded = true; break; } }
+            // Solo tarjetas VISIBLES (las de una pila colapsada no se ven).
+            var vis = removed.filter(function (el) { return el.offsetParent !== null; });
+            if (vis.length && !anyAdded) {
+                clearTimeout(_ndAnimT);
+                vis.forEach(function (el) { el.classList.add('nd-removing'); });
+                _ndAnimT = setTimeout(function () { _ndAnimT = null; _renderDrawerNow(); }, _NDREMOVE_MS);
+                return;
+            }
+        }
+        clearTimeout(_ndAnimT); _ndAnimT = null;
+        _renderDrawerNow();
+    }
+
+    function _renderDrawerNow() {
+        var list = document.getElementById('notifDrawerList');
+        if (!list) return;
+        var _openState = _ndCaptureOpen();
+        var arr = _sortNotifs(_nData.filter(_drawerMatch).slice());
+
+        if (!arr.length) {
+            if (!_firstLoadDone) {
+                list.innerHTML = '<div class="nd-empty"><svg width="34" height="34" fill="none" stroke="#CBD5E1" stroke-width="2" viewBox="0 0 24 24" style="animation:notif-spin 1s linear infinite;"><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0110 10" stroke-linecap="round"/></svg>Cargando…</div>';
+                return;
+            }
+            list.innerHTML = '<div class="nd-empty">' +
+                '<svg width="42" height="42" fill="none" stroke="#22C55E" stroke-width="1.6" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+                'Todo al d&iacute;a' +
+                '<div class="nd-empty-sub">' + (_dFiltro === 'all' ? 'No tienes notificaciones.' : 'Nada aqu&iacute; por ahora.') + '</div>' +
+            '</div>';
+            return;
+        }
+
+        var html;
+        if (_dFiltro === 'tareas') {
+            html = _ndRenderSubsections(arr, _ndTareaSub, [
+                { key: 'venc', label: 'Vencidas' },
+                { key: 'general', label: 'Generales' },
+                { key: 'editada', label: 'Editadas' }
+            ]);
+        } else if (_dFiltro === 'oportunidades') {
+            html = _ndRenderSubsections(arr, _ndOppSub, [
+                { key: 'comentarios', label: 'Comentarios' },
+                { key: 'actividades', label: 'Actividades' }
+            ]);
+        } else if (_dFiltro === 'general') {
+            html = _ndRenderSubsections(arr, _ndGeneralSub, [
+                { key: 'sistema', label: 'Sistema' },
+                { key: 'grupo', label: 'Grupo' },
+                { key: 'muro', label: 'Muro' }
+            ]);
+        } else {
+            html = _ndRenderGroups(arr);
+        }
+        list.innerHTML = html;
+        // Reabrir las pilas que el usuario tenía expandidas antes del repintado.
+        list.querySelectorAll('.nd-stack[data-stackkey]').forEach(function (el) {
+            if (_openState[el.getAttribute('data-stackkey')]) el.classList.add('open');
+        });
+    }
+
+    // Parte una lista en subsecciones con encabezado (orden = subDefs); dentro
+    // de cada una agrupa en pilas. classifier(n) → key de subsección.
+    function _ndRenderSubsections(arr, classifier, subDefs) {
+        var groups = {};
+        subDefs.forEach(function (s) { groups[s.key] = []; });
+        arr.forEach(function (n) {
+            var k = classifier(n);
+            (groups[k] || (groups[k] = [])).push(n);
+        });
+        var html = '';
+        subDefs.forEach(function (s) {
+            if (!groups[s.key] || !groups[s.key].length) return;
+            html += '<div class="nd-subhead">' + s.label + '</div>';
+            html += _ndRenderGroups(groups[s.key]);
+        });
+        return html;
+    }
+
+    // Agrupa una lista de notifs en pilas por clase (DRAWER_GROUPS),
+    // preservando el orden ya ordenado (prioridad/fecha). Devuelve HTML.
+    function _ndRenderGroups(arr) {
+        var buckets = {}, order = [];
+        arr.forEach(function (n) {
+            var g = _ndGroupOf(n.tipo);
+            if (!buckets[g.key]) { buckets[g.key] = { grp: g, items: [] }; order.push(g.key); }
+            buckets[g.key].items.push(n);
+        });
+        var html = '';
+        order.forEach(function (k) {
+            var b = buckets[k];
+            html += (b.items.length >= 2) ? _ndStack(b.grp, b.items) : _ndCard(b.items[0]);
+        });
+        return html;
+    }
+
+    window.notifDrawerFiltro = function (cat, btn) {
+        _dFiltro = cat;
+        document.querySelectorAll('#notifDrawerChips .nd-chip').forEach(function (b) { b.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        _renderDrawer();
+    };
+    // opts.peek = abierto por asomar el cursor → NO fijado (se auto-cierra al
+    // salir). Campana / handle / abrir algo → fijado (se queda).
+    function _ndIsWindowed(d) { return d && d.classList.contains('ww-windowed') && !d.classList.contains('ww-minimized'); }
+
+    // Limpia TODO el estilo inline que pudieran haber dejado windowize/flip o
+    // las animaciones del buzón. Sin esto, un transform/transition residual
+    // rompe el slide del cajón (se ocultaría de golpe en vez de deslizarse).
+    function _ndResetCard(card) {
+        if (!card) return;
+        card.style.transition = ''; card.style.transform = ''; card.style.transformOrigin = '';
+        card.style.position = ''; card.style.left = ''; card.style.top = '';
+        card.style.width = ''; card.style.height = ''; card.style.opacity = '';
+    }
+
+    window.notifDrawerOpen = function (opts) {
+        opts = opts || {};
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
+        // Si está minimizada en el dock, restaurarla vía SU chip (limpia bien:
+        // anima de vuelta y borra el chip). Si no hay chip, quitar la clase.
+        if (d.classList.contains('ww-minimized')) {
+            var restored = false;
+            document.querySelectorAll('#wwDock .ww-dock-chip').forEach(function (c) {
+                if (!restored && c._wwOverlay === d) { c.click(); restored = true; }
+            });
+            if (!restored) d.classList.remove('ww-minimized');
+            _drawerPinned = !opts.peek;
+            if (restored) return;   // el chip ya la mostró
+        }
+        _drawerPinned = opts.asWindow ? true : !opts.peek;
+        clearTimeout(_drawerLeaveT);
+        _ndResetCard(d.querySelector('.nd-shell'));   // sin estilos residuales
+
+        if (opts.asWindow && window.crmWidgetWindow && window.crmWidgetWindow.windowize
+            && !d.classList.contains('ww-windowed')) {
+            // CAMPANA → "carta saliendo del buzón": se pre-posiciona la card en
+            // la campana y el FLIP del sistema de ventanas la hace CRECER desde
+            // ahí hasta el centro. Panel sólido durante la animación (barato).
+            d.classList.add('open');
+            _renderDrawer();
+            if (window.notifLoad) window.notifLoad();
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var w = Math.min(Math.round(vw * 0.74), 1180);
+            var h = Math.round(vh * 0.80);
+            var rect = { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
+            var card = d.querySelector('.nd-shell');
+            var bell = document.getElementById('btnNotificaciones');
+            var lite = document.body.classList.contains('ww-lite');
+            d.classList.add('nd-sliding');
+            var clearCard = function () {
+                if (!card) return;
+                card.style.position = ''; card.style.left = ''; card.style.top = '';
+                card.style.width = ''; card.style.height = ''; card.style.opacity = '';
+            };
+            if (card && bell && !lite) {
+                var b = bell.getBoundingClientRect();
+                card.style.position = 'fixed';
+                card.style.left = b.left + 'px'; card.style.top = b.top + 'px';
+                card.style.width = b.width + 'px'; card.style.height = b.height + 'px';
+                card.style.opacity = '0';
+            }
+            var ok = false;
+            try { ok = window.crmWidgetWindow.windowize(d, rect); } catch (e) { }
+            if (!ok) {
+                // No se pudo windowizar (tope de ventanas / picker): limpiar el
+                // pre-posicionado y quedar como cajón lateral normal.
+                clearCard();
+                d.classList.remove('nd-sliding');
+                return;
+            }
+            if (card && !lite) requestAnimationFrame(function () { card.style.opacity = ''; });
+            clearTimeout(_slideT);
+            _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); clearCard(); }, 360);
+            return;
+        }
+
+        // CAJÓN lateral: slide-in con panel SÓLIDO durante la animación (fluido).
+        d.classList.add('nd-sliding');
+        d.classList.add('open');
+        _renderDrawer();
+        if (window.notifLoad) window.notifLoad();
+        clearTimeout(_slideT);
+        _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); }, 360);
+    };
+    window.notifDrawerClose = function () {
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
+        var card = d.querySelector('.nd-shell');
+        var lite = document.body.classList.contains('ww-lite');
+        var bell = document.getElementById('btnNotificaciones');
+        var windowed = d.classList.contains('ww-windowed') && !d.classList.contains('ww-minimized');
+        clearTimeout(_drawerLeaveT);
+        _drawerPinned = false;
+
+        // VENTANA (campana) → animación INVERSA del buzón: la ventana se ENCOGE
+        // de vuelta hacia la campana (en vez de irse a la derecha). Al terminar,
+        // se sale de modo ventana sin el FLIP de regreso.
+        if (windowed && card && bell && !lite) {
+            var c = card.getBoundingClientRect();
+            var bb = bell.getBoundingClientRect();
+            var dx = (bb.left + bb.width / 2) - (c.left + c.width / 2);
+            var dy = (bb.top + bb.height / 2) - (c.top + c.height / 2);
+            d.classList.add('nd-sliding');
+            card.style.transformOrigin = '50% 50%';
+            card.style.transition = 'transform .32s cubic-bezier(.4,0,.7,1), opacity .28s ease';
+            void card.offsetHeight;   // registrar estado inicial
+            card.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.05)';
+            card.style.opacity = '0';
+            clearTimeout(_slideT);
+            _slideT = setTimeout(function () {
+                d.classList.remove('ww-windowed', 'open', 'nd-sliding');  // cerrar sin FLIP de vuelta
+                // Reset SIN animar (transición none por un frame), si no el cajón
+                // se deslizaría visiblemente de la campana al borde derecho.
+                card.style.transition = 'none';
+                card.style.transform = ''; card.style.opacity = ''; card.style.transformOrigin = '';
+                card.style.position = ''; card.style.left = ''; card.style.top = '';
+                card.style.width = ''; card.style.height = '';
+                requestAnimationFrame(function () { card.style.transition = ''; });
+            }, 320);
+            return;
+        }
+
+        // VENTANA sin campana / Modo Ligero: cierre estándar (a cajón y ocultar).
+        if (windowed && window.crmWidgetWindow && window.crmWidgetWindow.unwindowize) {
+            try { window.crmWidgetWindow.unwindowize(d); } catch (e) { }
+        }
+        // CAJÓN lateral: slide-out limpio (sin inline residual que lo rompa).
+        if (card) { card.style.transition = ''; card.style.transform = ''; }
+        d.classList.add('nd-sliding');
+        d.classList.remove('open');
+        clearTimeout(_slideT);
+        _slideT = setTimeout(function () { d.classList.remove('nd-sliding'); }, 360);
+    };
+    // CAMPANA → ventana centrada (acción deliberada).
+    window.notifDrawerToggle = function () {
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
+        var abierto = d.classList.contains('open') || _ndIsWindowed(d) || d.classList.contains('ww-minimized');
+        abierto ? window.notifDrawerClose() : window.notifDrawerOpen({ asWindow: true });
+    };
+    // HANDLE del borde → cajón lateral fijado (clic deliberado, no se auto-cierra).
+    window.notifDrawerPeekToggle = function () {
+        var d = document.getElementById('notifDrawer');
+        if (!d) return;
+        var abierto = d.classList.contains('open') || _ndIsWindowed(d);
+        abierto ? window.notifDrawerClose() : window.notifDrawerOpen({});
+    };
+
+    // Marcar leída (local + servidor) y refrescar contadores/cajón.
+    function _ndMarkRead(id) {
+        var n = _nData.find(function (x) { return x.id === id; });
+        if (!n || n.leida) return;
+        n.leida = true;
+        try { fetch('/app/api/marcar-notificacion-leida/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': _csrf() } }); } catch (e) { }
+        _updateCounts();
+        _renderDrawer();
+    }
+
+    // ── Preview al pasar el cursor (popover a la izquierda del cajón) ──
+    var _ndPrevT = null;
+    function _ndShowPreview(nid, anchor) {
+        var n = _nData.find(function (x) { return x.id === nid; });
+        var p = document.getElementById('ndPreview');
+        if (!n || !p || !anchor) return;
+        var title = _ndEsc(n.titulo || '');
+        var msg = _ndCleanMsg(n.mensaje);
+        var rem = (n.remitente && !/sistema/i.test(n.remitente)) ? _ndEsc(n.remitente) : 'Sistema';
+        p.innerHTML =
+            (title ? '<div class="nd-preview-title">' + title + '</div>' : '') +
+            (msg ? '<div class="nd-preview-msg">' + msg + '</div>' : '') +
+            '<div class="nd-preview-meta">' + rem + ' &middot; ' + _ndEsc(n.fecha || '') + '</div>';
+        var d = document.getElementById('notifDrawer');
+        var dw = d ? d.offsetWidth : 392;
+        var r = anchor.getBoundingClientRect();
+        // medir alto antes de posicionar
+        p.style.visibility = 'hidden'; p.classList.add('show');
+        var ph = p.offsetHeight;
+        p.style.top = Math.max(12, Math.min(r.top, window.innerHeight - ph - 12)) + 'px';
+        p.style.right = (dw + 14) + 'px';
+        p.style.left = 'auto';
+        p.style.visibility = '';
+    }
+    function _ndHidePreview() {
+        var p = document.getElementById('ndPreview');
+        if (p) p.classList.remove('show');
+    }
+
+    // Rect para que la ventana abierta quepa A LA IZQUIERDA del panel de
+    // notificaciones (sin taparlo). Se mide el PANEL VISIBLE (.nd-shell), no
+    // el overlay #notifDrawer (que es inset:0 y ocupa todo el ancho → daría
+    // espacio 0 y la ventana saldría al mínimo).
+    function _ndFitRect() {
+        var d = document.getElementById('notifDrawer');
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var x = 20, gap = 28;
+        var avail = vw;   // por defecto: todo el ancho
+        if (d && (d.classList.contains('open') || _ndIsWindowed(d))) {
+            var shell = d.querySelector('.nd-shell');
+            if (shell) {
+                var r = shell.getBoundingClientRect();
+                // espacio a la izquierda del panel (su borde izquierdo)
+                if (r.width > 0 && r.left > 360) avail = r.left;
+            }
+        }
+        var w = Math.max(520, avail - x - gap);
+        return { x: x, y: 60, w: w, h: Math.round(vh * 0.86) };
+    }
+
+    // Garantiza que la oportunidad quede como VENTANA acomodada al rect
+    // (a la izquierda del cajón), aunque open() la haya reusado como modal.
+    // Reintenta unos frames porque la instancia puede tardar en existir.
+    function _ndForceWindow(oppId, rect) {
+        var tries = 0;
+        (function attempt() {
+            tries++;
+            try {
+                var insts = (window.OppWidgetV2 && window.OppWidgetV2.instances) ? window.OppWidgetV2.instances() : [];
+                var inst = null;
+                for (var i = 0; i < insts.length; i++) { if (insts[i].oppId === oppId) { inst = insts[i]; break; } }
+                if (inst && inst.root && window.crmWidgetWindow) {
+                    if (!inst.root.classList.contains('ww-windowed')) {
+                        window.crmWidgetWindow.windowize(inst.root, rect);
+                    }
+                    return;
+                }
+            } catch (e) { }
+            if (tries < 6) setTimeout(attempt, 70);
+        })();
+    }
+
+    // Abrir la entidad de una notificación SIEMPRE como VENTANA, dejando el
+    // cajón abierto (fijado) detrás. Reusa el mismo patrón del buscador:
+    // tarea → ventana-iframe; oportunidad → openDetalle({asWindow}); el resto
+    // cae al handler clásico (su sección/widget). El cajón NO se cierra.
+    window.notifOpenItem = function (id) {
+        var n = _nData.find(function (x) { return x.id === id; });
+        if (!n) return;
+        _drawerPinned = true;   // abrir algo ⇒ el cajón se queda
+
+        // Administrativas: sin ventana, solo marcar leída (Aprobar/Rechazar
+        // viven en sus propios botones para solicitud_cambio_perfil).
+        if (n.tipo === 'solicitud_cambio_perfil' || n.tipo === 'rendimiento_bajo') { _ndMarkRead(id); return; }
+
+        var esChat = (n.tipo === 'oportunidad_mensaje' || n.tipo === 'comentario_oportunidad');
+        if (!esChat) _ndMarkRead(id);
+
+        var rect = _ndFitRect();   // ventana A LA IZQUIERDA del cajón, sin taparlo
+
+        // Tarea → ventana-iframe (igual que el buscador), pero acomodada a la izq.
+        if (n.tarea_id && window.crmIframeWindow && typeof window.crmIframeWindow.open === 'function') {
+            window.crmIframeWindow.open('tarea:' + n.tarea_id, '/app/widget/tarea/' + n.tarea_id + '/', 'Tarea', null,
+                { forceWindow: true, rect: rect });
+            return;
+        }
+        // Oportunidad (o tarea de oportunidad con su opp) → ventana flotante
+        // dimensionada a la izquierda del cajón (con refuerzo por si se reusó).
+        if (n.oportunidad_id && typeof window.openDetalle === 'function') {
+            window.openDetalle(n.oportunidad_id, { asWindow: true, rect: rect });
+            _ndForceWindow(n.oportunidad_id, rect);
+            return;
+        }
+        // Resto (calendario, muro, grupo, proyecto, prospecto, cert): handler
+        // clásico (abre su sección/widget). No cerramos el cajón.
+        try { window.notifHandleClick(n.id, n.tarea_id || 0, n.oportunidad_id || 0, n.tarea_opp_id || 0, n.tipo); } catch (e) { }
     };
 
     /* ═══ Click Handler ═══ */
@@ -1534,14 +2347,115 @@
             var refreshSoon = function () {
                 _pollStaleReads = 0;  // volver a polling rápido
                 clearTimeout(_pollTimer);
-                setTimeout(function () { _pollForToasts(); _armPoll(); }, 300);
+                // _load() (recarga completa) y NO _pollForToasts(): este último
+                // solo detecta notifs NUEVAS (id > maxVisto) y nunca refleja
+                // BORRADOS. Al completar/aplazar una tarea el backend borra su
+                // notif de vencimiento; solo _load() la quita de la vista en
+                // tiempo real. _armPoll reanuda el polling de toasts normal.
+                setTimeout(function () { _load(); _armPoll(); }, 300);
             };
             window.crmDataBus.on('notificacion', refreshSoon);
-            // También en cambios que producen notificaciones — tareas, opps, etc.
+            // También en cambios que producen/retiran notificaciones.
             window.crmDataBus.on('tarea', refreshSoon);
             window.crmDataBus.on('tarea-opp', refreshSoon);
+            window.crmDataBus.on('actividad', refreshSoon);
             window.crmDataBus.on('oportunidad', refreshSoon);
         }
+
+        // ── Asomar el cajón desde el borde derecho (gatillo tipo macOS) ──
+        // Solo si el cursor toca el borde EXTREMO (~2px) y se queda ~250ms.
+        // No se dispara arrastrando una ventana, con el spotlight abierto, ni
+        // en la franja del topbar. Apagable con localStorage notifEdgePeek=off.
+        // El rechazo barato va PRIMERO: la inmensa mayoría de movimientos no
+        // están en el borde → un solo if y return (clave para Modo Ligero).
+        var _edgeT = null;
+        var _edgePeekOff = false;
+        var _nd = document.getElementById('notifDrawer');
+        try { _edgePeekOff = localStorage.getItem('notifEdgePeek') === 'off'; } catch (e) { }
+        document.addEventListener('mousemove', function (e) {
+            // CASO A — cajón ASOMADO abierto (sin fijar, ni ventana/dock): se
+            // cierra cuando el cursor se va a la IZQUIERDA del cajón. Basado en
+            // POSICIÓN, no en mouseleave: durante el slide de entrada el borde
+            // del cajón cruza bajo el cursor quieto y disparaba un cierre falso
+            // (flicker/trabado en Modo Completo). Aquí eso no pasa porque el
+            // cursor del asomar está a la DERECHA, nunca a la izquierda.
+            if (_nd && _nd.classList.contains('open') && !_drawerPinned
+                && !_nd.classList.contains('ww-windowed') && !_nd.classList.contains('ww-minimized')) {
+                var shell = _nd.querySelector('.nd-shell');
+                var left = shell ? shell.getBoundingClientRect().left : (window.innerWidth - 420);
+                if (e.clientX < left - 32) window.notifDrawerClose();
+                return;
+            }
+            // CASO B — gatillo de asomar (rechazo barato primero, clave en Ligero).
+            if (e.clientX < window.innerWidth - 2) {
+                if (_edgeT) { clearTimeout(_edgeT); _edgeT = null; }
+                return;
+            }
+            if (_edgePeekOff || _edgeT || e.clientY <= 64) return;
+            if (document.body.classList.contains('ww-dragging')) return;
+            if (!_nd || _nd.classList.contains('open') || _nd.classList.contains('ww-windowed')) return;
+            var sp = document.getElementById('spotlight-modal');
+            if (sp && sp.classList.contains('active')) return;
+            _edgeT = setTimeout(function () { _edgeT = null; window.notifDrawerOpen({ peek: true }); }, 250);
+        }, { passive: true });
+
+        // (_nd ya está declarado arriba para el gatillo de asomar.)
+        if (_nd) {
+            // Integrar con el sistema de ventanas: inyecta los controles
+            // minimizar/maximizar junto a la X (idempotente, se auto-salta si
+            // ya fue mejorado por el scan de widget_window.js).
+            if (window.crmWidgetWindow && window.crmWidgetWindow.enhance) {
+                try { window.crmWidgetWindow.enhance(_nd); } catch (e) { }
+            }
+            // Clic en los controles de ventana (− □) o arranque de arrastre →
+            // FIJAR el cajón, para que el auto-cierre del modo asomado no
+            // compita con minimizar/maximizar/mover (captura, antes que el ww).
+            _nd.addEventListener('pointerdown', function (e) {
+                if (e.target.closest && e.target.closest('.ww-ctrls, .ww-btn, .nd-head')) {
+                    _drawerPinned = true;
+                    clearTimeout(_drawerLeaveT);
+                }
+            }, true);
+            // El auto-cierre del asomado lo maneja el mousemove (por posición),
+            // no el mouseleave — así no choca con el slide de entrada. Aquí solo
+            // ocultamos el preview al salir.
+            _nd.addEventListener('mouseleave', function () {
+                clearTimeout(_ndPrevT); _ndHidePreview();
+            });
+            // Preview al pasar el cursor sobre una notificación (~350ms).
+            _nd.addEventListener('mouseover', function (e) {
+                var card = e.target.closest && e.target.closest('[data-nid]');
+                if (!card) return;
+                var nid = parseInt(card.getAttribute('data-nid'), 10);
+                clearTimeout(_ndPrevT);
+                _ndPrevT = setTimeout(function () { _ndShowPreview(nid, card); }, 350);
+            });
+            _nd.addEventListener('mouseout', function (e) {
+                var card = e.target.closest && e.target.closest('[data-nid]');
+                if (!card) return;
+                if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+                clearTimeout(_ndPrevT); _ndHidePreview();
+            });
+        }
+
+        // Cerrar el cajón: Esc + clic fuera (sin tapar la página con backdrop).
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var d = document.getElementById('notifDrawer');
+                if (d && d.classList.contains('open')) window.notifDrawerClose();
+            }
+        });
+        document.addEventListener('mousedown', function (e) {
+            var d = document.getElementById('notifDrawer');
+            if (!d || !d.classList.contains('open')) return;
+            if (d.contains(e.target)) return;
+            // En modo ventana flotante NO cierra por clic fuera (es una ventana
+            // libre; cierras con la X). Fijado (campana / abriste algo) tampoco
+            // por clic fuera. Solo el asomado se cierra al hacer clic afuera.
+            if (d.classList.contains('ww-windowed') || _drawerPinned) return;
+            if (e.target.closest && (e.target.closest('#btnNotificaciones') || e.target.closest('#notifEdgeHandle'))) return;
+            window.notifDrawerClose();
+        });
     });
 
 })();
