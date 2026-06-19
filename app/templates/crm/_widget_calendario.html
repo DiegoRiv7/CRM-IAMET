@@ -640,7 +640,7 @@
                     <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
                     <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                     <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
-                    <button type="button" id="calBtnEquipoPage" class="crm-tab" onclick="calSwitchView('equipo')">Equipo</button>
+                    {% comment %}Vista 'Equipo' (agenda por persona) en pausa — código dormido; se reactiva re-agregando este botón.{% endcomment %}
                     <button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
                 </div>
             </div>
@@ -662,7 +662,7 @@
                 <button id="calBtnMes" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
                 <button id="calBtnSemana" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
                 <button id="calBtnDia" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
-                <button id="calBtnEquipo" class="cal-view-btn" onclick="calSwitchView('equipo')">Equipo</button>
+                {% comment %}Vista 'Equipo' (agenda por persona) en pausa — código dormido; se reactiva re-agregando este botón.{% endcomment %}
                 <button id="calBtnTecnicos" class="cal-view-btn" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
             </div>
         </div>
@@ -1224,7 +1224,7 @@
         if (cluster.length) flush();
         return res;
     }
-    function _calWeekEvHtml(p, START, HOUR_H) {
+    function _calWeekEvHtml(p, START, HOUR_H, capCols) {
         var e = p.e, ep = e.extendedProps || {};
         var esTarea = String(e.id).indexOf('tarea-') === 0;
         var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
@@ -1233,7 +1233,10 @@
         if (color === '#8B5CF6') color = '#B45309';
         var top = (p.s - START * 60) / 60 * HOUR_H;
         var height = Math.max(22, (p.en - p.s) / 60 * HOUR_H - 3);
-        var gap = 4, wp = 100 / p.cols;
+        // Cap de columnas: no dejamos que los eventos se adelgacen sin límite
+        // cuando muchos se traslapan (los excedentes se colapsan en "+N más").
+        var effCols = capCols ? Math.min(p.cols, capCols) : p.cols;
+        var gap = 4, wp = 100 / effCols;
         var left = 'calc(' + (p.col * wp) + '% + ' + (p.col === 0 ? 2 : gap / 2) + 'px)';
         var width = 'calc(' + wp + '% - ' + (gap + (p.col === 0 ? 4 : 2)) + 'px)';
         var short = (p.en - p.s) <= 30;
@@ -1443,12 +1446,23 @@
         for (var hr = START; hr <= END; hr++) { h += '<div class="cwd-gut-row" style="height:' + HOUR_H + 'px;"><span class="cwd-gut-label">' + hr + ':00</span></div>'; }
         h += '</div><div class="cwd-cols" style="height:' + totalH + 'px;">';
         for (var hr2 = START; hr2 <= END; hr2++) { h += '<div class="cwd-grid-line" style="top:' + ((hr2 - START) * HOUR_H) + 'px;"></div>'; }
+        var CAP_COLS = 3;  // máximo de eventos lado a lado antes de colapsar
         days.forEach(function (d, di) {
             var dISO = _calFmtDateISO(d), isT = dISO === todayISO, we = (di === 5 || di === 6);
             var dayEv = filtered.filter(function (e) { return e.start && String(e.start).substring(0, 10) === dISO; });
             var placed = _calWeekLayout(dayEv, START, END);
             h += '<div class="cwd-col' + (isT ? ' today' : '') + (we ? ' weekend' : '') + '" data-date="' + dISO + '" onclick="_calWeekColClick(event,\'' + dISO + '\',' + START + ',' + HOUR_H + ')">';
-            placed.forEach(function (p) { h += _calWeekEvHtml(p, START, HOUR_H); });
+            var hidden = 0;
+            placed.forEach(function (p) {
+                if (p.col >= CAP_COLS) { hidden++; return; }  // excedente → "+N más"
+                h += _calWeekEvHtml(p, START, HOUR_H, CAP_COLS);
+            });
+            if (hidden > 0) {
+                // Sticky para que el indicador de exceso quede siempre visible
+                // aunque la columna esté scrolleada (no anclado a las 7:00).
+                h += '<button type="button" class="cwd-more" onclick="event.stopPropagation();window._calWeekDayMore(\'' + dISO + '\')" '
+                  + 'style="position:sticky;top:4px;z-index:8;display:block;width:max-content;margin:0 3px 0 auto;border:none;background:#1D1D1F;color:#fff;border-radius:20px;padding:2px 9px;font-size:0.64rem;font-weight:800;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.25);">+' + hidden + ' más</button>';
+            }
             if (isT) { var nm = now.getHours() * 60 + now.getMinutes(); if (nm >= START * 60 && nm <= END * 60) { h += '<div class="cwd-now" style="top:' + ((nm / 60 - START) * HOUR_H) + 'px;"><span class="cwd-now-dot"></span><span class="cwd-now-rule"></span></div>'; } }
             h += '</div>';
         });
@@ -1459,6 +1473,65 @@
         _calWeekBindDrag();
         var sc = root.querySelector('.cwd-scroll'); if (sc) sc.scrollTop = Math.max(0, (8.5 - START) * HOUR_H);
     }
+
+    // Overflow del día en la vista Semana: lista TODOS los eventos de ese día
+    // (incluidos los colapsados por "+N más"), ordenados por hora; clic abre.
+    window._calWeekDayMore = function (dISO) {
+        var allEvts = window._calAllEvents || _globalEvents || [];
+        var sel = document.getElementById('calUserFilter'); var fv = sel ? sel.value : 'all';
+        var filtered = (typeof _calFilterEventsForSelection === 'function') ? _calFilterEventsForSelection(allEvts, fv) : allEvts;
+        if (typeof _calApplyTypeFilters === 'function') filtered = _calApplyTypeFilters(filtered);
+        var dayEv = filtered.filter(function (e) { return e.start && String(e.start).substring(0, 10) === dISO; })
+            .sort(function (a, b) { return String(a.start || '').localeCompare(String(b.start || '')); });
+        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        var p = String(dISO).split('-'); var fechaStr = dISO;
+        if (p.length === 3) { var dt = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10)); fechaStr = DIAS[dt.getDay()] + ' ' + dt.getDate() + ' ' + MESES[dt.getMonth()] + ' ' + dt.getFullYear(); }
+        var ov = document.getElementById('calWeekDayModal');
+        if (!ov) {
+            ov = document.createElement('div');
+            ov.id = 'calWeekDayModal';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:12200;background:rgba(15,23,42,0.45);display:none;align-items:center;justify-content:center;';
+            ov.addEventListener('click', function (e) { if (e.target === ov) ov.style.display = 'none'; });
+            document.body.appendChild(ov);
+        }
+        var rows = dayEv.map(function (e) {
+            var ep = e.extendedProps || {};
+            var esTarea = String(e.id).indexOf('tarea-') === 0;
+            var hasOpp = !esTarea && ep.opportunity && ep.opportunity.id;
+            var color = e.color || (esTarea ? '#FF9500' : hasOpp ? '#0052D4' : '#3A3A3C');
+            if (color === '#8B5CF6') color = '#B45309';
+            var s = String(e.start || ''), en = String(e.end || '');
+            var t1 = s.length >= 16 ? s.substring(11, 16) : '';
+            var t2 = en.length >= 16 ? en.substring(11, 16) : '';
+            var horas = t1 ? (t1 + (t2 && t2 !== t1 ? '–' + t2 : '')) : '—';
+            var isComp = esTarea ? (ep.estado === 'completada') : ep.completada;
+            var done = isComp ? 'opacity:0.55;text-decoration:line-through;' : '';
+            return '<button type="button" data-wk-id="' + _calEsc(String(e.id)) + '" '
+                 + 'style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:none;border-bottom:1px solid #F2F2F7;background:#fff;padding:10px 14px;cursor:pointer;" '
+                 + 'onmouseover="this.style.background=\'#F9FAFB\'" onmouseout="this.style.background=\'#fff\'">'
+                 + '<span style="width:9px;height:9px;border-radius:50%;background:' + color + ';flex-shrink:0;"></span>'
+                 + '<span style="min-width:84px;font-size:0.78rem;font-weight:700;color:#1D1D1F;white-space:nowrap;">' + horas + '</span>'
+                 + '<span style="flex:1;min-width:0;font-size:0.88rem;font-weight:600;color:#1D1D1F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + done + '">' + _calEsc(e.title || '—') + '</span>'
+                 + '</button>';
+        }).join('');
+        ov.innerHTML =
+            '<div style="background:#fff;width:min(520px,94vw);max-height:80vh;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.25);">'
+          +   '<div style="padding:15px 18px;border-bottom:1px solid #F2F2F7;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
+          +     '<div style="font-size:1.02rem;font-weight:700;color:#1D1D1F;">' + _calEsc(fechaStr) + ' <span style="font-weight:600;color:#86868B;font-size:0.84rem;">· ' + dayEv.length + '</span></div>'
+          +     '<button type="button" id="calWeekDayClose" style="border:none;background:#F2F2F7;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;color:#6B7280;line-height:1;">&times;</button>'
+          +   '</div>'
+          +   '<div style="overflow-y:auto;">' + (rows || '<div style="padding:24px;text-align:center;color:#86868B;">Sin eventos.</div>') + '</div>'
+          + '</div>';
+        ov.style.display = 'flex';
+        document.getElementById('calWeekDayClose').addEventListener('click', function () { ov.style.display = 'none'; });
+        ov.querySelectorAll('[data-wk-id]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                ov.style.display = 'none';
+                if (typeof window._calOpenFull === 'function') window._calOpenFull(b.getAttribute('data-wk-id'));
+            });
+        });
+    };
 
     /* ─── ABRIR / CERRAR ─── */
     window.calendarioAbrir = function () {
