@@ -2568,6 +2568,7 @@
         var sel = document.getElementById('calUserFilter');
         var filterVal = sel ? sel.value : 'all';
         var filtered = _calFilterEventsForSelection(allEvts, filterVal);
+        if (typeof _calApplyTypeFilters === 'function') filtered = _calApplyTypeFilters(filtered);
 
         var dayEvts = filtered.filter(function(ev) {
             return ev.start && ev.start.substring(0,10) === dateStr;
@@ -3945,8 +3946,16 @@
         var filtered = _calFilterEventsForSelection(events, filterVal);
         filtered = _calApplyTypeFilters(filtered);
         if (_globalCalendar) { _globalCalendar.removeAllEventSources(); _globalCalendar.addEventSource(filtered); }
-        // El mes ya no usa FC para pintar: re-render del grid propio.
-        if (_calViewMode === 'month' && typeof window.calRenderMonthDesign === 'function') window.calRenderMonthDesign();
+        // Re-render de la vista ACTUAL (mes/semana/día son renderers propios que
+        // leen _globalEvents y aplican los filtros internamente; sin esto, al
+        // togglear un tipo en semana/día no se actualizaba).
+        if (_calViewMode === 'week' && typeof calRenderWeekView === 'function' && _calWeekStart) {
+            calRenderWeekView(_calWeekStart);
+        } else if (_calViewMode === 'day' && typeof calRenderDayView === 'function' && _calCurrentDay) {
+            calRenderDayView(_calCurrentDay);
+        } else if (typeof window.calRenderMonthDesign === 'function') {
+            window.calRenderMonthDesign();
+        }
     }
 
     /* ─── Filtro de tipos (Tareas / Actividades / Eventos / Cursos) ─── */
