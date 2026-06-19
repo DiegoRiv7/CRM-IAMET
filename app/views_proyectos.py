@@ -6627,6 +6627,254 @@ def api_grid_tecnicos(request):
     })
 
 
+def _equipo_estado_color(estado):
+    """Color por ESTADO de instalación — mismo mapa que el frontend
+    `_calEstadoColor` (mantener sincronizado)."""
+    return {
+        'completada': '#16A34A',
+        'cancelada': '#EF4444',
+        'en_curso': '#1D1D1F',
+        'tentativa': '#EC4899',
+    }.get(estado, '#7C3AED')  # programada / else → morado
+
+
+@login_required
+def api_grid_equipo(request):
+    """GET /app/api/calendario/equipo/grid/
+
+    Matriz Persona (User) × Día. A diferencia del grid de Técnicos (solo
+    instalaciones), cada celda agrega TODO lo que esa persona tiene ese día
+    en su calendario: Actividades + Tareas + Instalaciones del Programa de
+    Obra. Pensado para ver de un vistazo la semana de 5–8 empleados.
+
+    Params:
+        ?start=YYYY-MM-DD&end=YYYY-MM-DD  (rango inclusivo; default: semana
+                                           en curso lunes–domingo)
+        ?user_ids=1,2,3                   (opcional; si viene, esas son las
+                                           filas. Si no, se derivan los Users
+                                           con alguna actividad/tarea/
+                                           instalación en el rango).
+
+    Respuesta:
+      {
+        "success": true,
+        "rango": {"start": "...", "end": "..."},
+        "dias": ["2026-06-15", ...],
+        "usuarios": [{"id", "nombre", "avatar_url"|null, "rol_label"}],
+        "celdas": [{
+          "user_id", "fecha", "tipo": "actividad"|"tarea"|"instalacion",
+          "titulo", "hora_inicio", "hora_fin", "color",
+          "actividad_id"?, "tarea_id"?, "instalacion_id"?,
+          "cliente_nombre"?, "po"?, "proyecto"?, "estado"?, "completada"?
+        }]
+      }
+    """
+    from datetime import date, timedelta
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Solo GET'}, status=405)
+
+    start_raw = (request.GET.get('start') or '').strip()
+    end_raw = (request.GET.get('end') or '').strip()
+
+    if start_raw and end_raw:
+        try:
+            start = date.fromisoformat(start_raw)
+            end = date.fromisoformat(end_raw)
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Fechas inválidas'}, status=400)
+    else:
+        hoy = date.today()
+        start = hoy - timedelta(days=hoy.weekday())  # lunes
+        end = start + timedelta(days=6)              # domingo
+
+    if end < start:
+        return JsonResponse({'success': False, 'error': 'end < start'}, status=400)
+
+    dias = []
+    cursor = start
+    while cursor <= end:
+        dias.append(cursor.isoformat())
+        cursor += timedelta(days=1)
+    dias_set = set(dias)
+
+    # ── Filas pedidas explícitamente (user_ids) ──
+    user_ids_raw = (request.GET.get('user_ids') or '').strip()
+    requested_ids = None
+    if user_ids_raw:
+        requested_ids = set()
+        for tok in user_ids_raw.split(','):
+            tok = tok.strip()
+            if tok.isdigit():
+                requested_ids.add(int(tok))
+        if not requested_ids:
+            requested_ids = None
+
+    # ── 1) ACTIVIDADES en el rango (participante O creador) ──
+    # Filtramos por la fecha (date) de fecha_inicio dentro del rango.
+    acts_qs = (
+        Actividad.objects
+        .filter(fecha_inicio__date__range=(start, end))
+        .select_related('oportunidad', 'creado_por')
+        .prefetch_related('participantes')
+    )
+
+    # ── 2) TAREAS en el rango (asignado_a / participantes / observadores) ──
+    tareas_qs = (
+        Tarea.objects
+        .filter(fecha_limite__date__range=(start, end))
+        .select_related('asignado_a')
+        .prefetch_related('participantes', 'observadores')
+    )
+
+    # ── 3) INSTALACIONES (buffer inferior por multi-día) ──
+    inst_qs = (
+        Instalacion.objects
+        .filter(fecha_programada__range=(start - timedelta(days=45), end))
+        .prefetch_related('asignaciones__tecnico')
+    )
+
+    # Cada celda se acumula por user_id; los users involucrados se descubren
+    # aquí para el caso "Todos" (sin user_ids).
+    celdas = []
+    involved_user_ids = set()
+
+    def _emit(uid, cell):
+        if requested_ids is not None and uid not in requested_ids:
+            return
+        cell['user_id'] = uid
+        celdas.append(cell)
+        involved_user_ids.add(uid)
+
+    # ── Actividades ──
+    for act in acts_qs:
+        d_iso = act.fecha_inicio.date().isoformat()
+        hi = act.fecha_inicio.strftime('%H:%M') if act.fecha_inicio else ''
+        hf = act.fecha_fin.strftime('%H:%M') if act.fecha_fin else ''
+        color = act.color or ('#0052D4' if act.oportunidad_id else '#1D1D1F')
+        # Users a los que aplica: participantes ∪ {creador}.
+        uids = set(p.id for p in act.participantes.all())
+        if act.creado_por_id:
+            uids.add(act.creado_por_id)
+        base = {
+            'fecha': d_iso,
+            'tipo': 'actividad',
+            'titulo': act.titulo or '(sin título)',
+            'hora_inicio': hi,
+            'hora_fin': hf,
+            'color': color,
+            'actividad_id': act.id,
+            'completada': bool(act.completada),
+            'evento': bool(act.evento_id),
+            'curso': bool(act.curso_id),
+        }
+        for uid in uids:
+            _emit(uid, dict(base))
+
+    # ── Tareas ──
+    for t in tareas_qs:
+        if not t.fecha_limite:
+            continue
+        d_iso = t.fecha_limite.date().isoformat()
+        # Si quedó en 00:00 (deadline sin hora real), tratarla como fin de día.
+        if t.fecha_limite.hour == 0 and t.fecha_limite.minute == 0:
+            hi = hf = '23:59'
+        else:
+            hi = hf = t.fecha_limite.strftime('%H:%M')
+        uids = set()
+        if t.asignado_a_id:
+            uids.add(t.asignado_a_id)
+        for p in t.participantes.all():
+            uids.add(p.id)
+        for o in t.observadores.all():
+            uids.add(o.id)
+        base = {
+            'fecha': d_iso,
+            'tipo': 'tarea',
+            'titulo': t.titulo or '(sin título)',
+            'hora_inicio': hi,
+            'hora_fin': hf,
+            'color': '#FF9500',
+            'tarea_id': t.id,
+            'estado': t.estado,
+            'completada': t.estado == 'completada',
+        }
+        for uid in uids:
+            _emit(uid, dict(base))
+
+    # ── Instalaciones (vía Tecnico.usuario asignado) ──
+    for inst in inst_qs:
+        dias_inst = [d for d in _instalacion_dias_asignados(inst)
+                     if d.isoformat() in dias_set]
+        if not dias_inst:
+            continue
+        # Users ligados: cada asignación → tecnico → usuario (si existe).
+        uids = set()
+        for a in inst.asignaciones.all():
+            tec = a.tecnico
+            if tec and tec.usuario_id:
+                uids.add(tec.usuario_id)
+        if not uids:
+            continue
+        hi = inst.hora_inicio.strftime('%H:%M') if inst.hora_inicio else '08:00'
+        hf = inst.hora_fin.strftime('%H:%M') if inst.hora_fin else '17:00'
+        color = _equipo_estado_color(inst.estado)
+        titulo = inst.proyecto or inst.cliente_nombre or 'Instalación'
+        for d in dias_inst:
+            d_iso = d.isoformat()
+            base = {
+                'fecha': d_iso,
+                'tipo': 'instalacion',
+                'titulo': titulo,
+                'hora_inicio': hi,
+                'hora_fin': hf,
+                'color': color,
+                'instalacion_id': inst.id,
+                'estado': inst.estado,
+                'cliente_nombre': inst.cliente_nombre,
+                'po': inst.po,
+                'proyecto': inst.proyecto,
+            }
+            for uid in uids:
+                _emit(uid, dict(base))
+
+    # ── Construir la lista de filas (usuarios) ──
+    if requested_ids is not None:
+        row_ids = requested_ids
+    else:
+        row_ids = involved_user_ids
+
+    usuarios = []
+    if row_ids:
+        users_qs = User.objects.filter(id__in=row_ids).select_related('userprofile')
+        for u in users_qs:
+            nombre = u.get_full_name() or u.username
+            avatar_url = None
+            rol_label = ''
+            perfil = getattr(u, 'userprofile', None)
+            if perfil is not None:
+                try:
+                    avatar_url = perfil.get_avatar_url()
+                except Exception:
+                    avatar_url = None
+                rol_label = (getattr(perfil, 'puesto', '') or '').strip()
+            usuarios.append({
+                'id': u.id,
+                'nombre': nombre,
+                'avatar_url': avatar_url,
+                'rol_label': rol_label,
+            })
+        usuarios.sort(key=lambda x: (x['nombre'] or '').lower())
+
+    return JsonResponse({
+        'success': True,
+        'rango': {'start': start.isoformat(), 'end': end.isoformat()},
+        'dias': dias,
+        'usuarios': usuarios,
+        'celdas': celdas,
+    })
+
+
 # ─────────────────────────────────────────────────────────────────────
 # Endpoints para el widget de oportunidad pipeline Proyecto:
 # bloque "Proyecto ligado" + bloque "Programa de Obra (Instalaciones)".

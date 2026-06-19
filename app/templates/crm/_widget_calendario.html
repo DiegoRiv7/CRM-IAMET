@@ -640,6 +640,7 @@
                     <button type="button" id="calBtnMesPage" class="crm-tab active" onclick="calSwitchView('month')">Mes</button>
                     <button type="button" id="calBtnSemanaPage" class="crm-tab" onclick="calSwitchView('week')">Semana</button>
                     <button type="button" id="calBtnDiaPage" class="crm-tab" onclick="calSwitchView('day')">Día</button>
+                    <button type="button" id="calBtnEquipoPage" class="crm-tab" onclick="calSwitchView('equipo')">Equipo</button>
                     <button type="button" id="calBtnTecnicosPage" class="crm-tab" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
                 </div>
             </div>
@@ -661,6 +662,7 @@
                 <button id="calBtnMes" class="cal-view-btn active" onclick="calSwitchView('month')">Mes</button>
                 <button id="calBtnSemana" class="cal-view-btn" onclick="calSwitchView('week')">Semana</button>
                 <button id="calBtnDia" class="cal-view-btn" onclick="calSwitchView('day')">Día</button>
+                <button id="calBtnEquipo" class="cal-view-btn" onclick="calSwitchView('equipo')">Equipo</button>
                 <button id="calBtnTecnicos" class="cal-view-btn" onclick="calSwitchView('tecnicos')" style="display:none;">Técnicos</button>
             </div>
         </div>
@@ -685,6 +687,8 @@
                 </div>
                 <!-- Técnicos × Día grid view (solo en modo Instalaciones) -->
                 <div id="calTecnicosGridRoot" style="flex:1;min-height:0;display:none;flex-direction:column;overflow:auto;"></div>
+                <!-- Equipo (Persona × Día) grid view — actividades + tareas + instalaciones -->
+                <div id="calEquipoGridRoot" style="flex:1;min-height:0;display:none;flex-direction:column;overflow:auto;"></div>
             </div>
 
         </div><!-- /body -->
@@ -1697,6 +1701,11 @@
             _calWeekStart.setDate(_calWeekStart.getDate() - 7);
             calRenderTecnicosGrid(_calWeekStart);
             calUpdateNavTitle();
+        } else if (_calViewMode === 'equipo') {
+            _calWeekStart = new Date(_calWeekStart);
+            _calWeekStart.setDate(_calWeekStart.getDate() - 7);
+            calRenderEquipoGrid(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() - 1);
@@ -1720,6 +1729,11 @@
             _calWeekStart.setDate(_calWeekStart.getDate() + 7);
             calRenderTecnicosGrid(_calWeekStart);
             calUpdateNavTitle();
+        } else if (_calViewMode === 'equipo') {
+            _calWeekStart = new Date(_calWeekStart);
+            _calWeekStart.setDate(_calWeekStart.getDate() + 7);
+            calRenderEquipoGrid(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             _calCurrentDay = new Date(_calCurrentDay);
             _calCurrentDay.setDate(_calCurrentDay.getDate() + 1);
@@ -1742,6 +1756,10 @@
             _calWeekStart = calGetWeekStart(new Date());
             calRenderTecnicosGrid(_calWeekStart);
             calUpdateNavTitle();
+        } else if (_calViewMode === 'equipo') {
+            _calWeekStart = calGetWeekStart(new Date());
+            calRenderEquipoGrid(_calWeekStart);
+            calUpdateNavTitle();
         } else {
             calRenderDayView(_calCurrentDay);
             calUpdateNavTitle();
@@ -1758,22 +1776,26 @@
         var dayRoot = document.getElementById('calDayViewRoot');
         var weekRoot = document.getElementById('calWeekViewRoot');
         var gridRoot = document.getElementById('calTecnicosGridRoot');
+        var equipoRoot = document.getElementById('calEquipoGridRoot');
         var btnMes = document.getElementById('calBtnMes');
         var btnDia = document.getElementById('calBtnDia');
         var btnSemana = document.getElementById('calBtnSemana');
         var btnTec = document.getElementById('calBtnTecnicos');
+        var btnEquipo = document.getElementById('calBtnEquipo');
         // Duplicados en page-mode (al pie del calendario)
         var btnMesP = document.getElementById('calBtnMesPage');
         var btnDiaP = document.getElementById('calBtnDiaPage');
         var btnSemanaP = document.getElementById('calBtnSemanaPage');
         var btnTecP = document.getElementById('calBtnTecnicosPage');
+        var btnEquipoP = document.getElementById('calBtnEquipoPage');
         // Hide all
         fcRoot.style.display = 'none';
         if (monthDesign) monthDesign.style.display = 'none';
         dayRoot.style.display = 'none';
         weekRoot.style.display = 'none';
         if (gridRoot) gridRoot.style.display = 'none';
-        [btnMes, btnDia, btnSemana, btnTec, btnMesP, btnDiaP, btnSemanaP, btnTecP].forEach(function(b){ if(b) b.classList.remove('active'); });
+        if (equipoRoot) equipoRoot.style.display = 'none';
+        [btnMes, btnDia, btnSemana, btnTec, btnEquipo, btnMesP, btnDiaP, btnSemanaP, btnTecP, btnEquipoP].forEach(function(b){ if(b) b.classList.remove('active'); });
 
         if (mode === 'month') {
             // FC queda oculto (motor de fechas); el mes se pinta con el grid propio.
@@ -1824,6 +1846,21 @@
             else gridSeed = new Date();
             _calWeekStart = calGetWeekStart(gridSeed);
             calRenderTecnicosGrid(_calWeekStart);
+        } else if (mode === 'equipo') {
+            if (equipoRoot) {
+                equipoRoot.style.display = 'flex';
+                equipoRoot.style.flexDirection = 'column';
+            }
+            if (btnEquipo) btnEquipo.classList.add('active');
+            if (btnEquipoP) btnEquipoP.classList.add('active');
+            // Semilla de semana: misma lógica que 'tecnicos'.
+            var eqSeed;
+            if (prevMode === 'week' && _calWeekStart) eqSeed = _calWeekStart;
+            else if (prevMode === 'day' && _calCurrentDay) eqSeed = _calCurrentDay;
+            else if (_globalCalendar) eqSeed = _globalCalendar.getDate();
+            else eqSeed = new Date();
+            _calWeekStart = calGetWeekStart(eqSeed);
+            calRenderEquipoGrid(_calWeekStart);
         } else {
             dayRoot.style.display = 'flex';
             dayRoot.style.flexDirection = 'column';
@@ -1887,6 +1924,16 @@
                 tRange = tws.getDate() + ' de ' + MONTHS_ES[tws.getMonth()] + ' – ' + twe.getDate() + ' de ' + MONTHS_ES[twe.getMonth()] + ', ' + twe.getFullYear();
             }
             _setTitle('Técnicos · ' + tRange);
+        } else if (_calViewMode === 'equipo' && _calWeekStart) {
+            var ews = _calWeekStart;
+            var ewe = new Date(ews); ewe.setDate(ewe.getDate() + 6);
+            var eRange;
+            if (ews.getMonth() === ewe.getMonth()) {
+                eRange = ews.getDate() + ' – ' + ewe.getDate() + ' de ' + MONTHS_ES[ews.getMonth()] + ', ' + ews.getFullYear();
+            } else {
+                eRange = ews.getDate() + ' de ' + MONTHS_ES[ews.getMonth()] + ' – ' + ewe.getDate() + ' de ' + MONTHS_ES[ewe.getMonth()] + ', ' + ewe.getFullYear();
+            }
+            _setTitle('Equipo · ' + eRange);
         }
 
         if (headerDateEl) {
@@ -3415,6 +3462,261 @@
         }
     };
 
+    // ══════════════════════════════════════════════════════════════════
+    //  Grid EQUIPO (Persona × Día)
+    //  Filas = Usuarios; Columnas = 7 días; cada celda apila chips de las
+    //  3 fuentes (actividad/tarea/instalación) que la persona tiene ese día.
+    //  Espejo de calRenderTecnicosGrid / _calBuildTecnicosGridDOM.
+    // ══════════════════════════════════════════════════════════════════
+    window.calRenderEquipoGrid = function (weekStart) {
+        var root = document.getElementById('calEquipoGridRoot');
+        if (!root) return;
+        var ws = new Date(weekStart);
+        var we = new Date(ws); we.setDate(we.getDate() + 6);
+        root.innerHTML = '<div style="padding:24px;text-align:center;color:#86868B;font-size:0.85rem;">Cargando equipo…</div>';
+        var url = '/app/api/calendario/equipo/grid/?start=' + _calFmtDateISO(ws) + '&end=' + _calFmtDateISO(we);
+        // Selección actual del filtro de usuario: si no es 'all', se pasan como
+        // user_ids (acepta CSV). Si 'all', el backend deriva los involucrados.
+        var sel = document.getElementById('calUserFilter');
+        var uv = sel ? sel.value : 'all';
+        if (uv && uv !== 'all') url += '&user_ids=' + encodeURIComponent(uv);
+        fetch(url, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    root.innerHTML = '<div style="padding:24px;text-align:center;color:#FF3B30;">No se pudo cargar el grid.</div>';
+                    return;
+                }
+                _calBuildEquipoGridDOM(root, data, ws);
+            })
+            .catch(function () {
+                root.innerHTML = '<div style="padding:24px;text-align:center;color:#FF3B30;">Error de red.</div>';
+            });
+    };
+
+    function _calEquipoInitials(nombre) {
+        var parts = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return '?';
+        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function _calBuildEquipoGridDOM(root, data, weekStart) {
+        var usuarios = data.usuarios || [];
+        var dias = data.dias || [];
+        var celdas = data.celdas || [];
+
+        // Indexar celdas por (user_id, fecha).
+        var byKey = {};
+        celdas.forEach(function (c) {
+            var k = c.user_id + '|' + c.fecha;
+            if (!byKey[k]) byKey[k] = [];
+            byKey[k].push(c);
+        });
+
+        if (!usuarios.length) {
+            root.innerHTML = '<div style="padding:32px;text-align:center;color:#86868B;font-size:0.88rem;">'
+                + 'Nadie tiene actividades, tareas ni instalaciones esta semana.<br>'
+                + '<span style="font-size:0.78rem;">Cambia de semana con las flechas o selecciona usuarios en el filtro.</span>'
+                + '</div>';
+            return;
+        }
+
+        var hoyISO = _calFmtDateISO(new Date());
+        var TIPO_LABEL = { actividad: 'Actividad', tarea: 'Tarea', instalacion: 'Instalación' };
+
+        var html = '';
+        html += '<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:0.78rem;table-layout:fixed;">';
+        // Header
+        html += '<thead><tr>';
+        html += '<th style="position:sticky;left:0;z-index:3;background:#FAFAFC;border-bottom:1px solid #E5E5EA;border-right:1px solid #E5E5EA;padding:10px 12px;text-align:left;color:#1D1D1F;font-weight:700;width:160px;">Persona</th>';
+        dias.forEach(function (iso) {
+            var parts = iso.split('-');
+            var dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            var isHoy = iso === hoyISO;
+            var bg = isHoy ? '#FFF6E5' : '#FAFAFC';
+            html += '<th style="background:' + bg + ';border-bottom:1px solid #E5E5EA;padding:8px 6px;text-align:center;font-weight:600;color:#1D1D1F;">';
+            html += '<div style="font-size:0.7rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;">' + _CAL_TEC_DAYS_ES[dt.getDay()].slice(0, 3) + '</div>';
+            html += '<div style="font-size:0.95rem;font-weight:700;' + (isHoy ? 'color:#FF9500;' : '') + '">' + dt.getDate() + '</div>';
+            html += '<div style="font-size:0.66rem;color:#86868B;">' + _CAL_TEC_MONTHS_ES[dt.getMonth()] + '</div>';
+            html += '</th>';
+        });
+        html += '</tr></thead>';
+
+        // Rows
+        html += '<tbody>';
+        usuarios.forEach(function (u, rowIdx) {
+            var rowBg = rowIdx % 2 === 0 ? '#FFF' : '#FAFAFC';
+            html += '<tr>';
+            html += '<td style="position:sticky;left:0;z-index:1;background:' + rowBg + ';border-bottom:1px solid #F2F2F7;border-right:1px solid #E5E5EA;padding:8px 12px;color:#1D1D1F;">';
+            html += '<div style="display:flex;align-items:center;gap:8px;">';
+            if (u.avatar_url) {
+                html += '<img src="' + _calEscape(u.avatar_url) + '" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">';
+            } else {
+                html += '<span style="width:26px;height:26px;border-radius:50%;background:#E5E5EA;color:#6B7280;font-size:0.68rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' + _calEscape(_calEquipoInitials(u.nombre)) + '</span>';
+            }
+            html += '<div style="min-width:0;">';
+            html += '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _calEscape(u.nombre) + '</div>';
+            if (u.rol_label) {
+                html += '<div style="font-size:0.66rem;color:#86868B;text-transform:uppercase;letter-spacing:0.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _calEscape(u.rol_label) + '</div>';
+            }
+            html += '</div></div>';
+            html += '</td>';
+            dias.forEach(function (iso) {
+                var cellEntries = byKey[u.id + '|' + iso] || [];
+                html += '<td style="border-bottom:1px solid #F2F2F7;border-right:1px solid #F7F7FA;padding:4px;vertical-align:top;height:54px;background:' + rowBg + ';">';
+                cellEntries.forEach(function (c) {
+                    var color = c.color || '#7C3AED';
+                    var label = _calEscape(c.titulo || '—');
+                    var horas = (c.hora_inicio || c.hora_fin)
+                        ? (_calEscape(c.hora_inicio || '') + (c.hora_fin && c.hora_fin !== c.hora_inicio ? '–' + _calEscape(c.hora_fin) : ''))
+                        : '';
+                    var done = c.completada ? 'opacity:0.55;text-decoration:line-through;' : '';
+                    var idAttr = c.tipo === 'instalacion' ? ('inst:' + c.instalacion_id)
+                               : (c.tipo === 'tarea' ? ('tarea:' + c.tarea_id)
+                               : ('act:' + c.actividad_id));
+                    html += '<div data-grid-cell="1" data-eq-tipo="' + c.tipo + '" data-eq-id="' + _calEscape(idAttr) + '" '
+                          + 'data-eq-titulo="' + _calEscape(c.titulo || '') + '" '
+                          + 'data-cli="' + _calEscape(c.cliente_nombre || '') + '" data-proy="' + _calEscape(c.proyecto || '') + '" '
+                          + 'data-po="' + _calEscape(c.po || '') + '" data-est="' + _calEscape(c.estado || '') + '" '
+                          + 'data-hi="' + _calEscape(c.hora_inicio || '') + '" data-hf="' + _calEscape(c.hora_fin || '') + '" '
+                          + 'data-fecha="' + _calEscape(iso) + '" data-color="' + color + '" '
+                          + 'data-eq-typelabel="' + _calEscape(TIPO_LABEL[c.tipo] || '') + '" '
+                          + 'style="background:' + color + '15;border-left:3px solid ' + color + ';color:#1D1D1F;' + done
+                          + 'padding:4px 6px;border-radius:5px;margin-bottom:3px;font-size:0.74rem;font-weight:600;'
+                          + 'cursor:pointer;line-height:1.25;overflow:hidden;">'
+                          + '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + label + '</div>'
+                          + (horas ? '<div style="font-size:0.66rem;font-weight:600;color:#6B7280;">' + horas + '</div>' : '')
+                          + '</div>';
+                });
+                html += '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        root.innerHTML = html;
+
+        // Click: routea por tipo. Hover: preview compartido.
+        root.querySelectorAll('[data-grid-cell]').forEach(function (el) {
+            el.addEventListener('click', function () { _calEquipoCellClick(el); });
+            el.addEventListener('mouseenter', function (e) {
+                clearTimeout(window._calHoverTimer);
+                var mx = e.clientX, my = e.clientY;
+                window._calHoverTimer = setTimeout(function () { _calEquipoShowPreview(el, { mouseX: mx, mouseY: my }); }, 320);
+            });
+            el.addEventListener('mouseleave', function () {
+                clearTimeout(window._calHoverTimer);
+                if (typeof _calHideHoverPreview === 'function') _calHideHoverPreview();
+            });
+        });
+    }
+
+    function _calEquipoCellClick(el) {
+        var tipo = el.getAttribute('data-eq-tipo') || '';
+        var raw = el.getAttribute('data-eq-id') || '';
+        var sep = raw.indexOf(':');
+        var idStr = sep >= 0 ? raw.slice(sep + 1) : raw;
+        var id = parseInt(idStr, 10);
+        if (!id) return;
+        if (tipo === 'instalacion') {
+            if (typeof window.pobAbrirModal === 'function') window.pobAbrirModal(id);
+            else window.open('/admin/app/instalacion/' + id + '/change/', '_blank');
+        } else if (tipo === 'tarea') {
+            if (typeof window.crmTaskVerDetalle === 'function') window.crmTaskVerDetalle(id);
+        } else if (tipo === 'actividad') {
+            _calEquipoOpenActividad(id);
+        }
+    }
+
+    // Abre el modal de una actividad genérica desde el grid Equipo. Los
+    // openers existentes (woVerActividadGenerica/_calOpenFull) leen de
+    // _globalEvents; en la vista Equipo ese feed puede no tener la actividad,
+    // así que si falta la sintetizamos desde /api/actividades/<id>/ y luego
+    // delegamos al opener real.
+    function _calEquipoOpenActividad(id) {
+        var found = _globalEvents.find(function (x) { return String(x.id) === String(id); });
+        if (found) {
+            if (typeof window.woVerActividadGenerica === 'function') window.woVerActividadGenerica(id);
+            else if (typeof window._calOpenFull === 'function') window._calOpenFull(String(id));
+            return;
+        }
+        fetch('/app/api/actividades/' + id + '/', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) return;
+                var color = d.color || (d.opportunity ? '#0052D4' : '#1D1D1F');
+                _globalEvents.push({
+                    id: d.id, title: d.title,
+                    start: d.start ? _calToLocalISO(d.start) : null,
+                    end: d.end ? _calToLocalISO(d.end) : null,
+                    description: d.description, color: color,
+                    extendedProps: {
+                        participants: d.participants || [], opportunity: d.opportunity || null,
+                        evento: null, curso: null, creado_por: d.creado_por,
+                        tipo_actividad: d.tipo, completada: d.completada,
+                    }
+                });
+                if (typeof window.woVerActividadGenerica === 'function') window.woVerActividadGenerica(d.id);
+            })
+            .catch(function () {});
+    }
+
+    // Preview de celda del grid Equipo (reusa #calHoverPopover). Adapta el
+    // título según el tipo: instalación → cliente; actividad/tarea → título.
+    function _calEquipoShowPreview(el, opts) {
+        opts = opts || {};
+        var pop = _ensureHoverPopover();
+        var tipo = el.getAttribute('data-eq-tipo') || '';
+        var typeLabel = el.getAttribute('data-eq-typelabel') || 'Evento';
+        var titulo = el.getAttribute('data-eq-titulo') || '';
+        var cli = el.getAttribute('data-cli') || '';
+        var proy = el.getAttribute('data-proy') || '';
+        var po = el.getAttribute('data-po') || '';
+        var est = el.getAttribute('data-est') || '';
+        var hi = el.getAttribute('data-hi') || '';
+        var hf = el.getAttribute('data-hf') || '';
+        var fechaISO = el.getAttribute('data-fecha') || '';
+        var color = el.getAttribute('data-color') || '#7C3AED';
+        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        var fechaStr = '';
+        var p = fechaISO.split('-');
+        if (p.length === 3) {
+            var d = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+            fechaStr = DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()];
+        }
+        if (hi || hf) fechaStr += (fechaStr ? ' · ' : '') + hi + (hf && hf !== hi ? ' — ' + hf : '');
+        // Título principal: instalación usa cliente; otros usan su título.
+        var mainTitle = (tipo === 'instalacion' && cli) ? cli : (titulo || cli || '—');
+        var rows = '';
+        rows += fechaStr ? ('  <div class="cal-hover-when">' + _calEsc(fechaStr) + '</div>') : '';
+        if (tipo === 'instalacion') {
+            rows += proy ? ('<div class="cal-hover-meta is-related"><span class="cal-hover-meta-lbl">Proyecto</span><span class="cal-hover-meta-val">' + _calEsc(proy) + '</span></div>') : '';
+            rows += po ? ('<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">PO</span><span class="cal-hover-meta-val">' + _calEsc(po) + '</span></div>') : '';
+        }
+        rows += est ? ('<div class="cal-hover-meta"><span class="cal-hover-meta-lbl">Estado</span><span class="cal-hover-meta-val">' + _calEsc(est) + '</span></div>') : '';
+        pop.innerHTML =
+            '<div class="cal-hover-head" style="background:linear-gradient(135deg,' + color + 'D9 0%,' + color + ' 100%);">' +
+            '  <span class="cal-hover-type">' + _calEsc(typeLabel) + '</span>' +
+            '</div>' +
+            '<div class="cal-hover-body">' +
+            '  <div class="cal-hover-title">' + _calEsc(mainTitle) + '</div>' +
+            rows +
+            '</div>';
+        pop.style.visibility = 'hidden';
+        pop.style.display = 'block';
+        var pW = pop.offsetWidth, pH = pop.offsetHeight;
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var left = (opts.mouseX || 0) + 16, top = (opts.mouseY || 0) + 14;
+        if (left + pW + 8 > vw) left = (opts.mouseX || 0) - pW - 16;
+        if (left < 8) left = 8;
+        if (top + pH + 8 > vh) top = (opts.mouseY || 0) - pH - 14;
+        if (top < 8) top = 8;
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+        pop.style.visibility = '';
+    }
+
     // Invalida el cache del mes fetcheado para que el próximo cambio de vista
     // (semana/día) vuelva a pedir datos al server. Lo usa programa_obra.js al
     // guardar una instalación: si el usuario edita la hora estando en el grid
@@ -3425,6 +3727,11 @@
         // Si estamos en la vista grid Técnico × Día, re-renderizar el grid.
         if (_calViewMode === 'tecnicos') {
             if (_calWeekStart) calRenderTecnicosGrid(_calWeekStart);
+            return;
+        }
+        // Vista grid Equipo (Persona × Día): re-renderiza con la selección actual.
+        if (_calViewMode === 'equipo') {
+            if (_calWeekStart) calRenderEquipoGrid(_calWeekStart);
             return;
         }
         // Si estamos en modo Instalaciones, ignora userVal y usa el endpoint

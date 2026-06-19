@@ -299,6 +299,7 @@ urlpatterns = [
     # Calendario de Instalaciones (toggle alternativo en el header del calendario).
     path('api/calendario/instalaciones/', views_proyectos.api_instalaciones_calendario, name='api_instalaciones_calendario'),
     path('api/calendario/instalaciones/grid/', views_proyectos.api_grid_tecnicos, name='api_grid_tecnicos'),
+    path('api/calendario/equipo/grid/', views_proyectos.api_grid_equipo, name='api_grid_equipo'),
     # 'proyectos-ligados' (no 'proyectos') para no chocar con la ruta histórica
     # /api/oportunidad/<id>/proyectos/ que usa ProyectoOportunidadLink (sugerencias automáticas).
     path('api/oportunidad/<int:oportunidad_id>/proyectos-ligados/', views_proyectos.api_oportunidad_proyectos_ligados, name='api_oportunidad_proyectos_ligados'),
