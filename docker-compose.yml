@@ -15,7 +15,11 @@ services:
     environment:
       # Sobrescribe DB_HOST para el entorno de Docker Compose para usar el nombre del servicio
       DB_HOST: db
-    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --timeout 240 # Añade o modifica esta línea
+    # 1 solo worker (default) serializaba TODAS las requests → 504 en cascada
+    # bajo carga. gthread = varios slots concurrentes con poca RAM (ideal para
+    # vistas I/O-bound a MySQL). Requiere recrear el contenedor (up -d) al
+    # desplegar, no basta restart.
+    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 8 --worker-class gthread --timeout 240 --max-requests 1000 --max-requests-jitter 200
     # <<-- ESTA LÍNEA 'deploy:' DEBE TENER SOLO 2 ESPACIOS DE INDENTACIÓN -->>
 
 
