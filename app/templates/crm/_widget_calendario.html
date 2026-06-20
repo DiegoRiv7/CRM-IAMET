@@ -577,7 +577,7 @@
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="tarea" checked><span class="cal-filter-dot" style="background:#FF9500;"></span><span>Tareas</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="actividad" checked><span class="cal-filter-dot" style="background:#0052D4;"></span><span>Actividades</span></label>
                         <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="instalacion" checked><span class="cal-filter-dot" style="background:#7C3AED;"></span><span>Instalaciones</span></label>
-                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-type="curso" checked><span class="cal-filter-dot" style="background:#10B981;"></span><span>Cursos</span></label>
+                        <label class="cal-filter-pop-item"><input type="checkbox" data-cal-state="completadas" checked><span class="cal-filter-dot" style="background:#16A34A;"></span><span>Completadas</span></label>
                         {% comment %}
                         Fuente del calendario (antes era un toggle aparte en el
                         header). Actividades por defecto; Instalaciones = Plan de
@@ -4422,9 +4422,23 @@
         if (ep.curso) return 'curso';
         return 'actividad';
     }
+    // Filtro de "Completadas" (default ON). Si se apaga, se ocultan los
+    // eventos completados (actividades, tareas, instalaciones).
+    window._calShowCompletadas = (window._calShowCompletadas !== false);
+    function _calIsCompleted(ev) {
+        var ep = ev.extendedProps || {};
+        if (String(ev.id || '').indexOf('tarea-') === 0) return ep.estado === 'completada';
+        if (ep.source === 'instalacion' || ep.tipo_actividad === 'instalacion') return ep.estado === 'completada';
+        return !!ep.completada;
+    }
     function _calApplyTypeFilters(events) {
         var f = window._calTypeFilters || {};
-        return events.filter(function (ev) { return f[_calClassifyType(ev)] !== false; });
+        var hideComp = (window._calShowCompletadas === false);
+        return events.filter(function (ev) {
+            if (f[_calClassifyType(ev)] === false) return false;
+            if (hideComp && _calIsCompleted(ev)) return false;
+            return true;
+        });
     }
     window.calFiltroToggle = function (e) {
         e.stopPropagation();
@@ -4457,6 +4471,14 @@
             cb.addEventListener('change', function () {
                 var tipo = cb.getAttribute('data-cal-type');
                 window._calTypeFilters[tipo] = cb.checked;
+                var inp = document.getElementById('calUserFilter');
+                calApplyFilter(inp ? inp.value : 'all');
+            });
+        });
+        // Checkbox de estado "Completadas" (no es un tipo).
+        pop.querySelectorAll('input[type="checkbox"][data-cal-state="completadas"]').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                window._calShowCompletadas = cb.checked;
                 var inp = document.getElementById('calUserFilter');
                 calApplyFilter(inp ? inp.value : 'all');
             });
@@ -4564,8 +4586,23 @@
         }
         var relBtn=document.getElementById('woVerActRelacionado');
         if (relBtn) {
-            if (e.opportunity&&e.opportunity.text) { relBtn.style.display='inline-flex'; var span=relBtn.querySelector('span'); if (span) span.textContent='Oportunidad: '+e.opportunity.text; else relBtn.innerHTML='<span>Oportunidad: '+e.opportunity.text+'</span>'; }
-            else relBtn.style.display='none';
+            if (e.opportunity&&e.opportunity.text) {
+                relBtn.style.display='inline-flex';
+                var span=relBtn.querySelector('span'); if (span) span.textContent='Oportunidad: '+e.opportunity.text; else relBtn.innerHTML='<span>Oportunidad: '+e.opportunity.text+'</span>';
+                // Reasignar SIEMPRE el onclick (capturando el opp id de ESTA
+                // actividad). El visor de TareaOportunidad sobreescribe esta
+                // misma propiedad con un handler "solo cerrar"; sin reasignar
+                // aquí, al abrir otra actividad desde el calendario el botón
+                // quedaba pegado y la oportunidad "ya no se abría" (requería
+                // recargar). Usamos el id local, no el global, para no depender
+                // de _calCurrentOppId.
+                var _relOppId = (e.opportunity && e.opportunity.id) ? e.opportunity.id : null;
+                relBtn.onclick = function () {
+                    document.getElementById('widgetOppVerActividad').style.display='none';
+                    if (_relOppId && typeof window.openDetalle === 'function') window.openDetalle(_relOppId);
+                };
+            }
+            else { relBtn.style.display='none'; relBtn.onclick = null; }
         }
         var btnCompletar=document.getElementById('woVerActBtnCompletar');
         var btnEditar=document.getElementById('woVerActBtnEditar');

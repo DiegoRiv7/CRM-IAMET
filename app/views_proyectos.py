@@ -6438,6 +6438,14 @@ def api_instalaciones_calendario(request):
 
     qs = Instalacion.objects.all()
 
+    # Visibilidad (como el resto de actividades): la instalación SOLO le sale
+    # al creador del Programa de Obra y a los técnicos asignados. Los
+    # supervisores/superuser ven todas (supervisión).
+    if not (request.user.is_superuser or is_supervisor(request.user)):
+        qs = qs.filter(
+            Q(creado_por=request.user) | Q(asignaciones__tecnico__usuario=request.user)
+        ).distinct()
+
     start_raw = (request.GET.get('start') or '').strip()
     end_raw = (request.GET.get('end') or '').strip()
     mes_raw = (request.GET.get('mes') or '').strip()
