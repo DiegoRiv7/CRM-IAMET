@@ -6438,13 +6438,24 @@ def api_instalaciones_calendario(request):
 
     qs = Instalacion.objects.all()
 
-    # Visibilidad ESTRICTA: la instalación SOLO se le muestra en el calendario
-    # al CREADOR del programa de obra y a los TÉCNICOS ASIGNADOS. Ni siquiera
-    # los supervisores la ven (antes el bypass de 'Supervisores' la mostraba a
-    # mucha gente). Se mantiene superuser para administración/depuración.
-    if not request.user.is_superuser:
+    # Visibilidad base: la instalación se le muestra al CREADOR del programa de
+    # obra y a los TÉCNICOS ASIGNADOS. Supervisores/superuser ven todas (para
+    # coordinar). Esto evita que le salga a gente no involucrada.
+    if not (request.user.is_superuser or is_supervisor(request.user)):
         qs = qs.filter(
             Q(creado_por=request.user) | Q(asignaciones__tecnico__usuario=request.user)
+        ).distinct()
+
+    # Filtro por usuario(s) seleccionado(s) en el picker del calendario: al
+    # elegir a una persona, solo se muestran SUS instalaciones (donde es
+    # creador O técnico asignado). Necesario porque en el cliente las
+    # instalaciones no se filtran por el selector de usuario (son org-wide),
+    # así que sin esto un supervisor que elige a alguien veía TODAS.
+    user_ids_raw = (request.GET.get('user_ids') or request.GET.get('user_id') or '').strip()
+    sel_ids = [int(x) for x in user_ids_raw.split(',') if x.strip().isdigit()]
+    if sel_ids:
+        qs = qs.filter(
+            Q(creado_por_id__in=sel_ids) | Q(asignaciones__tecnico__usuario_id__in=sel_ids)
         ).distinct()
 
     start_raw = (request.GET.get('start') or '').strip()
