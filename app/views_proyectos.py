@@ -6438,10 +6438,11 @@ def api_instalaciones_calendario(request):
 
     qs = Instalacion.objects.all()
 
-    # Visibilidad (como el resto de actividades): la instalación SOLO le sale
-    # al creador del Programa de Obra y a los técnicos asignados. Los
-    # supervisores/superuser ven todas (supervisión).
-    if not (request.user.is_superuser or is_supervisor(request.user)):
+    # Visibilidad ESTRICTA: la instalación SOLO se le muestra en el calendario
+    # al CREADOR del programa de obra y a los TÉCNICOS ASIGNADOS. Ni siquiera
+    # los supervisores la ven (antes el bypass de 'Supervisores' la mostraba a
+    # mucha gente). Se mantiene superuser para administración/depuración.
+    if not request.user.is_superuser:
         qs = qs.filter(
             Q(creado_por=request.user) | Q(asignaciones__tecnico__usuario=request.user)
         ).distinct()
@@ -7021,6 +7022,7 @@ def _instalacion_to_full_dict(inst):
         'proyecto_nombre': inst.proyecto_crm.nombre if inst.proyecto_crm_id else '',
         'oportunidad_id': inst.oportunidad_id,
         'oportunidad_titulo': inst.oportunidad.oportunidad if inst.oportunidad_id else '',
+        'creador': (inst.creado_por.get_full_name() or inst.creado_por.username) if inst.creado_por_id else '',
         'asignaciones': asignaciones,
     }
 

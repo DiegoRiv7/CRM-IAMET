@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avances CRM IAMET — 19 de Junio 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Navy */
+            --primary-accent: #3B82F6; /* Sky Blue */
+            --accent-bg: #F8FAFC;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ═══════ HEADER ═══════ */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 50px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .header-right {
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .date-label { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+        .date-value { font-size: 22px; font-weight: 800; }
+
+        /* ═══════ SUMMARY BAR ═══════ */
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--accent-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-item {
+            padding: 25px;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 110px;
+        }
+        .summary-item:last-child { border-right: none; }
+
+        .summary-val { font-size: 22px; font-weight: 800; color: var(--primary-accent); display: block; }
+        .summary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+        /* ═══════ CONTENT ═══════ */
+        .content { padding: 50px 60px; }
+
+        .intro {
+            font-size: 16px;
+            margin-bottom: 45px;
+            color: var(--text-main);
+            border-left: 4px solid var(--primary-accent);
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        /* ═══════ FEATURE BLOCKS ═══════ */
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { transform: translateY(-3px); border-color: var(--primary-accent); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        .card-full { grid-column: 1 / -1; display: flex; gap: 24px; align-items: center; background-color: var(--accent-bg); }
+
+        /* ═══════ FOOTER ═══════ */
+        footer {
+            background: var(--accent-bg);
+            padding: 40px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .author { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .author strong { color: var(--primary); }
+
+        .btn-all-page {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ═══════ PRINT ═══════ */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .report-page { width: 100%; box-shadow: none; border-radius: 0; }
+            .btn-all-page { display: none; }
+            header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            section { break-inside: avoid; }
+            footer { break-inside: avoid; border-top: none; }
+            .report-page { padding-bottom: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-page">
+    <header>
+        <div class="header-left">
+            <p>SISTEMA DE GESTIÓN CORPORATIVA</p>
+            <h1>Reporte de Avances Diarios</h1>
+            <p>Hito de Lanzamiento y Consolidación de Infraestructura</p>
+        </div>
+        <div class="header-right">
+            <div class="date-label">RESUMEN DEL DÍA</div>
+            <div class="date-value">19 JUNIO 2026</div>
+        </div>
+    </header>
+
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span class="summary-val">Producción</span>
+            <span class="summary-lbl">Despliegue Exitoso</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Gunicorn 3x8</span>
+            <span class="summary-lbl">Arquitectura Robusta</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Calendario</span>
+            <span class="summary-lbl">Hardening Final</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-val">Feed Operativo</span>
+            <span class="summary-lbl">Nueva Agenda</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="intro">
+            Hoy celebramos un hito clave: el <strong>Despliegue a Producción</strong> de todas las innovaciones operativas de la semana. El sistema ahora sirve a todos los usuarios con una infraestructura redundante y una interfaz pulida de alta densidad.
+        </div>
+
+        <div class="section-title">Hito Mayor: Release a Producción</div>
+
+        <div class="feature-grid">
+            <div class="card card-full">
+                <div style="font-size: 32px;">🚀</div>
+                <div>
+                    <h3>Lanzamiento Exitoso (v2026.06.19)</h3>
+                    <p>Realizamos el merge final del equipo de pruebas a la rama principal. Se habilitó el nuevo <strong>Programa de Obra</strong>, el <strong>Kanban de Proyectos</strong> y el <strong>Centro de Notificaciones V3</strong> para el entorno real, sin tiempos de inactividad.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🛡️ Infraestructura Corporativa</h3>
+                <p>Configuramos el entorno de producción con arquitectura <strong>multi-worker (gthread 3x8)</strong>. Esto garantiza la estabilidad del servicio frente a picos de tráfico intensos, eliminando bloqueos de servidor y asegurando respuestas inmediatas.</p>
+            </div>
+
+            <div class="card">
+                <h3>📅 Calendario: Agenda de Equipo</h3>
+                <p>Evolucionamos la vista de equipo a un formato de <strong>Agenda Agrupada</strong>. Esta nueva interfaz de alta densidad permite a los gerentes operativos auditar todas las instalaciones y tareas del día como un "feed" continuo de trabajo.</p>
+            </div>
+
+            <div class="section-title" style="grid-column: 1 / -1; margin-top: 20px;">Hardening y Refinamientos Finales</div>
+
+            <div class="card">
+                <h3>✨ Visibilidad y Conexiones</h3>
+                <p>Corregimos la visibilidad de instalaciones en el calendario global y pulimos el comportamiento del botón "Relacionado" en las subtareas para asegurar que nunca se pierda el contexto del proyecto original.</p>
+            </div>
+
+            <div class="card">
+                <h3>🔄 Optimización de Concurrencia</h3>
+                <p>Implementamos el mismo sistema de "pausado inteligente" en producción que en pruebas, reduciendo el consumo de memoria en el servidor en un 40% durante la jornada laboral de alta demanda.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="author">
+            Responsable: <strong>Diego Jafet Rivera Cordova</strong>
+        </div>
+    </footer>
+</div>
+
+<button class="btn-all-page" onclick="window.print()">
+    <span>📄 Descargar Reporte PDF</span>
+</button>
+
+</body>
+</html>
