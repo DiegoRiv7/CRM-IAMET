@@ -1484,6 +1484,9 @@
     text-align: left;
 }
 .lw-p3-export-item:hover { background: #F1F5F9; color: #1D4ED8; }
+.lw-p3-export-divider { height: 1px; background: #E2E8F0; margin: 5px 6px; }
+.lw-p3-export-item-action { font-weight: 700; color: #0B5FB0; }
+.lw-p3-export-item-action:hover { background: #EFF6FF; color: #0B5FB0; }
 
 /* Botón Exportar de la toolbar deshabilitado (cuando hay >1 vols
    en el listado). Se ve gris pero deja pasar el hover para mostrar

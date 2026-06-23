@@ -2701,6 +2701,11 @@
                 h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-full\')">Descargar PDF completo</div>';
                 h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-nocost\')">Descargar PDF sin costos</div>';
                 h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-xlsx\')">Descargar Excel</div>';
+                // Crear cotización — igual que en la vista de vendedores.
+                h += '<div class="lw-p3-export-divider"></div>';
+                h += '<div class="lw-p3-export-item lw-p3-export-item-action" onclick="lwP3GenerarCotizacion(' + v.id + ', \'' + nombreSafe + '\')">'
+                   + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>'
+                   + 'Crear cotización</div>';
                 h += '</div>';
                 h += '</div>';
                 // Botón Eliminar — solo ingeniero y solo borradores
@@ -2747,6 +2752,62 @@
         else if (mode === 'dl-vol-nocost') url = base + 'volumetria-pdf/?download=1&sin_costos=1&' + qs;
         else return;
         window.open(url, '_blank');
+    };
+
+    // Crear cotización desde la volumetría del wizard (Fase 3) — mismo flujo
+    // que la opción de los vendedores: prompt de nombre → POST al endpoint
+    // generar-cotizacion → abre el PDF y queda guardada en el Drive de la
+    // oportunidad. Usa el estado del wizard (state.lev) para el nombre default.
+    window.lwP3GenerarCotizacion = function (volId, volNombre) {
+        document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+            el.classList.remove('is-open');
+        });
+        var lev = state.lev || {};
+        var nombreDefault = (lev.nombre || 'Cotización').trim();
+        if (volNombre) nombreDefault += ' - ' + String(volNombre).replace(/&#39;/g, "'").trim();
+
+        var promptPromise = (typeof lwPrompt === 'function')
+            ? lwPrompt({
+                title: 'Crear cotización',
+                message: 'Confirma el nombre de la cotización antes de generarla. Aparece como título del PDF y en el listado de cotizaciones de la oportunidad.',
+                placeholder: nombreDefault,
+                defaultValue: nombreDefault,
+                confirmLabel: 'Generar',
+                cancelLabel: 'Cancelar',
+                required: false,
+              })
+            : Promise.resolve(window.prompt('Nombre de la cotización:', nombreDefault));
+
+        promptPromise.then(function (nombreInput) {
+            if (nombreInput === null) return;  // canceló
+            var nombre = (nombreInput || '').trim() || nombreDefault;
+            if (typeof lwToast === 'function') lwToast('Generando cotización…', 'info');
+            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+            fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ nombre: nombre }),
+            }).then(function (r) {
+                return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+            }).then(function (res) {
+                if (!res.ok || !res.data || res.data.success !== true) {
+                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                    if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
+                    return;
+                }
+                try { window.open(res.data.pdf_url, '_blank'); } catch (e) { location.href = res.data.pdf_url; }
+                if (typeof lwToast === 'function') lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+                try {
+                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                    }
+                } catch (e) { /* defensivo */ }
+            }).catch(function (err) {
+                if (typeof lwToast === 'function') lwToast('Error de red al generar cotización', 'error'); else alert('Error de red');
+                try { console.error('[cotizacion]', err); } catch (e) {}
+            });
+        });
     };
 
     // Cierra los menús de export al hacer click fuera.
