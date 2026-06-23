@@ -223,21 +223,15 @@
     }
     .pt-evid-item {
         border-radius: 8px;
+        overflow: hidden;
         background: #fff;
         text-align: center;
         border: 1px solid #E2E8F0;
-        overflow: hidden;
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-    .pt-evid-imgframe {
-        background: #F8FAFC;
-        text-align: center;
     }
     .pt-evid-item img {
         width: 100%;
         height: auto;
-        max-height: 380px;
+        max-height: 420px;
         object-fit: contain;
         display: block;
         margin: 0 auto;
@@ -426,7 +420,7 @@
     <div class="pt-evid-grid {% if evidencias|length == 1 %}pt-evid-single{% endif %}">
         {% for ev in evidencias %}
         <div class="pt-evid-item">
-            <div class="pt-evid-imgframe"><img src="{{ ev.abs_url }}" alt="Evidencia {{ forloop.counter }}"></div>
+            <img src="{{ ev.abs_url }}" alt="Evidencia {{ forloop.counter }}">
             {% if ev.comentario %}<div class="pt-evid-cap"><span class="pt-evid-cap-lbl">Foto {{ forloop.counter }}</span>{{ ev.comentario|linebreaksbr }}</div>{% endif %}
         </div>
         {% endfor %}
