@@ -616,6 +616,9 @@
         html +=   _statBlock('UTILIDAD', '<span style="font-size:1.05rem;font-weight:700;color:#059669;">' + _fmtMoney(inst.utilidad) + '</span>');
         html +=   _statBlock('JORNADAS', _esc(String(inst.jornadas_count || 1)) + ' <span style="color:#86868B;font-size:0.8rem;">' + _esc(inst.jornadas_tipo_label || '') + '</span>');
         html +=   _statBlock('PERSONAL (TEXTO)', _esc(inst.personal || '') || '<span style="color:#C7C7CC;">—</span>');
+        html +=   _statBlock('CREADO POR', inst.creador
+            ? '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#0052D4;color:#fff;font-size:0.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">' + _esc((inst.creador || '?').substring(0, 1).toUpperCase()) + '</span>' + _esc(inst.creador) + '</span>'
+            : '<span style="color:#C7C7CC;">—</span>');
         html += '</div>';
 
         // ── Desglose de jornadas: tarjeta rectangular (esquinas redondeadas)

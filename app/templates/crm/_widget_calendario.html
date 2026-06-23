@@ -3211,11 +3211,21 @@
     }
 
     // Refetch en modo Instalaciones (Plan de Trabajo Bajanet). Sin prefijo.
+    // Query string del usuario seleccionado para el endpoint de instalaciones.
+    // Si hay alguien elegido en el picker, filtra las instalaciones a esa(s)
+    // persona(s) (creador o técnico asignado) en el backend.
+    function _calInstUserQS() {
+        var sel = document.getElementById('calUserFilter');
+        var v = sel ? sel.value : 'all';
+        if (!v || v === 'all') return '';
+        return '&user_ids=' + encodeURIComponent(v);
+    }
+
     function _calRefetchInstalaciones() {
         var mes = _calCurrentMesParam();  // 'YYYY-MM'
         var partes = mes.split('-');
         var url = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(partes[0])
-                + '&mes=' + encodeURIComponent(partes[1]);
+                + '&mes=' + encodeURIComponent(partes[1]) + _calInstUserQS();
         _calLastFetchedMes = mes;
         return fetch(url, { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
@@ -3876,9 +3886,9 @@
             if (_calWeekStart) calRenderEquipoGrid(_calWeekStart);
             return;
         }
-        // Si estamos en modo Instalaciones, ignora userVal y usa el endpoint
-        // de instalaciones. El filtro de usuario no aplica a instalaciones
-        // (todas son visibles para todos los usuarios autorizados).
+        // Modo Instalaciones: usa el endpoint de instalaciones. El filtro de
+        // usuario SÍ aplica vía _calInstUserQS() (creador o técnico asignado),
+        // para que al elegir a alguien solo salgan sus instalaciones.
         if (window._calCurrentSource === 'instalaciones') {
             return _calRefetchInstalaciones();
         }
@@ -3901,7 +3911,7 @@
         // En modo "Todas" también traemos las instalaciones para mostrarlas
         // junto al resto (en morado, con prefijo "INSTALACIONES - ").
         var _instParts = mes.split('-');
-        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]);
+        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]) + _calInstUserQS();
         _calLastFetchedMes = mes;
         var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
         var pTareas = fetch(tareasUrl).then(function(r){return r.json();});

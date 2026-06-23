@@ -6438,12 +6438,24 @@ def api_instalaciones_calendario(request):
 
     qs = Instalacion.objects.all()
 
-    # Visibilidad (como el resto de actividades): la instalación SOLO le sale
-    # al creador del Programa de Obra y a los técnicos asignados. Los
-    # supervisores/superuser ven todas (supervisión).
+    # Visibilidad base: la instalación se le muestra al CREADOR del programa de
+    # obra y a los TÉCNICOS ASIGNADOS. Supervisores/superuser ven todas (para
+    # coordinar). Esto evita que le salga a gente no involucrada.
     if not (request.user.is_superuser or is_supervisor(request.user)):
         qs = qs.filter(
             Q(creado_por=request.user) | Q(asignaciones__tecnico__usuario=request.user)
+        ).distinct()
+
+    # Filtro por usuario(s) seleccionado(s) en el picker del calendario: al
+    # elegir a una persona, solo se muestran SUS instalaciones (donde es
+    # creador O técnico asignado). Necesario porque en el cliente las
+    # instalaciones no se filtran por el selector de usuario (son org-wide),
+    # así que sin esto un supervisor que elige a alguien veía TODAS.
+    user_ids_raw = (request.GET.get('user_ids') or request.GET.get('user_id') or '').strip()
+    sel_ids = [int(x) for x in user_ids_raw.split(',') if x.strip().isdigit()]
+    if sel_ids:
+        qs = qs.filter(
+            Q(creado_por_id__in=sel_ids) | Q(asignaciones__tecnico__usuario_id__in=sel_ids)
         ).distinct()
 
     start_raw = (request.GET.get('start') or '').strip()
@@ -7021,6 +7033,7 @@ def _instalacion_to_full_dict(inst):
         'proyecto_nombre': inst.proyecto_crm.nombre if inst.proyecto_crm_id else '',
         'oportunidad_id': inst.oportunidad_id,
         'oportunidad_titulo': inst.oportunidad.oportunidad if inst.oportunidad_id else '',
+        'creador': (inst.creado_por.get_full_name() or inst.creado_por.username) if inst.creado_por_id else '',
         'asignaciones': asignaciones,
     }
 
