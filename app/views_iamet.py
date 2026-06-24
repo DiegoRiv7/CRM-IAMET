@@ -4620,26 +4620,13 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
 
 @login_required
 @require_http_methods(["GET"])
-def api_levantamiento_propuesta_pdf(request, levantamiento_id):
-    """Genera el PDF de la Propuesta Técnica de un levantamiento.
-
-    Respeta el formato del docx original (tablas azules con secciones).
-    Params:
-      ?download=1  → fuerza Content-Disposition: attachment
-      por defecto  → inline (se abre en la pestaña para preview)
-    """
-    from django.http import HttpResponse
+def _propuesta_pdf_bytes(lev, request):
+    """Construye el PDF de la Propuesta Técnica y devuelve los bytes.
+    Reusado por la vista de descarga/preview y por el guardado al Drive.
+    Lanza excepción si WeasyPrint falla."""
     from django.template.loader import render_to_string
     from django.conf import settings
     import os
-    try:
-        lev = ProyectoLevantamiento.objects.select_related(
-            'proyecto', 'creado_por'
-        ).prefetch_related('evidencias').get(id=levantamiento_id)
-    except ProyectoLevantamiento.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
-    if not _check_access(request.user, lev.proyecto):
-        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
     f1 = lev.fase1_data or {}
     f2 = lev.fase2_data or {}
@@ -4736,21 +4723,90 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     }
 
     html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
+    from weasyprint import HTML
+    return HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+
+
+def _propuesta_pdf_filename(lev):
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'propuesta')).strip()[:80] or 'propuesta'
+    return f'PropuestaTecnica_{safe_name}.pdf'
+
+
+def api_levantamiento_propuesta_pdf(request, levantamiento_id):
+    """Genera el PDF de la Propuesta Técnica de un levantamiento.
+
+    Respeta el formato del docx original (tablas azules con secciones).
+    Params:
+      ?download=1  → fuerza Content-Disposition: attachment
+      por defecto  → inline (se abre en la pestaña para preview)
+    """
+    from django.http import HttpResponse
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
     try:
-        from weasyprint import HTML
-        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+        pdf_bytes = _propuesta_pdf_bytes(lev, request)
     except Exception as e:
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'propuesta')).strip()[:80] or 'propuesta'
-    filename = f'PropuestaTecnica_{safe_name}.pdf'
+    filename = _propuesta_pdf_filename(lev)
     disp = 'attachment' if request.GET.get('download') else 'inline'
     response['Content-Disposition'] = f'{disp}; filename="{filename}"'
     return response
+
+
+@login_required
+def api_levantamiento_propuesta_guardar_drive(request, levantamiento_id):
+    """POST → genera el PDF de la Propuesta Técnica y lo guarda en el Drive
+    de la oportunidad vinculada al proyecto del levantamiento. Silencioso
+    (no devuelve el PDF). Usado al descargar la propuesta y al avanzar de
+    fase 2→3 cuando el ingeniero acepta guardarla."""
+    from .models import ArchivoOportunidad
+    from django.core.files.base import ContentFile
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Solo POST'}, status=405)
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    oportunidad = getattr(lev.proyecto, 'oportunidad', None) if lev.proyecto else None
+    if not oportunidad:
+        return JsonResponse({'success': False, 'error': 'El proyecto no tiene oportunidad vinculada — la propuesta no tiene a dónde ir.'}, status=400)
+
+    try:
+        pdf_bytes = _propuesta_pdf_bytes(lev, request)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    filename = _propuesta_pdf_filename(lev)
+    archivo = ArchivoOportunidad.objects.create(
+        nombre_original=filename,
+        archivo=ContentFile(pdf_bytes, name=filename),
+        tipo_archivo='pdf',
+        tamaño=len(pdf_bytes),
+        oportunidad=oportunidad,
+        carpeta=None,  # raíz del Drive
+        subido_por=request.user,
+        extension='pdf',
+        mime_type='application/pdf',
+    )
+    return JsonResponse({'success': True, 'archivo_id': archivo.id, 'oportunidad_id': oportunidad.id})
 
 
 # ─── VOLUMETRÍA: helpers compartidos (PDF + XLSX) ─────────────────

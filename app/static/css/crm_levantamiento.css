@@ -2669,6 +2669,10 @@
 .lw-pdf-menu-item:hover { background: #F8FAFC; color: #0F172A; }
 .lw-pdf-menu-item svg { flex-shrink: 0; color: #64748B; margin-top: 2px; }
 .lw-pdf-menu-item:hover svg { color: #2563EB; }
+/* Acción destacada (Generar cotización) con separador superior */
+.lw-pdf-menu-item-action { border-top: 1px solid #EEF2F7; margin-top: 4px; padding-top: 9px; }
+.lw-pdf-menu-item-action .lw-pdf-menu-item-title { color: #0B5FB0; font-weight: 700; }
+.lw-pdf-menu-item-action svg { color: #0B5FB0; }
 .lw-pdf-menu-item-title {
     font-size: 13px;
     font-weight: 600;

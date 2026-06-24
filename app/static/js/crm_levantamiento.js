@@ -452,7 +452,28 @@
             body: JSON.stringify({ fase_actual: state.lev.fase_actual }),
         });
     };
-    window.lwNextPhase = function () { lwGoPhase(Math.min(5, state.phase + 1)); };
+    window.lwNextPhase = function () {
+        var target = Math.min(5, state.phase + 1);
+        // Al pasar de Propuesta Técnica (Fase 2) → Volumetría (Fase 3),
+        // preguntar si guardar la propuesta en el Drive de la oportunidad.
+        // Sí → avanza y, en segundo plano, el sistema genera el PDF y lo
+        // mete al Drive. No → simplemente avanza sin generar nada.
+        if (state.phase === 2 && target === 3 && typeof lwConfirm === 'function') {
+            lwConfirm({
+                title: 'Guardar Propuesta Técnica',
+                message: '¿Deseas guardar la Propuesta Técnica en el Drive de la oportunidad antes de continuar?',
+                confirmLabel: 'Sí, guardar',
+                cancelLabel: 'No, solo avanzar',
+            }).then(function (yes) {
+                if (yes && typeof lwGuardarPropuestaDrive === 'function') {
+                    lwGuardarPropuestaDrive(true);  // genera y guarda en background
+                }
+                lwGoPhase(target);
+            });
+            return;
+        }
+        lwGoPhase(target);
+    };
     window.lwPrevPhase = function () { lwGoPhase(Math.max(1, state.phase - 1)); };
 
     function renderPhase(n) {
@@ -2545,7 +2566,14 @@
                 return;
             }
             var qsVol = 'volumetria_id=' + encodeURIComponent(volId);
-            if (mode === 'dl-vol-xlsx') {
+            if (mode === 'gen-cotizacion') {
+                // Generar cotización (mismo flujo que la vista de vendedores).
+                var volObj = (state.volumetrias || []).filter(function (v) { return v.id === volId; })[0] || {};
+                if (typeof window.lwP3GenerarCotizacion === 'function') {
+                    window.lwP3GenerarCotizacion(volId, volObj.nombre || '');
+                }
+                return;
+            } else if (mode === 'dl-vol-xlsx') {
                 url = base + 'volumetria-xlsx/?' + qsVol;
             } else if (mode === 'view-vol-full') {
                 url = base + 'volumetria-pdf/?' + qsVol;
@@ -2582,8 +2610,37 @@
             var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
             url = base + endpoint + '/' + (mode === 'download' ? '?download=1' : '');
         }
+        // ¿Es la DESCARGA de la Propuesta Técnica (Fase 2)? Entonces, además
+        // de descargarla, la guardamos en el Drive de la oportunidad.
+        var _esDescargaPropuesta = (state.phase === 2 && mode === 'download');
         // Flush pendientes primero para que el export tenga la data fresca.
-        lwFlushSave().then(function () { window.open(url, '_blank'); });
+        lwFlushSave().then(function () {
+            window.open(url, '_blank');
+            if (_esDescargaPropuesta) lwGuardarPropuestaDrive(true);
+        });
+    };
+
+    // Genera la Propuesta Técnica en el server y la guarda en el Drive de la
+    // oportunidad. `silentToast` controla si avisa al usuario. Devuelve Promise.
+    window.lwGuardarPropuestaDrive = function (showToast) {
+        if (!state.lev || !state.lev.id) return Promise.resolve();
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        return fetch('/app/api/iamet/levantamientos/' + state.lev.id + '/propuesta-guardar-drive/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: '{}',
+        }).then(function (r) {
+            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+        }).then(function (res) {
+            if (res.ok && res.data && res.data.success) {
+                if (showToast) lwCheer('Propuesta guardada', 'Se agregó al Drive de la oportunidad.', 'success');
+            } else if (showToast) {
+                lwCheer('No se pudo guardar', (res.data && res.data.error) || 'Revisa que el proyecto tenga oportunidad vinculada.', 'warn');
+            }
+        }).catch(function () {
+            if (showToast) lwCheer('Error de red', 'No se pudo guardar la propuesta en el Drive.', 'warn');
+        });
     };
 
     // ═══════════════════════════════════════════════════════════════
