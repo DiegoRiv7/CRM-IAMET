@@ -3372,12 +3372,10 @@ def api_levantamiento_crear(request, proyecto_id):
         existentes = proyecto.levantamientos.count()
         nombre = f'Levantamiento {existentes + 1}'
 
-    # Pre-poblar Fase 1 AGRESIVAMENTE desde proyecto + oportunidad +
-    # cliente ligado. El ingeniero abre el wizard y encuentra hasta
-    # No prellenamos ningun dato: el ingeniero debe capturar cada
-    # campo manualmente para asegurar que los datos son reales y no
-    # asumidos. El unico valor que respetamos es el override explicito
-    # que venga en la peticion.
+    # Pre-poblar Fase 1 con lo que YA tiene la oportunidad vinculada al
+    # proyecto: cliente, contacto (nombre/email/teléfono) y la fecha de hoy
+    # (el día en que se inicia el levantamiento). El ingeniero solo confirma
+    # o ajusta. Un override explícito en la petición SIEMPRE gana.
     fase1_default = {
         'cliente':     '',
         'cliente_id':  None,
@@ -3391,8 +3389,32 @@ def api_levantamiento_crear(request, proyecto_id):
         'componentes': [],
         'productos':   [],
     }
+    # Autollenado desde oportunidad + cliente.
+    fase1_auto = {'fecha': timezone.localdate().isoformat()}
+    opp = getattr(proyecto, 'oportunidad', None)
+    cli = getattr(opp, 'cliente', None) if opp else None
+    cont = getattr(opp, 'contacto', None) if opp else None
+    if cli is not None:
+        fase1_auto['cliente'] = cli.nombre_empresa or ''
+        fase1_auto['cliente_id'] = cli.id
+    elif getattr(proyecto, 'cliente_nombre', ''):
+        fase1_auto['cliente'] = proyecto.cliente_nombre
+    if cont is not None:
+        nombre_cont = f"{cont.nombre} {cont.apellido or ''}".strip()
+        if nombre_cont:
+            fase1_auto['contacto'] = nombre_cont
+        if cont.email:
+            fase1_auto['email'] = cont.email
+        if cont.telefono:
+            fase1_auto['telefono'] = cont.telefono
+    elif cli is not None and getattr(cli, 'contacto_principal', ''):
+        fase1_auto['contacto'] = cli.contacto_principal
+    if not fase1_auto.get('telefono') and cli is not None and getattr(cli, 'telefono', ''):
+        fase1_auto['telefono'] = cli.telefono
+
     fase1_override = data.get('fase1_data') or {}
-    fase1 = {**fase1_default, **fase1_override}
+    # Orden de precedencia: defaults < autollenado < override explícito.
+    fase1 = {**fase1_default, **fase1_auto, **fase1_override}
 
     lev = ProyectoLevantamiento.objects.create(
         proyecto=proyecto,

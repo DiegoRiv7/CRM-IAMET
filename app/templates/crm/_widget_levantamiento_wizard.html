@@ -144,7 +144,8 @@
             <button type="button" class="lw-tab" data-phase="4" onclick="lwGoPhase(4)">
                 <span class="lw-tab-num">4</span><span class="lw-tab-label">Programa de Obra</span>
             </button>
-            <button type="button" class="lw-tab" data-phase="5" onclick="lwGoPhase(5)">
+            {% comment %}Fase 5 (Reportes) OCULTA por pedido — no se borra, solo display:none. Reactivar = quitar el style.{% endcomment %}
+            <button type="button" class="lw-tab" data-phase="5" onclick="lwGoPhase(5)" style="display:none;">
                 <span class="lw-tab-num">5</span><span class="lw-tab-label">Reportes</span>
             </button>
             <div class="lw-tabs-progress">

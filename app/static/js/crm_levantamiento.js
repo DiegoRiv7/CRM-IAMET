@@ -100,7 +100,9 @@
         if (!levData) return;
         opts = opts || {};
         state.lev = JSON.parse(JSON.stringify(levData)); // deep copy
-        state.phase = Math.max(1, Math.min(5, levData.fase_actual || 1));
+        // Fase 5 (Reportes) está oculta → el máximo navegable es 4. Si un
+        // levantamiento viejo quedó en fase_actual 5, lo abrimos en la 4.
+        state.phase = Math.max(1, Math.min(4, levData.fase_actual || 1));
         state.dirty = false;
         state.readonly = (opts.puedeEditar === false);
 
@@ -309,27 +311,28 @@
                 numEl.textContent = String(n);
             }
         });
+        // Fase 5 oculta → el flujo termina en la 4.
         var completed = Math.max(state.phase - 1, 0);
         var fill = $('lwProgressFill');
-        if (fill) fill.style.width = (completed / 5 * 100) + '%';
+        if (fill) fill.style.width = (completed / 4 * 100) + '%';
         var plbl = $('lwProgressLabel');
-        if (plbl) plbl.textContent = completed + '/5';
+        if (plbl) plbl.textContent = completed + '/4';
         var fc = $('lwFooterCenter');
         if (fc) {
             var phaseLabels = ['', 'Levantamiento', 'Propuesta Técnica', 'Volumetría', 'Programa de Obra', 'Reportes'];
-            fc.textContent = 'Fase ' + state.phase + ' de 5 — ' + phaseLabels[state.phase];
+            fc.textContent = 'Fase ' + state.phase + ' de 4 — ' + phaseLabels[state.phase];
         }
         // prev/next disable + label dinámico para prev en Fase 3
         _lwUpdatePrevButton();
         var next = $('lwFooterNext');
         if (next) {
-            next.disabled = (state.phase === 5);
-            next.style.opacity = (state.phase === 5) ? '0.4' : '';
-            next.textContent = state.phase < 5 ? 'Siguiente fase →' : 'Última fase';
+            next.disabled = (state.phase >= 4);
+            next.style.opacity = (state.phase >= 4) ? '0.4' : '';
+            next.textContent = state.phase < 4 ? 'Siguiente fase →' : 'Última fase';
         }
-        // Ocultar footer en fase 5 (se ve mejor sin él)
+        // El footer se mantiene visible (la fase 5 que lo ocultaba ya no se usa).
         var footer = $('lwFooter');
-        if (footer) footer.style.display = state.phase === 5 ? 'none' : 'flex';
+        if (footer) footer.style.display = 'flex';
     }
 
     // Botón "Fase anterior" del footer es contextual:
@@ -423,7 +426,8 @@
     window._lwIslandCollapseAll = _lwIslandCollapseAll;
 
     window.lwGoPhase = function (n) {
-        if (n < 1 || n > 5) return;
+        // Fase 5 (Reportes) oculta → tope navegable = 4.
+        if (n < 1 || n > 4) return;
         // Gate 70% Fase 1 → Fase >=2
         if (state.phase === 1 && n > 1) {
             var prog = lwFase1Progress();
@@ -453,7 +457,7 @@
         });
     };
     window.lwNextPhase = function () {
-        var target = Math.min(5, state.phase + 1);
+        var target = Math.min(4, state.phase + 1);
         // Al pasar de Propuesta Técnica (Fase 2) → Volumetría (Fase 3),
         // preguntar si guardar la propuesta en el Drive de la oportunidad.
         // Sí → avanza y, en segundo plano, el sistema genera el PDF y lo
@@ -1529,9 +1533,9 @@
         if (elP) elP.textContent = nProd;
         if (elM) elM.textContent = '$' + monto.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-        // Progress bar (fase actual / 5)
+        // Progress bar (fase actual / 4 — la fase 5 está oculta)
         var phase = state.phase || 1;
-        var pct = Math.min(100, phase * 20);
+        var pct = Math.min(100, phase * 25);
         var fill = $('lwSumProgressFill');
         var lbl = $('lwSumProgressLbl');
         if (fill) fill.style.width = pct + '%';
