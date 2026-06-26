@@ -1809,9 +1809,11 @@
             setTimeout(function () { lwAutoGrow(desc); }, 40);
         }
 
-        // Listas de Especificaciones + Comentarios
-        renderP2SpecList('especificaciones', f2.especificaciones);
-        renderP2SpecList('comentarios', f2.comentarios_spec);
+        // Tipo de servicio + Componentes (texto libre, en lista por líneas).
+        // Se prellenan con lo seleccionado en Fase 1 (servicios / componentes)
+        // si aún no se han capturado en Fase 2.
+        lwP2PrefillFreeBox('lw_f2_tiposervicio', 'especificaciones', f2.especificaciones, f1.servicios);
+        lwP2PrefillFreeBox('lw_f2_componentes', 'comentarios_spec', f2.comentarios_spec, f1.componentes);
 
         // Productos / Materiales (seleccionados via catalogo)
         renderPhase2Productos();
@@ -2460,70 +2462,35 @@
         });
     };
 
-    // ── Especificaciones + Comentarios (listas editables tipo bullet) ──
-    function renderP2SpecList(kind, items) {
-        var listEl = $(kind === 'especificaciones' ? 'lw_f2_especif_list' : 'lw_f2_coment_list');
-        if (!listEl) return;
-        items = items || [];
-        listEl.innerHTML = items.map(function (txt, idx) {
-            return '<div class="lw-p2-specs-row">' +
-                '<span class="lw-p2-specs-bullet"></span>' +
-                '<input type="text" class="lw-p2-specs-input" value="' + esc(txt) + '" placeholder="Escribe aquí…" ' +
-                    'oninput="lwP2SpecUpdate(\'' + kind + '\',' + idx + ', this.value)" ' +
-                    'onkeydown="lwP2SpecKey(event, \'' + kind + '\',' + idx + ')">' +
-                '<button type="button" class="lw-p2-specs-del" onclick="lwP2SpecDel(\'' + kind + '\',' + idx + ')" title="Eliminar">×</button>' +
-            '</div>';
-        }).join('');
+    // ── Tipo de servicio + Componentes (texto libre, una entrada por línea) ──
+    // Se guardan en fase2_data.especificaciones / .comentarios_spec como
+    // arreglos (cada línea = item), para que el PDF los liste como bullets.
+    // Prellenado: si no hay nada capturado en Fase 2, toma lo seleccionado en
+    // Fase 1 (servicios / componentes) y lo persiste.
+    function lwP2PrefillFreeBox(textareaId, key, current, fallbackList) {
+        var ta = $(textareaId);
+        if (!ta) return;
+        var f2 = state.lev.fase2_data || {};
+        var arr, prefilled = false;
+        if (current && current.length) {
+            arr = current.slice();
+        } else {
+            arr = (fallbackList || []).filter(function (s) { return s && String(s).trim(); });
+            prefilled = arr.length > 0;
+        }
+        ta.value = arr.join('\n');
+        f2[key] = arr;
+        state.lev.fase2_data = f2;
+        setTimeout(function () { lwAutoGrow(ta); }, 40);
+        if (prefilled) lwFieldChange();  // persistir el prellenado de Fase 1
     }
 
-    window.lwP2AddSpec = function (kind) {
-        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
+    // Cada línea no vacía del textarea = un item del arreglo guardado.
+    window.lwP2ListUpdate = function (key, value) {
         var f2 = state.lev.fase2_data || {};
-        f2[key] = f2[key] || [];
-        f2[key].push('');
-        state.lev.fase2_data = f2;
-        renderP2SpecList(kind, f2[key]);
-        // Focus en el input recién creado
-        setTimeout(function () {
-            var listEl = $(kind === 'especificaciones' ? 'lw_f2_especif_list' : 'lw_f2_coment_list');
-            if (listEl) {
-                var inputs = listEl.querySelectorAll('.lw-p2-specs-input');
-                if (inputs.length) inputs[inputs.length - 1].focus();
-            }
-        }, 30);
-        lwFieldChange();
-    };
-
-    window.lwP2SpecUpdate = function (kind, idx, val) {
-        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
-        var f2 = state.lev.fase2_data || {};
-        f2[key] = f2[key] || [];
-        f2[key][idx] = val;
+        f2[key] = String(value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
         state.lev.fase2_data = f2;
         lwFieldChange();
-    };
-
-    window.lwP2SpecDel = function (kind, idx) {
-        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
-        var f2 = state.lev.fase2_data || {};
-        f2[key] = f2[key] || [];
-        f2[key].splice(idx, 1);
-        state.lev.fase2_data = f2;
-        renderP2SpecList(kind, f2[key]);
-        lwFieldChange();
-    };
-
-    // Enter → agrega nueva fila; Backspace en vacío → elimina
-    window.lwP2SpecKey = function (e, kind, idx) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            lwP2AddSpec(kind);
-        } else if (e.key === 'Backspace' && !e.currentTarget.value) {
-            e.preventDefault();
-            var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
-            var f2 = state.lev.fase2_data || {};
-            if ((f2[key] || []).length > 1) lwP2SpecDel(kind, idx);
-        }
     };
 
     // ── Dropdown PDF ───────────────────────────────────────

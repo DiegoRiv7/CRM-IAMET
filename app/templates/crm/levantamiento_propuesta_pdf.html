@@ -354,22 +354,22 @@
     <tr><td class="pt-desc-cell">{{ desc_proyecto|default:"—"|linebreaksbr }}</td></tr>
 </table>
 
-<!-- ═══ Especificaciones + Comentarios ═══ -->
+<!-- ═══ Tipo de servicio + Componentes ═══ -->
 <table class="pt-table">
     <tr class="pt-specs-head">
-        <td>Especificaciones Técnicas</td>
-        <td>Comentarios</td>
+        <td>Tipo de Servicio</td>
+        <td>Componentes</td>
     </tr>
     <tr>
         <td class="pt-specs-col {% if not especificaciones %}empty{% endif %}">
             {% if especificaciones %}
             <ul>{% for it in especificaciones %}<li>{{ it }}</li>{% endfor %}</ul>
-            {% else %}Sin especificaciones capturadas{% endif %}
+            {% else %}Sin tipo de servicio capturado{% endif %}
         </td>
         <td class="pt-specs-col {% if not comentarios_spec %}empty{% endif %}">
             {% if comentarios_spec %}
             <ul>{% for it in comentarios_spec %}<li>{{ it }}</li>{% endfor %}</ul>
-            {% else %}Sin comentarios capturados{% endif %}
+            {% else %}Sin componentes capturados{% endif %}
         </td>
     </tr>
 </table>
