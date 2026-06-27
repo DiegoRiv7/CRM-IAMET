@@ -1868,7 +1868,8 @@
         var f2 = state.lev.fase2_data || {};
         var prods = f2.productos || [];
         if (!prods.length) {
-            wrap.innerHTML = '<div class="lw-empty-card" style="padding:16px;text-align:center;color:#94A3B8;font-style:italic;border:1px dashed #CBD5E1;border-radius:10px;">Ningún material seleccionado. Usa el buscador de arriba o agrégalos a mano.</div>';
+            // Sin cuadro vacío: el buscador de arriba siempre está disponible.
+            wrap.innerHTML = '';
             return;
         }
         wrap.innerHTML =
@@ -1959,11 +1960,14 @@
     var _p2CatTimer = null;
     window.lwP2CatalogSearch = function () {
         var q = ($('lwP2CatalogSearch').value || '').trim();
+        var listEl = $('lwP2CatalogList');
         if (_p2CatTimer) clearTimeout(_p2CatTimer);
         if (q.length < 2) {
-            $('lwP2CatalogList').innerHTML = '<div class="lw-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
+            // Sin texto suficiente: ocultar la lista (la barra queda lista).
+            if (listEl) { listEl.style.display = 'none'; listEl.innerHTML = ''; }
             return;
         }
+        if (listEl) { listEl.style.display = 'block'; listEl.innerHTML = '<div class="lw-catalog-empty">Buscando…</div>'; }
         _p2CatTimer = setTimeout(function () {
             apiFetch('/app/api/iamet/catalogo-productos/?q=' + encodeURIComponent(q) + '&limit=40').then(function (r) {
                 var list = (r && r.ok && r.data) ? r.data : [];
@@ -1974,6 +1978,7 @@
     function _p2RenderCatalogList(list) {
         var wrap = $('lwP2CatalogList');
         if (!wrap) return;
+        wrap.style.display = 'block';
         var q = ($('lwP2CatalogSearch').value || '').trim();
         if (!list.length) {
             // Empty state con opcion de agregar manual — util porque el
@@ -2014,14 +2019,18 @@
             qty: 1, partida: f2.productos.length + 1,
         });
         state.lev.fase2_data = f2;
-        // Limpiar search y cerrar catalogo
-        $('lwP2CatalogSearch').value = '';
-        lwP2CloseCatalog();
+        // Limpiar el texto y ocultar resultados, pero el buscador SIGUE
+        // disponible para agregar más.
+        var _s = $('lwP2CatalogSearch');
+        if (_s) { _s.value = ''; }
+        var _l = $('lwP2CatalogList');
+        if (_l) { _l.style.display = 'none'; _l.innerHTML = ''; }
         renderPhase2Productos();
         renderPhase2();
         _lwF2RecomputeProgress();
         lwFieldChange();
         lwCheer('✓ Material agregado', esc(q).slice(0, 80));
+        if (_s) _s.focus();
     };
     window.lwP2CatalogAdd = function (i) {
         var list = window._lwP2CatalogCurrent || [];
@@ -2040,6 +2049,9 @@
         _lwF2RecomputeProgress();
         lwFieldChange();
         lwCheer('✓ Material agregado', esc(p.desc).slice(0, 80));
+        // Mantener el buscador listo para seguir agregando.
+        var _s = $('lwP2CatalogSearch');
+        if (_s) { _s.focus(); }
     };
 
     // ── Progress bar Fase 2 ─────────────────────────────────
