@@ -2472,8 +2472,12 @@
         if (!ta) return;
         var f2 = state.lev.fase2_data || {};
         var arr, prefilled = false;
-        if (current && current.length) {
-            arr = current.slice();
+        // "Con contenido" = al menos un item NO vacío (el repetidor viejo dejaba
+        // items '' que hacían que current pareciera lleno y bloqueaban el
+        // prellenado desde Fase 1).
+        var cleanCurrent = (current || []).filter(function (s) { return s && String(s).trim(); });
+        if (cleanCurrent.length) {
+            arr = cleanCurrent;
         } else {
             arr = (fallbackList || []).filter(function (s) { return s && String(s).trim(); });
             prefilled = arr.length > 0;
