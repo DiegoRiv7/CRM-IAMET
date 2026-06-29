@@ -4642,6 +4642,37 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
 
 @login_required
 @require_http_methods(["GET"])
+def _compress_image_for_pdf(src_path, tmp_dir, max_side=1600, quality=80):
+    """Crea una copia reducida y recomprimida (JPEG) de una foto para incrustarla
+    en un PDF ligero, apto para enviar por correo. Reescala para que el lado más
+    largo no pase de ``max_side`` px y la guarda como JPEG ``quality``. No toca el
+    archivo original.
+
+    Devuelve la ruta del archivo temporal generado, o '' si algo falla (en cuyo
+    caso el caller debe usar la imagen original como fallback)."""
+    try:
+        import os, uuid
+        from PIL import Image, ImageOps
+        try:
+            resample = Image.Resampling.LANCZOS
+        except AttributeError:  # Pillow < 9.1
+            resample = Image.LANCZOS
+        with Image.open(src_path) as im:
+            im = ImageOps.exif_transpose(im)   # aplica la orientación de la cámara
+            if im.mode != 'RGB':
+                im = im.convert('RGB')
+            w, h = im.size
+            longest = max(w, h)
+            if longest > max_side:
+                scale = max_side / float(longest)
+                im = im.resize((max(1, round(w * scale)), max(1, round(h * scale))), resample)
+            out_path = os.path.join(tmp_dir, f'{uuid.uuid4().hex}.jpg')
+            im.save(out_path, format='JPEG', quality=quality, optimize=True, progressive=True)
+        return out_path
+    except Exception:
+        return ''
+
+
 def _propuesta_pdf_bytes(lev, request):
     """Construye el PDF de la Propuesta Técnica y devuelve los bytes.
     Reusado por la vista de descarga/preview y por el guardado al Drive.
@@ -4680,10 +4711,25 @@ def _propuesta_pdf_bytes(lev, request):
                 return 'file://' + p
         return ''
 
-    evidencias = [{
-        'abs_url': _file_url_for_field(e.archivo),
-        'comentario': e.comentario or '',
-    } for e in lev.evidencias.all()]
+    # Carpeta temporal para las fotos comprimidas; se borra al final (try/finally
+    # alrededor del render). Las fotos de evidencia se reescalan + recomprimen para
+    # que el PDF quede ligero y se pueda enviar por correo. Si la compresión falla
+    # en una foto se usa la original como fallback; los archivos originales no se tocan.
+    import tempfile, shutil
+    _img_tmp_dir = tempfile.mkdtemp(prefix='propuesta_pdf_')
+
+    evidencias = []
+    for e in lev.evidencias.all():
+        abs_url = _file_url_for_field(e.archivo)
+        try:
+            src_path = e.archivo.path
+        except Exception:
+            src_path = ''
+        if src_path:
+            comp_path = _compress_image_for_pdf(src_path, _img_tmp_dir)
+            if comp_path:
+                abs_url = 'file://' + comp_path
+        evidencias.append({'abs_url': abs_url, 'comentario': e.comentario or ''})
 
     # Formato de fecha: "04 / Nov / 2025"
     import datetime as _dt
@@ -4744,9 +4790,12 @@ def _propuesta_pdf_bytes(lev, request):
         'empresa_direccion': 'Tijuana, B.C.',
     }
 
-    html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
-    from weasyprint import HTML
-    return HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    try:
+        html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
+        from weasyprint import HTML
+        return HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    finally:
+        shutil.rmtree(_img_tmp_dir, ignore_errors=True)
 
 
 def _propuesta_pdf_filename(lev):
