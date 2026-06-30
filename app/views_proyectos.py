@@ -6486,9 +6486,11 @@ def api_instalaciones_calendario(request):
 
     if rango_start and rango_end:
         # Ampliamos el límite inferior: una instalación que inició antes del
-        # rango puede extenderse hasta dentro de él por su duración. El
-        # post-filtro de abajo descarta las que no tocan el rango.
-        qs = qs.filter(fecha_programada__range=(rango_start - timedelta(days=45), rango_end))
+        # rango puede extenderse hasta dentro de él por su duración. 400 días
+        # cubre la duración máxima de un programa (antes 45, que dejaban fuera
+        # programas largos). El post-filtro de abajo descarta las que no tocan
+        # el rango.
+        qs = qs.filter(fecha_programada__range=(rango_start - timedelta(days=400), rango_end))
 
     # Filtros opcionales adicionales.
     estado = (request.GET.get('estado') or '').strip()
@@ -6602,10 +6604,13 @@ def api_grid_tecnicos(request):
     # cada instalación ocupa TODOS sus días (duración completa) con SUS horas,
     # para que el técnico aparezca en todas las jornadas del programa.
     # Buffer en el límite inferior por instalaciones que iniciaron antes pero
-    # se extienden al rango visible.
+    # se extienden al rango visible. 400 días cubre la duración máxima de un
+    # programa (el guard de _instalacion_dias_asignados corta en 400). Antes
+    # eran 45 días, que dejaban fuera programas largos cuyo inicio quedaba
+    # más atrás aunque sus jornadas cayeran en la semana visible.
     inst_qs = (
         Instalacion.objects
-        .filter(fecha_programada__range=(start - timedelta(days=45), end))
+        .filter(fecha_programada__range=(start - timedelta(days=400), end))
         .prefetch_related('asignaciones')
     )
 
@@ -6748,9 +6753,11 @@ def api_grid_equipo(request):
     )
 
     # ── 3) INSTALACIONES (buffer inferior por multi-día) ──
+    # 400 días = duración máxima de un programa; 45 días dejaban fuera
+    # programas largos cuyas jornadas caen en la semana visible.
     inst_qs = (
         Instalacion.objects
-        .filter(fecha_programada__range=(start - timedelta(days=45), end))
+        .filter(fecha_programada__range=(start - timedelta(days=400), end))
         .prefetch_related('asignaciones__tecnico')
     )
 
