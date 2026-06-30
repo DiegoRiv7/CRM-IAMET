@@ -3372,12 +3372,10 @@ def api_levantamiento_crear(request, proyecto_id):
         existentes = proyecto.levantamientos.count()
         nombre = f'Levantamiento {existentes + 1}'
 
-    # Pre-poblar Fase 1 AGRESIVAMENTE desde proyecto + oportunidad +
-    # cliente ligado. El ingeniero abre el wizard y encuentra hasta
-    # No prellenamos ningun dato: el ingeniero debe capturar cada
-    # campo manualmente para asegurar que los datos son reales y no
-    # asumidos. El unico valor que respetamos es el override explicito
-    # que venga en la peticion.
+    # Pre-poblar Fase 1 con lo que YA tiene la oportunidad vinculada al
+    # proyecto: cliente, contacto (nombre/email/teléfono) y la fecha de hoy
+    # (el día en que se inicia el levantamiento). El ingeniero solo confirma
+    # o ajusta. Un override explícito en la petición SIEMPRE gana.
     fase1_default = {
         'cliente':     '',
         'cliente_id':  None,
@@ -3391,8 +3389,32 @@ def api_levantamiento_crear(request, proyecto_id):
         'componentes': [],
         'productos':   [],
     }
+    # Autollenado desde oportunidad + cliente.
+    fase1_auto = {'fecha': timezone.localdate().isoformat()}
+    opp = getattr(proyecto, 'oportunidad', None)
+    cli = getattr(opp, 'cliente', None) if opp else None
+    cont = getattr(opp, 'contacto', None) if opp else None
+    if cli is not None:
+        fase1_auto['cliente'] = cli.nombre_empresa or ''
+        fase1_auto['cliente_id'] = cli.id
+    elif getattr(proyecto, 'cliente_nombre', ''):
+        fase1_auto['cliente'] = proyecto.cliente_nombre
+    if cont is not None:
+        nombre_cont = f"{cont.nombre} {cont.apellido or ''}".strip()
+        if nombre_cont:
+            fase1_auto['contacto'] = nombre_cont
+        if cont.email:
+            fase1_auto['email'] = cont.email
+        if cont.telefono:
+            fase1_auto['telefono'] = cont.telefono
+    elif cli is not None and getattr(cli, 'contacto_principal', ''):
+        fase1_auto['contacto'] = cli.contacto_principal
+    if not fase1_auto.get('telefono') and cli is not None and getattr(cli, 'telefono', ''):
+        fase1_auto['telefono'] = cli.telefono
+
     fase1_override = data.get('fase1_data') or {}
-    fase1 = {**fase1_default, **fase1_override}
+    # Orden de precedencia: defaults < autollenado < override explícito.
+    fase1 = {**fase1_default, **fase1_auto, **fase1_override}
 
     lev = ProyectoLevantamiento.objects.create(
         proyecto=proyecto,
@@ -4620,26 +4642,44 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
 
 @login_required
 @require_http_methods(["GET"])
-def api_levantamiento_propuesta_pdf(request, levantamiento_id):
-    """Genera el PDF de la Propuesta Técnica de un levantamiento.
+def _compress_image_for_pdf(src_path, tmp_dir, max_side=1600, quality=80):
+    """Crea una copia reducida y recomprimida (JPEG) de una foto para incrustarla
+    en un PDF ligero, apto para enviar por correo. Reescala para que el lado más
+    largo no pase de ``max_side`` px y la guarda como JPEG ``quality``. No toca el
+    archivo original.
 
-    Respeta el formato del docx original (tablas azules con secciones).
-    Params:
-      ?download=1  → fuerza Content-Disposition: attachment
-      por defecto  → inline (se abre en la pestaña para preview)
-    """
-    from django.http import HttpResponse
+    Devuelve la ruta del archivo temporal generado, o '' si algo falla (en cuyo
+    caso el caller debe usar la imagen original como fallback)."""
+    try:
+        import os, uuid
+        from PIL import Image, ImageOps
+        try:
+            resample = Image.Resampling.LANCZOS
+        except AttributeError:  # Pillow < 9.1
+            resample = Image.LANCZOS
+        with Image.open(src_path) as im:
+            im = ImageOps.exif_transpose(im)   # aplica la orientación de la cámara
+            if im.mode != 'RGB':
+                im = im.convert('RGB')
+            w, h = im.size
+            longest = max(w, h)
+            if longest > max_side:
+                scale = max_side / float(longest)
+                im = im.resize((max(1, round(w * scale)), max(1, round(h * scale))), resample)
+            out_path = os.path.join(tmp_dir, f'{uuid.uuid4().hex}.jpg')
+            im.save(out_path, format='JPEG', quality=quality, optimize=True, progressive=True)
+        return out_path
+    except Exception:
+        return ''
+
+
+def _propuesta_pdf_bytes(lev, request):
+    """Construye el PDF de la Propuesta Técnica y devuelve los bytes.
+    Reusado por la vista de descarga/preview y por el guardado al Drive.
+    Lanza excepción si WeasyPrint falla."""
     from django.template.loader import render_to_string
     from django.conf import settings
     import os
-    try:
-        lev = ProyectoLevantamiento.objects.select_related(
-            'proyecto', 'creado_por'
-        ).prefetch_related('evidencias').get(id=levantamiento_id)
-    except ProyectoLevantamiento.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
-    if not _check_access(request.user, lev.proyecto):
-        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
     f1 = lev.fase1_data or {}
     f2 = lev.fase2_data or {}
@@ -4671,10 +4711,25 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
                 return 'file://' + p
         return ''
 
-    evidencias = [{
-        'abs_url': _file_url_for_field(e.archivo),
-        'comentario': e.comentario or '',
-    } for e in lev.evidencias.all()]
+    # Carpeta temporal para las fotos comprimidas; se borra al final (try/finally
+    # alrededor del render). Las fotos de evidencia se reescalan + recomprimen para
+    # que el PDF quede ligero y se pueda enviar por correo. Si la compresión falla
+    # en una foto se usa la original como fallback; los archivos originales no se tocan.
+    import tempfile, shutil
+    _img_tmp_dir = tempfile.mkdtemp(prefix='propuesta_pdf_')
+
+    evidencias = []
+    for e in lev.evidencias.all():
+        abs_url = _file_url_for_field(e.archivo)
+        try:
+            src_path = e.archivo.path
+        except Exception:
+            src_path = ''
+        if src_path:
+            comp_path = _compress_image_for_pdf(src_path, _img_tmp_dir)
+            if comp_path:
+                abs_url = 'file://' + comp_path
+        evidencias.append({'abs_url': abs_url, 'comentario': e.comentario or ''})
 
     # Formato de fecha: "04 / Nov / 2025"
     import datetime as _dt
@@ -4735,22 +4790,94 @@ def api_levantamiento_propuesta_pdf(request, levantamiento_id):
         'empresa_direccion': 'Tijuana, B.C.',
     }
 
-    html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
+    try:
+        html = render_to_string('crm/levantamiento_propuesta_pdf.html', ctx, request=request)
+        from weasyprint import HTML
+        return HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    finally:
+        shutil.rmtree(_img_tmp_dir, ignore_errors=True)
+
+
+def _propuesta_pdf_filename(lev):
+    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'propuesta')).strip()[:80] or 'propuesta'
+    return f'PropuestaTecnica_{safe_name}.pdf'
+
+
+def api_levantamiento_propuesta_pdf(request, levantamiento_id):
+    """Genera el PDF de la Propuesta Técnica de un levantamiento.
+
+    Respeta el formato del docx original (tablas azules con secciones).
+    Params:
+      ?download=1  → fuerza Content-Disposition: attachment
+      por defecto  → inline (se abre en la pestaña para preview)
+    """
+    from django.http import HttpResponse
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
     try:
-        from weasyprint import HTML
-        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+        pdf_bytes = _propuesta_pdf_bytes(lev, request)
     except Exception as e:
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (lev.nombre or 'propuesta')).strip()[:80] or 'propuesta'
-    filename = f'PropuestaTecnica_{safe_name}.pdf'
+    filename = _propuesta_pdf_filename(lev)
     disp = 'attachment' if request.GET.get('download') else 'inline'
     response['Content-Disposition'] = f'{disp}; filename="{filename}"'
     return response
+
+
+@login_required
+def api_levantamiento_propuesta_guardar_drive(request, levantamiento_id):
+    """POST → genera el PDF de la Propuesta Técnica y lo guarda en el Drive
+    de la oportunidad vinculada al proyecto del levantamiento. Silencioso
+    (no devuelve el PDF). Usado al descargar la propuesta y al avanzar de
+    fase 2→3 cuando el ingeniero acepta guardarla."""
+    from .models import ArchivoOportunidad
+    from django.core.files.base import ContentFile
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Solo POST'}, status=405)
+    try:
+        lev = ProyectoLevantamiento.objects.select_related(
+            'proyecto', 'creado_por'
+        ).prefetch_related('evidencias').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+
+    oportunidad = getattr(lev.proyecto, 'oportunidad', None) if lev.proyecto else None
+    if not oportunidad:
+        return JsonResponse({'success': False, 'error': 'El proyecto no tiene oportunidad vinculada — la propuesta no tiene a dónde ir.'}, status=400)
+
+    try:
+        pdf_bytes = _propuesta_pdf_bytes(lev, request)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error generando PDF: {e}'}, status=500)
+
+    filename = _propuesta_pdf_filename(lev)
+    archivo = ArchivoOportunidad.objects.create(
+        nombre_original=filename,
+        archivo=ContentFile(pdf_bytes, name=filename),
+        tipo_archivo='pdf',
+        tamaño=len(pdf_bytes),
+        oportunidad=oportunidad,
+        carpeta=None,  # raíz del Drive
+        subido_por=request.user,
+        extension='pdf',
+        mime_type='application/pdf',
+    )
+    return JsonResponse({'success': True, 'archivo_id': archivo.id, 'oportunidad_id': oportunidad.id})
 
 
 # ─── VOLUMETRÍA: helpers compartidos (PDF + XLSX) ─────────────────

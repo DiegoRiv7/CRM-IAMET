@@ -100,7 +100,9 @@
         if (!levData) return;
         opts = opts || {};
         state.lev = JSON.parse(JSON.stringify(levData)); // deep copy
-        state.phase = Math.max(1, Math.min(5, levData.fase_actual || 1));
+        // Fase 5 (Reportes) está oculta → el máximo navegable es 4. Si un
+        // levantamiento viejo quedó en fase_actual 5, lo abrimos en la 4.
+        state.phase = Math.max(1, Math.min(4, levData.fase_actual || 1));
         state.dirty = false;
         state.readonly = (opts.puedeEditar === false);
 
@@ -309,27 +311,29 @@
                 numEl.textContent = String(n);
             }
         });
-        var completed = Math.max(state.phase - 1, 0);
+        // Fase 5 oculta → el flujo termina en la 4. El contador del stepper
+        // refleja la fase ACTUAL (no las completadas) para no contradecir el
+        // resto de la UI: "Fase 2 de 4", "COMPLETADO 50%", "Puedes avanzar".
         var fill = $('lwProgressFill');
-        if (fill) fill.style.width = (completed / 5 * 100) + '%';
+        if (fill) fill.style.width = (state.phase / 4 * 100) + '%';
         var plbl = $('lwProgressLabel');
-        if (plbl) plbl.textContent = completed + '/5';
+        if (plbl) plbl.textContent = state.phase + '/4';
         var fc = $('lwFooterCenter');
         if (fc) {
             var phaseLabels = ['', 'Levantamiento', 'Propuesta Técnica', 'Volumetría', 'Programa de Obra', 'Reportes'];
-            fc.textContent = 'Fase ' + state.phase + ' de 5 — ' + phaseLabels[state.phase];
+            fc.textContent = 'Fase ' + state.phase + ' de 4 — ' + phaseLabels[state.phase];
         }
         // prev/next disable + label dinámico para prev en Fase 3
         _lwUpdatePrevButton();
         var next = $('lwFooterNext');
         if (next) {
-            next.disabled = (state.phase === 5);
-            next.style.opacity = (state.phase === 5) ? '0.4' : '';
-            next.textContent = state.phase < 5 ? 'Siguiente fase →' : 'Última fase';
+            next.disabled = (state.phase >= 4);
+            next.style.opacity = (state.phase >= 4) ? '0.4' : '';
+            next.textContent = state.phase < 4 ? 'Siguiente fase →' : 'Última fase';
         }
-        // Ocultar footer en fase 5 (se ve mejor sin él)
+        // El footer se mantiene visible (la fase 5 que lo ocultaba ya no se usa).
         var footer = $('lwFooter');
-        if (footer) footer.style.display = state.phase === 5 ? 'none' : 'flex';
+        if (footer) footer.style.display = 'flex';
     }
 
     // Botón "Fase anterior" del footer es contextual:
@@ -423,7 +427,8 @@
     window._lwIslandCollapseAll = _lwIslandCollapseAll;
 
     window.lwGoPhase = function (n) {
-        if (n < 1 || n > 5) return;
+        // Fase 5 (Reportes) oculta → tope navegable = 4.
+        if (n < 1 || n > 4) return;
         // Gate 70% Fase 1 → Fase >=2
         if (state.phase === 1 && n > 1) {
             var prog = lwFase1Progress();
@@ -452,7 +457,28 @@
             body: JSON.stringify({ fase_actual: state.lev.fase_actual }),
         });
     };
-    window.lwNextPhase = function () { lwGoPhase(Math.min(5, state.phase + 1)); };
+    window.lwNextPhase = function () {
+        var target = Math.min(4, state.phase + 1);
+        // Al pasar de Propuesta Técnica (Fase 2) → Volumetría (Fase 3),
+        // preguntar si guardar la propuesta en el Drive de la oportunidad.
+        // Sí → avanza y, en segundo plano, el sistema genera el PDF y lo
+        // mete al Drive. No → simplemente avanza sin generar nada.
+        if (state.phase === 2 && target === 3 && typeof lwConfirm === 'function') {
+            lwConfirm({
+                title: 'Guardar Propuesta Técnica',
+                message: '¿Deseas guardar la Propuesta Técnica en el Drive de la oportunidad antes de continuar?',
+                confirmLabel: 'Sí, guardar',
+                cancelLabel: 'No, solo avanzar',
+            }).then(function (yes) {
+                if (yes && typeof lwGuardarPropuestaDrive === 'function') {
+                    lwGuardarPropuestaDrive(true);  // genera y guarda en background
+                }
+                lwGoPhase(target);
+            });
+            return;
+        }
+        lwGoPhase(target);
+    };
     window.lwPrevPhase = function () { lwGoPhase(Math.max(1, state.phase - 1)); };
 
     function renderPhase(n) {
@@ -1508,9 +1534,9 @@
         if (elP) elP.textContent = nProd;
         if (elM) elM.textContent = '$' + monto.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-        // Progress bar (fase actual / 5)
+        // Progress bar (fase actual / 4 — la fase 5 está oculta)
         var phase = state.phase || 1;
-        var pct = Math.min(100, phase * 20);
+        var pct = Math.min(100, phase * 25);
         var fill = $('lwSumProgressFill');
         var lbl = $('lwSumProgressLbl');
         if (fill) fill.style.width = pct + '%';
@@ -1784,44 +1810,17 @@
             setTimeout(function () { lwAutoGrow(desc); }, 40);
         }
 
-        // Listas de Especificaciones + Comentarios
-        renderP2SpecList('especificaciones', f2.especificaciones);
-        renderP2SpecList('comentarios', f2.comentarios_spec);
+        // Tipo de servicio + Componentes (texto libre, en lista por líneas).
+        // Se prellenan con lo seleccionado en Fase 1 (servicios / componentes)
+        // si aún no se han capturado en Fase 2.
+        lwP2PrefillFreeBox('lw_f2_tiposervicio', 'especificaciones', f2.especificaciones, f1.servicios);
+        lwP2PrefillFreeBox('lw_f2_componentes', 'comentarios_spec', f2.comentarios_spec, f1.componentes);
 
-        // Productos / Materiales (seleccionados via catalogo)
+        // Productos / Materiales (seleccionados via catalogo). Cada fila lleva
+        // su propio comentario de instalación expandible — antes había una
+        // segunda lista "Notas por partida" que duplicaba los productos.
         renderPhase2Productos();
 
-        // Partidas con comentarios — ahora iteran fase2.productos
-        var productos = f2.productos || [];
-        var wrap = $('lw_f2_partidas');
-        if (!productos.length) {
-            wrap.innerHTML = '<div class="lw-empty-card">Agrega productos arriba primero para poder escribir notas por partida</div>';
-        } else {
-            var comentarios = f2.comentarios || {}; // idx -> texto
-            wrap.innerHTML = productos.map(function (p, idx) {
-                var com = comentarios[idx] || '';
-                var hasNote = com.trim() !== '';
-                return '<div class="lw-prod-card" data-idx="' + idx + '">' +
-                    '<div class="lw-prod-head" onclick="lwP2ToggleExpand(' + idx + ')">' +
-                        '<div class="lw-prod-head-left">' +
-                            '<span class="lw-prod-num">' + (idx + 1) + '</span>' +
-                            '<div>' +
-                                '<div class="lw-prod-title">' + esc(p.desc || '') + '</div>' +
-                                '<div class="lw-prod-sub">' + esc(p.marca || '') + ' · ' + esc(p.modelo || '') + ' · <strong>' + (p.qty || 0) + ' ' + esc(p.unidad || '') + '</strong></div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="lw-prod-head-right">' +
-                            (hasNote ? '<span class="lw-prod-has-note">Nota</span>' : '') +
-                            '<svg class="lw-prod-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="lw-prod-body" style="display:none;">' +
-                        '<label>Comentarios de Instalación</label>' +
-                        '<textarea rows="3" oninput="lwP2UpdateComment(' + idx + ', this.value)" placeholder="Condiciones de instalación, herramientas necesarias…">' + esc(com) + '</textarea>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
-        }
         // Evidencias
         renderPhase2Photos();
         // Notas sobre las evidencias
@@ -1841,25 +1840,39 @@
         var f2 = state.lev.fase2_data || {};
         var prods = f2.productos || [];
         if (!prods.length) {
-            wrap.innerHTML = '<div class="lw-empty-card" style="padding:16px;text-align:center;color:#94A3B8;font-style:italic;border:1px dashed #CBD5E1;border-radius:10px;">Ningún material seleccionado. Usa el buscador de arriba o agrégalos a mano.</div>';
+            // Sin cuadro vacío: el buscador de arriba siempre está disponible.
+            wrap.innerHTML = '';
             return;
         }
+        var comentarios = f2.comentarios || {}; // idx -> texto
         wrap.innerHTML =
             '<div class="lw-f2-prods-list">' +
             prods.map(function (p, i) {
-                return '<div class="lw-f2-prod-row">' +
-                    '<span class="lw-f2-prod-num">' + (i + 1) + '</span>' +
-                    '<div class="lw-f2-prod-info">' +
-                        '<input class="lw-f2-prod-desc-input" type="text" value="' + esc(p.desc || '') + '" placeholder="Descripción" oninput="lwP2ProdField(' + i + ', \'desc\', this.value)">' +
-                        '<div class="lw-f2-prod-sub-inputs">' +
-                            '<input type="text" value="' + esc(p.marca || '') + '" placeholder="Marca" oninput="lwP2ProdField(' + i + ', \'marca\', this.value)">' +
-                            '<input type="text" value="' + esc(p.modelo || '') + '" placeholder="Modelo / No. Parte" oninput="lwP2ProdField(' + i + ', \'modelo\', this.value)">' +
+                var com = comentarios[i] || '';
+                var hasNote = com.trim() !== '';
+                return '<div class="lw-f2-prod-item" data-idx="' + i + '">' +
+                    '<div class="lw-f2-prod-row">' +
+                        '<span class="lw-f2-prod-num">' + (i + 1) + '</span>' +
+                        '<div class="lw-f2-prod-info">' +
+                            '<input class="lw-f2-prod-desc-input" type="text" value="' + esc(p.desc || '') + '" placeholder="Descripción" oninput="lwP2ProdField(' + i + ', \'desc\', this.value)">' +
+                            '<div class="lw-f2-prod-sub-inputs">' +
+                                '<input type="text" value="' + esc(p.marca || '') + '" placeholder="Marca" oninput="lwP2ProdField(' + i + ', \'marca\', this.value)">' +
+                                '<input type="text" value="' + esc(p.modelo || '') + '" placeholder="Modelo / No. Parte" oninput="lwP2ProdField(' + i + ', \'modelo\', this.value)">' +
+                            '</div>' +
                         '</div>' +
+                        '<label class="lw-f2-prod-qty"><span>Cant</span>' +
+                            '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdField(' + i + ', \'qty\', this.value)">' +
+                        '</label>' +
+                        '<button type="button" class="lw-f2-prod-note-btn' + (hasNote ? ' has-note' : '') + '" onclick="lwP2ToggleProdNote(' + i + ')" title="Comentario de instalación">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+                            (hasNote ? '<span class="lw-f2-prod-note-dot"></span>' : '') +
+                        '</button>' +
+                        '<button type="button" class="lw-f2-prod-del" onclick="lwP2DelProd(' + i + ')" title="Eliminar">×</button>' +
                     '</div>' +
-                    '<label class="lw-f2-prod-qty"><span>Cant</span>' +
-                        '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdField(' + i + ', \'qty\', this.value)">' +
-                    '</label>' +
-                    '<button type="button" class="lw-f2-prod-del" onclick="lwP2DelProd(' + i + ')" title="Eliminar">×</button>' +
+                    '<div class="lw-f2-prod-note-body" style="display:' + (hasNote ? 'block' : 'none') + ';">' +
+                        '<label>Comentarios de instalación</label>' +
+                        '<textarea rows="2" oninput="lwP2UpdateComment(' + i + ', this.value)" placeholder="Condiciones de instalación, herramientas necesarias…">' + esc(com) + '</textarea>' +
+                    '</div>' +
                 '</div>';
             }).join('') +
             '</div>' +
@@ -1868,6 +1881,23 @@
                 'Agregar fila en blanco' +
             '</button>';
     }
+
+    // Expandir/colapsar el comentario de instalación de una partida (fila de
+    // producto en Fase 2). Reemplaza la lista separada "Notas por partida".
+    window.lwP2ToggleProdNote = function (i) {
+        var item = document.querySelector('.lw-f2-prod-item[data-idx="' + i + '"]');
+        if (!item) return;
+        var body = item.querySelector('.lw-f2-prod-note-body');
+        var btn = item.querySelector('.lw-f2-prod-note-btn');
+        if (!body) return;
+        var open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        if (btn) btn.classList.toggle('active', !open);
+        if (!open) {
+            var ta = body.querySelector('textarea');
+            if (ta) ta.focus();
+        }
+    };
 
     // Update generico de cualquier campo del producto, sin re-render
     // para no perder el foco mientras el usuario escribe.
@@ -1932,11 +1962,14 @@
     var _p2CatTimer = null;
     window.lwP2CatalogSearch = function () {
         var q = ($('lwP2CatalogSearch').value || '').trim();
+        var listEl = $('lwP2CatalogList');
         if (_p2CatTimer) clearTimeout(_p2CatTimer);
         if (q.length < 2) {
-            $('lwP2CatalogList').innerHTML = '<div class="lw-catalog-empty">Escribe al menos 2 caracteres para buscar…</div>';
+            // Sin texto suficiente: ocultar la lista (la barra queda lista).
+            if (listEl) { listEl.style.display = 'none'; listEl.innerHTML = ''; }
             return;
         }
+        if (listEl) { listEl.style.display = 'block'; listEl.innerHTML = '<div class="lw-catalog-empty">Buscando…</div>'; }
         _p2CatTimer = setTimeout(function () {
             apiFetch('/app/api/iamet/catalogo-productos/?q=' + encodeURIComponent(q) + '&limit=40').then(function (r) {
                 var list = (r && r.ok && r.data) ? r.data : [];
@@ -1947,6 +1980,7 @@
     function _p2RenderCatalogList(list) {
         var wrap = $('lwP2CatalogList');
         if (!wrap) return;
+        wrap.style.display = 'block';
         var q = ($('lwP2CatalogSearch').value || '').trim();
         if (!list.length) {
             // Empty state con opcion de agregar manual — util porque el
@@ -1987,14 +2021,18 @@
             qty: 1, partida: f2.productos.length + 1,
         });
         state.lev.fase2_data = f2;
-        // Limpiar search y cerrar catalogo
-        $('lwP2CatalogSearch').value = '';
-        lwP2CloseCatalog();
+        // Limpiar el texto y ocultar resultados, pero el buscador SIGUE
+        // disponible para agregar más.
+        var _s = $('lwP2CatalogSearch');
+        if (_s) { _s.value = ''; }
+        var _l = $('lwP2CatalogList');
+        if (_l) { _l.style.display = 'none'; _l.innerHTML = ''; }
         renderPhase2Productos();
         renderPhase2();
         _lwF2RecomputeProgress();
         lwFieldChange();
         lwCheer('✓ Material agregado', esc(q).slice(0, 80));
+        if (_s) _s.focus();
     };
     window.lwP2CatalogAdd = function (i) {
         var list = window._lwP2CatalogCurrent || [];
@@ -2013,6 +2051,14 @@
         _lwF2RecomputeProgress();
         lwFieldChange();
         lwCheer('✓ Material agregado', esc(p.desc).slice(0, 80));
+        // Contraer las sugerencias y limpiar el texto, así el usuario VE que
+        // el material se agregó a la lista. El buscador sigue listo para
+        // seguir agregando (basta volver a teclear).
+        var _s = $('lwP2CatalogSearch');
+        if (_s) { _s.value = ''; }
+        var _l = $('lwP2CatalogList');
+        if (_l) { _l.style.display = 'none'; _l.innerHTML = ''; }
+        if (_s) { _s.focus(); }
     };
 
     // ── Progress bar Fase 2 ─────────────────────────────────
@@ -2054,15 +2100,6 @@
             }
         }
     }
-    window.lwP2ToggleExpand = function (idx) {
-        var card = document.querySelector('.lw-prod-card[data-idx="' + idx + '"]');
-        if (!card) return;
-        var body = card.querySelector('.lw-prod-body');
-        var chev = card.querySelector('.lw-prod-chev');
-        var open = body.style.display !== 'none';
-        body.style.display = open ? 'none' : 'block';
-        if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
-    };
     window.lwP2UpdateComment = function (idx, val) {
         var f2 = state.lev.fase2_data || {};
         f2.comentarios = f2.comentarios || {};
@@ -2435,70 +2472,39 @@
         });
     };
 
-    // ── Especificaciones + Comentarios (listas editables tipo bullet) ──
-    function renderP2SpecList(kind, items) {
-        var listEl = $(kind === 'especificaciones' ? 'lw_f2_especif_list' : 'lw_f2_coment_list');
-        if (!listEl) return;
-        items = items || [];
-        listEl.innerHTML = items.map(function (txt, idx) {
-            return '<div class="lw-p2-specs-row">' +
-                '<span class="lw-p2-specs-bullet"></span>' +
-                '<input type="text" class="lw-p2-specs-input" value="' + esc(txt) + '" placeholder="Escribe aquí…" ' +
-                    'oninput="lwP2SpecUpdate(\'' + kind + '\',' + idx + ', this.value)" ' +
-                    'onkeydown="lwP2SpecKey(event, \'' + kind + '\',' + idx + ')">' +
-                '<button type="button" class="lw-p2-specs-del" onclick="lwP2SpecDel(\'' + kind + '\',' + idx + ')" title="Eliminar">×</button>' +
-            '</div>';
-        }).join('');
+    // ── Tipo de servicio + Componentes (texto libre, una entrada por línea) ──
+    // Se guardan en fase2_data.especificaciones / .comentarios_spec como
+    // arreglos (cada línea = item), para que el PDF los liste como bullets.
+    // Prellenado: si no hay nada capturado en Fase 2, toma lo seleccionado en
+    // Fase 1 (servicios / componentes) y lo persiste.
+    function lwP2PrefillFreeBox(textareaId, key, current, fallbackList) {
+        var ta = $(textareaId);
+        if (!ta) return;
+        var f2 = state.lev.fase2_data || {};
+        var arr, prefilled = false;
+        // "Con contenido" = al menos un item NO vacío (el repetidor viejo dejaba
+        // items '' que hacían que current pareciera lleno y bloqueaban el
+        // prellenado desde Fase 1).
+        var cleanCurrent = (current || []).filter(function (s) { return s && String(s).trim(); });
+        if (cleanCurrent.length) {
+            arr = cleanCurrent;
+        } else {
+            arr = (fallbackList || []).filter(function (s) { return s && String(s).trim(); });
+            prefilled = arr.length > 0;
+        }
+        ta.value = arr.join('\n');
+        f2[key] = arr;
+        state.lev.fase2_data = f2;
+        setTimeout(function () { lwAutoGrow(ta); }, 40);
+        if (prefilled) lwFieldChange();  // persistir el prellenado de Fase 1
     }
 
-    window.lwP2AddSpec = function (kind) {
-        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
+    // Cada línea no vacía del textarea = un item del arreglo guardado.
+    window.lwP2ListUpdate = function (key, value) {
         var f2 = state.lev.fase2_data || {};
-        f2[key] = f2[key] || [];
-        f2[key].push('');
-        state.lev.fase2_data = f2;
-        renderP2SpecList(kind, f2[key]);
-        // Focus en el input recién creado
-        setTimeout(function () {
-            var listEl = $(kind === 'especificaciones' ? 'lw_f2_especif_list' : 'lw_f2_coment_list');
-            if (listEl) {
-                var inputs = listEl.querySelectorAll('.lw-p2-specs-input');
-                if (inputs.length) inputs[inputs.length - 1].focus();
-            }
-        }, 30);
-        lwFieldChange();
-    };
-
-    window.lwP2SpecUpdate = function (kind, idx, val) {
-        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
-        var f2 = state.lev.fase2_data || {};
-        f2[key] = f2[key] || [];
-        f2[key][idx] = val;
+        f2[key] = String(value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
         state.lev.fase2_data = f2;
         lwFieldChange();
-    };
-
-    window.lwP2SpecDel = function (kind, idx) {
-        var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
-        var f2 = state.lev.fase2_data || {};
-        f2[key] = f2[key] || [];
-        f2[key].splice(idx, 1);
-        state.lev.fase2_data = f2;
-        renderP2SpecList(kind, f2[key]);
-        lwFieldChange();
-    };
-
-    // Enter → agrega nueva fila; Backspace en vacío → elimina
-    window.lwP2SpecKey = function (e, kind, idx) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            lwP2AddSpec(kind);
-        } else if (e.key === 'Backspace' && !e.currentTarget.value) {
-            e.preventDefault();
-            var key = kind === 'especificaciones' ? 'especificaciones' : 'comentarios_spec';
-            var f2 = state.lev.fase2_data || {};
-            if ((f2[key] || []).length > 1) lwP2SpecDel(kind, idx);
-        }
     };
 
     // ── Dropdown PDF ───────────────────────────────────────
@@ -2545,7 +2551,14 @@
                 return;
             }
             var qsVol = 'volumetria_id=' + encodeURIComponent(volId);
-            if (mode === 'dl-vol-xlsx') {
+            if (mode === 'gen-cotizacion') {
+                // Generar cotización (mismo flujo que la vista de vendedores).
+                var volObj = (state.volumetrias || []).filter(function (v) { return v.id === volId; })[0] || {};
+                if (typeof window.lwP3GenerarCotizacion === 'function') {
+                    window.lwP3GenerarCotizacion(volId, volObj.nombre || '');
+                }
+                return;
+            } else if (mode === 'dl-vol-xlsx') {
                 url = base + 'volumetria-xlsx/?' + qsVol;
             } else if (mode === 'view-vol-full') {
                 url = base + 'volumetria-pdf/?' + qsVol;
@@ -2582,8 +2595,37 @@
             var endpoint = state.phase === 1 ? 'levantamiento-pdf' : 'propuesta-pdf';
             url = base + endpoint + '/' + (mode === 'download' ? '?download=1' : '');
         }
+        // ¿Es la DESCARGA de la Propuesta Técnica (Fase 2)? Entonces, además
+        // de descargarla, la guardamos en el Drive de la oportunidad.
+        var _esDescargaPropuesta = (state.phase === 2 && mode === 'download');
         // Flush pendientes primero para que el export tenga la data fresca.
-        lwFlushSave().then(function () { window.open(url, '_blank'); });
+        lwFlushSave().then(function () {
+            window.open(url, '_blank');
+            if (_esDescargaPropuesta) lwGuardarPropuestaDrive(true);
+        });
+    };
+
+    // Genera la Propuesta Técnica en el server y la guarda en el Drive de la
+    // oportunidad. `silentToast` controla si avisa al usuario. Devuelve Promise.
+    window.lwGuardarPropuestaDrive = function (showToast) {
+        if (!state.lev || !state.lev.id) return Promise.resolve();
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        return fetch('/app/api/iamet/levantamientos/' + state.lev.id + '/propuesta-guardar-drive/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: '{}',
+        }).then(function (r) {
+            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+        }).then(function (res) {
+            if (res.ok && res.data && res.data.success) {
+                if (showToast) lwCheer('Propuesta guardada', 'Se agregó al Drive de la oportunidad.', 'success');
+            } else if (showToast) {
+                lwCheer('No se pudo guardar', (res.data && res.data.error) || 'Revisa que el proyecto tenga oportunidad vinculada.', 'warn');
+            }
+        }).catch(function () {
+            if (showToast) lwCheer('Error de red', 'No se pudo guardar la propuesta en el Drive.', 'warn');
+        });
     };
 
     // ═══════════════════════════════════════════════════════════════
@@ -2701,6 +2743,11 @@
                 h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-full\')">Descargar PDF completo</div>';
                 h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-nocost\')">Descargar PDF sin costos</div>';
                 h += '<div class="lw-p3-export-item" onclick="lwP3RowExport(' + v.id + ', \'dl-vol-xlsx\')">Descargar Excel</div>';
+                // Crear cotización — igual que en la vista de vendedores.
+                h += '<div class="lw-p3-export-divider"></div>';
+                h += '<div class="lw-p3-export-item lw-p3-export-item-action" onclick="lwP3GenerarCotizacion(' + v.id + ', \'' + nombreSafe + '\')">'
+                   + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>'
+                   + 'Crear cotización</div>';
                 h += '</div>';
                 h += '</div>';
                 // Botón Eliminar — solo ingeniero y solo borradores
@@ -2747,6 +2794,62 @@
         else if (mode === 'dl-vol-nocost') url = base + 'volumetria-pdf/?download=1&sin_costos=1&' + qs;
         else return;
         window.open(url, '_blank');
+    };
+
+    // Crear cotización desde la volumetría del wizard (Fase 3) — mismo flujo
+    // que la opción de los vendedores: prompt de nombre → POST al endpoint
+    // generar-cotizacion → abre el PDF y queda guardada en el Drive de la
+    // oportunidad. Usa el estado del wizard (state.lev) para el nombre default.
+    window.lwP3GenerarCotizacion = function (volId, volNombre) {
+        document.querySelectorAll('.lw-p3-export-menu.is-open').forEach(function (el) {
+            el.classList.remove('is-open');
+        });
+        var lev = state.lev || {};
+        var nombreDefault = (lev.nombre || 'Cotización').trim();
+        if (volNombre) nombreDefault += ' - ' + String(volNombre).replace(/&#39;/g, "'").trim();
+
+        var promptPromise = (typeof lwPrompt === 'function')
+            ? lwPrompt({
+                title: 'Crear cotización',
+                message: 'Confirma el nombre de la cotización antes de generarla. Aparece como título del PDF y en el listado de cotizaciones de la oportunidad.',
+                placeholder: nombreDefault,
+                defaultValue: nombreDefault,
+                confirmLabel: 'Generar',
+                cancelLabel: 'Cancelar',
+                required: false,
+              })
+            : Promise.resolve(window.prompt('Nombre de la cotización:', nombreDefault));
+
+        promptPromise.then(function (nombreInput) {
+            if (nombreInput === null) return;  // canceló
+            var nombre = (nombreInput || '').trim() || nombreDefault;
+            if (typeof lwToast === 'function') lwToast('Generando cotización…', 'info');
+            var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+            fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ nombre: nombre }),
+            }).then(function (r) {
+                return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+            }).then(function (res) {
+                if (!res.ok || !res.data || res.data.success !== true) {
+                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                    if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
+                    return;
+                }
+                try { window.open(res.data.pdf_url, '_blank'); } catch (e) { location.href = res.data.pdf_url; }
+                if (typeof lwToast === 'function') lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+                try {
+                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                    }
+                } catch (e) { /* defensivo */ }
+            }).catch(function (err) {
+                if (typeof lwToast === 'function') lwToast('Error de red al generar cotización', 'error'); else alert('Error de red');
+                try { console.error('[cotizacion]', err); } catch (e) {}
+            });
+        });
     };
 
     // Cierra los menús de export al hacer click fuera.

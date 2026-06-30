@@ -226,6 +226,7 @@
         overflow: hidden;
         background: #fff;
         text-align: center;
+        border: 1px solid #E2E8F0;
     }
     .pt-evid-item img {
         width: 100%;
@@ -234,6 +235,25 @@
         object-fit: contain;
         display: block;
         margin: 0 auto;
+    }
+    /* Comentario de la foto — banda inferior estilo "caption" */
+    .pt-evid-cap {
+        text-align: left;
+        font-size: 8.5pt;
+        line-height: 1.4;
+        color: #334155;
+        padding: 6px 9px;
+        border-top: 1px solid #E2E8F0;
+        background: #F8FAFC;
+    }
+    .pt-evid-cap .pt-evid-cap-lbl {
+        display: block;
+        font-size: 6.8pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #0B5FB0;
+        margin-bottom: 2px;
     }
     .pt-evid-empty {
         padding: 22px;
@@ -334,22 +354,22 @@
     <tr><td class="pt-desc-cell">{{ desc_proyecto|default:"—"|linebreaksbr }}</td></tr>
 </table>
 
-<!-- ═══ Especificaciones + Comentarios ═══ -->
+<!-- ═══ Tipo de servicio + Componentes ═══ -->
 <table class="pt-table">
     <tr class="pt-specs-head">
-        <td>Especificaciones Técnicas</td>
-        <td>Comentarios</td>
+        <td>Tipo de Servicio</td>
+        <td>Componentes</td>
     </tr>
     <tr>
         <td class="pt-specs-col {% if not especificaciones %}empty{% endif %}">
             {% if especificaciones %}
             <ul>{% for it in especificaciones %}<li>{{ it }}</li>{% endfor %}</ul>
-            {% else %}Sin especificaciones capturadas{% endif %}
+            {% else %}Sin tipo de servicio capturado{% endif %}
         </td>
         <td class="pt-specs-col {% if not comentarios_spec %}empty{% endif %}">
             {% if comentarios_spec %}
             <ul>{% for it in comentarios_spec %}<li>{{ it }}</li>{% endfor %}</ul>
-            {% else %}Sin comentarios capturados{% endif %}
+            {% else %}Sin componentes capturados{% endif %}
         </td>
     </tr>
 </table>
@@ -401,6 +421,7 @@
         {% for ev in evidencias %}
         <div class="pt-evid-item">
             <img src="{{ ev.abs_url }}" alt="Evidencia {{ forloop.counter }}">
+            {% if ev.comentario %}<div class="pt-evid-cap"><span class="pt-evid-cap-lbl">Foto {{ forloop.counter }}</span>{{ ev.comentario|linebreaksbr }}</div>{% endif %}
         </div>
         {% endfor %}
     </div>

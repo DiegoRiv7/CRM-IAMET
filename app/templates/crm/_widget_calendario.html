@@ -3910,8 +3910,12 @@
         var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500';
         // En modo "Todas" también traemos las instalaciones para mostrarlas
         // junto al resto (en morado, con prefijo "INSTALACIONES - ").
+        // NO se pasa _calInstUserQS(): las instalaciones son org-wide y el filtro
+        // cliente (_calFilterEventsForSelection) ya las exenta del selector de
+        // usuario. Filtrarlas aquí vaciaba el calendario al refetch (polling/sync)
+        // porque el usuario seleccionado no es creador ni técnico de ellas.
         var _instParts = mes.split('-');
-        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]) + _calInstUserQS();
+        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]);
         _calLastFetchedMes = mes;
         var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
         var pTareas = fetch(tareasUrl).then(function(r){return r.json();});

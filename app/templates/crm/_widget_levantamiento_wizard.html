@@ -84,6 +84,13 @@
                                 <div class="lw-pdf-menu-item-sub">Formato .xlsx editable</div>
                             </div>
                         </div>
+                        <div class="lw-pdf-menu-item lw-pdf-menu-item-action" data-menu-group="vol" onclick="lwPdfExport('gen-cotizacion')" style="display:none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
+                            <div>
+                                <div class="lw-pdf-menu-item-title">Generar cotización</div>
+                                <div class="lw-pdf-menu-item-sub">Crear documento de cotización</div>
+                            </div>
+                        </div>
                         <!-- Opciones exclusivas de Programa de Obra (Fase 4) -->
                         <div class="lw-pdf-menu-item" data-menu-group="po" onclick="lwPdfExport('view-po')" style="display:none;">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -137,7 +144,8 @@
             <button type="button" class="lw-tab" data-phase="4" onclick="lwGoPhase(4)">
                 <span class="lw-tab-num">4</span><span class="lw-tab-label">Programa de Obra</span>
             </button>
-            <button type="button" class="lw-tab" data-phase="5" onclick="lwGoPhase(5)">
+            {% comment %}Fase 5 (Reportes) OCULTA por pedido — no se borra, solo display:none. Reactivar = quitar el style.{% endcomment %}
+            <button type="button" class="lw-tab" data-phase="5" onclick="lwGoPhase(5)" style="display:none;">
                 <span class="lw-tab-num">5</span><span class="lw-tab-label">Reportes</span>
             </button>
             <div class="lw-tabs-progress">
@@ -415,53 +423,29 @@
                             <div class="lw-island-body">
                                 <div class="lw-p2-specs">
                                     <div class="lw-p2-specs-col">
-                                        <div class="lw-p2-specs-head">Especificaciones Técnicas</div>
-                                        <div class="lw-p2-specs-list" id="lw_f2_especif_list"></div>
-                                        <button type="button" class="lw-ghost-btn lw-p2-add-specs" onclick="lwP2AddSpec('especificaciones')">
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                                            Agregar especificación
-                                        </button>
+                                        <div class="lw-p2-specs-head">Tipo de servicio</div>
+                                        <textarea id="lw_f2_tiposervicio" class="lw-soft-textarea lw-p2-freebox" rows="5" placeholder="Un tipo de servicio por línea…" oninput="lwP2ListUpdate('especificaciones', this.value); lwAutoGrow(this);"></textarea>
                                     </div>
                                     <div class="lw-p2-specs-col">
-                                        <div class="lw-p2-specs-head">Comentarios</div>
-                                        <div class="lw-p2-specs-list" id="lw_f2_coment_list"></div>
-                                        <button type="button" class="lw-ghost-btn lw-p2-add-specs" onclick="lwP2AddSpec('comentarios')">
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                                            Agregar comentario
-                                        </button>
+                                        <div class="lw-p2-specs-head">Componentes</div>
+                                        <textarea id="lw_f2_componentes" class="lw-soft-textarea lw-p2-freebox" rows="5" placeholder="Un componente por línea…" oninput="lwP2ListUpdate('comentarios_spec', this.value); lwAutoGrow(this);"></textarea>
                                     </div>
                                 </div>
 
                                 <!-- Productos / Materiales con catálogo integrado -->
-                                <div class="lw-ifield" style="margin-top:18px;">
-                                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-                                        <label class="lw-ifield-label" style="margin:0;">Productos &amp; Materiales</label>
-                                        <button type="button" class="lw-ghost-btn" onclick="lwP2OpenCatalog()">
-                                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                            Buscar en catálogo
-                                        </button>
-                                    </div>
-                                    <span class="lw-ifield-hint" style="margin:2px 0 6px;">Selecciona los materiales considerados en esta propuesta.</span>
+                                <div class="lw-ifield" style="margin-top:6px;">
+                                    <label class="lw-ifield-label" style="margin:0;">Productos &amp; Materiales</label>
+                                    <span class="lw-ifield-hint" style="margin:2px 0 6px;">Busca en el catálogo y haz clic para agregar. Cada material agregado puede llevar su comentario de instalación.</span>
 
-                                    <div class="lw-catalog-box" id="lwP2CatalogBox" style="display:none;margin-bottom:10px;">
+                                    <div class="lw-catalog-box" id="lwP2CatalogBox" style="margin-bottom:10px;">
                                         <div class="lw-catalog-search">
                                             <svg width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                            <input type="text" id="lwP2CatalogSearch" placeholder="Escribe al menos 2 caracteres para buscar…" oninput="lwP2CatalogSearch()">
-                                            <button type="button" class="lw-catalog-close" onclick="lwP2CloseCatalog()" title="Cerrar">
-                                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                            </button>
+                                            <input type="text" id="lwP2CatalogSearch" placeholder="Buscar producto o material en el catálogo…" oninput="lwP2CatalogSearch()">
                                         </div>
-                                        <div class="lw-catalog-list" id="lwP2CatalogList">
-                                            <div class="lw-catalog-empty">Escribe para buscar en el catálogo…</div>
-                                        </div>
+                                        <div class="lw-catalog-list" id="lwP2CatalogList" style="display:none;"></div>
                                     </div>
 
                                     <div id="lw_f2_productos_wrap"></div>
-                                </div>
-
-                                <div class="lw-ifield lw-advanced" style="margin-top:18px;">
-                                    <label class="lw-ifield-label">Notas de instalación por partida (opcional)</label>
-                                    <div id="lw_f2_partidas"></div>
                                 </div>
                             </div>
                         </section>
