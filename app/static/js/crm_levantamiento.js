@@ -311,12 +311,13 @@
                 numEl.textContent = String(n);
             }
         });
-        // Fase 5 oculta → el flujo termina en la 4.
-        var completed = Math.max(state.phase - 1, 0);
+        // Fase 5 oculta → el flujo termina en la 4. El contador del stepper
+        // refleja la fase ACTUAL (no las completadas) para no contradecir el
+        // resto de la UI: "Fase 2 de 4", "COMPLETADO 50%", "Puedes avanzar".
         var fill = $('lwProgressFill');
-        if (fill) fill.style.width = (completed / 4 * 100) + '%';
+        if (fill) fill.style.width = (state.phase / 4 * 100) + '%';
         var plbl = $('lwProgressLabel');
-        if (plbl) plbl.textContent = completed + '/4';
+        if (plbl) plbl.textContent = state.phase + '/4';
         var fc = $('lwFooterCenter');
         if (fc) {
             var phaseLabels = ['', 'Levantamiento', 'Propuesta Técnica', 'Volumetría', 'Programa de Obra', 'Reportes'];
