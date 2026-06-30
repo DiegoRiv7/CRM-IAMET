@@ -1056,7 +1056,10 @@
         _renderAsignaciones([]);
         _pobAplicarUiModoCrear(true);
         _pobRenderUserChips();
-        _pobRenderUserResults([]);
+        // Cargar el catálogo de Técnicos y mostrarlos todos de entrada
+        // (misma fuente que el select de editar). _pobBuscarTecnicos('')
+        // carga la caché si hace falta y pinta la lista completa.
+        _pobBuscarTecnicos('');
 
         var modal = document.getElementById('pobModalBackdrop');
         if (modal) modal.classList.add('open');
@@ -1090,23 +1093,40 @@
         var desc = document.getElementById('pobInstDescripcion');
         if (desc) desc.focus();
 
-        // Hook del input de búsqueda de Users (live search).
+        // Hook del input de búsqueda de Técnicos (filtra el catálogo en vivo).
         var input = document.getElementById('pobUserSearch');
         if (input) {
             input.value = '';
             input.oninput = function () {
                 clearTimeout(_pobUserSearchDebounce);
                 var q = input.value.trim();
-                _pobUserSearchDebounce = setTimeout(function () {
-                    if (!q) { _pobRenderUserResults([]); return; }
-                    fetch('/app/api/users/?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
-                        .then(function (r) { return r.json(); })
-                        .then(function (results) { _pobRenderUserResults(results || []); })
-                        .catch(function () {});
-                }, 200);
+                _pobUserSearchDebounce = setTimeout(function () { _pobBuscarTecnicos(q); }, 120);
             };
         }
     };
+
+    // Buscador del modo CREAR: filtra el catálogo Tecnico (_pobTecnicosCache,
+    // la misma fuente que el select de editar) por nombre y lo mapea al shape
+    // {id, text, avatar_url} que espera _pobRenderUserResults. Con q vacío
+    // muestra todos. Antes consultaba /app/api/users/ (cuentas Django), pero
+    // los técnicos del catálogo no son Users, por eso no salían.
+    function _pobBuscarTecnicos(q) {
+        function pintar(lista) {
+            var ql = (q || '').toLowerCase();
+            var res = (lista || [])
+                .filter(function (t) { return !ql || (t.nombre || '').toLowerCase().indexOf(ql) !== -1; })
+                .map(function (t) {
+                    return {
+                        id: t.id,
+                        text: t.nombre + (t.rol_label ? ' (' + t.rol_label + ')' : ''),
+                        avatar_url: null,
+                    };
+                });
+            _pobRenderUserResults(res);
+        }
+        if (_pobTecnicosCache) { pintar(_pobTecnicosCache); }
+        else { _cargarTecnicosCache().then(pintar); }
+    }
 
     function _pobAplicarUiModoCrear(esCrear) {
         // En CREAR: muestra el picker de Users (pobCreateUsersBox) y oculta
@@ -1137,7 +1157,7 @@
         (results || []).forEach(function (u) { _pobUserSearchResults[u.id] = u; });
 
         if (!results || !results.length) {
-            wrap.innerHTML = '<div style="color:#86868B;font-size:0.74rem;padding:6px;">Escribe para buscar usuarios.</div>';
+            wrap.innerHTML = '<div style="color:#86868B;font-size:0.74rem;padding:6px;">Sin técnicos que coincidan.</div>';
             return;
         }
         wrap.innerHTML = results.map(function (u) {
@@ -1275,10 +1295,10 @@
         if (_pobCreatingMode) {
             url = '/app/api/proyecto/' + _proyectoIdActivo() + '/instalaciones/';
             method = 'POST';
-            // Solo en create: pasar la lista de Users elegidos en el picker.
-            // El backend auto-crea Tecnico si no existe y crea la asignación
-            // para la fecha programada.
-            if (_pobUserSelectedIds.length) payload.tecnico_user_ids = _pobUserSelectedIds;
+            // Solo en create: pasar la lista de Técnicos elegidos en el picker
+            // (IDs del catálogo Tecnico). El backend crea la asignación para la
+            // fecha programada.
+            if (_pobUserSelectedIds.length) payload.tecnico_ids = _pobUserSelectedIds;
             // Heredar oportunidad de la opp del proyecto si la hay (vino en
             // los defaults). El backend la usa solo si no hay otra.
             if (_pobActiveInst && _pobActiveInst.oportunidad_id) {

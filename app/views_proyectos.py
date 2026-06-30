@@ -7174,6 +7174,26 @@ def api_proyecto_instalaciones(request, proyecto_id):
                     asignaciones_error = str(e)
                     continue
 
+        # Asignación directa por ID de Tecnico (catálogo). El picker de "crear"
+        # ahora elige del mismo catálogo que el select de "editar", así que
+        # manda tecnico_ids (IDs de Tecnico), no user_ids.
+        tecnico_ids = data.get('tecnico_ids') or []
+        if tecnico_ids and inst.fecha_programada:
+            for tid in tecnico_ids:
+                try:
+                    tecnico = Tecnico.objects.get(pk=int(tid))
+                except (Tecnico.DoesNotExist, ValueError, TypeError):
+                    continue
+                try:
+                    _, created = InstalacionAsignacion.objects.get_or_create(
+                        instalacion=inst, tecnico=tecnico, fecha=inst.fecha_programada,
+                    )
+                    if created:
+                        asignaciones_creadas += 1
+                except Exception as e:
+                    asignaciones_error = str(e)
+                    continue
+
         resp = {'success': True, 'instalacion_id': inst.id, 'asignaciones_creadas': asignaciones_creadas}
         if asignaciones_error:
             resp['asignaciones_warning'] = asignaciones_error
