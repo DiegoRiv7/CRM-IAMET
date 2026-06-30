@@ -1815,40 +1815,11 @@
         lwP2PrefillFreeBox('lw_f2_tiposervicio', 'especificaciones', f2.especificaciones, f1.servicios);
         lwP2PrefillFreeBox('lw_f2_componentes', 'comentarios_spec', f2.comentarios_spec, f1.componentes);
 
-        // Productos / Materiales (seleccionados via catalogo)
+        // Productos / Materiales (seleccionados via catalogo). Cada fila lleva
+        // su propio comentario de instalación expandible — antes había una
+        // segunda lista "Notas por partida" que duplicaba los productos.
         renderPhase2Productos();
 
-        // Partidas con comentarios — ahora iteran fase2.productos
-        var productos = f2.productos || [];
-        var wrap = $('lw_f2_partidas');
-        if (!productos.length) {
-            wrap.innerHTML = '<div class="lw-empty-card">Agrega productos arriba primero para poder escribir notas por partida</div>';
-        } else {
-            var comentarios = f2.comentarios || {}; // idx -> texto
-            wrap.innerHTML = productos.map(function (p, idx) {
-                var com = comentarios[idx] || '';
-                var hasNote = com.trim() !== '';
-                return '<div class="lw-prod-card" data-idx="' + idx + '">' +
-                    '<div class="lw-prod-head" onclick="lwP2ToggleExpand(' + idx + ')">' +
-                        '<div class="lw-prod-head-left">' +
-                            '<span class="lw-prod-num">' + (idx + 1) + '</span>' +
-                            '<div>' +
-                                '<div class="lw-prod-title">' + esc(p.desc || '') + '</div>' +
-                                '<div class="lw-prod-sub">' + esc(p.marca || '') + ' · ' + esc(p.modelo || '') + ' · <strong>' + (p.qty || 0) + ' ' + esc(p.unidad || '') + '</strong></div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="lw-prod-head-right">' +
-                            (hasNote ? '<span class="lw-prod-has-note">Nota</span>' : '') +
-                            '<svg class="lw-prod-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="lw-prod-body" style="display:none;">' +
-                        '<label>Comentarios de Instalación</label>' +
-                        '<textarea rows="3" oninput="lwP2UpdateComment(' + idx + ', this.value)" placeholder="Condiciones de instalación, herramientas necesarias…">' + esc(com) + '</textarea>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
-        }
         // Evidencias
         renderPhase2Photos();
         // Notas sobre las evidencias
@@ -1872,22 +1843,35 @@
             wrap.innerHTML = '';
             return;
         }
+        var comentarios = f2.comentarios || {}; // idx -> texto
         wrap.innerHTML =
             '<div class="lw-f2-prods-list">' +
             prods.map(function (p, i) {
-                return '<div class="lw-f2-prod-row">' +
-                    '<span class="lw-f2-prod-num">' + (i + 1) + '</span>' +
-                    '<div class="lw-f2-prod-info">' +
-                        '<input class="lw-f2-prod-desc-input" type="text" value="' + esc(p.desc || '') + '" placeholder="Descripción" oninput="lwP2ProdField(' + i + ', \'desc\', this.value)">' +
-                        '<div class="lw-f2-prod-sub-inputs">' +
-                            '<input type="text" value="' + esc(p.marca || '') + '" placeholder="Marca" oninput="lwP2ProdField(' + i + ', \'marca\', this.value)">' +
-                            '<input type="text" value="' + esc(p.modelo || '') + '" placeholder="Modelo / No. Parte" oninput="lwP2ProdField(' + i + ', \'modelo\', this.value)">' +
+                var com = comentarios[i] || '';
+                var hasNote = com.trim() !== '';
+                return '<div class="lw-f2-prod-item" data-idx="' + i + '">' +
+                    '<div class="lw-f2-prod-row">' +
+                        '<span class="lw-f2-prod-num">' + (i + 1) + '</span>' +
+                        '<div class="lw-f2-prod-info">' +
+                            '<input class="lw-f2-prod-desc-input" type="text" value="' + esc(p.desc || '') + '" placeholder="Descripción" oninput="lwP2ProdField(' + i + ', \'desc\', this.value)">' +
+                            '<div class="lw-f2-prod-sub-inputs">' +
+                                '<input type="text" value="' + esc(p.marca || '') + '" placeholder="Marca" oninput="lwP2ProdField(' + i + ', \'marca\', this.value)">' +
+                                '<input type="text" value="' + esc(p.modelo || '') + '" placeholder="Modelo / No. Parte" oninput="lwP2ProdField(' + i + ', \'modelo\', this.value)">' +
+                            '</div>' +
                         '</div>' +
+                        '<label class="lw-f2-prod-qty"><span>Cant</span>' +
+                            '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdField(' + i + ', \'qty\', this.value)">' +
+                        '</label>' +
+                        '<button type="button" class="lw-f2-prod-note-btn' + (hasNote ? ' has-note' : '') + '" onclick="lwP2ToggleProdNote(' + i + ')" title="Comentario de instalación">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+                            (hasNote ? '<span class="lw-f2-prod-note-dot"></span>' : '') +
+                        '</button>' +
+                        '<button type="button" class="lw-f2-prod-del" onclick="lwP2DelProd(' + i + ')" title="Eliminar">×</button>' +
                     '</div>' +
-                    '<label class="lw-f2-prod-qty"><span>Cant</span>' +
-                        '<input type="number" min="0" step="1" value="' + (p.qty || 1) + '" oninput="lwP2ProdField(' + i + ', \'qty\', this.value)">' +
-                    '</label>' +
-                    '<button type="button" class="lw-f2-prod-del" onclick="lwP2DelProd(' + i + ')" title="Eliminar">×</button>' +
+                    '<div class="lw-f2-prod-note-body" style="display:' + (hasNote ? 'block' : 'none') + ';">' +
+                        '<label>Comentarios de instalación</label>' +
+                        '<textarea rows="2" oninput="lwP2UpdateComment(' + i + ', this.value)" placeholder="Condiciones de instalación, herramientas necesarias…">' + esc(com) + '</textarea>' +
+                    '</div>' +
                 '</div>';
             }).join('') +
             '</div>' +
@@ -1896,6 +1880,23 @@
                 'Agregar fila en blanco' +
             '</button>';
     }
+
+    // Expandir/colapsar el comentario de instalación de una partida (fila de
+    // producto en Fase 2). Reemplaza la lista separada "Notas por partida".
+    window.lwP2ToggleProdNote = function (i) {
+        var item = document.querySelector('.lw-f2-prod-item[data-idx="' + i + '"]');
+        if (!item) return;
+        var body = item.querySelector('.lw-f2-prod-note-body');
+        var btn = item.querySelector('.lw-f2-prod-note-btn');
+        if (!body) return;
+        var open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        if (btn) btn.classList.toggle('active', !open);
+        if (!open) {
+            var ta = body.querySelector('textarea');
+            if (ta) ta.focus();
+        }
+    };
 
     // Update generico de cualquier campo del producto, sin re-render
     // para no perder el foco mientras el usuario escribe.
@@ -2049,8 +2050,13 @@
         _lwF2RecomputeProgress();
         lwFieldChange();
         lwCheer('✓ Material agregado', esc(p.desc).slice(0, 80));
-        // Mantener el buscador listo para seguir agregando.
+        // Contraer las sugerencias y limpiar el texto, así el usuario VE que
+        // el material se agregó a la lista. El buscador sigue listo para
+        // seguir agregando (basta volver a teclear).
         var _s = $('lwP2CatalogSearch');
+        if (_s) { _s.value = ''; }
+        var _l = $('lwP2CatalogList');
+        if (_l) { _l.style.display = 'none'; _l.innerHTML = ''; }
         if (_s) { _s.focus(); }
     };
 
@@ -2093,15 +2099,6 @@
             }
         }
     }
-    window.lwP2ToggleExpand = function (idx) {
-        var card = document.querySelector('.lw-prod-card[data-idx="' + idx + '"]');
-        if (!card) return;
-        var body = card.querySelector('.lw-prod-body');
-        var chev = card.querySelector('.lw-prod-chev');
-        var open = body.style.display !== 'none';
-        body.style.display = open ? 'none' : 'block';
-        if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
-    };
     window.lwP2UpdateComment = function (idx, val) {
         var f2 = state.lev.fase2_data || {};
         f2.comentarios = f2.comentarios || {};
