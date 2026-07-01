@@ -57,8 +57,9 @@ El usuario final **solo revisa**: ajusta 2-3 partidas, algunas cantidades, mano 
 
 ## Estado actual
 
+- **EN PAUSA** — priorizado trabajo real de Calendario (visibilidad de tareas/
+  instalaciones + fixes de la vista Mes). Retomar la Fase 1 al terminar eso.
 - **Fase en curso:** Fase 1 (Cimientos) — no iniciada.
-- **Última actualización:** (pendiente)
 
 ---
 

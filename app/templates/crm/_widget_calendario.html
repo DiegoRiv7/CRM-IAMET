@@ -993,10 +993,23 @@
             '</button>';
     }
     window._calMonthCellClick = function (ev, dateK) {
-        if (ev && ev.target && ev.target.closest && ev.target.closest('.cmd-ev')) return;
+        // Clic sobre un evento (.cmd-ev) o sobre el botón "N más" (.cmd-more) NO
+        // debe abrir "Nueva Actividad": el evento se abre solo, y "N más" tiene
+        // su propio handler (_calMonthMoreClick, abajo).
+        if (ev && ev.target && ev.target.closest && (ev.target.closest('.cmd-ev') || ev.target.closest('.cmd-more'))) return;
         var p = dateK.split('-');
         var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), 10, 0);
         if (typeof window.calGlobalAbrirCrearActividad === 'function') window.calGlobalAbrirCrearActividad(d);
+    };
+    // "N más": abre la vista Día de ese día (para ver TODOS los eventos), en vez
+    // de abrir el modal "Nueva Actividad".
+    window._calMonthMoreClick = function (ev, dateK) {
+        if (ev) { if (ev.stopPropagation) ev.stopPropagation(); if (ev.preventDefault) ev.preventDefault(); }
+        var p = dateK.split('-');
+        if (typeof calSwitchView === 'function') calSwitchView('day');
+        _calCurrentDay = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+        if (typeof calRenderDayView === 'function') calRenderDayView(_calCurrentDay);
+        if (typeof calUpdateNavTitle === 'function') calUpdateNavTitle();
     };
     function _calMonthBindHover() {
         var root = document.getElementById('calMonthDesign'); if (!root) return;
@@ -1045,7 +1058,7 @@
                 '<div class="cmd-date"><span class="cmd-num' + (isToday ? ' on' : '') + '">' + d.getDate() + '</span></div>' +
                 '<div class="cmd-events">';
             shown.forEach(function (e) { html += _calMonthPillHtml(e); });
-            if (extra > 0) html += '<button class="cmd-more" onclick="_calMonthCellClick(event,\'' + k + '\')">' + extra + ' más</button>';
+            if (extra > 0) html += '<button class="cmd-more" onclick="_calMonthMoreClick(event,\'' + k + '\')">' + extra + ' más</button>';
             html += '</div></div>';
         }
         html += '</div></div>';
@@ -3907,15 +3920,15 @@
         var mes = _calCurrentMesParam();
         var sep = qs ? '&' : '?';
         var actividadesUrl = '/app/api/actividades/' + qs + sep + 'mes=' + encodeURIComponent(mes);
-        var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500';
-        // En modo "Todas" también traemos las instalaciones para mostrarlas
-        // junto al resto (en morado, con prefijo "INSTALACIONES - ").
-        // NO se pasa _calInstUserQS(): las instalaciones son org-wide y el filtro
-        // cliente (_calFilterEventsForSelection) ya las exenta del selector de
-        // usuario. Filtrarlas aquí vaciaba el calendario al refetch (polling/sync)
-        // porque el usuario seleccionado no es creador ni técnico de ellas.
+        // solo_responsable=1: en el calendario una tarea solo sale para su
+        // RESPONSABLE (no creador/participante/observador). La lista de Tareas
+        // no manda el flag y conserva su visibilidad amplia.
+        var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500&solo_responsable=1';
+        // Instalaciones: se filtran por el usuario del picker (creador o técnico
+        // asignado) en el backend vía _calInstUserQS(). Así una instalación solo
+        // sale al creador y a sus técnicos, no a gente ajena.
         var _instParts = mes.split('-');
-        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]);
+        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]) + _calInstUserQS();
         _calLastFetchedMes = mes;
         var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
         var pTareas = fetch(tareasUrl).then(function(r){return r.json();});
