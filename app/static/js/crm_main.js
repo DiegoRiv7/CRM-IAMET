@@ -655,9 +655,18 @@
             });
 
             // ── Submit form via AJAX ──
-            if (form) {
+            // GUARD: crmReady() se re-ejecuta en cada turbo:load. Si el listener
+            // se re-ata sobre el mismo <form>, se acumulan handlers y un solo
+            // submit dispara varios POST → la oportunidad se crea 2+ veces.
+            // Atar el submit UNA sola vez por elemento (dataset flag).
+            if (form && !form.dataset.wfSubmitBound) {
+                form.dataset.wfSubmitBound = '1';
                 form.addEventListener('submit', function (e) {
                     e.preventDefault();
+                    // Defensa extra: si ya hay una creación en vuelo, ignorar
+                    // este submit (evita duplicados por doble binding o doble clic).
+                    if (window._wfCreandoOportunidad) return;
+                    window._wfCreandoOportunidad = true;
                     var submitBtn = document.getElementById('wfSubmit');
                     submitBtn.disabled = true;
                     submitBtn.textContent = 'Creando...';
@@ -692,6 +701,7 @@
                     })
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
+                            window._wfCreandoOportunidad = false;
                             submitBtn.disabled = false;
                             submitBtn.textContent = 'Crear Negociacion';
 
@@ -729,6 +739,7 @@
                             }
                         })
                         .catch(function (err) {
+                            window._wfCreandoOportunidad = false;
                             submitBtn.disabled = false;
                             submitBtn.textContent = 'Crear Negociacion';
                             showToast('Error de conexion', 'error');

@@ -1261,7 +1261,19 @@ def api_tareas(request):
                     except (ValueError, TypeError):
                         uid_list = []
 
-                if uid_list:
+                # El calendario manda ?solo_responsable=1: una tarea solo debe
+                # aparecer en el calendario de su RESPONSABLE (asignado_a), no de
+                # su creador, participantes ni observadores. La lista de Tareas NO
+                # manda el flag, así que conserva su visibilidad amplia.
+                solo_responsable = request.GET.get('solo_responsable') == '1'
+
+                if uid_list and solo_responsable:
+                    tareas = Tarea.objects.filter(
+                        asignado_a_id__in=uid_list
+                    ).select_related(
+                        'creado_por', 'asignado_a', 'proyecto', 'oportunidad', 'oportunidad__cliente'
+                    ).order_by('-fecha_creacion')
+                elif uid_list:
                     ids_part = set(Tarea.objects.filter(participantes__id__in=uid_list).values_list('id', flat=True))
                     ids_obs  = set(Tarea.objects.filter(observadores__id__in=uid_list).values_list('id', flat=True))
                     ids_m2m_u = ids_part | ids_obs
