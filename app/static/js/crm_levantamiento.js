@@ -2823,32 +2823,171 @@
         promptPromise.then(function (nombreInput) {
             if (nombreInput === null) return;  // canceló
             var nombre = (nombreInput || '').trim() || nombreDefault;
-            if (typeof lwToast === 'function') lwToast('Generando cotización…', 'info');
             var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+
+            // Paso 1 — preview: ¿hay partidas con precio o costo en $0 que
+            // quedarían fuera? Si las hay, mostramos el cuadro para que el
+            // usuario decida antes de generar.
+            if (typeof lwToast === 'function') lwToast('Revisando partidas…', 'info');
             fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ nombre: nombre }),
+                body: JSON.stringify({ nombre: nombre, preview: true }),
             }).then(function (r) {
                 return r.json().then(function (data) { return { ok: r.ok, data: data }; });
             }).then(function (res) {
                 if (!res.ok || !res.data || res.data.success !== true) {
-                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                    var msg = (res.data && res.data.error) || 'No se pudo preparar la cotización';
                     if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
                     return;
                 }
-                try { window.open(res.data.pdf_url, '_blank'); } catch (e) { location.href = res.data.pdf_url; }
-                if (typeof lwToast === 'function') lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
-                try {
-                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
-                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
-                    }
-                } catch (e) { /* defensivo */ }
+                var invalidas = (res.data.partidas_invalidas) || [];
+                if (!invalidas.length) {
+                    // No hay partidas con $0 → generar directo.
+                    _lwP3DoGenerarCotizacion(volId, nombre, []);
+                    return;
+                }
+                // Hay partidas inválidas → cuadro de confirmación con checkboxes.
+                lwCotizacionExcluirModal(invalidas).then(function (decision) {
+                    if (decision === null) return;  // canceló
+                    // decision.excluir = claves que el usuario dejó fuera.
+                    _lwP3DoGenerarCotizacion(volId, nombre, decision.excluir);
+                });
             }).catch(function (err) {
-                if (typeof lwToast === 'function') lwToast('Error de red al generar cotización', 'error'); else alert('Error de red');
-                try { console.error('[cotizacion]', err); } catch (e) {}
+                if (typeof lwToast === 'function') lwToast('Error de red al preparar la cotización', 'error'); else alert('Error de red');
+                try { console.error('[cotizacion-preview]', err); } catch (e) {}
             });
+        });
+    };
+
+    // POST real de generación. `excluirKeys` = partidas a dejar fuera.
+    function _lwP3DoGenerarCotizacion(volId, nombre, excluirKeys) {
+        if (typeof lwToast === 'function') lwToast('Generando cotización…', 'info');
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ nombre: nombre, excluir_keys: excluirKeys || [] }),
+        }).then(function (r) {
+            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+        }).then(function (res) {
+            if (!res.ok || !res.data || res.data.success !== true) {
+                var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
+                return;
+            }
+            try { window.open(res.data.pdf_url, '_blank'); } catch (e) { location.href = res.data.pdf_url; }
+            if (typeof lwToast === 'function') lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+            try {
+                if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                    window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                }
+            } catch (e) { /* defensivo */ }
+        }).catch(function (err) {
+            if (typeof lwToast === 'function') lwToast('Error de red al generar cotización', 'error'); else alert('Error de red');
+            try { console.error('[cotizacion]', err); } catch (e) {}
+        });
+    }
+
+    // ── Cuadro: partidas que no saldrán en la cotización ───────────
+    // Lista las partidas con precio/costo en $0. Cada una trae un
+    // checkbox "Incluir de todas formas" (por defecto OFF → queda
+    // fuera). Devuelve Promise<{excluir:[keys]} | null>. `null` = canceló.
+    window.lwCotizacionExcluirModal = function (invalidas) {
+        _lwCloseExistingModals();
+        var fmtMoney = function (v) {
+            if (v === null || v === undefined) return '—';
+            try { return '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+            catch (e) { return '$' + v; }
+        };
+        return new Promise(function (resolve) {
+            var bd = document.createElement('div');
+            bd.className = 'lw-confirm-backdrop';
+            var box = document.createElement('div');
+            box.className = 'lw-confirm-box lw-confirm-warn lw-cotexcl-box';
+            box.setAttribute('role', 'dialog');
+            box.setAttribute('aria-modal', 'true');
+
+            var filas = invalidas.map(function (p, idx) {
+                var titulo = esc(p.nombre || 'Partida');
+                var sub = [];
+                if (p.marca) sub.push(esc(p.marca));
+                if (p.parte) sub.push(esc(p.parte));
+                var subLine = sub.length ? '<span class="lw-cotexcl-sub">' + sub.join(' · ') + '</span>' : '';
+                var descLine = p.desc ? '<span class="lw-cotexcl-desc">' + esc(p.desc) + '</span>' : '';
+                var metaLine =
+                    '<span class="lw-cotexcl-meta">Cant: ' + esc(String(p.cantidad)) +
+                    ' · Precio: ' + fmtMoney(p.precio_unit) +
+                    (p.costo_unit !== null && p.costo_unit !== undefined ? ' · Costo: ' + fmtMoney(p.costo_unit) : '') +
+                    '</span>';
+                var motivo = p.motivo ? '<span class="lw-cotexcl-motivo">' + esc(p.motivo) + '</span>' : '';
+                return '' +
+                    '<label class="lw-cotexcl-row" data-key="' + esc(p.key) + '">' +
+                        '<input type="checkbox" class="lw-cotexcl-chk" data-key="' + esc(p.key) + '">' +
+                        '<span class="lw-cotexcl-info">' +
+                            '<span class="lw-cotexcl-titulo">' + titulo + '</span>' +
+                            subLine + descLine + metaLine + motivo +
+                        '</span>' +
+                    '</label>';
+            }).join('');
+
+            var plural = invalidas.length === 1;
+            box.innerHTML =
+                '<div class="lw-confirm-icon">' +
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+                '</div>' +
+                '<div class="lw-confirm-body">' +
+                    '<div class="lw-confirm-title">' + (plural ? 'Una partida no saldrá en la cotización' : invalidas.length + ' partidas no saldrán en la cotización') + '</div>' +
+                    '<div class="lw-confirm-msg">' +
+                        (plural ? 'Esta partida tiene' : 'Estas partidas tienen') + ' <b>precio</b> o <b>costo</b> unitario en $0, por eso se dejar' + (plural ? 'á' : 'án') + ' fuera. ' +
+                        'Marca <b>“Incluir de todas formas”</b> las que sí quieras que aparezcan.' +
+                    '</div>' +
+                    '<div class="lw-cotexcl-list">' + filas + '</div>' +
+                '</div>' +
+                '<div class="lw-confirm-actions">' +
+                    '<button type="button" class="lw-confirm-cancel">Cancelar</button>' +
+                    '<button type="button" class="lw-confirm-ok">Generar cotización</button>' +
+                '</div>';
+            bd.appendChild(box);
+            document.body.appendChild(bd);
+
+            setTimeout(function () {
+                var ok = box.querySelector('.lw-confirm-ok');
+                if (ok) ok.focus();
+            }, 30);
+
+            // Feedback visual: la fila marcada (= incluir) se resalta.
+            box.querySelectorAll('.lw-cotexcl-chk').forEach(function (chk) {
+                chk.addEventListener('change', function () {
+                    var row = chk.closest('.lw-cotexcl-row');
+                    if (row) row.classList.toggle('is-incluir', chk.checked);
+                });
+            });
+
+            function close(result) {
+                document.removeEventListener('keydown', onKey, true);
+                if (bd.parentNode) bd.parentNode.removeChild(bd);
+                resolve(result);
+            }
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(null); }
+            }
+            box.querySelector('.lw-confirm-cancel').onclick = function () { close(null); };
+            box.querySelector('.lw-confirm-ok').onclick = function () {
+                // Marcadas = incluir. Excluir = todas las inválidas menos las marcadas.
+                var incluir = {};
+                box.querySelectorAll('.lw-cotexcl-chk').forEach(function (chk) {
+                    if (chk.checked) incluir[chk.getAttribute('data-key')] = true;
+                });
+                var excluir = invalidas
+                    .map(function (p) { return p.key; })
+                    .filter(function (k) { return !incluir[k]; });
+                close({ excluir: excluir });
+            };
+            bd.onclick = function (e) { if (e.target === bd) close(null); };
+            document.addEventListener('keydown', onKey, true);
         });
     };
 
@@ -4358,12 +4497,12 @@
         return null;
     }
 
+    // Fase 5 (Reportes) ya no existe → se omite de la vista de consulta.
     var FASES = [
         { n: 1, titulo: 'Levantamiento técnico',     has: _hasFase1, summary: _summary1, detail: _detail1 },
         { n: 2, titulo: 'Propuesta técnica',          has: _hasFase2, summary: _summary2, detail: _detail2 },
         { n: 3, titulo: 'Volumetría / Presupuesto',   has: _hasFase3, summary: _summary3, detail: _detail3 },
         { n: 4, titulo: 'Programa de obra',           has: _hasFase4, summary: _summary4, detail: _detail4 },
-        { n: 5, titulo: 'Reportes',                   has: _hasFase5, summary: _summary5, detail: _detail5 },
     ];
 
     function _renderFase(lev, def) {
@@ -4566,48 +4705,71 @@
         promptPromise.then(function (nombreInput) {
             if (nombreInput === null) return;  // canceló
             var nombre = (nombreInput || '').trim() || nombreDefault;
-
-            if (typeof lwToast === 'function') {
-                lwToast('Generando cotización…', 'info');
-            }
-
             var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
 
+            // Paso 1 — preview: ¿hay partidas con precio/costo en $0 que
+            // quedarían fuera? Mismo flujo que la vista del ingeniero.
+            if (typeof lwToast === 'function') lwToast('Revisando partidas…', 'info');
             fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ nombre: nombre }),
+                body: JSON.stringify({ nombre: nombre, preview: true }),
             }).then(function (r) {
                 return r.json().then(function (data) { return { ok: r.ok, data: data }; });
             }).then(function (res) {
                 if (!res.ok || !res.data || res.data.success !== true) {
-                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
-                    if (typeof lwToast === 'function') lwToast(msg, 'error');
-                    else alert(msg);
+                    var msg = (res.data && res.data.error) || 'No se pudo preparar la cotización';
+                    if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
                     return;
                 }
-                try {
-                    window.open(res.data.pdf_url, '_blank');
-                } catch (e) {
-                    location.href = res.data.pdf_url;
+                var invalidas = (res.data.partidas_invalidas) || [];
+                if (!invalidas.length) {
+                    _lvcDoGenerarCotizacion(volId, nombre, []);
+                    return;
                 }
-                if (typeof lwToast === 'function') {
-                    lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
-                }
-                try {
-                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
-                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
-                    }
-                } catch (e) { /* defensivo */ }
+                lwCotizacionExcluirModal(invalidas).then(function (decision) {
+                    if (decision === null) return;  // canceló
+                    _lvcDoGenerarCotizacion(volId, nombre, decision.excluir);
+                });
             }).catch(function (err) {
-                var msg = 'Error de red al generar cotización';
-                if (typeof lwToast === 'function') lwToast(msg, 'error');
-                else alert(msg);
-                try { console.error('[cotizacion]', err); } catch (e) {}
+                if (typeof lwToast === 'function') lwToast('Error de red al preparar la cotización', 'error'); else alert('Error de red');
+                try { console.error('[cotizacion-preview]', err); } catch (e) {}
             });
         });
     };
+
+    // POST real de generación (vista de consulta). `_lwP3DoGenerarCotizacion`
+    // vive en la otra IIFE y no es visible aquí, así que redefinimos el
+    // request local. `excluirKeys` = partidas a dejar fuera.
+    function _lvcDoGenerarCotizacion(volId, nombre, excluirKeys) {
+        if (typeof lwToast === 'function') lwToast('Generando cotización…', 'info');
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ nombre: nombre, excluir_keys: excluirKeys || [] }),
+        }).then(function (r) {
+            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+        }).then(function (res) {
+            if (!res.ok || !res.data || res.data.success !== true) {
+                var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
+                return;
+            }
+            try { window.open(res.data.pdf_url, '_blank'); } catch (e) { location.href = res.data.pdf_url; }
+            if (typeof lwToast === 'function') lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+            try {
+                if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                    window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                }
+            } catch (e) { /* defensivo */ }
+        }).catch(function (err) {
+            if (typeof lwToast === 'function') lwToast('Error de red al generar cotización', 'error'); else alert('Error de red');
+            try { console.error('[cotizacion]', err); } catch (e) {}
+        });
+    }
 
     // Click fuera de cualquier menú abierto → cerrarlo.
     document.addEventListener('click', function (e) {

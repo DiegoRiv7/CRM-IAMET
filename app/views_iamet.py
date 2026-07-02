@@ -3860,6 +3860,21 @@ def api_volumetria_eliminar(request, volumetria_id):
 # ['marca_documento']` si en el futuro el ingeniero la captura al
 # arrancar el levantamiento. Cuando exista el campo se usa, sino fallback.
 
+def _motivo_invalida(precio_unit, costo_unit):
+    """Texto legible del por qué una partida no entra a la cotización.
+    `costo_unit=None` → la partida no lleva costo (mano de obra), así que
+    solo evaluamos el precio."""
+    sin_precio = precio_unit is not None and precio_unit <= 0
+    sin_costo = costo_unit is not None and costo_unit <= 0
+    if sin_precio and sin_costo:
+        return 'Precio y costo unitario en $0'
+    if sin_precio:
+        return 'Precio unitario en $0'
+    if sin_costo:
+        return 'Costo unitario en $0'
+    return ''
+
+
 @login_required
 @require_http_methods(['POST'])
 def api_volumetria_generar_cotizacion(request, volumetria_id):
@@ -3874,6 +3889,23 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
     except (json.JSONDecodeError, ValueError):
         body = {}
     nombre_override = (body.get('nombre') or '').strip()
+
+    # ── Preview / exclusión de partidas inválidas ─────────────────
+    # `preview=True` → no crea nada; devuelve las partidas que se
+    # excluirían por tener precio unitario o costo unitario en $0,
+    # para que el frontend muestre el cuadro de confirmación.
+    # `excluir_keys` → lista de claves posicionales (ej. "eq:0:2") que
+    # el usuario decidió dejar fuera. Cuando el frontend la envía,
+    # manda exactamente lo que quiere excluir (aunque sea []); si no
+    # viene la clave, hacemos el default: excluir toda partida inválida.
+    preview = bool(body.get('preview'))
+    _excluir_raw = body.get('excluir_keys', None)
+    if isinstance(_excluir_raw, list):
+        excluir_provided = True
+        excluir_set_user = set(str(k) for k in _excluir_raw)
+    else:
+        excluir_provided = False
+        excluir_set_user = set()
 
     try:
         vol = ProyectoVolumetria.objects.select_related(
@@ -3954,6 +3986,173 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
 
     marcas_validas = {m for m, _ in DetalleCotizacion.MARCA_CHOICES}
 
+    # ── Recolectar filas (títulos + items) en una lista plana ──────
+    # Se construye ANTES de tocar la BD para poder: (a) responder el
+    # preview sin crear nada, y (b) filtrar títulos sin items reales
+    # debajo (sub-rótulos vacíos del Excel, ej. "1 1/2\" STEEL
+    # CONNECTOR" sin productos).
+    #
+    # Cada producto lleva una `key` posicional estable (ej. "eq:0:2" =
+    # sección 0, fila 2 del equipamiento). Como el preview y la
+    # generación recorren el mismo `vol.data` en el mismo orden, la
+    # clave identifica la misma partida en ambas llamadas — sin
+    # depender de un id en el schema v4 (que no lo conserva).
+    pending = []  # [{tipo: 'titulo'|'producto', ...}]
+
+    def _push_titulo(texto):
+        t = (texto or '').strip()
+        if t:
+            pending.append({'tipo': 'titulo', 'texto': t})
+
+    def _push_producto_eq(r, key):
+        try:
+            qty_raw = float(r.get('qty') or 0)
+        except (TypeError, ValueError):
+            qty_raw = 0
+        if qty_raw <= 0:
+            return
+        qty = max(1, int(round(qty_raw)))
+        try:
+            precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+        except Exception:
+            precio_unit = _D('0.00')
+        try:
+            costo_unit = _D(str(r.get('costo_unit') or 0)).quantize(_D('0.01'))
+        except Exception:
+            costo_unit = _D('0.00')
+        total_row = (precio_unit * qty).quantize(_D('0.01'))
+        marca_raw = (r.get('marca') or '').strip()
+        marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+        parte_raw = (r.get('parte') or '').strip()
+        desc_raw = (r.get('desc') or '').strip()
+        nombre = parte_raw or marca_raw or (desc_raw[:80] if desc_raw else 'Producto')
+        if not marca_db and marca_raw:
+            nombre = (marca_raw + ' ' + nombre).strip()
+        # Inválida para la cotización: precio o costo unitario en $0.
+        invalida = precio_unit <= 0 or costo_unit <= 0
+        motivo = _motivo_invalida(precio_unit, costo_unit)
+        pending.append({
+            'tipo': 'producto',
+            'key': key,
+            'nombre': nombre[:255],
+            'desc': desc_raw,
+            'cantidad': qty,
+            'precio_unit': precio_unit,
+            'costo_unit': costo_unit,
+            'total': total_row,
+            'marca_db': marca_db,
+            'marca_disp': marca_raw,
+            'parte': parte_raw[:100],
+            'invalida': invalida,
+            'motivo': motivo,
+        })
+
+    def _push_producto_mo(r, key):
+        try:
+            qty_raw = float(r.get('qty') or 0)
+        except (TypeError, ValueError):
+            qty_raw = 0
+        if qty_raw <= 0:
+            return
+        qty = max(1, int(round(qty_raw)))
+        try:
+            precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
+        except Exception:
+            precio_unit = _D('0.00')
+        total_row = (precio_unit * qty).quantize(_D('0.01'))
+        desc_raw = (r.get('desc') or '').strip()
+        parte_raw = (r.get('parte') or '').strip() or 'SERVICIOS PROFESIONALES'
+        marca_raw = (r.get('marca') or '').strip() or 'BAJANET'
+        marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
+        nombre = parte_raw or desc_raw[:80] or 'Servicio'
+        if not marca_db:
+            nombre = (marca_raw + ' ' + nombre).strip() if marca_raw else nombre
+        # La mano de obra no lleva costo capturado en la volumetría, así
+        # que solo la marcamos inválida cuando su precio unitario es $0.
+        invalida = precio_unit <= 0
+        motivo = _motivo_invalida(precio_unit, None)
+        pending.append({
+            'tipo': 'producto',
+            'key': key,
+            'nombre': nombre[:255],
+            'desc': desc_raw,
+            'cantidad': qty,
+            'precio_unit': precio_unit,
+            'costo_unit': None,
+            'total': total_row,
+            'marca_db': marca_db,
+            'marca_disp': (r.get('marca') or '').strip(),
+            'parte': parte_raw[:100],
+            'invalida': invalida,
+            'motivo': motivo,
+        })
+
+    # Equipamiento + Mano de Obra (mano de obra cuenta como partida
+    # cobrada al cliente, así que sí va al subtotal del PDF).
+    sections_mo = ctx.get('sections_mo') or []
+
+    if sections_eq:
+        _push_titulo('EQUIPAMIENTO / MATERIALES')
+        for si, sec in enumerate(sections_eq):
+            _push_titulo(sec.get('titulo'))
+            for ri, r in enumerate(sec.get('rows') or []):
+                if r.get('is_header'):
+                    _push_titulo(r.get('texto'))
+                else:
+                    _push_producto_eq(r, 'eq:%d:%d' % (si, ri))
+
+    if sections_mo:
+        _push_titulo('MANO DE OBRA / SERVICIOS')
+        for si, sec in enumerate(sections_mo):
+            _push_titulo(sec.get('titulo'))
+            for ri, r in enumerate(sec.get('rows') or []):
+                _push_producto_mo(r, 'mo:%d:%d' % (si, ri))
+
+    # ── Partidas inválidas (precio/costo en $0) ────────────────────
+    invalidas = [p for p in pending if p['tipo'] == 'producto' and p['invalida']]
+
+    # Preview: no creamos nada, solo devolvemos las partidas que se
+    # excluirían para que el frontend arme el cuadro de confirmación.
+    if preview:
+        return JsonResponse({
+            'success': True,
+            'preview': True,
+            'partidas_invalidas': [{
+                'key': p['key'],
+                'nombre': p['nombre'],
+                'marca': p['marca_disp'],
+                'parte': p['parte'],
+                'desc': p['desc'],
+                'cantidad': p['cantidad'],
+                'precio_unit': float(p['precio_unit']),
+                'costo_unit': (float(p['costo_unit']) if p['costo_unit'] is not None else None),
+                'motivo': p['motivo'],
+            } for p in invalidas],
+            'total_productos': sum(1 for p in pending if p['tipo'] == 'producto'),
+        })
+
+    # ── Determinar qué partidas se excluyen ────────────────────────
+    # Si el frontend mandó `excluir_keys`, esa es la decisión final del
+    # usuario (marcó/desmarcó en el cuadro). Si no vino, default: se
+    # excluyen automáticamente todas las inválidas.
+    if excluir_provided:
+        excluir_set = excluir_set_user
+    else:
+        excluir_set = {p['key'] for p in invalidas}
+
+    if excluir_set:
+        pending = [
+            p for p in pending
+            if not (p['tipo'] == 'producto' and p.get('key') in excluir_set)
+        ]
+
+    if not any(p['tipo'] == 'producto' for p in pending):
+        return JsonResponse({
+            'success': False,
+            'error': 'No quedan partidas válidas para la cotización '
+                     '(todas fueron excluidas o tienen precio/costo en $0).',
+        }, status=400)
+
     with transaction.atomic():
         cotizacion = Cotizacion.objects.create(
             titulo=nombre_cot,
@@ -3972,104 +4171,11 @@ def api_volumetria_generar_cotizacion(request, volumetria_id):
             created_by=request.user,
         )
 
-        # ── Recolectar filas (títulos + items) en una lista plana ──
-        # Lo construimos primero en memoria para poder filtrar títulos
-        # que no tienen ningún item real debajo (sub-rótulos vacíos del
-        # Excel, ej. "1 1/2\" STEEL CONNECTOR" sin productos).
-        pending = []  # [{tipo: 'titulo'|'producto', ...}]
-
-        def _push_titulo(texto):
-            t = (texto or '').strip()
-            if t:
-                pending.append({'tipo': 'titulo', 'texto': t})
-
-        def _push_producto_eq(r):
-            try:
-                qty_raw = float(r.get('qty') or 0)
-            except (TypeError, ValueError):
-                qty_raw = 0
-            if qty_raw <= 0:
-                return
-            qty = max(1, int(round(qty_raw)))
-            try:
-                precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
-            except Exception:
-                precio_unit = _D('0.00')
-            total_row = (precio_unit * qty).quantize(_D('0.01'))
-            marca_raw = (r.get('marca') or '').strip()
-            marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
-            parte_raw = (r.get('parte') or '').strip()
-            desc_raw = (r.get('desc') or '').strip()
-            nombre = parte_raw or marca_raw or (desc_raw[:80] if desc_raw else 'Producto')
-            if not marca_db and marca_raw:
-                nombre = (marca_raw + ' ' + nombre).strip()
-            pending.append({
-                'tipo': 'producto',
-                'nombre': nombre[:255],
-                'desc': desc_raw,
-                'cantidad': qty,
-                'precio_unit': precio_unit,
-                'total': total_row,
-                'marca_db': marca_db,
-                'parte': parte_raw[:100],
-            })
-
-        def _push_producto_mo(r):
-            try:
-                qty_raw = float(r.get('qty') or 0)
-            except (TypeError, ValueError):
-                qty_raw = 0
-            if qty_raw <= 0:
-                return
-            qty = max(1, int(round(qty_raw)))
-            try:
-                precio_unit = _D(str(r.get('precio_unit') or 0)).quantize(_D('0.01'))
-            except Exception:
-                precio_unit = _D('0.00')
-            total_row = (precio_unit * qty).quantize(_D('0.01'))
-            desc_raw = (r.get('desc') or '').strip()
-            parte_raw = (r.get('parte') or '').strip() or 'SERVICIOS PROFESIONALES'
-            marca_raw = (r.get('marca') or '').strip() or 'BAJANET'
-            marca_db = marca_raw.upper() if marca_raw.upper() in marcas_validas else None
-            nombre = parte_raw or desc_raw[:80] or 'Servicio'
-            if not marca_db:
-                nombre = (marca_raw + ' ' + nombre).strip() if marca_raw else nombre
-            pending.append({
-                'tipo': 'producto',
-                'nombre': nombre[:255],
-                'desc': desc_raw,
-                'cantidad': qty,
-                'precio_unit': precio_unit,
-                'total': total_row,
-                'marca_db': marca_db,
-                'parte': parte_raw[:100],
-            })
-
-        # Equipamiento + Mano de Obra (mano de obra cuenta como partida
-        # cobrada al cliente, así que sí va al subtotal del PDF).
-        sections_mo = ctx.get('sections_mo') or []
-
-        if sections_eq:
-            _push_titulo('EQUIPAMIENTO / MATERIALES')
-            for sec in sections_eq:
-                _push_titulo(sec.get('titulo'))
-                for r in (sec.get('rows') or []):
-                    if r.get('is_header'):
-                        _push_titulo(r.get('texto'))
-                    else:
-                        _push_producto_eq(r)
-
-        if sections_mo:
-            _push_titulo('MANO DE OBRA / SERVICIOS')
-            for sec in sections_mo:
-                _push_titulo(sec.get('titulo'))
-                for r in (sec.get('rows') or []):
-                    _push_producto_mo(r)
-
         # ── Filtrar títulos sin items reales debajo ────────────────
         # Pasada hacia atrás: solo conservamos un título si entre él y el
         # siguiente título hay al menos UN producto. Resultado: limpia
-        # los rótulos vacíos del Excel.
+        # los rótulos vacíos del Excel (y los que quedaron huérfanos al
+        # excluir partidas inválidas).
         filtered = []
         i = 0
         n = len(pending)
@@ -4640,8 +4746,6 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
     return response
 
 
-@login_required
-@require_http_methods(["GET"])
 def _compress_image_for_pdf(src_path, tmp_dir, max_side=1600, quality=80):
     """Crea una copia reducida y recomprimida (JPEG) de una foto para incrustarla
     en un PDF ligero, apto para enviar por correo. Reescala para que el lado más
@@ -4803,6 +4907,8 @@ def _propuesta_pdf_filename(lev):
     return f'PropuestaTecnica_{safe_name}.pdf'
 
 
+@login_required
+@require_http_methods(["GET"])
 def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     """Genera el PDF de la Propuesta Técnica de un levantamiento.
 
