@@ -4746,8 +4746,6 @@ def api_levantamiento_sitio_pdf(request, levantamiento_id):
     return response
 
 
-@login_required
-@require_http_methods(["GET"])
 def _compress_image_for_pdf(src_path, tmp_dir, max_side=1600, quality=80):
     """Crea una copia reducida y recomprimida (JPEG) de una foto para incrustarla
     en un PDF ligero, apto para enviar por correo. Reescala para que el lado más
@@ -4909,6 +4907,8 @@ def _propuesta_pdf_filename(lev):
     return f'PropuestaTecnica_{safe_name}.pdf'
 
 
+@login_required
+@require_http_methods(["GET"])
 def api_levantamiento_propuesta_pdf(request, levantamiento_id):
     """Genera el PDF de la Propuesta Técnica de un levantamiento.
 
