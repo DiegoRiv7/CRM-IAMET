@@ -4945,3 +4945,79 @@ button.lvc-export-item {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 .lw-prompt-input::placeholder { color: #94A3B8; }
+
+/* ── Cuadro: partidas excluidas de la cotización (precio/costo $0) ── */
+.lw-cotexcl-box {
+    max-width: 560px;
+}
+.lw-cotexcl-list {
+    margin-top: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 2px;
+}
+.lw-cotexcl-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    background: #F8FAFC;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.lw-cotexcl-row:hover { border-color: #CBD5E1; }
+.lw-cotexcl-row.is-incluir {
+    background: #ECFDF5;
+    border-color: #6EE7B7;
+}
+.lw-cotexcl-chk {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: #16A34A;
+    cursor: pointer;
+}
+.lw-cotexcl-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.lw-cotexcl-titulo {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0F172A;
+    line-height: 1.3;
+}
+.lw-cotexcl-sub {
+    font-size: 12px;
+    color: #64748B;
+    font-weight: 500;
+}
+.lw-cotexcl-desc {
+    font-size: 12px;
+    color: #64748B;
+    line-height: 1.35;
+}
+.lw-cotexcl-meta {
+    font-size: 11.5px;
+    color: #475569;
+    margin-top: 2px;
+}
+.lw-cotexcl-motivo {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #B45309;
+    background: #FEF3C7;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
