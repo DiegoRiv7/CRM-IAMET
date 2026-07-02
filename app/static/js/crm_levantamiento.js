@@ -4497,12 +4497,12 @@
         return null;
     }
 
+    // Fase 5 (Reportes) ya no existe → se omite de la vista de consulta.
     var FASES = [
         { n: 1, titulo: 'Levantamiento técnico',     has: _hasFase1, summary: _summary1, detail: _detail1 },
         { n: 2, titulo: 'Propuesta técnica',          has: _hasFase2, summary: _summary2, detail: _detail2 },
         { n: 3, titulo: 'Volumetría / Presupuesto',   has: _hasFase3, summary: _summary3, detail: _detail3 },
         { n: 4, titulo: 'Programa de obra',           has: _hasFase4, summary: _summary4, detail: _detail4 },
-        { n: 5, titulo: 'Reportes',                   has: _hasFase5, summary: _summary5, detail: _detail5 },
     ];
 
     function _renderFase(lev, def) {
@@ -4705,48 +4705,71 @@
         promptPromise.then(function (nombreInput) {
             if (nombreInput === null) return;  // canceló
             var nombre = (nombreInput || '').trim() || nombreDefault;
-
-            if (typeof lwToast === 'function') {
-                lwToast('Generando cotización…', 'info');
-            }
-
             var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
 
+            // Paso 1 — preview: ¿hay partidas con precio/costo en $0 que
+            // quedarían fuera? Mismo flujo que la vista del ingeniero.
+            if (typeof lwToast === 'function') lwToast('Revisando partidas…', 'info');
             fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ nombre: nombre }),
+                body: JSON.stringify({ nombre: nombre, preview: true }),
             }).then(function (r) {
                 return r.json().then(function (data) { return { ok: r.ok, data: data }; });
             }).then(function (res) {
                 if (!res.ok || !res.data || res.data.success !== true) {
-                    var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
-                    if (typeof lwToast === 'function') lwToast(msg, 'error');
-                    else alert(msg);
+                    var msg = (res.data && res.data.error) || 'No se pudo preparar la cotización';
+                    if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
                     return;
                 }
-                try {
-                    window.open(res.data.pdf_url, '_blank');
-                } catch (e) {
-                    location.href = res.data.pdf_url;
+                var invalidas = (res.data.partidas_invalidas) || [];
+                if (!invalidas.length) {
+                    _lvcDoGenerarCotizacion(volId, nombre, []);
+                    return;
                 }
-                if (typeof lwToast === 'function') {
-                    lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
-                }
-                try {
-                    if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
-                        window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
-                    }
-                } catch (e) { /* defensivo */ }
+                lwCotizacionExcluirModal(invalidas).then(function (decision) {
+                    if (decision === null) return;  // canceló
+                    _lvcDoGenerarCotizacion(volId, nombre, decision.excluir);
+                });
             }).catch(function (err) {
-                var msg = 'Error de red al generar cotización';
-                if (typeof lwToast === 'function') lwToast(msg, 'error');
-                else alert(msg);
-                try { console.error('[cotizacion]', err); } catch (e) {}
+                if (typeof lwToast === 'function') lwToast('Error de red al preparar la cotización', 'error'); else alert('Error de red');
+                try { console.error('[cotizacion-preview]', err); } catch (e) {}
             });
         });
     };
+
+    // POST real de generación (vista de consulta). `_lwP3DoGenerarCotizacion`
+    // vive en la otra IIFE y no es visible aquí, así que redefinimos el
+    // request local. `excluirKeys` = partidas a dejar fuera.
+    function _lvcDoGenerarCotizacion(volId, nombre, excluirKeys) {
+        if (typeof lwToast === 'function') lwToast('Generando cotización…', 'info');
+        var csrf = (document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)') || [])[2] || '';
+        fetch('/app/api/iamet/volumetrias/' + volId + '/generar-cotizacion/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ nombre: nombre, excluir_keys: excluirKeys || [] }),
+        }).then(function (r) {
+            return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+        }).then(function (res) {
+            if (!res.ok || !res.data || res.data.success !== true) {
+                var msg = (res.data && res.data.error) || 'No se pudo generar la cotización';
+                if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
+                return;
+            }
+            try { window.open(res.data.pdf_url, '_blank'); } catch (e) { location.href = res.data.pdf_url; }
+            if (typeof lwToast === 'function') lwToast('Cotización creada y guardada en el Drive de la oportunidad', 'ok');
+            try {
+                if (typeof window.crmReloadCotizacionesOportunidad === 'function' && res.data.oportunidad_id) {
+                    window.crmReloadCotizacionesOportunidad(res.data.oportunidad_id);
+                }
+            } catch (e) { /* defensivo */ }
+        }).catch(function (err) {
+            if (typeof lwToast === 'function') lwToast('Error de red al generar cotización', 'error'); else alert('Error de red');
+            try { console.error('[cotizacion]', err); } catch (e) {}
+        });
+    }
 
     // Click fuera de cualquier menú abierto → cerrarlo.
     document.addEventListener('click', function (e) {
