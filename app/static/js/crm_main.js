@@ -7664,8 +7664,13 @@
                 }).join('') + '</div>';
             }
 
+            // En el preview NO mostramos la imagen ni su link: solo un 📷 para
+            // indicar que hay foto (se verá al abrir la tarea).
+            var _tcpDescRaw = (t.descripcion || '').replace(/!\[[^\]]*\]\([^)\s]+\)/g, '[[TCPIMG]]');
+            var _tcpDescHtml = _tcpEsc(_tcpDescRaw).replace(/\n/g, '<br>')
+                .replace(/\[\[TCPIMG\]\]/g, '<span class="tcp-desc-img-ico" title="Imagen adjunta" style="display:inline-block;opacity:.8;">📷</span>');
             var descHtml = t.descripcion
-                ? '<div class="tcp-detail-desc">' + _tcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>'
+                ? '<div class="tcp-detail-desc">' + _tcpDescHtml + '</div>'
                 : '<div class="tcp-detail-desc empty">Sin descripción.</div>';
 
             // Clock SVG para fechas (usado en pill vencida, sin icono ⚠)
