@@ -4,6 +4,20 @@ Modal de DETALLE DE TAREA (crmTaskDetailModal). Extraído de _content.html
 la página-iframe widget_tarea_page (multi-tarea en ventanas). La lógica
 vive en crm_main.js (crmTaskVerDetalle y compañía).
 {% endcomment %}
+<style>
+/* Imágenes incrustadas (inline) en la descripción de tareas */
+.tarea-desc-img {
+    max-width: 100%;
+    max-height: 420px;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    margin: 6px 0;
+    display: block;
+    cursor: zoom-in;
+}
+.tarea-desc-img:hover { border-color: #4f6ef7; }
+</style>
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal" data-windowable="1">
     <div class="crm-task-modal">
         <!-- ═════ HEADER SUPERIOR (Global Tools) ═════ -->

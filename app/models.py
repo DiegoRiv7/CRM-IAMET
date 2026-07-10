@@ -2526,7 +2526,29 @@ class Tarea(models.Model):
     def get_descripcion_html(self):
         """Convierte la descripción (incluyendo tags de Bitrix) a HTML con menciones"""
         import re
+        import html as _html
         desc = self.descripcion or ""
+
+        # 0. Imágenes/enlaces markdown de adjuntos internos → HTML seguro.
+        #    Solo se aceptan URLs internas de tareas (evita XSS / URLs externas).
+        def _es_url_interna(u):
+            return u.startswith('/app/api/tarea-imagen/') or u.startswith('/app/api/tarea-archivo/')
+
+        def _img_md(m):
+            alt = _html.escape(m.group(1) or '', quote=True)
+            url = m.group(2) or ''
+            if _es_url_interna(url):
+                return f'<img src="{_html.escape(url, quote=True)}" alt="{alt}" class="tarea-desc-img" loading="lazy">'
+            return m.group(0)
+        desc = re.sub(r'!\[([^\]]*)\]\(([^)\s]+)\)', _img_md, desc)
+
+        def _link_md(m):
+            txt = _html.escape(m.group(1) or '', quote=True)
+            url = m.group(2) or ''
+            if _es_url_interna(url):
+                return f'<a href="{_html.escape(url, quote=True)}" target="_blank" rel="noopener">{txt}</a>'
+            return m.group(0)
+        desc = re.sub(r'(?<!\!)\[([^\]]*)\]\(([^)\s]+)\)', _link_md, desc)
 
         # 1. Convertir [USER=XX]Nombre[/USER] (formato Bitrix)
         def replace_bitrix_user(match):

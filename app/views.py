@@ -33,6 +33,8 @@ from .views_tarea_comentarios import (
     api_editar_comentario_tarea,
     api_eliminar_comentario_tarea,
     api_tarea_archivo,
+    api_tarea_imagen_inline,
+    api_tarea_imagen,
 )
 
 from .views_prospeccion import *
