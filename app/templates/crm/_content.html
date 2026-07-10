@@ -1928,7 +1928,16 @@
                 </div>
             </div>
 
-            <textarea id="crmTaskDescEditor" class="crm-ctw-desc" rows="4" placeholder="Añade una descripción… (soporta Markdown)"></textarea>
+            <div id="crmTaskDescEditor" class="crm-ctw-desc crm-ce-editor" contenteditable="true" data-placeholder="Añade una descripción… (pega o arrastra imágenes)"></div>
+            <style>
+                /* Editor visual (contenteditable) de descripción de tareas */
+                .crm-ce-editor { min-height: 90px; max-height: 340px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
+                .crm-ce-editor:empty:before { content: attr(data-placeholder); color: #9CA3AF; pointer-events: none; }
+                .crm-ce-editor:focus { outline: none; }
+                .crm-ce-editor img, .crm-ce-img { max-width: 100%; max-height: 240px; height: auto; display: block; margin: 5px 0; border-radius: 6px; border: 1px solid #E5E7EB; }
+                .crm-ce-uploading { opacity: 0.5; filter: grayscale(0.2); }
+                .crm-ce-dragover { outline: 2px dashed #4f6ef7 !important; outline-offset: 2px; background: #F8FAFF; }
+            </style>
             <!-- Chips de archivos adjuntos (aparece cuando hay archivos) -->
             <div id="crmCreateFilesPreview" class="crm-ctw-files-preview" style="display:none;"></div>
         </main>

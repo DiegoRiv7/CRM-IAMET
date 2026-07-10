@@ -2010,13 +2010,18 @@ def api_crear_tarea(request):
             except Exception:
                 pass
 
-        # Crear comentario inicial si hay descripción
+        # Crear comentario inicial si hay descripción. Las imágenes inline ya se
+        # ven en la descripción; en este comentario solo dejamos un marcador para
+        # no duplicar la imagen completa en la actividad.
         if descripcion.strip():
-            TareaComentario.objects.create(
-                tarea=tarea,
-                usuario=request.user,
-                contenido=f"📝 Tarea creada: {descripcion}"
-            )
+            import re as _re
+            desc_comentario = _re.sub(r'!\[[^\]]*\]\([^)\s]+\)', '🖼️ imagen', descripcion).strip()
+            if desc_comentario:
+                TareaComentario.objects.create(
+                    tarea=tarea,
+                    usuario=request.user,
+                    contenido=f"📝 Tarea creada: {desc_comentario}"
+                )
         
         # Enviar notificación al usuario asignado
         if asignado_a:

@@ -2196,7 +2196,27 @@ class TareaComentario(models.Model):
     def get_contenido_con_menciones(self):
         """Convierte las menciones @[Nombre] / @usuario y [USER=XX] en enlaces HTML"""
         import re
+        import html as _html
         contenido = self.contenido or ""
+
+        # Imágenes/enlaces markdown de adjuntos internos → HTML seguro (mismo
+        # criterio que la descripción: solo URLs internas de tareas).
+        def _es_url_interna_c(u):
+            return u.startswith('/app/api/tarea-imagen/') or u.startswith('/app/api/tarea-archivo/')
+        def _img_md_c(m):
+            alt = _html.escape(m.group(1) or '', quote=True)
+            url = m.group(2) or ''
+            if _es_url_interna_c(url):
+                return f'<img src="{_html.escape(url, quote=True)}" alt="{alt}" class="tarea-desc-img" loading="lazy">'
+            return m.group(0)
+        contenido = re.sub(r'!\[([^\]]*)\]\(([^)\s]+)\)', _img_md_c, contenido)
+        def _link_md_c(m):
+            txt = _html.escape(m.group(1) or '', quote=True)
+            url = m.group(2) or ''
+            if _es_url_interna_c(url):
+                return f'<a href="{_html.escape(url, quote=True)}" target="_blank" rel="noopener">{txt}</a>'
+            return m.group(0)
+        contenido = re.sub(r'(?<!\!)\[([^\]]*)\]\(([^)\s]+)\)', _link_md_c, contenido)
 
         def replace_bitrix_user(match):
             b_id = match.group(1)
