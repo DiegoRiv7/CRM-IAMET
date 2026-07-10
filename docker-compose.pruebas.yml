@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    restart: unless-stopped
     container_name: crm-pruebas-web
     volumes:
       - .:/app
@@ -30,6 +31,7 @@ services:
 
   db:
     image: mysql:8.0
+    restart: unless-stopped
     container_name: crm-pruebas-db
     volumes:
       - db_pruebas:/var/lib/mysql

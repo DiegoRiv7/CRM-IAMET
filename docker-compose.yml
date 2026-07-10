@@ -3,6 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
+    restart: unless-stopped
     volumes:
       - .:/app # Monta el directorio actual para desarrollo (opcional para producción)
       - media_files:/app/media # Volumen persistente para archivos media
@@ -34,6 +35,7 @@ services:
 
   db:
     image: mysql:8.0
+    restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql # Volumen de datos persistente para la base de datos
     environment:
