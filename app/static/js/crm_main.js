@@ -9798,7 +9798,7 @@
             _crmCurrentTaskId = null;
             if (_crmTimerInterval) { clearInterval(_crmTimerInterval); _crmTimerInterval = null; }
             // Limpiar archivos pendientes del comentario
-            _crmCommentFiles = [];
+            _crmCommentFiles.length = 0; // mutar en sitio (array compartido)
             _crmFilesRender();
             _crmMentionClose();
         }
@@ -10347,7 +10347,10 @@
         }
 
         // ── Comment files (drag-drop + select) ──
-        var _crmCommentFiles = [];
+        // Estado COMPARTIDO en window (nunca se reasigna, solo se muta) para que
+        // el handler que agrega el archivo y el que envía usen el MISMO array
+        // aunque crmReady se re-ejecute (turbo:load) y existan varios closures.
+        var _crmCommentFiles = (window._crmCommentFiles = window._crmCommentFiles || []);
 
         function _crmFilesRender() {
             var preview = document.getElementById('crm-task-files-preview');
@@ -10552,7 +10555,7 @@
                     .then(function (data) {
                         if (data.success) {
                             if (input) input.value = '';
-                            _crmCommentFiles = [];
+                            _crmCommentFiles.length = 0; // mutar en sitio (array compartido)
                             _crmFilesRender();
                             crmTaskCargarComentarios(_crmCurrentTaskId);
                             if (typeof notifLoad === 'function') notifLoad();
