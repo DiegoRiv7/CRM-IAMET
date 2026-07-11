@@ -117,9 +117,11 @@ def api_agregar_comentario_tarea(request, tarea_id):
         if not user_can_comment:
             return JsonResponse({'error': 'Sin permisos para comentar en esta tarea'}, status=403)
         
-        # Obtener contenido del comentario
+        # Obtener contenido del comentario. Se permite vacío si vienen archivos
+        # adjuntos (p.ej. pegar/arrastrar una captura sin escribir texto).
         contenido = request.POST.get('contenido', '').strip()
-        if not contenido:
+        tiene_archivos = any(k.startswith('archivo_') for k in request.FILES.keys())
+        if not contenido and not tiene_archivos:
             return JsonResponse({'error': 'El contenido del comentario es requerido'}, status=400)
         
         # Crear el comentario
@@ -339,4 +341,73 @@ def api_tarea_archivo(request, archivo_id):
     response = FileResponse(f, content_type=content_type or 'application/octet-stream')
     filename = archivo.nombre_original or archivo.archivo.name.split('/')[-1]
     response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+
+# Imágenes incrustadas (inline) en descripción/comentarios de tareas.
+# No usan modelo: la imagen se guarda en MEDIA/tareas/inline y se referencia
+# por URL dentro del texto (markdown ![](/app/api/tarea-imagen/<archivo>/)).
+_INLINE_SUBDIR = 'tareas/inline'
+_INLINE_EXT_OK = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'}
+
+
+def api_tarea_imagen_inline(request):
+    """Sube una imagen para incrustarla en la descripción o comentario de una
+    tarea. Devuelve una URL servible y el markdown listo para insertar."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'No autenticado'}, status=403)
+
+    import os
+    import uuid
+    from django.core.files.storage import default_storage
+
+    f = request.FILES.get('imagen') or request.FILES.get('archivo')
+    if not f:
+        return JsonResponse({'error': 'No se recibió ninguna imagen'}, status=400)
+
+    nombre = f.name or 'imagen.png'
+    ext = os.path.splitext(nombre)[1].lower()
+    ctype = (f.content_type or '').lower()
+    if not (ctype.startswith('image/') or ext in _INLINE_EXT_OK):
+        return JsonResponse({'error': 'Solo se permiten imágenes'}, status=400)
+    if f.size and f.size > 15 * 1024 * 1024:
+        return JsonResponse({'error': 'La imagen supera el límite de 15 MB'}, status=400)
+    if ext not in _INLINE_EXT_OK:
+        ext = '.png'
+
+    rel_path = f'{_INLINE_SUBDIR}/{uuid.uuid4().hex}{ext}'
+    saved = default_storage.save(rel_path, f)
+    fname = os.path.basename(saved)
+    url = f'/app/api/tarea-imagen/{fname}/'
+    return JsonResponse({
+        'success': True,
+        'url': url,
+        'nombre': nombre,
+        'markdown': f'![{nombre}]({url})',
+    })
+
+
+def api_tarea_imagen(request, nombre):
+    """Sirve una imagen inline de tareas (requiere sesión)."""
+    import mimetypes
+    from django.http import FileResponse, Http404
+    from django.core.files.storage import default_storage
+
+    if not request.user.is_authenticated:
+        raise Http404
+    # <str:> ya evita '/'; guard extra contra path traversal por si acaso.
+    if not nombre or '/' in nombre or '\\' in nombre or '..' in nombre:
+        raise Http404
+    rel_path = f'{_INLINE_SUBDIR}/{nombre}'
+    if not default_storage.exists(rel_path):
+        raise Http404
+    try:
+        f = default_storage.open(rel_path, 'rb')
+    except Exception:
+        raise Http404
+    content_type, _ = mimetypes.guess_type(nombre)
+    response = FileResponse(f, content_type=content_type or 'application/octet-stream')
+    response['Content-Disposition'] = f'inline; filename="{nombre}"'
     return response

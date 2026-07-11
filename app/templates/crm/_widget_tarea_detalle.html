@@ -4,6 +4,28 @@ Modal de DETALLE DE TAREA (crmTaskDetailModal). Extraído de _content.html
 la página-iframe widget_tarea_page (multi-tarea en ventanas). La lógica
 vive en crm_main.js (crmTaskVerDetalle y compañía).
 {% endcomment %}
+<style>
+/* Imágenes incrustadas (inline) en la descripción de tareas */
+.tarea-desc-img {
+    max-width: 100%;
+    max-height: 420px;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    margin: 6px 0;
+    display: block;
+    cursor: zoom-in;
+}
+.tarea-desc-img:hover { border-color: #4f6ef7; }
+/* Editor visual (contenteditable) al editar la descripción */
+.crm-ce-editor { white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
+.crm-ce-editor:focus { outline: none; }
+/* Editar en el detalle: editor compacto (scopeado por id para NO afectar al de crear) */
+#crm-task-descripcion.crm-ce-editor { min-height: 80px; max-height: 340px; overflow-y: auto; }
+.crm-ce-editor img, .crm-ce-img { max-width: 100%; max-height: 240px; height: auto; display: block; margin: 5px 0; border-radius: 6px; border: 1px solid #E5E7EB; }
+.crm-ce-uploading { opacity: 0.5; filter: grayscale(0.2); }
+.crm-ce-dragover { outline: 2px dashed #4f6ef7 !important; outline-offset: 2px; background: #F8FAFF; }
+</style>
 <div class="crm-task-modal-overlay" id="crmTaskDetailModal" data-windowable="1">
     <div class="crm-task-modal">
         <!-- ═════ HEADER SUPERIOR (Global Tools) ═════ -->

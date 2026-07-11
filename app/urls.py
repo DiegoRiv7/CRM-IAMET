@@ -140,6 +140,8 @@ urlpatterns = [
     path('api/comentario-tarea/<int:comentario_id>/editar/', views.api_editar_comentario_tarea, name='api_editar_comentario_tarea'),
     path('api/comentario-tarea/<int:comentario_id>/eliminar/', views.api_eliminar_comentario_tarea, name='api_eliminar_comentario_tarea'),
     path('api/tarea-archivo/<int:archivo_id>/', views.api_tarea_archivo, name='api_tarea_archivo'),
+    path('api/tarea/imagen-inline/', views.api_tarea_imagen_inline, name='api_tarea_imagen_inline'),
+    path('api/tarea-imagen/<str:nombre>/', views.api_tarea_imagen, name='api_tarea_imagen'),
 
     # ── APIs CRM ──────────────────────────────────────────────────────────────
     path('api/crm-table-data/', views.api_crm_table_data, name='api_crm_table_data'),

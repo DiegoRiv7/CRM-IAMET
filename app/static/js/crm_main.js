@@ -7664,8 +7664,13 @@
                 }).join('') + '</div>';
             }
 
+            // En el preview NO mostramos la imagen ni su link: solo un 📷 para
+            // indicar que hay foto (se verá al abrir la tarea).
+            var _tcpDescRaw = (t.descripcion || '').replace(/!\[[^\]]*\]\([^)\s]+\)/g, '[[TCPIMG]]');
+            var _tcpDescHtml = _tcpEsc(_tcpDescRaw).replace(/\n/g, '<br>')
+                .replace(/\[\[TCPIMG\]\]/g, '<span class="tcp-desc-img-ico" title="Imagen adjunta" style="display:inline-block;opacity:.8;">📷</span>');
             var descHtml = t.descripcion
-                ? '<div class="tcp-detail-desc">' + _tcpEsc(t.descripcion).replace(/\n/g, '<br>') + '</div>'
+                ? '<div class="tcp-detail-desc">' + _tcpDescHtml + '</div>'
                 : '<div class="tcp-detail-desc empty">Sin descripción.</div>';
 
             // Clock SVG para fechas (usado en pill vencida, sin icono ⚠)
@@ -8729,7 +8734,7 @@
                 titleEl.replaceWith(h1);
             }
             var descEl = document.getElementById('crm-task-descripcion');
-            if (descEl && descEl.tagName === 'TEXTAREA') {
+            if (descEl && (descEl.tagName === 'TEXTAREA' || descEl.getAttribute('contenteditable') === 'true')) {
                 var div = document.createElement('div');
                 div.id = 'crm-task-descripcion';
                 div.className = 'crm-task-desc-content';
@@ -9332,28 +9337,31 @@
 
         function crmTaskEditarDescripcion() {
             var descEl = document.getElementById('crm-task-descripcion');
-            if (!descEl || descEl.tagName === 'TEXTAREA') return;
-            var current = descEl.textContent === 'Sin descripción' ? '' : descEl.textContent;
-            var ta = document.createElement('textarea');
-            ta.id = 'crm-task-descripcion';
-            ta.rows = 4;
-            ta.value = current;
-            ta.style.cssText = 'width:100%;border:1px solid #0052D4;border-radius:6px;padding:6px 8px;font-size:0.85rem;outline:none;color:#1D1D1F;resize:vertical;font-family:inherit;background:#FAFAFA;';
-            descEl.replaceWith(ta); ta.focus();
+            if (!descEl || descEl.getAttribute('contenteditable') === 'true') return;
+            // Editor VISUAL (contenteditable): parte del markdown crudo y muestra
+            // las imágenes ya renderizadas; se serializa de vuelta a markdown al guardar.
+            var rawMd = (_crmTaskOriginal && typeof _crmTaskOriginal.descripcion === 'string')
+                ? _crmTaskOriginal.descripcion : '';
+            var ed = document.createElement('div');
+            ed.id = 'crm-task-descripcion';
+            ed.className = 'crm-task-desc-content crm-tw-desc crm-ce-editor';
+            ed.setAttribute('contenteditable', 'true');
+            ed.innerHTML = (typeof window._crmMarkdownToCe === 'function') ? window._crmMarkdownToCe(rawMd) : '';
+            ed.style.cssText = 'width:100%;min-height:80px;border:1px solid #0052D4;border-radius:6px;padding:8px 10px;font-size:0.85rem;outline:none;color:#1D1D1F;background:#FAFAFA;line-height:1.6;';
+            descEl.replaceWith(ed); ed.focus();
             crmTaskShowSaveBar();
-            ta.addEventListener('input', function () {
-                if (ta.value !== _crmTaskOriginal.descripcion) {
-                    _crmTaskEdits.descripcion = ta.value;
-                } else { delete _crmTaskEdits.descripcion; }
+            ed.addEventListener('input', function () {
+                var md = (typeof window._crmCeToMarkdown === 'function') ? window._crmCeToMarkdown(ed) : ed.innerText;
+                if (md !== _crmTaskOriginal.descripcion) { _crmTaskEdits.descripcion = md; }
+                else { delete _crmTaskEdits.descripcion; }
             });
-            ta.addEventListener('keydown', function (e) {
+            ed.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') crmTaskCancelarEdicion();
                 if (e.key === 'Enter' && e.ctrlKey) crmTaskGuardar();
             });
-            // Soporte invisible para pegar/arrastrar imágenes en la descripción.
-            // Sin UI nueva: la imagen se sube como adjunto silenciosamente.
+            // Pegar / arrastrar imágenes → se incrustan visualmente en el editor.
             if (typeof window._crmTaskAttachImageHandlers === 'function') {
-                window._crmTaskAttachImageHandlers(ta, { mode: 'edit' });
+                window._crmTaskAttachImageHandlers(ed, { mode: 'edit' });
             }
         }
 
@@ -9601,7 +9609,12 @@
                     if (d.success) {
                         // Merge edits into _crmTaskLastData and re-render sin fetch
                         if (_crmTaskEdits.titulo) _crmTaskLastData.titulo = _crmTaskEdits.titulo;
-                        if ('descripcion' in _crmTaskEdits) _crmTaskLastData.descripcion = _crmTaskEdits.descripcion;
+                        if ('descripcion' in _crmTaskEdits) {
+                            _crmTaskLastData.descripcion = _crmTaskEdits.descripcion;
+                            // Regenerar el HTML mostrado para que las imágenes inline
+                            // aparezcan de inmediato (sin esperar un reload del backend).
+                            _crmTaskLastData.descripcion_html = _crmDescToHtml(_crmTaskEdits.descripcion);
+                        }
                         if ('fecha_limite' in _crmTaskEdits) _crmTaskLastData.fecha_limite = _crmTaskEdits.fecha_limite;
                         if ('asignado_a' in _crmTaskEdits) {
                             _crmTaskLastData.responsable_data = {
@@ -9790,7 +9803,7 @@
             _crmCurrentTaskId = null;
             if (_crmTimerInterval) { clearInterval(_crmTimerInterval); _crmTimerInterval = null; }
             // Limpiar archivos pendientes del comentario
-            _crmCommentFiles = [];
+            _crmCommentFiles.length = 0; // mutar en sitio (array compartido)
             _crmFilesRender();
             _crmMentionClose();
         }
@@ -10339,7 +10352,10 @@
         }
 
         // ── Comment files (drag-drop + select) ──
-        var _crmCommentFiles = [];
+        // Estado COMPARTIDO en window (nunca se reasigna, solo se muta) para que
+        // el handler que agrega el archivo y el que envía usen el MISMO array
+        // aunque crmReady se re-ejecute (turbo:load) y existan varios closures.
+        var _crmCommentFiles = (window._crmCommentFiles = window._crmCommentFiles || []);
 
         function _crmFilesRender() {
             var preview = document.getElementById('crm-task-files-preview');
@@ -10498,6 +10514,22 @@
             });
         }
 
+        // Pegar captura (Cmd/Ctrl+V) en el comentario → se adjunta como imagen
+        if (commentInput && !commentInput._crmPasteBound) {
+            commentInput._crmPasteBound = true;
+            commentInput.addEventListener('paste', function (e) {
+                var items = (e.clipboardData && e.clipboardData.items) || [];
+                var imgs = [];
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].kind === 'file' && items[i].type && items[i].type.indexOf('image/') === 0) {
+                        var f = items[i].getAsFile();
+                        if (f) imgs.push(f);
+                    }
+                }
+                if (imgs.length) { e.preventDefault(); _crmFilesAdd(imgs); }
+            });
+        }
+
         // Submit comment
         var commentForm = document.getElementById('crm-task-comment-form');
         if (commentForm) {
@@ -10509,8 +10541,7 @@
                 if (!_crmCurrentTaskId) return;
 
                 var formData = new FormData();
-                if (contenido) formData.append('contenido', contenido);
-                else formData.append('contenido', '(archivo adjunto)');
+                formData.append('contenido', contenido); // puede ir vacío si solo hay archivos
 
                 _crmCommentFiles.forEach(function (f, i) { formData.append('archivo_' + i, f); });
 
@@ -10529,7 +10560,7 @@
                     .then(function (data) {
                         if (data.success) {
                             if (input) input.value = '';
-                            _crmCommentFiles = [];
+                            _crmCommentFiles.length = 0; // mutar en sitio (array compartido)
                             _crmFilesRender();
                             crmTaskCargarComentarios(_crmCurrentTaskId);
                             if (typeof notifLoad === 'function') notifLoad();
@@ -10813,8 +10844,16 @@
         }
         window.crmCreateOnFilesPicked = function (inp) {
             if (!inp || !inp.files) return;
+            var descEditor = document.getElementById('crmTaskDescEditor');
             for (var i = 0; i < inp.files.length; i++) {
-                _crmCreateFiles.push(inp.files[i]);
+                var f = inp.files[i];
+                if (descEditor && f.type && f.type.indexOf('image/') === 0) {
+                    // Imagen → se incrusta visualmente en la descripción
+                    _crmCeInsertUploadingImage(descEditor, f);
+                } else {
+                    // Otros archivos → adjunto normal de la tarea
+                    _crmCreateFiles.push(f);
+                }
             }
             inp.value = ''; // permite re-seleccionar el mismo archivo
             _crmCreateRenderFiles();
@@ -10831,6 +10870,178 @@
             if (!f) return;
             _crmCreateFiles.push(f);
             _crmCreateRenderFiles();
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // ═══ IMÁGENES INLINE EN DESCRIPCIÓN (pegar / arrastrar / botón) ═══
+        // ══════════════════════════════════════════════════════════════
+        var _crmInlineSeq = 0;
+
+        // Sube una imagen al endpoint inline; promesa con {success,url,markdown,nombre}
+        function _crmInlineUpload(file) {
+            var fd = new FormData();
+            fd.append('imagen', file);
+            return fetch('/app/api/tarea/imagen-inline/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrf() },
+                body: fd
+            }).then(function (r) { return r.json(); });
+        }
+
+        // Serializa un editor contenteditable a markdown: texto + ![](url) por <img>.
+        function _crmCeToMarkdown(el) {
+            if (!el) return '';
+            var out = '';
+            (function walk(node) {
+                Array.prototype.forEach.call(node.childNodes, function (n) {
+                    if (n.nodeType === 3) {
+                        out += n.nodeValue;
+                    } else if (n.nodeType === 1) {
+                        var tag = n.tagName.toLowerCase();
+                        if (tag === 'img') {
+                            var src = n.getAttribute('src') || '';
+                            if (src.indexOf('blob:') === 0) return; // aún subiendo → no serializar
+                            var alt = n.getAttribute('alt') || 'imagen';
+                            out += '![' + alt + '](' + src + ')';
+                        } else if (tag === 'br') {
+                            out += '\n';
+                        } else if (tag === 'div' || tag === 'p') {
+                            if (out && out.charAt(out.length - 1) !== '\n') out += '\n';
+                            walk(n);
+                            if (out.charAt(out.length - 1) !== '\n') out += '\n';
+                        } else {
+                            walk(n);
+                        }
+                    }
+                });
+            })(el);
+            return out.replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+        }
+        window._crmCeToMarkdown = _crmCeToMarkdown;
+
+        // Convierte markdown almacenado → HTML para el editor visual (contenteditable).
+        function _crmMarkdownToCe(raw) {
+            var s = raw || '';
+            var re = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+            var html = '', last = 0, m;
+            function esc(t) { return _crmEscHtmlDesc(t).replace(/\n/g, '<br>'); }
+            while ((m = re.exec(s)) !== null) {
+                html += esc(s.slice(last, m.index));
+                var url = m[2];
+                if (_crmDescInterna(url)) {
+                    html += '<img src="' + _crmEscHtmlDesc(url) + '" alt="' + _crmEscHtmlDesc(m[1] || 'imagen') + '" class="tarea-desc-img crm-ce-img" contenteditable="false">';
+                } else {
+                    html += esc(m[0]);
+                }
+                last = re.lastIndex;
+            }
+            html += esc(s.slice(last));
+            return html;
+        }
+        window._crmMarkdownToCe = _crmMarkdownToCe;
+
+        // Inserta una imagen en el editor visible: preview local INMEDIATO y luego
+        // cambia al URL del servidor cuando termina la subida.
+        function _crmCeInsertUploadingImage(el, file) {
+            if (!el || !file || !file.type || file.type.indexOf('image/') !== 0) return;
+            el.focus();
+            var localUrl = URL.createObjectURL(file);
+            var img = document.createElement('img');
+            img.src = localUrl;
+            img.alt = file.name || 'imagen';
+            img.className = 'tarea-desc-img crm-ce-img crm-ce-uploading';
+            img.setAttribute('contenteditable', 'false');
+            var sel = window.getSelection();
+            var range;
+            if (sel && sel.rangeCount && el.contains(sel.anchorNode)) {
+                range = sel.getRangeAt(0);
+                range.deleteContents();
+            } else {
+                range = document.createRange();
+                range.selectNodeContents(el);
+                range.collapse(false);
+            }
+            range.insertNode(img);
+            var br = document.createElement('br');
+            range.setStartAfter(img);
+            range.insertNode(br);
+            range.setStartAfter(br);
+            range.collapse(true);
+            if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            _crmInlineUpload(file).then(function (data) {
+                if (data && data.success && data.url) {
+                    img.src = data.url;
+                    img.classList.remove('crm-ce-uploading');
+                } else {
+                    if (img.parentNode) img.parentNode.removeChild(img);
+                    if (typeof showToast === 'function') showToast((data && data.error) || 'No se pudo subir la imagen', 'error');
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                try { URL.revokeObjectURL(localUrl); } catch (e) {}
+            }).catch(function () {
+                if (img.parentNode) img.parentNode.removeChild(img);
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                if (typeof showToast === 'function') showToast('Error subiendo imagen', 'error');
+            });
+        }
+        window._crmCeInsertUploadingImage = _crmCeInsertUploadingImage;
+
+        // Render mínimo cliente-side: imágenes/enlaces markdown internos + saltos.
+        // (El backend hace el render completo — con menciones — en el próximo load.)
+        function _crmEscHtmlDesc(s) {
+            return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function _crmDescInterna(u) {
+            return u.indexOf('/app/api/tarea-imagen/') === 0 || u.indexOf('/app/api/tarea-archivo/') === 0;
+        }
+        function _crmDescToHtml(raw) {
+            var s = raw || '';
+            s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, alt, url) {
+                return _crmDescInterna(url) ? '<img src="' + _crmEscHtmlDesc(url) + '" alt="' + _crmEscHtmlDesc(alt) + '" class="tarea-desc-img" loading="lazy">' : m;
+            });
+            s = s.replace(/(^|[^!])\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, pre, txt, url) {
+                return _crmDescInterna(url) ? pre + '<a href="' + _crmEscHtmlDesc(url) + '" target="_blank" rel="noopener">' + _crmEscHtmlDesc(txt) + '</a>' : m;
+            });
+            return s.replace(/\n/g, '<br>');
+        }
+        window._crmDescToHtml = _crmDescToHtml;
+
+        // Gancho llamado al abrir "crear tarea" y al editar la descripción:
+        // habilita PEGAR (Cmd/Ctrl+V) y ARRASTRAR imágenes en el editor visual.
+        window._crmTaskAttachImageHandlers = function (el, opts) {
+            if (!el || el._crmImgBound) return;
+            el._crmImgBound = true;
+            el.addEventListener('paste', function (e) {
+                var items = (e.clipboardData && e.clipboardData.items) || [];
+                var imgs = [];
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].kind === 'file' && items[i].type && items[i].type.indexOf('image/') === 0) {
+                        var f = items[i].getAsFile();
+                        if (f) imgs.push(f);
+                    }
+                }
+                if (imgs.length) {
+                    e.preventDefault();
+                    imgs.forEach(function (f) { _crmCeInsertUploadingImage(el, f); });
+                }
+            });
+            el.addEventListener('dragover', function (e) {
+                if (e.dataTransfer && e.dataTransfer.types && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) {
+                    e.preventDefault();
+                    el.classList.add('crm-ce-dragover');
+                }
+            });
+            el.addEventListener('dragleave', function () { el.classList.remove('crm-ce-dragover'); });
+            el.addEventListener('drop', function (e) {
+                var files = (e.dataTransfer && e.dataTransfer.files) || [];
+                var imgs = Array.prototype.filter.call(files, function (f) { return f.type && f.type.indexOf('image/') === 0; });
+                if (imgs.length) {
+                    e.preventDefault();
+                    el.classList.remove('crm-ce-dragover');
+                    imgs.forEach(function (f) { _crmCeInsertUploadingImage(el, f); });
+                }
+            });
         };
 
         // ── Header: fetch nombre de oportunidad (si oppId presente) ──
@@ -11063,9 +11274,11 @@
             var descripcion = '';
             if (descEditor) {
                 // Soporta tanto textarea (composer nuevo) como contenteditable (legacy)
-                descripcion = (descEditor.value !== undefined)
-                    ? descEditor.value
-                    : (descEditor.innerText || descEditor.textContent || '');
+                descripcion = (typeof window._crmCeToMarkdown === 'function' && descEditor.getAttribute('contenteditable') === 'true')
+                    ? window._crmCeToMarkdown(descEditor)
+                    : ((descEditor.value !== undefined)
+                        ? descEditor.value
+                        : (descEditor.innerText || descEditor.textContent || ''));
             }
             var highPriority = (document.getElementById('crmTaskHighPriority') || {}).checked;
             var dueDate = (document.getElementById('crmTaskDueDate') || {}).value || '';

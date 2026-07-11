@@ -1819,8 +1819,11 @@
     // Evita requests duplicadas y nos asegura no quedarnos sin eventos al
     // navegar de un mes a otro.
     window.calMaybeRefetchOnMonthChange = function () {
-        var mes = _calCurrentMesParam();
-        if (mes !== _calLastFetchedMes) {
+        // Comparamos el conjunto de meses visibles (no solo el mes del lunes):
+        // así una semana que empieza a cruzar el cambio de mes también refetchea
+        // aunque su lunes siga en el mismo mes que la semana anterior.
+        var key = _calVisibleMeses().join(',');
+        if (key !== _calLastFetchedMes) {
             var sel = document.getElementById('calUserFilter');
             calGlobalRefetch(sel ? sel.value : 'all');
         }
@@ -3289,15 +3292,20 @@
     }
 
     function _calRefetchInstalaciones() {
-        var mes = _calCurrentMesParam();  // 'YYYY-MM'
-        var partes = mes.split('-');
-        var url = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(partes[0])
-                + '&mes=' + encodeURIComponent(partes[1]) + _calInstUserQS();
-        _calLastFetchedMes = mes;
-        return fetch(url, { credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                var instalaciones = (data && data.instalaciones) || [];
+        // Igual que el fetch general: la semana puede cruzar mes → pedimos
+        // todos los meses visibles y mezclamos las instalaciones.
+        var meses = _calVisibleMeses();
+        _calLastFetchedMes = meses.join(',');
+        return Promise.all(meses.map(function (mes) {
+            var partes = mes.split('-');
+            var url = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(partes[0])
+                    + '&mes=' + encodeURIComponent(partes[1]) + _calInstUserQS();
+            return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).catch(function () { return { instalaciones: [] }; });
+        }))
+            .then(function (datas) {
+                var instalaciones = [];
+                datas.forEach(function (d) { instalaciones = instalaciones.concat((d && d.instalaciones) || []); });
+                instalaciones = _calDedupeById(instalaciones);
                 _globalEvents = [];
                 instalaciones.forEach(function (inst) {
                     // _calMapInstalacion devuelve un evento por día asignado.
@@ -3971,22 +3979,40 @@
         // Backend de /api/actividades/ y /api/tareas/ soporta ?mes=YYYY-MM.
         // /api/tareas/ pagina a 50 por default; per_page=500 garantiza traer
         // todas las tareas del mes visible sin perder ninguna.
-        var mes = _calCurrentMesParam();
+        // La semana puede cruzar el cambio de mes → pedimos TODOS los meses
+        // visibles (1 o 2) y los mezclamos. Antes era un solo mes y los días
+        // del mes vecino salían vacíos.
+        var meses = _calVisibleMeses();
         var sep = qs ? '&' : '?';
-        var actividadesUrl = '/app/api/actividades/' + qs + sep + 'mes=' + encodeURIComponent(mes);
+        _calLastFetchedMes = meses.join(',');
+        // Actividades: una petición por mes visible; se mezclan y deduplican.
+        var pActividades = Promise.all(meses.map(function (mes) {
+            var url = '/app/api/actividades/' + qs + sep + 'mes=' + encodeURIComponent(mes);
+            return fetch(url,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();}).catch(function(){return [];});
+        })).then(function (arrs) { return _calDedupeById([].concat.apply([], arrs)); });
         // solo_responsable=1: en el calendario una tarea solo sale para su
         // RESPONSABLE (no creador/participante/observador). La lista de Tareas
         // no manda el flag y conserva su visibilidad amplia.
-        var tareasUrl = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500&solo_responsable=1';
+        var pTareas = Promise.all(meses.map(function (mes) {
+            var url = '/app/api/tareas/' + qs + sep + 'mes=' + encodeURIComponent(mes) + '&per_page=500&solo_responsable=1';
+            return fetch(url).then(function(r){return r.json();}).catch(function(){return {tareas:[]};});
+        })).then(function (datas) {
+            var all = [];
+            datas.forEach(function (d) { all = all.concat((d && (d.tareas || d.results)) || []); });
+            return { tareas: _calDedupeById(all) };
+        });
         // Instalaciones: se filtran por el usuario del picker (creador o técnico
         // asignado) en el backend vía _calInstUserQS(). Así una instalación solo
         // sale al creador y a sus técnicos, no a gente ajena.
-        var _instParts = mes.split('-');
-        var instUrl = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(_instParts[0]) + '&mes=' + encodeURIComponent(_instParts[1]) + _calInstUserQS();
-        _calLastFetchedMes = mes;
-        var pActividades = fetch(actividadesUrl,{method:'GET',headers:{'Content-Type':'application/json','X-CSRFToken':csrf}}).then(function(r){return r.json();});
-        var pTareas = fetch(tareasUrl).then(function(r){return r.json();});
-        var pInstalaciones = fetch(instUrl,{credentials:'same-origin'}).then(function(r){return r.json();}).catch(function(){return {instalaciones:[]};});
+        var pInstalaciones = Promise.all(meses.map(function (mes) {
+            var parts = mes.split('-');
+            var url = '/app/api/calendario/instalaciones/?anio=' + encodeURIComponent(parts[0]) + '&mes=' + encodeURIComponent(parts[1]) + _calInstUserQS();
+            return fetch(url,{credentials:'same-origin'}).then(function(r){return r.json();}).catch(function(){return {instalaciones:[]};});
+        })).then(function (datas) {
+            var all = [];
+            datas.forEach(function (d) { all = all.concat((d && d.instalaciones) || []); });
+            return { instalaciones: _calDedupeById(all) };
+        });
 
         Promise.all([pActividades,pTareas,pInstalaciones]).then(function(results){
             var actividades=results[0];
@@ -4073,6 +4099,44 @@
         }
         if (!d) d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    }
+
+    // Meses (YYYY-MM) que abarca el rango visible actual. En vista Semana la
+    // semana puede cruzar el cambio de mes (incluso de año), así que devolvemos
+    // TODOS los meses tocados por los 7 días — si no, los días del otro mes se
+    // quedaban sin eventos porque el fetch era por un solo mes. En Mes/Día basta
+    // el mes de referencia.
+    function _calVisibleMeses() {
+        var out = [];
+        function push(y, m0) {  // m0: 0-11
+            var key = y + '-' + String(m0 + 1).padStart(2, '0');
+            if (out.indexOf(key) < 0) out.push(key);
+        }
+        if (_calViewMode === 'week') {
+            var ws = _calWeekStart || _calCurrentDay || new Date();
+            for (var i = 0; i < 7; i++) {
+                var d = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i);
+                push(d.getFullYear(), d.getMonth());
+            }
+        } else {
+            var p = _calCurrentMesParam().split('-');
+            push(parseInt(p[0], 10), parseInt(p[1], 10) - 1);
+        }
+        return out;
+    }
+
+    // Dedup por `id` (los eventos que cruzan el borde del mes pueden venir en la
+    // respuesta de ambos meses). Los items sin id se conservan tal cual.
+    function _calDedupeById(arr) {
+        var seen = {}, out = [];
+        (arr || []).forEach(function (x) {
+            var id = x && x.id;
+            if (id === undefined || id === null) { out.push(x); return; }
+            if (seen[id]) return;
+            seen[id] = true;
+            out.push(x);
+        });
+        return out;
     }
 
     function _calGetSelection() {
