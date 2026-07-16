@@ -48,6 +48,29 @@ def _detectar_tipo_financiero(nombre):
     return ''
 
 
+def _vincular_pdf_a_factura(factura, archivo_oportunidad, ext):
+    """
+    Enlaza un PDF del drive a una factura de ingreso YA existente que no tenía
+    documento (para que el folio sea clickeable) y, si aún no se había evaluado,
+    extrae monto + moneda del PDF y recalcula el monto en pesos.
+    """
+    from decimal import Decimal
+    factura.archivo_drive = archivo_oportunidad
+    if (ext or '').lower() == 'pdf' and factura.monto_original is None:
+        try:
+            pdf_data = _extraer_datos_pdf(archivo_oportunidad.archivo)
+            moneda = pdf_data.get('moneda') or 'MXN'
+            monto_orig = pdf_data.get('monto') or factura.monto or Decimal('0')
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_orig, moneda, pdf_data.get('tipo_cambio'))
+            factura.moneda = moneda
+            factura.monto_original = monto_orig
+            factura.tipo_cambio = tc_usado
+            factura.monto = monto_mxn or factura.monto
+        except Exception as exc:
+            logger.warning(f"[Financiero] Vincular PDF a factura {factura.id}: {exc}")
+    factura.save()
+
+
 def analizar_archivo_drive(archivo_oportunidad):
     """
     Analiza un ArchivoOportunidad recién subido.
@@ -100,12 +123,20 @@ def analizar_archivo_drive(archivo_oportunidad):
         archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
         logger.info(f"[Financiero] Duplicado detectado: OC '{numero_doc_check}' ya existe en proyecto {proyecto.id}")
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: OC {numero_doc_check} ya existe'}
-    if tipo == 'factura' and ProyectoFacturaIngreso.objects.filter(proyecto=proyecto, numero_factura=numero_doc_check).exists():
-        archivo_oportunidad.procesado_financiero = True
-        archivo_oportunidad.tipo_financiero = tipo
-        archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
-        logger.info(f"[Financiero] Duplicado detectado: Factura '{numero_doc_check}' ya existe en proyecto {proyecto.id}")
-        return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: Factura {numero_doc_check} ya existe'}
+    if tipo == 'factura':
+        existente = ProyectoFacturaIngreso.objects.filter(proyecto=proyecto, numero_factura=numero_doc_check).first()
+        if existente:
+            archivo_oportunidad.procesado_financiero = True
+            archivo_oportunidad.tipo_financiero = tipo
+            archivo_oportunidad.save(update_fields=['procesado_financiero', 'tipo_financiero'])
+            # Si la factura ya existía pero SIN documento (creada a mano), enlazamos
+            # este PDF del drive para que el folio se pueda abrir y re-evaluamos su monto/moneda.
+            if not existente.archivo_drive_id:
+                _vincular_pdf_a_factura(existente, archivo_oportunidad, ext)
+                logger.info(f"[Financiero] Factura existente '{numero_doc_check}' vinculada al PDF del drive")
+                return {'procesado': True, 'tipo': tipo, 'monto': existente.monto, 'error': None}
+            logger.info(f"[Financiero] Duplicado detectado: Factura '{numero_doc_check}' ya existe en proyecto {proyecto.id}")
+            return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: Factura {numero_doc_check} ya existe'}
 
     # Extraer datos del PDF
     pdf_data = {}
@@ -664,6 +695,49 @@ def procesar_archivos_pendientes_oportunidad(oportunidad_id):
             errores += 1
 
     return {'total': total, 'procesados': procesados, 'errores': errores}
+
+
+def vincular_pdfs_faltantes(proyecto_iamet):
+    """
+    Para cada factura de ingreso del proyecto que NO tiene documento vinculado,
+    busca en el drive de la oportunidad un PDF cuyo folio coincida y lo enlaza
+    (haciendo el folio clickeable + extrayendo monto/moneda del PDF).
+
+    Resuelve el caso de facturas creadas a mano cuyo PDF YA estaba en el drive,
+    sin depender de la bandera `procesado_financiero` (que el sync viejo pudo
+    haber puesto en True al saltar el archivo como duplicado).
+
+    Retorna { revisadas, vinculadas }.
+    """
+    from .models import ProyectoFacturaIngreso, ArchivoOportunidad
+
+    if not proyecto_iamet.oportunidad_id:
+        return {'revisadas': 0, 'vinculadas': 0}
+
+    facturas = list(ProyectoFacturaIngreso.objects.filter(
+        proyecto=proyecto_iamet, archivo_drive__isnull=True,
+    ))
+    if not facturas:
+        return {'revisadas': 0, 'vinculadas': 0}
+
+    # Indexar los archivos del drive de la oportunidad por folio de factura.
+    por_folio = {}
+    for a in ArchivoOportunidad.objects.filter(oportunidad_id=proyecto_iamet.oportunidad_id):
+        nombre = (a.nombre_original or '').strip()
+        if _detectar_tipo_financiero(nombre) != 'factura':
+            continue
+        folio = _extraer_numero_factura(nombre)
+        por_folio.setdefault(folio, a)  # primero gana si hay repetidos
+
+    vinculadas = 0
+    for f in facturas:
+        arch = por_folio.get(f.numero_factura)
+        if arch:
+            _vincular_pdf_a_factura(f, arch, (arch.extension or '').lower())
+            vinculadas += 1
+            logger.info(f"[Financiero] Backfill: factura '{f.numero_factura}' vinculada al PDF del drive")
+
+    return {'revisadas': len(facturas), 'vinculadas': vinculadas}
 
 
 def reevaluar_facturas_moneda(proyecto_iamet=None):

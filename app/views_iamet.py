@@ -2170,8 +2170,11 @@ def api_financiero_sync_drive(request, proyecto_id):
 
     from .services_financiero import (
         procesar_archivos_pendientes_oportunidad, reevaluar_facturas_moneda,
+        vincular_pdfs_faltantes,
     )
     resultado = procesar_archivos_pendientes_oportunidad(proyecto.oportunidad_id)
+    # Enlazar PDFs del drive a facturas existentes sin documento (folio clickeable)
+    vinc_res = vincular_pdfs_faltantes(proyecto)
     # Re-evaluar moneda de facturas importadas antes de esta función (USD→MXN)
     moneda_res = reevaluar_facturas_moneda(proyecto)
 
@@ -2180,6 +2183,7 @@ def api_financiero_sync_drive(request, proyecto_id):
         'total': resultado['total'],
         'procesados': resultado['procesados'],
         'errores': resultado['errores'],
+        'vinculadas': vinc_res['vinculadas'],
         'moneda_reevaluadas': moneda_res['actualizadas'],
         'moneda_usd': moneda_res['usd'],
     })

@@ -5242,6 +5242,8 @@
             if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sincronizar Drive'; }
             if (resp.success) {
                 var msg = resp.procesados + ' archivo(s) importado(s)';
+                if (resp.vinculadas > 0) msg += ', ' + resp.vinculadas + ' factura(s) vinculada(s) a su PDF';
+                if (resp.moneda_usd > 0) msg += ', ' + resp.moneda_usd + ' en USD convertida(s)';
                 if (resp.errores > 0) msg += ', ' + resp.errores + ' con error';
                 _showToast(msg);
                 renderFinanciero(currentProjectId);
