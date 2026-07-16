@@ -5484,9 +5484,9 @@
         }
 
         var html = '';
-        var total = 0;
+        var total = 0;   // siempre en MXN (el backend ya convirti\u00f3 USD\u2192pesos)
         invoices.forEach(function(inv) {
-            var amount = Number(inv.monto || 0);
+            var amount = Number(inv.monto || 0);   // ya en MXN
             total += amount;
             var paid = _isPaid(inv);
             var overdue = _isOverdue(inv);
@@ -5495,10 +5495,28 @@
             else if (overdue) { pillClass = 'is-danger'; pillLabel = 'Vencida'; }
             else { pillClass = 'is-warn'; pillLabel = 'Pendiente'; }
             var concepto = (inv.notas || inv.metodo_pago || '\u2014');
+
+            // Folio: si hay documento vinculado, es link que abre el PDF en pesta\u00f1a nueva
+            var folioTxt = _esc(inv.numero_factura || '\u2014');
+            var folioHtml = inv.archivo_url
+                ? '<a href="' + _esc(inv.archivo_url) + '" target="_blank" rel="noopener" class="proy-fin-folio proy-fin-folio-link" title="Abrir documento">' + folioTxt + '</a>'
+                : '<span class="proy-fin-folio">' + folioTxt + '</span>';
+
+            // Monto: si la factura ven\u00eda en USD, mostrar original \u2192 convertido a pesos
+            var montoHtml;
+            if ((inv.moneda || 'MXN') === 'USD' && inv.monto_original != null) {
+                var tcTxt = inv.tipo_cambio ? (' \u00b7 TC ' + Number(inv.tipo_cambio).toFixed(2)) : '';
+                montoHtml =
+                    '<span class="proy-fin-orig" title="Monto original en d\u00f3lares' + tcTxt + '">USD ' + fmtMoney(inv.monto_original) + '</span>' +
+                    '<span class="proy-fin-conv">' + fmtMoney(amount) + ' MXN</span>';
+            } else {
+                montoHtml = fmtMoney(amount);
+            }
+
             html += '<tr>' +
-                '<td><span class="proy-fin-folio">' + _esc(inv.numero_factura || '\u2014') + '</span></td>' +
+                '<td>' + folioHtml + '</td>' +
                 '<td><span class="proy-fin-concepto" title="' + _esc(concepto) + '">' + _esc(concepto) + '</span></td>' +
-                '<td style="text-align:right" class="proy-fin-amount">' + fmtMoney(amount) + '</td>' +
+                '<td style="text-align:right" class="proy-fin-amount">' + montoHtml + '</td>' +
                 '<td class="proy-fin-date">' + fmtDate(inv.fecha_factura) + '</td>' +
                 '<td><span class="proy-fin-pill ' + pillClass + '">' + pillLabel + '</span></td>' +
                 '<td style="text-align:center">' + _btnEliminarIcon('proyFinEliminarFacturaIngreso(' + inv.id + ')') + '</td>' +

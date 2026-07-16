@@ -738,11 +738,27 @@ def _factura_prov_to_dict(f):
 
 
 def _factura_ingreso_to_dict(f):
+    # URL para abrir el documento de la factura en una pestaña nueva.
+    # Preferimos el archivo del drive (ArchivoOportunidad, servido inline por
+    # api_drive_archivo_stream); si es una factura manual, usamos su FileField.
+    archivo_url = ''
+    ad = f.archivo_drive
+    if ad and ad.oportunidad_id:
+        archivo_url = f'/app/api/oportunidad/{ad.oportunidad_id}/drive/archivo/{ad.id}/stream/'
+    elif getattr(f, 'archivo', None):
+        try:
+            archivo_url = f.archivo.url
+        except Exception:
+            archivo_url = ''
     return {
         'id': f.id,
         'proyecto_id': f.proyecto_id,
         'numero_factura': f.numero_factura,
         'monto': float(f.monto),
+        'moneda': f.moneda,
+        'monto_original': float(f.monto_original) if f.monto_original is not None else None,
+        'tipo_cambio': float(f.tipo_cambio) if f.tipo_cambio is not None else None,
+        'archivo_url': archivo_url,
         'fecha_factura': _fmt(f.fecha_factura),
         'fecha_vencimiento': _fmt(f.fecha_vencimiento),
         'fecha_pago': _fmt(f.fecha_pago),
@@ -1936,7 +1952,7 @@ def api_facturas_ingreso_lista(request, proyecto_id):
     if not _check_access(request.user, proyecto):
         return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
 
-    facturas = proyecto.facturas_ingreso.all()
+    facturas = proyecto.facturas_ingreso.select_related('archivo_drive').all()
     items = [_factura_ingreso_to_dict(f) for f in facturas]
     return JsonResponse({'success': True, 'data': items})
 
@@ -2152,14 +2168,20 @@ def api_financiero_sync_drive(request, proyecto_id):
     if not proyecto.oportunidad_id:
         return JsonResponse({'success': False, 'error': 'El proyecto no tiene oportunidad vinculada'}, status=400)
 
-    from .services_financiero import procesar_archivos_pendientes_oportunidad
+    from .services_financiero import (
+        procesar_archivos_pendientes_oportunidad, reevaluar_facturas_moneda,
+    )
     resultado = procesar_archivos_pendientes_oportunidad(proyecto.oportunidad_id)
+    # Re-evaluar moneda de facturas importadas antes de esta función (USD→MXN)
+    moneda_res = reevaluar_facturas_moneda(proyecto)
 
     return JsonResponse({
         'success': True,
         'total': resultado['total'],
         'procesados': resultado['procesados'],
         'errores': resultado['errores'],
+        'moneda_reevaluadas': moneda_res['actualizadas'],
+        'moneda_usd': moneda_res['usd'],
     })
 
 

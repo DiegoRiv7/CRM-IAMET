@@ -21,6 +21,33 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+# Folio IAMET tipo "IAMET-2026-0358" / "IAMET 2026 0358" / "IAMET_2026_0358".
+# Sin \b final: el '_' cuenta como carácter de palabra y rompería el boundary.
+_FACTURA_FOLIO_RE = re.compile(r'\bIAMET[\s\-_]*\d{2,4}[\s\-_]*\d+', re.IGNORECASE)
+
+
+def _detectar_tipo_financiero(nombre):
+    """
+    Clasifica un archivo del drive por su NOMBRE.
+    Retorna 'oc', 'factura' o '' (no aplica).
+
+    Las facturas llegan en varios formatos porque provienen de 2 empresas distintas:
+      - Nombre que empieza con 'Factura'   (ej. 'Factura IAMET-2026-0358.pdf')
+      - Folio IAMET                        (ej. 'IAMET-2026-0358.pdf', 'IAMET 2026 0358.pdf')
+    Las órdenes de compra empiezan con 'OCC'.
+    """
+    n = (nombre or '').strip().upper()
+    if not n:
+        return ''
+    if n.startswith('OCC'):
+        return 'oc'
+    if n.startswith('FACTURA'):
+        return 'factura'
+    if _FACTURA_FOLIO_RE.search(n):
+        return 'factura'
+    return ''
+
+
 def analizar_archivo_drive(archivo_oportunidad):
     """
     Analiza un ArchivoOportunidad recién subido.
@@ -41,13 +68,9 @@ def analizar_archivo_drive(archivo_oportunidad):
     if archivo_oportunidad.procesado_financiero:
         return {'procesado': False, 'tipo': '', 'monto': None, 'error': 'Ya procesado'}
 
-    # Detectar tipo por nombre
-    nombre_upper = nombre.upper()
-    if nombre_upper.startswith('OCC'):
-        tipo = 'oc'
-    elif nombre_upper.startswith('FACTURA'):
-        tipo = 'factura'
-    else:
+    # Detectar tipo por nombre (varios formatos de factura de 2 empresas)
+    tipo = _detectar_tipo_financiero(nombre)
+    if not tipo:
         return {'procesado': False, 'tipo': '', 'monto': None, 'error': None}
 
     # Buscar proyecto IAMET vinculado a esta oportunidad
@@ -118,17 +141,23 @@ def analizar_archivo_drive(archivo_oportunidad):
 
         elif tipo == 'factura':
             from django.utils import timezone
+            moneda = pdf_data.get('moneda') or 'MXN'
+            monto_original = monto  # lo extraído está en la moneda original del PDF
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_original, moneda, pdf_data.get('tipo_cambio'))
             factura = ProyectoFacturaIngreso(
                 proyecto=proyecto,
                 numero_factura=_extraer_numero_factura(nombre) if not pdf_data.get('numero_factura') else pdf_data['numero_factura'],
-                monto=monto or Decimal('0'),
+                monto=monto_mxn or Decimal('0'),
+                moneda=moneda,
+                monto_original=monto_original,
+                tipo_cambio=tc_usado,
                 fecha_factura=fecha_doc or timezone.localdate(),
                 status='emitted',
                 archivo_drive=archivo_oportunidad,
                 notas=f'Importada automáticamente del drive. Archivo: {nombre}',
             )
             factura.save()
-            logger.info(f"[Financiero] Factura '{factura.numero_factura}' creada: monto=${monto}, fecha={fecha_doc}")
+            logger.info(f"[Financiero] Factura '{factura.numero_factura}' creada: {moneda} ${monto_original} → MXN ${monto_mxn} (TC {tc_usado}), fecha={fecha_doc}")
 
     except Exception as exc:
         logger.exception(f"[Financiero] Error al crear registro desde '{nombre}': {exc}")
@@ -160,13 +189,9 @@ def analizar_archivo_proyecto(archivo_proyecto):
     ext = (archivo_proyecto.extension or '').lower()
     proyecto_obj = archivo_proyecto.proyecto  # Proyecto (Bitrix)
 
-    # Detectar tipo por nombre
-    nombre_upper = nombre.upper()
-    if nombre_upper.startswith('OCC'):
-        tipo = 'oc'
-    elif nombre_upper.startswith('FACTURA'):
-        tipo = 'factura'
-    else:
+    # Detectar tipo por nombre (varios formatos de factura de 2 empresas)
+    tipo = _detectar_tipo_financiero(nombre)
+    if not tipo:
         return {'procesado': False, 'tipo': '', 'monto': None, 'error': None}
 
     # Buscar oportunidad vinculada al Proyecto (vía OportunidadProyecto)
@@ -226,16 +251,22 @@ def analizar_archivo_proyecto(archivo_proyecto):
 
         elif tipo == 'factura':
             from django.utils import timezone
+            moneda = pdf_data.get('moneda') or 'MXN'
+            monto_original = monto  # lo extraído está en la moneda original del PDF
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_original, moneda, pdf_data.get('tipo_cambio'))
             factura = ProyectoFacturaIngreso(
                 proyecto=proyecto_iamet,
                 numero_factura=_extraer_numero_factura(nombre) if not pdf_data.get('numero_factura') else pdf_data['numero_factura'],
-                monto=monto or Decimal('0'),
+                monto=monto_mxn or Decimal('0'),
+                moneda=moneda,
+                monto_original=monto_original,
+                tipo_cambio=tc_usado,
                 fecha_factura=fecha_doc or timezone.localdate(),
                 status='emitted',
                 notas=f'Importada automáticamente del drive del proyecto. Archivo: {nombre}',
             )
             factura.save()
-            logger.info(f"[Financiero-Proyecto] Factura '{factura.numero_factura}' creada: monto=${monto}, fecha={fecha_doc}")
+            logger.info(f"[Financiero-Proyecto] Factura '{factura.numero_factura}' creada: {moneda} ${monto_original} → MXN ${monto_mxn} (TC {tc_usado}), fecha={fecha_doc}")
 
     except Exception as exc:
         logger.exception(f"[Financiero-Proyecto] Error al crear registro desde '{nombre}': {exc}")
@@ -281,6 +312,8 @@ def _extraer_datos_pdf(archivo_field):
         'fecha': None,
         'numero_oc': None,
         'numero_factura': None,
+        'moneda': 'MXN',
+        'tipo_cambio': None,
     }
 
     # Patrones
@@ -343,6 +376,10 @@ def _extraer_datos_pdf(archivo_field):
     m_oc = oc_re.search(all_text)
     if m_oc:
         result['numero_oc'] = m_oc.group(1).strip()
+
+    # ── Detectar moneda (USD vs MXN) y tipo de cambio ──
+    result['moneda'] = _detectar_moneda(all_text)
+    result['tipo_cambio'] = _extraer_tipo_cambio(all_text)
 
     # ── Extraer proveedor ──
     # El proveedor generalmente aparece en las primeras líneas del PDF
@@ -485,6 +522,76 @@ def _parse_monto_str(s):
         return None
 
 
+def _detectar_moneda(text):
+    """
+    Detecta si el documento está en USD o MXN.
+    Prioriza el campo explícito 'Moneda:' de los CFDI; si no, busca señales
+    fuertes de dólares. Default: MXN (moneda nacional).
+    """
+    if not text:
+        return 'MXN'
+    t = text.upper()
+    # 1) Campo explícito "Moneda: USD" / "Moneda: MXN" / "Moneda: Peso Mexicano"
+    m = re.search(r'MONEDA\s*:?\s*([A-Z\.\s]{2,25})', t)
+    if m:
+        val = m.group(1)
+        if 'USD' in val or 'DOLAR' in val or 'DÓLAR' in val or 'DLL' in val:
+            return 'USD'
+        if 'MXN' in val or 'PESO' in val or 'M.N' in val or 'NACIONAL' in val:
+            return 'MXN'
+    # 2) Señales fuertes de USD en cualquier parte del documento
+    if re.search(r'\bUSD\b|US\s?\$|\bD[OÓ]LARES?\b|\bDLLS?\b', t):
+        return 'USD'
+    return 'MXN'
+
+
+def _extraer_tipo_cambio(text):
+    """
+    Extrae el tipo de cambio USD→MXN impreso en la factura.
+    Ej: 'Tipo de cambio: 17.5000', 'TipoCambio 17.50', 'T.C. 17.4321'.
+    Valida que caiga en un rango razonable (5–50) para no confundirlo con otro número.
+    """
+    if not text:
+        return None
+    patterns = [
+        r'Tipo\s*de\s*[Cc]ambio\s*:?\s*\$?\s*([\d]+\.?\d*)',
+        r'Tipo\s*Cambio\s*:?\s*\$?\s*([\d]+\.?\d*)',
+        r'\bT\.?\s*C\.?\s*:?\s*\$?\s*([\d]+\.\d{2,4})',
+    ]
+    for pat in patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            val = _parse_monto_str(m.group(1))
+            if val and Decimal('5') <= val <= Decimal('50'):
+                return val
+    return None
+
+
+def _tipo_cambio_fallback():
+    """
+    Tipo de cambio de respaldo cuando una factura en USD no trae el TC impreso.
+    Configurable con la variable de entorno TIPO_CAMBIO_USD_FALLBACK.
+    """
+    import os
+    try:
+        return Decimal(str(os.getenv('TIPO_CAMBIO_USD_FALLBACK', '17.00')))
+    except (InvalidOperation, ValueError):
+        return Decimal('17.00')
+
+
+def _convertir_a_mxn(monto_original, moneda, tipo_cambio):
+    """
+    Convierte un monto a pesos.
+    Retorna (monto_mxn, tipo_cambio_usado). Para MXN el TC es None.
+    """
+    if monto_original is None:
+        return None, None
+    if (moneda or 'MXN').upper() == 'USD':
+        tc = tipo_cambio or _tipo_cambio_fallback()
+        return (monto_original * tc), tc
+    return monto_original, None
+
+
 def _parse_fecha(fecha_str):
     """Convierte '24-03-2026' o '24/03/2026' a date object."""
     fecha_str = fecha_str.strip().replace('/', '-')
@@ -517,8 +624,16 @@ def _extraer_proveedor_de_nombre(nombre):
 
 
 def _extraer_numero_factura(nombre):
-    """Extrae el número de factura del nombre del archivo."""
+    """
+    Extrae el número/folio de factura del nombre del archivo.
+    Normaliza el folio IAMET a 'IAMET-2026-0358' venga como venga escrito.
+    """
     base = re.sub(r'\.\w+$', '', nombre).strip()
+    # 1) Folio IAMET (funciona esté o no la palabra 'Factura' delante)
+    m = _FACTURA_FOLIO_RE.search(base)
+    if m:
+        return re.sub(r'[\s_]+', '-', m.group(0).strip()).upper()
+    # 2) 'Factura XXX'
     m = re.match(r'(Factura\s*[\w\-]+)', base, re.IGNORECASE)
     if m:
         return m.group(1).strip()
@@ -549,3 +664,61 @@ def procesar_archivos_pendientes_oportunidad(oportunidad_id):
             errores += 1
 
     return {'total': total, 'procesados': procesados, 'errores': errores}
+
+
+def reevaluar_facturas_moneda(proyecto_iamet=None):
+    """
+    Re-evalúa la moneda de facturas de ingreso YA importadas que todavía no
+    tienen `monto_original` (se crearon antes de la función de moneda, asumiendo
+    que el número del PDF estaba en pesos).
+
+    Para cada una: si tiene PDF vinculado (archivo_drive), lo re-parsea para
+    detectar USD/MXN + tipo de cambio y recalcula `monto` en pesos. Si no tiene
+    PDF (factura manual), la marca como MXN dejando el monto tal cual.
+
+    Es idempotente: una vez estampada (monto_original != NULL) ya no se vuelve a tocar.
+    Retorna { total, actualizadas, usd }.
+    """
+    from .models import ProyectoFacturaIngreso
+
+    qs = ProyectoFacturaIngreso.objects.filter(monto_original__isnull=True)
+    if proyecto_iamet is not None:
+        qs = qs.filter(proyecto=proyecto_iamet)
+
+    total = qs.count()
+    actualizadas = 0
+    usd = 0
+
+    for f in qs.select_related('archivo_drive'):
+        moneda = 'MXN'
+        tc_pdf = None
+        pdf_monto = None
+
+        arch = f.archivo_drive
+        if arch and getattr(arch, 'archivo', None) and (arch.extension or '').lower() == 'pdf':
+            try:
+                pdf_data = _extraer_datos_pdf(arch.archivo)
+                moneda = pdf_data.get('moneda') or 'MXN'
+                tc_pdf = pdf_data.get('tipo_cambio')
+                pdf_monto = pdf_data.get('monto')
+            except Exception as exc:
+                logger.warning(f"[Financiero] Reevaluar moneda factura {f.id}: {exc}")
+
+        if moneda == 'USD':
+            # El número guardado (o el del PDF) estaba en dólares → convertir a pesos.
+            monto_orig = pdf_monto or f.monto or Decimal('0')
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_orig, 'USD', tc_pdf)
+            usd += 1
+        else:
+            # MXN: el monto ya estaba bien; solo lo estampamos sin alterarlo.
+            monto_orig = f.monto or Decimal('0')
+            monto_mxn, tc_usado = monto_orig, None
+
+        f.monto_original = monto_orig
+        f.moneda = moneda
+        f.tipo_cambio = tc_usado
+        f.monto = monto_mxn or Decimal('0')
+        f.save(update_fields=['monto_original', 'moneda', 'tipo_cambio', 'monto'])
+        actualizadas += 1
+
+    return {'total': total, 'actualizadas': actualizadas, 'usd': usd}
