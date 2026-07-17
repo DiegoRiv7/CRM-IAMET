@@ -4586,7 +4586,11 @@ class ProyectoOrdenCompra(models.Model):
     proveedor = models.CharField(max_length=255)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
-    monto_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    monto_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))  # SIEMPRE en MXN (convertido)
+    MONEDA_CHOICES = [('MXN', 'Pesos (MXN)'), ('USD', 'Dólares (USD)')]
+    moneda = models.CharField(max_length=3, choices=MONEDA_CHOICES, default='MXN', verbose_name="Moneda original del documento")
+    monto_original = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name="Monto en la moneda original")
+    tipo_cambio = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Tipo de cambio aplicado (USD→MXN)")
     STATUS_CHOICES = [
         ('draft', 'Borrador'),
         ('emitted', 'Emitida'),

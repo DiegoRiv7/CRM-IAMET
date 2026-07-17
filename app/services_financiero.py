@@ -48,6 +48,23 @@ def _detectar_tipo_financiero(nombre):
     return ''
 
 
+def _detectar_tipo_por_contenido(text):
+    """
+    Clasifica un PDF por su CONTENIDO cuando el nombre del archivo no basta.
+    Los 2 formatos de OC (BAJANET e IAMET) comparten el título 'Orden de compra',
+    aunque el número (ej. 'TIJ13933') no lleve prefijo 'OCC' en el nombre.
+    Retorna 'oc', 'factura' o ''.
+    """
+    if not text:
+        return ''
+    t = text.upper()
+    if 'ORDEN DE COMPRA' in t:
+        return 'oc'
+    if 'FACTURA' in t or _FACTURA_FOLIO_RE.search(t):
+        return 'factura'
+    return ''
+
+
 def _vincular_pdf_a_factura(factura, archivo_oportunidad, ext):
     """
     Enlaza un PDF del drive a una factura de ingreso YA existente que no tenía
@@ -91,8 +108,20 @@ def analizar_archivo_drive(archivo_oportunidad):
     if archivo_oportunidad.procesado_financiero:
         return {'procesado': False, 'tipo': '', 'monto': None, 'error': 'Ya procesado'}
 
-    # Detectar tipo por nombre (varios formatos de factura de 2 empresas)
+    # Extraer datos del PDF una sola vez (se reutiliza para detección por
+    # contenido, dedup por número y creación del registro).
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            pdf_data = _extraer_datos_pdf(archivo_oportunidad.archivo)
+        except Exception as exc:
+            logger.warning(f"[Financiero] Error al parsear PDF '{nombre}': {exc}")
+
+    # Detectar tipo: primero por nombre; si no basta, por contenido del PDF.
+    # (Los 2 formatos de OC de BAJANET/IAMET no siempre traen 'OCC' en el nombre.)
     tipo = _detectar_tipo_financiero(nombre)
+    if not tipo:
+        tipo = _detectar_tipo_por_contenido(pdf_data.get('_texto', ''))
     if not tipo:
         return {'procesado': False, 'tipo': '', 'monto': None, 'error': None}
 
@@ -115,8 +144,12 @@ def analizar_archivo_drive(archivo_oportunidad):
         archivo_oportunidad.save(update_fields=['procesado_financiero'])
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': 'Ya importado'}
 
-    # Verificar duplicado por número de OC/Factura (mismo nombre de archivo = mismo documento)
-    numero_doc_check = _extraer_numero_oc(nombre) if tipo == 'oc' else _extraer_numero_factura(nombre)
+    # Verificar duplicado por número de OC/Factura. Preferimos el número extraído
+    # del PDF (fiable para los formatos que no traen 'OCC'/folio en el nombre).
+    if tipo == 'oc':
+        numero_doc_check = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
+    else:
+        numero_doc_check = pdf_data.get('numero_factura') or _extraer_numero_factura(nombre)
     if tipo == 'oc' and ProyectoOrdenCompra.objects.filter(proyecto=proyecto, numero_oc=numero_doc_check).exists():
         archivo_oportunidad.procesado_financiero = True
         archivo_oportunidad.tipo_financiero = tipo
@@ -138,14 +171,6 @@ def analizar_archivo_drive(archivo_oportunidad):
             logger.info(f"[Financiero] Duplicado detectado: Factura '{numero_doc_check}' ya existe en proyecto {proyecto.id}")
             return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: Factura {numero_doc_check} ya existe'}
 
-    # Extraer datos del PDF
-    pdf_data = {}
-    if ext == 'pdf':
-        try:
-            pdf_data = _extraer_datos_pdf(archivo_oportunidad.archivo)
-        except Exception as exc:
-            logger.warning(f"[Financiero] Error al parsear PDF '{nombre}': {exc}")
-
     monto = pdf_data.get('monto')
     proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
     fecha_doc = pdf_data.get('fecha')
@@ -154,21 +179,27 @@ def analizar_archivo_drive(archivo_oportunidad):
     # Crear registro financiero
     try:
         if tipo == 'oc':
+            moneda = pdf_data.get('moneda') or 'MXN'
+            monto_original = monto  # lo extraído está en la moneda original del PDF
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_original, moneda, pdf_data.get('tipo_cambio'))
             oc = ProyectoOrdenCompra(
                 proyecto=proyecto,
                 partida=None,
                 numero_oc=numero_doc,
                 proveedor=_acortar_nombre(proveedor),
                 cantidad=Decimal('1'),
-                precio_unitario=monto or Decimal('0'),
-                monto_total=monto or Decimal('0'),
+                precio_unitario=monto_mxn or Decimal('0'),
+                monto_total=monto_mxn or Decimal('0'),
+                moneda=moneda,
+                monto_original=monto_original,
+                tipo_cambio=tc_usado,
                 status='emitted',
                 fecha_emision=fecha_doc,
                 archivo_drive=archivo_oportunidad,
                 notas=f'Importado automáticamente del drive. Archivo: {nombre}',
             )
             oc.save()
-            logger.info(f"[Financiero] OC '{oc.numero_oc}' creada: proveedor={proveedor}, monto=${monto}, fecha={fecha_doc}")
+            logger.info(f"[Financiero] OC '{oc.numero_oc}' creada: {moneda} ${monto_original} → MXN ${monto_mxn} (TC {tc_usado}), fecha={fecha_doc}")
 
         elif tipo == 'factura':
             from django.utils import timezone
@@ -220,8 +251,19 @@ def analizar_archivo_proyecto(archivo_proyecto):
     ext = (archivo_proyecto.extension or '').lower()
     proyecto_obj = archivo_proyecto.proyecto  # Proyecto (Bitrix)
 
-    # Detectar tipo por nombre (varios formatos de factura de 2 empresas)
+    # Extraer datos del PDF una sola vez (detección por contenido, dedup y creación).
+    pdf_data = {}
+    if ext == 'pdf':
+        try:
+            pdf_data = _extraer_datos_pdf(archivo_proyecto.archivo)
+        except Exception as exc:
+            logger.warning(f"[Financiero-Proyecto] Error al parsear PDF '{nombre}': {exc}")
+
+    # Detectar tipo: por nombre y, si no basta, por contenido del PDF
+    # (los 2 formatos de OC de BAJANET/IAMET no siempre traen 'OCC' en el nombre).
     tipo = _detectar_tipo_financiero(nombre)
+    if not tipo:
+        tipo = _detectar_tipo_por_contenido(pdf_data.get('_texto', ''))
     if not tipo:
         return {'procesado': False, 'tipo': '', 'monto': None, 'error': None}
 
@@ -240,22 +282,17 @@ def analizar_archivo_proyecto(archivo_proyecto):
         logger.info(f"[Financiero-Proyecto] Archivo '{nombre}' detectado como {tipo} pero no se encontró ProyectoIAMET vinculado al proyecto {proyecto_obj.id}.")
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': 'Sin proyecto IAMET vinculado'}
 
-    # Verificar duplicado por número de OC/Factura
-    numero_doc_check = _extraer_numero_oc(nombre) if tipo == 'oc' else _extraer_numero_factura(nombre)
+    # Verificar duplicado por número de OC/Factura (preferimos el número del PDF)
+    if tipo == 'oc':
+        numero_doc_check = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
+    else:
+        numero_doc_check = pdf_data.get('numero_factura') or _extraer_numero_factura(nombre)
     if tipo == 'oc' and ProyectoOrdenCompra.objects.filter(proyecto=proyecto_iamet, numero_oc=numero_doc_check).exists():
         logger.info(f"[Financiero-Proyecto] Duplicado detectado: OC '{numero_doc_check}' ya existe en proyecto {proyecto_iamet.id}")
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: OC {numero_doc_check} ya existe'}
     if tipo == 'factura' and ProyectoFacturaIngreso.objects.filter(proyecto=proyecto_iamet, numero_factura=numero_doc_check).exists():
         logger.info(f"[Financiero-Proyecto] Duplicado detectado: Factura '{numero_doc_check}' ya existe en proyecto {proyecto_iamet.id}")
         return {'procesado': False, 'tipo': tipo, 'monto': None, 'error': f'Duplicado: Factura {numero_doc_check} ya existe'}
-
-    # Extraer datos del PDF
-    pdf_data = {}
-    if ext == 'pdf':
-        try:
-            pdf_data = _extraer_datos_pdf(archivo_proyecto.archivo)
-        except Exception as exc:
-            logger.warning(f"[Financiero-Proyecto] Error al parsear PDF '{nombre}': {exc}")
 
     monto = pdf_data.get('monto')
     proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
@@ -265,20 +302,26 @@ def analizar_archivo_proyecto(archivo_proyecto):
     # Crear registro financiero
     try:
         if tipo == 'oc':
+            moneda = pdf_data.get('moneda') or 'MXN'
+            monto_original = monto  # lo extraído está en la moneda original del PDF
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_original, moneda, pdf_data.get('tipo_cambio'))
             oc = ProyectoOrdenCompra(
                 proyecto=proyecto_iamet,
                 partida=None,
                 numero_oc=numero_doc,
                 proveedor=_acortar_nombre(proveedor),
                 cantidad=Decimal('1'),
-                precio_unitario=monto or Decimal('0'),
-                monto_total=monto or Decimal('0'),
+                precio_unitario=monto_mxn or Decimal('0'),
+                monto_total=monto_mxn or Decimal('0'),
+                moneda=moneda,
+                monto_original=monto_original,
+                tipo_cambio=tc_usado,
                 status='emitted',
                 fecha_emision=fecha_doc,
                 notas=f'Importado automáticamente del drive del proyecto. Archivo: {nombre}',
             )
             oc.save()
-            logger.info(f"[Financiero-Proyecto] OC '{oc.numero_oc}' creada: proveedor={proveedor}, monto=${monto}, fecha={fecha_doc}")
+            logger.info(f"[Financiero-Proyecto] OC '{oc.numero_oc}' creada: {moneda} ${monto_original} → MXN ${monto_mxn} (TC {tc_usado}), fecha={fecha_doc}")
 
         elif tipo == 'factura':
             from django.utils import timezone
@@ -361,9 +404,12 @@ def _extraer_datos_pdf(archivo_field):
         r'Fecha\s*(?:Documento)?\s*[:.\-]\s*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
         re.IGNORECASE
     )
-    # "Orden de Compra - TIJ13781" o "OCC-TIJ13781" o "Orden de Compra: TIJ13781"
+    # "Orden de Compra - TIJ13781", "OCC-TIJ13781", "Orden de Compra: TIJ13781"
+    # o "Orden de compra TIJ13933" (título sin separador, formato BAJANET/IAMET).
+    # [ \t] (no \s) evita saltar de línea; el código debe contener al menos un
+    # dígito para no capturar "BAJANET"/"Proveedor" cuando no hay separador.
     oc_re = re.compile(
-        r'(?:Orden\s+de\s+Compra|OCC)\s*[-:]\s*([\w\-]+)',
+        r'(?:Orden\s+de\s+Compra|OCC)[ \t]*[-:]?[ \t]*([A-Za-z]*\d[\w\-]*)',
         re.IGNORECASE
     )
     # RFC pattern para limpiar del proveedor
@@ -418,6 +464,9 @@ def _extraer_datos_pdf(archivo_field):
     # "Proveedor" seguida del nombre, o la primera línea larga en mayúsculas
     # que parezca un nombre de empresa.
     result['proveedor'] = _extraer_proveedor_pdf(all_text)
+
+    # Texto crudo para detección por contenido (2 formatos de OC de 2 empresas)
+    result['_texto'] = all_text
 
     return result
 
@@ -793,6 +842,67 @@ def reevaluar_facturas_moneda(proyecto_iamet=None):
         f.tipo_cambio = tc_usado
         f.monto = monto_mxn or Decimal('0')
         f.save(update_fields=['monto_original', 'moneda', 'tipo_cambio', 'monto'])
+        actualizadas += 1
+
+    return {'total': total, 'actualizadas': actualizadas, 'usd': usd}
+
+
+def reevaluar_ocs_moneda(proyecto_iamet=None):
+    """
+    Re-evalúa la moneda de Órdenes de Compra YA importadas que todavía no tienen
+    `monto_original` (se crearon antes del soporte de moneda, asumiendo pesos).
+
+    Si tienen PDF vinculado (archivo_drive), lo re-parsea para detectar USD/MXN +
+    tipo de cambio y recalcula el monto en pesos; si están en pesos, solo estampa
+    la moneda sin alterar el monto. Idempotente (monto_original != NULL ya no se toca).
+    Retorna { total, actualizadas, usd }.
+    """
+    from .models import ProyectoOrdenCompra
+
+    qs = ProyectoOrdenCompra.objects.filter(monto_original__isnull=True)
+    if proyecto_iamet is not None:
+        qs = qs.filter(proyecto=proyecto_iamet)
+
+    total = qs.count()
+    actualizadas = 0
+    usd = 0
+
+    for oc in qs.select_related('archivo_drive'):
+        moneda = 'MXN'
+        tc_pdf = None
+        pdf_monto = None
+
+        arch = oc.archivo_drive
+        if arch and getattr(arch, 'archivo', None) and (arch.extension or '').lower() == 'pdf':
+            try:
+                pdf_data = _extraer_datos_pdf(arch.archivo)
+                moneda = pdf_data.get('moneda') or 'MXN'
+                tc_pdf = pdf_data.get('tipo_cambio')
+                pdf_monto = pdf_data.get('monto')
+            except Exception as exc:
+                logger.warning(f"[Financiero] Reevaluar moneda OC {oc.id}: {exc}")
+
+        if moneda == 'USD':
+            # El monto guardado (o el del PDF) estaba en dólares → convertir a pesos.
+            monto_orig = pdf_monto or oc.monto_total or Decimal('0')
+            monto_mxn, tc_usado = _convertir_a_mxn(monto_orig, 'USD', tc_pdf)
+            usd += 1
+        else:
+            # MXN: el monto ya estaba bien; lo estampamos sin alterarlo.
+            monto_orig = oc.monto_total or Decimal('0')
+            monto_mxn, tc_usado = monto_orig, None
+
+        # save() recalcula monto_total = cantidad * precio_unitario. Ajustamos
+        # precio_unitario para que el total quede en pesos, preservando la cantidad.
+        cantidad = oc.cantidad or Decimal('1')
+        if cantidad == 0:
+            cantidad = Decimal('1')
+        oc.moneda = moneda
+        oc.monto_original = monto_orig
+        oc.tipo_cambio = tc_usado
+        oc.cantidad = cantidad
+        oc.precio_unitario = (monto_mxn or Decimal('0')) / cantidad
+        oc.save()
         actualizadas += 1
 
     return {'total': total, 'actualizadas': actualizadas, 'usd': usd}

@@ -705,6 +705,9 @@ def _oc_to_dict(oc):
         'cantidad': float(oc.cantidad),
         'precio_unitario': float(oc.precio_unitario),
         'monto_total': float(oc.monto_total),
+        'moneda': oc.moneda,
+        'monto_original': float(oc.monto_original) if oc.monto_original is not None else None,
+        'tipo_cambio': float(oc.tipo_cambio) if oc.tipo_cambio is not None else None,
         'status': oc.status,
         'fecha_emision': _fmt(oc.fecha_emision),
         'fecha_entrega_esperada': _fmt(oc.fecha_entrega_esperada),
@@ -2170,13 +2173,14 @@ def api_financiero_sync_drive(request, proyecto_id):
 
     from .services_financiero import (
         procesar_archivos_pendientes_oportunidad, reevaluar_facturas_moneda,
-        vincular_pdfs_faltantes,
+        reevaluar_ocs_moneda, vincular_pdfs_faltantes,
     )
     resultado = procesar_archivos_pendientes_oportunidad(proyecto.oportunidad_id)
     # Enlazar PDFs del drive a facturas existentes sin documento (folio clickeable)
     vinc_res = vincular_pdfs_faltantes(proyecto)
-    # Re-evaluar moneda de facturas importadas antes de esta función (USD→MXN)
+    # Re-evaluar moneda de facturas y OC importadas antes del soporte de moneda (USD→MXN)
     moneda_res = reevaluar_facturas_moneda(proyecto)
+    moneda_oc_res = reevaluar_ocs_moneda(proyecto)
 
     return JsonResponse({
         'success': True,
@@ -2186,6 +2190,8 @@ def api_financiero_sync_drive(request, proyecto_id):
         'vinculadas': vinc_res['vinculadas'],
         'moneda_reevaluadas': moneda_res['actualizadas'],
         'moneda_usd': moneda_res['usd'],
+        'oc_moneda_reevaluadas': moneda_oc_res['actualizadas'],
+        'oc_moneda_usd': moneda_oc_res['usd'],
     })
 
 
@@ -2221,11 +2227,18 @@ def api_financiero_upload_oc(request, proyecto_id):
             import logging
             logging.warning(f"[Financiero] Error parseando PDF upload: {exc}")
 
-    from .services_financiero import _extraer_numero_oc, _extraer_proveedor_de_nombre, _acortar_nombre
+    from .services_financiero import (
+        _extraer_numero_oc, _extraer_proveedor_de_nombre, _acortar_nombre, _convertir_a_mxn,
+    )
     numero_oc = pdf_data.get('numero_oc') or _extraer_numero_oc(nombre)
     proveedor = pdf_data.get('proveedor') or _extraer_proveedor_de_nombre(nombre)
     monto = pdf_data.get('monto') or D('0')
     fecha = pdf_data.get('fecha')
+
+    # Moneda: si la OC viene en USD, convertir a pesos (mismo criterio que el sync)
+    moneda = pdf_data.get('moneda') or 'MXN'
+    monto_original = monto
+    monto_mxn, tc_usado = _convertir_a_mxn(monto_original, moneda, pdf_data.get('tipo_cambio'))
 
     # Verificar duplicado
     if ProyectoOrdenCompra.objects.filter(proyecto=proyecto, numero_oc=numero_oc).exists():
@@ -2237,8 +2250,11 @@ def api_financiero_upload_oc(request, proyecto_id):
         numero_oc=numero_oc,
         proveedor=_acortar_nombre(proveedor),
         cantidad=D('1'),
-        precio_unitario=monto,
-        monto_total=monto,
+        precio_unitario=monto_mxn or D('0'),
+        monto_total=monto_mxn or D('0'),
+        moneda=moneda,
+        monto_original=monto_original,
+        tipo_cambio=tc_usado,
         status='emitted',
         fecha_emision=fecha,
         notas=f'Subido manualmente. Archivo: {nombre}',
@@ -2247,7 +2263,7 @@ def api_financiero_upload_oc(request, proyecto_id):
     return JsonResponse({
         'success': True,
         'data': _oc_to_dict(oc),
-        'monto_extraido': float(monto),
+        'monto_extraido': float(monto_mxn or 0),
     })
 
 

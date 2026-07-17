@@ -2037,12 +2037,23 @@
                         ? '<a href="' + oc.archivo_url + '" target="_blank" style="font-weight:600;color:#007aff;text-decoration:none;white-space:nowrap;cursor:pointer;" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' + (oc.numero_oc || '\u2014') + '</a>'
                         : '<span style="font-weight:600;color:#007aff;white-space:nowrap;">' + (oc.numero_oc || '\u2014') + '</span>';
 
+                    // Monto: si la OC ven\u00eda en USD, mostrar original \u2192 convertido a pesos
+                    var montoHtml;
+                    if ((oc.moneda || 'MXN') === 'USD' && oc.monto_original != null) {
+                        var tcTxt = oc.tipo_cambio ? (' \u00b7 TC ' + Number(oc.tipo_cambio).toFixed(2)) : '';
+                        montoHtml =
+                            '<span class="proy-fin-orig" title="Monto original en d\u00f3lares' + tcTxt + '">USD ' + fmtMoney(oc.monto_original) + '</span>' +
+                            '<span class="proy-fin-conv">' + fmtMoney(amount) + ' MXN</span>';
+                    } else {
+                        montoHtml = fmtMoney(amount);
+                    }
+
                     html += '<tr>' +
                         '<td>' + nombreHtml + '</td>' +
                         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (oc.proveedor || '').replace(/"/g,'') + '">' + (oc.proveedor || '\u2014') + '</td>' +
                         '<td>' + (oc.descripcion || oc.partida_descripcion || '\u2014') + '</td>' +
                         '<td style="text-align:right">' + (oc.cantidad || 0) + '</td>' +
-                        '<td style="text-align:right;font-weight:600;">' + fmtMoney(amount) + '</td>' +
+                        '<td style="text-align:right;font-weight:600;">' + montoHtml + '</td>' +
                         '<td style="text-align:center"><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
                         '<td style="white-space:nowrap;">' + fmtDate(oc.fecha_emision) + '</td>' +
                         '<td style="text-align:center;"><button onclick="event.stopPropagation();proyFinEliminarOC(' + oc.id + ')" style="background:none;border:none;cursor:pointer;color:#D1D5DB;padding:4px;" title="Eliminar OC"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></td>' +
@@ -5243,7 +5254,8 @@
             if (resp.success) {
                 var msg = resp.procesados + ' archivo(s) importado(s)';
                 if (resp.vinculadas > 0) msg += ', ' + resp.vinculadas + ' factura(s) vinculada(s) a su PDF';
-                if (resp.moneda_usd > 0) msg += ', ' + resp.moneda_usd + ' en USD convertida(s)';
+                var usdTotal = (resp.moneda_usd || 0) + (resp.oc_moneda_usd || 0);
+                if (usdTotal > 0) msg += ', ' + usdTotal + ' en USD convertida(s)';
                 if (resp.errores > 0) msg += ', ' + resp.errores + ' con error';
                 _showToast(msg);
                 renderFinanciero(currentProjectId);
