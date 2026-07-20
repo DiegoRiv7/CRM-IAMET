@@ -34,12 +34,14 @@ def _detectar_tipo_financiero(nombre):
     Las facturas llegan en varios formatos porque provienen de 2 empresas distintas:
       - Nombre que empieza con 'Factura'   (ej. 'Factura IAMET-2026-0358.pdf')
       - Folio IAMET                        (ej. 'IAMET-2026-0358.pdf', 'IAMET 2026 0358.pdf')
-    Las órdenes de compra empiezan con 'OCC'.
+    Las órdenes de compra (BAJANET e IAMET) llegan con nombres flexibles:
+      'OCC-POIAM1637.pdf', 'OC-123.pdf', 'OC 123.pdf', 'Orden de compra TIJ....pdf'.
+    Si el nombre no coincide, _detectar_tipo_por_contenido lo cubre por el PDF.
     """
     n = (nombre or '').strip().upper()
     if not n:
         return ''
-    if n.startswith('OCC'):
+    if n.startswith('OCC') or re.match(r'OC[\s\-_]', n) or 'ORDEN DE COMPRA' in n:
         return 'oc'
     if n.startswith('FACTURA'):
         return 'factura'
