@@ -37,13 +37,17 @@ from django.utils.html import json_script
 # Helper function to detect lost opportunities
 from .views_utils import *
 
+@user_passes_test(lambda u: u.is_superuser)
 def register(request):
+    # Alta de usuarios restringida a administradores (superuser). El registro
+    # estaba ABIERTO al público: cualquiera en internet podía crearse una cuenta
+    # y atravesar el perímetro de @login_required. No se inicia sesión como el
+    # usuario recién creado para no cambiar la sesión del admin.
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('home') # Redirigir a 'home' después de registrar e iniciar sesión
+            form.save()
+            return redirect('home')
     else:
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})

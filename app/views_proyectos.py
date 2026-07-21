@@ -1217,6 +1217,7 @@ def api_toggle_pin_tarea(request, tarea_id):
     return JsonResponse({'success': True, 'anclada': anclada})
 
 
+@login_required
 def api_tareas(request):
     """
     API para obtener y crear tareas
