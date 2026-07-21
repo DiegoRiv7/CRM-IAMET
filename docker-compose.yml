@@ -20,7 +20,7 @@ services:
     # bajo carga. gthread = varios slots concurrentes con poca RAM (ideal para
     # vistas I/O-bound a MySQL). Requiere recrear el contenedor (up -d) al
     # desplegar, no basta restart.
-    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 8 --worker-class gthread --timeout 240 --max-requests 1000 --max-requests-jitter 200
+    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 8 --worker-class gthread --timeout 90 --max-requests 1000 --max-requests-jitter 200
     # <<-- ESTA LÍNEA 'deploy:' DEBE TENER SOLO 2 ESPACIOS DE INDENTACIÓN -->>
 
 
