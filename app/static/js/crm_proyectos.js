@@ -2037,12 +2037,23 @@
                         ? '<a href="' + oc.archivo_url + '" target="_blank" style="font-weight:600;color:#007aff;text-decoration:none;white-space:nowrap;cursor:pointer;" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' + (oc.numero_oc || '\u2014') + '</a>'
                         : '<span style="font-weight:600;color:#007aff;white-space:nowrap;">' + (oc.numero_oc || '\u2014') + '</span>';
 
+                    // Monto: si la OC ven\u00eda en USD, mostrar original \u2192 convertido a pesos
+                    var montoHtml;
+                    if ((oc.moneda || 'MXN') === 'USD' && oc.monto_original != null) {
+                        var tcTxt = oc.tipo_cambio ? (' \u00b7 TC ' + Number(oc.tipo_cambio).toFixed(2)) : '';
+                        montoHtml =
+                            '<span class="proy-fin-orig" title="Monto original en d\u00f3lares' + tcTxt + '">USD ' + fmtMoney(oc.monto_original) + '</span>' +
+                            '<span class="proy-fin-conv">' + fmtMoney(amount) + ' MXN</span>';
+                    } else {
+                        montoHtml = fmtMoney(amount);
+                    }
+
                     html += '<tr>' +
                         '<td>' + nombreHtml + '</td>' +
                         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (oc.proveedor || '').replace(/"/g,'') + '">' + (oc.proveedor || '\u2014') + '</td>' +
                         '<td>' + (oc.descripcion || oc.partida_descripcion || '\u2014') + '</td>' +
                         '<td style="text-align:right">' + (oc.cantidad || 0) + '</td>' +
-                        '<td style="text-align:right;font-weight:600;">' + fmtMoney(amount) + '</td>' +
+                        '<td style="text-align:right;font-weight:600;">' + montoHtml + '</td>' +
                         '<td style="text-align:center"><span class="proy-badge ' + statusClass(oc.status) + '">' + statusLabel(oc.status) + '</span></td>' +
                         '<td style="white-space:nowrap;">' + fmtDate(oc.fecha_emision) + '</td>' +
                         '<td style="text-align:center;"><button onclick="event.stopPropagation();proyFinEliminarOC(' + oc.id + ')" style="background:none;border:none;cursor:pointer;color:#D1D5DB;padding:4px;" title="Eliminar OC"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></td>' +
@@ -5242,6 +5253,9 @@
             if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sincronizar Drive'; }
             if (resp.success) {
                 var msg = resp.procesados + ' archivo(s) importado(s)';
+                if (resp.vinculadas > 0) msg += ', ' + resp.vinculadas + ' factura(s) vinculada(s) a su PDF';
+                var usdTotal = (resp.moneda_usd || 0) + (resp.oc_moneda_usd || 0);
+                if (usdTotal > 0) msg += ', ' + usdTotal + ' en USD convertida(s)';
                 if (resp.errores > 0) msg += ', ' + resp.errores + ' con error';
                 _showToast(msg);
                 renderFinanciero(currentProjectId);
@@ -5484,9 +5498,9 @@
         }
 
         var html = '';
-        var total = 0;
+        var total = 0;   // siempre en MXN (el backend ya convirti\u00f3 USD\u2192pesos)
         invoices.forEach(function(inv) {
-            var amount = Number(inv.monto || 0);
+            var amount = Number(inv.monto || 0);   // ya en MXN
             total += amount;
             var paid = _isPaid(inv);
             var overdue = _isOverdue(inv);
@@ -5495,10 +5509,28 @@
             else if (overdue) { pillClass = 'is-danger'; pillLabel = 'Vencida'; }
             else { pillClass = 'is-warn'; pillLabel = 'Pendiente'; }
             var concepto = (inv.notas || inv.metodo_pago || '\u2014');
+
+            // Folio: si hay documento vinculado, es link que abre el PDF en pesta\u00f1a nueva
+            var folioTxt = _esc(inv.numero_factura || '\u2014');
+            var folioHtml = inv.archivo_url
+                ? '<a href="' + _esc(inv.archivo_url) + '" target="_blank" rel="noopener" class="proy-fin-folio proy-fin-folio-link" title="Abrir documento">' + folioTxt + '</a>'
+                : '<span class="proy-fin-folio">' + folioTxt + '</span>';
+
+            // Monto: si la factura ven\u00eda en USD, mostrar original \u2192 convertido a pesos
+            var montoHtml;
+            if ((inv.moneda || 'MXN') === 'USD' && inv.monto_original != null) {
+                var tcTxt = inv.tipo_cambio ? (' \u00b7 TC ' + Number(inv.tipo_cambio).toFixed(2)) : '';
+                montoHtml =
+                    '<span class="proy-fin-orig" title="Monto original en d\u00f3lares' + tcTxt + '">USD ' + fmtMoney(inv.monto_original) + '</span>' +
+                    '<span class="proy-fin-conv">' + fmtMoney(amount) + ' MXN</span>';
+            } else {
+                montoHtml = fmtMoney(amount);
+            }
+
             html += '<tr>' +
-                '<td><span class="proy-fin-folio">' + _esc(inv.numero_factura || '\u2014') + '</span></td>' +
+                '<td>' + folioHtml + '</td>' +
                 '<td><span class="proy-fin-concepto" title="' + _esc(concepto) + '">' + _esc(concepto) + '</span></td>' +
-                '<td style="text-align:right" class="proy-fin-amount">' + fmtMoney(amount) + '</td>' +
+                '<td style="text-align:right" class="proy-fin-amount">' + montoHtml + '</td>' +
                 '<td class="proy-fin-date">' + fmtDate(inv.fecha_factura) + '</td>' +
                 '<td><span class="proy-fin-pill ' + pillClass + '">' + pillLabel + '</span></td>' +
                 '<td style="text-align:center">' + _btnEliminarIcon('proyFinEliminarFacturaIngreso(' + inv.id + ')') + '</td>' +

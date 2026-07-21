@@ -5582,10 +5582,36 @@ select.proy-info-input {
   color: var(--proy-wm-accent);
   font-variant-numeric: tabular-nums;
 }
+/* Folio como link al documento de la factura */
+.proy-fin-folio-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity .12s ease;
+}
+.proy-fin-folio-link:hover {
+  text-decoration: underline;
+  opacity: .82;
+}
 .proy-fin-amount {
   font-weight: 700;
   color: var(--proy-wm-text);
   font-variant-numeric: tabular-nums;
+}
+/* Facturas en USD: monto original (dólares) + convertido (pesos) apilados */
+.proy-fin-orig {
+  display: block;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--proy-wm-text-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.proy-fin-conv {
+  display: block;
+  font-weight: 700;
+  color: var(--proy-wm-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
 }
 .proy-fin-date {
   color: var(--proy-wm-text-muted);

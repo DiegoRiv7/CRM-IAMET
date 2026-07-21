@@ -30,7 +30,10 @@ from .views_v2 import proveedores_v2 as views_v2_proveedores
 
 urlpatterns = [
     # ── Bitrix ───────────────────────────────────────────────────────────────
-    path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
+    # Integración con Bitrix24 retirada. El webhook receptor era PÚBLICO, con
+    # @csrf_exempt y SIN validación de token: cualquiera podía inyectar
+    # oportunidades falsas. Ruta deshabilitada para cerrarla al público.
+    # path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
     path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     path('bitrix/lost-opportunities/', views.bitrix_lost_opportunities, name='bitrix-lost-opportunities'),
 

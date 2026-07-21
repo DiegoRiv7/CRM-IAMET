@@ -4586,7 +4586,11 @@ class ProyectoOrdenCompra(models.Model):
     proveedor = models.CharField(max_length=255)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
-    monto_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
+    monto_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))  # SIEMPRE en MXN (convertido)
+    MONEDA_CHOICES = [('MXN', 'Pesos (MXN)'), ('USD', 'Dólares (USD)')]
+    moneda = models.CharField(max_length=3, choices=MONEDA_CHOICES, default='MXN', verbose_name="Moneda original del documento")
+    monto_original = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True, verbose_name="Monto en la moneda original")
+    tipo_cambio = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Tipo de cambio aplicado (USD→MXN)")
     STATUS_CHOICES = [
         ('draft', 'Borrador'),
         ('emitted', 'Emitida'),
@@ -4659,7 +4663,19 @@ class ProyectoFacturaProveedor(models.Model):
 class ProyectoFacturaIngreso(models.Model):
     proyecto = models.ForeignKey(ProyectoIAMET, on_delete=models.CASCADE, related_name='facturas_ingreso')
     numero_factura = models.CharField(max_length=100)
+    # `monto` SIEMPRE se guarda en PESOS (MXN). Si la factura venía en USD, aquí
+    # queda ya convertido (monto_original * tipo_cambio). Así todos los aggregates
+    # de facturado/cobrado (Sum('monto')) siguen siendo correctos en pesos.
     monto = models.DecimalField(max_digits=14, decimal_places=2)
+    MONEDA_CHOICES = [('MXN', 'Pesos (MXN)'), ('USD', 'Dólares (USD)')]
+    moneda = models.CharField(max_length=3, choices=MONEDA_CHOICES, default='MXN',
+        verbose_name="Moneda original del documento")
+    # Monto tal cual aparece en la factura, en su moneda original. NULL = factura
+    # aún no evaluada por el módulo de moneda (creada antes de esta función).
+    monto_original = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
+        verbose_name="Monto en la moneda original")
+    tipo_cambio = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True,
+        verbose_name="Tipo de cambio aplicado (USD→MXN)")
     archivo_drive = models.ForeignKey('ArchivoOportunidad', on_delete=models.SET_NULL, null=True, blank=True, related_name='facturas_generadas', verbose_name="Archivo del drive vinculado")
     fecha_factura = models.DateField()
     fecha_vencimiento = models.DateField(null=True, blank=True)

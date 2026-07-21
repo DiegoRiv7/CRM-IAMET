@@ -1236,11 +1236,18 @@ def cotizaciones_view(request):
     return render(request, 'cotizaciones.html', context)
 
 
+@login_required
 def cotizaciones_por_oportunidad_view(request, oportunidad_id):
     """
     Vista para mostrar todas las cotizaciones y volumetrías de una oportunidad específica
     """
     oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
+    # Estaba SIN login: un externo podía enumerar IDs y leer cotizaciones/
+    # volumetrías (precios) de cualquier oportunidad. Se exige sesión y permiso
+    # sobre el dueño (mismo patrón que el resto de vistas de cotizaciones).
+    from .views_grupos import puede_actuar_sobre
+    if not puede_actuar_sobre(request.user, oportunidad.usuario):
+        return HttpResponse("Acceso denegado.", status=403)
     
     # Determinar qué tipo de contenido mostrar basado en el parámetro 'tipo'
     tipo_contenido = request.GET.get('tipo', 'cotizaciones')  # Por defecto mostrar cotizaciones
