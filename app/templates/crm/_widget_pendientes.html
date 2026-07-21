@@ -1,10 +1,11 @@
 {% comment %}
   WIDGET "PENDIENTES" — oportunidades por urgencia (Pendientes / Hoy / Próximamente)
-  Diseño inspirado en el modal de Notificaciones. Abre con pendAbrir().
-  Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>
+  Ventana reutilizando el sistema widget_window.js (data-windowable + .ww-card):
+  minimizar / maximizar / cerrar / arrastrar / redimensionar, igual que Notificaciones.
+  Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
-<div id="widgetPendientes" class="pend-overlay">
-  <div class="pend-shell">
+<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Pendientes">
+  <div class="ww-card pend-card">
     <!-- Header -->
     <div class="pend-head">
       <h2 class="pend-title">Pendientes</h2>
@@ -16,13 +17,11 @@
           </button>
           <div id="pendVendedorMenu" class="pend-vend-menu"></div>
         </div>
-        <button type="button" class="pend-close" onclick="pendCerrar()" title="Cerrar">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
+        <button type="button" class="widget-close pend-close" onclick="pendCerrar()" title="Cerrar">&times;</button>
       </div>
     </div>
 
-    <!-- Tabs -->
+    <!-- Tabs (centradas, como Notificaciones) -->
     <div class="pend-tabs">
       <button type="button" class="pend-tab active" data-tab="pendientes" onclick="pendSetTab('pendientes')">
         Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
@@ -43,18 +42,17 @@
 </div>
 
 <style>
-  .pend-overlay{position:fixed;inset:0;z-index:4000;display:none;align-items:flex-start;justify-content:center;
-    background:rgba(15,17,21,.42);backdrop-filter:blur(3px);padding:48px 16px;}
-  .pend-overlay.active{display:flex;}
-  .pend-shell{width:min(920px,96vw);max-height:88vh;background:#f4f5f7;border-radius:20px;display:flex;flex-direction:column;
-    box-shadow:0 24px 70px rgba(0,0,0,.34);overflow:hidden;animation:pendIn .18s ease;}
-  @keyframes pendIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
-  .pend-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 12px;}
-  .pend-title{margin:0;font-size:1.35rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  /* La ventana: hereda .ww-card (posición/resize la maneja widget_window.css en modo ventana) */
+  #widgetPendientes .pend-card{width:min(1040px,95vw);height:min(84vh,780px);max-width:95vw;
+    background:#f4f5f7;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 24px 70px rgba(0,0,0,.32);}
+  .pend-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 10px;flex:none;}
+  .pend-title{margin:0;font-size:1.4rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
   .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;}
-  .pend-close{width:34px;height:34px;border:none;border-radius:50%;background:#fff;color:#3a3b40;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.12);transition:background .15s;}
-  .pend-close:hover{background:#eceef1;}
+  /* Combina con los [— □] que inyecta widget_window.js (.ww-btn: 30px, #F2F2F7) */
+  #widgetPendientes .pend-close{width:30px;height:30px;border:none;border-radius:50%;background:#F2F2F7;color:#86868B;
+    font-size:19px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;}
+  #widgetPendientes .pend-close:hover{background:#E8E8ED;color:#1D1D1F;}
   /* Selector vendedor */
   .pend-vend{position:relative;}
   .pend-vend-btn{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e2e4e8;border-radius:20px;
@@ -68,31 +66,34 @@
     padding:8px 10px;border-radius:8px;font-size:.88rem;color:#2c2d33;cursor:pointer;}
   .pend-vend-item:hover{background:#f2f3f6;}
   .pend-vend-item.active{color:#0a84ff;font-weight:700;}
-  /* Tabs */
-  .pend-tabs{display:flex;gap:8px;padding:2px 22px 14px;}
-  .pend-tab{display:flex;align-items:center;gap:7px;border:none;background:transparent;border-radius:22px;padding:8px 16px;
-    font-size:.92rem;font-weight:600;color:#6b6d75;cursor:pointer;transition:all .15s;}
+  /* Tabs centradas */
+  .pend-tabs{display:flex;justify-content:center;gap:8px;padding:2px 22px 12px;flex:none;}
+  .pend-tab{display:flex;align-items:center;gap:7px;border:none;background:transparent;border-radius:22px;padding:8px 18px;
+    font-size:.95rem;font-weight:600;color:#6b6d75;cursor:pointer;transition:all .15s;}
   .pend-tab:hover{background:#e9ebef;}
   .pend-tab.active{background:#1c1d22;color:#fff;}
   .pend-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
     border-radius:10px;background:rgba(0,0,0,.09);font-size:.72rem;font-weight:700;color:inherit;}
   .pend-tab.active .pend-count{background:rgba(255,255,255,.22);}
-  /* Body */
-  .pend-body{flex:1;overflow-y:auto;padding:6px 18px 20px;}
-  .pend-card{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:13px 16px;margin-bottom:9px;
+  /* Body / tarjetas */
+  .pend-body{flex:1;overflow-y:auto;padding:4px 18px 18px;}
+  .pend-cardrow{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:13px 18px;margin-bottom:9px;
     cursor:pointer;transition:box-shadow .15s,transform .05s;box-shadow:0 1px 2px rgba(0,0,0,.05);}
-  .pend-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.11);}
-  .pend-card:active{transform:scale(.995);}
+  .pend-cardrow:hover{box-shadow:0 4px 14px rgba(0,0,0,.11);}
+  .pend-cardrow:active{transform:scale(.996);}
   .pend-dot{width:10px;height:10px;border-radius:50%;flex:none;}
   .pend-dot.rojo{background:#ff3b30;} .pend-dot.ambar{background:#ff9500;} .pend-dot.verde{background:#34c759;}
   .pend-c-main{flex:1;min-width:0;}
-  .pend-c-nombre{font-size:.95rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .pend-c-sub{font-size:.8rem;color:#8a8c93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-c-nombre{font-size:.98rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-c-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px;}
+  .pend-chip{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:#5a5c63;
+    background:#f0f1f4;border-radius:6px;padding:2px 8px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pend-chip svg{flex:none;opacity:.6;}
   .pend-c-right{text-align:right;flex:none;}
-  .pend-c-motivo{font-size:.8rem;font-weight:600;color:#ff3b30;white-space:nowrap;}
+  .pend-c-motivo{font-size:.82rem;font-weight:700;color:#ff3b30;white-space:nowrap;}
   .pend-c-motivo.ambar{color:#c77700;} .pend-c-motivo.verde{color:#248a3d;}
   .pend-c-vend{font-size:.72rem;color:#a2a4ab;margin-top:3px;white-space:nowrap;}
-  .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.92rem;}
+  .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.95rem;}
 </style>
 
 <script>
@@ -100,40 +101,35 @@
   if (window.__pendInit) return;
   window.__pendInit = true;
 
-  var _data = null;
-  var _tab = 'pendientes';
-  var _sel = 'mias';
-
+  var _data = null, _tab = 'pendientes', _sel = 'mias';
   function el(id){ return document.getElementById(id); }
 
   window.pendAbrir = function () {
     var ov = el('widgetPendientes');
     if (!ov) return;
+    ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
-    document.body.style.overflow = 'hidden';
     pendCargar();
   };
   window.pendCerrar = function () {
     var ov = el('widgetPendientes');
     if (!ov) return;
     ov.classList.remove('active');
-    document.body.style.overflow = '';
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
   };
 
   window.pendSetTab = function (tab) {
     _tab = tab;
-    var tabs = document.querySelectorAll('#widgetPendientes .pend-tab');
-    tabs.forEach(function (t){ t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+    document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t){
+      t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+    });
     _render();
   };
 
   window.pendToggleVendedor = function (ev) {
     if (ev) ev.stopPropagation();
-    var m = el('pendVendedorMenu');
-    if (m) m.classList.toggle('open');
+    var m = el('pendVendedorMenu'); if (m) m.classList.toggle('open');
   };
-
   window.pendSelVendedor = function (val, label) {
     _sel = val;
     var lbl = el('pendVendedorLabel'); if (lbl) lbl.textContent = label;
@@ -141,10 +137,13 @@
     pendCargar();
   };
 
+  // Clic en una oportunidad: NO cierra Pendientes; la deja de fondo y abre el detalle encima.
   window.pendAbrirOpp = function (id) {
+    var ov = el('widgetPendientes');
+    if (ov) ov.style.zIndex = '998';   // debajo del detalle (--z-widget:1000)
     try {
-      if (typeof openDetalle === 'function') { pendCerrar(); openDetalle(id); return; }
-      if (window.openDetalle) { pendCerrar(); window.openDetalle(id); return; }
+      if (typeof openDetalle === 'function') { openDetalle(id); return; }
+      if (window.openDetalle) { window.openDetalle(id); return; }
     } catch (e) {}
     window.location.href = '/app/home/?open_opp=' + id;
   };
@@ -172,21 +171,22 @@
     if (!wrap) return;
     if (!d.puede_seleccionar) { wrap.style.display = 'none'; return; }
     wrap.style.display = '';
-    var menu = el('pendVendedorMenu');
     var yo = d.yo || {};
-    var html = '<div class="pend-vend-head">Vendedores</div>';
-    html += _vItem('mias', 'Mías');
-    html += _vItem('todos', 'Todos');
+    var html = '<div class="pend-vend-head">Vendedores</div>' + _vItem('mias', 'Mías') + _vItem('todos', 'Todos');
     (d.vendedores || []).forEach(function (v){
-      if (yo.id && v.id === yo.id) return; // "Mías" ya cubre al propio usuario
+      if (yo.id && v.id === yo.id) return;
       html += _vItem(String(v.id), _esc(v.nombre));
     });
-    menu.innerHTML = html;
+    el('pendVendedorMenu').innerHTML = html;
   }
   function _vItem(val, label) {
     var act = (String(_sel) === String(val)) ? ' active' : '';
     return '<button type="button" class="pend-vend-item' + act + '" onclick="pendSelVendedor(\'' + val + '\',\'' + label.replace(/'/g,"\\'") + '\')">' + label + '</button>';
   }
+
+  var _ICON_CLIENTE = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>';
+  var _ICON_PIPE = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg>';
+  var _ICON_ETAPA = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
 
   function _render() {
     var body = el('pendBody');
@@ -198,18 +198,22 @@
       return;
     }
     var tone = _tab === 'pendientes' ? 'rojo' : (_tab === 'hoy' ? 'ambar' : 'verde');
+    var mostrarVend = (_sel !== 'mias');
     var html = '';
     items.forEach(function (it){
-      var sub = _esc(it.cliente || '') + (it.etapa ? ' · ' + _esc(it.etapa) : '');
-      html += '<div class="pend-card" onclick="pendAbrirOpp(' + it.id + ')">' +
+      var chips = '';
+      if (it.cliente)  chips += '<span class="pend-chip" title="Cliente">' + _ICON_CLIENTE + _esc(it.cliente) + '</span>';
+      if (it.pipeline) chips += '<span class="pend-chip" title="Pipeline">' + _ICON_PIPE + _esc(it.pipeline) + '</span>';
+      if (it.etapa)    chips += '<span class="pend-chip" title="Etapa">' + _ICON_ETAPA + _esc(it.etapa) + '</span>';
+      html += '<div class="pend-cardrow" onclick="pendAbrirOpp(' + it.id + ')">' +
         '<span class="pend-dot ' + tone + '"></span>' +
         '<div class="pend-c-main">' +
           '<div class="pend-c-nombre">' + _esc(it.nombre) + '</div>' +
-          '<div class="pend-c-sub">' + (sub || '—') + '</div>' +
+          '<div class="pend-c-meta">' + (chips || '<span class="pend-chip">Sin datos</span>') + '</div>' +
         '</div>' +
         '<div class="pend-c-right">' +
           '<div class="pend-c-motivo ' + tone + '">' + _esc(it.motivo || '') + '</div>' +
-          (it.vendedor ? '<div class="pend-c-vend">' + _esc(it.vendedor) + '</div>' : '') +
+          (mostrarVend && it.vendedor ? '<div class="pend-c-vend">' + _esc(it.vendedor) + '</div>' : '') +
         '</div>' +
       '</div>';
     });
@@ -222,10 +226,8 @@
     });
   }
 
-  // Cerrar overlay al hacer clic fuera del shell; cerrar menú vendedor al clic fuera
+  // Cerrar el menú de vendedor al hacer clic fuera
   document.addEventListener('click', function (e) {
-    var ov = el('widgetPendientes');
-    if (ov && ov.classList.contains('active') && e.target === ov) pendCerrar();
     var wrap = el('pendVendedorWrap');
     if (wrap && !wrap.contains(e.target)) {
       var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');

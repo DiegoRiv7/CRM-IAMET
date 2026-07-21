@@ -6610,6 +6610,7 @@ def api_pendientes(request):
             'id': oid,
             'nombre': opp.oportunidad or '(sin nombre)',
             'cliente': (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else ''),
+            'pipeline': opp.get_tipo_negociacion_display() if opp.tipo_negociacion else '',
             'etapa': opp.etapa_corta or '',
             'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario_id else '',
         }
