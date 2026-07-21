@@ -6573,7 +6573,7 @@ def api_pendientes(request):
     term_q = Q()
     for v in _PEND_ETAPAS_TERMINALES:
         term_q |= Q(etapa_corta__iexact=v)
-    qs = TodoItem.objects.select_related('cliente', 'usuario').exclude(term_q)
+    qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto').exclude(term_q)
     if user_ids is not None:
         qs = qs.filter(usuario_id__in=user_ids)
 
@@ -6601,6 +6601,7 @@ def api_pendientes(request):
         return va or vb
 
     buckets = {'pendientes': [], 'hoy': [], 'proximamente': []}
+    resumen_pool = []  # (opp, tier) para la pestaña Resumen: pendientes + hoy
 
     for opp in qs:
         oid = opp.id
@@ -6619,16 +6620,19 @@ def api_pendientes(request):
             item['motivo'] = ('Vencida hoy' if dias <= 0 else f'Vencida hace {dias} día' + ('s' if dias != 1 else ''))
             item['fecha'] = venc.isoformat()
             buckets['pendientes'].append(item)
+            resumen_pool.append((opp, 'overdue'))
         elif prox is None:
             item['motivo'] = 'Sin nada agendado'
             item['fecha'] = None
             buckets['pendientes'].append(item)
+            resumen_pool.append((opp, 'sinagendar'))
         else:
             pl = timezone.localtime(prox)
             if pl.date() == today:
                 item['motivo'] = 'Agendada hoy ' + pl.strftime('%H:%M')
                 item['fecha'] = prox.isoformat()
                 buckets['hoy'].append(item)
+                resumen_pool.append((opp, 'today'))
             else:
                 item['motivo'] = 'Agendada ' + pl.strftime('%d/%m/%Y')
                 item['fecha'] = prox.isoformat()
@@ -6639,6 +6643,79 @@ def api_pendientes(request):
     buckets['pendientes'].sort(key=lambda x: (x['fecha'] is None, x['fecha'] or ''))
     buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
     buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
+
+    # ── Resumen del día: briefing priorizado (pendientes + hoy) ──
+    # Prioridad = urgencia + valor + probabilidad. Acción = de la tarea real.
+    _res_ids = [o.id for (o, _t) in resumen_pool]
+    _near = {}
+    for _t in TareaOportunidad.objects.filter(
+            oportunidad_id__in=_res_ids, estado__in=['pendiente', 'en_progreso']
+    ).exclude(fecha_limite=None).order_by('fecha_limite'):
+        _near.setdefault(_t.oportunidad_id, _t)
+    for _t in Tarea.objects.filter(
+            oportunidad_id__in=_res_ids, estado__in=_ACTIVOS
+    ).exclude(fecha_limite=None).order_by('fecha_limite'):
+        _cur = _near.get(_t.oportunidad_id)
+        if _cur is None or (_t.fecha_limite and _cur.fecha_limite and _t.fecha_limite < _cur.fecha_limite):
+            _near[_t.oportunidad_id] = _t
+
+    _TIER_PTS = {'overdue': 100, 'today': 70, 'sinagendar': 50}
+    _scored = []
+    for opp, tier in resumen_pool:
+        monto = float(opp.monto or 0)
+        prob = int(opp.probabilidad_cierre or 0)
+        score = _TIER_PTS.get(tier, 40) + min(monto / 5000.0, 120) + prob * 0.5
+        _scored.append((score, opp, tier))
+    _scored.sort(key=lambda x: x[0], reverse=True)
+
+    resumen_items = []
+    for idx, (score, opp, tier) in enumerate(_scored):
+        prob = int(opp.probabilidad_cierre or 0)
+        overdue = (tier == 'overdue')
+        if prob < 40 or (overdue and prob < 60):
+            riesgo = 'Alto'
+        elif prob < 70 or overdue:
+            riesgo = 'Medio'
+        else:
+            riesgo = 'Bajo'
+        contacto = str(opp.contacto).strip() if opp.contacto_id and opp.contacto else ''
+        tsk = _near.get(opp.id)
+        if tsk and tsk.fecha_limite:
+            hora = timezone.localtime(tsk.fecha_limite).strftime('%H:%M')
+            titulo = (getattr(tsk, 'titulo', '') or '').strip() or 'Dar seguimiento'
+            accion = titulo
+            if contacto:
+                accion += f' con {contacto}'
+            accion += f' antes de las {hora}.'
+            accion += ' Si no hay respuesta, envía el correo de seguimiento y agenda el siguiente paso para mañana.'
+        elif tier == 'sinagendar':
+            accion = 'Sin actividad agendada. '
+            accion += (f'Contacta a {contacto} ' if contacto else 'Contacta al cliente ')
+            accion += 'y agenda el siguiente paso hoy.'
+        else:
+            accion = 'Da seguimiento a esta oportunidad hoy.'
+        monto = float(opp.monto or 0)
+        resumen_items.append({
+            'prioridad': idx + 1,
+            'opp_id': opp.id,
+            'cliente': (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else '—'),
+            'proyecto': opp.oportunidad or '(sin nombre)',
+            'valor': monto,
+            'valor_fmt': '${:,.0f}'.format(monto),
+            'probabilidad': prob,
+            'riesgo': riesgo,
+            'accion': accion,
+        })
+
+    _hora = timezone.localtime(now).hour
+    saludo = 'Buenos días' if _hora < 12 else ('Buenas tardes' if _hora < 19 else 'Buenas noches')
+    nombre_corto = user.first_name or (user.get_full_name() or user.username).split(' ')[0]
+    resumen = {
+        'saludo': saludo,
+        'nombre': nombre_corto,
+        'total': len(resumen_items),
+        'items': resumen_items,
+    }
 
     # ── Lista de vendedores para el selector (según rol) ──
     # Solo se incluyen vendedores que TIENEN al menos una oportunidad abierta
@@ -6662,6 +6739,7 @@ def api_pendientes(request):
 
     return JsonResponse({
         'success': True,
+        'resumen': resumen,
         'buckets': buckets,
         'counts': {k: len(v) for k, v in buckets.items()},
         'puede_seleccionar': puede_seleccionar,

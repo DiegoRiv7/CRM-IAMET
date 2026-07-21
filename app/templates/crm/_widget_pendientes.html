@@ -23,7 +23,8 @@
 
     <!-- Tabs (centradas, como Notificaciones) -->
     <div class="pend-tabs">
-      <button type="button" class="pend-tab active" data-tab="pendientes" onclick="pendSetTab('pendientes')">
+      <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Resumen</button>
+      <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
         Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
       </button>
       <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
@@ -94,6 +95,24 @@
   .pend-c-motivo.ambar{color:#c77700;} .pend-c-motivo.verde{color:#248a3d;}
   .pend-c-vend{font-size:.72rem;color:#a2a4ab;margin-top:3px;white-space:nowrap;}
   .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.95rem;}
+  /* Resumen del día */
+  .pend-res-hero{padding:8px 6px 18px;}
+  .pend-res-saludo{font-size:1.55rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-res-sub{font-size:1.02rem;color:#5a5c63;margin-top:5px;}
+  .pend-res-sub b{color:#1c1d22;}
+  .pend-res-card{background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:12px;cursor:pointer;
+    box-shadow:0 1px 2px rgba(0,0,0,.05);border-left:4px solid #ff3b30;transition:box-shadow .15s,transform .05s;}
+  .pend-res-card:hover{box-shadow:0 5px 16px rgba(0,0,0,.12);}
+  .pend-res-card:active{transform:scale(.997);}
+  .pend-res-prio{font-size:.78rem;font-weight:800;color:#ff3b30;text-transform:uppercase;letter-spacing:.04em;margin-bottom:9px;}
+  .pend-res-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 24px;}
+  .pend-res-row{display:flex;gap:8px;font-size:.9rem;padding:2px 0;min-width:0;}
+  .pend-res-k{color:#8a8c93;min-width:150px;font-weight:600;flex:none;}
+  .pend-res-v{color:#1c1d22;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pend-res-accion{margin-top:11px;font-size:.92rem;color:#33353b;line-height:1.5;background:#f7f8fa;border-radius:10px;padding:10px 13px;}
+  .pend-res-accion-lbl{display:block;font-size:.72rem;font-weight:800;color:#8a8c93;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+  .pend-riesgo{font-weight:800;}
+  .pend-riesgo.alto{color:#ff3b30;} .pend-riesgo.medio{color:#c77700;} .pend-riesgo.bajo{color:#248a3d;}
 </style>
 
 <script>
@@ -101,7 +120,7 @@
   if (window.__pendInit) return;
   window.__pendInit = true;
 
-  var _data = null, _tab = 'pendientes', _sel = 'mias';
+  var _data = null, _tab = 'resumen', _sel = 'mias';
   function el(id){ return document.getElementById(id); }
 
   function _normalRect() {
@@ -248,9 +267,42 @@
   var _ICON_PIPE = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg>';
   var _ICON_ETAPA = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
 
+  function _resRow(label, val) {
+    return '<div class="pend-res-row"><span class="pend-res-k">' + label + '</span><span class="pend-res-v">' + val + '</span></div>';
+  }
+  function _renderResumen() {
+    var body = el('pendBody');
+    var r = _data && _data.resumen;
+    if (!body) return;
+    if (!r) { body.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
+    var hero = '<div class="pend-res-hero">' +
+      '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '.</div>' +
+      '<div class="pend-res-sub">' + (r.total > 0
+          ? 'Hoy debes trabajar <b>' + r.total + '</b> oportunidad' + (r.total === 1 ? '' : 'es') + '.'
+          : 'No tienes oportunidades urgentes para hoy. 🎉') +
+      '</div></div>';
+    var cards = '';
+    (r.items || []).forEach(function (it) {
+      var rk = (it.riesgo || '').toLowerCase();
+      cards += '<div class="pend-res-card" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
+        '<div class="pend-res-prio">Prioridad ' + it.prioridad + '</div>' +
+        '<div class="pend-res-grid">' +
+          _resRow('Cliente', _esc(it.cliente)) +
+          _resRow('Proyecto', _esc(it.proyecto)) +
+          _resRow('Valor', _esc(it.valor_fmt)) +
+          _resRow('Probabilidad de cierre', (it.probabilidad != null ? it.probabilidad : 0) + '%') +
+          _resRow('Riesgo', '<span class="pend-riesgo ' + rk + '">' + _esc(it.riesgo) + '</span>') +
+        '</div>' +
+        '<div class="pend-res-accion"><span class="pend-res-accion-lbl">Acción</span>' + _esc(it.accion) + '</div>' +
+      '</div>';
+    });
+    body.innerHTML = hero + cards;
+  }
+
   function _render() {
     var body = el('pendBody');
     if (!body || !_data) return;
+    if (_tab === 'resumen') { _renderResumen(); return; }
     var items = (_data.buckets && _data.buckets[_tab]) || [];
     if (!items.length) {
       var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
@@ -293,5 +345,14 @@
       var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
     }
   });
+
+  // Auto-mostrar el Resumen 1 vez al día (primera carga del día = "al iniciar sesión")
+  try {
+    var _hoy = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('pend_resumen_dia') !== _hoy) {
+      localStorage.setItem('pend_resumen_dia', _hoy);
+      setTimeout(function () { if (window.pendAbrir) window.pendAbrir(); }, 1400);
+    }
+  } catch (e) {}
 })();
 </script>
