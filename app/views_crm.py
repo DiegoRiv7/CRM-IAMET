@@ -6515,3 +6515,151 @@ def api_dashboard_prospectos_convertidos_detalle(request):
     return JsonResponse({'rows': rows, 'count': len(rows)})
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# WIDGET "PENDIENTES" — oportunidades por urgencia (Pendientes / Hoy / Próximamente)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Etapas terminales (cerradas) de etapa_corta — mismas que usa el reporte de
+# oportunidades abiertas. Una oportunidad es "abierta" si su etapa NO está aquí.
+_PEND_ETAPAS_TERMINALES = {
+    'ganada', 'ganado', 'pagada', 'pagado',
+    'perdida', 'perdido', 'cerrada', 'cerrado',
+}
+
+
+@login_required
+def api_pendientes(request):
+    """
+    GET /app/api/pendientes/?vendedor=<id|todos|mias>
+
+    Clasifica las oportunidades ABIERTAS del usuario (o del vendedor elegido,
+    según permisos) en 3 grupos por urgencia. Cada oportunidad cae en UN solo
+    grupo (la urgencia manda: vencida > hoy > próxima):
+      - pendientes:   tiene tarea/actividad VENCIDA, o NO tiene nada agendado.
+      - hoy:          su próxima tarea/actividad agendada cae hoy.
+      - proximamente: su próxima tarea/actividad es a futuro.
+
+    Misma lógica de "vencida/próxima" que la tabla CRM: TareaOportunidad + Tarea
+    (la "Actividad Programada"); NO se usan las actividades de calendario porque
+    muchas nunca se cierran y generan falsos positivos.
+
+    Visibilidad idéntica al resto del CRM (get_usuarios_visibles_ids): un vendedor
+    normal solo ve las suyas; supervisor/miembro de grupo puede elegir vendedor
+    (limitado a su grupo). El default siempre es "las mías".
+    """
+    from datetime import timedelta
+    from django.contrib.auth.models import User
+    from django.utils import timezone
+    from .models import TodoItem, TareaOportunidad, Tarea
+
+    user = request.user
+    now = timezone.now()
+    today = timezone.localdate()
+
+    visibles = get_usuarios_visibles_ids(user)  # None = supervisor global (ve todo)
+
+    # ── Resolver selector de vendedor (con permisos) ──
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+    if sel.isdigit():
+        pedido = int(sel)
+        # Solo si tiene permiso de ver a ese vendedor; si no, cae a las suyas.
+        user_ids = [pedido] if (visibles is None or pedido in visibles) else [user.id]
+    elif sel == 'todos':
+        user_ids = None if visibles is None else list(visibles)
+    else:  # '' o 'mias' → default: las mías
+        user_ids = [user.id]
+
+    # ── Oportunidades ABIERTAS (excluir etapas terminales, case-insensitive) ──
+    term_q = Q()
+    for v in _PEND_ETAPAS_TERMINALES:
+        term_q |= Q(etapa_corta__iexact=v)
+    qs = TodoItem.objects.select_related('cliente', 'usuario').exclude(term_q)
+    if user_ids is not None:
+        qs = qs.filter(usuario_id__in=user_ids)
+
+    _ids = list(qs.values_list('id', flat=True))
+    _ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
+
+    def _min_map(model, estados, comp):
+        f = {'oportunidad_id__in': _ids, 'estado__in': estados,
+             'fecha_limite__isnull': False}
+        f['fecha_limite__lte' if comp == 'lte' else 'fecha_limite__gt'] = now
+        return dict(
+            model.objects.filter(**f).values_list('oportunidad_id')
+            .annotate(m=Min('fecha_limite')).values_list('oportunidad_id', 'm')
+        )
+
+    venc_opp = _min_map(TareaOportunidad, ['pendiente', 'en_progreso'], 'lte')
+    venc_tar = _min_map(Tarea, _ACTIVOS, 'lte')
+    prox_opp = _min_map(TareaOportunidad, ['pendiente', 'en_progreso'], 'gt')
+    prox_tar = _min_map(Tarea, _ACTIVOS, 'gt')
+
+    def _min2(a, b, oid):
+        va, vb = a.get(oid), b.get(oid)
+        if va and vb:
+            return min(va, vb)
+        return va or vb
+
+    buckets = {'pendientes': [], 'hoy': [], 'proximamente': []}
+
+    for opp in qs:
+        oid = opp.id
+        venc = _min2(venc_opp, venc_tar, oid)
+        prox = _min2(prox_opp, prox_tar, oid)
+        item = {
+            'id': oid,
+            'nombre': opp.oportunidad or '(sin nombre)',
+            'cliente': (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else ''),
+            'etapa': opp.etapa_corta or '',
+            'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario_id else '',
+        }
+        if venc:
+            dias = (today - timezone.localtime(venc).date()).days
+            item['motivo'] = ('Vencida hoy' if dias <= 0 else f'Vencida hace {dias} día' + ('s' if dias != 1 else ''))
+            item['fecha'] = venc.isoformat()
+            buckets['pendientes'].append(item)
+        elif prox is None:
+            item['motivo'] = 'Sin nada agendado'
+            item['fecha'] = None
+            buckets['pendientes'].append(item)
+        else:
+            pl = timezone.localtime(prox)
+            if pl.date() == today:
+                item['motivo'] = 'Agendada hoy ' + pl.strftime('%H:%M')
+                item['fecha'] = prox.isoformat()
+                buckets['hoy'].append(item)
+            else:
+                item['motivo'] = 'Agendada ' + pl.strftime('%d/%m/%Y')
+                item['fecha'] = prox.isoformat()
+                buckets['proximamente'].append(item)
+
+    # Orden: pendientes → más vencida primero (fecha asc, sin-fecha al final);
+    # hoy/próx → por fecha ascendente.
+    buckets['pendientes'].sort(key=lambda x: (x['fecha'] is None, x['fecha'] or ''))
+    buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
+    buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
+
+    # ── Lista de vendedores para el selector (según rol) ──
+    puede_seleccionar = (visibles is None) or bool(visibles and len(visibles) > 1)
+    vendedores = []
+    if puede_seleccionar:
+        if visibles is None:
+            vqs = User.objects.filter(is_active=True).exclude(groups__name='Supervisores')
+        else:
+            vqs = User.objects.filter(is_active=True, id__in=visibles)
+        vendedores = [
+            {'id': u.id, 'nombre': u.get_full_name() or u.username}
+            for u in vqs.order_by('first_name', 'last_name')
+        ]
+
+    return JsonResponse({
+        'success': True,
+        'buckets': buckets,
+        'counts': {k: len(v) for k, v in buckets.items()},
+        'puede_seleccionar': puede_seleccionar,
+        'vendedores': vendedores,
+        'seleccion': sel or 'mias',
+        'yo': {'id': user.id, 'nombre': user.get_full_name() or user.username},
+    })
+
+

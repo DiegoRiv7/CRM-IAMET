@@ -1,0 +1,235 @@
+{# ═══════════════════════════════════════════════════════════════════════════
+   WIDGET "PENDIENTES" — oportunidades por urgencia (Pendientes / Hoy / Próximamente)
+   Diseño inspirado en el modal de Notificaciones. Abre con pendAbrir().
+   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>
+   ═══════════════════════════════════════════════════════════════════════════ #}
+<div id="widgetPendientes" class="pend-overlay">
+  <div class="pend-shell">
+    <!-- Header -->
+    <div class="pend-head">
+      <h2 class="pend-title">Pendientes</h2>
+      <div class="pend-head-actions">
+        <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
+          <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
+            <span id="pendVendedorLabel">Mías</span>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="pendVendedorMenu" class="pend-vend-menu"></div>
+        </div>
+        <button type="button" class="pend-close" onclick="pendCerrar()" title="Cerrar">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="pend-tabs">
+      <button type="button" class="pend-tab active" data-tab="pendientes" onclick="pendSetTab('pendientes')">
+        Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
+      </button>
+      <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
+        Hoy <span class="pend-count" id="pendCount-hoy">0</span>
+      </button>
+      <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
+        Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="pend-body" id="pendBody">
+      <div class="pend-empty">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pend-overlay{position:fixed;inset:0;z-index:4000;display:none;align-items:flex-start;justify-content:center;
+    background:rgba(15,17,21,.42);backdrop-filter:blur(3px);padding:48px 16px;}
+  .pend-overlay.active{display:flex;}
+  .pend-shell{width:min(920px,96vw);max-height:88vh;background:#f4f5f7;border-radius:20px;display:flex;flex-direction:column;
+    box-shadow:0 24px 70px rgba(0,0,0,.34);overflow:hidden;animation:pendIn .18s ease;}
+  @keyframes pendIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+  .pend-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 12px;}
+  .pend-title{margin:0;font-size:1.35rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;}
+  .pend-close{width:34px;height:34px;border:none;border-radius:50%;background:#fff;color:#3a3b40;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.12);transition:background .15s;}
+  .pend-close:hover{background:#eceef1;}
+  /* Selector vendedor */
+  .pend-vend{position:relative;}
+  .pend-vend-btn{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e2e4e8;border-radius:20px;
+    padding:6px 12px;font-size:.85rem;font-weight:600;color:#33353b;cursor:pointer;}
+  .pend-vend-btn:hover{background:#f7f8fa;}
+  .pend-vend-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;min-width:220px;max-height:320px;overflow:auto;z-index:10;}
+  .pend-vend-menu.open{display:block;}
+  .pend-vend-head{font-size:.68rem;font-weight:700;color:#9a9ca3;text-transform:uppercase;letter-spacing:.04em;padding:6px 10px 4px;}
+  .pend-vend-item{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;border:none;background:none;
+    padding:8px 10px;border-radius:8px;font-size:.88rem;color:#2c2d33;cursor:pointer;}
+  .pend-vend-item:hover{background:#f2f3f6;}
+  .pend-vend-item.active{color:#0a84ff;font-weight:700;}
+  /* Tabs */
+  .pend-tabs{display:flex;gap:8px;padding:2px 22px 14px;}
+  .pend-tab{display:flex;align-items:center;gap:7px;border:none;background:transparent;border-radius:22px;padding:8px 16px;
+    font-size:.92rem;font-weight:600;color:#6b6d75;cursor:pointer;transition:all .15s;}
+  .pend-tab:hover{background:#e9ebef;}
+  .pend-tab.active{background:#1c1d22;color:#fff;}
+  .pend-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
+    border-radius:10px;background:rgba(0,0,0,.09);font-size:.72rem;font-weight:700;color:inherit;}
+  .pend-tab.active .pend-count{background:rgba(255,255,255,.22);}
+  /* Body */
+  .pend-body{flex:1;overflow-y:auto;padding:6px 18px 20px;}
+  .pend-card{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:13px 16px;margin-bottom:9px;
+    cursor:pointer;transition:box-shadow .15s,transform .05s;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+  .pend-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.11);}
+  .pend-card:active{transform:scale(.995);}
+  .pend-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .pend-dot.rojo{background:#ff3b30;} .pend-dot.ambar{background:#ff9500;} .pend-dot.verde{background:#34c759;}
+  .pend-c-main{flex:1;min-width:0;}
+  .pend-c-nombre{font-size:.95rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-c-sub{font-size:.8rem;color:#8a8c93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-c-right{text-align:right;flex:none;}
+  .pend-c-motivo{font-size:.8rem;font-weight:600;color:#ff3b30;white-space:nowrap;}
+  .pend-c-motivo.ambar{color:#c77700;} .pend-c-motivo.verde{color:#248a3d;}
+  .pend-c-vend{font-size:.72rem;color:#a2a4ab;margin-top:3px;white-space:nowrap;}
+  .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.92rem;}
+</style>
+
+<script>
+(function () {
+  if (window.__pendInit) return;
+  window.__pendInit = true;
+
+  var _data = null;
+  var _tab = 'pendientes';
+  var _sel = 'mias';
+
+  function el(id){ return document.getElementById(id); }
+
+  window.pendAbrir = function () {
+    var ov = el('widgetPendientes');
+    if (!ov) return;
+    ov.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    pendCargar();
+  };
+  window.pendCerrar = function () {
+    var ov = el('widgetPendientes');
+    if (!ov) return;
+    ov.classList.remove('active');
+    document.body.style.overflow = '';
+    var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+  };
+
+  window.pendSetTab = function (tab) {
+    _tab = tab;
+    var tabs = document.querySelectorAll('#widgetPendientes .pend-tab');
+    tabs.forEach(function (t){ t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+    _render();
+  };
+
+  window.pendToggleVendedor = function (ev) {
+    if (ev) ev.stopPropagation();
+    var m = el('pendVendedorMenu');
+    if (m) m.classList.toggle('open');
+  };
+
+  window.pendSelVendedor = function (val, label) {
+    _sel = val;
+    var lbl = el('pendVendedorLabel'); if (lbl) lbl.textContent = label;
+    var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    pendCargar();
+  };
+
+  window.pendAbrirOpp = function (id) {
+    try {
+      if (typeof openDetalle === 'function') { pendCerrar(); openDetalle(id); return; }
+      if (window.openDetalle) { pendCerrar(); window.openDetalle(id); return; }
+    } catch (e) {}
+    window.location.href = '/app/home/?open_opp=' + id;
+  };
+
+  function pendCargar() {
+    var body = el('pendBody');
+    if (body) body.innerHTML = '<div class="pend-empty">Cargando…</div>';
+    fetch('/app/api/pendientes/?vendedor=' + encodeURIComponent(_sel), { credentials: 'same-origin' })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        if (!d || !d.success) { if (body) body.innerHTML = '<div class="pend-empty">Error al cargar</div>'; return; }
+        _data = d;
+        _buildVendedores(d);
+        ['pendientes','hoy','proximamente'].forEach(function (k){
+          var c = el('pendCount-' + k); if (c) c.textContent = (d.counts && d.counts[k]) || 0;
+        });
+        _render();
+      })
+      .catch(function (){ if (body) body.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  window.pendCargar = pendCargar;
+
+  function _buildVendedores(d) {
+    var wrap = el('pendVendedorWrap');
+    if (!wrap) return;
+    if (!d.puede_seleccionar) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    var menu = el('pendVendedorMenu');
+    var yo = d.yo || {};
+    var html = '<div class="pend-vend-head">Vendedores</div>';
+    html += _vItem('mias', 'Mías');
+    html += _vItem('todos', 'Todos');
+    (d.vendedores || []).forEach(function (v){
+      if (yo.id && v.id === yo.id) return; // "Mías" ya cubre al propio usuario
+      html += _vItem(String(v.id), _esc(v.nombre));
+    });
+    menu.innerHTML = html;
+  }
+  function _vItem(val, label) {
+    var act = (String(_sel) === String(val)) ? ' active' : '';
+    return '<button type="button" class="pend-vend-item' + act + '" onclick="pendSelVendedor(\'' + val + '\',\'' + label.replace(/'/g,"\\'") + '\')">' + label + '</button>';
+  }
+
+  function _render() {
+    var body = el('pendBody');
+    if (!body || !_data) return;
+    var items = (_data.buckets && _data.buckets[_tab]) || [];
+    if (!items.length) {
+      var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      body.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
+      return;
+    }
+    var tone = _tab === 'pendientes' ? 'rojo' : (_tab === 'hoy' ? 'ambar' : 'verde');
+    var html = '';
+    items.forEach(function (it){
+      var sub = _esc(it.cliente || '') + (it.etapa ? ' · ' + _esc(it.etapa) : '');
+      html += '<div class="pend-card" onclick="pendAbrirOpp(' + it.id + ')">' +
+        '<span class="pend-dot ' + tone + '"></span>' +
+        '<div class="pend-c-main">' +
+          '<div class="pend-c-nombre">' + _esc(it.nombre) + '</div>' +
+          '<div class="pend-c-sub">' + (sub || '—') + '</div>' +
+        '</div>' +
+        '<div class="pend-c-right">' +
+          '<div class="pend-c-motivo ' + tone + '">' + _esc(it.motivo || '') + '</div>' +
+          (it.vendedor ? '<div class="pend-c-vend">' + _esc(it.vendedor) + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    body.innerHTML = html;
+  }
+
+  function _esc(s) {
+    return (s == null ? '' : String(s)).replace(/[&<>"']/g, function (c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  // Cerrar overlay al hacer clic fuera del shell; cerrar menú vendedor al clic fuera
+  document.addEventListener('click', function (e) {
+    var ov = el('widgetPendientes');
+    if (ov && ov.classList.contains('active') && e.target === ov) pendCerrar();
+    var wrap = el('pendVendedorWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    }
+  });
+})();
+</script>

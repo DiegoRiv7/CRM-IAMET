@@ -148,6 +148,7 @@ urlpatterns = [
 
     # ── APIs CRM ──────────────────────────────────────────────────────────────
     path('api/crm-table-data/', views.api_crm_table_data, name='api_crm_table_data'),
+    path('api/pendientes/', views.api_pendientes, name='api_pendientes'),
     path('api/subir-facturacion/', views.api_subir_facturacion, name='api_subir_facturacion'),
     path('api/desglose-facturacion/', views.api_desglose_facturacion, name='api_desglose_facturacion'),
     path('api/subir-cobrado/', views.api_subir_cobrado, name='api_subir_cobrado'),
