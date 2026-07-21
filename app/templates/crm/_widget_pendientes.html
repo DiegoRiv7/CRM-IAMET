@@ -104,16 +104,76 @@
   var _data = null, _tab = 'pendientes', _sel = 'mias';
   function el(id){ return document.getElementById(id); }
 
+  function _normalRect() {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var w = Math.min(Math.round(vw * 0.74), 1120);
+    var h = Math.min(Math.round(vh * 0.82), 820);
+    return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
+  }
+  function _setRect(ov, r) {
+    ov.style.setProperty('--ww-x', r.x + 'px');
+    ov.style.setProperty('--ww-y', r.y + 'px');
+    ov.style.setProperty('--ww-w', r.w + 'px');
+    ov.style.setProperty('--ww-h', r.h + 'px');
+  }
+  function _cardRect(ov) {
+    var card = ov.querySelector('.ww-card');
+    if (!card) return null;
+    var b = card.getBoundingClientRect();
+    return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+  }
+  // Repurpose el botón □ que inyecta widget_window.js: en vez de windowize/unwindowize,
+  // alterna PANTALLA COMPLETA ↔ tamaño normal.
+  function _overrideMaxBtn(ov) {
+    var btn = ov._wwBtnWin;
+    if (!btn || btn._pendFS) return;
+    var clone = btn.cloneNode(true);        // clon sin el listener del sistema
+    clone._pendFS = true;
+    if (btn.parentNode) btn.parentNode.replaceChild(clone, btn);
+    ov._wwBtnWin = clone;
+    clone.title = 'Pantalla completa';
+    clone.addEventListener('click', function (e) { e.stopPropagation(); pendToggleFull(); });
+  }
+  window.pendToggleFull = function () {
+    var ov = el('widgetPendientes');
+    if (!ov) return;
+    var W = window.crmWidgetWindow;
+    if (W && W.windowize && !ov.classList.contains('ww-windowed')) {
+      try { W.windowize(ov, ov._pendNormalRect || _normalRect()); } catch (e) {}
+    }
+    if (!ov._pendFull) {
+      ov._pendNormalRect = _cardRect(ov) || ov._pendNormalRect || _normalRect();
+      _setRect(ov, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight });
+      ov._pendFull = true;
+    } else {
+      _setRect(ov, ov._pendNormalRect || _normalRect());
+      ov._pendFull = false;
+    }
+  };
+
   window.pendAbrir = function () {
     var ov = el('widgetPendientes');
     if (!ov) return;
     ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
     pendCargar();
+    // Abrir ya como ventana flotante → arrastrable desde el inicio.
+    var W = window.crmWidgetWindow;
+    if (W && W.windowize && !ov.classList.contains('ww-windowed')) {
+      ov._pendNormalRect = _normalRect();
+      ov._pendFull = false;
+      try { W.windowize(ov, ov._pendNormalRect); } catch (e) {}
+      _overrideMaxBtn(ov);
+    }
   };
   window.pendCerrar = function () {
     var ov = el('widgetPendientes');
     if (!ov) return;
+    var W = window.crmWidgetWindow;
+    if (W && W.unwindowize && ov.classList.contains('ww-windowed')) {
+      try { W.unwindowize(ov); } catch (e) {}
+    }
+    ov._pendFull = false;
     ov.classList.remove('active');
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
   };

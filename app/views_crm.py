@@ -6641,6 +6641,8 @@ def api_pendientes(request):
     buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
 
     # ── Lista de vendedores para el selector (según rol) ──
+    # Solo se incluyen vendedores que TIENEN al menos una oportunidad abierta
+    # (no tiene sentido poder filtrar por alguien sin oportunidades).
     puede_seleccionar = (visibles is None) or bool(visibles and len(visibles) > 1)
     vendedores = []
     if puede_seleccionar:
@@ -6648,9 +6650,14 @@ def api_pendientes(request):
             vqs = User.objects.filter(is_active=True).exclude(groups__name='Supervisores')
         else:
             vqs = User.objects.filter(is_active=True, id__in=visibles)
+        con_opp = set(
+            TodoItem.objects.exclude(term_q)
+            .filter(usuario_id__in=vqs.values_list('id', flat=True))
+            .values_list('usuario_id', flat=True)
+        )
         vendedores = [
             {'id': u.id, 'nombre': u.get_full_name() or u.username}
-            for u in vqs.order_by('first_name', 'last_name')
+            for u in vqs.order_by('first_name', 'last_name') if u.id in con_opp
         ]
 
     return JsonResponse({
