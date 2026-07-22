@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('app', '0199_catalogo_tipos_ampliados'),
+        ('app', '0200_tema_temporada'),
     ]
 
     operations = [
