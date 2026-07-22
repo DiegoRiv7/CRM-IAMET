@@ -47,7 +47,9 @@ body[data-theme="temporada"] {
     --tmp-sol-y: 12%;
     --tmp-sol-size: 150px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
-    --tmp-sidebar: linear-gradient(180deg, rgba(111, 168, 214, 0.90) 0%, rgba(78, 134, 184, 0.93) 60%, rgba(62, 114, 162, 0.95) 100%);
+    /* Sidebar "agua": muy translúcido — el cielo se ve a través y el blur
+       de 22px hace el efecto de vidrio mojado */
+    --tmp-sidebar: linear-gradient(180deg, rgba(170, 212, 240, 0.38) 0%, rgba(130, 182, 222, 0.42) 55%, rgba(105, 160, 205, 0.50) 100%);
 }
 
 /* ═══ Pieles por fase del día (cielo, sol, scrim y sidebar) ═══
