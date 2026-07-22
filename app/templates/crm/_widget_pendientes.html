@@ -582,10 +582,11 @@
     var rk = (it.riesgo || '').toLowerCase();
     var prob = (it.probabilidad != null ? it.probabilidad : 0);
     var pw = Math.max(0, Math.min(100, prob));
-    var contactoLine = (it.contacto || '—') + (it.hora ? ' · hasta ' + it.hora : '');
+    var contactoVal = (it.contacto || '');
+    if (it.hora) contactoVal += (contactoVal ? ' · ' : '') + 'hasta ' + it.hora;
     var agentSub = it.completada
       ? '<span class="pend-sc-done">✓ Completada hoy</span>'
-      : ('Prioridad ' + it.prioridad + ' · ' + (_resIdx + 1) + ' de ' + total);
+      : ('Prioridad ' + it.prioridad);
     var playBlock = it.completada
       ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Jugada completada</div><div class="pend-sc-play-txt">' + _esc(_completedMsg(it)) + '</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
@@ -612,7 +613,7 @@
         '<div class="pend-sc-divider"></div>' +
         '<div class="pend-sc-kv"><div class="pend-sc-flabel">Cliente</div><div class="pend-sc-kv-val">' + _esc(it.cliente) + '</div></div>' +
         '<div class="pend-sc-kv"><div class="pend-sc-flabel">Proyecto</div><div class="pend-sc-kv-val">' + _esc(it.proyecto) + '</div></div>' +
-        '<div class="pend-sc-kv"><div class="pend-sc-flabel">Contacto</div><div class="pend-sc-kv-val">' + _esc(contactoLine) + '</div></div>' +
+        (contactoVal ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Contacto</div><div class="pend-sc-kv-val">' + _esc(contactoVal) + '</div></div>' : '') +
         '<button type="button" class="pend-sc-btn" onclick="pendAbrirOpp(' + it.opp_id + ')">Ver oportunidad</button>' +
       '</div>' +
     '</div>';
