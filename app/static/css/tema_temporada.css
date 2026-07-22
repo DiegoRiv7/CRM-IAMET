@@ -32,6 +32,18 @@ body[data-theme="temporada"] {
     --table-header-bg: rgba(255, 255, 255, 0.10);
     --table-row-hover: rgba(255, 255, 255, 0.16);
     --accent-crm: #F2823B;
+
+    /* ── ACENTO POR FASE ──
+       Las 2 primeras fases del día (despertar, pleno) acentúan en AZUL
+       (el tono de la sidebar de esa hora); las 2 últimas (atardecer,
+       crepúsculo) en NARANJA sunset. Default = naranja. */
+    --tmp-acc: #F2823B;
+    --tmp-acc-dark: #E8722E;
+    --tmp-acc-light: #FF9A4D;
+    --tmp-acc-deep: #C05A28;
+    --tmp-acc-rgb: 242, 130, 59;
+    --tmp-acc-grad: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #FFAB63 0%, #F2823B 100%);
     --island-bg: rgba(255, 255, 255, 0.14);
     --island-border: rgba(255, 255, 255, 0.28);
     background-color: #16233C;
@@ -47,9 +59,15 @@ body[data-theme="temporada"] {
     --tmp-sol-y: 12%;
     --tmp-sol-size: 150px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
-    /* Sidebar del pleno: el tono más oscuro del cielo de esta fase
-       (#3E6FA8) en degradado — los acentos van en azul-blanco (regla
-       aparte) en lugar de naranja. */
+    /* Acento azul (tono de la sidebar del mediodía) */
+    --tmp-acc: #3E6FA8;
+    --tmp-acc-dark: #325C90;
+    --tmp-acc-light: #5E92C6;
+    --tmp-acc-deep: #28507E;
+    --tmp-acc-rgb: 62, 111, 168;
+    --tmp-acc-grad: linear-gradient(135deg, #5E92C6 0%, #3E6FA8 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #6EA2D6 0%, #4A7BB4 100%);
+    /* Sidebar del pleno: el tono más oscuro del cielo de esta fase */
     --tmp-sidebar: linear-gradient(180deg, rgba(62, 111, 168, 0.92) 0%, rgba(50, 92, 142, 0.94) 55%, rgba(40, 76, 120, 0.96) 100%);
 }
 
@@ -58,6 +76,14 @@ body[data-theme="temporada"] {
    pleno, atardecer con la mitad de arriba oscura y el último cuarto azul
    cielo (la luz quedando abajo), y azul noche en el crepúsculo. */
 body[data-theme="temporada"][data-fase="despertar"] {
+    /* Acento azul (tono de la sidebar de la mañana) */
+    --tmp-acc: #4A6E9C;
+    --tmp-acc-dark: #3E608E;
+    --tmp-acc-light: #5E86B4;
+    --tmp-acc-deep: #2C5080;
+    --tmp-acc-rgb: 74, 110, 156;
+    --tmp-acc-grad: linear-gradient(135deg, #5E86B4 0%, #3E608E 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #6E96C4 0%, #4A6E9C 100%);
     --tmp-cielo: linear-gradient(180deg, #35547E 0%, #4A6E9C 30%, #7E9EC0 58%, #D9BC8A 86%, #A8845A 100%);
     --tmp-sol: radial-gradient(circle, #FFF6DC 0%, #FFDF9A 55%, rgba(255, 223, 154, 0) 78%);
     --tmp-sol-x: 24%;
@@ -87,10 +113,11 @@ body[data-theme="temporada"][data-fase="crepusculo"] {
        la capa --tmp-luces, ENCIMA del scrim, para que el velo oscuro no
        las apague. El sol sigue hundido en el horizonte (calc 100vh). */
     --tmp-luces:
-        radial-gradient(circle 300px at 10% 0%, rgba(255, 200, 125, 0.42) 0%, rgba(255, 200, 125, 0) 60%),
-        radial-gradient(circle 240px at 34% -2%, rgba(255, 186, 108, 0.34) 0%, rgba(255, 186, 108, 0) 58%),
-        radial-gradient(circle 290px at 60% 0%, rgba(255, 200, 125, 0.40) 0%, rgba(255, 200, 125, 0) 60%),
-        radial-gradient(circle 230px at 86% -2%, rgba(255, 186, 108, 0.32) 0%, rgba(255, 186, 108, 0) 58%);
+        radial-gradient(ellipse 120% 42% at 50% -6%, rgba(255, 190, 115, 0.20) 0%, rgba(255, 190, 115, 0) 70%),
+        radial-gradient(circle 420px at 10% 0%, rgba(255, 204, 132, 0.58) 0%, rgba(255, 204, 132, 0) 62%),
+        radial-gradient(circle 340px at 34% -2%, rgba(255, 192, 116, 0.48) 0%, rgba(255, 192, 116, 0) 60%),
+        radial-gradient(circle 410px at 60% 0%, rgba(255, 204, 132, 0.55) 0%, rgba(255, 204, 132, 0) 62%),
+        radial-gradient(circle 330px at 86% -2%, rgba(255, 192, 116, 0.46) 0%, rgba(255, 192, 116, 0) 60%);
     --tmp-cielo: linear-gradient(180deg,
         #16233E 0%, #1E2C4A 30%, #2A3858 58%,
         #52290F 84%, #6B3412 92%, #241408 100%);
@@ -167,8 +194,8 @@ body[data-theme="temporada"] .crm-sidebar {
 /* (Pleno usa los mismos acentos naranjas que las demás fases — decisión
    del usuario tras probar la variante azul-blanco.) */
 body[data-theme="temporada"] .crm-sb-logo {
-    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
-    box-shadow: 0 4px 16px rgba(242, 130, 59, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+    background: var(--tmp-acc-grad) !important;
+    box-shadow: 0 4px 16px rgba(var(--tmp-acc-rgb), 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
 body[data-theme="temporada"] .crm-sb-btn,
 body[data-theme="temporada"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.78); }
@@ -177,16 +204,16 @@ body[data-theme="temporada"] .crm-sb-btn:hover {
     color: #ffffff;
 }
 body[data-theme="temporada"] .crm-sb-btn.active {
-    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(242, 130, 59, 0.35) !important;
+    box-shadow: 0 4px 14px rgba(var(--tmp-acc-rgb), 0.35) !important;
 }
 body[data-theme="temporada"] .crm-sb-btn.active::before {
     background: #ffffff !important;
 }
 body[data-theme="temporada"] .crm-sb-divider { background: rgba(255, 255, 255, 0.10) !important; }
 body[data-theme="temporada"] .crm-sb-label { color: rgba(255, 255, 255, 0.70); }
-body[data-theme="temporada"] .crm-sb-dot { background: #F2823B !important; }
+body[data-theme="temporada"] .crm-sb-dot { background: var(--tmp-acc) !important; }
 
 /* ═══ Topbar / Dynamic Island ═══ */
 body[data-theme="temporada"] .crm-unified-header { background: transparent !important; }
@@ -233,9 +260,9 @@ body[data-theme="temporada"] .crm-page-sidebar .crm-tab:hover {
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .crm-page-sidebar .crm-tab.active {
-    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.40) !important;
 }
 
 /* Botones facet (Filtro, Ordenar, Excel, vista, Cotizar) */
@@ -255,26 +282,26 @@ body[data-theme="temporada"] .crm-facet-export {
     color: rgba(255, 255, 255, 0.85) !important;
 }
 body[data-theme="temporada"] .crm-facet-export:hover {
-    background: rgba(242, 130, 59, 0.28) !important;
-    border-color: rgba(242, 130, 59, 0.6) !important;
+    background: rgba(var(--tmp-acc-rgb), 0.28) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.6) !important;
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .crm-facet-btn.active {
-    background: rgba(242, 130, 59, 0.30) !important;
-    border-color: rgba(242, 130, 59, 0.70) !important;
+    background: rgba(var(--tmp-acc-rgb), 0.30) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.70) !important;
     color: #ffffff !important;
 }
 
 /* +Nuevo — CTA principal en naranja sunset */
 body[data-theme="temporada"] .crm-facet-new {
-    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
-    border-color: #E8722E !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+    background: var(--tmp-acc-grad) !important;
+    border-color: var(--tmp-acc-dark) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.35) !important;
 }
 body[data-theme="temporada"] .crm-facet-new:hover {
-    background: linear-gradient(135deg, #FFAB63 0%, #F2823B 100%) !important;
-    border-color: #FF9A4D !important;
-    box-shadow: 0 4px 14px rgba(242, 130, 59, 0.45) !important;
+    background: var(--tmp-acc-grad-hover) !important;
+    border-color: var(--tmp-acc-light) !important;
+    box-shadow: 0 4px 14px rgba(var(--tmp-acc-rgb), 0.45) !important;
 }
 
 /* Pills de periodo / vendedores (der) */
@@ -430,7 +457,7 @@ body[data-theme="temporada"] .crm-ctw-header {
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
 }
 
 /* ── DETALLE DE OPORTUNIDAD ── */
@@ -440,7 +467,7 @@ body[data-theme="temporada"] .wo-header {
 body[data-theme="temporada"] .wo-title { color: #ffffff !important; }
 /* Badge de tipo (VENTA PROYECTO…) → rojo sólido */
 body[data-theme="temporada"] .wo-type-badge {
-    background: #E8722E !important;
+    background: var(--tmp-acc-dark) !important;
     color: #ffffff !important;
 }
 /* Botones del header (asistente, controles de ventana) → claros */
@@ -461,7 +488,7 @@ body[data-theme="temporada"] .wo-card {
 }
 body[data-theme="temporada"] .wo-card-accent {
     background: linear-gradient(135deg, #FDF4EA, #ffffff) !important;
-    border: 1px solid rgba(242, 130, 59, 0.30) !important;
+    border: 1px solid rgba(var(--tmp-acc-rgb), 0.30) !important;
 }
 
 /* ── NUEVA OPORTUNIDAD ── (el fondo del header lo da la regla compartida) */
@@ -482,7 +509,7 @@ body[data-theme="temporada"] .wn-ctw-canvas { background: transparent !important
 /* Footer: barra verde-crema clara sólida con borde rojo superior */
 body[data-theme="temporada"] .wn-ctw-toolbar {
     background: #FBEFE3 !important;
-    border-top: 2px solid #E8722E !important;
+    border-top: 2px solid var(--tmp-acc-dark) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -508,13 +535,13 @@ body[data-theme="temporada"] .tcp-detail {
 /* Header de columnas (TAREA · ESTADO · …) como barra greca verde→rojo */
 body[data-theme="temporada"] .tcp-col-head {
     color: #ffffff !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     border-radius: 14px 14px 0 0 !important;
 }
 body[data-theme="temporada"] .tcp-col-head > span { color: #ffffff !important; }
 /* Filas: el texto se asienta sobre el frosted; hover/active claros */
 body[data-theme="temporada"] .tcp-row:hover { background: rgba(255, 255, 255, 0.45) !important; }
-body[data-theme="temporada"] .tcp-row.active { background: rgba(242, 130, 59, 0.18) !important; }
+body[data-theme="temporada"] .tcp-row.active { background: rgba(var(--tmp-acc-rgb), 0.18) !important; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    CONTROLES DE VENTANA (— □ ×) — sólidos blancos sobre el header oscuro
@@ -533,7 +560,7 @@ body[data-theme="temporada"] .ww-btn:hover {
 }
 /* La × (último control) en rojo mexicano al hover */
 body[data-theme="temporada"] .ww-ctrls button:last-child:hover {
-    background: #E8722E !important;
+    background: var(--tmp-acc-dark) !important;
     color: #ffffff !important;
 }
 
@@ -566,7 +593,7 @@ body[data-theme="temporada"] .muro-card {
 }
 body[data-theme="temporada"] .muro-card-header {
     border-radius: 24px 24px 0 0 !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
 }
 /* Título (usa color inline; lo vencemos con !important) */
 body[data-theme="temporada"] .muro-card-header > div > span { color: #ffffff !important; }
@@ -581,8 +608,8 @@ body[data-theme="temporada"] .muro-filter-btn:hover {
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .muro-filter-btn.active {
-    background: #F2823B !important;
-    border-color: #F2823B !important;
+    background: var(--tmp-acc) !important;
+    border-color: var(--tmp-acc) !important;
     color: #ffffff !important;
 }
 /* Close (X) clara, hover rojo */
@@ -603,7 +630,7 @@ body[data-theme="temporada"] .crm-task-modal {
     box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
 }
 body[data-theme="temporada"] .crm-tw-header {
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     border-radius: 16px 16px 0 0 !important;
 }
 /* Breadcrumb, iconos y close del header en claro */
@@ -625,7 +652,7 @@ body[data-theme="temporada"] .crm-create-task-container {
     box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
 }
 body[data-theme="temporada"] .crm-ctw-header {
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     border-radius: 16px 16px 0 0 !important;
 }
 /* Botón de oportunidad vinculada y close en claro */
@@ -639,7 +666,7 @@ body[data-theme="temporada"] .crm-ctw-close:hover { background: rgba(232,114,46,
 body[data-theme="temporada"] .crm-ctw-canvas { background: transparent !important; }
 body[data-theme="temporada"] .crm-ctw-toolbar {
     background: #FBEFE3 !important;
-    border-top: 2px solid #E8722E !important;
+    border-top: 2px solid var(--tmp-acc-dark) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -710,9 +737,9 @@ body[data-theme="temporada"] .proy-tab:hover {
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .proy-tab.active {
-    background: linear-gradient(135deg, #F2823B 0%, #E8722E 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.40) !important;
 }
 body[data-theme="temporada"] .proy-facet-btn {
     background: rgba(255, 255, 255, 0.10) !important;
@@ -725,8 +752,8 @@ body[data-theme="temporada"] .proy-facet-btn:hover {
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .proy-facet-btn.active {
-    background: rgba(242, 130, 59, 0.30) !important;
-    border-color: rgba(242, 130, 59, 0.70) !important;
+    background: rgba(var(--tmp-acc-rgb), 0.30) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.70) !important;
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .proy-facet-menu {
@@ -756,18 +783,18 @@ body[data-theme="temporada"] .proy-search::placeholder {
     color: rgba(255, 255, 255, 0.50) !important;
 }
 body[data-theme="temporada"] .proy-search:focus {
-    border-color: rgba(242, 130, 59, 0.60) !important;
-    box-shadow: 0 0 0 3px rgba(242, 130, 59, 0.20) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.60) !important;
+    box-shadow: 0 0 0 3px rgba(var(--tmp-acc-rgb), 0.20) !important;
 }
 body[data-theme="temporada"] .proy-btn-new {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
-    border-color: #E8722E !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+    background: var(--tmp-acc-grad) !important;
+    border-color: var(--tmp-acc-dark) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.35) !important;
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .proy-btn-new:hover {
-    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
-    box-shadow: 0 4px 14px rgba(242, 130, 59, 0.45) !important;
+    background: var(--tmp-acc-grad) !important;
+    box-shadow: 0 4px 14px rgba(var(--tmp-acc-rgb), 0.45) !important;
 }
 
 /* --- Header de la tabla (PROYECTO/CLIENTE, MONTO, SERVICIO...) --- */
@@ -857,9 +884,9 @@ body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn:hover {
 }
 body[data-theme="temporada"] .proy-v3-topbar-tab.active,
 body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn.active {
-    background: linear-gradient(135deg, #F2823B 0%, #E8722E 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.40) !important;
 }
 body[data-theme="temporada"] .proy-v3-topbar-tab.active:hover,
 body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn.active:hover {
@@ -965,7 +992,7 @@ body[data-theme="temporada"] .proy-tab-header {
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     border-radius: 14px 14px 0 0 !important;
     color: #ffffff !important;
 }
@@ -988,7 +1015,7 @@ body[data-theme="temporada"] .proy-tab-header button:hover {
    selección — igual que "+Nueva Actividad" del calendario. */
 body[data-theme="temporada"] .proy-tab-header .wop-btn-primary,
 body[data-theme="temporada"] .proy-tab-header .proy-btn-primary {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     border: none !important;
 }
 
@@ -1091,7 +1118,7 @@ body[data-theme="temporada"] .proy-dialog-header {
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
 }
 body[data-theme="temporada"] .proy-dialog-header h3,
 body[data-theme="temporada"] .proy-dialog-header .proy-dialog-title {
@@ -1106,10 +1133,10 @@ body[data-theme="temporada"] .proy-btn-close:hover {
 }
 body[data-theme="temporada"] .proy-dialog-footer {
     background: #FBEFE3 !important;
-    border-top: 2px solid #E8722E !important;
+    border-top: 2px solid var(--tmp-acc-dark) !important;
 }
 body[data-theme="temporada"] .proy-dialog-footer .proy-btn-primary {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
 }
 
@@ -1127,8 +1154,8 @@ body[data-theme="temporada"] .proy-fin-subtab {
     color: rgba(0, 0, 0, 0.60) !important;
 }
 body[data-theme="temporada"] .proy-fin-subtab.is-active {
-    color: #C05A28 !important;
-    border-bottom-color: #C05A28 !important;
+    color: var(--tmp-acc-deep) !important;
+    border-bottom-color: var(--tmp-acc-deep) !important;
 }
 
 /* --- Finance head (banner) --- */
@@ -1190,7 +1217,7 @@ body[data-theme="temporada"] .cal-card > div:first-child {
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .cal-card > div:first-child * {
@@ -1209,7 +1236,7 @@ body[data-theme="temporada"] .cal-card > div:first-child .cal-userpick-btn {
 }
 /* +Nueva Actividad button in header */
 body[data-theme="temporada"] .cal-card > div:first-child button[onclick*="CrearActividad"] {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    background: var(--tmp-acc-grad) !important;
 }
 /* Close button × */
 body[data-theme="temporada"] .cal-card > div:first-child button[onclick*="Cerrar"] {
@@ -1234,9 +1261,9 @@ body[data-theme="temporada"] .cal-page-bar {
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     border-color: transparent !important;
-    border-bottom-color: #E8722E !important;
+    border-bottom-color: var(--tmp-acc-dark) !important;
 }
 /* Topbar facet buttons / pills — glass translúcido sobre la greca.
    Prefijo .widget-overlay.is-page-mode para ganarle en especificidad a las
@@ -1314,20 +1341,20 @@ body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab
     color: #ffffff !important;
 }
 body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab.active {
-    background: linear-gradient(135deg, #F2823B 0%, #E8722E 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.40) !important;
 }
 /* +Nueva actividad → verde mexicano (en vez del azul default) */
 body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     border: none !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.35) !important;
 }
 body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
-    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
-    box-shadow: 0 4px 14px rgba(242, 130, 59, 0.45) !important;
+    background: var(--tmp-acc-grad) !important;
+    box-shadow: 0 4px 14px rgba(var(--tmp-acc-rgb), 0.45) !important;
     color: #ffffff !important;
 }
 
@@ -1381,8 +1408,8 @@ body[data-theme="temporada"] .cal-userpick-btn:hover {
     background: rgba(255, 255, 255, 0.20) !important;
 }
 body[data-theme="temporada"] .cal-userpick-btn.has-value {
-    background: rgba(242, 130, 59, 0.25) !important;
-    border-color: rgba(242, 130, 59, 0.50) !important;
+    background: rgba(var(--tmp-acc-rgb), 0.25) !important;
+    border-color: rgba(var(--tmp-acc-rgb), 0.50) !important;
     color: #ffffff !important;
 }
 
@@ -1466,7 +1493,7 @@ body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-day-number {
 /* Hoy: círculo verde mexicano (nuestro acento), número blanco */
 body[data-theme="temporada"] #fullCalendarRoot .fc-day-today { background: rgba(242,130,59,.05) !important; }
 body[data-theme="temporada"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
-    background: #F2823B !important;
+    background: var(--tmp-acc) !important;
     color: #ffffff !important;
     box-shadow: 0 3px 9px rgba(242,130,59,.4) !important;
 }
@@ -1519,8 +1546,8 @@ body[data-theme="temporada"] .cal-day-list-empty-ic {
     color: #7E8A9A !important;
 }
 body[data-theme="temporada"] .cal-day-list-empty-btn {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+    background: var(--tmp-acc-grad) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.35) !important;
 }
 
 /* --- Hover popover (tooltip de evento) --- */
@@ -1539,9 +1566,9 @@ body[data-theme="temporada"] .cal-view-btn:hover {
     background: rgba(30, 46, 80, 0.08) !important;
 }
 body[data-theme="temporada"] .cal-view-btn.active {
-    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(242, 130, 59, 0.30) !important;
+    box-shadow: 0 2px 8px rgba(var(--tmp-acc-rgb), 0.30) !important;
 }
 
 /* --- Subnav buttons (overlay mode): dark on light --- */
@@ -1580,11 +1607,11 @@ body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-chi
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
 }
 /* Iconito del badge inferior-izquierdo en verde mexicano */
 body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child > div:last-child {
-    color: #C05A28 !important;
+    color: var(--tmp-acc-deep) !important;
 }
 
 /* ── FORMULARIO NUEVA ACTIVIDAD (.wact-*) ── */
@@ -1602,7 +1629,7 @@ body[data-theme="temporada"] .wact-header {
         linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
     background-repeat: repeat, no-repeat, no-repeat !important;
     background-size: 96px 96px, auto, auto !important;
-    border-bottom: 2px solid #E8722E !important;
+    border-bottom: 2px solid var(--tmp-acc-dark) !important;
     border-radius: 16px 16px 0 0 !important;
 }
 /* Breadcrumb e iconos del header en blanco */
@@ -1623,16 +1650,16 @@ body[data-theme="temporada"] .wact-close:hover {
 /* Footer/toolbar: verde-crema claro con borde rojo superior */
 body[data-theme="temporada"] .wact-toolbar {
     background: #FBEFE3 !important;
-    border-top: 2px solid #E8722E !important;
+    border-top: 2px solid var(--tmp-acc-dark) !important;
 }
 /* Botón Guardar Actividad (cuando está listo) → verde mexicano */
 body[data-theme="temporada"] .wact-submit.is-ready {
-    background: linear-gradient(180deg, #F2823B 0%, #C05A28 100%) !important;
+    background: var(--tmp-acc-grad) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+    box-shadow: 0 2px 10px rgba(var(--tmp-acc-rgb), 0.35) !important;
 }
 body[data-theme="temporada"] .wact-submit.is-ready:hover {
-    background: linear-gradient(180deg, #FF9A4D 0%, #E8722E 100%) !important;
+    background: var(--tmp-acc-grad-hover) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1794,12 +1821,12 @@ body[data-theme="temporada"] .wo-header {
 body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-franja-solx: 24%;
     --tmp-franja-glow: rgba(255, 223, 154, 0.60);
-    --tmp-franja-borde: #F2A54D;
+    --tmp-franja-borde: #5E86B4;
 }
 body[data-theme="temporada"][data-fase="pleno"] {
     --tmp-franja-solx: 76%;
     --tmp-franja-glow: rgba(255, 240, 190, 0.50);
-    --tmp-franja-borde: #F2823B;
+    --tmp-franja-borde: #3E6FA8;
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-franja-solx: 50%;
