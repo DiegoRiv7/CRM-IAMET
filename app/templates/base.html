@@ -124,7 +124,7 @@
     Sunset", reactiva por hora vía data-fase en el body). Igual que el
     Mundial: autocontenido y scopeado a body[data-theme="temporada"].
     {% endcomment %}
-    <link rel="stylesheet" href="{% static 'css/tema_temporada.css' %}?v=20260722-fase2">
+    <link rel="stylesheet" href="{% static 'css/tema_temporada.css' %}?v=20260722-fase3">
     {# Modo Ligero: overrides bajo body.ww-lite — debe ir DESPUÉS de todo para ganar #}
     <link rel="stylesheet" href="{% static 'css/perf_lite.css' %}?v=20260615-perf-v5">
 
@@ -144,7 +144,9 @@
         /* Motor del tema Temporada: pone data-fase según la hora local.
            Solo el CSS de body[data-theme="temporada"] lo consume — para
            cualquier otro tema el atributo es inerte. Re-checa cada 5 min
-           para que el cielo transicione solo en sesiones largas. */
+           para que el cielo transicione solo en sesiones largas.
+           window.__tmpFaseManual: override del selector temporal de
+           revisión (ver bloque TEMPORAL abajo). */
         (function () {
             function faseDelDia() {
                 var h = new Date().getHours();
@@ -153,11 +155,56 @@
                 if (h >= 16 && h < 17) return 'atardecer';
                 return 'crepusculo';
             }
-            function aplicar() { document.body.setAttribute('data-fase', faseDelDia()); }
+            function aplicar() {
+                document.body.setAttribute('data-fase', window.__tmpFaseManual || faseDelDia());
+            }
+            window.__tmpAplicarFase = aplicar;
             aplicar();
             setInterval(aplicar, 5 * 60 * 1000);
         })();
     </script>
+    {% comment %}
+    ══ TEMPORAL — QUITAR AL APROBAR EL TEMA ══
+    Selector flotante de fase del día para revisar las 4 pieles del tema
+    Temporada sin esperar al reloj. Solo aparece con el tema activo.
+    {% endcomment %}
+    <div id="tmpFaseDemo" style="display:none; position:fixed; bottom:16px; right:16px; z-index:99999;
+        align-items:center; gap:3px; padding:5px 6px; border-radius:12px;
+        background:rgba(10,16,30,0.82); border:1px solid rgba(255,255,255,0.18);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 8px 24px rgba(0,0,0,0.4); font-family:inherit;">
+        <span style="font-size:9px; color:rgba(255,255,255,0.5); font-weight:700; padding:0 5px; letter-spacing:0.5px;">FASE</span>
+        <button type="button" data-tmpf="" style="border:none; cursor:pointer; padding:7px 10px; border-radius:8px; font-size:11px; font-weight:700; background:transparent; color:rgba(255,255,255,0.65);">Auto</button>
+        <button type="button" data-tmpf="despertar" style="border:none; cursor:pointer; padding:7px 10px; border-radius:8px; font-size:11px; font-weight:700; background:transparent; color:rgba(255,255,255,0.65);">8-12</button>
+        <button type="button" data-tmpf="pleno" style="border:none; cursor:pointer; padding:7px 10px; border-radius:8px; font-size:11px; font-weight:700; background:transparent; color:rgba(255,255,255,0.65);">12-16</button>
+        <button type="button" data-tmpf="atardecer" style="border:none; cursor:pointer; padding:7px 10px; border-radius:8px; font-size:11px; font-weight:700; background:transparent; color:rgba(255,255,255,0.65);">16-17</button>
+        <button type="button" data-tmpf="crepusculo" style="border:none; cursor:pointer; padding:7px 10px; border-radius:8px; font-size:11px; font-weight:700; background:transparent; color:rgba(255,255,255,0.65);">17-18</button>
+    </div>
+    <script>
+        (function () {
+            var bar = document.getElementById('tmpFaseDemo');
+            if (!bar) return;
+            if (document.body.getAttribute('data-theme') !== 'temporada') return;
+            bar.style.display = 'flex';
+            var botones = bar.querySelectorAll('button');
+            function pintar() {
+                botones.forEach(function (b) {
+                    var on = (window.__tmpFaseManual || '') === b.getAttribute('data-tmpf');
+                    b.style.background = on ? 'linear-gradient(135deg,#FF9A4D,#F2823B)' : 'transparent';
+                    b.style.color = on ? '#fff' : 'rgba(255,255,255,0.65)';
+                });
+            }
+            botones.forEach(function (b) {
+                b.addEventListener('click', function () {
+                    window.__tmpFaseManual = b.getAttribute('data-tmpf') || null;
+                    window.__tmpAplicarFase();
+                    pintar();
+                });
+            });
+            pintar();
+        })();
+    </script>
+    {% comment %}══ FIN TEMPORAL ══{% endcomment %}
     <!-- Contenido Principal -->
     <div class="flex-grow container mx-auto px-4 py-8 main-content">
         {% block content %}

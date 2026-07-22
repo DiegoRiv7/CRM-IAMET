@@ -1765,3 +1765,71 @@ body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-franja-glow: rgba(255, 150, 70, 0.38);
     --tmp-franja-borde: #B85A2A;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 3 — ANIMACIONES SUTILES. Tres piezas, todas discretas:
+     1. El sol del cielo "respira" (pulso lento de 7s).
+     2. Los rayos de la franja ondean apenas perceptible (vaivén de 18s).
+     3. El glow de la franja respira en contrafase (9s).
+   Guardas: prefers-reduced-motion y Modo Ligero (body.ww-lite) las apagan.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes tmpSolRespira {
+    0%, 100% { opacity: 0.88; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.05); }
+}
+body[data-theme="temporada"]::after {
+    animation: tmpSolRespira 7s ease-in-out infinite;
+}
+
+/* Vaivén de los rayos de la franja: solo se mueve la capa del conic
+   (background-position por capa; glow y cielo quedan fijos). */
+@keyframes tmpRayosOndean {
+    0%, 100% { background-position: 0px 0px, 0px 0px, 0px 0px; }
+    50%      { background-position: 10px 0px, 0px 0px, 0px 0px; }
+}
+body[data-theme="temporada"] .wo-header,
+body[data-theme="temporada"] .wn-ctw-header,
+body[data-theme="temporada"] .muro-card-header,
+body[data-theme="temporada"] .tcp-col-head,
+body[data-theme="temporada"] .ptk-cols-head,
+body[data-theme="temporada"] .pob-head,
+body[data-theme="temporada"] .crm-tw-header,
+body[data-theme="temporada"] .crm-ctw-header,
+body[data-theme="temporada"] .cal-page-bar,
+body[data-theme="temporada"] .proy-dialog-header,
+body[data-theme="temporada"] .proy-tab-header,
+body[data-theme="temporada"] .wact-header,
+body[data-theme="temporada"] .cal-card > div:first-child,
+body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child {
+    animation: tmpRayosOndean 18s ease-in-out infinite;
+}
+
+/* El sol de la franja transiciona suave cuando cambia la fase (las vars
+   de posición/glow cambian de golpe, pero el ojo lo percibe apenas). */
+
+/* ── Guardas de accesibilidad y rendimiento ── */
+@media (prefers-reduced-motion: reduce) {
+    body[data-theme="temporada"]::after,
+    body[data-theme="temporada"] .wo-header,
+    body[data-theme="temporada"] .wn-ctw-header,
+    body[data-theme="temporada"] .muro-card-header,
+    body[data-theme="temporada"] .tcp-col-head,
+    body[data-theme="temporada"] .ptk-cols-head,
+    body[data-theme="temporada"] .pob-head,
+    body[data-theme="temporada"] .crm-tw-header,
+    body[data-theme="temporada"] .crm-ctw-header,
+    body[data-theme="temporada"] .cal-page-bar,
+    body[data-theme="temporada"] .proy-dialog-header,
+    body[data-theme="temporada"] .proy-tab-header,
+    body[data-theme="temporada"] .wact-header,
+    body[data-theme="temporada"] .cal-card > div:first-child,
+    body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child {
+        animation: none !important;
+    }
+}
+body.ww-lite[data-theme="temporada"]::after { animation: none !important; }
+body.ww-lite[data-theme="temporada"] .wo-header,
+body.ww-lite[data-theme="temporada"] .cal-page-bar,
+body.ww-lite[data-theme="temporada"] .crm-tw-header,
+body.ww-lite[data-theme="temporada"] .ptk-cols-head { animation: none !important; }
