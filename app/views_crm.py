@@ -6551,28 +6551,30 @@ def _pend_briefing_ia(nombre, items):
     top = items[:12]
     facts = [{
         'id': it['opp_id'], 'cliente': it['cliente'], 'proyecto': it['proyecto'],
-        'valor': it['valor_fmt'], 'probabilidad': it['probabilidad'],
-        'riesgo': it['riesgo'], 'contexto': it['accion'],
+        'valor': it['valor_fmt'], 'probabilidad': it['probabilidad'], 'riesgo': it['riesgo'],
+        'contacto': it.get('contacto') or '', 'hora': it.get('hora') or '',
+        'accion_base': it['accion'],
     } for it in top]
 
     sys = (
-        "Eres el asistente de ventas del CRM: cálido, cercano y motivador. Le hablas de "
-        f"tú a {nombre} (vendedor), como si le contaras su plan del día. Con base "
-        "EXCLUSIVAMENTE en los datos que te doy, redacta en español:\n"
-        "1) 'frase': UNA frase breve y motivadora para arrancar el día (no digas "
-        "'Buenos días', eso ya se muestra aparte).\n"
-        "2) 'acciones': por cada oportunidad (clave = su id), reescribe la acción en UNA "
-        "frase corta, natural y humana —como se lo dirías a un colega—, usando los datos "
-        "del 'contexto'. NO copies frases genéricas tipo 'si no responde, envía el correo'. "
-        "Sé directo y específico. NO inventes nombres, montos ni fechas que no aparezcan.\n"
-        "Devuelve SOLO JSON válido: {\"frase\": \"...\", \"acciones\": {\"<id>\": \"...\"}}"
+        "Eres el asistente de ventas del CRM: cálido, cercano y motivador. Le hablas de tú a "
+        f"{nombre} (vendedor). Con base EXCLUSIVAMENTE en los datos que te doy, para CADA "
+        "oportunidad (clave = su id) escribe DOS textos en español:\n"
+        "- 'mensaje': 1-2 frases cálidas y persuasivas que la vendan, mencionando de forma "
+        "natural el valor y/o la probabilidad. Estilo: 'Empieza por aquí, "
+        f"{nombre}. {{cliente}} está a un paso de firmar; con un empujón hoy cierras los {{valor}}.'\n"
+        "- 'accion': el siguiente paso concreto en 1-2 frases, natural y directo, usando "
+        "'accion_base', 'contacto' y 'hora' si están (puedes sugerir enviar el correo y agendar "
+        "seguimiento). Humano, no robótico.\n"
+        "NO inventes nombres, montos, fechas ni datos que no aparezcan. Devuelve SOLO JSON "
+        "válido: {\"items\": {\"<id>\": {\"mensaje\": \"...\", \"accion\": \"...\"}}}"
     )
-    usr = "Vendedor: " + nombre + "\nOportunidades de hoy (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
+    usr = "Vendedor: " + nombre + "\nOportunidades (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
 
     try:
         res = chat(
             [{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
-            model=modelo, temperature=0.6, max_tokens=1000,
+            model=modelo, temperature=0.6, max_tokens=1600,
         )
         txt = ((res or {}).get('text') or '').strip()
         a, b = txt.find('{'), txt.rfind('}')
@@ -6581,11 +6583,8 @@ def _pend_briefing_ia(nombre, items):
         parsed = _json.loads(txt[a:b + 1])
         if not isinstance(parsed, dict):
             return None
-        acc = parsed.get('acciones') or {}
-        return {
-            'frase': (parsed.get('frase') or '').strip(),
-            'acciones': {str(k): v for k, v in acc.items() if isinstance(v, str) and v.strip()},
-        }
+        out = parsed.get('items') or {}
+        return {'items': {str(k): v for k, v in out.items() if isinstance(v, dict)}}
     except Exception as exc:
         logger.warning(f"[Pendientes] Briefing IA no disponible: {exc}")
         return None
@@ -6764,7 +6763,9 @@ def api_pendientes(request):
         else:
             riesgo = 'Bajo'
         contacto = str(opp.contacto).strip() if opp.contacto_id and opp.contacto else ''
+        cliente_nom = (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else '') or (opp.oportunidad or 'Esta oportunidad')
         tsk = _near.get(opp.id)
+        hora = ''
         if tsk and tsk.fecha_limite:
             hora = timezone.localtime(tsk.fecha_limite).strftime('%H:%M')
             titulo = (getattr(tsk, 'titulo', '') or '').strip() or 'Dar seguimiento'
@@ -6778,15 +6779,26 @@ def api_pendientes(request):
         else:
             accion = 'Dale seguimiento hoy.'
         monto = float(opp.monto or 0)
+        val_fmt = '${:,.0f}'.format(monto)
+        # Mensaje-narrativa de respaldo (la IA lo reescribe si está disponible).
+        if prob >= 80:
+            mensaje = f"{cliente_nom} está muy cerca de firmar ({prob}%). Un empujón hoy y cierras {val_fmt}."
+        elif prob >= 50:
+            mensaje = f"{cliente_nom} avanza bien ({prob}%). Vale la pena moverla hoy: {val_fmt} en la mesa."
+        else:
+            mensaje = f"{cliente_nom} necesita atención hoy — {val_fmt} en juego."
         resumen_items.append({
             'prioridad': idx + 1,
             'opp_id': opp.id,
             'cliente': (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else '—'),
             'proyecto': opp.oportunidad or '(sin nombre)',
             'valor': monto,
-            'valor_fmt': '${:,.0f}'.format(monto),
+            'valor_fmt': val_fmt,
             'probabilidad': prob,
             'riesgo': riesgo,
+            'contacto': contacto,
+            'hora': hora,
+            'mensaje': mensaje,
             'accion': accion,
         })
 
@@ -6797,23 +6809,23 @@ def api_pendientes(request):
         'saludo': saludo,
         'nombre': nombre_corto,
         'total': len(resumen_items),
-        'frase': '',
         'items': resumen_items,
     }
     # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
-    # Los datos duros ya están calculados; la IA solo redacta. Fallback = template.
+    # Los datos duros ya están calculados; la IA solo redacta mensaje + acción.
     try:
         _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
     except Exception:
         _ia = None
     if _ia:
-        if _ia.get('frase'):
-            resumen['frase'] = _ia['frase']
-        _acc = _ia.get('acciones') or {}
+        _items = _ia.get('items') or {}
         for _it in resumen_items:
-            _t = _acc.get(str(_it['opp_id']))
-            if _t:
-                _it['accion'] = _t
+            _e = _items.get(str(_it['opp_id']))
+            if isinstance(_e, dict):
+                if _e.get('mensaje'):
+                    _it['mensaje'] = _e['mensaje']
+                if _e.get('accion'):
+                    _it['accion'] = _e['accion']
 
     # ── Lista de vendedores para el selector (según rol) ──
     # Solo se incluyen vendedores que TIENEN al menos una oportunidad abierta

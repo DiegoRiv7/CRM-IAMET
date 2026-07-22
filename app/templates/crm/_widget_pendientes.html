@@ -8,7 +8,6 @@
   <div class="ww-card pend-card">
     <!-- Topbar: pestañas (izquierda) + selector y controles de ventana (derecha) -->
     <div class="pend-topbar">
-      <div class="pend-weather" id="pendWeather" aria-hidden="true">☀️</div>
       <div class="pend-tabs">
         <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Resumen</button>
         <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
@@ -57,11 +56,7 @@
   #widgetPendientes .pend-card{width:min(1040px,95vw);height:min(84vh,780px);max-width:95vw;
     background:#f4f5f7;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
     box-shadow:0 24px 70px rgba(0,0,0,.32);}
-  .pend-topbar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 16px;flex:none;}
-  .pend-weather{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:21px;
-    background:linear-gradient(135deg,#e9f0ff,#f6ecff);box-shadow:0 2px 8px rgba(90,90,170,.14);justify-self:start;}
-  .pend-topbar > .pend-tabs{justify-self:center;}
-  .pend-topbar > .pend-head-actions{justify-self:end;}
+  .pend-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;}
   .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;flex:none;}
   /* Combina con los [— □] que inyecta widget_window.js (.ww-btn: 30px, #F2F2F7) */
   #widgetPendientes .pend-close{width:30px;height:30px;border:none;border-radius:50%;background:#F2F2F7;color:#86868B;
@@ -108,32 +103,49 @@
   .pend-c-motivo.ambar{color:#c77700;} .pend-c-motivo.verde{color:#248a3d;}
   .pend-c-vend{font-size:.72rem;color:#a2a4ab;margin-top:3px;white-space:nowrap;}
   .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.95rem;}
-  /* Resumen — saludo natural */
-  .pend-res-hero{padding:6px 4px 18px;}
-  .pend-res-saludo{font-size:1.5rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
-  .pend-res-frase{font-size:1.05rem;color:#33353b;margin-top:7px;line-height:1.5;}
-  .pend-res-sub{font-size:.85rem;color:#9a9ca3;margin-top:7px;}
-  .pend-res-sub b{color:#5a5c63;}
-  /* Resumen — tarjetas compactas (número · título · valor / meta / acción) */
-  .pend-res-card{display:grid;grid-template-columns:auto 1fr auto;
-    grid-template-areas:"num title val" "num meta meta" "num acc acc";
-    column-gap:13px;row-gap:5px;background:#fff;border-radius:14px;padding:13px 16px;margin-bottom:9px;cursor:pointer;
-    box-shadow:0 1px 2px rgba(0,0,0,.05);transition:box-shadow .15s,transform .05s;}
-  .pend-res-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);}
-  .pend-res-card:active{transform:scale(.997);}
-  .pend-res-num{grid-area:num;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:.9rem;font-weight:800;color:#fff;background:#ff9500;align-self:start;margin-top:1px;}
-  .pend-res-num.alto{background:#ff3b30;} .pend-res-num.medio{background:#ff9500;} .pend-res-num.bajo{background:#34c759;}
-  .pend-res-titulo{grid-area:title;font-size:1rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;align-self:center;}
-  .pend-res-val{grid-area:val;font-size:1rem;font-weight:800;color:#1c1d22;white-space:nowrap;align-self:center;}
-  .pend-res-meta{grid-area:meta;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.8rem;color:#8a8c93;min-width:0;}
-  .pend-res-meta .sep{opacity:.45;}
-  .pend-res-meta .cli{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px;}
-  .pend-res-meta .prob{font-weight:700;color:#5a5c63;}
-  .pend-res-meta .rg{font-weight:700;}
-  .pend-res-meta .rg.alto{color:#ff3b30;} .pend-res-meta .rg.medio{color:#c77700;} .pend-res-meta .rg.bajo{color:#248a3d;}
-  .pend-res-acc{grid-area:acc;font-size:.92rem;color:#2c2d33;line-height:1.5;display:flex;gap:7px;margin-top:2px;}
-  .pend-res-acc-ic{flex:none;}
+  /* Resumen — saludo */
+  .pend-res-hero{padding:4px 4px 16px;}
+  .pend-res-saludo{font-size:1.45rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-res-sub{font-size:.9rem;color:#8a8c93;margin-top:5px;}
+  .pend-res-empty2{text-align:center;color:#9a9ca3;padding:40px 20px;font-size:.95rem;}
+  /* Tarjeta dividida (una oportunidad a la vez) */
+  .pend-split{display:flex;flex-wrap:wrap;background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(0,0,0,.07);overflow:hidden;}
+  .pend-sc-left{flex:1 1 340px;min-width:290px;padding:20px 22px;display:flex;flex-direction:column;}
+  .pend-sc-right{flex:1 1 250px;min-width:230px;padding:20px 22px;border-left:1px solid #edeef1;background:#fbfbfc;display:flex;flex-direction:column;}
+  .pend-sc-agent{display:flex;align-items:center;gap:11px;margin-bottom:14px;}
+  .pend-sc-ia{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+    font-size:.78rem;font-weight:800;color:#0a6cff;background:#e7f0ff;}
+  .pend-sc-agent-name{font-size:.92rem;font-weight:800;color:#1c1d22;}
+  .pend-sc-agent-sub{font-size:.78rem;color:#9a9ca3;margin-top:1px;}
+  .pend-sc-msg{font-size:1.12rem;line-height:1.5;color:#1c1d22;font-weight:600;}
+  .pend-sc-play{margin-top:16px;background:#f5f6f8;border-radius:12px;padding:13px 15px;}
+  .pend-sc-play-lbl{font-size:.68rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .pend-sc-play-txt{font-size:.94rem;line-height:1.5;color:#33353b;}
+  /* Panel derecho */
+  .pend-sc-value{font-size:1.7rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;margin-top:2px;}
+  .pend-sc-flabel{font-size:.74rem;color:#9a9ca3;font-weight:600;}
+  .pend-sc-prob{margin-top:16px;}
+  .pend-sc-prob-top{display:flex;align-items:baseline;justify-content:space-between;}
+  .pend-sc-prob-pct{font-size:.92rem;font-weight:800;color:#1c1d22;}
+  .pend-sc-bar{height:6px;border-radius:3px;background:#e9ebef;margin-top:6px;overflow:hidden;}
+  .pend-sc-bar-fill{height:100%;border-radius:3px;background:#0a6cff;}
+  .pend-sc-block{margin-top:16px;}
+  .pend-sc-riesgo{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-size:.82rem;font-weight:700;padding:4px 11px;border-radius:20px;}
+  .pend-sc-riesgo::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .pend-sc-riesgo.alto{color:#d9480f;background:#fff0e6;} .pend-sc-riesgo.medio{color:#b9770a;background:#fff6e0;} .pend-sc-riesgo.bajo{color:#2b8a3e;background:#e9f9ee;}
+  .pend-sc-divider{height:1px;background:#edeef1;margin:16px 0;}
+  .pend-sc-kv{margin-bottom:11px;}
+  .pend-sc-kv-val{font-size:.95rem;font-weight:700;color:#1c1d22;margin-top:1px;}
+  .pend-sc-btn{margin-top:auto;width:100%;border:none;border-radius:11px;background:#111317;color:#fff;font-size:.95rem;font-weight:700;
+    padding:13px;cursor:pointer;transition:background .15s;}
+  .pend-sc-btn:hover{background:#000;}
+  /* Paginación */
+  .pend-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 0 4px;}
+  .pend-pager-btn{width:34px;height:34px;border-radius:50%;border:1px solid #e2e4e8;background:#fff;color:#5a5c63;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;line-height:1;transition:all .15s;}
+  .pend-pager-btn:hover:not(:disabled){background:#f2f3f6;color:#111317;}
+  .pend-pager-btn:disabled{opacity:.4;cursor:default;}
+  .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
   /* Barra de chat con el asistente */
   .pend-chat{flex:none;border-top:1px solid #e6e8ec;background:#fff;padding:10px 14px 12px;}
   .pend-chat-msgs{max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
@@ -156,7 +168,7 @@
   if (window.__pendInit) return;
   window.__pendInit = true;
 
-  var _data = null, _tab = 'resumen', _sel = 'mias';
+  var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0;
   function el(id){ return document.getElementById(id); }
 
   function _normalRect() {
@@ -326,6 +338,7 @@
       .then(function (d){
         if (!d || !d.success) { if (body) body.innerHTML = '<div class="pend-empty">Error al cargar</div>'; return; }
         _data = d;
+        _resIdx = 0;
         _buildVendedores(d);
         ['pendientes','hoy','proximamente'].forEach(function (k){
           var c = el('pendCount-' + k); if (c) c.textContent = (d.counts && d.counts[k]) || 0;
@@ -368,36 +381,66 @@
     var body = el('pendBody');
     var r = _data && _data.resumen;
     if (!body) return;
-    var w = el('pendWeather'); if (w && r) w.textContent = _asistenteEmoji(r.saludo);
     if (!r) { body.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
-    var total = r.total || 0;
-    var intro = r.frase ? _esc(r.frase)
-      : (total > 0
-          ? 'Tienes <b>' + total + '</b> oportunidad' + (total === 1 ? '' : 'es') + ' para trabajar hoy.'
-          : 'Vas al día — no hay nada urgente. ¡Buen trabajo! 🎉');
+    var items = r.items || [];
+    var total = items.length;
     var hero = '<div class="pend-res-hero">' +
-      '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + ' 👋</div>' +
-      '<div class="pend-res-frase">' + intro + '</div>' +
-      (r.frase && total > 0 ? '<div class="pend-res-sub"><b>' + total + '</b> para hoy · por orden de prioridad</div>' : '') +
+      '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
+      '<div class="pend-res-sub">' + (total > 0
+          ? 'Hoy trabajas <b>' + total + '</b> oportunidad' + (total === 1 ? '' : 'es') + ' · te las paso en orden de prioridad'
+          : 'Vas al día — no hay nada urgente para hoy. 🎉') + '</div>' +
     '</div>';
-    var cards = '';
-    (r.items || []).forEach(function (it) {
-      var rk = (it.riesgo || '').toLowerCase();
-      var prob = (it.probabilidad != null ? it.probabilidad : 0);
-      cards += '<div class="pend-res-card" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
-        '<div class="pend-res-num ' + rk + '">' + it.prioridad + '</div>' +
-        '<div class="pend-res-titulo">' + _esc(it.proyecto) + '</div>' +
-        '<div class="pend-res-val">' + _esc(it.valor_fmt) + '</div>' +
-        '<div class="pend-res-meta">' +
-          '<span class="cli">' + _esc(it.cliente) + '</span>' +
-          '<span class="sep">·</span><span class="prob">' + prob + '%</span>' +
-          '<span class="sep">·</span><span class="rg ' + rk + '">Riesgo ' + _esc(it.riesgo) + '</span>' +
+    if (!total) { body.innerHTML = hero; return; }
+    if (_resIdx >= total) _resIdx = total - 1;
+    if (_resIdx < 0) _resIdx = 0;
+    var it = items[_resIdx];
+    var rk = (it.riesgo || '').toLowerCase();
+    var prob = (it.probabilidad != null ? it.probabilidad : 0);
+    var pw = Math.max(0, Math.min(100, prob));
+    var contactoLine = (it.contacto || '—') + (it.hora ? ' · hasta ' + it.hora : '');
+    var card = '<div class="pend-split">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent">' +
+          '<div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">Prioridad ' + it.prioridad + ' · ' + (_resIdx + 1) + ' de ' + total + '</div></div>' +
         '</div>' +
-        '<div class="pend-res-acc"><span class="pend-res-acc-ic">👉</span><span>' + _esc(it.accion) + '</span></div>' +
-      '</div>';
-    });
-    body.innerHTML = hero + cards;
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
+        '<div class="pend-sc-play">' +
+          '<div class="pend-sc-play-lbl">Tu jugada de hoy</div>' +
+          '<div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">Valor</div>' +
+        '<div class="pend-sc-value">' + _esc(it.valor_fmt) + '</div>' +
+        '<div class="pend-sc-prob">' +
+          '<div class="pend-sc-prob-top"><span class="pend-sc-flabel">Probabilidad</span><span class="pend-sc-prob-pct">' + prob + '%</span></div>' +
+          '<div class="pend-sc-bar"><div class="pend-sc-bar-fill" style="width:' + pw + '%"></div></div>' +
+        '</div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Riesgo</div>' +
+          '<div><span class="pend-sc-riesgo ' + rk + '">Riesgo ' + rk + '</span></div>' +
+        '</div>' +
+        '<div class="pend-sc-divider"></div>' +
+        '<div class="pend-sc-kv"><div class="pend-sc-flabel">Cliente</div><div class="pend-sc-kv-val">' + _esc(it.cliente) + '</div></div>' +
+        '<div class="pend-sc-kv"><div class="pend-sc-flabel">Proyecto</div><div class="pend-sc-kv-val">' + _esc(it.proyecto) + '</div></div>' +
+        '<div class="pend-sc-kv"><div class="pend-sc-flabel">Contacto</div><div class="pend-sc-kv-val">' + _esc(contactoLine) + '</div></div>' +
+        '<button type="button" class="pend-sc-btn" onclick="pendAbrirOpp(' + it.opp_id + ')">Ver oportunidad</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(-1)"' + (_resIdx === 0 ? ' disabled' : '') + ' aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">Oportunidad ' + (_resIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)"' + (_resIdx >= total - 1 ? ' disabled' : '') + ' aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    body.innerHTML = hero + card + pager;
   }
+  window.pendResNav = function (delta) {
+    var r = _data && _data.resumen; if (!r) return;
+    var total = (r.items || []).length;
+    _resIdx = Math.max(0, Math.min(total - 1, _resIdx + delta));
+    _renderResumen();
+  };
 
   function _render() {
     var body = el('pendBody');
