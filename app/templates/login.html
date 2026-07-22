@@ -26,42 +26,33 @@
         }
 
         /* ── Fases del día (las pone el script según la hora) ──
-           Un solo cielo azul profundo siempre; lo que cambia con la hora
-           es la calidez del sol y qué tanto se oscurece el azul. */
+           Solo degradados azul agua — sin figuras. La hora ajusta apenas
+           la luminosidad del azul y la calidez del acento de luz. */
         body[data-fase="despertar"] {
-            --cielo: linear-gradient(160deg, #33517E 0%, #27416A 45%, #1B3054 78%, #132340 100%);
-            --sol-nucleo: #FFF3D0; --sol-medio: #FFD98A; --sol-borde: #F2B15C;
-            --sol-halo: rgba(255, 217, 138, 0.30);
-            --nube-opacidad: 0.14;
+            --cielo: linear-gradient(160deg, #2A5A7E 0%, #1E4664 50%, #143348 100%);
+            --luz: rgba(255, 218, 158, 0.14);
+            --luz-agua: rgba(88, 178, 208, 0.16);
         }
         body[data-fase="pleno"] {
-            --cielo: linear-gradient(160deg, #2E4E80 0%, #24406C 45%, #182F54 78%, #10213E 100%);
-            --sol-nucleo: #FFFDF2; --sol-medio: #FFEDB0; --sol-borde: #F5C878;
-            --sol-halo: rgba(255, 240, 190, 0.32);
-            --nube-opacidad: 0.16;
+            --cielo: linear-gradient(160deg, #2E6488 0%, #1F4A68 50%, #15364C 100%);
+            --luz: rgba(255, 244, 208, 0.16);
+            --luz-agua: rgba(96, 190, 218, 0.20);
         }
         body[data-fase="atardecer"] {
-            --cielo: linear-gradient(160deg, #2A3C64 0%, #1F3054 45%, #16233F 78%, #0E1830 100%);
-            --sol-nucleo: #FFE0A8; --sol-medio: #FFAE5C; --sol-borde: #E8823F;
-            --sol-halo: rgba(255, 174, 92, 0.30);
-            --nube-opacidad: 0.11;
+            --cielo: linear-gradient(160deg, #28506E 0%, #1B3E58 50%, #122C40 100%);
+            --luz: rgba(255, 186, 120, 0.15);
+            --luz-agua: rgba(80, 164, 194, 0.14);
         }
         body[data-fase="crepusculo"] {
-            --cielo: linear-gradient(160deg, #1C2A48 0%, #141F3A 45%, #0E172C 78%, #080E1E 100%);
-            --sol-nucleo: rgba(255, 200, 130, 0.85); --sol-medio: rgba(230, 140, 66, 0.70); --sol-borde: rgba(180, 100, 45, 0.60);
-            --sol-halo: rgba(226, 122, 44, 0.18);
-            --nube-opacidad: 0.06;
+            --cielo: linear-gradient(160deg, #1B3A50 0%, #122C40 50%, #0A1E2E 100%);
+            --luz: rgba(226, 146, 80, 0.10);
+            --luz-agua: rgba(64, 140, 170, 0.10);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--bg-white); color: var(--text-main); overflow: hidden; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes glowRespira { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
-        @keyframes nubeDeriva { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(34px); } }
-        @keyframes nubeDeriva2 { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-26px); } }
-        @keyframes gaviotaVuela { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(18px, -6px); } }
-        @keyframes gaviotaVuela2 { 0%, 100% { transform: translate(0, 0) scale(0.7); } 50% { transform: translate(-14px, -9px) scale(0.7); } }
 
         .anim-stagger-1 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.1s; }
         .anim-stagger-2 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.2s; }
@@ -69,60 +60,18 @@
         .anim-stagger-4 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.4s; }
         .anim-stagger-5 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.5s; }
 
-        /* ═══ Cielo profundo (panel izquierdo) ═══
-           Azul oscuro elegante, sol bien dibujado en la esquina superior
-           izquierda, nubes suaves a la deriva y gaviotas de trazo fino. */
+        /* ═══ Panel izquierdo — azul agua, solo degradados ═══
+           Sin figuras: la profundidad la dan dos acentos de luz radiales
+           (uno cálido arriba-izquierda, uno aqua abajo-derecha) sobre el
+           degradado diagonal. */
         .branding-section {
             flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center;
             padding: 60px; position: relative; overflow: hidden; color: var(--brand-text);
-            background: var(--cielo);
-            transition: background 1.4s ease;
-        }
-        /* Sol: disco con núcleo, degradado cálido y doble halo — dibujado
-           por capas, no un círculo plano. Esquina superior izquierda. */
-        .sol {
-            position: absolute; left: 9%; top: 9%; z-index: 1;
-            pointer-events: none;
-            animation: glowRespira 8s ease-in-out infinite;
-            transition: all 1.4s ease;
-        }
-        .sol .halo {
-            position: absolute; left: 50%; top: 50%; width: 340px; height: 340px;
-            transform: translate(-50%, -50%); border-radius: 50%;
-            background: radial-gradient(circle, var(--sol-halo) 0%, rgba(255,255,255,0) 65%);
-            filter: blur(10px);
-            transition: background 1.4s ease;
-        }
-        .sol .disco {
-            position: relative; width: 92px; height: 92px; border-radius: 50%;
-            background: radial-gradient(circle at 42% 38%, var(--sol-nucleo) 0%, var(--sol-medio) 55%, var(--sol-borde) 100%);
-            box-shadow:
-                0 0 34px 6px var(--sol-halo),
-                inset 0 0 14px rgba(255, 255, 255, 0.45);
-            transition: background 1.4s ease, box-shadow 1.4s ease;
-        }
-        .sol .anillo {
-            position: absolute; left: 50%; top: 50%; width: 128px; height: 128px;
-            transform: translate(-50%, -50%); border-radius: 50%;
-            border: 1px solid rgba(255, 235, 190, 0.22);
-        }
-        /* Nubes: formas suaves de elipses SVG con desenfoque, deriva lenta */
-        .nube { position: absolute; z-index: 2; pointer-events: none; filter: blur(3px); opacity: var(--nube-opacidad); transition: opacity 1.4s ease; }
-        .nube svg { display: block; fill: #ffffff; }
-        .nube-1 { left: 44%; top: 13%; animation: nubeDeriva 46s ease-in-out infinite; }
-        .nube-2 { left: 66%; top: 30%; transform: scale(0.62); animation: nubeDeriva2 58s ease-in-out infinite; }
-        .nube-3 { left: 18%; top: 40%; transform: scale(0.45); opacity: calc(var(--nube-opacidad) * 0.7); animation: nubeDeriva 64s ease-in-out infinite; }
-        /* Gaviotas: trazo fino de dos curvas, nítidas pero discretas */
-        .gaviota { position: absolute; z-index: 3; pointer-events: none; opacity: 0.65; }
-        .gaviota svg path { stroke: rgba(255,255,255,0.92); stroke-width: 1.8; fill: none; stroke-linecap: round; }
-        .gaviota-1 { left: 58%; top: 21%; animation: gaviotaVuela 12s ease-in-out infinite; }
-        .gaviota-2 { left: 50%; top: 16%; animation: gaviotaVuela2 15s ease-in-out infinite; }
-        body[data-fase="crepusculo"] .gaviota { opacity: 0.22; }
-        /* Grano fotográfico muy sutil */
-        .grano {
-            position: absolute; inset: 0; z-index: 4; pointer-events: none;
-            opacity: 0.035; mix-blend-mode: overlay;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-image:
+                radial-gradient(circle 560px at 10% 8%, var(--luz) 0%, rgba(255,255,255,0) 62%),
+                radial-gradient(circle 680px at 92% 96%, var(--luz-agua) 0%, rgba(255,255,255,0) 65%),
+                var(--cielo);
+            transition: background-image 1.4s ease;
         }
 
         .branding-content { position: relative; z-index: 5; width: 100%; max-width: 480px; }
@@ -205,25 +154,11 @@
         .modal-msg.success { color: #16a34a; }
         .modal-msg.error { color: var(--error-color); }
 
-        @media (prefers-reduced-motion: reduce) {
-            .sol, .nube, .gaviota { animation: none !important; }
-        }
         @media (max-width: 900px) { .branding-section { display: none; } .login-section { flex: 1; } }
     </style>
 </head>
 <body data-fase="pleno">
     <div class="branding-section">
-        <div class="sol">
-            <div class="halo"></div>
-            <div class="disco"></div>
-            <div class="anillo"></div>
-        </div>
-        <div class="nube nube-1"><svg width="220" height="64" viewBox="0 0 220 64"><ellipse cx="60" cy="44" rx="58" ry="18"/><ellipse cx="112" cy="32" rx="46" ry="22"/><ellipse cx="160" cy="44" rx="54" ry="16"/><ellipse cx="88" cy="24" rx="30" ry="16"/></svg></div>
-        <div class="nube nube-2"><svg width="220" height="64" viewBox="0 0 220 64"><ellipse cx="60" cy="44" rx="58" ry="18"/><ellipse cx="112" cy="32" rx="46" ry="22"/><ellipse cx="160" cy="44" rx="54" ry="16"/><ellipse cx="88" cy="24" rx="30" ry="16"/></svg></div>
-        <div class="nube nube-3"><svg width="220" height="64" viewBox="0 0 220 64"><ellipse cx="60" cy="44" rx="58" ry="18"/><ellipse cx="112" cy="32" rx="46" ry="22"/><ellipse cx="160" cy="44" rx="54" ry="16"/><ellipse cx="88" cy="24" rx="30" ry="16"/></svg></div>
-        <div class="gaviota gaviota-1"><svg width="34" height="15" viewBox="0 0 44 20"><path d="M2 14 Q 11 5, 22 12 Q 33 5, 42 14"/></svg></div>
-        <div class="gaviota gaviota-2"><svg width="34" height="15" viewBox="0 0 44 20"><path d="M2 14 Q 11 5, 22 12 Q 33 5, 42 14"/></svg></div>
-        <div class="grano"></div>
         <div class="branding-content">
             <div class="kicker anim-stagger-1">IAMET &middot; Sistema de Gesti&oacute;n</div>
             <h1 class="anim-stagger-1">Bienvenido a tu CRM.</h1>
