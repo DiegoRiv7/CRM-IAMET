@@ -6527,6 +6527,90 @@ _PEND_ETAPAS_TERMINALES = {
 }
 
 
+def _pend_briefing_ia(nombre, items):
+    """Redacta con el asistente embebido (LLM) una frase motivadora + una acción
+    por oportunidad, ANCLADA a los datos dados (no inventa). Devuelve
+    {'frase': str, 'acciones': {str(opp_id): str}} o None si no se pudo.
+    """
+    if not items:
+        return None
+    try:
+        from .asistente_provider import chat
+        from .models import AsistenteConfig
+    except Exception:
+        return None
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if cfg and not cfg.activo:
+            return None
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        modelo = None
+
+    import json as _json
+    top = items[:12]
+    facts = [{
+        'id': it['opp_id'], 'cliente': it['cliente'], 'proyecto': it['proyecto'],
+        'valor': it['valor_fmt'], 'probabilidad': it['probabilidad'],
+        'riesgo': it['riesgo'], 'contexto': it['accion'],
+    } for it in top]
+
+    sys = (
+        "Eres el asistente de ventas del CRM: cálido, cercano y motivador. Le hablas de "
+        f"tú a {nombre} (vendedor), como si le contaras su plan del día. Con base "
+        "EXCLUSIVAMENTE en los datos que te doy, redacta en español:\n"
+        "1) 'frase': UNA frase breve y motivadora para arrancar el día (no digas "
+        "'Buenos días', eso ya se muestra aparte).\n"
+        "2) 'acciones': por cada oportunidad (clave = su id), UNA acción concreta y "
+        "persuasiva en 1-2 frases, tono coach, que retome el 'contexto'. Humana y "
+        "específica. NO inventes nombres, montos, fechas ni datos que no aparezcan.\n"
+        "Devuelve SOLO JSON válido: {\"frase\": \"...\", \"acciones\": {\"<id>\": \"...\"}}"
+    )
+    usr = "Vendedor: " + nombre + "\nOportunidades de hoy (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
+
+    try:
+        res = chat(
+            [{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
+            model=modelo, temperature=0.6, max_tokens=1000,
+        )
+        txt = ((res or {}).get('text') or '').strip()
+        a, b = txt.find('{'), txt.rfind('}')
+        if a == -1 or b == -1:
+            return None
+        parsed = _json.loads(txt[a:b + 1])
+        if not isinstance(parsed, dict):
+            return None
+        acc = parsed.get('acciones') or {}
+        return {
+            'frase': (parsed.get('frase') or '').strip(),
+            'acciones': {str(k): v for k, v in acc.items() if isinstance(v, str) and v.strip()},
+        }
+    except Exception as exc:
+        logger.warning(f"[Pendientes] Briefing IA no disponible: {exc}")
+        return None
+
+
+def _pend_briefing_cacheado(user, today, sel, nombre, items):
+    """Briefing IA cacheado 1 vez al día por (usuario, fecha, selección). Lo genera
+    y guarda si no existe. Devuelve el dict {frase, acciones} o None."""
+    from .models import AsistenteResumenDiario
+    key_sel = (sel or 'mias')
+    try:
+        row = AsistenteResumenDiario.objects.filter(usuario=user, fecha=today, seleccion=key_sel).first()
+        if row and row.data:
+            return row.data
+    except Exception:
+        pass
+    data = _pend_briefing_ia(nombre, items)
+    if data:
+        try:
+            AsistenteResumenDiario.objects.update_or_create(
+                usuario=user, fecha=today, seleccion=key_sel, defaults={'data': data})
+        except Exception:
+            pass
+    return data
+
+
 @login_required
 def api_pendientes(request):
     """
@@ -6714,8 +6798,23 @@ def api_pendientes(request):
         'saludo': saludo,
         'nombre': nombre_corto,
         'total': len(resumen_items),
+        'frase': '',
         'items': resumen_items,
     }
+    # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
+    # Los datos duros ya están calculados; la IA solo redacta. Fallback = template.
+    try:
+        _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
+    except Exception:
+        _ia = None
+    if _ia:
+        if _ia.get('frase'):
+            resumen['frase'] = _ia['frase']
+        _acc = _ia.get('acciones') or {}
+        for _it in resumen_items:
+            _t = _acc.get(str(_it['opp_id']))
+            if _t:
+                _it['accion'] = _t
 
     # ── Lista de vendedores para el selector (según rol) ──
     # Solo se incluyen vendedores que TIENEN al menos una oportunidad abierta

@@ -765,6 +765,13 @@ class CatalogoCableado(models.Model):
         ('JACK', 'Jack'),
         ('PATCHCORD', 'Patchcord'),
         ('FACEPLATE', 'Faceplate'),
+        ('FIBRA', 'Fibra Óptica'),
+        ('CHAROLA', 'Charola/Escalerilla'),
+        ('TUBERIA', 'Tubería/Conduit'),
+        ('SOPORTERIA', 'Soportería/Fijación'),
+        ('EQUIPO', 'Equipo Activo'),
+        ('ACCESORIO', 'Accesorio'),
+        ('OTRO', 'Otro'),
     ]
     
     numero_parte = models.CharField(
@@ -6577,3 +6584,26 @@ class PerfEvent(models.Model):
 
     def __str__(self):
         return f'{self.modo}/{self.motivo} @ {self.ts:%Y-%m-%d %H:%M}'
+
+
+class AsistenteResumenDiario(models.Model):
+    """Caché del briefing diario del widget Pendientes (pestaña Resumen).
+
+    Se genera 1 vez al día por (usuario, fecha, seleccion) para no volver a
+    llamar al LLM en cada carga del widget. `data` guarda el texto redactado:
+    {"saludo": str, "acciones": {"<opp_id>": str}}.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='resumenes_diarios')
+    fecha = models.DateField()
+    seleccion = models.CharField(max_length=20, default='mias')
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'fecha', 'seleccion')]
+        indexes = [models.Index(fields=['usuario', 'fecha', 'seleccion'])]
+        verbose_name = 'Resumen diario del asistente'
+        verbose_name_plural = 'Resúmenes diarios del asistente'
+
+    def __str__(self):
+        return f'Resumen {self.usuario_id} {self.fecha} ({self.seleccion})'
