@@ -7091,9 +7091,29 @@ def _replay_stats(user, mes, anio):
     if top and top.get('cliente__nombre_empresa'):
         top_cliente = {'nombre': top['cliente__nombre_empresa'], 'total_fmt': _replay_money(top['t']), 'count': top['c']}
 
+    # Tendencias vs mes anterior (ventas y eficiencia)
+    mes_prev_nombre = _MESES_ES[pmes]
+    ventas_prev = TodoItem.objects.filter(
+        usuario=user, fecha_actualizacion__month=pmes, fecha_actualizacion__year=panio
+    ).filter(Q(etapa_corta__in=['Ganado', 'Pagado']) | Q(estado_crm='pagada'))
+    monto_prev = _sum(ventas_prev, 'monto')
+
+    def _trend(cur, prev):
+        try:
+            cur, prev = float(cur or 0), float(prev or 0)
+        except (ValueError, TypeError):
+            return ''
+        if prev <= 0:
+            return ''
+        pct = round((cur - prev) / prev * 100)
+        if pct == 0:
+            return ''
+        return ('▲ +' if pct > 0 else '▼ ') + str(pct) + '% vs ' + mes_prev_nombre.lower()
+
     return {
-        'mes': mes, 'anio': anio, 'mes_nombre': _MESES_ES[mes],
+        'mes': mes, 'anio': anio, 'mes_nombre': _MESES_ES[mes], 'mes_prev_nombre': mes_prev_nombre,
         'eficiencia': round(ef, 1), 'eficiencia_prev': (round(ef_prev, 1) if ef_prev is not None else None),
+        'eficiencia_trend': _trend(ef, ef_prev), 'ventas_trend': _trend(monto_vendido, monto_prev),
         'empleado_mes': empleado_mes,
         'ventas': ventas_count, 'monto_vendido_fmt': _replay_money(monto_vendido),
         'trabajadas': trabajadas,
@@ -7119,14 +7139,15 @@ def _replay_ia_msgs(nombre, stats):
         modelo = None
     import json as _json
     sys = (
-        "Eres el asistente del CRM. Redactas un 'Replay mensual' estilo Spotify Wrapped para "
-        f"{nombre} (vendedor), sobre su mes de {stats.get('mes_nombre')}. Con base EXCLUSIVAMENTE "
-        "en los datos, escribe mensajes cortos, cálidos y motivadores (1-2 frases c/u), en "
-        "español, tuteando. Devuelve SOLO JSON con estas claves (cada valor un string):\n"
-        "'intro' (bienvenida al recap), 'eficiencia' (menciona si mejoró o bajó), 'ventas' "
-        "(lo que cerró y el monto), 'cotizaciones', 'actividades' (tareas y actividades), "
-        "'curioso' (un dato curioso o logro usando mejor_dia/top_cliente/dias_trabajados), y "
-        "'cierre' (motivador para el mes que empieza). NO inventes números ni nombres que no estén."
+        "Eres el asistente del CRM. Redactas los TITULARES de un 'Replay mensual' estilo "
+        f"Spotify Wrapped para {nombre}, sobre su mes de {stats.get('mes_nombre')}. Con base "
+        "EXCLUSIVAMENTE en los datos, escribe TÍTULOS cortos y con gancho (estilo editorial de "
+        "revista, 3-8 palabras, sin comillas), en español, tuteando. Devuelve SOLO JSON con "
+        "estas claves (cada valor un string):\n"
+        "'intro' (titular del mes, ej. 'Un junio lleno de oportunidades'), 'eficiencia', "
+        "'ventas', 'cotizaciones', 'actividades', 'curioso' (usa mejor_dia/top_cliente/"
+        "dias_trabajados), 'cierre' (motivador para el mes que empieza). NO inventes números "
+        "ni nombres que no estén en los datos."
     )
     usr = "Datos del mes (JSON):\n" + _json.dumps(stats, ensure_ascii=False)
     try:
@@ -7144,53 +7165,71 @@ def _replay_ia_msgs(nombre, stats):
 
 
 def _replay_build_cards(s, m):
-    def msg(key, fb):
-        return (m.get(key) or fb)
-    cards = [
-        {'tipo': 'intro', 'bg': 0, 'kicker': 'Tu ' + s['mes_nombre'],
-         'titulo': 'Tu ' + s['mes_nombre'] + ' en resumen',
-         'grid': [
-             {'v': str(s['eficiencia']) + '%', 'l': 'Eficiencia'},
-             {'v': str(s['ventas']), 'l': 'Oportunidades ganadas'},
-             {'v': s['monto_vendido_fmt'], 'l': 'Vendido'},
-             {'v': str(s['trabajadas']), 'l': 'Oportunidades trabajadas'},
-             {'v': str(s['cotizaciones']), 'l': 'Cotizaciones'},
-             {'v': str(s['tareas']), 'l': 'Tareas completadas'},
-             {'v': str(s['actividades']), 'l': 'Actividades completadas'},
-             {'v': str(s['dias_trabajados']), 'l': 'Días activos'},
-         ],
-         'badge': ('🏆 Empleado del mes' if s['empleado_mes'] else ''),
-         'mensaje': msg('intro', '¡Aquí está tu ' + s['mes_nombre'] + ' en resumen!')},
-    ]
-    trend = ''
-    if s['eficiencia_prev'] is not None:
-        d = round(s['eficiencia'] - s['eficiencia_prev'], 1)
-        trend = ('↑ +' + str(d) + ' pts' if d > 0 else ('↓ ' + str(d) + ' pts' if d < 0 else 'igual que el mes pasado'))
-    cards.append({'tipo': 'eficiencia', 'bg': 1, 'kicker': 'Tu eficiencia',
-                  'stat': str(s['eficiencia']) + '%', 'stat_label': trend,
-                  'badge': ('🏆 Empleado del mes' if s['empleado_mes'] else ''),
-                  'mensaje': msg('eficiencia', 'Tu esfuerzo del mes, en un número.')})
-    cards.append({'tipo': 'ventas', 'bg': 2, 'kicker': 'Cerraste',
-                  'stat': str(s['ventas']), 'stat_label': ('ventas · ' + s['monto_vendido_fmt']),
-                  'mensaje': msg('ventas', 'Cada cierre cuenta.')})
-    cards.append({'tipo': 'cotizaciones', 'bg': 3, 'kicker': 'Cotizaste',
-                  'stat': str(s['cotizaciones']), 'stat_label': ('cotizaciones · ' + s['cotizaciones_monto_fmt']),
-                  'mensaje': msg('cotizaciones', 'Sembrando oportunidades.')})
-    cards.append({'tipo': 'actividades', 'bg': 4, 'kicker': 'Completaste',
-                  'stat': str(s['tareas'] + s['actividades']),
-                  'stat_label': (str(s['tareas']) + ' tareas · ' + str(s['actividades']) + ' actividades'),
-                  'mensaje': msg('actividades', 'Constancia que se nota.')})
+    def hd(key, fb):
+        return (m.get(key) or fb).strip()
+    mesL = s['mes_nombre'].lower()
+    cards = []
+    # 1) Portada / resumen general
+    cards.append({
+        'theme': 0, 'kicker': 'Resumen del mes',
+        'headline': hd('intro', 'Un ' + mesL + ' lleno de oportunidades.'),
+        'badge': ('🏆 Empleado del mes' if s['empleado_mes'] else ''),
+        'hero_label': 'Vendido este mes', 'hero_stat': s['monto_vendido_fmt'], 'hero_trend': s.get('ventas_trend', ''),
+        'boxes': [
+            {'v': str(s['ventas']), 'l': 'Oportunidades ganadas'},
+            {'v': str(s['eficiencia']) + '%', 'l': 'Eficiencia'},
+            {'v': str(s['dias_trabajados']), 'l': 'Días activos'},
+        ],
+    })
+    # 2) Eficiencia
+    cards.append({
+        'theme': 1, 'kicker': 'Tu eficiencia',
+        'headline': hd('eficiencia', 'Tu constancia, en un número.'),
+        'hero_label': 'Eficiencia del mes', 'hero_stat': str(s['eficiencia']) + '%', 'hero_trend': s.get('eficiencia_trend', ''),
+        'boxes': ([{'v': 'Día ' + str(s['mejor_dia']['dia']), 'l': 'Tu mejor día · ' + str(s['mejor_dia']['eficiencia']) + '%'}] if s['mejor_dia'] else []),
+    })
+    # 3) Ventas
+    v_boxes = [{'v': s['monto_vendido_fmt'], 'l': 'Monto vendido'}]
     if s['top_cliente']:
-        cur_stat, cur_label = s['top_cliente']['nombre'], ('tu cliente estrella · ' + s['top_cliente']['total_fmt'])
+        v_boxes.append({'v': s['top_cliente']['nombre'], 'l': 'Cliente estrella · ' + s['top_cliente']['total_fmt']})
+    cards.append({
+        'theme': 2, 'kicker': 'Ventas', 'headline': hd('ventas', 'Cada cierre cuenta.'),
+        'hero_label': 'Oportunidades cerradas', 'hero_stat': str(s['ventas']), 'hero_trend': '',
+        'boxes': v_boxes,
+    })
+    # 4) Cotizaciones
+    cards.append({
+        'theme': 3, 'kicker': 'Cotizaciones', 'headline': hd('cotizaciones', 'Sembrando oportunidades.'),
+        'hero_label': 'Cotizaciones hechas', 'hero_stat': str(s['cotizaciones']), 'hero_trend': '',
+        'boxes': [{'v': s['cotizaciones_monto_fmt'], 'l': 'Monto cotizado'}],
+    })
+    # 5) Productividad
+    cards.append({
+        'theme': 4, 'kicker': 'Productividad', 'headline': hd('actividades', 'Constancia que se nota.'),
+        'hero_label': 'Tareas y actividades', 'hero_stat': str(s['tareas'] + s['actividades']), 'hero_trend': '',
+        'boxes': [
+            {'v': str(s['tareas']), 'l': 'Tareas'},
+            {'v': str(s['actividades']), 'l': 'Actividades'},
+            {'v': str(s['dias_trabajados']), 'l': 'Días activos'},
+        ],
+    })
+    # 6) Dato curioso
+    if s['top_cliente']:
+        cur_l, cur_v = 'Tu cliente estrella', s['top_cliente']['nombre']
     elif s['mejor_dia']:
-        cur_stat, cur_label = ('Día ' + str(s['mejor_dia']['dia'])), ('tu mejor día · ' + str(s['mejor_dia']['eficiencia']) + '%')
+        cur_l, cur_v = 'Tu mejor día', 'Día ' + str(s['mejor_dia']['dia'])
     else:
-        cur_stat, cur_label = str(s['dias_trabajados']), 'días trabajados'
-    cards.append({'tipo': 'curioso', 'bg': 5, 'kicker': 'Dato del mes',
-                  'stat': cur_stat, 'stat_label': cur_label,
-                  'mensaje': msg('curioso', '¡Un logro para presumir!')})
-    cards.append({'tipo': 'cierre', 'bg': 6, 'kicker': '¡A por más!', 'stat': '', 'stat_label': '',
-                  'mensaje': msg('cierre', s['mes_nombre'] + ' quedó atrás. Este mes vas por más. 💪')})
+        cur_l, cur_v = 'Días activos', str(s['dias_trabajados'])
+    cards.append({
+        'theme': 5, 'kicker': 'Dato del mes', 'headline': hd('curioso', '¡Un logro para presumir!'),
+        'hero_label': cur_l, 'hero_stat': cur_v, 'hero_trend': '', 'boxes': [],
+    })
+    # 7) Cierre
+    cards.append({
+        'theme': 6, 'kicker': '¡A por más!',
+        'headline': hd('cierre', s['mes_nombre'] + ' quedó atrás. Este mes vas por más.'),
+        'hero_label': '', 'hero_stat': '', 'hero_trend': '', 'boxes': [],
+    })
     return cards
 
 
@@ -7199,7 +7238,7 @@ def api_pendientes_replay(request):
     """Replay mensual (Wrapped) del MES ANTERIOR. Cacheado 1 vez por mes."""
     from django.utils import timezone
     from .models import ReplayMensual
-    _VER = 2   # subir si cambia la estructura de las tarjetas → regenera el caché
+    _VER = 3   # subir si cambia la estructura de las tarjetas → regenera el caché
     today = timezone.localdate()
     mes, anio = (12, today.year - 1) if today.month == 1 else (today.month - 1, today.year)
     row = ReplayMensual.objects.filter(usuario=request.user, mes=mes, anio=anio).first()
