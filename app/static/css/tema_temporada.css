@@ -47,9 +47,10 @@ body[data-theme="temporada"] {
     --tmp-sol-y: 12%;
     --tmp-sol-size: 150px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
-    /* Sidebar "agua": muy translúcido — el cielo se ve a través y el blur
-       de 22px hace el efecto de vidrio mojado */
-    --tmp-sidebar: linear-gradient(180deg, rgba(170, 212, 240, 0.38) 0%, rgba(130, 182, 222, 0.42) 55%, rgba(105, 160, 205, 0.50) 100%);
+    /* Sidebar del pleno: blanco → azul claro, frosted (el blur de 22px
+       lo vuelve vidrio esmerilado luminoso). Textos en oscuro (regla
+       aparte) porque el fondo es claro. */
+    --tmp-sidebar: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(228, 241, 250, 0.70) 45%, rgba(196, 224, 244, 0.64) 100%);
 }
 
 /* ═══ Pieles por fase del día (cielo, sol, scrim y sidebar) ═══
@@ -145,14 +146,24 @@ body[data-theme="temporada"] .crm-sidebar {
     -webkit-backdrop-filter: blur(22px) saturate(160%);
     border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
-/* En el pleno (sidebar azul cielo claro) los textos ganan una sombra
-   sutil para conservar legibilidad sobre el fondo brillante. */
+/* En el pleno la sidebar es CLARA (blanco→azul cielo): textos e iconos
+   pasan a azul pizarra oscuro para legibilidad; el activo conserva su
+   naranja con texto blanco. */
 body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn,
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-label {
-    text-shadow: 0 1px 4px rgba(10, 30, 50, 0.45);
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-avatar {
+    color: rgba(30, 52, 80, 0.86);
+    text-shadow: none;
 }
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn,
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.92); }
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-label { color: rgba(30, 52, 80, 0.60); text-shadow: none; }
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn:hover {
+    background: rgba(44, 74, 110, 0.10) !important;
+    color: #1E3450;
+}
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn.active { color: #ffffff !important; }
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-divider { background: rgba(30, 52, 80, 0.14) !important; }
+body[data-theme="temporada"][data-fase="pleno"] .crm-sidebar {
+    border-right: 1px solid rgba(255, 255, 255, 0.55) !important;
+}
 body[data-theme="temporada"] .crm-sb-logo {
     background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
     box-shadow: 0 4px 16px rgba(242, 130, 59, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
@@ -1801,19 +1812,13 @@ body[data-theme="temporada"][data-fase="crepusculo"] {
 
 /* ═══════════════════════════════════════════════════════════════════════
    FASE 3 — ANIMACIONES SUTILES. Tres piezas, todas discretas:
-     1. El sol del cielo "respira" (pulso lento de 7s).
-     2. Los rayos de la franja ondean apenas perceptible (vaivén de 18s).
-     3. El glow de la franja respira en contrafase (9s).
+     1. Los rayos de la franja ondean apenas perceptible (vaivén de 18s).
+   El sol del cielo NO se anima (decisión del usuario 2026-07-22): queda
+   fijo en su posición y SOLO se desplaza con la transición de 1.4s al
+   cambiar la fase del día — el movimiento se ve únicamente en el cambio
+   de hora, que es lo natural.
    Guardas: prefers-reduced-motion y Modo Ligero (body.ww-lite) las apagan.
    ═══════════════════════════════════════════════════════════════════════ */
-
-@keyframes tmpSolRespira {
-    0%, 100% { opacity: 0.88; transform: scale(1); }
-    50%      { opacity: 1;    transform: scale(1.05); }
-}
-body[data-theme="temporada"]::after {
-    animation: tmpSolRespira 7s ease-in-out infinite;
-}
 
 /* Vaivén de los rayos de la franja: solo se mueve la capa del conic
    (background-position por capa; glow y cielo quedan fijos). */
