@@ -397,6 +397,15 @@
   }
   window.pendRefreshEstado = pendRefreshEstado;
 
+  // Reintenta el refresco varias veces: al cerrar el detalle, el guardado de la
+  // completación puede seguir en curso (async), así que consultamos varias veces
+  // en los siguientes segundos hasta atraparlo.
+  function pendRefreshBurst() {
+    pendRefreshEstado();
+    [700, 1600, 3000, 5000].forEach(function (ms) { setTimeout(pendRefreshEstado, ms); });
+  }
+  window.pendRefreshBurst = pendRefreshBurst;
+
   // Observa el cierre del detalle de oportunidad para refrescar al instante.
   var _detObs = null, _detWasOpen = false;
   function _watchDetalle() {
@@ -408,7 +417,7 @@
       var open = det.classList.contains('active');
       if (_detWasOpen && !open) {
         var pov = el('widgetPendientes');
-        if (pov && pov.classList.contains('active')) pendRefreshEstado();
+        if (pov && pov.classList.contains('active')) pendRefreshBurst();
       }
       _detWasOpen = open;
     });
