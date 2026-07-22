@@ -113,7 +113,13 @@
         /* ═══ Panel del formulario (derecha) — limpio y sobrio ═══ */
         .login-section {
             flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 40px; background: var(--bg-white); position: relative;
+            padding: 40px; position: relative;
+            /* Resplandor dorado sutil entrando por la izquierda: la luz del
+               sol de la foto derramandose hacia el formulario (la misma
+               formula de la fase despertar: azul + luz dorada) */
+            background:
+                radial-gradient(circle 520px at 0% 34%, rgba(255, 202, 122, 0.13) 0%, rgba(255, 202, 122, 0) 62%),
+                var(--bg-white);
         }
         /* Cinta superior: el horizonte del atardecer */
         .login-section::before {
