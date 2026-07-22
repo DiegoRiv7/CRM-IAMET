@@ -339,3 +339,1429 @@ body[data-theme="temporada"] .glass-card {
 body[data-theme="temporada"] .glass-card:hover {
     background: rgba(255, 255, 255, 0.18) !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2 — WIDGETS. Portado sistemático de las secciones de widgets del
+   tema Mundial (tareas, calendario, proyectos, muro, ideas, formularios,
+   fix de inputs) con la paleta de verano: verdes → azules acero,
+   rojos/verde-brillante → naranjas sunset. Las franjas con greca azteca
+   se sobreescriben al final por la FRANJA DE SOL reactiva por hora.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════
+   MODALES Y TABLAS — SÓLIDOS (no transparentes). La info se trabaja aquí,
+   así que prioridad a la legibilidad. Identidad mundial vía MARCO:
+   header/footer en VERDE OSCURO sólido con destello rojo azteca; el cuerpo
+   queda claro para que el texto oscuro se lea perfecto.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Panel principal — sólido blanco neutro (sin tinte verde, sin transparencia) */
+body[data-theme="temporada"] .widget-card,
+body[data-theme="temporada"] .widget-card-lg,
+body[data-theme="temporada"] .wn-overlay .wn-card.wn-composer {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
+}
+
+/* Header tricolor con grecas aztecas — compartido por detalle y nueva-opp.
+   Verde oscuro → rojo mexicano + patrón de grecas escalonadas (tipo jersey
+   de México) + destello rojo. Texto blanco encima. */
+body[data-theme="temporada"] .wo-header,
+body[data-theme="temporada"] .wn-ctw-header,
+body[data-theme="temporada"] .muro-card-header,
+body[data-theme="temporada"] .tcp-col-head,
+body[data-theme="temporada"] .ptk-cols-head,
+body[data-theme="temporada"] .pob-head,
+body[data-theme="temporada"] .crm-tw-header,
+body[data-theme="temporada"] .crm-ctw-header {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+}
+
+/* ── DETALLE DE OPORTUNIDAD ── */
+body[data-theme="temporada"] .wo-header {
+    border-radius: 24px 24px 0 0 !important;
+}
+body[data-theme="temporada"] .wo-title { color: #ffffff !important; }
+/* Badge de tipo (VENTA PROYECTO…) → rojo sólido */
+body[data-theme="temporada"] .wo-type-badge {
+    background: #E8722E !important;
+    color: #ffffff !important;
+}
+/* Botones del header (asistente, controles de ventana) → claros */
+body[data-theme="temporada"] .wo-asist-btn-title,
+body[data-theme="temporada"] .ww-btn-win {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="temporada"] .ww-btn-win:hover {
+    background: rgba(255,255,255,0.16) !important;
+    color: #ffffff !important;
+}
+
+/* Cuerpo claro; sub-tarjetas blancas sólidas → texto oscuro legible */
+body[data-theme="temporada"] .wo-content { background: transparent !important; }
+body[data-theme="temporada"] .wo-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(30, 46, 80, 0.18) !important;
+}
+body[data-theme="temporada"] .wo-card-accent {
+    background: linear-gradient(135deg, #FDF4EA, #ffffff) !important;
+    border: 1px solid rgba(242, 130, 59, 0.30) !important;
+}
+
+/* ── NUEVA OPORTUNIDAD ── (el fondo del header lo da la regla compartida) */
+body[data-theme="temporada"] .wn-ctw-header {
+    border-radius: 16px 16px 0 0 !important;
+}
+body[data-theme="temporada"] .wn-ctw-breadcrumb,
+body[data-theme="temporada"] .wn-ctw-crumb-muted,
+body[data-theme="temporada"] .wn-ctw-crumb-current { color: #ffffff !important; }
+body[data-theme="temporada"] .wn-ctw-breadcrumb svg { color: rgba(255,255,255,0.70) !important; }
+body[data-theme="temporada"] .wn-ctw-close { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="temporada"] .wn-ctw-close:hover {
+    background: rgba(232,114,46,0.45) !important;
+    color: #ffffff !important;
+}
+/* Cuerpo claro → título, inputs y labels legibles (texto oscuro original) */
+body[data-theme="temporada"] .wn-ctw-canvas { background: transparent !important; }
+/* Footer: barra verde-crema clara sólida con borde rojo superior */
+body[data-theme="temporada"] .wn-ctw-toolbar {
+    background: #FBEFE3 !important;
+    border-top: 2px solid #E8722E !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECCIÓN TAREAS — panel sólido claro (legible) sobre la cielo; el verde
+   vive en bordes y el rojo natural de "ATRASADAS"/vencidas se conserva.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Shell frosted: vidrio esmerilado claro → la cielo se asoma por detrás
+   pero el texto (oscuro) se mantiene legible gracias al blur + tinte. */
+body[data-theme="temporada"] .tcp-shell {
+    background: rgba(245, 246, 243, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+    border: 1px solid rgba(30, 46, 80, 0.30) !important;
+    box-shadow: 0 16px 48px rgba(4, 8, 18, 0.40) !important;
+}
+/* Panel derecho "TU DÍA" — frosted también */
+body[data-theme="temporada"] .tcp-detail {
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(22px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+    border-left-color: rgba(30, 46, 80, 0.22) !important;
+}
+/* Header de columnas (TAREA · ESTADO · …) como barra greca verde→rojo */
+body[data-theme="temporada"] .tcp-col-head {
+    color: #ffffff !important;
+    border-bottom: 2px solid #E8722E !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+body[data-theme="temporada"] .tcp-col-head > span { color: #ffffff !important; }
+/* Filas: el texto se asienta sobre el frosted; hover/active claros */
+body[data-theme="temporada"] .tcp-row:hover { background: rgba(255, 255, 255, 0.45) !important; }
+body[data-theme="temporada"] .tcp-row.active { background: rgba(242, 130, 59, 0.18) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CONTROLES DE VENTANA (— □ ×) — sólidos blancos sobre el header oscuro
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] .ww-ctrls button,
+body[data-theme="temporada"] .ww-btn,
+body[data-theme="temporada"] .widget-overlay.ww-windowed .ww-btn-win {
+    background: #ffffff !important;
+    color: #053a1f !important;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.38) !important;
+}
+body[data-theme="temporada"] .ww-ctrls button:hover,
+body[data-theme="temporada"] .ww-btn:hover {
+    background: #eef0ec !important;
+    color: #032615 !important;
+}
+/* La × (último control) en rojo mexicano al hover */
+body[data-theme="temporada"] .ww-ctrls button:last-child:hover {
+    background: #E8722E !important;
+    color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   IDEAS — cards en glass esmerilado (las columnas ya heredan crm-kanban-col).
+   Prospección ya está temada porque reutiliza .crm-kanban-col / .crm-postit.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] .idea-card {
+    /* PERF: sin blur por tarjeta (ver nota en .crm-postit) */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+body[data-theme="temporada"] .idea-card:hover {
+    background: rgba(255, 255, 255, 0.97) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.30) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MURO — misma fórmula: cuerpo blanco sólido + header greca verde→rojo.
+   (El header ya recibe el fondo por la regla compartida de arriba.)
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] .muro-card {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+}
+body[data-theme="temporada"] .muro-card-header {
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: 2px solid #E8722E !important;
+}
+/* Título (usa color inline; lo vencemos con !important) */
+body[data-theme="temporada"] .muro-card-header > div > span { color: #ffffff !important; }
+/* Botones de filtro: claros sobre el header oscuro; activo en verde */
+body[data-theme="temporada"] .muro-filter-btn {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.30) !important;
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="temporada"] .muro-filter-btn:hover {
+    background: rgba(255,255,255,0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .muro-filter-btn.active {
+    background: #F2823B !important;
+    border-color: #F2823B !important;
+    color: #ffffff !important;
+}
+/* Close (X) clara, hover rojo */
+body[data-theme="temporada"] .muro-close-btn { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="temporada"] .muro-close-btn:hover {
+    background: rgba(232,114,46,0.45) !important;
+    color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   WIDGET DETALLE DE TAREA — misma fórmula (cuerpo claro + header greca).
+   El header (.crm-tw-header) ya recibe el fondo greca por la regla
+   compartida; aquí cuerpo claro + textos/iconos del header en blanco.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] .crm-task-modal {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
+}
+body[data-theme="temporada"] .crm-tw-header {
+    border-bottom: 2px solid #E8722E !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Breadcrumb, iconos y close del header en claro */
+body[data-theme="temporada"] .crm-tw-header,
+body[data-theme="temporada"] .crm-tw-header a,
+body[data-theme="temporada"] .crm-tw-header button,
+body[data-theme="temporada"] .crm-tw-header svg { color: #ffffff !important; }
+body[data-theme="temporada"] .crm-tw-header button:hover { background: rgba(255,255,255,0.16) !important; }
+body[data-theme="temporada"] .crm-tw-header-divider { background: rgba(255,255,255,0.25) !important; }
+/* Cuerpo y panel lateral: claros (texto oscuro original legible) */
+body[data-theme="temporada"] .crm-tw-main { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FORM CREAR TAREA — cuerpo claro + header greca + footer claro.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] .crm-create-task-container {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
+}
+body[data-theme="temporada"] .crm-ctw-header {
+    border-bottom: 2px solid #E8722E !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Botón de oportunidad vinculada y close en claro */
+body[data-theme="temporada"] .crm-ctw-project { color: #ffffff !important; }
+body[data-theme="temporada"] .crm-ctw-project:hover { background: rgba(255,255,255,0.16) !important; color:#ffffff !important; }
+body[data-theme="temporada"] .crm-ctw-project-ico { color: #ffffff !important; }
+body[data-theme="temporada"] .crm-ctw-chev { color: rgba(255,255,255,0.7) !important; }
+body[data-theme="temporada"] .crm-ctw-close { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="temporada"] .crm-ctw-close:hover { background: rgba(232,114,46,0.45) !important; color:#ffffff !important; }
+/* Cuerpo claro (título/inputs legibles) + footer claro con borde rojo */
+body[data-theme="temporada"] .crm-ctw-canvas { background: transparent !important; }
+body[data-theme="temporada"] .crm-ctw-toolbar {
+    background: #FBEFE3 !important;
+    border-top: 2px solid #E8722E !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VISTA CALENDARIO DE TAREAS — columnas por día transparentes (como el
+   kanban del CRM); cards en glass esmerilado. La cielo se ve detrás.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] .tareas-cal-col {
+    background: linear-gradient(180deg, transparent 0%, transparent 38%, rgba(8, 14, 26, 0.14) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+body[data-theme="temporada"] .tareas-cal-col.col-atrasadas {
+    background: linear-gradient(180deg, rgba(232,114,46,0.10) 0%, rgba(120,10,18,0.18) 100%) !important;
+    border-color: rgba(232,114,46,0.45) !important;
+}
+body[data-theme="temporada"] .tareas-cal-col.col-hoy {
+    background: linear-gradient(180deg, rgba(242,130,59,0.12) 0%, rgba(30,46,80,0.16) 100%) !important;
+    border-color: rgba(242,130,59,0.5) !important;
+}
+body[data-theme="temporada"] .tareas-cal-col-head {
+    /* PERF: sin blur (7 columnas); velo más opaco compensa */
+    background: rgba(10, 16, 30, 0.60) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: rgba(255,255,255,0.14) !important;
+}
+body[data-theme="temporada"] .tareas-cal-day-name,
+body[data-theme="temporada"] .tareas-cal-day-num,
+body[data-theme="temporada"] .tareas-cal-count {
+    color: #ffffff !important;
+}
+/* Cards de la vista calendario: glass esmerilado blanco */
+body[data-theme="temporada"] .tareas-card {
+    /* PERF: sin blur por tarjeta (ver nota en .crm-postit) */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.70) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PROYECTOS — listado frosted (la cielo se asoma) + detalle con
+   topbar/tabs glass oscuro. Misma fórmula: fondo translúcido + headers
+   legibles + texto oscuro sobre surfaces claras.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* --- Sección principal: transparente para dejar ver la cielo --- */
+body[data-theme="temporada"] #proyectosSection {
+    background: transparent !important;
+}
+
+/* --- Topbar (Filtro / Ordenar / Proyectos pill / Buscar / + Nuevo) --- */
+body[data-theme="temporada"] .proy-tabs-wrap {
+    background: transparent !important;
+}
+body[data-theme="temporada"] .proy-tabs {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+}
+body[data-theme="temporada"] .proy-tab {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+body[data-theme="temporada"] .proy-tab:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-tab.active {
+    background: linear-gradient(135deg, #F2823B 0%, #E8722E 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+}
+body[data-theme="temporada"] .proy-facet-btn {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="temporada"] .proy-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-facet-btn.active {
+    background: rgba(242, 130, 59, 0.30) !important;
+    border-color: rgba(242, 130, 59, 0.70) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-facet-menu {
+    background: rgba(20, 40, 28, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.50) !important;
+}
+body[data-theme="temporada"] .proy-facet-item {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="temporada"] .proy-facet-item:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-search-wrap .proy-search-icon {
+    color: rgba(255, 255, 255, 0.55) !important;
+    stroke: rgba(255, 255, 255, 0.55) !important;
+}
+body[data-theme="temporada"] .proy-search {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-search::placeholder {
+    color: rgba(255, 255, 255, 0.50) !important;
+}
+body[data-theme="temporada"] .proy-search:focus {
+    border-color: rgba(242, 130, 59, 0.60) !important;
+    box-shadow: 0 0 0 3px rgba(242, 130, 59, 0.20) !important;
+}
+body[data-theme="temporada"] .proy-btn-new {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    border-color: #E8722E !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-btn-new:hover {
+    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
+    box-shadow: 0 4px 14px rgba(242, 130, 59, 0.45) !important;
+}
+
+/* --- Header de la tabla (PROYECTO/CLIENTE, MONTO, SERVICIO...) --- */
+body[data-theme="temporada"] #proyListView .crm-list-head {
+    color: rgba(255, 255, 255, 0.65) !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+body[data-theme="temporada"] #proyListView .crm-list-hcell {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* --- Filas de proyectos: glass esmerilado (como cards kanban) --- */
+body[data-theme="temporada"] #proyListView .crm-list-row {
+    /* PERF: sin blur por fila (ver nota en .crm-postit) */
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+body[data-theme="temporada"] #proyListView .crm-list-row:hover {
+    background: rgba(255, 255, 255, 0.97) !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* --- Empty state --- */
+body[data-theme="temporada"] .proy-empty {
+    color: rgba(255, 255, 255, 0.70) !important;
+}
+body[data-theme="temporada"] .proy-empty p {
+    color: rgba(255, 255, 255, 0.70) !important;
+}
+body[data-theme="temporada"] .proy-empty svg {
+    stroke: rgba(255, 255, 255, 0.40) !important;
+}
+
+/* --- Detalle de proyecto: card transparente --- */
+body[data-theme="temporada"] .proy-detail-page {
+    background: transparent !important;
+}
+body[data-theme="temporada"] .proy-detail-card {
+    background: transparent !important;
+}
+
+/* --- Topbar v3 del detalle (back + tabs + avatares) --- */
+body[data-theme="temporada"] .proy-v3-topbar {
+    background: transparent !important;
+}
+body[data-theme="temporada"] .proy-v3-back {
+    color: rgba(255, 255, 255, 0.80) !important;
+}
+body[data-theme="temporada"] .proy-v3-back:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="temporada"] .proy-v3-crumb-name {
+    color: rgba(255, 255, 255, 0.90) !important;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+}
+body[data-theme="temporada"] .proy-v3-topbar-sep {
+    color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="temporada"] .proy-v3-opp-link {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+body[data-theme="temporada"] .proy-v3-opp-link:hover {
+    color: #ffffff !important;
+}
+
+/* --- Tabs del detalle (Resumen / Tareas / Programa de Obra / ...) --- */
+body[data-theme="temporada"] .proy-v3-topbar-tabs {
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+}
+body[data-theme="temporada"] .proy-v3-topbar-tab,
+body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+body[data-theme="temporada"] .proy-v3-topbar-tab:hover,
+body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-v3-topbar-tab.active,
+body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn.active {
+    background: linear-gradient(135deg, #F2823B 0%, #E8722E 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+}
+body[data-theme="temporada"] .proy-v3-topbar-tab.active:hover,
+body[data-theme="temporada"] .proy-v3-topbar-tabs .proy-tab-btn.active:hover {
+    background: linear-gradient(135deg, #FF9A4D 0%, #008a55 100%) !important;
+}
+body[data-theme="temporada"] .proy-v3-topbar-tabs svg {
+    color: inherit !important;
+}
+
+/* --- Avatares y agregar miembro --- */
+body[data-theme="temporada"] .proy-v3-add-member {
+    color: rgba(255, 255, 255, 0.70) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+body[data-theme="temporada"] .proy-v3-add-member:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+}
+
+/* --- Chip de oportunidad (esquina sup. derecha): glass como el toolbar --- */
+body[data-theme="temporada"] .proy-v3-opp-pill {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: rgba(255, 255, 255, 0.90) !important;
+}
+body[data-theme="temporada"] .proy-v3-opp-pill:hover {
+    background: rgba(255, 255, 255, 0.20) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-v3-opp-pill svg { color: rgba(255, 255, 255, 0.90) !important; }
+
+/* --- Header del proyecto (nombre + meta line): TARJETA BLANCA estilo Apple ---
+   Antes era transparente con texto blanco sobre el estadio (se leía mal). Ahora
+   es una card blanca, así que el texto vuelve a ser oscuro como en modo claro. */
+body[data-theme="temporada"] .proy-v3-header.proy-v3-header--minimal {
+    background: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-v3-name {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+body[data-theme="temporada"] .proy-v3-meta-line {
+    color: #64748b !important;
+}
+body[data-theme="temporada"] .proy-v3-meta-sep {
+    color: #cbd5e1 !important;
+}
+body[data-theme="temporada"] .proy-v3-meta-cliente,
+body[data-theme="temporada"] .proy-v3-meta-fechas {
+    color: #1e293b !important;
+}
+body[data-theme="temporada"] .proy-v3-rag-text {
+    color: inherit !important;
+}
+
+/* Tareas del proyecto: la búsqueda flota como glass (no cuadro blanco sólido),
+   igual que la barra del módulo de Tareas real. */
+body[data-theme="temporada"] .proy-tcp-search { background: rgba(10,30,20,0.45) !important; border-color: rgba(255,255,255,0.45) !important; -webkit-backdrop-filter: blur(14px) !important; backdrop-filter: blur(14px) !important; }
+body[data-theme="temporada"] .proy-tcp-search input { color: #ffffff !important; }
+body[data-theme="temporada"] .proy-tcp-search input::placeholder { color: rgba(255,255,255,0.72) !important; }
+body[data-theme="temporada"] .proy-tcp-search svg { stroke: rgba(255,255,255,0.85) !important; }
+
+/* --- KPI strip: SÓLIDO (legibilidad prioritaria) --- */
+body[data-theme="temporada"] .proy-v3-kpi-strip {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(30, 46, 80, 0.22) !important;
+    box-shadow: 0 10px 34px rgba(4, 8, 18, 0.38) !important;
+}
+body[data-theme="temporada"] .proy-v3-kpi-cell + .proy-v3-kpi-cell {
+    border-left-color: rgba(30, 46, 80, 0.14) !important;
+}
+
+/* --- Dashboard cards (Resumen tab): SÓLIDO blanco --- */
+body[data-theme="temporada"] .proy-v3-dash-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(30, 46, 80, 0.20) !important;
+    box-shadow: 0 8px 28px rgba(4, 8, 18, 0.30) !important;
+}
+body[data-theme="temporada"] .proy-v3-dash-card-head {
+    border-bottom-color: rgba(30, 46, 80, 0.12) !important;
+}
+
+/* --- Tab panes: panel SÓLIDO claro (texto oscuro legible) --- */
+body[data-theme="temporada"] .proy-tab-pane {
+    background: #f5f5f3 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(30, 46, 80, 0.22) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 34px rgba(4, 8, 18, 0.38) !important;
+}
+
+/* --- Tab header (dentro de panes) con greca --- */
+body[data-theme="temporada"] .proy-tab-header {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+    border-radius: 14px 14px 0 0 !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-tab-header * {
+    color: #ffffff !important;
+}
+/* Botones dentro del header greca: el wildcard de arriba les fuerza texto
+   blanco pero su fondo era CLARO (proy-btn-outline, wop-btn, "← Atrás")
+   → pills blancos ilegibles. Mismo glass oscuro que los botones del
+   header del calendario. */
+body[data-theme="temporada"] .proy-tab-header button {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-tab-header button:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+}
+/* Los primarios (+ Nueva instalación, etc.) conservan jerarquía en verde
+   selección — igual que "+Nueva Actividad" del calendario. */
+body[data-theme="temporada"] .proy-tab-header .wop-btn-primary,
+body[data-theme="temporada"] .proy-tab-header .proy-btn-primary {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    border: none !important;
+}
+
+/* --- Programa de Obra: pane sin card ni greca (como Tareas) --- */
+/* El pane lo transparenta el JS inline (_proyTareasBg) y aquí matamos la
+   greca del header para que el toolbar (título + "Nueva instalación") flote
+   limpio sobre el estadio. El pane en sí ya queda transparente por el inline
+   !important del walk; reforzamos por si el walk no corrió todavía. */
+body[data-theme="temporada"] #proyPane_programa-obra.proy-tab-pane {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+body[data-theme="temporada"] #proyPane_programa-obra .proy-tab-header {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+}
+body[data-theme="temporada"] #proyPane_programa-obra .proy-tab-header h3 {
+    color: #ffffff !important;
+}
+/* Partidas y Levantamientos: pane y header transparentes (mata el cuadro
+   blanco), título en blanco sobre el estadio. La tabla interna conserva su
+   card blanca. */
+body[data-theme="temporada"] #proyPane_partidasv4.proy-tab-pane,
+body[data-theme="temporada"] #proyPane_partidas.proy-tab-pane {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+body[data-theme="temporada"] #proyPane_partidasv4 .proy-tab-header,
+body[data-theme="temporada"] #proyPane_partidas .proy-tab-header {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+}
+body[data-theme="temporada"] #proyPane_partidasv4 .proy-tab-header h3,
+body[data-theme="temporada"] #proyPane_partidas .proy-tab-header h3 {
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] #proyPane_partidasv4 #proyPartidasOrigen {
+    color: rgba(255,255,255,0.8) !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+/* Drive: pane y header transparentes (mata el cuadro blanco), título en
+   blanco sobre el estadio. La card interna #proyDriveCard conserva su fondo
+   blanco. */
+body[data-theme="temporada"] #proyPane_drive.proy-tab-pane {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+body[data-theme="temporada"] #proyPane_drive .proy-tab-header {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+}
+body[data-theme="temporada"] #proyPane_drive .proy-tab-header h3 {
+    color: #ffffff !important;
+}
+/* Empty state ("Sin instalaciones aún") legible sobre el estadio. */
+body[data-theme="temporada"] #proyPane_programa-obra .pob-empty-title {
+    color: #ffffff !important;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+}
+body[data-theme="temporada"] #proyPane_programa-obra .pob-empty-sub {
+    color: rgba(255,255,255,0.85) !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+body[data-theme="temporada"] #proyPane_programa-obra .pob-empty-ic {
+    stroke: rgba(255,255,255,0.75) !important;
+    opacity: 0.8 !important;
+}
+/* Header greca del modal de instalación: texto/íconos en blanco. */
+body[data-theme="temporada"] .pob-eyebrow { color: #ffffff !important; }
+body[data-theme="temporada"] .pob-eyebrow svg { color: rgba(255,255,255,0.85) !important; }
+body[data-theme="temporada"] .pob-head .widget-close { color: #fff !important; background: rgba(255,255,255,0.22) !important; }
+body[data-theme="temporada"] .pob-head .widget-close:hover { background: rgba(255,255,255,0.38) !important; }
+
+/* --- Diálogos de proyecto (Crear, Editar, etc.) --- */
+body[data-theme="temporada"] .proy-dialog-overlay {
+    background: rgba(1, 12, 6, 0.70) !important;
+}
+body[data-theme="temporada"] .proy-dialog-card {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
+}
+body[data-theme="temporada"] .proy-dialog-header {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+}
+body[data-theme="temporada"] .proy-dialog-header h3,
+body[data-theme="temporada"] .proy-dialog-header .proy-dialog-title {
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-btn-close {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="temporada"] .proy-btn-close:hover {
+    background: rgba(232,114,46,0.45) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .proy-dialog-footer {
+    background: #FBEFE3 !important;
+    border-top: 2px solid #E8722E !important;
+}
+body[data-theme="temporada"] .proy-dialog-footer .proy-btn-primary {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    color: #ffffff !important;
+}
+
+/* --- Tablas internas de proyecto (partidas, finanzas, levantamientos) --- */
+body[data-theme="temporada"] .proy-table th,
+body[data-theme="temporada"] .proy-fin-table th,
+body[data-theme="temporada"] .lev-list-table thead th,
+body[data-theme="temporada"] .proy-partidas-table thead th {
+    background: rgba(24, 38, 66, 0.12) !important;
+    color: #1a1a1a !important;
+}
+
+/* --- Finance sub-tabs --- */
+body[data-theme="temporada"] .proy-fin-subtab {
+    color: rgba(0, 0, 0, 0.60) !important;
+}
+body[data-theme="temporada"] .proy-fin-subtab.is-active {
+    color: #C05A28 !important;
+    border-bottom-color: #C05A28 !important;
+}
+
+/* --- Finance head (banner) --- */
+body[data-theme="temporada"] .proy-fin-head {
+    background: linear-gradient(135deg, rgba(30, 46, 80, 0.08), rgba(232, 114, 46, 0.05)) !important;
+    border: 1px solid rgba(30, 46, 80, 0.18) !important;
+    border-radius: 14px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CALENDARIO — panel SÓLIDO claro (como Tareas) con header greca.
+   Legibilidad es prioridad; fondo opaco, texto oscuro legible.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* --- Calendario estilo Claude Design: fondo CLARO suave detrás (en vez de
+       la cielo dura) + card translúcido flotante con sombra azulada. La greca
+       de arriba se conserva (identidad Mundial); el cuerpo es claro y aireado
+       como el diseño, para que el card "flote" en 3D sin verse plano. --- */
+body[data-theme="temporada"] .cal-card {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 18px 50px rgba(20, 50, 100, 0.14), 0 1px 0 rgba(255,255,255,.9) inset !important;
+}
+body[data-theme="temporada"] .cal-card--page {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+/* Fondo del área del calendario: TRANSPARENTE — deja ver la cielo (Mundial)
+   alrededor del card flotante, como pidió el usuario. */
+body[data-theme="temporada"] .widget-overlay.is-page-mode {
+    background: transparent !important;
+}
+/* MODO PÁGINA: card sólido blanco + sombra 3D (flota sobre la cielo). */
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-card--page {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255,255,255,0.55) !important;
+    /* Sombra profunda y oscura → el card "flota" en 3D sobre la cielo
+       (fondo transparente). Borde superior iluminado + contacto + ambiente. */
+    box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,0.85),
+        0 2px 5px rgba(0,0,0,0.20),
+        0 12px 28px rgba(0,0,0,0.32),
+        0 36px 70px rgba(0,0,0,0.42),
+        0 60px 120px rgba(0,0,0,0.28) !important;
+}
+
+/* --- Header principal del overlay (div sin clase, primer hijo de .cal-card)
+       y subnav: barra greca azteca verde→rojo --- */
+body[data-theme="temporada"] .cal-card > div:first-child {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-card > div:first-child * {
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-card > div:first-child button {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-card > div:first-child button:hover {
+    background: rgba(255,255,255,0.22) !important;
+}
+body[data-theme="temporada"] .cal-card > div:first-child .cal-userpick-btn {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+/* +Nueva Actividad button in header */
+body[data-theme="temporada"] .cal-card > div:first-child button[onclick*="CrearActividad"] {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+}
+/* Close button × */
+body[data-theme="temporada"] .cal-card > div:first-child button[onclick*="Cerrar"] {
+    background: transparent !important;
+}
+body[data-theme="temporada"] .cal-card > div:first-child button[onclick*="Cerrar"]:hover {
+    background: rgba(232,114,46,0.30) !important;
+}
+
+/* --- Subnav (arrows + Hoy + título + Mes/Semana/Día) --- */
+body[data-theme="temporada"] .cal-subnav-default {
+    background: rgba(24, 38, 66, 0.06) !important;
+    border-bottom-color: rgba(30, 46, 80, 0.12) !important;
+}
+
+/* --- Topbar del calendario: greca azteca verde→rojo --- */
+body[data-theme="temporada"] .cal-page-bar {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+    border-color: transparent !important;
+    border-bottom-color: #E8722E !important;
+}
+/* Topbar facet buttons / pills — glass translúcido sobre la greca.
+   Prefijo .widget-overlay.is-page-mode para ganarle en especificidad a las
+   reglas !important de crm.css (que los ponían blancos sólidos). */
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-add,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill {
+    background: rgba(12, 20, 38, 0.34) !important;
+    border: 1px solid rgba(255,255,255,0.38) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.20) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:not(.crm-facet-new):hover,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
+    background: rgba(12, 20, 38, 0.48) !important;
+    border-color: rgba(255,255,255,0.55) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn svg,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+/* Búsqueda en el header (pill expandible) + estrella del Asistente.
+   Mismo look verde-oscuro translúcido que los otros botones del header. */
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-pill {
+    background: rgba(12, 20, 38, 0.34) !important;
+    border: 1px solid rgba(255,255,255,0.38) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.20) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-hdrsearch.open .cal-search-pill {
+    background: rgba(12, 20, 38, 0.48) !important;
+    border-color: rgba(255,255,255,0.5) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ic,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-input,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-clear {
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ic svg,
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-clear svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-input::placeholder {
+    color: rgba(255,255,255,0.75) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai {
+    color: #FFE08A !important;
+    border-left: 1px solid rgba(255,255,255,0.3) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai svg {
+    color: #FFE08A !important;
+    stroke: #FFE08A !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai:hover {
+    color: #FFD24A !important;
+}
+/* User picker con valor seleccionado */
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill.has-value {
+    background: rgba(242,130,59,0.35) !important;
+    border-color: rgba(255,255,255,0.40) !important;
+}
+/* Dynamic island Mes/Semana/Día */
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-tabs--dashboard {
+    background: rgba(0, 0, 0, 0.26) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab {
+    color: rgba(255,255,255,0.78) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab:hover {
+    background: rgba(255,255,255,0.14) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab.active {
+    background: linear-gradient(135deg, #F2823B 0%, #E8722E 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.40) !important;
+}
+/* +Nueva actividad → verde mexicano (en vez del azul default) */
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+}
+body[data-theme="temporada"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new:hover {
+    background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
+    box-shadow: 0 4px 14px rgba(242, 130, 59, 0.45) !important;
+    color: #ffffff !important;
+}
+
+/* --- Navegación de fecha (← → Hoy · Junio 2026) --- */
+body[data-theme="temporada"] .cal-topnav-arrow {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-topnav-arrow:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="temporada"] .cal-topnav-today {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-topnav-today:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="temporada"] .cal-topnav-title {
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+/* --- Source toggle (Actividades / Instalaciones) --- */
+body[data-theme="temporada"] .cal-source-toggle {
+    background: rgba(0, 0, 0, 0.22) !important;
+}
+body[data-theme="temporada"] .cal-source-btn {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+body[data-theme="temporada"] .cal-source-btn:hover {
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-source-btn-active {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.25) !important;
+}
+
+/* --- User picker --- */
+body[data-theme="temporada"] .cal-userpick-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-userpick-btn:hover {
+    background: rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="temporada"] .cal-userpick-btn.has-value {
+    background: rgba(242, 130, 59, 0.25) !important;
+    border-color: rgba(242, 130, 59, 0.50) !important;
+    color: #ffffff !important;
+}
+
+/* --- Filter popup --- */
+body[data-theme="temporada"] .cal-filter-pop {
+    background: rgba(20, 40, 28, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.50) !important;
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .cal-filter-pop-lbl {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+body[data-theme="temporada"] .cal-filter-pop-item {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+body[data-theme="temporada"] .cal-filter-pop-item:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ═══ Grid del MES — estilo Calendario CRM (Claude Design) ═══
+   Tipografía, celdas, números y header tal cual el diseño; conservamos
+   nuestros colores por tipo (píldoras) y el "hoy" en verde mexicano.
+   --hair = rgba(20,30,55,.08) como en el diseño. */
+body[data-theme="temporada"] #fullCalendarRoot {
+    --fc-border-color: rgba(20,30,55,.08) !important;
+    --fc-page-bg-color: #ffffff !important;
+    --fc-neutral-bg-color: #ffffff !important;
+    --fc-today-bg-color: rgba(242,130,59,.05) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+/* Sin marco interno: el card redondeado es el contenedor */
+body[data-theme="temporada"] #fullCalendarRoot .fc-scrollgrid { border: none !important; }
+/* Header de días (LUN MAR…): izquierda, gris, uppercase, hairline abajo */
+body[data-theme="temporada"] #fullCalendarRoot .fc-col-header-cell {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(20,30,55,.08) !important;
+    text-align: left !important;
+    padding: 0 !important;
+}
+body[data-theme="temporada"] #fullCalendarRoot .fc-col-header-cell-cushion {
+    color: #8b9099 !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: .4px !important;
+    text-transform: uppercase !important;
+    padding: 11px 14px !important;
+    display: block !important;
+    text-align: left !important;
+}
+/* Celdas: cuadro blanco con hairlines (right + bottom); última col sin right */
+body[data-theme="temporada"] #fullCalendarRoot td,
+body[data-theme="temporada"] #fullCalendarRoot th { border-color: rgba(20,30,55,.08) !important; }
+body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-day {
+    background: #ffffff !important;
+    border-right: 1px solid rgba(20,30,55,.08) !important;
+    border-bottom: 1px solid rgba(20,30,55,.08) !important;
+    transition: background .12s !important;
+}
+body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-day:nth-child(7n) { border-right: none !important; }
+body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-day:hover { background: rgba(10,116,240,.035) !important; }
+/* Días de otro mes: muy sutil + número apagado */
+body[data-theme="temporada"] #fullCalendarRoot .fc-day-other { background: rgba(20,30,55,.018) !important; }
+body[data-theme="temporada"] #fullCalendarRoot .fc-day-other .fc-daygrid-day-number { color: #aeb4bd !important; }
+/* Marco de celda con poco padding (números y píldoras pegados arriba) */
+body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-day-frame { padding: 2px 5px 5px !important; }
+/* Número del día: arriba-derecha, círculo 24px, gris-tinta */
+body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-day-number {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #3b3f46 !important;
+    width: 24px !important; height: 24px !important;
+    border-radius: 50% !important;
+    display: grid !important; place-items: center !important;
+    padding: 0 !important;
+    margin: 4px 4px 0 0 !important;
+}
+/* Hoy: círculo verde mexicano (nuestro acento), número blanco */
+body[data-theme="temporada"] #fullCalendarRoot .fc-day-today { background: rgba(242,130,59,.05) !important; }
+body[data-theme="temporada"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
+    background: #F2823B !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(242,130,59,.4) !important;
+}
+/* "N más" en gris discreto (estilo diseño) */
+body[data-theme="temporada"] #fullCalendarRoot .fc-daygrid-more-link {
+    color: #8b9099 !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+
+/* --- FullCalendar popover ("+3 más") --- */
+body[data-theme="temporada"] #fullCalendarRoot .fc-popover {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.25) !important;
+    box-shadow: 0 12px 40px rgba(4, 8, 18, 0.30) !important;
+}
+body[data-theme="temporada"] #fullCalendarRoot .fc-popover-header {
+    background: rgba(24, 38, 66, 0.10) !important;
+    color: #1a1a1a !important;
+}
+
+/* --- Day view: hour grid (sobre frosted, texto oscuro) --- */
+body[data-theme="temporada"] .cal-hour-row {
+    border-bottom-color: rgba(24, 38, 66, 0.10) !important;
+}
+body[data-theme="temporada"] .cal-hour-label {
+    color: #7E8A9A !important;
+}
+
+/* --- Day view: agenda cards (sólidos blancos, legibles) --- */
+body[data-theme="temporada"] .cal-day-agenda-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(30, 46, 80, 0.18) !important;
+    box-shadow: 0 2px 8px rgba(4, 8, 18, 0.10) !important;
+}
+body[data-theme="temporada"] .cal-day-agenda-card:hover {
+    box-shadow: 0 6px 18px rgba(4, 8, 18, 0.16) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* --- Day view empty state (sobre frosted → oscuro) --- */
+body[data-theme="temporada"] .cal-day-list-empty-t {
+    color: #1a1a1a !important;
+}
+body[data-theme="temporada"] .cal-day-list-empty-s {
+    color: #6b7280 !important;
+}
+body[data-theme="temporada"] .cal-day-list-empty-ic {
+    background: rgba(30, 46, 80, 0.08) !important;
+    color: #7E8A9A !important;
+}
+body[data-theme="temporada"] .cal-day-list-empty-btn {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+}
+
+/* --- Hover popover (tooltip de evento) --- */
+body[data-theme="temporada"] .cal-hover-popover {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.25) !important;
+    box-shadow: 0 16px 48px rgba(4, 8, 18, 0.30) !important;
+}
+
+/* --- View buttons (Mes / Semana / Día) — both modes --- */
+body[data-theme="temporada"] .cal-view-btn {
+    color: #5a7a64 !important;
+}
+body[data-theme="temporada"] .cal-view-btn:hover {
+    color: #1a1a1a !important;
+    background: rgba(30, 46, 80, 0.08) !important;
+}
+body[data-theme="temporada"] .cal-view-btn.active {
+    background: linear-gradient(135deg, #F2823B 0%, #C05A28 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(242, 130, 59, 0.30) !important;
+}
+
+/* --- Subnav buttons (overlay mode): dark on light --- */
+body[data-theme="temporada"] .cal-subnav-default button[onclick*="Nav"] {
+    background: rgba(30, 46, 80, 0.08) !important;
+}
+body[data-theme="temporada"] .cal-subnav-default button[onclick*="Nav"]:hover {
+    background: rgba(30, 46, 80, 0.16) !important;
+}
+body[data-theme="temporada"] .cal-subnav-default span[id="calNavTitle"] {
+    color: #1a1a1a !important;
+}
+/* View buttons container in subnav */
+body[data-theme="temporada"] .cal-subnav-default > div:last-child {
+    background: rgba(30, 46, 80, 0.06) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ACTIVIDADES — modal de detalle + formulario "Nueva Actividad".
+   Misma fórmula: cuerpo claro + header greca azteca verde→rojo.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── DETALLE DE ACTIVIDAD (header inline azul → greca) ──
+   El header es un <div> con estilo inline background:#0052D4 sin clase; lo
+   vencemos con !important sobre el primer hijo de la tarjeta. */
+body[data-theme="temporada"] #widgetOppVerActividad .widget-card {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
+}
+body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+}
+/* Iconito del badge inferior-izquierdo en verde mexicano */
+body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child > div:last-child {
+    color: #C05A28 !important;
+}
+
+/* ── FORMULARIO NUEVA ACTIVIDAD (.wact-*) ── */
+body[data-theme="temporada"] .wact-shell {
+    background: #f5f5f3 !important;
+    border: 1px solid rgba(30, 46, 80, 0.35) !important;
+    box-shadow: 0 30px 80px rgba(4, 8, 18, 0.55) !important;
+}
+/* Header con greca verde→rojo */
+body[data-theme="temporada"] .wact-header {
+    background-color: #1E2E50 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.18' stroke-width='2.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M-6 90 L12 90 L12 74 L28 74 L28 58 L44 58 L44 42 L60 42 L60 26 L76 26 L76 10 L94 10'/%3E%3Cpath d='M6 10 L22 26 L38 8'/%3E%3Cpath d='M50 68 L50 86 L68 86 L68 72 L59 72'/%3E%3Cpath d='M72 38 L90 56 L72 74'/%3E%3Cpath d='M16 42 L30 42 L30 56'/%3E%3Cpath d='M80 86 L92 74'/%3E%3Cpath d='M40 90 L52 78'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 100% 0%, rgba(232,114,46,0.55) 0%, transparent 55%),
+        linear-gradient(120deg, #1E2E50 0%, #16233C 40%, #B85A2A 100%) !important;
+    background-repeat: repeat, no-repeat, no-repeat !important;
+    background-size: 96px 96px, auto, auto !important;
+    border-bottom: 2px solid #E8722E !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+/* Breadcrumb e iconos del header en blanco */
+body[data-theme="temporada"] .wact-breadcrumb,
+body[data-theme="temporada"] .wact-crumb-current {
+    color: #ffffff !important;
+}
+body[data-theme="temporada"] .wact-breadcrumb svg {
+    color: rgba(255,255,255,0.75) !important;
+}
+body[data-theme="temporada"] .wact-close {
+    color: rgba(255,255,255,0.85) !important;
+}
+body[data-theme="temporada"] .wact-close:hover {
+    background: rgba(232,114,46,0.45) !important;
+    color: #ffffff !important;
+}
+/* Footer/toolbar: verde-crema claro con borde rojo superior */
+body[data-theme="temporada"] .wact-toolbar {
+    background: #FBEFE3 !important;
+    border-top: 2px solid #E8722E !important;
+}
+/* Botón Guardar Actividad (cuando está listo) → verde mexicano */
+body[data-theme="temporada"] .wact-submit.is-ready {
+    background: linear-gradient(180deg, #F2823B 0%, #C05A28 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(242, 130, 59, 0.35) !important;
+}
+body[data-theme="temporada"] .wact-submit.is-ready:hover {
+    background: linear-gradient(180deg, #FF9A4D 0%, #E8722E 100%) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COTIZAR (crear_cotizacion.html) — NO usar la foto de la cielo aquí.
+   La página hereda body[data-theme="temporada"] y en modo ventana su fondo
+   propio (.apple-bg) se oculta, dejando ver la cielo del ::before y
+   causando el "flash". Aquí la apagamos y dejamos un fondo sólido oscuro;
+   la decoración mundial vive solo en la franja/greca del header de la
+   ventana (ya aplicada por .wo-header / chrome de la ventana).
+   Scope doble: por si .dashboard-container queda en el body (merge) o como
+   elemento interno (:has).
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"].dashboard-container::before,
+body[data-theme="temporada"]:has(.dashboard-container)::before {
+    display: none !important;
+}
+body[data-theme="temporada"].dashboard-container,
+body[data-theme="temporada"]:has(.dashboard-container) {
+    background: linear-gradient(165deg, #06351f 0%, #04240f 58%, #2c0a11 100%) !important;
+}
+/* Tarjetas sólidas (sin transparencia que deje ver nada detrás) */
+body[data-theme="temporada"] .dashboard-container .card {
+    background: #ffffff !important;
+    border: 1px solid rgba(30, 46, 80, 0.18) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX GLOBAL: CAMPOS DE FORMULARIO (2026-06-11)
+   crm.css pone al body color blanco en mundial (var --text-crm) y el
+   preflight de Tailwind hace que input/select/textarea HEREDEN ese color
+   → cualquier campo sin color explícito escribía blanco-sobre-blanco
+   (ej. "Nueva instalación" del Programa de Obra, selects que se veían
+   vacíos). Default oscuro SIN !important y con especificidad mínima:
+   los campos sobre superficies oscuras del tema (buscadores del topbar,
+   proy-search…) tienen su blanco explícito con !important y no se tocan.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] input,
+body[data-theme="temporada"] select,
+body[data-theme="temporada"] textarea {
+    color: #1e293b;
+    caret-color: #1e293b;
+}
+body[data-theme="temporada"] select option {
+    color: #1e293b;
+    background: #ffffff;
+}
+/* Editores contenteditable (correo, reporte del levantamiento, etc.):
+   son divs y no los cubre la regla de arriba — heredan igual el blanco
+   del body. Sin caret-color para no pisar el caret propio de cada editor. */
+body[data-theme="temporada"] [contenteditable="true"] {
+    color: #1e293b;
+}
+
+
+/* Título del marco de las ventanas-iframe (idea/prospecto/drive/cotizador):
+   el chrome trae color oscuro inline y sobre la greca era ilegible. */
+body[data-theme="temporada"] .oppv2-cot [data-cot-title] {
+    color: #ffffff !important;
+}
+
+
+/* ── Header del modal de tarea: nuevo layout (acciones izq, ventana der) ──
+   La regla general pinta TODO el header en blanco; los controles de
+   ventana [— □ ×] son círculos CLAROS → su glifo debe ser oscuro, y la X
+   dentro del cluster adopta el mismo círculo para consistencia. */
+body[data-theme="temporada"] .crm-tw-header-left .crm-tw-icon-btn,
+body[data-theme="temporada"] .crm-tw-header-left .crm-tw-icon-btn svg {
+    color: #ffffff !important;
+}
+/* Hover / abierto: el botón toma fondo CLARO → su glifo debe ir oscuro
+   (si no, queda blanco-sobre-gris, el 'cuadrado blanco' del menú abierto). */
+body[data-theme="temporada"] .crm-tw-header-left .crm-tw-icon-btn:hover,
+body[data-theme="temporada"] .crm-tw-header-left .crm-tw-icon-btn.is-open,
+body[data-theme="temporada"] .crm-tw-header-left .crm-tw-icon-btn:hover svg,
+body[data-theme="temporada"] .crm-tw-header-left .crm-tw-icon-btn.is-open svg {
+    color: #1E293B !important;
+}
+body[data-theme="temporada"] .crm-tw-header .ww-ctrls button,
+body[data-theme="temporada"] .crm-tw-header .ww-ctrls button svg {
+    color: #3C3C43 !important;
+}
+body[data-theme="temporada"] .crm-tw-header .ww-ctrls button:hover {
+    background: #E5E5EA !important;
+}
+body[data-theme="temporada"] .crm-tw-header .ww-ctrls .crm-tw-icon-btn {
+    background: #F2F2F7 !important;
+    border-radius: 50% !important;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Dropdown de 3-puntos (.crm-tw-menu): es un panel BLANCO que cuelga del
+   header — la regla general lo pintaba con texto blanco (invisible).
+   Texto oscuro sobre el panel; el item 'danger' conserva su rojo. */
+body[data-theme="temporada"] .crm-tw-menu,
+body[data-theme="temporada"] .crm-tw-menu button,
+body[data-theme="temporada"] .crm-tw-menu button svg,
+body[data-theme="temporada"] .crm-tw-menu span {
+    color: #1D1D1F !important;
+}
+body[data-theme="temporada"] .crm-tw-menu .crm-tw-menu-item.danger,
+body[data-theme="temporada"] .crm-tw-menu .crm-tw-menu-item.danger svg,
+body[data-theme="temporada"] .crm-tw-menu .crm-tw-menu-item.danger span {
+    color: #DC2626 !important;
+}
+body[data-theme="temporada"] .crm-tw-menu button:hover {
+    background: #F2F2F7 !important;
+}
+
+/* ── Dashboard de Reportes (tab=clientes): chart-cards sólidas ──
+   .ck-chart-card usa glass translúcido (rgba .72/.45 + blur 40px) pensado para
+   fondo claro; sobre la cielo del tema mundial se ven lavadas y las gráficas
+   quedan ilegibles. Las volvemos sólidas blancas con sombra limpia. */
+body[data-theme="temporada"] .ck-chart-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(15,23,42,0.08) !important;
+    box-shadow: 0 1px 3px rgba(20,50,100,0.06), 0 10px 30px rgba(20,50,100,0.10) !important;
+}
+body[data-theme="temporada"] .ck-chart-card:hover {
+    box-shadow: 0 2px 6px rgba(20,50,100,0.08), 0 16px 44px rgba(20,50,100,0.14) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FRANJA DE SOL — reemplaza la greca azteca del Mundial. Es el mismo
+   cielo de la fase actual (var --tmp-cielo) comprimido en la franja, con
+   el glow del sol asomando desde abajo y rayos sutiles en abanico
+   (repeating-conic). Se mueve con la hora vía las vars de cada fase.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="temporada"] #widgetOppVerActividad .widget-card > div:first-child,
+body[data-theme="temporada"] .cal-card > div:first-child,
+body[data-theme="temporada"] .cal-page-bar,
+body[data-theme="temporada"] .crm-ctw-header,
+body[data-theme="temporada"] .crm-tw-header,
+body[data-theme="temporada"] .muro-card-header,
+body[data-theme="temporada"] .pob-head,
+body[data-theme="temporada"] .proy-dialog-header,
+body[data-theme="temporada"] .proy-tab-header,
+body[data-theme="temporada"] .ptk-cols-head,
+body[data-theme="temporada"] .tcp-col-head,
+body[data-theme="temporada"] .wact-header,
+body[data-theme="temporada"] .wn-ctw-header,
+body[data-theme="temporada"] .wo-header {
+    background-color: #1E2E50 !important;
+    background-image:
+        repeating-conic-gradient(from -90deg at var(--tmp-franja-solx, 76%) 150%, rgba(255,255,255,0.09) 0deg 4deg, rgba(255,255,255,0) 4deg 12deg),
+        radial-gradient(circle at var(--tmp-franja-solx, 76%) 135%, var(--tmp-franja-glow, rgba(255,220,150,0.55)) 0%, transparent 60%),
+        var(--tmp-cielo) !important;
+    background-repeat: no-repeat, no-repeat, no-repeat !important;
+    background-size: auto, auto, cover !important;
+    border-bottom: 2px solid var(--tmp-franja-borde, #F2823B) !important;
+}
+
+/* Posición del sol y glow de la franja según la fase del día */
+body[data-theme="temporada"][data-fase="despertar"] {
+    --tmp-franja-solx: 24%;
+    --tmp-franja-glow: rgba(255, 223, 154, 0.60);
+    --tmp-franja-borde: #F2A54D;
+}
+body[data-theme="temporada"][data-fase="pleno"] {
+    --tmp-franja-solx: 76%;
+    --tmp-franja-glow: rgba(255, 240, 190, 0.50);
+    --tmp-franja-borde: #F2823B;
+}
+body[data-theme="temporada"][data-fase="atardecer"] {
+    --tmp-franja-solx: 50%;
+    --tmp-franja-glow: rgba(255, 180, 90, 0.70);
+    --tmp-franja-borde: #E8722E;
+}
+body[data-theme="temporada"][data-fase="crepusculo"] {
+    --tmp-franja-solx: 50%;
+    --tmp-franja-glow: rgba(255, 150, 70, 0.38);
+    --tmp-franja-borde: #B85A2A;
+}
