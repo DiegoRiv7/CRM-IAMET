@@ -119,7 +119,9 @@
   .pend-sc-agent-sub{font-size:.78rem;color:#9a9ca3;margin-top:1px;}
   .pend-sc-msg{font-size:1.12rem;line-height:1.5;color:#1c1d22;font-weight:600;}
   .pend-sc-play{margin-top:16px;background:#f5f6f8;border-radius:12px;padding:13px 15px;}
+  .pend-sc-play.done{background:#eef8f1;}
   .pend-sc-play-lbl{font-size:.68rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .pend-sc-play-lbl.done{color:#2b8a3e;}
   .pend-sc-play-txt{font-size:.94rem;line-height:1.5;color:#33353b;}
   /* Panel derecho */
   .pend-sc-value{font-size:1.7rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;margin-top:2px;}
@@ -373,10 +375,51 @@
     pendCargar();
   };
 
+  // Refresca SOLO el estado (trabajadas hoy) sin recargar todo ni re-ordenar:
+  // marca la actual como completada en su lugar; se ordena al final al reabrir.
+  function pendRefreshEstado() {
+    var r = _data && _data.resumen; if (!r || !r.items || !r.items.length) return;
+    var ids = r.items.map(function (it) { return it.opp_id; }).join(',');
+    fetch('/app/api/pendientes/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
+      .then(function (res) { return res.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var worked = {};
+        (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
+        var comp = 0, pend = 0;
+        r.items.forEach(function (it) {
+          it.completada = !!worked[it.opp_id];
+          if (it.completada) comp++; else pend++;
+        });
+        r.completadas = comp; r.pendientes = pend;
+        if (_tab === 'resumen' && r.modo !== 'recap') _renderResumen();
+      }).catch(function () {});
+  }
+  window.pendRefreshEstado = pendRefreshEstado;
+
+  // Observa el cierre del detalle de oportunidad para refrescar al instante.
+  var _detObs = null, _detWasOpen = false;
+  function _watchDetalle() {
+    if (_detObs) return;
+    var det = el('widgetDetalle');
+    if (!det) return;
+    _detWasOpen = det.classList.contains('active');
+    _detObs = new MutationObserver(function () {
+      var open = det.classList.contains('active');
+      if (_detWasOpen && !open) {
+        var pov = el('widgetPendientes');
+        if (pov && pov.classList.contains('active')) pendRefreshEstado();
+      }
+      _detWasOpen = open;
+    });
+    _detObs.observe(det, { attributes: true, attributeFilter: ['class'] });
+  }
+
   // Clic en una oportunidad: NO cierra Pendientes; la deja de fondo y abre el detalle encima.
   window.pendAbrirOpp = function (id) {
     var ov = el('widgetPendientes');
     if (ov) ov.style.zIndex = '998';   // debajo del detalle (--z-widget:1000)
+    _watchDetalle();
     try {
       if (typeof openDetalle === 'function') { openDetalle(id); return; }
       if (window.openDetalle) { window.openDetalle(id); return; }
@@ -466,6 +509,9 @@
     var agentSub = it.completada
       ? '<span class="pend-sc-done">✓ Completada hoy</span>'
       : ('Prioridad ' + it.prioridad + ' · ' + (_resIdx + 1) + ' de ' + total);
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Jugada completada</div><div class="pend-sc-play-txt">' + _esc(_completedMsg(it)) + '</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
     var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
         '<div class="pend-sc-agent">' +
@@ -474,10 +520,7 @@
           '<div class="pend-sc-agent-sub">' + agentSub + '</div></div>' +
         '</div>' +
         '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
-        '<div class="pend-sc-play">' +
-          '<div class="pend-sc-play-lbl">Tu jugada de hoy</div>' +
-          '<div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div>' +
-        '</div>' +
+        playBlock +
       '</div>' +
       '<div class="pend-sc-right">' +
         '<div class="pend-sc-flabel">Valor</div>' +
@@ -497,18 +540,23 @@
       '</div>' +
     '</div>';
     var pager = total > 1 ? ('<div class="pend-pager">' +
-      '<button type="button" class="pend-pager-btn" onclick="pendResNav(-1)"' + (_resIdx === 0 ? ' disabled' : '') + ' aria-label="Anterior">‹</button>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(-1)" aria-label="Anterior">‹</button>' +
       '<span class="pend-pager-lbl">Oportunidad ' + (_resIdx + 1) + ' de ' + total + '</span>' +
-      '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)"' + (_resIdx >= total - 1 ? ' disabled' : '') + ' aria-label="Siguiente">›</button>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)" aria-label="Siguiente">›</button>' +
     '</div>') : '';
     res.innerHTML = hero + card + pager;
   }
   window.pendResNav = function (delta) {
     var r = _data && _data.resumen; if (!r) return;
     var total = (r.items || []).length;
-    _resIdx = Math.max(0, Math.min(total - 1, _resIdx + delta));
+    if (!total) return;
+    _resIdx = (_resIdx + delta + total) % total;   // circular: 1ª ↔ última
     _renderResumen();
   };
+  function _completedMsg(it) {
+    if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad. 💪';
+    return '¡Listo! Completaste la tarea de esta oportunidad. 💪';
+  }
 
   function _recapRow(it, done) {
     return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="pendAbrirOpp(' + it.opp_id + ')">' +

@@ -6931,3 +6931,14 @@ def api_pendientes(request):
     })
 
 
+@login_required
+def api_pendientes_estado(request):
+    """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
+    Sirve para refrescar el widget en el momento (sin recargar todo ni la IA)
+    cuando el usuario completa una oportunidad desde el detalle."""
+    from django.utils import timezone
+    ids = [int(x) for x in request.GET.get('ids', '').split(',') if x.strip().isdigit()]
+    worked = _pend_trabajadas_hoy(ids, timezone.localdate()) if ids else set()
+    return JsonResponse({'success': True, 'worked_ids': sorted(worked)})
+
+
