@@ -94,9 +94,9 @@
   .pend-tab.active .pend-count{color:rgba(255,255,255,.72);}
   /* Body / tarjetas */
   .pend-body{flex:1;overflow-y:auto;padding:4px 18px 18px;}
-  .pend-cardrow{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:13px 18px;margin-bottom:9px;
-    cursor:pointer;transition:box-shadow .15s,transform .05s;box-shadow:0 1px 2px rgba(0,0,0,.05);}
-  .pend-cardrow:hover{box-shadow:0 4px 14px rgba(0,0,0,.11);}
+  .pend-cardrow{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #dde0e6;border-radius:14px;padding:14px 18px;margin-bottom:12px;
+    cursor:pointer;transition:box-shadow .15s,border-color .15s,transform .05s;box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  .pend-cardrow:hover{border-color:#c3c7cf;box-shadow:0 5px 16px rgba(15,23,42,.1);}
   .pend-cardrow:active{transform:scale(.996);}
   .pend-dot{width:10px;height:10px;border-radius:50%;flex:none;}
   .pend-dot.rojo{background:#ff3b30;} .pend-dot.ambar{background:#ff9500;} .pend-dot.verde{background:#34c759;}
@@ -169,6 +169,11 @@
   /* Replay mensual — estilo editorial "Wrapped" (fondo cálido, serif, formas) */
   .pend-tab-replay{display:inline-flex;align-items:center;gap:2px;}
   .pend-tab-replay.active{background:linear-gradient(135deg,#e07a3e,#c8551f) !important;color:#fff !important;}
+  /* Toda la ventana en tono cálido al estar en Replay (para que el diseño cuadre) */
+  #widgetPendientes .pend-card.replay-on{background:#faf3e8;}
+  #widgetPendientes .pend-card.replay-on .pend-topbar{background:#faf3e8;border-bottom-color:#efe1cc;}
+  #widgetPendientes .pend-card.replay-on .pend-tab{color:#8a7358;}
+  #widgetPendientes .pend-card.replay-on .pend-count{color:#b7a482;}
   .pend-replay-wrap{position:relative;display:inline-flex;}
   .pend-replay-caret{display:inline-flex;align-items:center;padding:2px;margin-left:2px;border-radius:5px;opacity:.75;}
   .pend-replay-caret:hover{opacity:1;background:rgba(255,255,255,.22);}
@@ -635,6 +640,8 @@
   function _renderReplay() {
     var res = el('pendResArea'); if (!res) return;
     res.classList.remove('pend-day');
+    var _rcard = document.querySelector('#widgetPendientes .pend-card');
+    if (_rcard) _rcard.classList.add('replay-on');
     if (!_replayData) {
       res.innerHTML = '<div class="pend-empty">Preparando tu resumen del mes…</div>';
       var url = '/app/api/pendientes/replay/';
@@ -697,13 +704,14 @@
     if (ev) { ev.stopPropagation(); ev.preventDefault(); }
     var menu = el('pendReplayMenu'); if (!menu) return;
     if (menu.classList.contains('open')) { menu.classList.remove('open'); return; }
-    var now = new Date(), html = '';
-    for (var i = 1; i <= 12; i++) {
-      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      var mm = d.getMonth() + 1, yy = d.getFullYear(), nom = _mesesFull[d.getMonth()];
-      var act = ((_replayMes === mm && _replayAnio === yy) || (_replayMes === null && i === 1)) ? ' active' : '';
+    var now = new Date(), yy = now.getFullYear(), curMes = now.getMonth() + 1, html = '';
+    // Solo meses de ESTE año, desde el mes anterior hasta enero
+    for (var mm = curMes - 1; mm >= 1; mm--) {
+      var nom = _mesesFull[mm - 1];
+      var act = ((_replayMes === mm && _replayAnio === yy) || (_replayMes === null && mm === curMes - 1)) ? ' active' : '';
       html += '<button type="button" class="pend-vend-item' + act + '" onclick="pendReplaySelMes(' + mm + ',' + yy + ',\'' + nom + '\')">' + nom + ' ' + yy + '</button>';
     }
+    if (!html) html = '<div style="padding:10px 12px;color:#9a9ca3;font-size:.85rem;">Aún no hay meses anteriores este año.</div>';
     menu.innerHTML = html;
     menu.classList.add('open');
   };
@@ -769,6 +777,8 @@
   function _render() {
     var res = el('pendResArea');
     if (!res) return;
+    var _card = document.querySelector('#widgetPendientes .pend-card');
+    if (_card) _card.classList.toggle('replay-on', _tab === 'replay');
     var chatFlow = el('pendChatFlow');
     if (_tab === 'replay') { if (chatFlow) chatFlow.style.display = 'none'; _renderReplay(); return; }
     if (!_data) return;
