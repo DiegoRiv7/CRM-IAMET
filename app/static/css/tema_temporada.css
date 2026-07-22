@@ -59,14 +59,15 @@ body[data-theme="temporada"] {
     --tmp-sol-y: 12%;
     --tmp-sol-size: 150px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
-    /* Acento azul (tono de la sidebar del mediodía) */
-    --tmp-acc: #3E6FA8;
-    --tmp-acc-dark: #325C90;
-    --tmp-acc-light: #5E92C6;
+    /* Acento azul del mediodía con toque de blanco (resalta sobre la
+       sidebar azul oscura) */
+    --tmp-acc: #4E82BC;
+    --tmp-acc-dark: #3E6FA8;
+    --tmp-acc-light: #8FB8E2;
     --tmp-acc-deep: #28507E;
-    --tmp-acc-rgb: 62, 111, 168;
-    --tmp-acc-grad: linear-gradient(135deg, #5E92C6 0%, #3E6FA8 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #6EA2D6 0%, #4A7BB4 100%);
+    --tmp-acc-rgb: 78, 130, 188;
+    --tmp-acc-grad: linear-gradient(135deg, #8FB8E2 0%, #4478B2 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #A2C6EC 0%, #5288C0 100%);
     /* Sidebar del pleno: el tono más oscuro del cielo de esta fase */
     --tmp-sidebar: linear-gradient(180deg, rgba(62, 111, 168, 0.92) 0%, rgba(50, 92, 142, 0.94) 55%, rgba(40, 76, 120, 0.96) 100%);
 }
@@ -82,8 +83,8 @@ body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-acc-light: #5E86B4;
     --tmp-acc-deep: #2C5080;
     --tmp-acc-rgb: 74, 110, 156;
-    --tmp-acc-grad: linear-gradient(135deg, #5E86B4 0%, #3E608E 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #6E96C4 0%, #4A6E9C 100%);
+    --tmp-acc-grad: linear-gradient(135deg, #82A8D2 0%, #46689A 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #92B8E0 0%, #5276AA 100%);
     --tmp-cielo: linear-gradient(180deg, #35547E 0%, #4A6E9C 30%, #7E9EC0 58%, #D9BC8A 86%, #A8845A 100%);
     --tmp-sol: radial-gradient(circle, #FFF6DC 0%, #FFDF9A 55%, rgba(255, 223, 154, 0) 78%);
     --tmp-sol-x: 24%;
@@ -94,6 +95,14 @@ body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-sidebar: linear-gradient(180deg, rgba(52, 82, 124, 0.92) 0%, rgba(40, 66, 104, 0.94) 60%, rgba(30, 52, 86, 0.96) 100%);
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
+    /* Acento naranja sunset (las fases de tarde/noche son cálidas) */
+    --tmp-acc: #F2823B;
+    --tmp-acc-dark: #E8722E;
+    --tmp-acc-light: #FF9A4D;
+    --tmp-acc-deep: #C05A28;
+    --tmp-acc-rgb: 242, 130, 59;
+    --tmp-acc-grad: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #FFAB63 0%, #F2823B 100%);
     --tmp-cielo: linear-gradient(180deg,
         #1E2E50 0%, #31497A 32%, #5E5E90 50%,
         #B8613F 68%, #E8823F 80%, #B85A2A 90%, #3A2415 100%);
@@ -108,16 +117,24 @@ body[data-theme="temporada"][data-fase="atardecer"] {
         rgba(49, 73, 122, 0.91) 75%, rgba(96, 138, 182, 0.88) 100%);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
+    /* Acento naranja sunset (las fases de tarde/noche son cálidas) */
+    --tmp-acc: #F2823B;
+    --tmp-acc-dark: #E8722E;
+    --tmp-acc-light: #FF9A4D;
+    --tmp-acc-deep: #C05A28;
+    --tmp-acc-rgb: 242, 130, 59;
+    --tmp-acc-grad: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #FFAB63 0%, #F2823B 100%);
     /* Playa de noche con luces colgadas: pozos de luz cálida cayendo
        desde el borde superior (como serie de focos de terraza). Van en
        la capa --tmp-luces, ENCIMA del scrim, para que el velo oscuro no
        las apague. El sol sigue hundido en el horizonte (calc 100vh). */
     --tmp-luces:
-        radial-gradient(ellipse 120% 42% at 50% -6%, rgba(255, 190, 115, 0.20) 0%, rgba(255, 190, 115, 0) 70%),
-        radial-gradient(circle 420px at 10% 0%, rgba(255, 204, 132, 0.58) 0%, rgba(255, 204, 132, 0) 62%),
-        radial-gradient(circle 340px at 34% -2%, rgba(255, 192, 116, 0.48) 0%, rgba(255, 192, 116, 0) 60%),
-        radial-gradient(circle 410px at 60% 0%, rgba(255, 204, 132, 0.55) 0%, rgba(255, 204, 132, 0) 62%),
-        radial-gradient(circle 330px at 86% -2%, rgba(255, 192, 116, 0.46) 0%, rgba(255, 192, 116, 0) 60%);
+        radial-gradient(ellipse 100% 26% at 50% -4%, rgba(255, 190, 115, 0.16) 0%, rgba(255, 190, 115, 0) 68%),
+        radial-gradient(circle 260px at 10% 0%, rgba(255, 204, 132, 0.55) 0%, rgba(255, 204, 132, 0) 62%),
+        radial-gradient(circle 210px at 34% -2%, rgba(255, 192, 116, 0.46) 0%, rgba(255, 192, 116, 0) 60%),
+        radial-gradient(circle 255px at 60% 0%, rgba(255, 204, 132, 0.52) 0%, rgba(255, 204, 132, 0) 62%),
+        radial-gradient(circle 205px at 86% -2%, rgba(255, 192, 116, 0.44) 0%, rgba(255, 192, 116, 0) 60%);
     --tmp-cielo: linear-gradient(180deg,
         #16233E 0%, #1E2C4A 30%, #2A3858 58%,
         #52290F 84%, #6B3412 92%, #241408 100%);
@@ -1900,3 +1917,17 @@ body.ww-lite[data-theme="temporada"] .wo-header,
 body.ww-lite[data-theme="temporada"] .cal-page-bar,
 body.ww-lite[data-theme="temporada"] .crm-tw-header,
 body.ww-lite[data-theme="temporada"] .ptk-cols-head { animation: none !important; }
+
+
+/* ═══ Fases azules (despertar/pleno): anillo blanco interior en los
+   elementos de acento para que resalten sobre la sidebar azul ═══ */
+body[data-theme="temporada"][data-fase="despertar"] .crm-sb-logo,
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-logo,
+body[data-theme="temporada"][data-fase="despertar"] .crm-sb-btn.active,
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn.active,
+body[data-theme="temporada"][data-fase="despertar"] .crm-page-sidebar .crm-tab.active,
+body[data-theme="temporada"][data-fase="pleno"] .crm-page-sidebar .crm-tab.active,
+body[data-theme="temporada"][data-fase="despertar"] .crm-facet-new,
+body[data-theme="temporada"][data-fase="pleno"] .crm-facet-new {
+    box-shadow: 0 4px 14px rgba(20, 45, 80, 0.35), inset 0 0 0 1.5px rgba(255, 255, 255, 0.60) !important;
+}
