@@ -47,10 +47,10 @@ body[data-theme="temporada"] {
     --tmp-sol-y: 12%;
     --tmp-sol-size: 150px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
-    /* Sidebar del pleno: blanco → azul claro, frosted (el blur de 22px
-       lo vuelve vidrio esmerilado luminoso). Textos en oscuro (regla
-       aparte) porque el fondo es claro. */
-    --tmp-sidebar: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(228, 241, 250, 0.70) 45%, rgba(196, 224, 244, 0.64) 100%);
+    /* Sidebar del pleno: el tono más oscuro del cielo de esta fase
+       (#3E6FA8) en degradado — los acentos van en azul-blanco (regla
+       aparte) en lugar de naranja. */
+    --tmp-sidebar: linear-gradient(180deg, rgba(62, 111, 168, 0.92) 0%, rgba(50, 92, 142, 0.94) 55%, rgba(40, 76, 120, 0.96) 100%);
 }
 
 /* ═══ Pieles por fase del día (cielo, sol, scrim y sidebar) ═══
@@ -82,17 +82,23 @@ body[data-theme="temporada"][data-fase="atardecer"] {
         rgba(49, 73, 122, 0.91) 75%, rgba(96, 138, 182, 0.88) 100%);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
-    /* Naranjas más profundos (ya casi noche) y el sol hundido en el
-       horizonte: solo asoma la mitad superior del disco por el borde
-       inferior de la pantalla (calc con 100vh, independiente del alto). */
-    --tmp-cielo: linear-gradient(180deg,
-        #0D1730 0%, #162442 30%, #243252 58%,
-        #52290F 84%, #6B3412 92%, #180C04 100%);
+    /* Playa de noche con luces colgadas: pozos de luz cálida cayendo
+       desde el borde superior (como serie de focos de terraza) sobre el
+       azul noche — iluminan sin dibujar las luces. El sol sigue hundido
+       en el horizonte (solo asoma media esfera, calc con 100vh). */
+    --tmp-cielo:
+        radial-gradient(circle 230px at 10% -4%, rgba(255, 196, 120, 0.26) 0%, rgba(255, 196, 120, 0) 62%),
+        radial-gradient(circle 180px at 34% -6%, rgba(255, 182, 104, 0.20) 0%, rgba(255, 182, 104, 0) 60%),
+        radial-gradient(circle 220px at 60% -4%, rgba(255, 196, 120, 0.24) 0%, rgba(255, 196, 120, 0) 62%),
+        radial-gradient(circle 170px at 86% -6%, rgba(255, 182, 104, 0.19) 0%, rgba(255, 182, 104, 0) 60%),
+        linear-gradient(180deg,
+        #16233E 0%, #1E2C4A 30%, #2A3858 58%,
+        #52290F 84%, #6B3412 92%, #241408 100%);
     --tmp-sol: radial-gradient(circle, rgba(255, 178, 100, 0.60) 0%, rgba(226, 122, 44, 0.35) 50%, rgba(200, 105, 35, 0) 75%);
     --tmp-sol-x: 50%;
     --tmp-sol-y: calc(100vh - 85px);
     --tmp-sol-size: 170px;
-    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.16) 0%, rgba(6, 10, 20, 0.36) 75%, rgba(4, 7, 14, 0.50) 100%);
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.10) 0%, rgba(6, 10, 20, 0.26) 75%, rgba(4, 7, 14, 0.40) 100%);
     /* Sidebar noche (el oscuro original) */
     --tmp-sidebar: linear-gradient(180deg, rgba(16, 26, 46, 0.92) 0%, rgba(11, 18, 34, 0.95) 60%, rgba(7, 12, 24, 0.97) 100%);
 }
@@ -111,6 +117,13 @@ body[data-theme="temporada"]::before {
         var(--tmp-scrim),
         var(--tmp-cielo);
     background-size: cover;
+    transition: none;
+}
+/* La transición SOLO existe cuando el motor ya pintó la primera fase
+   (clase tmp-anim, puesta un frame después de aplicar data-fase). Así el
+   sol/cielo NO viajan al recargar la página ni al cerrar ventanas — solo
+   se deslizan cuando la fase cambia estando la página abierta. */
+body.tmp-anim[data-theme="temporada"]::before {
     transition: background-image 1.4s ease;
 }
 
@@ -128,7 +141,11 @@ body[data-theme="temporada"]::after {
     background: var(--tmp-sol);
     filter: blur(6px);
     pointer-events: none;
-    transition: all 1.4s ease;
+    transition: none;
+}
+body.tmp-anim[data-theme="temporada"]::after {
+    transition: left 1.4s ease, top 1.4s ease, width 1.4s ease, height 1.4s ease,
+                margin-left 1.4s ease, background 1.4s ease;
 }
 
 /* ═══ Layout: transparente para dejar ver el cielo ═══ */
@@ -146,24 +163,24 @@ body[data-theme="temporada"] .crm-sidebar {
     -webkit-backdrop-filter: blur(22px) saturate(160%);
     border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
-/* En el pleno la sidebar es CLARA (blanco→azul cielo): textos e iconos
-   pasan a azul pizarra oscuro para legibilidad; el activo conserva su
-   naranja con texto blanco. */
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn,
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-avatar {
-    color: rgba(30, 52, 80, 0.86);
-    text-shadow: none;
+/* En el pleno los acentos de la sidebar cambian de naranja a AZUL-BLANCO
+   (vidrio claro sobre el azul del cielo): logo y botón activo en
+   degradado blanco→azul cielo con texto/icono azul profundo. */
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-logo {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, #BCD8F0 100%) !important;
+    box-shadow: 0 4px 16px rgba(20, 45, 75, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+    color: #1E4A75 !important;
 }
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-label { color: rgba(30, 52, 80, 0.60); text-shadow: none; }
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn:hover {
-    background: rgba(44, 74, 110, 0.10) !important;
-    color: #1E3450;
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-logo * { color: #1E4A75 !important; }
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn.active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, #C6DEF2 100%) !important;
+    color: #1E4A75 !important;
+    box-shadow: 0 4px 14px rgba(20, 45, 75, 0.28) !important;
 }
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn.active { color: #ffffff !important; }
-body[data-theme="temporada"][data-fase="pleno"] .crm-sb-divider { background: rgba(30, 52, 80, 0.14) !important; }
-body[data-theme="temporada"][data-fase="pleno"] .crm-sidebar {
-    border-right: 1px solid rgba(255, 255, 255, 0.55) !important;
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn.active::before {
+    background: #1E4A75 !important;
 }
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-dot { background: #BCD8F0 !important; }
 body[data-theme="temporada"] .crm-sb-logo {
     background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
     box-shadow: 0 4px 16px rgba(242, 130, 59, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
