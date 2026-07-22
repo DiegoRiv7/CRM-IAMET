@@ -6,9 +6,20 @@
 {% endcomment %}
 <div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Pendientes">
   <div class="ww-card pend-card">
-    <!-- Header -->
-    <div class="pend-head">
-      <h2 class="pend-title">Pendientes</h2>
+    <!-- Topbar: pestañas (izquierda) + selector y controles de ventana (derecha) -->
+    <div class="pend-topbar">
+      <div class="pend-tabs">
+        <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Resumen</button>
+        <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
+          Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
+        </button>
+        <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
+          Hoy <span class="pend-count" id="pendCount-hoy">0</span>
+        </button>
+        <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
+          Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
+        </button>
+      </div>
       <div class="pend-head-actions">
         <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
           <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
@@ -21,23 +32,21 @@
       </div>
     </div>
 
-    <!-- Tabs (centradas, como Notificaciones) -->
-    <div class="pend-tabs">
-      <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Resumen</button>
-      <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
-        Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
-      </button>
-      <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
-        Hoy <span class="pend-count" id="pendCount-hoy">0</span>
-      </button>
-      <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
-        Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
-      </button>
-    </div>
-
     <!-- Body -->
     <div class="pend-body" id="pendBody">
       <div class="pend-empty">Cargando…</div>
+    </div>
+
+    <!-- Barra de chat con el asistente general (solo visible en Resumen) -->
+    <div class="pend-chat" id="pendChat" style="display:none;">
+      <div class="pend-chat-msgs" id="pendChatMsgs"></div>
+      <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
+        <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
+               placeholder="Pregúntale al asistente sobre tus oportunidades…">
+        <button type="submit" class="pend-chat-send" title="Enviar">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </form>
     </div>
   </div>
 </div>
@@ -47,9 +56,8 @@
   #widgetPendientes .pend-card{width:min(1040px,95vw);height:min(84vh,780px);max-width:95vw;
     background:#f4f5f7;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
     box-shadow:0 24px 70px rgba(0,0,0,.32);}
-  .pend-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 10px;flex:none;}
-  .pend-title{margin:0;font-size:1.4rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
-  .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;}
+  .pend-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;flex:none;}
+  .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;flex:none;}
   /* Combina con los [— □] que inyecta widget_window.js (.ww-btn: 30px, #F2F2F7) */
   #widgetPendientes .pend-close{width:30px;height:30px;border:none;border-radius:50%;background:#F2F2F7;color:#86868B;
     font-size:19px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;}
@@ -67,9 +75,9 @@
     padding:8px 10px;border-radius:8px;font-size:.88rem;color:#2c2d33;cursor:pointer;}
   .pend-vend-item:hover{background:#f2f3f6;}
   .pend-vend-item.active{color:#0a84ff;font-weight:700;}
-  /* Tabs centradas */
-  .pend-tabs{display:flex;justify-content:center;gap:8px;padding:2px 22px 12px;flex:none;}
-  .pend-tab{display:flex;align-items:center;gap:7px;border:none;background:transparent;border-radius:22px;padding:8px 18px;
+  /* Tabs a la izquierda (en la topbar) */
+  .pend-tabs{display:flex;gap:6px;flex-wrap:wrap;min-width:0;}
+  .pend-tab{display:flex;align-items:center;gap:7px;border:none;background:transparent;border-radius:22px;padding:8px 16px;
     font-size:.95rem;font-weight:600;color:#6b6d75;cursor:pointer;transition:all .15s;}
   .pend-tab:hover{background:#e9ebef;}
   .pend-tab.active{background:#1c1d22;color:#fff;}
@@ -127,6 +135,21 @@
   .pend-res-accion{display:flex;gap:9px;margin-top:13px;font-size:.94rem;color:#2c2d33;line-height:1.5;
     background:#f6f8fb;border-radius:12px;padding:11px 13px;}
   .pend-res-accion-ic{flex:none;font-size:1rem;}
+  /* Barra de chat con el asistente */
+  .pend-chat{flex:none;border-top:1px solid #e6e8ec;background:#fff;padding:10px 14px 12px;}
+  .pend-chat-msgs{max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .pend-chat-msgs:empty{display:none;}
+  .pend-chat-bubble{max-width:82%;padding:9px 13px;border-radius:14px;font-size:.92rem;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;}
+  .pend-chat-bubble.user{align-self:flex-end;background:#0a84ff;color:#fff;border-bottom-right-radius:5px;}
+  .pend-chat-bubble.ai{align-self:flex-start;background:#f0f1f4;color:#1c1d22;border-bottom-left-radius:5px;}
+  .pend-chat-bubble.ai.pend-typing{color:#8a8c93;font-style:italic;}
+  .pend-chat-form{display:flex;gap:8px;align-items:center;}
+  .pend-chat-input{flex:1;border:1px solid #dfe1e6;border-radius:22px;padding:11px 16px;font-size:.95rem;outline:none;background:#f7f8fa;transition:border-color .15s,background .15s;}
+  .pend-chat-input:focus{border-color:#0a84ff;background:#fff;}
+  .pend-chat-send{flex:none;width:40px;height:40px;border:none;border-radius:50%;background:#0a84ff;color:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .15s;}
+  .pend-chat-send:hover{background:#0060df;}
+  .pend-chat-send:disabled{background:#c7c9ce;cursor:default;}
 </style>
 
 <script>
@@ -184,19 +207,29 @@
     }
   };
 
+  function _ensureWindow(ov) {
+    var W = window.crmWidgetWindow;
+    if (!W || !W.windowize) return false;
+    if (!ov.classList.contains('ww-windowed')) {
+      if (W.enhance) { try { W.enhance(ov); } catch (e) {} }
+      ov._pendNormalRect = ov._pendNormalRect || _normalRect();
+      ov._pendFull = false;
+      try { W.windowize(ov, ov._pendNormalRect); } catch (e) {}
+    }
+    _overrideMaxBtn(ov);
+    return ov.classList.contains('ww-windowed');
+  }
   window.pendAbrir = function () {
     var ov = el('widgetPendientes');
     if (!ov) return;
     ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
+    var chat = el('pendChat'); if (chat) chat.style.display = (_tab === 'resumen') ? '' : 'none';
     pendCargar();
-    // Abrir ya como ventana flotante → arrastrable desde el inicio.
-    var W = window.crmWidgetWindow;
-    if (W && W.windowize && !ov.classList.contains('ww-windowed')) {
-      ov._pendNormalRect = _normalRect();
-      ov._pendFull = false;
-      try { W.windowize(ov, ov._pendNormalRect); } catch (e) {}
-      _overrideMaxBtn(ov);
+    // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
+    // de ventanas aún no está listo en el auto-open del día.
+    if (!_ensureWindow(ov)) {
+      setTimeout(function () { _ensureWindow(ov); }, 350);
     }
   };
   window.pendCerrar = function () {
@@ -216,7 +249,52 @@
     document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t){
       t.classList.toggle('active', t.getAttribute('data-tab') === tab);
     });
+    var chat = el('pendChat'); if (chat) chat.style.display = (tab === 'resumen') ? '' : 'none';
     _render();
+  };
+
+  // ── Chat con el asistente general (el "consultor") ──
+  function _getCsrf() {
+    var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function _chatBubble(text, who) {
+    var msgs = el('pendChatMsgs'); if (!msgs) return null;
+    var b = document.createElement('div');
+    b.className = 'pend-chat-bubble ' + who;
+    b.textContent = text;
+    msgs.appendChild(b);
+    msgs.scrollTop = msgs.scrollHeight;
+    return b;
+  }
+  window.pendChatSend = function (ev) {
+    if (ev) ev.preventDefault();
+    var input = el('pendChatInput');
+    var send = document.querySelector('#widgetPendientes .pend-chat-send');
+    if (!input) return false;
+    var texto = (input.value || '').trim();
+    if (!texto) return false;
+    input.value = '';
+    _chatBubble(texto, 'user');
+    if (send) send.disabled = true;
+    var typing = _chatBubble('Escribiendo…', 'ai');
+    if (typing) typing.classList.add('pend-typing');
+    fetch('/app/api/asistente/mensaje/', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: texto })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
+      _chatBubble((d && (d.respuesta || d.error)) || 'No pude responder ahora mismo.', 'ai');
+    }).catch(function () {
+      if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
+      _chatBubble('Error de conexión con el asistente.', 'ai');
+    }).then(function () {
+      if (send) send.disabled = false;
+      if (input) input.focus();
+    });
+    return false;
   };
 
   window.pendToggleVendedor = function (ev) {
