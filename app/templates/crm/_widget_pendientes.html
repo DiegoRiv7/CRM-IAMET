@@ -4,12 +4,12 @@
   minimizar / maximizar / cerrar / arrastrar / redimensionar, igual que Notificaciones.
   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
-<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Pendientes">
+<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Resumen">
   <div class="ww-card pend-card">
     <!-- Topbar: pestañas (izquierda) + selector y controles de ventana (derecha) -->
     <div class="pend-topbar">
       <div class="pend-tabs">
-        <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Resumen</button>
+        <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
         <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
           Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
         </button>
