@@ -7178,7 +7178,7 @@ def _replay_build_cards(s, m):
         'boxes': [
             {'v': str(s['ventas']), 'l': 'Oportunidades ganadas'},
             {'v': str(s['eficiencia']) + '%', 'l': 'Eficiencia'},
-            {'v': str(s['dias_trabajados']), 'l': 'Días activos'},
+            {'v': str(s['tareas']), 'l': 'Tareas completadas'},
         ],
     })
     # 2) Eficiencia
@@ -7240,7 +7240,14 @@ def api_pendientes_replay(request):
     from .models import ReplayMensual
     _VER = 3   # subir si cambia la estructura de las tarjetas → regenera el caché
     today = timezone.localdate()
+    # Por defecto el mes anterior; o el mes pedido (?mes=&anio=) si es ANTERIOR al actual.
     mes, anio = (12, today.year - 1) if today.month == 1 else (today.month - 1, today.year)
+    try:
+        qmes, qanio = int(request.GET.get('mes', 0)), int(request.GET.get('anio', 0))
+        if 1 <= qmes <= 12 and qanio >= 2000 and (qanio, qmes) < (today.year, today.month):
+            mes, anio = qmes, qanio
+    except (ValueError, TypeError):
+        pass
     row = ReplayMensual.objects.filter(usuario=request.user, mes=mes, anio=anio).first()
     if row and row.data and row.data.get('_ver') == _VER:
         return JsonResponse({'success': True, **row.data})

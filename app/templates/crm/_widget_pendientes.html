@@ -20,7 +20,13 @@
         <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
           Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
         </button>
-        <button type="button" class="pend-tab pend-tab-replay" data-tab="replay" id="pendTabReplay" onclick="pendSetTab('replay')">Replay</button>
+        <span class="pend-replay-wrap">
+          <button type="button" class="pend-tab pend-tab-replay" data-tab="replay" id="pendTabReplay" onclick="pendSetTab('replay')">
+            <span id="pendReplayLabel">Replay</span>
+            <span class="pend-replay-caret" onclick="pendReplayPicker(event)"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </button>
+          <div id="pendReplayMenu" class="pend-replay-menu"></div>
+        </span>
       </div>
       <div class="pend-head-actions">
         <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
@@ -161,7 +167,14 @@
   #pendResArea.pend-day .pend-split{flex:none;margin:auto 0;}
   #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
   /* Replay mensual — estilo editorial "Wrapped" (fondo cálido, serif, formas) */
+  .pend-tab-replay{display:inline-flex;align-items:center;gap:2px;}
   .pend-tab-replay.active{background:linear-gradient(135deg,#e07a3e,#c8551f) !important;color:#fff !important;}
+  .pend-replay-wrap{position:relative;display:inline-flex;}
+  .pend-replay-caret{display:inline-flex;align-items:center;padding:2px;margin-left:2px;border-radius:5px;opacity:.75;}
+  .pend-replay-caret:hover{opacity:1;background:rgba(255,255,255,.22);}
+  .pend-replay-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#fff;border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;min-width:190px;max-height:320px;overflow:auto;z-index:20;}
+  .pend-replay-menu.open{display:block;}
   #pendResArea.pend-day .rp{flex:1;margin:0;}
   .rp{position:relative;overflow:hidden;border-radius:22px;background:#faf3e8;padding:34px 40px;
     display:flex;flex-direction:column;justify-content:center;min-height:100%;}
@@ -243,7 +256,7 @@
   window.__pendInit = true;
 
   var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
-  var _replayData = null, _replayIdx = 0;
+  var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
   function el(id){ return document.getElementById(id); }
 
   function _normalRect() {
@@ -624,12 +637,14 @@
     res.classList.remove('pend-day');
     if (!_replayData) {
       res.innerHTML = '<div class="pend-empty">Preparando tu resumen del mes…</div>';
-      fetch('/app/api/pendientes/replay/', { credentials: 'same-origin' })
+      var url = '/app/api/pendientes/replay/';
+      if (_replayMes && _replayAnio) url += '?mes=' + _replayMes + '&anio=' + _replayAnio;
+      fetch(url, { credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo cargar el resumen del mes</div>'; return; }
           _replayData = d; _replayIdx = 0;
-          var tabR = el('pendTabReplay'); if (tabR && d.mes_nombre) tabR.textContent = 'Resumen ' + d.mes_nombre;
+          var lbl = el('pendReplayLabel'); if (lbl && d.mes_nombre) lbl.textContent = 'Resumen ' + d.mes_nombre;
           _renderReplay();
         })
         .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
@@ -675,6 +690,30 @@
     if (!_replayData) return;
     var n = (_replayData.cards || []).length; if (!n) return;
     _replayIdx = (_replayIdx + delta + n) % n;
+    _renderReplay();
+  };
+  var _mesesFull = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  window.pendReplayPicker = function (ev) {
+    if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+    var menu = el('pendReplayMenu'); if (!menu) return;
+    if (menu.classList.contains('open')) { menu.classList.remove('open'); return; }
+    var now = new Date(), html = '';
+    for (var i = 1; i <= 12; i++) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      var mm = d.getMonth() + 1, yy = d.getFullYear(), nom = _mesesFull[d.getMonth()];
+      var act = ((_replayMes === mm && _replayAnio === yy) || (_replayMes === null && i === 1)) ? ' active' : '';
+      html += '<button type="button" class="pend-vend-item' + act + '" onclick="pendReplaySelMes(' + mm + ',' + yy + ',\'' + nom + '\')">' + nom + ' ' + yy + '</button>';
+    }
+    menu.innerHTML = html;
+    menu.classList.add('open');
+  };
+  window.pendReplaySelMes = function (mes, anio, nombre) {
+    _replayMes = mes; _replayAnio = anio; _replayData = null; _replayIdx = 0;
+    var lbl = el('pendReplayLabel'); if (lbl) lbl.textContent = 'Resumen ' + nombre;
+    var menu = el('pendReplayMenu'); if (menu) menu.classList.remove('open');
+    _tab = 'replay';
+    document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'replay'); });
+    var chat = el('pendChat'); if (chat) chat.style.display = 'none';
     _renderReplay();
   };
   // Marcar/desmarcar manualmente como trabajada (para cuando no hay tarea que cerrar).
@@ -778,6 +817,10 @@
     if (wrap && !wrap.contains(e.target)) {
       var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
     }
+    var rwrap = document.querySelector('#widgetPendientes .pend-replay-wrap');
+    if (rwrap && !rwrap.contains(e.target)) {
+      var rm = el('pendReplayMenu'); if (rm) rm.classList.remove('open');
+    }
     var oppLink = e.target.closest && e.target.closest('#pendChatFlow a[data-asist-opp]');
     if (oppLink) {
       e.preventDefault();
@@ -792,9 +835,8 @@
 
   // Etiqueta de la pestaña Replay con el nombre del mes anterior ("Resumen Junio")
   try {
-    var _mesesR = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    var _tabR = el('pendTabReplay');
-    if (_tabR) _tabR.textContent = 'Resumen ' + _mesesR[(new Date().getMonth() + 11) % 12];
+    var _tabR = el('pendReplayLabel');
+    if (_tabR) _tabR.textContent = 'Resumen ' + _mesesFull[(new Date().getMonth() + 11) % 12];
   } catch (e) {}
 
   // Auto-mostrar el Resumen 1 vez al día (primera carga del día = "al iniciar sesión")
