@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -67,11 +68,28 @@
         .branding-section {
             flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center;
             padding: 60px; position: relative; overflow: hidden; color: var(--brand-text);
+            /* FOTO de fondo (palmeras vistas desde abajo) + scrim para
+               legibilidad: velo oscuro que se intensifica al centro-abajo
+               donde vive el texto. El degradado azul queda de respaldo
+               mientras carga la foto. */
             background-image:
-                radial-gradient(circle 560px at 10% 8%, var(--luz) 0%, rgba(255,255,255,0) 62%),
-                radial-gradient(circle 680px at 92% 96%, var(--luz-agua) 0%, rgba(255,255,255,0) 65%),
+                linear-gradient(180deg, rgba(10, 22, 34, 0.30) 0%, rgba(10, 22, 34, 0.44) 55%, rgba(8, 18, 28, 0.62) 100%),
+                url('{% static "images/fondos/verano_login.jpg" %}'),
                 var(--cielo);
-            transition: background-image 1.4s ease;
+            background-size: auto, cover, auto;
+            background-position: center, center 30%, center;
+            background-repeat: no-repeat;
+        }
+        /* La hora tiñe la foto sutilmente (cálido en atardecer, frío de noche) */
+        body[data-fase="atardecer"] .branding-section::before,
+        body[data-fase="crepusculo"] .branding-section::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+        }
+        body[data-fase="atardecer"] .branding-section::before {
+            background: rgba(226, 122, 44, 0.10); mix-blend-mode: overlay;
+        }
+        body[data-fase="crepusculo"] .branding-section::before {
+            background: rgba(10, 20, 40, 0.32);
         }
 
         .branding-content { position: relative; z-index: 5; width: 100%; max-width: 480px; }
