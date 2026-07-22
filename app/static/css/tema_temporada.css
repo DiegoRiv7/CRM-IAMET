@@ -37,14 +37,16 @@ body[data-theme="temporada"] {
     background-color: #16233C;
 
     /* Piel por defecto (= pleno) por si data-fase no llegó.
-       PLENO es el pico máximo del sol: cielo más claro y brillante,
-       sidebar AZUL CIELO y scrim mínimo. */
-    --tmp-cielo: linear-gradient(180deg, #2E4E7E 0%, #4470A2 38%, #6E9AC2 70%, #9CBEDC 100%);
-    --tmp-sol: radial-gradient(circle, #FFFBEC 0%, #FFEDB0 55%, rgba(255, 237, 176, 0) 78%);
+       PLENO es la playa a las 2 de la tarde: cielo azul claro y luminoso,
+       sol grande y brillante, sidebar AZUL CIELO y scrim casi nulo.
+       (Brillo sí, deslumbrar no: el tope de claridad lo pone la arena
+       del último tramo, no blanco puro.) */
+    --tmp-cielo: linear-gradient(180deg, #3E6FA8 0%, #5E92C6 30%, #8FBCE0 62%, #C6E0F2 100%);
+    --tmp-sol: radial-gradient(circle, #FFFFF6 0%, #FFF4C4 45%, #FFE9A0 60%, rgba(255, 233, 160, 0) 78%);
     --tmp-sol-x: 76%;
-    --tmp-sol-y: 13%;
-    --tmp-sol-size: 96px;
-    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.04) 0%, rgba(6, 10, 20, 0.12) 75%, rgba(4, 7, 14, 0.20) 100%);
+    --tmp-sol-y: 12%;
+    --tmp-sol-size: 150px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.02) 0%, rgba(6, 10, 20, 0.08) 75%, rgba(4, 7, 14, 0.14) 100%);
     --tmp-sidebar: linear-gradient(180deg, rgba(111, 168, 214, 0.90) 0%, rgba(78, 134, 184, 0.93) 60%, rgba(62, 114, 162, 0.95) 100%);
 }
 
@@ -77,12 +79,15 @@ body[data-theme="temporada"][data-fase="atardecer"] {
         rgba(49, 73, 122, 0.91) 75%, rgba(96, 138, 182, 0.88) 100%);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
+    /* Naranjas más profundos (ya casi noche) y el sol hundido en el
+       horizonte: solo asoma la mitad superior del disco por el borde
+       inferior de la pantalla (calc con 100vh, independiente del alto). */
     --tmp-cielo: linear-gradient(180deg,
         #0D1730 0%, #162442 30%, #243252 58%,
-        #6E3A24 84%, #8A4520 92%, #241408 100%);
-    --tmp-sol: radial-gradient(circle, rgba(255, 190, 120, 0.55) 0%, rgba(255, 150, 70, 0.28) 50%, rgba(255, 150, 70, 0) 75%);
+        #52290F 84%, #6B3412 92%, #180C04 100%);
+    --tmp-sol: radial-gradient(circle, rgba(255, 178, 100, 0.60) 0%, rgba(226, 122, 44, 0.35) 50%, rgba(200, 105, 35, 0) 75%);
     --tmp-sol-x: 50%;
-    --tmp-sol-y: 88%;
+    --tmp-sol-y: calc(100vh - 85px);
     --tmp-sol-size: 170px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.16) 0%, rgba(6, 10, 20, 0.36) 75%, rgba(4, 7, 14, 0.50) 100%);
     /* Sidebar noche (el oscuro original) */
@@ -1788,8 +1793,8 @@ body[data-theme="temporada"][data-fase="atardecer"] {
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-franja-solx: 50%;
-    --tmp-franja-glow: rgba(255, 150, 70, 0.38);
-    --tmp-franja-borde: #B85A2A;
+    --tmp-franja-glow: rgba(226, 122, 44, 0.30);
+    --tmp-franja-borde: #8A4520;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
