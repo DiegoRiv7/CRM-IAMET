@@ -32,6 +32,9 @@ class UserProfile(models.Model):
     ]
     
     THEME_CHOICES = [
+        # 'temporada' es el slot estacional (piel actual: Verano). 'mundial'
+        # queda oculto del selector pero se conserva por si vuelve a usarse.
+        ('temporada', 'Temporada'),
         ('mundial', 'Mundial'),
         ('perla', 'Perla'),
         ('sakura', 'Sakura'),
@@ -45,7 +48,7 @@ class UserProfile(models.Model):
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
     avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
-    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='mundial', verbose_name="Tema de color")
+    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='temporada', verbose_name="Tema de color")
     meta_mensual = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('1500000'), verbose_name="Meta Facturado")
     meta_oportunidades = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Oportunidades")
     meta_cotizado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cotizado")

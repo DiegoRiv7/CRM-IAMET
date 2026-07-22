@@ -120,17 +120,23 @@
                             </div>
                             <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Espacial</span>
                         </div>
-                        <div onclick="setThemeSelection('mundial')"
+                        {% comment %}
+                        Temporada: slot estacional (piel actual: Verano). El swatch
+                        de Mundial se ocultó al terminar el mundial 2026 — su CSS y
+                        choice siguen vivos por si vuelve; quien lo tenía fue migrado
+                        a 'temporada' (migración 0200).
+                        {% endcomment %}
+                        <div onclick="setThemeSelection('temporada')"
                             style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:6px;">
-                            <div id="swatch-mundial"
-                                class="theme-swatch {% if request.user.userprofile.theme == 'mundial' %}active{% endif %}"
-                                style="width:42px; height:42px; border-radius:50%; background: linear-gradient(135deg, #006847 0%, #ffffff 50%, #CE1126 100%); border:1px solid rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                            <div id="swatch-temporada"
+                                class="theme-swatch {% if request.user.userprofile.theme == 'temporada' or request.user.userprofile.theme == 'mundial' %}active{% endif %}"
+                                style="width:42px; height:42px; border-radius:50%; background: linear-gradient(180deg, #31497A 0%, #5E5E90 45%, #E8823F 75%, #B85A2A 100%); border:1px solid rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
                             </div>
-                            <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Mundial</span>
+                            <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Temporada</span>
                         </div>
                     </div>
                     <input type="hidden" name="theme" id="themeInput"
-                        value="{{ request.user.userprofile.theme|default:'mundial' }}">
+                        value="{{ request.user.userprofile.theme|default:'temporada' }}">
                 </div>
 
                 {% comment %}Rendimiento (Modo Ligero): client-side por equipo (localStorage), NO parte del form — no se envía al servidor.{% endcomment %}
