@@ -7148,7 +7148,18 @@ def _replay_build_cards(s, m):
         return (m.get(key) or fb)
     cards = [
         {'tipo': 'intro', 'bg': 0, 'kicker': 'Tu ' + s['mes_nombre'],
-         'stat': str(s['trabajadas']), 'stat_label': 'oportunidades trabajadas',
+         'titulo': 'Tu ' + s['mes_nombre'] + ' en resumen',
+         'grid': [
+             {'v': str(s['eficiencia']) + '%', 'l': 'Eficiencia'},
+             {'v': str(s['ventas']), 'l': 'Oportunidades ganadas'},
+             {'v': s['monto_vendido_fmt'], 'l': 'Vendido'},
+             {'v': str(s['trabajadas']), 'l': 'Oportunidades trabajadas'},
+             {'v': str(s['cotizaciones']), 'l': 'Cotizaciones'},
+             {'v': str(s['tareas']), 'l': 'Tareas completadas'},
+             {'v': str(s['actividades']), 'l': 'Actividades completadas'},
+             {'v': str(s['dias_trabajados']), 'l': 'Días activos'},
+         ],
+         'badge': ('🏆 Empleado del mes' if s['empleado_mes'] else ''),
          'mensaje': msg('intro', '¡Aquí está tu ' + s['mes_nombre'] + ' en resumen!')},
     ]
     trend = ''
@@ -7188,16 +7199,17 @@ def api_pendientes_replay(request):
     """Replay mensual (Wrapped) del MES ANTERIOR. Cacheado 1 vez por mes."""
     from django.utils import timezone
     from .models import ReplayMensual
+    _VER = 2   # subir si cambia la estructura de las tarjetas → regenera el caché
     today = timezone.localdate()
     mes, anio = (12, today.year - 1) if today.month == 1 else (today.month - 1, today.year)
     row = ReplayMensual.objects.filter(usuario=request.user, mes=mes, anio=anio).first()
-    if row and row.data:
+    if row and row.data and row.data.get('_ver') == _VER:
         return JsonResponse({'success': True, **row.data})
     stats = _replay_stats(request.user, mes, anio)
     nombre = request.user.first_name or (request.user.get_full_name() or request.user.username).split(' ')[0]
     msgs = _replay_ia_msgs(nombre, stats)
     data = {
-        'mes_nombre': stats['mes_nombre'], 'anio': anio, 'nombre': nombre,
+        '_ver': _VER, 'mes_nombre': stats['mes_nombre'], 'anio': anio, 'nombre': nombre,
         'cards': _replay_build_cards(stats, msgs),
     }
     try:

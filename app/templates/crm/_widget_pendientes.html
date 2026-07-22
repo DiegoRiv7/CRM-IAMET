@@ -159,14 +159,20 @@
   #pendResArea.pend-day .pend-res-hero{flex:none;text-align:center;}
   #pendResArea.pend-day .pend-split{flex:none;margin:auto 0;}
   #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
-  /* Replay mensual — tarjetas minimalistas (como Mi día) */
-  .pend-rcard{background:#fff;border:1px solid #ececf0;border-radius:18px;padding:22px 24px;box-shadow:0 2px 12px rgba(15,23,42,.05);}
-  .pend-rcard .pend-sc-agent{margin-bottom:14px;}
-  .pend-rcard-stat{font-size:3rem;font-weight:800;color:#1c1d22;letter-spacing:-.02em;line-height:1.06;word-break:break-word;}
-  .pend-rcard-statlabel{font-size:.98rem;font-weight:600;color:#8a8c93;margin-top:2px;}
-  .pend-rcard-badge{display:inline-block;margin-top:12px;background:#eef2ff;color:#4759d6;padding:5px 13px;border-radius:20px;font-size:.82rem;font-weight:700;}
-  .pend-rcard-msg{font-size:1.02rem;line-height:1.55;color:#33353b;font-weight:500;margin-top:16px;}
-  #pendResArea.pend-day .pend-rcard{flex:none;margin:auto 0;}
+  /* Replay mensual — tarjetas minimalistas (como Mi día) que llenan el espacio */
+  .pend-rcard{background:#fff;border:1px solid #ececf0;border-radius:20px;padding:30px 34px;box-shadow:0 2px 14px rgba(15,23,42,.06);}
+  .pend-rcard .pend-sc-agent{margin-bottom:18px;}
+  .pend-rcard-titulo{font-size:1.6rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-rcard-stat{font-size:3.4rem;font-weight:800;color:#1c1d22;letter-spacing:-.02em;line-height:1.06;word-break:break-word;}
+  .pend-rcard-statlabel{font-size:1rem;font-weight:600;color:#8a8c93;margin-top:2px;}
+  .pend-rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px 24px;margin-top:20px;}
+  .pend-rgrid-cell{text-align:left;}
+  .pend-rgrid-v{font-size:2.1rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;line-height:1.1;word-break:break-word;}
+  .pend-rgrid-l{font-size:.82rem;font-weight:600;color:#8a8c93;margin-top:2px;}
+  .pend-rcard-badge{display:inline-block;margin-top:14px;background:#eef2ff;color:#4759d6;padding:5px 13px;border-radius:20px;font-size:.82rem;font-weight:700;}
+  .pend-rcard-msg{font-size:1.05rem;line-height:1.55;color:#33353b;font-weight:500;margin-top:20px;}
+  /* La tarjeta LLENA el espacio disponible (sin hueco), contenido centrado vertical */
+  #pendResArea.pend-day .pend-rcard{flex:1;display:flex;flex-direction:column;justify-content:center;margin:0;}
   /* Oportunidad ya trabajada (dentro de la tarjeta) */
   .pend-sc-done{color:#2b8a3e;font-weight:700;}
   .pend-split.done{opacity:.72;}
@@ -622,9 +628,18 @@
       '<div><div class="pend-sc-agent-name">Asistente</div>' +
       '<div class="pend-sc-agent-sub">' + _esc(c.kicker || '') + '</div></div>' +
     '</div>';
-    var wrap = '<div class="pend-rcard">' + head +
-      (c.stat ? '<div class="pend-rcard-stat">' + _esc(c.stat) + '</div>' : '') +
-      (c.stat_label ? '<div class="pend-rcard-statlabel">' + _esc(c.stat_label) + '</div>' : '') +
+    var body;
+    if (c.grid && c.grid.length) {
+      var cells = c.grid.map(function (g) {
+        return '<div class="pend-rgrid-cell"><div class="pend-rgrid-v">' + _esc(g.v) + '</div><div class="pend-rgrid-l">' + _esc(g.l) + '</div></div>';
+      }).join('');
+      body = (c.titulo ? '<div class="pend-rcard-titulo">' + _esc(c.titulo) + '</div>' : '') +
+             '<div class="pend-rgrid">' + cells + '</div>';
+    } else {
+      body = (c.stat ? '<div class="pend-rcard-stat">' + _esc(c.stat) + '</div>' : '') +
+             (c.stat_label ? '<div class="pend-rcard-statlabel">' + _esc(c.stat_label) + '</div>' : '');
+    }
+    var wrap = '<div class="pend-rcard">' + head + body +
       (c.badge ? '<div><span class="pend-rcard-badge">' + _esc(c.badge) + '</span></div>' : '') +
       (c.mensaje ? '<div class="pend-rcard-msg">' + _esc(c.mensaje) + '</div>' : '') +
     '</div>';
