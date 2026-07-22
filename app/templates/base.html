@@ -124,7 +124,7 @@
     Sunset", reactiva por hora vía data-fase en el body). Igual que el
     Mundial: autocontenido y scopeado a body[data-theme="temporada"].
     {% endcomment %}
-    <link rel="stylesheet" href="{% static 'css/tema_temporada.css' %}?v=20260722-fase4b">
+    <link rel="stylesheet" href="{% static 'css/tema_temporada.css' %}?v=20260722-fase4c">
     {# Modo Ligero: overrides bajo body.ww-lite — debe ir DESPUÉS de todo para ganar #}
     <link rel="stylesheet" href="{% static 'css/perf_lite.css' %}?v=20260615-perf-v5">
 
@@ -156,18 +156,24 @@
                 return 'crepusculo';
             }
             function aplicar() {
-                document.body.setAttribute('data-fase', window.__tmpFaseManual || faseDelDia());
+                var f = window.__tmpFaseManual || faseDelDia();
+                var prev = document.body.getAttribute('data-fase');
+                if (prev === f) return;
+                // tmp-anim SOLO existe durante un cambio real de fase con
+                // la página ya pintada (one-shot de 1.6s). Cargas, reloads
+                // y restauraciones de Turbo pintan la fase en seco.
+                if (prev) {
+                    document.body.classList.add('tmp-anim');
+                    clearTimeout(window.__tmpAnimT);
+                    window.__tmpAnimT = setTimeout(function () {
+                        document.body.classList.remove('tmp-anim');
+                    }, 1600);
+                }
+                document.body.setAttribute('data-fase', f);
             }
             window.__tmpAplicarFase = aplicar;
+            document.body.classList.remove('tmp-anim');
             aplicar();
-            // tmp-anim habilita las transiciones de cielo/sol. Se pone DOS
-            // frames después del primer pintado: la carga inicial no anima
-            // (el sol solo viaja en cambios de fase con la página abierta).
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    document.body.classList.add('tmp-anim');
-                });
-            });
             setInterval(aplicar, 5 * 60 * 1000);
         })();
     </script>
