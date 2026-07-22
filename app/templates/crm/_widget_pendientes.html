@@ -146,6 +146,26 @@
   .pend-pager-btn:hover:not(:disabled){background:#f2f3f6;color:#111317;}
   .pend-pager-btn:disabled{opacity:.4;cursor:default;}
   .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
+  /* Oportunidad ya trabajada (dentro de la tarjeta) */
+  .pend-sc-done{color:#2b8a3e;font-weight:700;}
+  .pend-split.done{opacity:.72;}
+  .pend-split.done .pend-sc-ia{background:#e6f6ec;color:#2b8a3e;}
+  /* Recap del cierre del día */
+  .pend-recap-msg{font-size:1.15rem;line-height:1.5;color:#1c1d22;font-weight:600;background:#fff;border:1px solid #ececf0;
+    border-radius:16px;padding:18px 20px;margin-bottom:14px;}
+  .pend-recap-stats{display:flex;gap:12px;margin-bottom:14px;}
+  .pend-recap-stat{flex:1;background:#fff;border:1px solid #ececf0;border-radius:14px;padding:14px;text-align:center;}
+  .pend-recap-stat .n{display:block;font-size:1.8rem;font-weight:800;color:#1c1d22;line-height:1.1;}
+  .pend-recap-stat .l{font-size:.74rem;font-weight:700;color:#8a8c93;text-transform:uppercase;letter-spacing:.03em;}
+  .pend-recap-stat.done .n{color:#2b8a3e;}
+  .pend-recap-sec{font-size:.72rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin:14px 2px 8px;}
+  .pend-recap-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #f0f1f3;border-radius:12px;padding:11px 14px;margin-bottom:7px;cursor:pointer;transition:box-shadow .15s;}
+  .pend-recap-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
+  .pend-recap-ic{flex:none;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;background:#f0f1f3;color:#9a9ca3;}
+  .pend-recap-row.done .pend-recap-ic{background:#e6f6ec;color:#2b8a3e;}
+  .pend-recap-nombre{flex:1;min-width:0;font-size:.95rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-recap-cli{font-size:.82rem;color:#8a8c93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+  .pend-recap-val{flex:none;font-size:.92rem;font-weight:800;color:#1c1d22;}
   /* Conversación con el asistente — fluye en el MISMO scroll del body, bajo la tarjeta */
   #widgetPendientes #pendChatFlow{
     --ai-blue:#0066FF; --ai-blue-dark:#0052D4; --ai-cyan:#00B5FF; --ai-violet:#6366F1;
@@ -417,13 +437,23 @@
     var r = _data && _data.resumen;
     if (!res) return;
     if (!r) { res.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
+    if (r.modo === 'recap') { _renderRecap(res, r); return; }
     var items = r.items || [];
     var total = items.length;
+    var pendientes = (r.pendientes != null ? r.pendientes : total);
+    var completadas = r.completadas || 0;
+    var subtxt;
+    if (pendientes > 0) {
+      subtxt = 'Hoy trabajas <b>' + pendientes + '</b> oportunidad' + (pendientes === 1 ? '' : 'es') + ' · te las paso en orden de prioridad';
+      if (completadas > 0) subtxt += ' · <b>' + completadas + '</b> ✓';
+    } else if (completadas > 0) {
+      subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
+    } else {
+      subtxt = 'Vas al día — no hay nada urgente para hoy. 🎉';
+    }
     var hero = '<div class="pend-res-hero">' +
       '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
-      '<div class="pend-res-sub">' + (total > 0
-          ? 'Hoy trabajas <b>' + total + '</b> oportunidad' + (total === 1 ? '' : 'es') + ' · te las paso en orden de prioridad'
-          : 'Vas al día — no hay nada urgente para hoy. 🎉') + '</div>' +
+      '<div class="pend-res-sub">' + subtxt + '</div>' +
     '</div>';
     if (!total) { res.innerHTML = hero; return; }
     if (_resIdx >= total) _resIdx = total - 1;
@@ -433,12 +463,15 @@
     var prob = (it.probabilidad != null ? it.probabilidad : 0);
     var pw = Math.max(0, Math.min(100, prob));
     var contactoLine = (it.contacto || '—') + (it.hora ? ' · hasta ' + it.hora : '');
-    var card = '<div class="pend-split">' +
+    var agentSub = it.completada
+      ? '<span class="pend-sc-done">✓ Completada hoy</span>'
+      : ('Prioridad ' + it.prioridad + ' · ' + (_resIdx + 1) + ' de ' + total);
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
         '<div class="pend-sc-agent">' +
           '<div class="pend-sc-ia">IA</div>' +
           '<div><div class="pend-sc-agent-name">Asistente</div>' +
-          '<div class="pend-sc-agent-sub">Prioridad ' + it.prioridad + ' · ' + (_resIdx + 1) + ' de ' + total + '</div></div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div>' +
         '</div>' +
         '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
         '<div class="pend-sc-play">' +
@@ -476,6 +509,37 @@
     _resIdx = Math.max(0, Math.min(total - 1, _resIdx + delta));
     _renderResumen();
   };
+
+  function _recapRow(it, done) {
+    return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
+      '<span class="pend-recap-ic">' + (done ? '✓' : '○') + '</span>' +
+      '<span class="pend-recap-nombre">' + _esc(it.proyecto) + '</span>' +
+      '<span class="pend-recap-cli">' + _esc(it.cliente) + '</span>' +
+      '<span class="pend-recap-val">' + _esc(it.valor_fmt) + '</span>' +
+    '</div>';
+  }
+  function _renderRecap(res, r) {
+    var items = r.items || [];
+    var done = items.filter(function (it) { return it.completada; });
+    var pend = items.filter(function (it) { return !it.completada; });
+    var html = '<div class="pend-res-hero">' +
+      '<div class="pend-res-saludo">Cierre del día 🌙</div>' +
+      '<div class="pend-res-sub">Así te fue hoy, ' + _esc(r.nombre) + '</div></div>';
+    html += '<div class="pend-recap-msg">' + _esc(r.recap_msg || '') + '</div>';
+    html += '<div class="pend-recap-stats">' +
+      '<div class="pend-recap-stat done"><span class="n">' + done.length + '</span><span class="l">Completadas</span></div>' +
+      '<div class="pend-recap-stat pend"><span class="n">' + pend.length + '</span><span class="l">Pendientes</span></div>' +
+    '</div>';
+    if (done.length) {
+      html += '<div class="pend-recap-sec">✓ Trabajadas hoy</div>';
+      done.forEach(function (it) { html += _recapRow(it, true); });
+    }
+    if (pend.length) {
+      html += '<div class="pend-recap-sec">○ Quedaron pendientes</div>';
+      pend.forEach(function (it) { html += _recapRow(it, false); });
+    }
+    res.innerHTML = html;
+  }
 
   function _render() {
     var res = el('pendResArea');

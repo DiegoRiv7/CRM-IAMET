@@ -6548,7 +6548,7 @@ def _pend_briefing_ia(nombre, items):
         modelo = None
 
     import json as _json
-    top = items[:12]
+    top = items[:20]
     facts = [{
         'id': it['opp_id'], 'cliente': it['cliente'], 'proyecto': it['proyecto'],
         'valor': it['valor_fmt'], 'probabilidad': it['probabilidad'], 'riesgo': it['riesgo'],
@@ -6578,7 +6578,7 @@ def _pend_briefing_ia(nombre, items):
     try:
         res = chat(
             [{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
-            model=modelo, temperature=0.6, max_tokens=1600,
+            model=modelo, temperature=0.6, max_tokens=2400,
         )
         txt = ((res or {}).get('text') or '').strip()
         a, b = txt.find('{'), txt.rfind('}')
@@ -6613,6 +6613,50 @@ def _pend_briefing_cacheado(user, today, sel, nombre, items):
         except Exception:
             pass
     return data
+
+
+def _pend_trabajadas_hoy(oportunidad_ids, today):
+    """Conjunto de opp_ids que se 'trabajaron' HOY: una tarea/actividad de la
+    oportunidad marcada COMPLETADA hoy, o una tarea/actividad CREADA/agendada hoy.
+    """
+    from .models import (TareaOportunidad, TareaOportunidadHistorial,
+                         Actividad, OportunidadActividad)
+    if not oportunidad_ids:
+        return set()
+    worked = set()
+    # (A) Tareas de oportunidad marcadas como completadas hoy (log de eventos)
+    worked |= set(TareaOportunidadHistorial.objects.filter(
+        tipo='cerrada', tarea__oportunidad_id__in=oportunidad_ids, fecha__date=today
+    ).values_list('tarea__oportunidad_id', flat=True))
+    # (A) Actividades de calendario completadas hoy (proxy: fecha_inicio hoy)
+    worked |= set(Actividad.objects.filter(
+        oportunidad_id__in=oportunidad_ids, completada=True, fecha_inicio__date=today
+    ).values_list('oportunidad_id', flat=True))
+    # (B) Tareas de oportunidad creadas/agendadas hoy
+    worked |= set(TareaOportunidad.objects.filter(
+        oportunidad_id__in=oportunidad_ids, fecha_creacion__date=today
+    ).values_list('oportunidad_id', flat=True))
+    # (B) Actividad real registrada hoy en el timeline (agendó/hizo algo)
+    worked |= set(OportunidadActividad.objects.filter(
+        oportunidad_id__in=oportunidad_ids,
+        tipo__in=['tarea', 'seguimiento', 'llamada', 'reunion', 'email', 'propuesta'],
+        fecha_creacion__date=today,
+    ).values_list('oportunidad_id', flat=True))
+    worked.discard(None)
+    return worked
+
+
+def _pend_recap_msg(nombre, completadas, total):
+    """Mensaje del asistente para el cierre del día (18:00) según el rendimiento."""
+    if total <= 0:
+        return f'{nombre}, hoy no tenías oportunidades urgentes. ¡A descansar! 🎉'
+    if completadas <= 0:
+        return f'{nombre}, hoy no marcaste avances. Mañana es una nueva oportunidad — arranca temprano. 💪'
+    if completadas >= total:
+        return f'¡Día redondo, {nombre}! Trabajaste tus {total} oportunidades del día. 🔥'
+    if (completadas / total) >= 0.6:
+        return f'Buen día, {nombre}: avanzaste {completadas} de {total}. Vas con buen ritmo. 👏'
+    return f'{nombre}, trabajaste {completadas} de {total} hoy. Un empujón mañana y las sacas. 💪'
 
 
 @login_required
@@ -6832,6 +6876,28 @@ def api_pendientes(request):
                     _it['mensaje'] = _e['mensaje']
                 if _e.get('accion'):
                     _it['accion'] = _e['accion']
+
+    # ── Marcar las trabajadas HOY → van al final como completadas ──
+    worked = _pend_trabajadas_hoy(_res_ids, today)
+    pend = [it for it in resumen_items if it['opp_id'] not in worked]
+    done = [it for it in resumen_items if it['opp_id'] in worked]
+    for i, it in enumerate(pend):
+        it['prioridad'] = i + 1
+        it['completada'] = False
+    for it in done:
+        it['completada'] = True
+    resumen_items = pend + done
+    resumen['items'] = resumen_items
+    resumen['pendientes'] = len(pend)         # lo que falta por trabajar (baja el contador)
+    resumen['completadas'] = len(done)
+    resumen['total'] = len(resumen_items)
+
+    # ── Modo cierre del día (recap) a partir de las 18:00 ──
+    if _hora >= 18:
+        resumen['modo'] = 'recap'
+        resumen['recap_msg'] = _pend_recap_msg(nombre_corto, len(done), len(resumen_items))
+    else:
+        resumen['modo'] = 'dia'
 
     # ── Lista de vendedores para el selector (según rol) ──
     # Solo se incluyen vendedores que TIENEN al menos una oportunidad abierta
