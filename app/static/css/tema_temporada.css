@@ -36,21 +36,31 @@ body[data-theme="temporada"] {
     --island-border: rgba(255, 255, 255, 0.28);
     background-color: #16233C;
 
-    /* Piel por defecto (= pleno) por si data-fase no llegó */
-    --tmp-cielo: linear-gradient(180deg, #24406B 0%, #35598C 38%, #5580AC 70%, #82A6C6 100%);
+    /* Piel por defecto (= pleno) por si data-fase no llegó.
+       PLENO es el pico máximo del sol: cielo más claro y brillante,
+       sidebar AZUL CIELO y scrim mínimo. */
+    --tmp-cielo: linear-gradient(180deg, #2E4E7E 0%, #4470A2 38%, #6E9AC2 70%, #9CBEDC 100%);
     --tmp-sol: radial-gradient(circle, #FFFBEC 0%, #FFEDB0 55%, rgba(255, 237, 176, 0) 78%);
     --tmp-sol-x: 76%;
     --tmp-sol-y: 13%;
     --tmp-sol-size: 96px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.04) 0%, rgba(6, 10, 20, 0.12) 75%, rgba(4, 7, 14, 0.20) 100%);
+    --tmp-sidebar: linear-gradient(180deg, rgba(111, 168, 214, 0.90) 0%, rgba(78, 134, 184, 0.93) 60%, rgba(62, 114, 162, 0.95) 100%);
 }
 
-/* ═══ Pieles por fase del día (solo re-definen el cielo y el sol) ═══ */
+/* ═══ Pieles por fase del día (cielo, sol, scrim y sidebar) ═══
+   El sidebar acompaña al sol: intermedio al despertar, azul cielo en el
+   pleno, atardecer con la mitad de arriba oscura y el último cuarto azul
+   cielo (la luz quedando abajo), y azul noche en el crepúsculo. */
 body[data-theme="temporada"][data-fase="despertar"] {
     --tmp-cielo: linear-gradient(180deg, #35547E 0%, #4A6E9C 30%, #7E9EC0 58%, #D9BC8A 86%, #A8845A 100%);
     --tmp-sol: radial-gradient(circle, #FFF6DC 0%, #FFDF9A 55%, rgba(255, 223, 154, 0) 78%);
     --tmp-sol-x: 24%;
     --tmp-sol-y: 66%;
     --tmp-sol-size: 110px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.10) 0%, rgba(6, 10, 20, 0.24) 75%, rgba(4, 7, 14, 0.36) 100%);
+    /* Sidebar intermedio: entre azul noche y azul cielo */
+    --tmp-sidebar: linear-gradient(180deg, rgba(52, 82, 124, 0.92) 0%, rgba(40, 66, 104, 0.94) 60%, rgba(30, 52, 86, 0.96) 100%);
 }
 body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-cielo: linear-gradient(180deg,
@@ -60,6 +70,11 @@ body[data-theme="temporada"][data-fase="atardecer"] {
     --tmp-sol-x: 50%;
     --tmp-sol-y: 72%;
     --tmp-sol-size: 140px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.16) 0%, rgba(6, 10, 20, 0.36) 75%, rgba(4, 7, 14, 0.50) 100%);
+    /* Sidebar atardecer: mitad de arriba azul oscuro → último cuarto azul cielo */
+    --tmp-sidebar: linear-gradient(180deg,
+        rgba(22, 32, 58, 0.95) 0%, rgba(22, 32, 58, 0.94) 50%,
+        rgba(49, 73, 122, 0.91) 75%, rgba(96, 138, 182, 0.88) 100%);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-cielo: linear-gradient(180deg,
@@ -69,6 +84,9 @@ body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-sol-x: 50%;
     --tmp-sol-y: 88%;
     --tmp-sol-size: 170px;
+    --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.16) 0%, rgba(6, 10, 20, 0.36) 75%, rgba(4, 7, 14, 0.50) 100%);
+    /* Sidebar noche (el oscuro original) */
+    --tmp-sidebar: linear-gradient(180deg, rgba(16, 26, 46, 0.92) 0%, rgba(11, 18, 34, 0.95) 60%, rgba(7, 12, 24, 0.97) 100%);
 }
 
 /* ═══ Capa de cielo FIJA (misma técnica a prueba de balas del Mundial) ═══
@@ -82,7 +100,7 @@ body[data-theme="temporada"]::before {
     z-index: -2;
     pointer-events: none;
     background-image:
-        radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.16) 0%, rgba(6, 10, 20, 0.36) 75%, rgba(4, 7, 14, 0.50) 100%),
+        var(--tmp-scrim),
         var(--tmp-cielo);
     background-size: cover;
     transition: background-image 1.4s ease;
@@ -113,13 +131,21 @@ body[data-theme="temporada"] .crm-page-sidebar {
 body[data-theme="temporada"] .crm-main,
 body[data-theme="temporada"] .crm-content { background: transparent !important; }
 
-/* ═══ Sidebar: degradado azul noche (constante en todas las fases) ═══ */
+/* ═══ Sidebar: acompaña al sol — el degradado viene de la fase ═══ */
 body[data-theme="temporada"] .crm-sidebar {
-    background: linear-gradient(180deg, rgba(16, 26, 46, 0.92) 0%, rgba(11, 18, 34, 0.95) 60%, rgba(7, 12, 24, 0.97) 100%) !important;
+    background: var(--tmp-sidebar) !important;
     backdrop-filter: blur(22px) saturate(160%);
     -webkit-backdrop-filter: blur(22px) saturate(160%);
     border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
+/* En el pleno (sidebar azul cielo claro) los textos ganan una sombra
+   sutil para conservar legibilidad sobre el fondo brillante. */
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn,
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-label {
+    text-shadow: 0 1px 4px rgba(10, 30, 50, 0.45);
+}
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-btn,
+body[data-theme="temporada"][data-fase="pleno"] .crm-sb-avatar { color: rgba(255, 255, 255, 0.92); }
 body[data-theme="temporada"] .crm-sb-logo {
     background: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%) !important;
     box-shadow: 0 4px 16px rgba(242, 130, 59, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
