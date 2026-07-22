@@ -6561,9 +6561,10 @@ def _pend_briefing_ia(nombre, items):
         "EXCLUSIVAMENTE en los datos que te doy, redacta en español:\n"
         "1) 'frase': UNA frase breve y motivadora para arrancar el día (no digas "
         "'Buenos días', eso ya se muestra aparte).\n"
-        "2) 'acciones': por cada oportunidad (clave = su id), UNA acción concreta y "
-        "persuasiva en 1-2 frases, tono coach, que retome el 'contexto'. Humana y "
-        "específica. NO inventes nombres, montos, fechas ni datos que no aparezcan.\n"
+        "2) 'acciones': por cada oportunidad (clave = su id), reescribe la acción en UNA "
+        "frase corta, natural y humana —como se lo dirías a un colega—, usando los datos "
+        "del 'contexto'. NO copies frases genéricas tipo 'si no responde, envía el correo'. "
+        "Sé directo y específico. NO inventes nombres, montos ni fechas que no aparezcan.\n"
         "Devuelve SOLO JSON válido: {\"frase\": \"...\", \"acciones\": {\"<id>\": \"...\"}}"
     )
     usr = "Vendedor: " + nombre + "\nOportunidades de hoy (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
@@ -6771,13 +6772,11 @@ def api_pendientes(request):
             if contacto:
                 accion += f' con {contacto}'
             accion += f' antes de las {hora}.'
-            accion += ' Si no hay respuesta, envía el correo de seguimiento y agenda el siguiente paso para mañana.'
         elif tier == 'sinagendar':
-            accion = 'Sin actividad agendada. '
-            accion += (f'Contacta a {contacto} ' if contacto else 'Contacta al cliente ')
-            accion += 'y agenda el siguiente paso hoy.'
+            accion = (f'Contacta a {contacto} y agenda el siguiente paso.'
+                      if contacto else 'Aún no tiene actividad agendada — agenda el siguiente paso.')
         else:
-            accion = 'Da seguimiento a esta oportunidad hoy.'
+            accion = 'Dale seguimiento hoy.'
         monto = float(opp.monto or 0)
         resumen_items.append({
             'prioridad': idx + 1,
