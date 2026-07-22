@@ -6610,3 +6610,25 @@ class AsistenteResumenDiario(models.Model):
 
     def __str__(self):
         return f'Resumen {self.usuario_id} {self.fecha} ({self.seleccion})'
+
+
+class PendienteCompletada(models.Model):
+    """Marca manual de "ya trabajé esta oportunidad hoy" desde el widget Pendientes.
+
+    Complementa la detección automática (tarea/actividad completada o agendada hoy):
+    cuando NO hay una tarea que cerrar, el usuario puede marcarla a mano. Es por
+    usuario y por día.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pendientes_completadas')
+    oportunidad = models.ForeignKey(TodoItem, on_delete=models.CASCADE, related_name='+')
+    fecha = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'oportunidad', 'fecha')]
+        indexes = [models.Index(fields=['usuario', 'fecha'])]
+        verbose_name = 'Pendiente marcada trabajada'
+        verbose_name_plural = 'Pendientes marcadas trabajadas'
+
+    def __str__(self):
+        return f'{self.usuario_id} · opp {self.oportunidad_id} · {self.fecha}'

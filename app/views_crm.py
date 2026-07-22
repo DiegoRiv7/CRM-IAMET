@@ -6615,15 +6615,21 @@ def _pend_briefing_cacheado(user, today, sel, nombre, items):
     return data
 
 
-def _pend_trabajadas_hoy(oportunidad_ids, today):
+def _pend_trabajadas_hoy(oportunidad_ids, today, user=None):
     """Conjunto de opp_ids que se 'trabajaron' HOY: una tarea/actividad de la
-    oportunidad marcada COMPLETADA hoy, o una tarea/actividad CREADA/agendada hoy.
+    oportunidad marcada COMPLETADA hoy, una tarea/actividad CREADA/agendada hoy, o
+    marcada MANUALMENTE como trabajada hoy por el usuario.
     """
     from .models import (TareaOportunidad, TareaOportunidadHistorial,
-                         Actividad, OportunidadActividad)
+                         Actividad, OportunidadActividad, PendienteCompletada)
     if not oportunidad_ids:
         return set()
     worked = set()
+    # (C) Marcada manualmente como trabajada hoy por este usuario
+    if user is not None:
+        worked |= set(PendienteCompletada.objects.filter(
+            usuario=user, fecha=today, oportunidad_id__in=oportunidad_ids
+        ).values_list('oportunidad_id', flat=True))
     # (A) Tareas de oportunidad marcadas como completadas hoy (log de eventos)
     worked |= set(TareaOportunidadHistorial.objects.filter(
         tipo='cerrada', tarea__oportunidad_id__in=oportunidad_ids, fecha__date=today
@@ -6878,7 +6884,7 @@ def api_pendientes(request):
                     _it['accion'] = _e['accion']
 
     # ── Marcar las trabajadas HOY → van al final como completadas ──
-    worked = _pend_trabajadas_hoy(_res_ids, today)
+    worked = _pend_trabajadas_hoy(_res_ids, today, user)
     pend = [it for it in resumen_items if it['opp_id'] not in worked]
     done = [it for it in resumen_items if it['opp_id'] in worked]
     for i, it in enumerate(pend):
@@ -6938,7 +6944,30 @@ def api_pendientes_estado(request):
     cuando el usuario completa una oportunidad desde el detalle."""
     from django.utils import timezone
     ids = [int(x) for x in request.GET.get('ids', '').split(',') if x.strip().isdigit()]
-    worked = _pend_trabajadas_hoy(ids, timezone.localdate()) if ids else set()
+    worked = _pend_trabajadas_hoy(ids, timezone.localdate(), request.user) if ids else set()
     return JsonResponse({'success': True, 'worked_ids': sorted(worked)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_pendientes_completar(request):
+    """Marca/desmarca manualmente una oportunidad como trabajada HOY (por usuario)."""
+    import json as _json
+    from django.utils import timezone
+    from .models import TodoItem, PendienteCompletada
+    try:
+        data = _json.loads(request.body or b'{}')
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    opp_id = data.get('opp_id')
+    done = bool(data.get('done', True))
+    if not opp_id or not TodoItem.objects.filter(id=opp_id).exists():
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada'}, status=404)
+    today = timezone.localdate()
+    if done:
+        PendienteCompletada.objects.get_or_create(usuario=request.user, oportunidad_id=opp_id, fecha=today)
+    else:
+        PendienteCompletada.objects.filter(usuario=request.user, oportunidad_id=opp_id, fecha=today).delete()
+    return JsonResponse({'success': True, 'opp_id': opp_id, 'done': done})
 
 

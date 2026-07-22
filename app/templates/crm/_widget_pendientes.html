@@ -122,6 +122,11 @@
   .pend-sc-play.done{background:#eef8f1;}
   .pend-sc-play-lbl{font-size:.68rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
   .pend-sc-play-lbl.done{color:#2b8a3e;}
+  .pend-sc-hecha{margin-top:14px;align-self:flex-start;background:#fff;border:1.5px solid #2b8a3e;color:#2b8a3e;border-radius:10px;
+    padding:9px 16px;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;}
+  .pend-sc-hecha:hover{background:#2b8a3e;color:#fff;}
+  .pend-sc-undo{margin-top:12px;align-self:flex-start;background:none;border:none;color:#8a8c93;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:4px 0;}
+  .pend-sc-undo:hover{color:#5a5c63;}
   .pend-sc-play-txt{font-size:.94rem;line-height:1.5;color:#33353b;}
   /* Panel derecho */
   .pend-sc-value{font-size:1.7rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;margin-top:2px;}
@@ -521,6 +526,9 @@
     var playBlock = it.completada
       ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Jugada completada</div><div class="pend-sc-play-txt">' + _esc(_completedMsg(it)) + '</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var actionBtn = it.completada
+      ? '<button type="button" class="pend-sc-undo" onclick="pendMarcarHecha(' + it.opp_id + ',false)">Deshacer</button>'
+      : '<button type="button" class="pend-sc-hecha" onclick="pendMarcarHecha(' + it.opp_id + ',true)">✓ Marcar como trabajada</button>';
     var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
         '<div class="pend-sc-agent">' +
@@ -530,6 +538,7 @@
         '</div>' +
         '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
         playBlock +
+        actionBtn +
       '</div>' +
       '<div class="pend-sc-right">' +
         '<div class="pend-sc-flabel">Valor</div>' +
@@ -566,6 +575,24 @@
     if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad. 💪';
     return '¡Listo! Completaste la tarea de esta oportunidad. 💪';
   }
+  // Marcar/desmarcar manualmente como trabajada (para cuando no hay tarea que cerrar).
+  window.pendMarcarHecha = function (oppId, done) {
+    fetch('/app/api/pendientes/completar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ opp_id: oppId, done: done })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.success) return;
+      var r = _data && _data.resumen; if (!r || !r.items) return;
+      var comp = 0, pend = 0;
+      r.items.forEach(function (it) {
+        if (it.opp_id === oppId) it.completada = done;
+        if (it.completada) comp++; else pend++;
+      });
+      r.completadas = comp; r.pendientes = pend;
+      if (_tab === 'resumen' && r.modo !== 'recap') _renderResumen();
+    }).catch(function () {});
+  };
 
   function _recapRow(it, done) {
     return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
