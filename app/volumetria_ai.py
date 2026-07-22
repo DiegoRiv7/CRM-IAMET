@@ -127,9 +127,26 @@ def _contexto_texto(lev):
         "ESPECIFICACIONES (Fase 2):",
         '\n'.join(f'- {e}' for e in (f2.get('especificaciones') or [])) or '(sin especificaciones)',
         "",
+        "COMPONENTES/COMENTARIOS TÉCNICOS (Fase 2):",
+        '\n'.join(f'- {c}' for c in (f2.get('comentarios_spec') or [])) or '(sin comentarios)',
+        "",
         "NOTAS DEL SITIO (Fase 2):",
         (f2.get('notas_evidencia') or '(sin notas del sitio)').strip(),
     ]
+    # Productos que el ingeniero ya eligió del catálogo en Fase 2, con su
+    # comentario de instalación por partida — van directo a la volumetría.
+    productos_f2 = f2.get('productos') or []
+    if productos_f2:
+        comentarios = f2.get('comentarios') or {}
+        partes += ["", "PRODUCTOS YA SELECCIONADOS POR EL INGENIERO (Fase 2 — inclúyelos):"]
+        for i, p in enumerate(productos_f2):
+            linea = (f"- {p.get('qty') or 1} x {p.get('desc') or ''} "
+                     f"(marca {p.get('marca') or '?'}, parte {p.get('modelo') or p.get('id') or '?'}, "
+                     f"${p.get('precio') or 0} USD)")
+            com = comentarios.get(str(i)) or comentarios.get(i)
+            if com:
+                linea += f" — instalación: {com}"
+            partes.append(linea)
     programa = (f2.get('programa') or {})
     if any(programa.values()):
         partes += ["", "PROGRAMA DE IMPLEMENTACIÓN:",
