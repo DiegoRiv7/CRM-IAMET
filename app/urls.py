@@ -580,6 +580,8 @@ urlpatterns = [
     # Volumetrías (borradores múltiples por levantamiento) ──────
     path('api/iamet/levantamientos/<int:levantamiento_id>/volumetrias/', views_iamet.api_volumetrias_lista, name='api_iamet_volumetrias_lista'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/volumetrias/crear/', views_iamet.api_volumetria_crear, name='api_iamet_volumetria_crear'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/volumetrias/generar-ai/', views_iamet.api_volumetria_generar_ai, name='api_iamet_volumetria_generar_ai'),
+    path('api/iamet/volumetrias/<int:volumetria_id>/generar-ai/estado/', views_iamet.api_volumetria_generar_ai_estado, name='api_iamet_volumetria_generar_ai_estado'),
     path('api/iamet/volumetrias/<int:volumetria_id>/', views_iamet.api_volumetria_detalle, name='api_iamet_volumetria_detalle'),
     path('api/iamet/volumetrias/<int:volumetria_id>/actualizar/', views_iamet.api_volumetria_actualizar, name='api_iamet_volumetria_actualizar'),
     path('api/iamet/volumetrias/<int:volumetria_id>/data/', views_iamet.api_volumetria_data, name='api_iamet_volumetria_data'),

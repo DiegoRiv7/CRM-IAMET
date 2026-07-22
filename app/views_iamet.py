@@ -3742,6 +3742,87 @@ def api_volumetria_crear(request, levantamiento_id):
     return JsonResponse({'success': True, 'data': _vol_to_dict(vol)})
 
 
+def _volumetria_ai_worker(vol_id, user_id):
+    """Corre la generación AI en un hilo. El estado vive en data['_ai'] de la
+    propia volumetría (el caché default es por-proceso y gunicorn corre varios
+    workers, así que BD es el único lugar que todos ven).
+
+    Nota: si gunicorn recicla el worker a media generación (max-requests), el
+    estado queda en 'generando' — el frontend corta el polling a los ~5 min."""
+    from django.contrib.auth.models import User as _User
+    from django.db import close_old_connections
+    from .volumetria_ai import generar_borrador_volumetria
+
+    close_old_connections()
+    try:
+        user = _User.objects.get(id=user_id)
+        resultado = generar_borrador_volumetria(vol_id, user)
+        vol = ProyectoVolumetria.objects.get(id=vol_id)
+        vol.data['_ai'] = {
+            'status': 'listo',
+            'resumen': resultado['resumen'],
+            'stats': resultado['stats'],
+        }
+        vol.save(update_fields=['data'])
+    except Exception as e:
+        try:
+            vol = ProyectoVolumetria.objects.get(id=vol_id)
+            vol.data = vol.data or {}
+            vol.data['_ai'] = {'status': 'error', 'error': str(e)[:300]}
+            vol.save(update_fields=['data'])
+        except Exception:
+            pass
+    finally:
+        close_old_connections()
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_volumetria_generar_ai(request, levantamiento_id):
+    """Crea una volumetría borrador y lanza la generación AI (Fases 1-2 +
+    fotos → borrador de partidas) en background. Polling en
+    api_volumetria_generar_ai_estado. Mismos permisos que crear."""
+    import threading
+
+    try:
+        lev = ProyectoLevantamiento.objects.select_related('proyecto').get(id=levantamiento_id)
+    except ProyectoLevantamiento.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Levantamiento no encontrado'}, status=404)
+    if not _check_access(request.user, lev.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    if _user_es_solo_lectura_levantamiento(request.user):
+        return JsonResponse({'success': False, 'error': 'Los vendedores no pueden crear volumetrías'}, status=403)
+    if not (lev.fase1_data or lev.fase2_data):
+        return JsonResponse({'success': False,
+                             'error': 'El levantamiento no tiene Fases 1-2 capturadas; la AI no tendría contexto.'},
+                            status=400)
+    existentes = lev.volumetrias.count()
+    vol = ProyectoVolumetria.objects.create(
+        levantamiento=lev,
+        nombre=f'Borrador AI {existentes + 1}',
+        status='borrador',
+        data={'_ai': {'status': 'generando'}},
+        creado_por=request.user,
+    )
+    threading.Thread(target=_volumetria_ai_worker,
+                     args=(vol.id, request.user.id), daemon=True).start()
+    return JsonResponse({'success': True, 'volumetria_id': vol.id})
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_volumetria_generar_ai_estado(request, volumetria_id):
+    """Estado del borrador AI: generando | listo | error."""
+    try:
+        vol = ProyectoVolumetria.objects.select_related('levantamiento__proyecto').get(id=volumetria_id)
+    except ProyectoVolumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+    if not _check_access(request.user, vol.levantamiento.proyecto):
+        return JsonResponse({'success': False, 'error': 'Sin acceso'}, status=403)
+    estado = (vol.data or {}).get('_ai') or {'status': 'desconocido'}
+    return JsonResponse({'success': True, 'estado': estado})
+
+
 @login_required
 @require_http_methods(["GET"])
 def api_volumetria_detalle(request, volumetria_id):
