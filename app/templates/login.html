@@ -13,13 +13,15 @@
            donde el verano se luce a plenitud; adentro el CRM es sobrio.
            ════════════════════════════════════════════════════════════════ */
         :root {
-            --bg-white: #f7f6f3;
+            /* Paleta extraída de la foto: azul petróleo del cielo + coral
+               de las nubes + papel cálido con un toque de rubor. */
+            --bg-white: #FAF6F3;
             --text-main: #1d1d1f;
             --text-muted: #6b7280;
-            --sol-naranja: #F2823B;
-            --sol-naranja-hover: #E8722E;
-            --mar-azul: #2C6398;
-            --mar-azul-oscuro: #1E4A75;
+            --sol-naranja: #DE7663;          /* coral de las nubes */
+            --sol-naranja-hover: #C96354;    /* coral profundo */
+            --mar-azul: #2A6478;             /* petróleo del cielo */
+            --mar-azul-oscuro: #1E4A58;
             --input-bg: #ffffff;
             --brand-text: #ffffff;
             --brand-text-muted: rgba(255,255,255,0.82);
@@ -104,9 +106,9 @@
         .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.12); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.20); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: background 0.2s; }
         .feature-item:hover { background: rgba(255, 255, 255, 0.20); }
         .feature-icon { display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; border-radius: 8px; font-weight: bold; flex-shrink: 0; }
-        .feature-icon.sol { background: linear-gradient(135deg, #FF9A4D, #E8722E); }
-        .feature-icon.mar { background: linear-gradient(135deg, #4E86B8, #2C6398); }
-        .feature-icon.arena { background: linear-gradient(135deg, #E8B34D, #C98A2B); }
+        .feature-icon.sol { background: linear-gradient(135deg, #E28472, #D46E5C); }
+        .feature-icon.mar { background: linear-gradient(135deg, #3E7A8E, #24586A); }
+        .feature-icon.arena { background: linear-gradient(135deg, #D9A08E, #BE7E68); }
 
         /* ═══ Panel del formulario (derecha) — limpio y sobrio ═══ */
         .login-section {
@@ -116,12 +118,12 @@
         /* Cinta superior: el horizonte del atardecer */
         .login-section::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, #2C6398 0%, #4E86B8 35%, #F2A54D 70%, #E8722E 100%);
+            background: linear-gradient(90deg, #24586A 0%, #3E7A8E 40%, #E8968A 75%, #DE7663 100%);
         }
         .login-box { width: 100%; max-width: 380px; }
         .logo {
             font-size: 2.5rem; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 10px;
-            background: linear-gradient(135deg, #1E4A75 0%, #2C6398 45%, #F2823B 100%);
+            background: linear-gradient(135deg, #1E4A58 0%, #2A6478 45%, #DE7663 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
         }
@@ -132,7 +134,7 @@
         .input-group input[type="text"],
         .input-group input[type="password"] { width: 100%; padding: 14px 16px; font-size: 1rem; background-color: var(--input-bg); border: 1px solid #e0e0dd; border-radius: 12px; outline: none; transition: all 0.3s ease; color: var(--text-main); }
         .input-group input[type="text"]:focus,
-        .input-group input[type="password"]:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(242, 130, 59, 0.14); }
+        .input-group input[type="password"]:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(222, 118, 99, 0.16); }
         .input-group input.input-error { border-color: var(--error-color) !important; background-color: #fff5f5 !important; }
 
         .error-banner { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 0.875rem; color: var(--error-color); }
@@ -144,12 +146,13 @@
             width: 100%; padding: 16px; color: white; border: none; border-radius: 12px;
             font-size: 1.1rem; font-weight: 600; cursor: pointer;
             transition: all 0.3s ease; position: relative; overflow: hidden;
-            background: linear-gradient(120deg, #2C6398 0%, #4E86B8 45%, #F2823B 100%);
-            box-shadow: 0 4px 16px rgba(242, 130, 59, 0.30), 0 2px 4px rgba(0,0,0,0.12);
+            /* Coral sólido de las nubes — sin degradado atravesado */
+            background: linear-gradient(135deg, #E28472 0%, #D46E5C 100%);
+            box-shadow: 0 4px 16px rgba(222, 118, 99, 0.35), 0 2px 4px rgba(0,0,0,0.12);
         }
         .btn-submit:hover {
-            background: linear-gradient(120deg, #35709F 0%, #5E92C6 45%, #FF9A4D 100%);
-            box-shadow: 0 6px 24px rgba(242, 130, 59, 0.40), 0 2px 6px rgba(0,0,0,0.16);
+            background: linear-gradient(135deg, #E8968A 0%, #DE7663 100%);
+            box-shadow: 0 6px 24px rgba(222, 118, 99, 0.42), 0 2px 6px rgba(0,0,0,0.16);
             transform: translateY(-1px);
         }
         .btn-submit:active { transform: scale(0.98) translateY(0); }
@@ -157,17 +160,17 @@
         /* Modal "Olvidé mi contraseña" */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10, 20, 34, 0.55); z-index: 100; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(4, 10, 18, 0.30); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; border-top: 3px solid; border-image: linear-gradient(90deg, #2C6398, #F2823B) 1; }
+        .modal-box { background: var(--bg-white); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(4, 10, 18, 0.30); animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; border-top: 3px solid; border-image: linear-gradient(90deg, #2A6478, #DE7663) 1; }
         .modal-box h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: var(--mar-azul-oscuro); }
         .modal-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
         .modal-box input { width: 100%; padding: 12px 14px; font-size: 1rem; background-color: #ffffff; border: 1px solid #e0e0dd; border-radius: 10px; outline: none; transition: all 0.3s ease; color: var(--text-main); margin-bottom: 12px; }
-        .modal-box input:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(242, 130, 59, 0.14); }
+        .modal-box input:focus { background-color: #ffffff; border-color: var(--sol-naranja); box-shadow: 0 0 0 4px rgba(222, 118, 99, 0.16); }
         .modal-actions { display: flex; gap: 10px; }
         .modal-actions button { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease; }
         .btn-modal-cancel { background: #e8e8e5; color: var(--text-muted); }
         .btn-modal-cancel:hover { background: #ddddd9; }
-        .btn-modal-send { background: linear-gradient(135deg, #FF9A4D, #E8722E); color: white; }
-        .btn-modal-send:hover { background: linear-gradient(135deg, #FFAB63, #F2823B); }
+        .btn-modal-send { background: linear-gradient(135deg, #E28472, #D46E5C); color: white; }
+        .btn-modal-send:hover { background: linear-gradient(135deg, #E8968A, #DE7663); }
         .modal-msg { font-size: 0.85rem; margin-top: 10px; text-align: center; min-height: 1.2em; }
         .modal-msg.success { color: #16a34a; }
         .modal-msg.error { color: var(--error-color); }
@@ -205,12 +208,12 @@
                 <svg class="logo-sol" width="44" height="44" viewBox="0 0 100 100">
                     <defs>
                         <radialGradient id="solG" cx="50%" cy="45%" r="55%">
-                            <stop offset="0%" stop-color="#FFE9A0"/>
-                            <stop offset="55%" stop-color="#FFB35C"/>
-                            <stop offset="100%" stop-color="#F2823B"/>
+                            <stop offset="0%" stop-color="#FFE4D2"/>
+                            <stop offset="55%" stop-color="#EF9B84"/>
+                            <stop offset="100%" stop-color="#DE7663"/>
                         </radialGradient>
                     </defs>
-                    <g stroke="#F2A54D" stroke-width="4.5" stroke-linecap="round">
+                    <g stroke="#E8968A" stroke-width="4.5" stroke-linecap="round">
                         <line x1="50" y1="6" x2="50" y2="17"/>
                         <line x1="50" y1="83" x2="50" y2="94"/>
                         <line x1="6" y1="50" x2="17" y2="50"/>
@@ -221,7 +224,7 @@
                         <line x1="73" y1="27" x2="81" y2="19"/>
                     </g>
                     <circle cx="50" cy="50" r="24" fill="url(#solG)"/>
-                    <circle cx="50" cy="50" r="24" fill="none" stroke="#E8722E" stroke-width="1.5" opacity="0.6"/>
+                    <circle cx="50" cy="50" r="24" fill="none" stroke="#C96354" stroke-width="1.5" opacity="0.6"/>
                 </svg>
             </div>
             <p class="subtitle anim-stagger-2">Ingresa tus credenciales para acceder.</p>
