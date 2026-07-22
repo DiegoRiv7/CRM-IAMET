@@ -205,7 +205,7 @@
   if (window.__pendInit) return;
   window.__pendInit = true;
 
-  var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0;
+  var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
   function el(id){ return document.getElementById(id); }
 
   function _normalRect() {
@@ -279,6 +279,9 @@
     if (!_ensureWindow(ov)) {
       setTimeout(function () { _ensureWindow(ov); }, 350);
     }
+    // Sondeo: detecta al instante cuando completas algo, sin recargar ni cerrar.
+    if (_pollTimer) clearInterval(_pollTimer);
+    _pollTimer = setInterval(function () { if (_tab === 'resumen') pendRefreshEstado(); }, 3000);
   };
   window.pendCerrar = function () {
     var ov = el('widgetPendientes');
@@ -289,6 +292,7 @@
     }
     ov._pendFull = false;
     ov.classList.remove('active');
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
   };
 
@@ -391,13 +395,15 @@
         if (!d || !d.success) return;
         var worked = {};
         (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
-        var comp = 0, pend = 0;
+        var changed = false, comp = 0, pend = 0;
         r.items.forEach(function (it) {
-          it.completada = !!worked[it.opp_id];
-          if (it.completada) comp++; else pend++;
+          var now = !!worked[it.opp_id];
+          if (now !== !!it.completada) changed = true;
+          it.completada = now;
+          if (now) comp++; else pend++;
         });
         r.completadas = comp; r.pendientes = pend;
-        if (_tab === 'resumen' && r.modo !== 'recap') _renderResumen();
+        if (changed && _tab === 'resumen' && r.modo !== 'recap') _renderResumen();
       }).catch(function () {});
   }
   window.pendRefreshEstado = pendRefreshEstado;
@@ -526,9 +532,6 @@
     var playBlock = it.completada
       ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Jugada completada</div><div class="pend-sc-play-txt">' + _esc(_completedMsg(it)) + '</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
-    var actionBtn = it.completada
-      ? '<button type="button" class="pend-sc-undo" onclick="pendMarcarHecha(' + it.opp_id + ',false)">Deshacer</button>'
-      : '<button type="button" class="pend-sc-hecha" onclick="pendMarcarHecha(' + it.opp_id + ',true)">✓ Marcar como trabajada</button>';
     var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
         '<div class="pend-sc-agent">' +
@@ -538,7 +541,6 @@
         '</div>' +
         '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
         playBlock +
-        actionBtn +
       '</div>' +
       '<div class="pend-sc-right">' +
         '<div class="pend-sc-flabel">Valor</div>' +
