@@ -53,7 +53,7 @@
 
 <style>
   /* La ventana: hereda .ww-card (posición/resize la maneja widget_window.css en modo ventana) */
-  #widgetPendientes .pend-card{width:min(1240px,96vw);height:min(82vh,740px);max-width:96vw;
+  #widgetPendientes .pend-card{width:min(1420px,96vw);height:min(90vh,880px);max-width:96vw;
     background:#fafbfc;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
     box-shadow:0 24px 70px rgba(0,0,0,.32);
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;}
@@ -210,8 +210,8 @@
 
   function _normalRect() {
     var vw = window.innerWidth, vh = window.innerHeight;
-    var w = Math.min(Math.round(vw * 0.84), 1240);
-    var h = Math.min(Math.round(vh * 0.80), 720);
+    var w = Math.min(Math.round(vw * 0.90), 1420);
+    var h = Math.min(Math.round(vh * 0.88), 860);
     return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
   }
   function _setRect(ov, r) {
