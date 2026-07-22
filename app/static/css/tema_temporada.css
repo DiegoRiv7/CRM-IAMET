@@ -124,31 +124,31 @@ body[data-theme="temporada"][data-fase="atardecer"] {
         rgba(49, 73, 122, 0.91) 75%, rgba(96, 138, 182, 0.88) 100%);
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
-    /* Acento naranja sunset (las fases de tarde/noche son cálidas) */
-    --tmp-acc: #F2823B;
-    --tmp-acc-dark: #E8722E;
-    --tmp-acc-light: #FF9A4D;
-    --tmp-acc-deep: #C05A28;
-    --tmp-acc-rgb: 242, 130, 59;
-    --tmp-acc-grad: linear-gradient(135deg, #FF9A4D 0%, #E8722E 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #FFAB63 0%, #F2823B 100%);
-    /* Playa de noche con luces colgadas: pozos de luz cálida cayendo
-       desde el borde superior (como serie de focos de terraza). Van en
-       la capa --tmp-luces, ENCIMA del scrim, para que el velo oscuro no
-       las apague. El sol sigue hundido en el horizonte (calc 100vh). */
+    /* Acento ámbar dorado — el color de las luces de terraza (el naranja
+       sunset no entonaba con la noche) */
+    --tmp-acc: #E8A04D;
+    --tmp-acc-dark: #D18C3A;
+    --tmp-acc-light: #F5B968;
+    --tmp-acc-deep: #B87830;
+    --tmp-acc-rgb: 232, 160, 77;
+    --tmp-acc-grad: linear-gradient(135deg, #F5B968 0%, #D18C3A 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #FFC97E 0%, #E8A04D 100%);
+    /* Noche de playa: cielo azul noche LIMPIO (sin naranja terroso ni
+       sol — ya se metió); todo el calor viene de las luces de terraza
+       cayendo desde arriba, con las palmeras casi negras dormidas. */
     --tmp-luces:
-        radial-gradient(ellipse 100% 26% at 50% -4%, rgba(255, 190, 115, 0.16) 0%, rgba(255, 190, 115, 0) 68%),
-        radial-gradient(circle 260px at 10% 0%, rgba(255, 204, 132, 0.55) 0%, rgba(255, 204, 132, 0) 62%),
-        radial-gradient(circle 210px at 34% -2%, rgba(255, 192, 116, 0.46) 0%, rgba(255, 192, 116, 0) 60%),
-        radial-gradient(circle 255px at 60% 0%, rgba(255, 204, 132, 0.52) 0%, rgba(255, 204, 132, 0) 62%),
-        radial-gradient(circle 205px at 86% -2%, rgba(255, 192, 116, 0.44) 0%, rgba(255, 192, 116, 0) 60%);
+        radial-gradient(ellipse 110% 34% at 50% -6%, rgba(255, 196, 120, 0.22) 0%, rgba(255, 196, 120, 0) 66%),
+        radial-gradient(circle 270px at 10% 0%, rgba(255, 206, 138, 0.62) 0%, rgba(255, 206, 138, 0) 62%),
+        radial-gradient(circle 220px at 34% -2%, rgba(255, 196, 122, 0.52) 0%, rgba(255, 196, 122, 0) 60%),
+        radial-gradient(circle 265px at 60% 0%, rgba(255, 206, 138, 0.58) 0%, rgba(255, 206, 138, 0) 62%),
+        radial-gradient(circle 215px at 86% -2%, rgba(255, 196, 122, 0.50) 0%, rgba(255, 196, 122, 0) 60%);
+    --tmp-palmeras: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201600%20900%22%3E%20%3Cdefs%3E%20%3Cfilter%20id=%22b%22%20x=%22-20%25%22%20y=%22-20%25%22%20width=%22140%25%22%20height=%22140%25%22%3E%3CfeGaussianBlur%20stdDeviation=%227%22/%3E%3C/filter%3E%20%3Cg%20id=%22fronda%22%3E%3Cpath%20d=%22M0%200%20C%2034%20-30,%2086%20-38,%20120%20-18%20C%2084%20-22,%2042%20-9,%2010%209%20Z%22/%3E%3C/g%3E%20%3Cg%20id=%22palma%22%3E%20%3Cpath%20d=%22M-7%20340%20C%20-3%20230,%203%20120,%20-1%2010%20L%2011%2010%20C%209%20120,%2012%20230,%2019%20340%20Z%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-155)%20scale(1.15)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-125)%20scale(1.25)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-95)%20scale(1.1)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-65)%20scale(1.3)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-35)%20scale(1.2)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(-8)%20scale(1.28)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(18)%20scale(1.05)%22/%3E%20%3Cuse%20href=%22%23fronda%22%20transform=%22rotate(40)%20scale(0.9)%22/%3E%20%3Cellipse%20cx=%222%22%20cy=%224%22%20rx=%2212%22%20ry=%229%22/%3E%20%3C/g%3E%20%3C/defs%3E%20%3Cg%20filter=%22url(%23b)%22%20fill=%22%2304060B%22%3E%20%3Cg%20opacity=%220.48%22%20transform=%22translate(210,565)%20scale(1.35)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.34%22%20transform=%22translate(365,640)%20scale(0.85)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.44%22%20transform=%22translate(1450,610)%20scale(1.5)%20scale(-1,1)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3Cg%20opacity=%220.26%22%20transform=%22translate(1240,690)%20scale(0.7)%22%3E%3Cuse%20href=%22%23palma%22/%3E%3C/g%3E%20%3C/g%3E%20%3C/svg%3E");
     --tmp-cielo: linear-gradient(180deg,
-        #16233E 0%, #1E2C4A 30%, #2A3858 58%,
-        #52290F 84%, #6B3412 92%, #241408 100%);
-    --tmp-sol: radial-gradient(circle, rgba(255, 178, 100, 0.60) 0%, rgba(226, 122, 44, 0.35) 50%, rgba(200, 105, 35, 0) 75%);
+        #0F1B34 0%, #152238 40%, #1B2A44 72%, #1E2740 100%);
+    --tmp-sol: radial-gradient(circle, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 100%);
     --tmp-sol-x: 50%;
-    --tmp-sol-y: calc(100vh - 85px);
-    --tmp-sol-size: 170px;
+    --tmp-sol-y: 120vh;
+    --tmp-sol-size: 0px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.10) 0%, rgba(6, 10, 20, 0.26) 75%, rgba(4, 7, 14, 0.40) 100%);
     /* Sidebar noche (el oscuro original) */
     --tmp-sidebar: linear-gradient(180deg, rgba(16, 26, 46, 0.92) 0%, rgba(11, 18, 34, 0.95) 60%, rgba(7, 12, 24, 0.97) 100%);
@@ -1860,8 +1860,8 @@ body[data-theme="temporada"][data-fase="atardecer"] {
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-franja-solx: 50%;
-    --tmp-franja-glow: rgba(226, 122, 44, 0.30);
-    --tmp-franja-borde: #8A4520;
+    --tmp-franja-glow: rgba(232, 160, 77, 0.34);
+    --tmp-franja-borde: #B87830;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
