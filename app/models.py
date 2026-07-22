@@ -6632,3 +6632,21 @@ class PendienteCompletada(models.Model):
 
     def __str__(self):
         return f'{self.usuario_id} · opp {self.oportunidad_id} · {self.fecha}'
+
+
+class ReplayMensual(models.Model):
+    """Caché del 'Replay' mensual (Wrapped) del vendedor. Se genera 1 vez por
+    (usuario, mes, anio): el mes ya cerró, los datos son finales."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='replays_mensuales')
+    mes = models.PositiveSmallIntegerField()
+    anio = models.PositiveIntegerField()
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'mes', 'anio')]
+        verbose_name = 'Replay mensual'
+        verbose_name_plural = 'Replays mensuales'
+
+    def __str__(self):
+        return f'Replay {self.usuario_id} {self.mes}/{self.anio}'

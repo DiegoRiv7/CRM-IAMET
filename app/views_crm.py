@@ -7020,3 +7020,190 @@ def api_pendientes_completar(request):
     return JsonResponse({'success': True, 'opp_id': opp_id, 'done': done})
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# REPLAY MENSUAL (tipo Wrapped) — recap del mes anterior, 1 vez al mes
+# ═══════════════════════════════════════════════════════════════════════════
+
+_MESES_ES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+             'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+
+def _replay_money(v):
+    try:
+        return '${:,.0f}'.format(float(v or 0))
+    except (ValueError, TypeError):
+        return '$0'
+
+
+def _replay_stats(user, mes, anio):
+    """Todas las métricas del mes (usuario, mes, anio) para el Replay."""
+    from django.db.models import Count, Sum, Q, Value, DecimalField
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal
+    from .models import (TodoItem, Cotizacion, EficienciaMensual, AsistenciaJornada,
+                         TareaOportunidadHistorial, Tarea, Actividad)
+
+    def _sum(qs, field):
+        return qs.aggregate(s=Coalesce(Sum(field), Value(Decimal('0'), output_field=DecimalField())))['s']
+
+    em = EficienciaMensual.objects.filter(usuario=user, mes=mes, anio=anio).first()
+    ef = float(em.promedio_eficiencia) if em else 0.0
+    empleado_mes = bool(em.empleado_del_mes) if em else False
+    pmes, panio = (12, anio - 1) if mes == 1 else (mes - 1, anio)
+    em_prev = EficienciaMensual.objects.filter(usuario=user, mes=pmes, anio=panio).first()
+    ef_prev = float(em_prev.promedio_eficiencia) if em_prev else None
+
+    ventas = TodoItem.objects.filter(
+        usuario=user, fecha_actualizacion__month=mes, fecha_actualizacion__year=anio
+    ).filter(Q(etapa_corta__in=['Ganado', 'Pagado']) | Q(estado_crm='pagada'))
+    ventas_count = ventas.count()
+    monto_vendido = _sum(ventas, 'monto')
+
+    trabajadas = TodoItem.objects.filter(
+        usuario=user, fecha_actualizacion__month=mes, fecha_actualizacion__year=anio
+    ).count()
+
+    cot = Cotizacion.objects.filter(created_by=user, fecha_creacion__month=mes, fecha_creacion__year=anio)
+    cot_count = cot.count()
+    cot_monto = _sum(cot, 'total')
+
+    tareas_opp = TareaOportunidadHistorial.objects.filter(
+        autor=user, tipo='cerrada', fecha__month=mes, fecha__year=anio
+    ).values('tarea_id').distinct().count()
+    tareas_proy = Tarea.objects.filter(
+        asignado_a=user, estado='completada', fecha_completada__month=mes, fecha_completada__year=anio
+    ).count()
+    actividades = Actividad.objects.filter(
+        creado_por=user, completada=True, fecha_inicio__month=mes, fecha_inicio__year=anio
+    ).count()
+
+    jornadas = AsistenciaJornada.objects.filter(
+        usuario=user, fecha__month=mes, fecha__year=anio, hora_fin__isnull=False
+    )
+    dias_trabajados = jornadas.count()
+    mejor = jornadas.order_by('-eficiencia_dia').first()
+    mejor_dia = None
+    if mejor and mejor.eficiencia_dia:
+        mejor_dia = {'dia': mejor.fecha.day, 'eficiencia': float(mejor.eficiencia_dia)}
+    top = (ventas.values('cliente__nombre_empresa')
+           .annotate(t=Sum('monto'), c=Count('id')).order_by('-t').first())
+    top_cliente = None
+    if top and top.get('cliente__nombre_empresa'):
+        top_cliente = {'nombre': top['cliente__nombre_empresa'], 'total_fmt': _replay_money(top['t']), 'count': top['c']}
+
+    return {
+        'mes': mes, 'anio': anio, 'mes_nombre': _MESES_ES[mes],
+        'eficiencia': round(ef, 1), 'eficiencia_prev': (round(ef_prev, 1) if ef_prev is not None else None),
+        'empleado_mes': empleado_mes,
+        'ventas': ventas_count, 'monto_vendido_fmt': _replay_money(monto_vendido),
+        'trabajadas': trabajadas,
+        'cotizaciones': cot_count, 'cotizaciones_monto_fmt': _replay_money(cot_monto),
+        'tareas': tareas_opp + tareas_proy, 'actividades': actividades,
+        'dias_trabajados': dias_trabajados, 'mejor_dia': mejor_dia, 'top_cliente': top_cliente,
+    }
+
+
+def _replay_ia_msgs(nombre, stats):
+    """Mensajes personalizados por tarjeta (asistente). Devuelve dict {clave: texto}."""
+    try:
+        from .asistente_provider import chat
+        from .models import AsistenteConfig
+    except Exception:
+        return {}
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if cfg and not cfg.activo:
+            return {}
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        modelo = None
+    import json as _json
+    sys = (
+        "Eres el asistente del CRM. Redactas un 'Replay mensual' estilo Spotify Wrapped para "
+        f"{nombre} (vendedor), sobre su mes de {stats.get('mes_nombre')}. Con base EXCLUSIVAMENTE "
+        "en los datos, escribe mensajes cortos, cálidos y motivadores (1-2 frases c/u), en "
+        "español, tuteando. Devuelve SOLO JSON con estas claves (cada valor un string):\n"
+        "'intro' (bienvenida al recap), 'eficiencia' (menciona si mejoró o bajó), 'ventas' "
+        "(lo que cerró y el monto), 'cotizaciones', 'actividades' (tareas y actividades), "
+        "'curioso' (un dato curioso o logro usando mejor_dia/top_cliente/dias_trabajados), y "
+        "'cierre' (motivador para el mes que empieza). NO inventes números ni nombres que no estén."
+    )
+    usr = "Datos del mes (JSON):\n" + _json.dumps(stats, ensure_ascii=False)
+    try:
+        res = chat([{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
+                   model=modelo, temperature=0.7, max_tokens=1000)
+        txt = ((res or {}).get('text') or '').strip()
+        a, b = txt.find('{'), txt.rfind('}')
+        if a == -1 or b == -1:
+            return {}
+        parsed = _json.loads(txt[a:b + 1])
+        return {k: v for k, v in parsed.items() if isinstance(v, str)}
+    except Exception as exc:
+        logger.warning(f"[Replay] IA no disponible: {exc}")
+        return {}
+
+
+def _replay_build_cards(s, m):
+    def msg(key, fb):
+        return (m.get(key) or fb)
+    cards = [
+        {'tipo': 'intro', 'bg': 0, 'kicker': 'Tu ' + s['mes_nombre'],
+         'stat': str(s['trabajadas']), 'stat_label': 'oportunidades trabajadas',
+         'mensaje': msg('intro', '¡Aquí está tu ' + s['mes_nombre'] + ' en resumen!')},
+    ]
+    trend = ''
+    if s['eficiencia_prev'] is not None:
+        d = round(s['eficiencia'] - s['eficiencia_prev'], 1)
+        trend = ('↑ +' + str(d) + ' pts' if d > 0 else ('↓ ' + str(d) + ' pts' if d < 0 else 'igual que el mes pasado'))
+    cards.append({'tipo': 'eficiencia', 'bg': 1, 'kicker': 'Tu eficiencia',
+                  'stat': str(s['eficiencia']) + '%', 'stat_label': trend,
+                  'badge': ('🏆 Empleado del mes' if s['empleado_mes'] else ''),
+                  'mensaje': msg('eficiencia', 'Tu esfuerzo del mes, en un número.')})
+    cards.append({'tipo': 'ventas', 'bg': 2, 'kicker': 'Cerraste',
+                  'stat': str(s['ventas']), 'stat_label': ('ventas · ' + s['monto_vendido_fmt']),
+                  'mensaje': msg('ventas', 'Cada cierre cuenta.')})
+    cards.append({'tipo': 'cotizaciones', 'bg': 3, 'kicker': 'Cotizaste',
+                  'stat': str(s['cotizaciones']), 'stat_label': ('cotizaciones · ' + s['cotizaciones_monto_fmt']),
+                  'mensaje': msg('cotizaciones', 'Sembrando oportunidades.')})
+    cards.append({'tipo': 'actividades', 'bg': 4, 'kicker': 'Completaste',
+                  'stat': str(s['tareas'] + s['actividades']),
+                  'stat_label': (str(s['tareas']) + ' tareas · ' + str(s['actividades']) + ' actividades'),
+                  'mensaje': msg('actividades', 'Constancia que se nota.')})
+    if s['top_cliente']:
+        cur_stat, cur_label = s['top_cliente']['nombre'], ('tu cliente estrella · ' + s['top_cliente']['total_fmt'])
+    elif s['mejor_dia']:
+        cur_stat, cur_label = ('Día ' + str(s['mejor_dia']['dia'])), ('tu mejor día · ' + str(s['mejor_dia']['eficiencia']) + '%')
+    else:
+        cur_stat, cur_label = str(s['dias_trabajados']), 'días trabajados'
+    cards.append({'tipo': 'curioso', 'bg': 5, 'kicker': 'Dato del mes',
+                  'stat': cur_stat, 'stat_label': cur_label,
+                  'mensaje': msg('curioso', '¡Un logro para presumir!')})
+    cards.append({'tipo': 'cierre', 'bg': 6, 'kicker': '¡A por más!', 'stat': '', 'stat_label': '',
+                  'mensaje': msg('cierre', s['mes_nombre'] + ' quedó atrás. Este mes vas por más. 💪')})
+    return cards
+
+
+@login_required
+def api_pendientes_replay(request):
+    """Replay mensual (Wrapped) del MES ANTERIOR. Cacheado 1 vez por mes."""
+    from django.utils import timezone
+    from .models import ReplayMensual
+    today = timezone.localdate()
+    mes, anio = (12, today.year - 1) if today.month == 1 else (today.month - 1, today.year)
+    row = ReplayMensual.objects.filter(usuario=request.user, mes=mes, anio=anio).first()
+    if row and row.data:
+        return JsonResponse({'success': True, **row.data})
+    stats = _replay_stats(request.user, mes, anio)
+    nombre = request.user.first_name or (request.user.get_full_name() or request.user.username).split(' ')[0]
+    msgs = _replay_ia_msgs(nombre, stats)
+    data = {
+        'mes_nombre': stats['mes_nombre'], 'anio': anio, 'nombre': nombre,
+        'cards': _replay_build_cards(stats, msgs),
+    }
+    try:
+        ReplayMensual.objects.update_or_create(usuario=request.user, mes=mes, anio=anio, defaults={'data': data})
+    except Exception:
+        pass
+    return JsonResponse({'success': True, **data})
+
+
