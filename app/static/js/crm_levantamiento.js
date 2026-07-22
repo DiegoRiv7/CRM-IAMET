@@ -2694,16 +2694,12 @@
         h += '<p class="lw-p3-panel-sub">Crea distintos escenarios de la volumetría. Sólo las marcadas como <b>completadas</b> son visibles para vendedores.</p>';
         h += '</div>';
         if (puedeEditar) {
-            h += '<div style="display:flex;gap:10px;align-items:center;">';
-            // Generar con AI — crea un borrador a partir de Fases 1-2 + fotos.
-            h += '<button type="button" class="lw-p3-btn-primary" id="lwP3BtnGenerarAI" onclick="lwP3GenerarAI()" ';
-            h += 'style="background:linear-gradient(135deg,#6366F1,#0066FF);">';
-            h += '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3l1.9 5.7L19.5 10l-5.6 1.3L12 17l-1.9-5.7L4.5 10l5.6-1.3z"/><path d="M19 15l.8 2.4 2.4.8-2.4.8L19 21l-.8-2.4-2.4-.8 2.4-.8z"/></svg>';
-            h += 'Generar con AI</button>';
+            // NOTA: el botón "Generar con AI" (lwP3GenerarAI) está pausado a
+            // pedido del usuario — el backend sigue vivo. Para reactivarlo,
+            // restaurar aquí el botón con onclick="lwP3GenerarAI()".
             h += '<button type="button" class="lw-p3-btn-primary" onclick="lwP3CrearVolumetria()">';
             h += '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
             h += 'Iniciar volumetría</button>';
-            h += '</div>';
         }
         h += '</div>';
 

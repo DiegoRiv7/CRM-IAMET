@@ -57,8 +57,22 @@ El usuario final **solo revisa**: ajusta 2-3 partidas, algunas cantidades, mano 
 
 ## Estado actual
 
-- **RETOMADO 2026-07-21.** Fases 1-2 prácticamente completas; Fase 3 con código
-  listo pendiente de probar en pruebas.
+- **EN PAUSA (2026-07-22, decisión del usuario).** El motor completo quedó
+  construido, deployado en pruebas y FUNCIONANDO (una generación real exitosa:
+  "Borrador AI 1" del levantamiento AP AST2 — 13 partidas, formato correcto).
+  Solo se retiró el botón de la UI (`crm_levantamiento.js`, buscar
+  `lwP3GenerarAI` — el handler y el backend siguen vivos; reactivar = restaurar
+  el botón). Modelo: VOLUMETRIA_AI_MODEL=openrouter/anthropic/claude-sonnet-4.6
+  en `.env.pruebas` (solo volumetrías; el resto del sistema sigue en 4o-mini).
+- Pendientes al retomar: 1) comparar borrador AI vs volumetría real del AP
+  (el usuario la tiene en Excel) y la de Carl Zeiss → % de acierto; 2) revisar
+  `ai_volumetria_ejemplos/catalogo_candidato.csv` e importar catálogo a
+  PRODUCCIÓN; 3) afinar prompt/ejemplos con los errores; 4) restaurar botón.
+- En pruebas quedaron: catálogo semilla importado (114 SKUs), 3 levantamientos
+  de prueba "[AI TEST] …" (levs 56-58, proyecto 27) con fotos, y la key de
+  OpenRouter de prod copiada a `.env.pruebas`.
+
+### Avance previo (2026-07-21) — Fases 1-3 completas, Fase 4 construida
 - Hecho:
   - Dataset de 5 pares reales entrada→salida extraído de producción a
     `ai_volumetria_ejemplos/` (gitignored — fotos de clientes). Mejor ejemplo:
