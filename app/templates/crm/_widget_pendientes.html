@@ -153,6 +153,11 @@
   .pend-pager-btn:hover:not(:disabled){background:#f2f3f6;color:#111317;}
   .pend-pager-btn:disabled{opacity:.4;cursor:default;}
   .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
+  /* "Mi día": mensaje arriba centrado, tarjeta centrada vertical, flechas abajo */
+  #pendResArea.pend-day{display:flex;flex-direction:column;min-height:100%;}
+  #pendResArea.pend-day .pend-res-hero{flex:none;text-align:center;}
+  #pendResArea.pend-day .pend-split{flex:none;margin:auto 0;}
+  #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
   /* Oportunidad ya trabajada (dentro de la tarjeta) */
   .pend-sc-done{color:#2b8a3e;font-weight:700;}
   .pend-split.done{opacity:.72;}
@@ -499,6 +504,7 @@
     var res = el('pendResArea');
     var r = _data && _data.resumen;
     if (!res) return;
+    res.classList.remove('pend-day');
     if (!r) { res.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
     if (r.modo === 'recap') { _renderRecap(res, r); return; }
     var items = r.items || [];
@@ -565,6 +571,7 @@
       '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)" aria-label="Siguiente">›</button>' +
     '</div>') : '';
     res.innerHTML = hero + card + pager;
+    res.classList.add('pend-day');   // layout centrado (mensaje arriba, tarjeta centro, flechas abajo)
   }
   window.pendResNav = function (delta) {
     var r = _data && _data.resumen; if (!r) return;
@@ -633,6 +640,7 @@
     var chatFlow = el('pendChatFlow');
     if (_tab === 'resumen') { if (chatFlow) chatFlow.style.display = ''; _renderResumen(); return; }
     if (chatFlow) chatFlow.style.display = 'none';   // el chat solo vive en Resumen
+    res.classList.remove('pend-day');
     var items = (_data.buckets && _data.buckets[_tab]) || [];
     if (!items.length) {
       var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
