@@ -128,13 +128,13 @@ body[data-theme="temporada"][data-fase="atardecer"] {
 body[data-theme="temporada"][data-fase="crepusculo"] {
     /* Acento ámbar dorado — el color de las luces de terraza (el naranja
        sunset no entonaba con la noche) */
-    --tmp-acc: #E8A04D;
-    --tmp-acc-dark: #D18C3A;
-    --tmp-acc-light: #F5B968;
-    --tmp-acc-deep: #B87830;
-    --tmp-acc-rgb: 232, 160, 77;
-    --tmp-acc-grad: linear-gradient(135deg, #F5B968 0%, #D18C3A 100%);
-    --tmp-acc-grad-hover: linear-gradient(135deg, #FFC97E 0%, #E8A04D 100%);
+    --tmp-acc: #D4A868;
+    --tmp-acc-dark: #BE9254;
+    --tmp-acc-light: #E2BE84;
+    --tmp-acc-deep: #A67E44;
+    --tmp-acc-rgb: 212, 168, 104;
+    --tmp-acc-grad: linear-gradient(135deg, #E2BE84 0%, #BE9254 100%);
+    --tmp-acc-grad-hover: linear-gradient(135deg, #ECCB96 0%, #D4A868 100%);
     /* Noche de playa: cielo azul noche LIMPIO (sin naranja terroso ni
        sol — ya se metió); todo el calor viene de las luces de terraza
        cayendo desde arriba, con las palmeras casi negras dormidas. */
@@ -152,8 +152,9 @@ body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-sol-y: 120vh;
     --tmp-sol-size: 0px;
     --tmp-scrim: radial-gradient(ellipse 140% 110% at 50% 42%, rgba(8, 14, 26, 0.10) 0%, rgba(6, 10, 20, 0.26) 75%, rgba(4, 7, 14, 0.40) 100%);
-    /* Sidebar noche (el oscuro original) */
-    --tmp-sidebar: linear-gradient(180deg, rgba(16, 26, 46, 0.92) 0%, rgba(11, 18, 34, 0.95) 60%, rgba(7, 12, 24, 0.97) 100%);
+    /* Sidebar noche: el tono más oscuro del cielo violeta (misma regla
+       que las demás fases) */
+    --tmp-sidebar: linear-gradient(180deg, rgba(22, 19, 50, 0.92) 0%, rgba(16, 14, 38, 0.95) 60%, rgba(11, 9, 28, 0.97) 100%);
 }
 
 /* ═══ Capa de cielo FIJA (misma técnica a prueba de balas del Mundial) ═══
@@ -1862,8 +1863,8 @@ body[data-theme="temporada"][data-fase="atardecer"] {
 }
 body[data-theme="temporada"][data-fase="crepusculo"] {
     --tmp-franja-solx: 50%;
-    --tmp-franja-glow: rgba(232, 160, 77, 0.34);
-    --tmp-franja-borde: #B87830;
+    --tmp-franja-glow: rgba(212, 168, 104, 0.32);
+    --tmp-franja-borde: #A67E44;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
