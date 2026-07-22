@@ -1,0 +1,505 @@
+{
+ "carl_zeiss_nodos": {
+  "entrada": {
+   "descripcion_necesidad": "El cliente requiere 2 bajadas de red en el Area de Shape Finder .\nEspecificaciones técnicas del cableado \ncable Azul Cat6A Paduit\nJacks Azules Cat6a Panduit  lado usuario\nJack Negros Cat6a Panduit lado rack\nPatchcord Azules 6a Color Azul , de 5 y 7 Ft de alta densidad\nse deberá de agregar un Patch Panel Angulado de 48 unidades de alta densidad\n\nCondiciones de la instalación:\nJornada en Domingo\n2 personas minimo\nse realizará burbuja\n\nInfraestructura\nya cuenta  con tubería instalada, solo es realizar el tendido del nodo",
+   "servicios": [
+    "Cableado Estructurado"
+   ],
+   "componentes": [
+    "Cable Cat6A"
+   ],
+   "notas_materiales": "Cable azul cat6a , jacks azules , patchcords azules de alta y normales  5 Ft  se considera jornada en domingo  conectado al IDF 3",
+   "especificaciones": [
+    "Cable Cat6a Color Azul ",
+    "Jackcs Color Azul",
+    "Patchord Azul 6A Diametro reducido"
+   ],
+   "notas_sitio": "las bajadas ya están realizadas y  cuentan con 2 nodos cada una, se agregaran 2 nodos mas para  cada bajada. se contempla burbuja para la instalación y se considera trabajar en Domingo.\n\nsera necesario agregar un patch panel  anulado",
+   "fotos_comentarios": [
+    "Agregar 3 más a esta bajada , cambiar face plate",
+    "2 nodos en esta posición , cambiar el face plate",
+    "Agregar patch panel angulado de 1 unidad"
+   ]
+  },
+  "salida_secciones": [
+   {
+    "tipo": "equipamiento",
+    "titulo": "Equipamiento",
+    "items": [
+     {
+      "row_type": "header",
+      "texto": "EQUIPAMIENTO"
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "PUR6AV04BU-G.",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "Bobina de Cable UTP de 4 Pares, Vari-MaTriX, Cat6A, Color AZUL en 305 Metros.",
+      "precioLista": 505.4,
+      "costoUnitario": 353.78,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "CJ6X88TGBL",
+      "cantidad": 4.0,
+      "row_type": "item",
+      "descripcion": "CONECTOR JACK RJ45 CATEGORÍA 6A NEGRO",
+      "precioLista": 22.2,
+      "costoUnitario": 15.54,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "CJ6X88TGBU",
+      "cantidad": 4.0,
+      "row_type": "item",
+      "descripcion": "CONECTOR JACK RJ45 CATEGORÍA 6A AZUL",
+      "precioLista": 22.2,
+      "costoUnitario": 15.54,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "CFPE4WHY",
+      "cantidad": 2.0,
+      "row_type": "item",
+      "descripcion": "PLACA DE PARED VERTICAL PARA 4 PUERTOS",
+      "precioLista": 3.8,
+      "costoUnitario": 2.66,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "UTP28X5BU",
+      "cantidad": 2.0,
+      "row_type": "item",
+      "descripcion": "Cable de Parcheo UTP Cat6A, CM/LSZH, Diámetro Reducido (28AWG), Color AZUL, 5 ft",
+      "precioLista": 21.4,
+      "costoUnitario": 14.98,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "UTP6A7BU",
+      "cantidad": 2.0,
+      "row_type": "item",
+      "descripcion": "Cable de Parcheo UTP Cat6A, CM/LSZH, NORMAL (28AWG), Color AZUL, 7ft",
+      "precioLista": 21.37,
+      "costoUnitario": 14.959,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "parte": "CPPA48HDWBLY",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "Panel de Parcheo Modular Mini-Com (Sin Conectores), Angulado, Sin Blindaje, Alta Densidad, de 48 Puertos, 1UR",
+      "precioLista": 257.0,
+      "costoUnitario": 179.9,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "row_type": "header",
+      "texto": "ACCESORIOS"
+     },
+     {
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "MISCELANEOS",
+      "precioLista": 45.0,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "BURBUJA",
+      "precioLista": 180.0,
+      "descuentoCosto": 30.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "row_type": "header",
+      "texto": "INCLUYE:"
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "TTS-35RX0",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "ROLLO VELCRO NEGRO",
+      "precioLista": 0.0,
+      "costoUnitario": 17.5,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "S8-18-C0",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "CINCHOS STRONGHOLD S15-50 (200MM) PLENUM AH-2 NEGRO PQ.100",
+      "precioLista": 0.0,
+      "costoUnitario": 3.01,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "T038X000VPM-BK",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "ETIQUETAS PARA FACEPLATE",
+      "precioLista": 0.0,
+      "costoUnitario": 17.71,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "ST14-075-60BK",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "CINTA ELECTRICA ADHESIVA DE PVC ST14 NEGRA",
+      "precioLista": 0.0,
+      "costoUnitario": 1.72,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "BAJANET",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "LOTE MATERIAL PARA BURBUJA",
+      "precioLista": 0.0,
+      "costoUnitario": 45.0,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "CONSTRUWOOD",
+      "parte": "PE-2074",
+      "cantidad": 1.0,
+      "row_type": "item",
+      "descripcion": "TRIPLAY PINO 0 CARAS 4' X 8' 3/4\"",
+      "precioLista": 0.0,
+      "costoUnitario": 29.0,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "TORNILLERÍA",
+      "parte": "CH013005",
+      "cantidad": 3.0,
+      "row_type": "item",
+      "descripcion": "1/4 KG CHILILLO NEGRO PARA MADERA 6 X 1-1/2",
+      "precioLista": 0.0,
+      "costoUnitario": 2.8,
+      "descuentoCosto": 0.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "row_type": "header",
+      "texto": "EQUIPO ELEVACION"
+     },
+     {
+      "row_type": "header",
+      "texto": "SE VA USAR ESCALERA DE TIJERA EN 8 PIES."
+     }
+    ]
+   },
+   {
+    "tipo": "mano_obra",
+    "titulo": "Mano de Obra",
+    "items": [
+     {
+      "marca": "BAJANET",
+      "parte": "SERVICIOS PROFESIONALES",
+      "cantidad": 4.0,
+      "descripcion": "INSTALACION DE NODO DE RED CAT.6A",
+      "precioLista": 95.0,
+      "descuentoVenta": 0.0
+     },
+     {
+      "marca": "BAJANET",
+      "parte": "SERVICIOS PROFESIONALES",
+      "cantidad": 1.0,
+      "descripcion": "JORNADA DE FIN DE SEMANA DOMINGO",
+      "precioLista": 390.0,
+      "descuentoVenta": 0.0
+     }
+    ]
+   },
+   {
+    "tipo": "costo_mo",
+    "titulo": "Costos Adicionales",
+    "items": [
+     {
+      "dias": 2.0,
+      "cantidad": 0.0,
+      "descripcion": "Supervisor",
+      "costoUnitario": 120.0
+     },
+     {
+      "dias": 2.0,
+      "cantidad": 3.0,
+      "descripcion": "Tecnico",
+      "costoUnitario": 70.0
+     },
+     {
+      "dias": 1.0,
+      "cantidad": 1.0,
+      "descripcion": "combustible",
+      "costoUnitario": 40.0
+     },
+     {
+      "dias": 1.0,
+      "cantidad": 0.0,
+      "descripcion": "casetas",
+      "costoUnitario": 10.0
+     },
+     {
+      "dias": 1.0,
+      "cantidad": 1.0,
+      "descripcion": "comidas",
+      "costoUnitario": 60.0
+     }
+    ]
+   }
+  ]
+ },
+ "reubicacion_camara": {
+  "entrada": {
+   "descripcion_necesidad": "EL CLIENTE SOLICITA REUBICAR LA CAMARA DE PASILLO P22 , SE REUTILIZARA NODO EXISTENTE",
+   "servicios": [
+    "CCTV"
+   ],
+   "componentes": [
+    "Cámara IP",
+    "Cable Cat6"
+   ],
+   "notas_materiales": "",
+   "especificaciones": [
+    "REUBICACION DE CAMARA"
+   ],
+   "notas_sitio": "",
+   "fotos_comentarios": [
+    "CAMARA DE PASILLO A REUBICAR",
+    "NODO EXISTENTE A UTILIZAR",
+    "POSICION NUEVA , SE COLOCARA TUBERIA PARA LLEGAR AL PASILLO"
+   ]
+  },
+  "salida_secciones": [
+   {
+    "tipo": "equipamiento",
+    "titulo": "Equipamiento",
+    "items": [
+     {
+      "row_type": "header",
+      "texto": "Equipamiento"
+     },
+     {
+      "marca": "BAJANET",
+      "parte": "TUBERIA",
+      "cantidad": 6,
+      "row_type": "item",
+      "descripcion": "METRO DE TUBERIA STEEL 3/4",
+      "precioLista": 9,
+      "descuentoCosto": 30,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "RYMCO / KOBREX",
+      "parte": "TN075",
+      "cantidad": 6,
+      "row_type": "item",
+      "descripcion": "TUBO STEEL 3/4",
+      "precioLista": 0,
+      "costoUnitario": 0,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "FELEC",
+      "parte": "FFSC-75",
+      "cantidad": 2,
+      "row_type": "item",
+      "descripcion": "CONECTOR STEEL 3/4",
+      "precioLista": 0,
+      "costoUnitario": 0,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "FELEC",
+      "parte": "FFMT50-P75",
+      "cantidad": 2,
+      "row_type": "item",
+      "descripcion": "MONITOR PVC 3/4",
+      "precioLista": 0,
+      "costoUnitario": 0,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "FELEC",
+      "parte": "FFS-75",
+      "cantidad": 1,
+      "row_type": "item",
+      "descripcion": "COPLE STEEL 3/4",
+      "precioLista": 0,
+      "costoUnitario": 0,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "FELEC",
+      "parte": "FFAO60-75",
+      "cantidad": 2,
+      "row_type": "item",
+      "descripcion": "ABRAZADERA TIPO O 3/4",
+      "precioLista": 0,
+      "costoUnitario": -1,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "charofil",
+      "parte": "CH-VR-9-3000",
+      "cantidad": 2,
+      "row_type": "item",
+      "descripcion": "Varilla Roscada de 3/8\" x 3000mm, con acabado Electro Zinc",
+      "precioLista": 5.7,
+      "costoUnitario": 4.5600000000000005,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "index",
+      "parte": "SUTL-38-114",
+      "cantidad": 2,
+      "row_type": "item",
+      "descripcion": "Mordaza de Acero Fija barras de 1 1/4\", para varilla roscada de 3/8\".",
+      "precioLista": 6.76,
+      "costoUnitario": 5.4079999999999995,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "PUR6004BU-ME",
+      "cantidad": 20,
+      "row_type": "item",
+      "descripcion": "Metro de  Cable UTP Cobre, TX6000&trade; PanNet, Reelex, Azul, Categoría 6 Mejorado (23 AWG), PVC (CMR, Riser), de 4 Pares",
+      "precioLista": 1.7,
+      "costoUnitario": 1.19,
+      "descuentoCosto": 30,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "PANDUIT",
+      "parte": "FP6X88MTG",
+      "cantidad": 2,
+      "row_type": "item",
+      "descripcion": "Plug RJ45 UTP, Instalación Recta, Terminación en Campo Certificable, Compatible con Cat5e, Cat6 y Cat6A, Color Negro",
+      "precioLista": 23.5,
+      "costoUnitario": 16.45,
+      "descuentoCosto": 30,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "BAJANET",
+      "parte": "MISCELANEOS",
+      "cantidad": 1,
+      "row_type": "item",
+      "descripcion": "MISCELANEOS",
+      "precioLista": 25,
+      "costoUnitario": 20,
+      "descuentoCosto": 20,
+      "descuentoVenta": 0
+     },
+     {
+      "row_type": "header",
+      "texto": "Accesorios"
+     }
+    ]
+   },
+   {
+    "tipo": "mano_obra",
+    "titulo": "Mano de Obra",
+    "items": [
+     {
+      "marca": "BAJANET",
+      "notas": "NOTA, EL CLIENTE PROPORCINA EL CARRO DE ELEVACION",
+      "parte": "SERVICIOS PROFESIONALES",
+      "cantidad": 6,
+      "descripcion": "INSTALACION DE TUBERIA STEEL 3/4",
+      "precioLista": 5,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "BAJANET",
+      "parte": "SERVICIOS PROFESIONALES",
+      "cantidad": 1,
+      "descripcion": "JORNADA DE FIN DE SEMANA SABADO",
+      "precioLista": 270,
+      "descuentoVenta": 0
+     },
+     {
+      "marca": "BAJANET",
+      "parte": "SERVICIOS PROFESIONALES",
+      "cantidad": 1,
+      "descripcion": "INSTALACION DE NODO Y CAMARA",
+      "precioLista": 60,
+      "descuentoVenta": 0
+     }
+    ]
+   },
+   {
+    "tipo": "costo_mo",
+    "titulo": "Costos Adicionales",
+    "items": [
+     {
+      "dias": 1,
+      "cantidad": 0,
+      "descripcion": "Supervisor",
+      "costoUnitario": 120
+     },
+     {
+      "dias": 2,
+      "cantidad": 2,
+      "descripcion": "Tecnico",
+      "costoUnitario": 40
+     },
+     {
+      "dias": 1,
+      "cantidad": 1,
+      "descripcion": "combustible",
+      "costoUnitario": 25
+     },
+     {
+      "dias": 1,
+      "cantidad": 0,
+      "descripcion": "casetas",
+      "costoUnitario": 12
+     },
+     {
+      "dias": 1,
+      "cantidad": 0,
+      "descripcion": "comidas",
+      "costoUnitario": 16
+     }
+    ]
+   }
+  ]
+ }
+}
