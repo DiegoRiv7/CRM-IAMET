@@ -6652,6 +6652,55 @@ def _pend_trabajadas_hoy(oportunidad_ids, today, user=None):
     return worked
 
 
+def _pend_resumen_stats(user, today):
+    """(total, completadas) del RESUMEN del día del usuario (sus oportunidades):
+    cuántas oportunidades entraban al resumen (vencidas / de hoy / sin agendar) y
+    cuántas se trabajaron hoy. Sirve para el bono de eficiencia por seguir el resumen.
+    """
+    from django.utils import timezone
+    from .models import TodoItem, TareaOportunidad, Tarea
+    now = timezone.now()
+    term_q = Q()
+    for v in _PEND_ETAPAS_TERMINALES:
+        term_q |= Q(etapa_corta__iexact=v)
+    ids = list(TodoItem.objects.filter(usuario=user).exclude(term_q).values_list('id', flat=True))
+    if not ids:
+        return (0, 0)
+    _ACT = ('pendiente', 'iniciada', 'en_progreso')
+
+    def mm(model, estados, comp):
+        f = {'oportunidad_id__in': ids, 'estado__in': estados, 'fecha_limite__isnull': False}
+        f['fecha_limite__lte' if comp == 'lte' else 'fecha_limite__gt'] = now
+        return dict(model.objects.filter(**f).values_list('oportunidad_id')
+                    .annotate(m=Min('fecha_limite')).values_list('oportunidad_id', 'm'))
+
+    venc_o = mm(TareaOportunidad, ['pendiente', 'en_progreso'], 'lte')
+    venc_t = mm(Tarea, _ACT, 'lte')
+    prox_o = mm(TareaOportunidad, ['pendiente', 'en_progreso'], 'gt')
+    prox_t = mm(Tarea, _ACT, 'gt')
+
+    def m2(a, b, o):
+        va, vb = a.get(o), b.get(o)
+        return (min(va, vb) if (va and vb) else (va or vb))
+
+    candidatos = []
+    for oid in ids:
+        venc = m2(venc_o, venc_t, oid)
+        prox = m2(prox_o, prox_t, oid)
+        if venc:                       # vencida
+            candidatos.append(oid)
+        elif prox is None:             # sin nada agendado
+            candidatos.append(oid)
+        else:
+            if timezone.localtime(prox).date() == today:   # para hoy
+                candidatos.append(oid)
+            # a futuro → no entra al resumen
+    if not candidatos:
+        return (0, 0)
+    worked = _pend_trabajadas_hoy(candidatos, today, user)
+    return (len(candidatos), len(worked & set(candidatos)))
+
+
 def _pend_recap_msg(nombre, completadas, total):
     """Mensaje del asistente para el cierre del día (18:00) según el rendimiento."""
     if total <= 0:
