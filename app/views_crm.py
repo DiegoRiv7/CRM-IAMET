@@ -6552,20 +6552,24 @@ def _pend_briefing_ia(nombre, items):
     facts = [{
         'id': it['opp_id'], 'cliente': it['cliente'], 'proyecto': it['proyecto'],
         'valor': it['valor_fmt'], 'probabilidad': it['probabilidad'], 'riesgo': it['riesgo'],
+        'etapa': it.get('etapa') or '', 'estado': it.get('tier') or '',
         'contacto': it.get('contacto') or '', 'hora': it.get('hora') or '',
         'accion_base': it['accion'],
     } for it in top]
 
     sys = (
-        "Eres el asistente de ventas del CRM: cálido, cercano y motivador. Le hablas de tú a "
-        f"{nombre} (vendedor). Con base EXCLUSIVAMENTE en los datos que te doy, para CADA "
-        "oportunidad (clave = su id) escribe DOS textos en español:\n"
-        "- 'mensaje': 1-2 frases cálidas y persuasivas que la vendan, mencionando de forma "
-        "natural el valor y/o la probabilidad. Estilo: 'Empieza por aquí, "
-        f"{nombre}. {{cliente}} está a un paso de firmar; con un empujón hoy cierras los {{valor}}.'\n"
-        "- 'accion': el siguiente paso concreto en 1-2 frases, natural y directo, usando "
-        "'accion_base', 'contacto' y 'hora' si están (puedes sugerir enviar el correo y agendar "
-        "seguimiento). Humano, no robótico.\n"
+        "Eres el asistente de ventas del CRM: cálido, cercano y también ESTRATÉGICO. Le hablas "
+        f"de tú a {nombre} (vendedor). Con base EXCLUSIVAMENTE en los datos que te doy, para "
+        "CADA oportunidad (clave = su id) escribe DOS textos en español:\n"
+        "- 'mensaje': 1-2 frases cálidas y persuasivas que la vendan y den contexto (menciona "
+        "de forma natural el valor y la probabilidad, y por qué vale la pena hoy).\n"
+        "- 'accion': el siguiente paso MÁS ÚTIL para avanzar o cerrar HOY, en 1-2 frases, "
+        "natural y directo. Considera la ETAPA ('etapa') y el ESTADO ('estado': overdue=está "
+        "atrasada, today=vence hoy, sinagendar=no tiene actividad). Si hay tarea agendada úsala "
+        "('accion_base', 'contacto', 'hora'). Si NO, propón el paso lógico según la etapa "
+        "(ej.: Levantamiento → agenda el levantamiento; Cotización/Enviada → da seguimiento a la "
+        "propuesta y resuelve dudas; Negociación/Seguimiento → empuja el cierre y la orden de "
+        "compra). Sé concreto y accionable, no genérico.\n"
         "NO inventes nombres, montos, fechas ni datos que no aparezcan. Devuelve SOLO JSON "
         "válido: {\"items\": {\"<id>\": {\"mensaje\": \"...\", \"accion\": \"...\"}}}"
     )
@@ -6796,6 +6800,8 @@ def api_pendientes(request):
             'valor_fmt': val_fmt,
             'probabilidad': prob,
             'riesgo': riesgo,
+            'etapa': opp.etapa_corta or '',
+            'tier': tier,
             'contacto': contacto,
             'hora': hora,
             'mensaje': mensaje,

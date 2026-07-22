@@ -32,14 +32,14 @@
       </div>
     </div>
 
-    <!-- Body -->
+    <!-- Body: un solo scroll (resumen/lista arriba + conversación con el asistente debajo) -->
     <div class="pend-body" id="pendBody">
-      <div class="pend-empty">Cargando…</div>
+      <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
+      <div id="pendChatFlow" class="pend-chatflow"></div>
     </div>
 
-    <!-- Barra de chat con el asistente general (solo visible en Resumen) -->
+    <!-- Barra de entrada del chat (solo en Resumen). Las respuestas salen en el body. -->
     <div class="pend-chat" id="pendChat" style="display:none;">
-      <div class="pend-chat-msgs" id="pendChatMsgs"></div>
       <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
         <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
                placeholder="Pregúntale al asistente sobre tus oportunidades…">
@@ -53,7 +53,7 @@
 
 <style>
   /* La ventana: hereda .ww-card (posición/resize la maneja widget_window.css en modo ventana) */
-  #widgetPendientes .pend-card{width:min(1040px,95vw);height:min(84vh,780px);max-width:95vw;
+  #widgetPendientes .pend-card{width:min(1240px,96vw);height:min(88vh,880px);max-width:96vw;
     background:#f4f5f7;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
     box-shadow:0 24px 70px rgba(0,0,0,.32);}
   .pend-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;}
@@ -146,18 +146,25 @@
   .pend-pager-btn:hover:not(:disabled){background:#f2f3f6;color:#111317;}
   .pend-pager-btn:disabled{opacity:.4;cursor:default;}
   .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
-  /* Barra de chat con el asistente */
-  .pend-chat{flex:none;border-top:1px solid #e6e8ec;background:#fff;padding:10px 14px 12px;}
-  .pend-chat-msgs{max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
-  .pend-chat-msgs:empty{display:none;}
-  .pend-chat-bubble{max-width:82%;padding:9px 13px;border-radius:14px;font-size:.92rem;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;}
-  .pend-chat-bubble.user{align-self:flex-end;background:#0a84ff;color:#fff;border-bottom-right-radius:5px;}
-  .pend-chat-bubble.ai{align-self:flex-start;background:#f0f1f4;color:#1c1d22;border-bottom-left-radius:5px;}
-  .pend-chat-bubble.ai.pend-typing{color:#8a8c93;font-style:italic;}
-  .pend-chat-form{display:flex;gap:8px;align-items:center;}
-  .pend-chat-input{flex:1;border:1px solid #dfe1e6;border-radius:22px;padding:11px 16px;font-size:.95rem;outline:none;background:#f7f8fa;transition:border-color .15s,background .15s;}
+  /* Conversación con el asistente — fluye en el MISMO scroll del body, bajo la tarjeta */
+  #widgetPendientes #pendChatFlow{
+    --ai-blue:#0066FF; --ai-blue-dark:#0052D4; --ai-cyan:#00B5FF; --ai-violet:#6366F1;
+    --ai-magenta:#C026D3; --ai-pink:#EC4899; --ai-ink:#0F172A; --ai-muted:#64748B;
+    --ai-line:#E5E7EB; --ai-soft:#F8FAFF;
+    display:flex;flex-direction:column;gap:12px;padding:8px 4px 6px;}
+  #pendChatFlow:empty{display:none;}
+  .pend-msg{display:flex;}
+  .pend-msg-user{justify-content:flex-end;}
+  .pend-msg-ai{justify-content:flex-start;}
+  .pend-userbubble{background:#0a84ff;color:#fff;border-radius:16px;border-bottom-right-radius:5px;padding:10px 14px;font-size:.95rem;line-height:1.45;max-width:78%;word-wrap:break-word;}
+  .pend-msg-ai .asist-msg-bubble{max-width:90%;}
+  .pend-typing2{color:#8a8c93;font-style:italic;font-size:.92rem;padding:2px 4px;}
+  /* Barra de entrada del chat (abajo) */
+  .pend-chat{flex:none;border-top:1px solid #e6e8ec;background:#fff;padding:12px 16px;}
+  .pend-chat-form{display:flex;gap:10px;align-items:center;}
+  .pend-chat-input{flex:1;border:1px solid #dfe1e6;border-radius:24px;padding:13px 18px;font-size:.98rem;outline:none;background:#f7f8fa;transition:border-color .15s,background .15s;}
   .pend-chat-input:focus{border-color:#0a84ff;background:#fff;}
-  .pend-chat-send{flex:none;width:40px;height:40px;border:none;border-radius:50%;background:#0a84ff;color:#fff;cursor:pointer;
+  .pend-chat-send{flex:none;width:44px;height:44px;border:none;border-radius:50%;background:#0a84ff;color:#fff;cursor:pointer;
     display:flex;align-items:center;justify-content:center;transition:background .15s;}
   .pend-chat-send:hover{background:#0060df;}
   .pend-chat-send:disabled{background:#c7c9ce;cursor:default;}
@@ -173,8 +180,8 @@
 
   function _normalRect() {
     var vw = window.innerWidth, vh = window.innerHeight;
-    var w = Math.min(Math.round(vw * 0.74), 1120);
-    var h = Math.min(Math.round(vh * 0.82), 820);
+    var w = Math.min(Math.round(vw * 0.86), 1300);
+    var h = Math.min(Math.round(vh * 0.88), 900);
     return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
   }
   function _setRect(ov, r) {
@@ -269,14 +276,35 @@
     var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
     return m ? decodeURIComponent(m[1]) : '';
   }
-  function _chatBubble(text, who) {
-    var msgs = el('pendChatMsgs'); if (!msgs) return null;
+  function _scrollBody() {
+    var body = el('pendBody');
+    if (body) body.scrollTop = body.scrollHeight;
+  }
+  function _pushUserMsg(text) {
+    var flow = el('pendChatFlow'); if (!flow) return;
+    var row = document.createElement('div');
+    row.className = 'pend-msg pend-msg-user';
     var b = document.createElement('div');
-    b.className = 'pend-chat-bubble ' + who;
+    b.className = 'pend-userbubble';
     b.textContent = text;
-    msgs.appendChild(b);
-    msgs.scrollTop = msgs.scrollHeight;
-    return b;
+    row.appendChild(b);
+    flow.appendChild(row);
+    _scrollBody();
+  }
+  function _pushAiMsg(markdown) {
+    var flow = el('pendChatFlow'); if (!flow) return;
+    var row = document.createElement('div');
+    row.className = 'pend-msg pend-msg-ai';
+    var bubble = document.createElement('div');
+    bubble.className = 'asist-msg-bubble';  // reusa el estilo/render del asistente general
+    if (typeof window.asistenteRenderMarkdown === 'function') {
+      bubble.innerHTML = window.asistenteRenderMarkdown(markdown);
+    } else {
+      bubble.textContent = markdown;
+    }
+    row.appendChild(bubble);
+    flow.appendChild(row);
+    _scrollBody();
   }
   window.pendChatSend = function (ev) {
     if (ev) ev.preventDefault();
@@ -286,21 +314,24 @@
     var texto = (input.value || '').trim();
     if (!texto) return false;
     input.value = '';
-    _chatBubble(texto, 'user');
+    _pushUserMsg(texto);
     if (send) send.disabled = true;
-    var typing = _chatBubble('Escribiendo…', 'ai');
-    if (typing) typing.classList.add('pend-typing');
+    var flow = el('pendChatFlow');
+    var typing = document.createElement('div');
+    typing.className = 'pend-msg pend-msg-ai';
+    typing.innerHTML = '<div class="pend-typing2">Escribiendo…</div>';
+    if (flow) { flow.appendChild(typing); _scrollBody(); }
     fetch('/app/api/asistente/mensaje/', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
       body: JSON.stringify({ texto: texto })
     }).then(function (r) { return r.json(); }).then(function (d) {
-      if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
-      _chatBubble((d && (d.respuesta || d.error)) || 'No pude responder ahora mismo.', 'ai');
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      _pushAiMsg((d && (d.respuesta || d.error)) || 'No pude responder ahora mismo.');
     }).catch(function () {
-      if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
-      _chatBubble('Error de conexión con el asistente.', 'ai');
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      _pushAiMsg('Error de conexión con el asistente.');
     }).then(function () {
       if (send) send.disabled = false;
       if (input) input.focus();
@@ -331,12 +362,13 @@
   };
 
   function pendCargar() {
-    var body = el('pendBody');
-    if (body) body.innerHTML = '<div class="pend-empty">Cargando…</div>';
+    var res = el('pendResArea');
+    if (res) res.innerHTML = '<div class="pend-empty">Cargando…</div>';
+    var cf = el('pendChatFlow'); if (cf) cf.innerHTML = '';   // nueva carga → limpia la conversación
     fetch('/app/api/pendientes/?vendedor=' + encodeURIComponent(_sel), { credentials: 'same-origin' })
       .then(function (r){ return r.json(); })
       .then(function (d){
-        if (!d || !d.success) { if (body) body.innerHTML = '<div class="pend-empty">Error al cargar</div>'; return; }
+        if (!d || !d.success) { if (res) res.innerHTML = '<div class="pend-empty">Error al cargar</div>'; return; }
         _data = d;
         _resIdx = 0;
         _buildVendedores(d);
@@ -345,7 +377,7 @@
         });
         _render();
       })
-      .catch(function (){ if (body) body.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+      .catch(function (){ if (res) res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
   }
   window.pendCargar = pendCargar;
 
@@ -378,10 +410,10 @@
     return '☀️';
   }
   function _renderResumen() {
-    var body = el('pendBody');
+    var res = el('pendResArea');
     var r = _data && _data.resumen;
-    if (!body) return;
-    if (!r) { body.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
+    if (!res) return;
+    if (!r) { res.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
     var items = r.items || [];
     var total = items.length;
     var hero = '<div class="pend-res-hero">' +
@@ -390,7 +422,7 @@
           ? 'Hoy trabajas <b>' + total + '</b> oportunidad' + (total === 1 ? '' : 'es') + ' · te las paso en orden de prioridad'
           : 'Vas al día — no hay nada urgente para hoy. 🎉') + '</div>' +
     '</div>';
-    if (!total) { body.innerHTML = hero; return; }
+    if (!total) { res.innerHTML = hero; return; }
     if (_resIdx >= total) _resIdx = total - 1;
     if (_resIdx < 0) _resIdx = 0;
     var it = items[_resIdx];
@@ -433,7 +465,7 @@
       '<span class="pend-pager-lbl">Oportunidad ' + (_resIdx + 1) + ' de ' + total + '</span>' +
       '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)"' + (_resIdx >= total - 1 ? ' disabled' : '') + ' aria-label="Siguiente">›</button>' +
     '</div>') : '';
-    body.innerHTML = hero + card + pager;
+    res.innerHTML = hero + card + pager;
   }
   window.pendResNav = function (delta) {
     var r = _data && _data.resumen; if (!r) return;
@@ -443,13 +475,15 @@
   };
 
   function _render() {
-    var body = el('pendBody');
-    if (!body || !_data) return;
-    if (_tab === 'resumen') { _renderResumen(); return; }
+    var res = el('pendResArea');
+    if (!res || !_data) return;
+    var chatFlow = el('pendChatFlow');
+    if (_tab === 'resumen') { if (chatFlow) chatFlow.style.display = ''; _renderResumen(); return; }
+    if (chatFlow) chatFlow.style.display = 'none';   // el chat solo vive en Resumen
     var items = (_data.buckets && _data.buckets[_tab]) || [];
     if (!items.length) {
       var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
-      body.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
+      res.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
       return;
     }
     var tone = _tab === 'pendientes' ? 'rojo' : (_tab === 'hoy' ? 'ambar' : 'verde');
@@ -472,7 +506,7 @@
         '</div>' +
       '</div>';
     });
-    body.innerHTML = html;
+    res.innerHTML = html;
   }
 
   function _esc(s) {
@@ -481,11 +515,22 @@
     });
   }
 
-  // Cerrar el menú de vendedor al hacer clic fuera
+  // Cerrar el menú de vendedor al hacer clic fuera + abrir oportunidad desde las
+  // tarjetas que genera el asistente en el chat ([...](opp:ID)).
   document.addEventListener('click', function (e) {
     var wrap = el('pendVendedorWrap');
     if (wrap && !wrap.contains(e.target)) {
       var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    }
+    var oppLink = e.target.closest && e.target.closest('#pendChatFlow a[data-asist-opp]');
+    if (oppLink) {
+      e.preventDefault();
+      var oppId = parseInt(oppLink.getAttribute('data-asist-opp'), 10);
+      if (oppId) {
+        var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+        if (typeof window.asistenteAbrirOportunidad === 'function') window.asistenteAbrirOportunidad(oppId);
+        else if (window.openDetalle) window.openDetalle(oppId);
+      }
     }
   });
 
