@@ -159,24 +159,14 @@
   #pendResArea.pend-day .pend-res-hero{flex:none;text-align:center;}
   #pendResArea.pend-day .pend-split{flex:none;margin:auto 0;}
   #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
-  /* Replay mensual (Wrapped) */
-  .pend-tab-replay{background:linear-gradient(135deg,#0a84ff,#6c4bf6);color:#fff !important;}
-  .pend-tab-replay.active{background:linear-gradient(135deg,#0a6cff,#5a3bf0);}
-  .pend-wrap{border-radius:24px;padding:44px 34px;min-height:360px;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;text-align:center;color:#fff;position:relative;overflow:hidden;
-    box-shadow:0 12px 40px rgba(0,0,0,.22);margin:8px auto;max-width:640px;}
-  .pend-wrap-kicker{font-size:.9rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;opacity:.9;}
-  .pend-wrap-stat{font-size:4.4rem;font-weight:900;letter-spacing:-.02em;line-height:1.02;margin:6px 0 2px;word-break:break-word;}
-  .pend-wrap-statlabel{font-size:1.05rem;font-weight:700;opacity:.92;}
-  .pend-wrap-badge{display:inline-block;margin-top:14px;background:rgba(255,255,255,.24);padding:6px 16px;border-radius:20px;font-size:.85rem;font-weight:800;}
-  .pend-wrap-msg{font-size:1.08rem;line-height:1.5;font-weight:600;margin-top:22px;max-width:520px;opacity:.97;}
-  .pend-wrap.bg0{background:linear-gradient(135deg,#0a84ff,#6c4bf6);}
-  .pend-wrap.bg1{background:linear-gradient(135deg,#ff375f,#ff9500);}
-  .pend-wrap.bg2{background:linear-gradient(135deg,#34c759,#0a84ff);}
-  .pend-wrap.bg3{background:linear-gradient(135deg,#af52de,#ff2d55);}
-  .pend-wrap.bg4{background:linear-gradient(135deg,#5856d6,#00c7be);}
-  .pend-wrap.bg5{background:linear-gradient(135deg,#ff9500,#ff375f);}
-  .pend-wrap.bg6{background:linear-gradient(135deg,#1c1d22,#3a3b40);}
+  /* Replay mensual — tarjetas minimalistas (como Mi día) */
+  .pend-rcard{background:#fff;border:1px solid #ececf0;border-radius:18px;padding:22px 24px;box-shadow:0 2px 12px rgba(15,23,42,.05);}
+  .pend-rcard .pend-sc-agent{margin-bottom:14px;}
+  .pend-rcard-stat{font-size:3rem;font-weight:800;color:#1c1d22;letter-spacing:-.02em;line-height:1.06;word-break:break-word;}
+  .pend-rcard-statlabel{font-size:.98rem;font-weight:600;color:#8a8c93;margin-top:2px;}
+  .pend-rcard-badge{display:inline-block;margin-top:12px;background:#eef2ff;color:#4759d6;padding:5px 13px;border-radius:20px;font-size:.82rem;font-weight:700;}
+  .pend-rcard-msg{font-size:1.02rem;line-height:1.55;color:#33353b;font-weight:500;margin-top:16px;}
+  #pendResArea.pend-day .pend-rcard{flex:none;margin:auto 0;}
   /* Oportunidad ya trabajada (dentro de la tarjeta) */
   .pend-sc-done{color:#2b8a3e;font-weight:700;}
   .pend-split.done{opacity:.72;}
@@ -627,12 +617,16 @@
     if (_replayIdx >= cards.length) _replayIdx = cards.length - 1;
     if (_replayIdx < 0) _replayIdx = 0;
     var c = cards[_replayIdx];
-    var wrap = '<div class="pend-wrap bg' + (c.bg || 0) + '">' +
-      (c.kicker ? '<div class="pend-wrap-kicker">' + _esc(c.kicker) + '</div>' : '') +
-      (c.stat ? '<div class="pend-wrap-stat">' + _esc(c.stat) + '</div>' : '') +
-      (c.stat_label ? '<div class="pend-wrap-statlabel">' + _esc(c.stat_label) + '</div>' : '') +
-      (c.badge ? '<div class="pend-wrap-badge">' + _esc(c.badge) + '</div>' : '') +
-      (c.mensaje ? '<div class="pend-wrap-msg">' + _esc(c.mensaje) + '</div>' : '') +
+    var head = '<div class="pend-sc-agent">' +
+      '<div class="pend-sc-ia">IA</div>' +
+      '<div><div class="pend-sc-agent-name">Asistente</div>' +
+      '<div class="pend-sc-agent-sub">' + _esc(c.kicker || '') + '</div></div>' +
+    '</div>';
+    var wrap = '<div class="pend-rcard">' + head +
+      (c.stat ? '<div class="pend-rcard-stat">' + _esc(c.stat) + '</div>' : '') +
+      (c.stat_label ? '<div class="pend-rcard-statlabel">' + _esc(c.stat_label) + '</div>' : '') +
+      (c.badge ? '<div><span class="pend-rcard-badge">' + _esc(c.badge) + '</span></div>' : '') +
+      (c.mensaje ? '<div class="pend-rcard-msg">' + _esc(c.mensaje) + '</div>' : '') +
     '</div>';
     var pager = '<div class="pend-pager">' +
       '<button type="button" class="pend-pager-btn" onclick="pendReplayNav(-1)" aria-label="Anterior">‹</button>' +
@@ -640,6 +634,7 @@
       '<button type="button" class="pend-pager-btn" onclick="pendReplayNav(1)" aria-label="Siguiente">›</button>' +
     '</div>';
     res.innerHTML = wrap + pager;
+    res.classList.add('pend-day');   // centrado vertical + flechas abajo, como Mi día
   }
   window.pendReplayNav = function (delta) {
     if (!_replayData) return;
