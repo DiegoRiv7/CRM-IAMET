@@ -25,42 +25,46 @@
             --error-color: #c0392b;
         }
 
-        /* ── Fases del día (las pone el script según la hora) ── */
+        /* ── Fases del día (las pone el script según la hora) ──
+           Lenguaje editorial: cielo + mar separados por horizonte, el sol
+           es LUZ (glow difuso) y su reflejo espejea sobre el agua. */
         body[data-fase="despertar"] {
-            --cielo: linear-gradient(180deg, #35547E 0%, #4A6E9C 30%, #7E9EC0 58%, #D9BC8A 86%, #A8845A 100%);
-            --sol-grad: radial-gradient(circle, #FFF6DC 0%, #FFDF9A 55%, rgba(255,223,154,0) 78%);
-            --sol-x: 22%; --sol-y: 58%; --sol-size: 130px;
-            --mar1: rgba(56, 92, 132, 0.85); --mar2: rgba(38, 66, 100, 0.92);
+            --cielo: linear-gradient(180deg, #35547E 0%, #4A6E9C 40%, #7E9EC0 74%, #E0C08A 100%);
+            --mar: linear-gradient(180deg, #C0A47A 0%, #5E7494 26%, #35496A 100%);
+            --sol-x: 24%; --glow-y: 58%;
+            --glow: radial-gradient(circle, rgba(255, 240, 200, 0.85) 0%, rgba(255, 219, 145, 0.40) 40%, rgba(255, 219, 145, 0) 70%);
+            --reflejo-c: rgba(255, 224, 160, 0.45);
         }
         body[data-fase="pleno"] {
-            --cielo: linear-gradient(180deg, #3E6FA8 0%, #5E92C6 30%, #8FBCE0 62%, #C6E0F2 100%);
-            --sol-grad: radial-gradient(circle, #FFFFF6 0%, #FFF4C4 45%, #FFE9A0 60%, rgba(255,233,160,0) 78%);
-            --sol-x: 72%; --sol-y: 14%; --sol-size: 170px;
-            --mar1: rgba(74, 128, 176, 0.80); --mar2: rgba(52, 98, 142, 0.90);
+            --cielo: linear-gradient(180deg, #3E6FA8 0%, #5E92C6 35%, #8FBCE0 70%, #CFE4F4 100%);
+            --mar: linear-gradient(180deg, #A8CCE8 0%, #5E92C6 30%, #2E5A88 100%);
+            --sol-x: 72%; --glow-y: 16%;
+            --glow: radial-gradient(circle, rgba(255, 255, 244, 0.95) 0%, rgba(255, 242, 190, 0.45) 38%, rgba(255, 242, 190, 0) 68%);
+            --reflejo-c: rgba(255, 248, 214, 0.38);
         }
         body[data-fase="atardecer"] {
-            --cielo: linear-gradient(180deg, #1E2E50 0%, #31497A 32%, #5E5E90 50%, #B8613F 68%, #E8823F 80%, #B85A2A 90%, #3A2415 100%);
-            --sol-grad: radial-gradient(circle, #FFE9B8 0%, #FFB35C 55%, rgba(255,179,92,0) 78%);
-            --sol-x: 50%; --sol-y: 62%; --sol-size: 160px;
-            --mar1: rgba(88, 58, 44, 0.85); --mar2: rgba(52, 34, 24, 0.92);
+            --cielo: linear-gradient(180deg, #1E2E50 0%, #31497A 30%, #5E5E90 48%, #C4693F 74%, #F0924A 92%, #FFB35C 100%);
+            --mar: linear-gradient(180deg, #E8944E 0%, #8A4E30 28%, #2E1C12 100%);
+            --sol-x: 50%; --glow-y: 60%;
+            --glow: radial-gradient(circle, rgba(255, 233, 184, 0.90) 0%, rgba(255, 179, 92, 0.45) 40%, rgba(255, 179, 92, 0) 70%);
+            --reflejo-c: rgba(255, 186, 110, 0.55);
         }
         body[data-fase="crepusculo"] {
-            --cielo: linear-gradient(180deg, #0D1730 0%, #162442 30%, #243252 58%, #52290F 84%, #6B3412 92%, #180C04 100%);
-            --sol-grad: radial-gradient(circle, rgba(255,178,100,0.60) 0%, rgba(226,122,44,0.35) 50%, rgba(200,105,35,0) 75%);
-            --sol-x: 50%; --sol-y: 78%; --sol-size: 170px;
-            --mar1: rgba(30, 24, 40, 0.88); --mar2: rgba(16, 12, 22, 0.94);
+            --cielo: linear-gradient(180deg, #0D1730 0%, #162442 36%, #243252 64%, #5A2C10 90%, #7A3B12 100%);
+            --mar: linear-gradient(180deg, #6B3412 0%, #241822 42%, #0C0A12 100%);
+            --sol-x: 50%; --glow-y: 63%;
+            --glow: radial-gradient(circle, rgba(255, 178, 100, 0.55) 0%, rgba(226, 122, 44, 0.28) 45%, rgba(226, 122, 44, 0) 72%);
+            --reflejo-c: rgba(230, 132, 58, 0.30);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { display: flex; height: 100vh; background-color: var(--bg-white); color: var(--text-main); overflow: hidden; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes solRespira { 0%, 100% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } }
-        @keyframes gaviotaVuela { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(14px, -8px); } }
-        @keyframes gaviotaVuela2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-10px, -12px); } }
-        @keyframes olasVaiven { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-28px); } }
-        @keyframes olasVaiven2 { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(22px); } }
-        @keyframes palmeraBrisa { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(1.6deg); } }
+        @keyframes glowRespira { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+        @keyframes reflejoEspejea { 0%, 100% { opacity: 0.75; transform: translateX(-50%) scaleX(1); } 50% { opacity: 1; transform: translateX(-50%) scaleX(1.12); } }
+        @keyframes gaviotaVuela { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(18px, -6px); } }
+        @keyframes gaviotaVuela2 { 0%, 100% { transform: translate(0, 0) scale(0.62); } 50% { transform: translate(-14px, -9px) scale(0.62); } }
 
         .anim-stagger-1 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.1s; }
         .anim-stagger-2 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.2s; }
@@ -68,47 +72,69 @@
         .anim-stagger-4 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.4s; }
         .anim-stagger-5 { animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; animation-delay: 0.5s; }
 
-        /* ═══ Escena de playa (panel izquierdo) ═══ */
+        /* ═══ Horizonte editorial (panel izquierdo) ═══
+           Cielo arriba (66%), mar abajo (34%), horizonte limpio. El sol es
+           un glow difuso y su reflejo espejea en columna sobre el agua —
+           luz y atmósfera, no ilustración. */
         .branding-section {
             flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center;
             padding: 60px; position: relative; overflow: hidden; color: var(--brand-text);
             background: var(--cielo);
             transition: background 1.4s ease;
         }
-        /* El sol */
-        .escena-sol {
-            position: absolute; left: var(--sol-x); top: var(--sol-y);
-            width: var(--sol-size); height: var(--sol-size);
+        /* Mar: plano inferior con el horizonte marcado por un filo de luz */
+        .mar {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
+            background: var(--mar);
+            border-top: 1px solid rgba(255, 255, 255, 0.28);
+            transition: background 1.4s ease; z-index: 1; pointer-events: none;
+        }
+        /* Brillos horizontales sutiles del agua (sheen) */
+        .mar::after {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(180deg,
+                rgba(255, 255, 255, 0.045) 0px, rgba(255, 255, 255, 0) 3px,
+                rgba(255, 255, 255, 0) 14px);
+            mix-blend-mode: overlay;
+        }
+        /* El sol como luz: glow amplio y difuso en el cielo */
+        .sol-glow {
+            position: absolute; left: var(--sol-x); top: var(--glow-y);
+            width: 380px; height: 380px;
             transform: translate(-50%, -50%); border-radius: 50%;
-            background: var(--sol-grad); filter: blur(5px);
-            animation: solRespira 7s ease-in-out infinite;
-            transition: all 1.4s ease; z-index: 1; pointer-events: none;
+            background: var(--glow); filter: blur(18px);
+            animation: glowRespira 8s ease-in-out infinite;
+            transition: all 1.4s ease; z-index: 0; pointer-events: none;
         }
-        /* Gaviotas (trazos tipo "m" abierta) */
-        .gaviota { position: absolute; z-index: 2; pointer-events: none; opacity: 0.85; }
-        .gaviota svg path { stroke: rgba(255,255,255,0.85); stroke-width: 2.6; fill: none; stroke-linecap: round; }
-        .gaviota-1 { left: 58%; top: 18%; animation: gaviotaVuela 9s ease-in-out infinite; }
-        .gaviota-2 { left: 68%; top: 26%; transform: scale(0.7); animation: gaviotaVuela2 11s ease-in-out infinite; }
-        .gaviota-3 { left: 48%; top: 12%; transform: scale(0.5); animation: gaviotaVuela 13s ease-in-out infinite; }
-        body[data-fase="crepusculo"] .gaviota { opacity: 0.35; }
-        /* Palmera (silueta, esquina inferior izquierda, mece con la brisa) */
-        .palmera {
-            position: absolute; left: -30px; bottom: -12px; z-index: 4;
-            transform-origin: 50% 100%; animation: palmeraBrisa 8s ease-in-out infinite;
-            pointer-events: none;
+        /* Reflejo del sol sobre el agua: columna de luz anclada al horizonte */
+        .reflejo {
+            position: absolute; left: var(--sol-x); top: 66%; bottom: 0;
+            width: 110px; transform: translateX(-50%);
+            background: radial-gradient(ellipse 50% 100% at 50% 0%, var(--reflejo-c) 0%, rgba(255,255,255,0) 78%);
+            filter: blur(4px);
+            animation: reflejoEspejea 9s ease-in-out infinite;
+            transition: all 1.4s ease; z-index: 2; pointer-events: none;
         }
-        .palmera svg { display: block; }
-        .palmera path { fill: rgba(10, 18, 28, 0.82); }
-        /* Olas (dos capas con vaivén lento) */
-        .olas { position: absolute; left: -60px; right: -60px; bottom: 0; z-index: 3; pointer-events: none; }
-        .olas svg { display: block; width: calc(100% + 120px); }
-        .ola-1 { animation: olasVaiven 12s ease-in-out infinite; }
-        .ola-2 { position: absolute; bottom: 0; animation: olasVaiven2 9s ease-in-out infinite; }
-        .ola-1 path { fill: var(--mar1); transition: fill 1.4s ease; }
-        .ola-2 path { fill: var(--mar2); transition: fill 1.4s ease; }
+        /* Grano fotográfico: quita el acabado "plástico" de los degradados */
+        .grano {
+            position: absolute; inset: 0; z-index: 3; pointer-events: none;
+            opacity: 0.05; mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+        /* Dos gaviotas lejanas — trazo fino, apenas sugeridas */
+        .gaviota { position: absolute; z-index: 2; pointer-events: none; opacity: 0.45; }
+        .gaviota svg path { stroke: rgba(255,255,255,0.9); stroke-width: 1.5; fill: none; stroke-linecap: round; }
+        .gaviota-1 { left: 60%; top: 20%; animation: gaviotaVuela 12s ease-in-out infinite; }
+        .gaviota-2 { left: 52%; top: 14%; animation: gaviotaVuela2 15s ease-in-out infinite; }
+        body[data-fase="crepusculo"] .gaviota { opacity: 0.16; }
 
         .branding-content { position: relative; z-index: 5; width: 100%; max-width: 480px; }
-        .branding-content h1 { font-size: 3.5rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 20px; line-height: 1.1; text-shadow: 0 2px 14px rgba(0,0,0,0.45); }
+        .kicker {
+            font-size: 0.78rem; font-weight: 700; letter-spacing: 0.22em;
+            text-transform: uppercase; color: rgba(255,255,255,0.72);
+            margin-bottom: 14px; text-shadow: 0 1px 6px rgba(0,0,0,0.35);
+        }
+        .branding-content h1 { font-size: 3rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 18px; line-height: 1.12; text-shadow: 0 2px 14px rgba(0,0,0,0.45); }
         .branding-content p { font-size: 1.2rem; color: var(--brand-text-muted); line-height: 1.6; margin-bottom: 40px; text-shadow: 0 1px 8px rgba(0,0,0,0.35); }
         .feature-list { display: flex; flex-direction: column; gap: 15px; }
         .feature-item { display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.12); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.20); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: background 0.2s; }
@@ -183,36 +209,36 @@
         .modal-msg.error { color: var(--error-color); }
 
         @media (prefers-reduced-motion: reduce) {
-            .escena-sol, .gaviota, .palmera, .ola-1, .ola-2 { animation: none !important; }
+            .sol-glow, .reflejo, .gaviota { animation: none !important; }
         }
         @media (max-width: 900px) { .branding-section { display: none; } .login-section { flex: 1; } }
     </style>
 </head>
 <body data-fase="pleno">
     <div class="branding-section">
-        <div class="escena-sol"></div>
-        <div class="gaviota gaviota-1"><svg width="44" height="20" viewBox="0 0 44 20"><path d="M2 14 Q 11 4, 22 12 Q 33 4, 42 14"/></svg></div>
-        <div class="gaviota gaviota-2"><svg width="44" height="20" viewBox="0 0 44 20"><path d="M2 14 Q 11 4, 22 12 Q 33 4, 42 14"/></svg></div>
-        <div class="gaviota gaviota-3"><svg width="44" height="20" viewBox="0 0 44 20"><path d="M2 14 Q 11 4, 22 12 Q 33 4, 42 14"/></svg></div>
-        <div class="olas ola-1"><svg viewBox="0 0 1200 90" preserveAspectRatio="none" height="90"><path d="M0,50 C 150,20 300,80 450,55 C 600,30 750,75 900,50 C 1050,25 1150,60 1200,45 L1200,90 L0,90 Z"/></svg></div>
-        <div class="olas ola-2"><svg viewBox="0 0 1200 70" preserveAspectRatio="none" height="70"><path d="M0,40 C 180,65 360,15 540,40 C 720,65 900,20 1080,42 C 1140,50 1180,44 1200,40 L1200,70 L0,70 Z"/></svg></div>
-        <div class="palmera"><svg width="290" height="330" viewBox="0 0 290 330">
-            <path d="M128 330 C 122 250 118 190 124 138 L 142 138 C 138 192 140 252 150 330 Z"/>
-            <path d="M130 142 C 92 118 52 118 22 140 C 60 104 104 102 132 124 Z"/>
-            <path d="M129 138 C 96 96 58 82 20 92 C 62 66 110 82 134 116 Z"/>
-            <path d="M133 132 C 122 84 132 44 162 20 C 140 58 138 96 146 128 Z"/>
-            <path d="M138 130 C 158 88 196 66 240 70 C 198 84 168 108 152 136 Z"/>
-            <path d="M140 136 C 178 116 220 120 252 148 C 214 132 176 134 148 148 Z"/>
-            <ellipse cx="150" cy="146" rx="10" ry="7"/>
-            <ellipse cx="136" cy="152" rx="9" ry="6"/>
-        </svg></div>
+        <div class="sol-glow"></div>
+        <div class="mar"></div>
+        <div class="reflejo"></div>
+        <div class="gaviota gaviota-1"><svg width="30" height="13" viewBox="0 0 44 20"><path d="M2 14 Q 11 5, 22 12 Q 33 5, 42 14"/></svg></div>
+        <div class="gaviota gaviota-2"><svg width="30" height="13" viewBox="0 0 44 20"><path d="M2 14 Q 11 5, 22 12 Q 33 5, 42 14"/></svg></div>
+        <div class="grano"></div>
         <div class="branding-content">
+            <div class="kicker anim-stagger-1">IAMET &middot; Sistema de Gesti&oacute;n</div>
             <h1 class="anim-stagger-1">Bienvenido a tu CRM.</h1>
             <p class="anim-stagger-2">El núcleo operativo central para optimizar tus procesos empresariales, desde la prospección hasta la ingeniería y facturación.</p>
             <div class="feature-list">
-                <div class="feature-item anim-stagger-3"><div class="feature-icon sol">&#10003;</div><div><strong style="display: block; font-size: 1.05rem;">CRM y Oportunidades</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Gestión integral de ventas y cotizaciones.</span></div></div>
-                <div class="feature-item anim-stagger-4"><div class="feature-icon mar">&#9889;</div><div><strong style="display: block; font-size: 1.05rem;">Proyectos e Ingeniería</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Seguimiento de tareas, tiempos y volumetría.</span></div></div>
-                <div class="feature-item anim-stagger-5"><div class="feature-icon arena">&#128202;</div><div><strong style="display: block; font-size: 1.05rem;">Control Operativo</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Nómina, eficiencia y reportes en tiempo real.</span></div></div>
+                <div class="feature-item anim-stagger-3">
+                    <div class="feature-icon sol"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div><strong style="display: block; font-size: 1.05rem;">CRM y Oportunidades</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Gestión integral de ventas y cotizaciones.</span></div>
+                </div>
+                <div class="feature-item anim-stagger-4">
+                    <div class="feature-icon mar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+                    <div><strong style="display: block; font-size: 1.05rem;">Proyectos e Ingeniería</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Seguimiento de tareas, tiempos y volumetría.</span></div>
+                </div>
+                <div class="feature-item anim-stagger-5">
+                    <div class="feature-icon arena"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="15"/></svg></div>
+                    <div><strong style="display: block; font-size: 1.05rem;">Control Operativo</strong><span style="font-size: 0.9rem; color: var(--brand-text-muted);">Nómina, eficiencia y reportes en tiempo real.</span></div>
+                </div>
             </div>
         </div>
     </div>
