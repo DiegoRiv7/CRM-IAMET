@@ -279,13 +279,37 @@ body[data-theme="espacial"] .crm-kanban-card.crm-postit:hover {
 body[data-theme="espacial"] .crm-postit h3 { color: #79B8FF !important; }
 /* Textos oscuros inline → claros */
 body[data-theme="espacial"] .crm-postit [style*="color:#0F172A"] { color: #F2F2F7 !important; }
-body[data-theme="espacial"] .crm-postit [style*="color:#6B7280"] { color: rgba(235, 235, 245, 0.62) !important; }
+body[data-theme="espacial"] .crm-postit [style*="color:#6B7280"] { color: rgba(235, 235, 245, 0.80) !important; }
 body[data-theme="espacial"] .crm-postit [style*="color:#9CA3AF"] { color: rgba(235, 235, 245, 0.50) !important; }
 /* Chips Valor/Marca (fondo claro inline → grafito elevado) */
 body[data-theme="espacial"] .crm-postit [style*="background:#F8FAFC"] {
     background: #2C2C2E !important;
     border-color: rgba(255, 255, 255, 0.10) !important;
 }
+
+/* Labels grises (VALOR TOTAL / MARCA / ETAPA) más legibles */
+body[data-theme="espacial"] .crm-postit [style*="color:#94A3B8"] { color: rgba(235, 235, 245, 0.55) !important; }
+/* ROJOS semánticos (vencidas) → rojo brillante de dark mode */
+body[data-theme="espacial"] .crm-postit [style*="color:#DC2626"],
+body[data-theme="espacial"] .crm-postit [style*="color:#B91C1C"],
+body[data-theme="espacial"] .crm-postit [style*="color:#991B1B"],
+body[data-theme="espacial"] .crm-postit [style*="color:#EF4444"],
+body[data-theme="espacial"] .crm-postit [style*="color: #DC2626"],
+body[data-theme="espacial"] .crm-postit [style*="color: #EF4444"] { color: #FF7B72 !important; }
+/* Pill "Proyecto" (morado claro de fábrica) → morado brillante */
+body[data-theme="espacial"] .crm-postit [style*="background:#F5F3FF"] {
+    background: rgba(124, 58, 237, 0.22) !important;
+    color: #C9A8FF !important;
+    border-color: rgba(160, 120, 255, 0.55) !important;
+}
+/* Pill "Runrate" (azul claro de fábrica) → azul brillante */
+body[data-theme="espacial"] .crm-postit [style*="background:#EFF6FF"] {
+    background: rgba(59, 130, 246, 0.22) !important;
+    color: #8AC2FF !important;
+    border-color: rgba(96, 165, 250, 0.55) !important;
+}
+/* Aro de progreso: pista gris clara → gris oscuro */
+body[data-theme="espacial"] .crm-postit circle[stroke="#E5E7EB"] { stroke: rgba(255, 255, 255, 0.14) !important; }
 /* Barra de actividad programada */
 body[data-theme="espacial"] .crm-postit .card-act-bar {
     background: #2C2C2E !important;
