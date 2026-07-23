@@ -291,3 +291,122 @@ body[data-theme="sakura"] .glass-card:hover {
 }
 
 
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2 — WIDGETS. Sakura es un tema CLARO: el default del sistema ya
+   es legible, así que esta fase es dirigida (no el port masivo del
+   Mundial): paneles porcelana, la FRANJA DE PÉTALOS en los headers
+   especiales, y textos/acentos entonados. Regla del tema: sin oscuros.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Paneles de widgets: porcelana con filo rosa */
+body[data-theme="sakura"] .widget-card,
+body[data-theme="sakura"] .widget-card-lg,
+body[data-theme="sakura"] .wn-overlay .wn-card.wn-composer {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(217, 87, 139, 0.22) !important;
+    box-shadow: 0 30px 80px rgba(74, 42, 60, 0.22) !important;
+}
+
+/* ═══ FRANJA DE PÉTALOS — el diseño especial de los headers ═══
+   Blanco→pétalo con pétalos de cerezo cayendo en deriva lenta
+   (26s, apagada con prefers-reduced-motion y Modo Ligero). */
+body[data-theme="sakura"] .wo-header,
+body[data-theme="sakura"] .wn-ctw-header,
+body[data-theme="sakura"] .muro-card-header,
+body[data-theme="sakura"] .tcp-col-head,
+body[data-theme="sakura"] .ptk-cols-head,
+body[data-theme="sakura"] .pob-head,
+body[data-theme="sakura"] .crm-tw-header,
+body[data-theme="sakura"] .crm-ctw-header,
+body[data-theme="sakura"] .cal-page-bar,
+body[data-theme="sakura"] .proy-dialog-header,
+body[data-theme="sakura"] .proy-tab-header,
+body[data-theme="sakura"] .wact-header,
+body[data-theme="sakura"] .cal-card > div:first-child,
+body[data-theme="sakura"] #widgetOppVerActividad .widget-card > div:first-child {
+    background-color: #FDF1F6 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22170%22%20height=%22170%22%20viewBox=%220%200%20170%20170%22%3E%20%3Cg%20fill=%22%23E0629B%22%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(18,12)%20rotate(24%209%2010)%22%20opacity=%220.35%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(84,34)%20rotate(-38%209%2010)%20scale(0.8)%22%20opacity=%220.28%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(138,8)%20rotate(64%209%2010)%20scale(0.65)%22%20opacity=%220.32%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(48,86)%20rotate(-15%209%2010)%20scale(0.9)%22%20opacity=%220.25%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(120,110)%20rotate(40%209%2010)%20scale(0.75)%22%20opacity=%220.30%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(10,140)%20rotate(78%209%2010)%20scale(0.6)%22%20opacity=%220.26%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(150,64)%20rotate(-55%209%2010)%20scale(0.55)%22%20opacity=%220.22%22/%3E%20%3Cpath%20d=%22M9%200%20C14.5%205,%2015%2013,%209%2020%20C3%2013,%203.5%205,%209%200%20Z%22%20transform=%22translate(70,150)%20rotate(12%209%2010)%20scale(0.7)%22%20opacity=%220.24%22/%3E%20%3C/g%3E%20%3C/svg%3E"),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 214, 229, 0.92) 100%) !important;
+    background-repeat: repeat, no-repeat !important;
+    background-size: 170px 170px, auto !important;
+    border-bottom: 2px solid #E0629B !important;
+    animation: skrPetalosCaen 26s linear infinite;
+}
+@keyframes skrPetalosCaen {
+    from { background-position: 0px 0px, 0 0; }
+    to   { background-position: -34px 170px, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+body[data-theme="sakura"] .wo-header,
+body[data-theme="sakura"] .wn-ctw-header,
+body[data-theme="sakura"] .muro-card-header,
+body[data-theme="sakura"] .tcp-col-head,
+body[data-theme="sakura"] .ptk-cols-head,
+body[data-theme="sakura"] .pob-head,
+body[data-theme="sakura"] .crm-tw-header,
+body[data-theme="sakura"] .crm-ctw-header,
+body[data-theme="sakura"] .cal-page-bar,
+body[data-theme="sakura"] .proy-dialog-header,
+body[data-theme="sakura"] .proy-tab-header,
+body[data-theme="sakura"] .wact-header,
+body[data-theme="sakura"] .cal-card > div:first-child,
+body[data-theme="sakura"] #widgetOppVerActividad .widget-card > div:first-child { animation: none !important; }
+}
+body.ww-lite[data-theme="sakura"] .wo-header,
+body.ww-lite[data-theme="sakura"] .crm-tw-header,
+body.ww-lite[data-theme="sakura"] .cal-page-bar,
+body.ww-lite[data-theme="sakura"] .ptk-cols-head { animation: none !important; }
+
+/* Textos de los headers: rosa profundo sobre la franja clara */
+body[data-theme="sakura"] .wo-title,
+body[data-theme="sakura"] .wn-ctw-breadcrumb,
+body[data-theme="sakura"] .wn-ctw-crumb-muted,
+body[data-theme="sakura"] .wn-ctw-crumb-current,
+body[data-theme="sakura"] .crm-kanban-stage-name { color: #A83562 !important; }
+body[data-theme="sakura"] .wn-ctw-breadcrumb svg { color: rgba(168, 53, 98, 0.65) !important; }
+body[data-theme="sakura"] .wo-type-badge {
+    background: var(--skr-acc-grad) !important;
+    color: #ffffff !important;
+}
+body[data-theme="sakura"] .wo-asist-btn-title,
+body[data-theme="sakura"] .ww-btn-win,
+body[data-theme="sakura"] .wn-ctw-close,
+body[data-theme="sakura"] .ww-ctrls button { color: rgba(168, 53, 98, 0.85) !important; }
+body[data-theme="sakura"] .ww-btn-win:hover,
+body[data-theme="sakura"] .wn-ctw-close:hover,
+body[data-theme="sakura"] .ww-ctrls button:hover {
+    background: rgba(217, 87, 139, 0.14) !important;
+    color: #A83562 !important;
+}
+
+/* Cuerpos y sub-tarjetas: blanco con filos rosa */
+body[data-theme="sakura"] .wo-content { background: transparent !important; }
+body[data-theme="sakura"] .wo-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(217, 87, 139, 0.16) !important;
+}
+body[data-theme="sakura"] .wo-card-accent {
+    background: linear-gradient(135deg, #FEF3F8, #ffffff) !important;
+    border: 1px solid rgba(217, 87, 139, 0.28) !important;
+}
+body[data-theme="sakura"] .wn-ctw-canvas { background: transparent !important; }
+body[data-theme="sakura"] .wn-ctw-toolbar {
+    background: #FDF1F6 !important;
+    border-top: 2px solid rgba(224, 98, 155, 0.55) !important;
+}
+
+/* Muro / Ideas / Tareas-calendario: superficies porcelana */
+body[data-theme="sakura"] .muro-card,
+body[data-theme="sakura"] .idea-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(217, 87, 139, 0.18) !important;
+}
+body[data-theme="sakura"] .tareas-cal-col {
+    background: rgba(255, 255, 255, 0.55) !important;
+    border: 1px solid rgba(217, 87, 139, 0.14) !important;
+}
