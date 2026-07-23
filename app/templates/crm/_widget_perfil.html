@@ -174,6 +174,45 @@
                 </div>
             </div>
                 </div>
+                
+                <div>
+                    <div style="font-size:0.7rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.1em; margin:0 0 10px 4px;">Tu d&iacute;a</div>
+                    <div style="background:#fff; border-radius:20px; padding:22px; border:1px solid rgba(0,0,0,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+                            <div>
+                                <div id="tuDiaReloj" style="font-size:2.1rem; font-weight:800; color:#1d1d1f; letter-spacing:-1px; font-variant-numeric:tabular-nums;">--:--</div>
+                                <div id="tuDiaFecha" style="font-size:0.82rem; color:#86868b; font-weight:600; text-transform:capitalize; margin-top:2px;">&nbsp;</div>
+                            </div>
+                            <div id="tuDiaFase" style="display:flex; align-items:center; gap:10px; background:rgba(0,122,255,0.07); border:1px solid rgba(0,122,255,0.12); border-radius:14px; padding:10px 16px;">
+                                <span id="tuDiaFaseIcono" style="font-size:1.5rem;">&#9728;&#65039;</span>
+                                <div>
+                                    <div id="tuDiaFaseNombre" style="font-size:0.9rem; font-weight:800; color:#1d1d1f;">&nbsp;</div>
+                                    <div id="tuDiaFaseSub" style="font-size:0.7rem; color:#86868b; font-weight:600;">&nbsp;</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:16px; padding-top:16px; border-top:1px dashed rgba(0,0,0,0.08);">
+                            <div style="flex:1; text-align:center;">
+                                <div id="tuDiaTareas" style="font-size:1.05rem; font-weight:900; color:#1d1d1f;">--</div>
+                                <div style="font-size:0.62rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.05em;">Tareas</div>
+                            </div>
+                            <div style="flex:1; text-align:center; border-left:1px solid rgba(0,0,0,0.06);">
+                                <div id="tuDiaActs" style="font-size:1.05rem; font-weight:900; color:#1d1d1f;">--</div>
+                                <div style="font-size:0.62rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.05em;">Actividades</div>
+                            </div>
+                            <div style="flex:1; text-align:center; border-left:1px solid rgba(0,0,0,0.06);">
+                                <div id="tuDiaVentas" style="font-size:1.05rem; font-weight:900; color:#34C759;">--</div>
+                                <div style="font-size:0.62rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.05em;">Ventas hoy</div>
+                            </div>
+                            <div style="flex:1; text-align:center; border-left:1px solid rgba(0,0,0,0.06);">
+                                <div id="tuDiaEf" style="font-size:1.05rem; font-weight:900; color:#007AFF;">--%</div>
+                                <div style="font-size:0.62rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.05em;">Efectividad</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <div id="perfilPaneConfig" style="display:none; flex-direction:column; gap:20px;">
                 <div>
                     <div style="font-size:0.7rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.1em; margin:0 0 10px 4px;">Personalizaci&oacute;n</div>
                     <div style="background:#fff; border-radius:20px; padding:22px; border:1px solid rgba(0,0,0,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.04); display:flex; flex-direction:column; gap:16px;">
@@ -253,8 +292,7 @@
                 </div>
                     </div>
                 </div>
-                </div>
-                <div id="perfilPaneConfig" style="display:none; flex-direction:column; gap:20px;">
+
                 <div>
                     <div style="font-size:0.7rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.1em; margin:0 0 10px 4px;">Cuenta y preferencias</div>
                     <div style="background:#fff; border-radius:20px; padding:22px; border:1px solid rgba(0,0,0,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
@@ -640,9 +678,40 @@
                         v.textContent = d.ventas_cobradas;
                         vw.style.display = d.ventas_cobradas > 0 ? 'block' : 'none';
                     }
+                    // Card "Tu día" (pane Mi Cuenta)
+                    var dt = document.getElementById('tuDiaTareas');
+                    if (dt) dt.textContent = d.tareas_completadas + '/' + d.tareas_totales;
+                    var da = document.getElementById('tuDiaActs');
+                    if (da) da.textContent = d.actividades_completadas + '/' + d.actividades_totales;
+                    var dv = document.getElementById('tuDiaVentas');
+                    if (dv) dv.textContent = d.ventas_cobradas;
+                    var de = document.getElementById('tuDiaEf');
+                    if (de) de.textContent = d.eficiencia + '%';
                 })
                 .catch(function () { });
         }
+        // Reloj, fecha y escena del día (card "Tu día")
+        function tuDiaTick() {
+            var ahora = new Date();
+            var r = document.getElementById('tuDiaReloj');
+            if (r) r.textContent = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            var f = document.getElementById('tuDiaFecha');
+            if (f) f.textContent = ahora.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+            var h = ahora.getHours();
+            var fase = (h >= 8 && h < 12) ? ['\u{1F305}', 'Amanecer', 'El d\u00eda despierta \u00b7 hasta las 12:00']
+                : (h >= 12 && h < 16) ? ['\u2600\uFE0F', 'Pleno d\u00eda', 'El sol en lo alto \u00b7 hasta las 16:00']
+                : (h >= 16 && h < 17) ? ['\u{1F307}', 'Atardecer', 'El sol baja \u00b7 hasta las 17:00']
+                : ['\u{1F303}', 'Noche', 'Luces de terraza encendidas'];
+            var ic = document.getElementById('tuDiaFaseIcono');
+            var n = document.getElementById('tuDiaFaseNombre');
+            var s = document.getElementById('tuDiaFaseSub');
+            if (ic) ic.textContent = fase[0];
+            if (n) n.textContent = fase[1];
+            if (s) s.textContent = fase[2];
+        }
+        tuDiaTick();
+        setInterval(tuDiaTick, 15000);
+
         perfilCargarStats();
         setInterval(perfilCargarStats, 120000);
         (function () {
