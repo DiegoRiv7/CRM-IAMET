@@ -248,7 +248,10 @@
 
     <!-- Bottom actions -->
     <div class="crm-sb-bottom">
-        <!-- Resumen (centro de mando del vendedor; reemplaza a Novedades) -->
+        <!-- Resumen (centro de mando del vendedor; reemplaza a Novedades).
+             OCULTO salvo RESUMEN_HABILITADO=1 en el .env (feature flag) —
+             la funcionalidad queda desplegada, solo sin icono. -->
+        {% if resumen_habilitado %}
         <button type="button" class="crm-sb-btn" id="btnPendientes"
             onclick="if(window.pendAbrir){pendAbrir();}"
             data-tooltip="Resumen">
@@ -257,6 +260,7 @@
             </svg>
             <span class="crm-sb-label">Resumen</span>
         </button>
+        {% endif %}
 
         {% if es_supervisor %}
         <!-- Admin (visible para supervisores incluso en modo ingeniero) -->
