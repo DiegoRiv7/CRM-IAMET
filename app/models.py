@@ -3718,6 +3718,9 @@ class MailCorreo(models.Model):
     cuerpo_cargado = models.BooleanField(default=False)  # True once RFC822 was fetched
     destacado = models.BooleanField(default=False)
     eliminado = models.BooleanField(default=False)
+    # Carpeta virtual local (Fase 1): saca el correo del INBOX sin tocar el
+    # servidor IMAP. El movimiento real en el servidor llega con la Fase 2.
+    archivado = models.BooleanField(default=False)
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='correos_vinculados'

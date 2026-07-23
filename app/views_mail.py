@@ -448,10 +448,23 @@ def api_mail_lista(request):
         qs = qs.filter(carpeta_display='SENT', eliminado=False)
     elif carpeta == 'STARRED':
         qs = qs.filter(destacado=True, eliminado=False)
+    elif carpeta == 'ARCHIVE':
+        qs = qs.filter(archivado=True, eliminado=False)
     elif carpeta == 'TRASH':
         qs = qs.filter(eliminado=True)
     else:
-        qs = qs.filter(carpeta_display='INBOX', eliminado=False)
+        qs = qs.filter(carpeta_display='INBOX', eliminado=False, archivado=False)
+
+    # Búsqueda en servidor: historial completo de la carpeta, incluye cuerpo
+    # (el buscador del cliente solo filtraba la página cargada en pantalla)
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        qs = qs.filter(
+            Q(asunto__icontains=q)
+            | Q(remitente_nombre__icontains=q)
+            | Q(remitente_email__icontains=q)
+            | Q(cuerpo_texto__icontains=q)
+        )
 
     total = qs.count()
     offset = (pagina - 1) * por_pagina
@@ -1339,6 +1352,21 @@ def api_mail_destacar(request, correo_id):
     correo.destacado = not correo.destacado
     correo.save(update_fields=['destacado'])
     return JsonResponse({'ok': True, 'destacado': correo.destacado})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_archivar(request, correo_id):
+    """Toggle de archivo local (Fase 1). El correo sale del INBOX y vive en
+    la carpeta Archivo; el movimiento en el servidor IMAP llega en Fase 2."""
+    try:
+        correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
+    correo.archivado = not correo.archivado
+    correo.save(update_fields=['archivado'])
+    return JsonResponse({'ok': True, 'archivado': correo.archivado})
 
 
 @login_required

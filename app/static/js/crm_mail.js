@@ -205,6 +205,11 @@
         /* ── Load list ──────────────────────────────── */
         window.mailCargarLista = function (carpeta) {
             carpeta = carpeta || _mailCarpeta;
+            // Cambio de carpeta / recarga: resetear búsqueda activa
+            clearTimeout(window._mailSearchTO);
+            window._mailBusqueda = '';
+            var searchEl = document.getElementById('mailListSearch');
+            if (searchEl && searchEl.value) searchEl.value = '';
             var listEl = document.getElementById('mailList');
             if (listEl) listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#9CA3AF;font-size:0.83rem;">Cargando...</div>';
             var loadMore = document.getElementById('mailLoadMore');
@@ -280,30 +285,56 @@
             _mailPagina++;
             var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=' + _mailPagina;
             if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+            // Con búsqueda activa, paginar sobre los resultados del servidor
+            if (window._mailBusqueda) url += '&q=' + encodeURIComponent(window._mailBusqueda);
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     var mas = data.correos || [];
-                    _mailTodos = _mailTodos.concat(mas);
-                    _mailFiltrado = _mailTodos;
+                    if (window._mailBusqueda) {
+                        _mailFiltrado = _mailFiltrado.concat(mas);
+                    } else {
+                        _mailTodos = _mailTodos.concat(mas);
+                        _mailFiltrado = _mailTodos;
+                    }
                     _mailHayMas = data.hay_mas || false;
                     _renderLista(_mailFiltrado);
                 });
         };
 
-        /* ── Filter ─────────────────────────────────── */
+        /* ── Filter ───────────────────────────────────
+           Doble vía: filtro local INSTANTÁNEO sobre lo ya cargado +
+           búsqueda REAL en servidor (historial completo de la carpeta,
+           incluye cuerpo del correo) con debounce de 350ms. */
         window.mailFiltrar = function (q) {
-            q = (q || '').toLowerCase().trim();
-            if (!q) {
+            q = (q || '').trim();
+            var ql = q.toLowerCase();
+            if (!ql) {
                 _mailFiltrado = _mailTodos;
             } else {
                 _mailFiltrado = _mailTodos.filter(function (c) {
-                    return (c.asunto || '').toLowerCase().includes(q) ||
-                        (c.remitente_nombre || '').toLowerCase().includes(q) ||
-                        (c.remitente_email || '').toLowerCase().includes(q);
+                    return (c.asunto || '').toLowerCase().includes(ql) ||
+                        (c.remitente_nombre || '').toLowerCase().includes(ql) ||
+                        (c.remitente_email || '').toLowerCase().includes(ql);
                 });
             }
             _renderLista(_mailFiltrado);
+
+            clearTimeout(window._mailSearchTO);
+            window._mailBusqueda = q;
+            if (!q) return;
+            window._mailSearchTO = setTimeout(function () {
+                var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=1&q=' + encodeURIComponent(q);
+                if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
+                fetch(url)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (window._mailBusqueda !== q) return; // respuesta tardía
+                        _mailFiltrado = data.correos || [];
+                        _renderLista(_mailFiltrado);
+                    })
+                    .catch(function () { });
+            }, 350);
         };
 
         /* ── View email ─────────────────────────────── */
@@ -1006,6 +1037,26 @@
                         if (actionStar) actionStar.classList.remove('active');
                     }
                     _showToastMail(d.destacado ? 'Correo destacado' : 'Quitado de destacados', true);
+                });
+        };
+
+        window.mailArchivar = function () {
+            if (!_mailCorreoActual) return;
+            fetch('/app/api/mail/archivar/' + _mailCorreoActual.id + '/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) return;
+                    // El correo cambió de carpeta (INBOX ⇄ ARCHIVE): fuera de la lista actual
+                    var card = document.getElementById('mailCard_' + _mailCorreoActual.id);
+                    if (card) card.remove();
+                    document.getElementById('mailDetailContent').style.display = 'none';
+                    document.getElementById('mailDetailEmpty').style.display = 'flex';
+                    _mailCorreoActual = null;
+                    var island = document.getElementById('mailHeaderIsland');
+                    if (island) island.style.display = 'none';
+                    _showToastMail(d.archivado ? 'Correo archivado' : 'Devuelto a Bandeja de entrada', true);
                 });
         };
 

@@ -478,6 +478,7 @@ urlpatterns = [
     path('api/mail/check/', views_mail.api_mail_check_nuevos, name='api_mail_check_nuevos'),
     path('api/mail/auto-sync/', views_mail.api_mail_auto_sync, name='api_mail_auto_sync'),
     path('api/mail/destacar/<int:correo_id>/', views_mail.api_mail_destacar, name='api_mail_destacar'),
+    path('api/mail/archivar/<int:correo_id>/', views_mail.api_mail_archivar, name='api_mail_archivar'),
     path('api/mail/eliminar/<int:correo_id>/', views_mail.api_mail_eliminar, name='api_mail_eliminar'),
     path('api/mail/reenviar/<int:correo_id>/', views_mail.api_mail_reenviar, name='api_mail_reenviar'),
     path('api/mail/conexion/<int:conexion_id>/eliminar/', views_mail.api_mail_eliminar_conexion, name='api_mail_eliminar_conexion'),
