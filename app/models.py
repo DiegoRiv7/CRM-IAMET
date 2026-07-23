@@ -3691,6 +3691,15 @@ class MailConexion(models.Model):
         return f"{self.usuario.username} — {self.correo_electronico}"
 
 
+def mail_hilo_key(asunto):
+    """Clave de conversación estilo Gmail: asunto normalizado (sin prefijos
+    Re:/RV:/Fwd: encadenados, minúsculas, espacios colapsados)."""
+    import re as _re
+    s = (asunto or '').strip()
+    s = _re.sub(r'^\s*((re|rv|fw|fwd|rte|res)\s*(\[\d+\])?\s*:\s*)+', '', s, flags=_re.IGNORECASE)
+    return ' '.join(s.split()).lower()[:180]
+
+
 class MailCorreo(models.Model):
     """Cached email (headers synced eagerly; body fetched on first open)."""
     CARPETA_CHOICES = [('INBOX', 'Bandeja de entrada'), ('SENT', 'Enviados')]
@@ -3721,6 +3730,9 @@ class MailCorreo(models.Model):
     # Carpeta virtual local (Fase 1): saca el correo del INBOX sin tocar el
     # servidor IMAP. El movimiento real en el servidor llega con la Fase 2.
     archivado = models.BooleanField(default=False)
+    # Clave de conversación (asunto normalizado). Se siembra sola en save()
+    # para TODOS los puntos de creación (sync, enviar, responder, reenviar).
+    hilo_key = models.CharField(max_length=200, blank=True, default='', db_index=True)
     oportunidad = models.ForeignKey(
         'TodoItem', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='correos_vinculados'
@@ -3740,6 +3752,13 @@ class MailCorreo(models.Model):
         ordering = ['-fecha_envio']
         verbose_name = "Correo"
         verbose_name_plural = "Correos"
+
+    def save(self, *args, **kwargs):
+        if not self.hilo_key:
+            key = mail_hilo_key(self.asunto)
+            # Sin asunto: clave propia para que no se agrupe con otros vacíos
+            self.hilo_key = key or f'solo-{self.uid_imap}-{self.carpeta_imap}'[:180]
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"[{self.carpeta_display}] {self.asunto[:60]} — {self.remitente_email}"

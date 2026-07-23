@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Count, Max, Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -466,13 +466,10 @@ def api_mail_lista(request):
             | Q(cuerpo_texto__icontains=q)
         )
 
-    total = qs.count()
     offset = (pagina - 1) * por_pagina
-    correos = qs.select_related('oportunidad')[offset: offset + por_pagina]
 
-    result = []
-    for c in correos:
-        result.append({
+    def _row(c, hilo_count=1, hilo_no_leidos=0):
+        return {
             'id': c.id,
             'asunto': c.asunto or '(Sin asunto)',
             'remitente_nombre': c.remitente_nombre,
@@ -484,7 +481,45 @@ def api_mail_lista(request):
             'oportunidad_nombre': c.oportunidad.oportunidad if c.oportunidad else None,
             'destacado': c.destacado,
             'eliminado': c.eliminado,
+            'hilo_key': c.hilo_key,
+            'hilo_count': hilo_count,
+            'hilo_no_leidos': hilo_no_leidos,
+        }
+
+    # ── Vista de HILOS (Gmail-style): una fila por conversación ──
+    if request.GET.get('hilos') == '1':
+        resumen = (
+            qs.values('hilo_key')
+            .annotate(
+                ultima=Max('fecha_envio'),
+                n=Count('id'),
+                no_leidos=Count('id', filter=Q(leido=False)),
+            )
+            .order_by('-ultima')
+        )
+        total = resumen.count()
+        pagina_hilos = list(resumen[offset: offset + por_pagina])
+        keys = [r['hilo_key'] for r in pagina_hilos]
+        meta = {r['hilo_key']: r for r in pagina_hilos}
+        # Representante = el correo más reciente de cada hilo
+        reps = {}
+        for c in qs.filter(hilo_key__in=keys).select_related('oportunidad').order_by('-fecha_envio'):
+            if c.hilo_key not in reps:
+                reps[c.hilo_key] = c
+        result = []
+        for r in pagina_hilos:
+            c = reps.get(r['hilo_key'])
+            if c:
+                result.append(_row(c, hilo_count=meta[c.hilo_key]['n'],
+                                   hilo_no_leidos=meta[c.hilo_key]['no_leidos']))
+        return JsonResponse({
+            'ok': True, 'correos': result, 'total': total, 'pagina': pagina,
+            'por_pagina': por_pagina, 'hay_mas': (offset + por_pagina) < total,
         })
+
+    total = qs.count()
+    correos = qs.select_related('oportunidad')[offset: offset + por_pagina]
+    result = [_row(c) for c in correos]
 
     return JsonResponse({
         'ok': True,
@@ -494,6 +529,124 @@ def api_mail_lista(request):
         'por_pagina': por_pagina,
         'hay_mas': (offset + por_pagina) < total,
     })
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_antiguos(request):
+    """Backfill del historial: baja del servidor los 50 encabezados de INBOX
+    anteriores al correo más viejo ya cacheado. El botón 'Buscar más antiguos'
+    lo llama cuando la caché local se agotó."""
+    conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+    if not conexion:
+        return JsonResponse({'ok': False, 'error': 'Sin conexión'}, status=400)
+    try:
+        imap = _get_imap(conexion)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': f'Error al conectar: {e}'}, status=500)
+
+    nuevos = 0
+    try:
+        imap.select('INBOX', readonly=True)
+        typ, data = imap.uid('SEARCH', None, 'ALL')
+        all_uids = [u.decode() for u in (data[0].split() if data[0] else [])]
+
+        existing = set(
+            MailCorreo.objects.filter(usuario=request.user, carpeta_imap='INBOX')
+            .values_list('uid_imap', flat=True)
+        )
+        numeric_cached = [int(u) for u in existing if u.isdigit()]
+        if numeric_cached:
+            min_cached = min(numeric_cached)
+            pool = [u for u in all_uids if u not in existing and u.isdigit() and int(u) < min_cached]
+        else:
+            pool = [u for u in all_uids if u not in existing]
+        lote = pool[-50:]  # los 50 más recientes de los faltantes viejos
+
+        linked_message_ids = {
+            c.message_id: c.oportunidad_id
+            for c in MailCorreo.objects.filter(
+                usuario=request.user, oportunidad__isnull=False
+            ).exclude(message_id='')
+        }
+
+        for uid in lote:
+            try:
+                typ, fetch_data = imap.uid(
+                    'FETCH', uid.encode(),
+                    '(FLAGS BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID IN-REPLY-TO CONTENT-TYPE)])'
+                )
+                if not fetch_data or fetch_data[0] is None:
+                    continue
+                raw_headers = fetch_data[0][1] if isinstance(fetch_data[0], tuple) else b''
+                if not raw_headers:
+                    continue
+                msg = email_lib.message_from_bytes(raw_headers)
+                parsed = _parse_message_headers(msg)
+                raw_str = str(fetch_data)
+                has_adj = 'attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+                opp_id = None
+                irt = parsed['in_reply_to']
+                if irt and irt in linked_message_ids:
+                    opp_id = linked_message_ids[irt]
+                MailCorreo.objects.create(
+                    usuario=request.user,
+                    conexion=conexion,
+                    uid_imap=uid,
+                    carpeta_imap='INBOX',
+                    carpeta_display='INBOX',
+                    message_id=parsed['message_id'],
+                    in_reply_to=parsed['in_reply_to'],
+                    asunto=parsed['asunto'],
+                    remitente_nombre=parsed['remitente_nombre'],
+                    remitente_email=parsed['remitente_email'],
+                    destinatarios_json=json.dumps(parsed['destinatarios'], ensure_ascii=False),
+                    fecha_envio=parsed['fecha'],
+                    leido=True,  # correos viejos: no ensuciar el contador de no leídos
+                    tiene_adjuntos=has_adj,
+                    oportunidad_id=opp_id,
+                )
+                nuevos += 1
+            except Exception as exc:
+                logger.warning("Error backfill uid %s: %s", uid, exc)
+        quedan = len(pool) - len(lote)
+    except Exception as e:
+        logger.error("Backfill error: %s", e)
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    finally:
+        try:
+            imap.logout()
+        except Exception:
+            pass
+
+    return JsonResponse({'ok': True, 'nuevos': nuevos, 'quedan_en_servidor': max(0, quedan)})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_mail_hilo(request):
+    """Todos los correos de una conversación (INBOX + SENT), orden cronológico.
+    Alimenta la tira 'En esta conversación' del panel de lectura."""
+    key = (request.GET.get('key') or '').strip()
+    if not key:
+        return JsonResponse({'ok': False, 'error': 'key requerida'}, status=400)
+    correos = (
+        MailCorreo.objects.filter(usuario=request.user, hilo_key=key, eliminado=False)
+        .order_by('fecha_envio')
+    )
+    result = []
+    for c in correos:
+        result.append({
+            'id': c.id,
+            'carpeta': c.carpeta_display,
+            'asunto': c.asunto or '(Sin asunto)',
+            'remitente_nombre': c.remitente_nombre,
+            'remitente_email': c.remitente_email,
+            'fecha_envio': c.fecha_envio.isoformat() if c.fecha_envio else None,
+            'leido': c.leido,
+        })
+    return JsonResponse({'ok': True, 'correos': result})
 
 
 @login_required

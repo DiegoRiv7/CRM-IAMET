@@ -216,6 +216,7 @@
             if (loadMore) loadMore.style.display = 'none';
 
             var url = '/app/api/mail/lista/?carpeta=' + carpeta + '&pagina=1';
+            if (carpeta === 'INBOX') url += '&hilos=1'; // vista de conversaciones
             if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
             fetch(url)
                 .then(function (r) { return r.json(); })
@@ -264,7 +265,10 @@
                 h += dot;
                 h += '<div style="flex:1;min-width:0;">';
                 h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">';
+                h += '<span style="display:flex;align-items:center;gap:5px;min-width:0;">';
                 h += '<span class="mw-from" style="font-size:0.82rem;color:#1A1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">' + _esc(c.remitente_nombre || c.remitente_email) + '</span>';
+                if (c.hilo_count > 1) h += '<span class="mw-hilo-chip" style="flex-shrink:0;background:#EEF1F5;color:#6B7280;border-radius:999px;font-size:0.64rem;font-weight:700;padding:1px 6px;">' + c.hilo_count + '</span>';
+                h += '</span>';
                 h += '<span style="font-size:0.7rem;color:#9CA3AF;flex-shrink:0;">' + fecha + '</span>';
                 h += '</div>';
                 h += '<div style="display:flex;align-items:center;gap:4px;margin-top:1px;">';
@@ -277,13 +281,58 @@
             });
             listEl.innerHTML = h;
             var loadMore = document.getElementById('mailLoadMore');
-            if (loadMore) loadMore.style.display = _mailHayMas ? 'block' : 'none';
+            if (loadMore) {
+                if (_mailHayMas) {
+                    loadMore.dataset.mode = 'mas';
+                    loadMore.textContent = 'Cargar más';
+                    loadMore.style.display = 'block';
+                } else if (_mailCarpeta === 'INBOX' && !window._mailBusqueda) {
+                    // Caché local agotada: ofrecer backfill del servidor IMAP
+                    loadMore.dataset.mode = 'antiguos';
+                    loadMore.textContent = 'Buscar más antiguos en el servidor';
+                    loadMore.style.display = 'block';
+                } else {
+                    loadMore.style.display = 'none';
+                }
+            }
         }
+
+        /* ── Backfill: bajar historial viejo del servidor ── */
+        window.mailCargarAntiguos = function () {
+            var lm = document.getElementById('mailLoadMore');
+            if (lm) lm.textContent = 'Buscando en el servidor...';
+            fetch('/app/api/mail/antiguos/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) {
+                        _showToastMail(d.error || 'Error al buscar antiguos', false);
+                        if (lm) lm.textContent = 'Buscar más antiguos en el servidor';
+                        return;
+                    }
+                    if (d.nuevos > 0) {
+                        _showToastMail(d.nuevos + ' correos antiguos agregados', true);
+                        if (lm) { lm.dataset.mode = 'mas'; lm.textContent = 'Cargar más'; }
+                        _mailHayMas = true;
+                        mailCargarMas();
+                    } else {
+                        _showToastMail('No hay correos más antiguos en el servidor', true);
+                        if (lm) lm.style.display = 'none';
+                    }
+                })
+                .catch(function () {
+                    if (lm) lm.textContent = 'Buscar más antiguos en el servidor';
+                });
+        };
 
         /* ── Load more ──────────────────────────────── */
         window.mailCargarMas = function () {
+            var lm = document.getElementById('mailLoadMore');
+            if (lm && lm.dataset.mode === 'antiguos') { mailCargarAntiguos(); return; }
             _mailPagina++;
             var url = '/app/api/mail/lista/?carpeta=' + _mailCarpeta + '&pagina=' + _mailPagina;
+            if (_mailCarpeta === 'INBOX' && !window._mailBusqueda) url += '&hilos=1';
             if (_mailConexionId) url += '&conexion_id=' + _mailConexionId;
             // Con búsqueda activa, paginar sobre los resultados del servidor
             if (window._mailBusqueda) url += '&q=' + encodeURIComponent(window._mailBusqueda);
@@ -337,11 +386,58 @@
             }, 350);
         };
 
+        /* ── Tira de conversación (hilos) ───────────── */
+        function _mailRenderHiloStrip(key, activeId) {
+            var strip = document.getElementById('mailHiloStrip');
+            if (!strip) return;
+            window._mailHiloKey = key;
+            fetch('/app/api/mail/hilo/?key=' + encodeURIComponent(key))
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok || !d.correos || d.correos.length < 2) {
+                        strip.style.display = 'none';
+                        return;
+                    }
+                    var h = '<span style="font-size:0.68rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;">Conversaci&oacute;n (' + d.correos.length + ')</span>';
+                    d.correos.forEach(function (m) {
+                        var activo = m.id === activeId;
+                        var nombre = m.carpeta === 'SENT' ? 'Tú' : ((m.remitente_nombre || m.remitente_email || '').split(' ')[0].split('@')[0]);
+                        var fecha = m.fecha_envio ? _formatFecha(m.fecha_envio) : '';
+                        h += '<button onclick="mailVerCorreo(' + m.id + ')" style="flex-shrink:0;border:1px solid ' +
+                            (activo ? '#007AFF;background:rgba(0,122,255,0.10);color:#0052D4;' : '#E5E7EB;background:#fff;color:#374151;') +
+                            'border-radius:999px;padding:3px 10px;font-size:0.72rem;font-weight:' + (m.leido ? '500' : '700') +
+                            ';cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;">' +
+                            _esc(nombre) + ' <span style="opacity:0.55;font-size:0.66rem;">' + fecha + '</span></button>';
+                    });
+                    strip.innerHTML = h;
+                    strip.style.display = 'flex';
+                })
+                .catch(function () { strip.style.display = 'none'; });
+        }
+
         /* ── View email ─────────────────────────────── */
         window.mailVerCorreo = function (id) {
             document.querySelectorAll('.mail-card-wb').forEach(function (el) { el.classList.remove('selected'); });
             var card = document.getElementById('mailCard_' + id);
             if (card) card.classList.add('selected');
+
+            // Hilos: si el correo viene de la lista y es parte de una
+            // conversación, pintar la tira; si se clicó DESDE la tira,
+            // conservarla re-marcando el activo.
+            var hiloStrip = document.getElementById('mailHiloStrip');
+            var itemLista = (_mailFiltrado || []).concat(_mailTodos || []).find(function (c) { return c.id === id; });
+            if (itemLista) {
+                if (itemLista.hilo_count > 1 && itemLista.hilo_key) {
+                    _mailRenderHiloStrip(itemLista.hilo_key, id);
+                } else {
+                    window._mailHiloKey = null;
+                    if (hiloStrip) hiloStrip.style.display = 'none';
+                }
+            } else if (window._mailHiloKey) {
+                _mailRenderHiloStrip(window._mailHiloKey, id);
+            } else if (hiloStrip) {
+                hiloStrip.style.display = 'none';
+            }
 
             var panelVincular = document.getElementById('mailPanelVincular');
             if (panelVincular) panelVincular.style.display = 'none';
