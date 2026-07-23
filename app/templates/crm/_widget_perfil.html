@@ -601,11 +601,17 @@
             try {
                 const fd = new FormData();
                 fd.append('theme', theme);
-                const csrf = document.querySelector('#profileChangeForm [name=csrfmiddlewaretoken]')
-                    || document.querySelector('[name=csrfmiddlewaretoken]');
+                // csrf desde la cookie (el form del perfil no trae csrf_token)
+                let csrfVal = '';
+                const inp = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (inp) { csrfVal = inp.value; }
+                else {
+                    const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+                    if (m) csrfVal = m[1];
+                }
                 fetch('/app/api/perfil/solicitar-cambio/', {
                     method: 'POST',
-                    headers: { 'X-CSRFToken': csrf ? csrf.value : '' },
+                    headers: { 'X-CSRFToken': csrfVal },
                     body: fd,
                     credentials: 'same-origin'
                 }).catch(function () { /* si falla, el Guardar del form sigue disponible */ });
@@ -617,6 +623,18 @@
         var _mundialBgUrl = '/media/fondos/mundial.jpg';
         function applyThemeToBody(theme) {
             document.body.setAttribute('data-theme', theme);
+            // SINCRONIZAR TAMBIEN <html>: el CSS viejo (perla/pink/coffee en
+            // base.css y personalizacion.css) escucha html[data-theme] (que
+            // pone el script del head desde localStorage). Si solo se cambia
+            // el body, los DOS temas aplican a la vez y se mezclan.
+            const html = document.documentElement;
+            html.setAttribute('data-theme', theme);
+            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
+            if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
+                html.classList.add('light-theme');
+            } else {
+                html.classList.add('dark-theme');
+            }
             if (theme === 'mundial') {
                 // El fondo lo pinta body[data-theme="mundial"]::before vía la
                 // variable --mundial-img. Aquí solo le ponemos cache-bust para

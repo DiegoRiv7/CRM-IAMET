@@ -173,10 +173,18 @@
             window.__tmpAplicarFase = aplicar;
             document.body.classList.remove('tmp-anim');
             aplicar();
-            // Sincronizar localStorage con el tema real del perfil (el
-            // script del <head> lo lee antes de conocer al usuario; un
-            // valor viejo ahi causaba brincos de tema entre paginas).
-            try { localStorage.setItem('theme', document.body.getAttribute('data-theme') || 'temporada'); } catch (e) { }
+            // Sincronizar localStorage Y el atributo del <html> con el tema
+            // real del perfil (el script del <head> lee localStorage antes de
+            // conocer al usuario; un valor viejo dejaba al <html> con OTRO
+            // tema que el <body> y el CSS de ambos se mezclaba).
+            try {
+                var temaReal = document.body.getAttribute('data-theme') || 'temporada';
+                localStorage.setItem('theme', temaReal);
+                var htmlEl = document.documentElement;
+                htmlEl.setAttribute('data-theme', temaReal);
+                htmlEl.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
+                htmlEl.classList.add((temaReal === 'pink' || temaReal === 'white' || temaReal === 'coffee' || temaReal === 'perla') ? 'light-theme' : 'dark-theme');
+            } catch (e) { }
             setInterval(aplicar, 5 * 60 * 1000);
         })();
     </script>
