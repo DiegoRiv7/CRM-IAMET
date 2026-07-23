@@ -295,3 +295,175 @@ body[data-theme="duna"] .glass-card:hover {
 
 
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2 — WIDGETS. Duna es un tema CLARO: el default del sistema ya
+   es legible, así que esta fase es dirigida (no el port masivo del
+   Mundial): paneles porcelana, la FRANJA DE DUNAS en los headers
+   especiales, y textos/acentos entonados. Los oscuros del tema son siempre tibios (cuero/sepia).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Paneles de widgets: hueso cálido con filo camello */
+body[data-theme="duna"] .widget-card,
+body[data-theme="duna"] .widget-card-lg,
+body[data-theme="duna"] .wn-overlay .wn-card.wn-composer {
+    background: #FFFDF6 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(166, 117, 47, 0.22) !important;
+    box-shadow: 0 30px 80px rgba(74, 55, 36, 0.22) !important;
+}
+
+/* ═══ FRANJA DE DUNAS — el diseño especial de los headers ═══
+   Capas de dunas onduladas en camello/sepia con un sol viejo difuso.
+   Estática: el desierto viejo es quietud (sin animación). */
+body[data-theme="duna"] .wo-header,
+body[data-theme="duna"] .wn-ctw-header,
+body[data-theme="duna"] .muro-card-header,
+body[data-theme="duna"] .tcp-col-head,
+body[data-theme="duna"] .ptk-cols-head,
+body[data-theme="duna"] .pob-head,
+body[data-theme="duna"] .crm-tw-header,
+body[data-theme="duna"] .crm-ctw-header,
+body[data-theme="duna"] .cal-page-bar,
+body[data-theme="duna"] .proy-dialog-header,
+body[data-theme="duna"] .proy-tab-header,
+body[data-theme="duna"] .wact-header,
+body[data-theme="duna"] .cal-card > div:first-child,
+body[data-theme="duna"] #widgetOppVerActividad .widget-card > div:first-child {
+    background-color: #F7ECD6 !important;
+    background-image:
+        url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201200%20140%22%20preserveAspectRatio=%22none%22%3E%20%3Ccircle%20cx=%221020%22%20cy=%2238%22%20r=%2230%22%20fill=%22%23E8B460%22%20opacity=%220.50%22/%3E%20%3Ccircle%20cx=%221020%22%20cy=%2238%22%20r=%2246%22%20fill=%22%23E8B460%22%20opacity=%220.18%22/%3E%20%3Cpath%20fill=%22%23C89858%22%20opacity=%220.32%22%20d=%22M0%2088%20C%20200%2040,%20380%20112,%20600%2078%20C%20820%2046,%201000%20108,%201200%2068%20L1200%20140%20L0%20140%20Z%22/%3E%20%3Cpath%20fill=%22%23A6752F%22%20opacity=%220.26%22%20d=%22M0%20110%20C%20240%2072,%20460%20128,%20700%2096%20C%20900%2072,%201060%20120,%201200%20100%20L1200%20140%20L0%20140%20Z%22/%3E%20%3Cpath%20fill=%22%237E5624%22%20opacity=%220.20%22%20d=%22M0%20126%20C%20300%20102,%20560%20138,%20840%20116%20C%201020%20102,%201120%20130,%201200%20118%20L1200%20140%20L0%20140%20Z%22/%3E%20%3C/svg%3E"),
+        linear-gradient(180deg, rgba(252, 247, 236, 0.97) 0%, rgba(240, 223, 190, 0.94) 100%) !important;
+    background-repeat: no-repeat, no-repeat !important;
+    background-size: 100% 100%, auto !important;
+    border-bottom: 2px solid #A6752F !important;
+}
+
+/* Textos de los headers: sepia profundo sobre la franja de dunas */
+body[data-theme="duna"] .wo-title,
+body[data-theme="duna"] .wn-ctw-breadcrumb,
+body[data-theme="duna"] .wn-ctw-crumb-muted,
+body[data-theme="duna"] .wn-ctw-crumb-current,
+body[data-theme="duna"] .crm-kanban-stage-name { color: #7E5624 !important; }
+body[data-theme="duna"] .wn-ctw-breadcrumb svg { color: rgba(126, 86, 36, 0.65) !important; }
+body[data-theme="duna"] .wo-type-badge {
+    background: var(--dna-acc-grad) !important;
+    color: #ffffff !important;
+}
+body[data-theme="duna"] .wo-asist-btn-title,
+body[data-theme="duna"] .ww-btn-win,
+body[data-theme="duna"] .wn-ctw-close,
+body[data-theme="duna"] .ww-ctrls button { color: rgba(126, 86, 36, 0.85) !important; }
+body[data-theme="duna"] .ww-btn-win:hover,
+body[data-theme="duna"] .wn-ctw-close:hover,
+body[data-theme="duna"] .ww-ctrls button:hover {
+    background: rgba(166, 117, 47, 0.14) !important;
+    color: #7E5624 !important;
+}
+
+/* Cuerpos y sub-tarjetas: blanco con filos rosa */
+body[data-theme="duna"] .wo-content { background: transparent !important; }
+body[data-theme="duna"] .wo-card {
+    background: #FFFDF6 !important;
+    border: 1px solid rgba(166, 117, 47, 0.16) !important;
+}
+body[data-theme="duna"] .wo-card-accent {
+    background: linear-gradient(135deg, #FBF3E4, #ffffff) !important;
+    border: 1px solid rgba(166, 117, 47, 0.28) !important;
+}
+body[data-theme="duna"] .wn-ctw-canvas { background: transparent !important; }
+body[data-theme="duna"] .wn-ctw-toolbar {
+    background: #F7ECD6 !important;
+    border-top: 2px solid rgba(166, 117, 47, 0.55) !important;
+}
+
+/* Muro / Ideas / Tareas-calendario: superficies hueso */
+body[data-theme="duna"] .muro-card,
+body[data-theme="duna"] .idea-card {
+    background: #FFFDF6 !important;
+    border: 1px solid rgba(166, 117, 47, 0.18) !important;
+}
+body[data-theme="duna"] .tareas-cal-col {
+    background: rgba(255, 255, 255, 0.55) !important;
+    border: 1px solid rgba(166, 117, 47, 0.14) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PROYECTOS — tablero y topbar entonados (hueso + camello). Scope con
+   #proyectosSection para ganar a los estilos propios de la página.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="duna"] #proyectosSection { background: transparent !important; }
+body[data-theme="duna"] #proyectosSection .crm-kanban-col {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.40) 38%, rgba(200, 152, 88, 0.10) 100%) !important;
+    border: 1px solid rgba(166, 117, 47, 0.16) !important;
+    box-shadow: none !important;
+}
+body[data-theme="duna"] #proyectosSection .crm-kanban-head {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-bottom: 2px solid rgba(166, 117, 47, 0.45) !important;
+}
+body[data-theme="duna"] #proyectosSection .crm-kanban-head-title,
+body[data-theme="duna"] #proyectosSection .crm-kanban-stage-name { color: #7E5624 !important; }
+body[data-theme="duna"] .proy-tabs,
+body[data-theme="duna"] .proy-tab-bar {
+    background: rgba(255, 255, 255, 0.80) !important;
+    border: 1px solid rgba(166, 117, 47, 0.18) !important;
+}
+body[data-theme="duna"] .proy-tab,
+body[data-theme="duna"] .proy-tab-btn { color: rgba(74, 55, 36, 0.75) !important; }
+body[data-theme="duna"] .proy-tab.active,
+body[data-theme="duna"] .proy-tab-btn.is-active {
+    background: var(--dna-acc-grad) !important;
+    color: #ffffff !important;
+}
+body[data-theme="duna"] .proy-btn-new,
+body[data-theme="duna"] .proy-btn-primary {
+    background: var(--dna-acc-grad) !important;
+    border-color: var(--dna-acc-dark) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(166, 117, 47, 0.35) !important;
+}
+body[data-theme="duna"] .proy-btn-new:hover,
+body[data-theme="duna"] .proy-btn-primary:hover { background: var(--dna-acc-grad-hover) !important; }
+body[data-theme="duna"] .proy-facet-btn {
+    border-color: rgba(166, 117, 47, 0.28) !important;
+    color: rgba(74, 55, 36, 0.85) !important;
+    background: rgba(255, 255, 255, 0.70) !important;
+}
+body[data-theme="duna"] .proy-facet-btn:hover,
+body[data-theme="duna"] .proy-facet-btn.active {
+    background: rgba(200, 152, 88, 0.16) !important;
+    border-color: rgba(166, 117, 47, 0.50) !important;
+    color: #7E5624 !important;
+}
+body[data-theme="duna"] .proy-search {
+    background: rgba(255, 255, 255, 0.80) !important;
+    border-color: rgba(166, 117, 47, 0.24) !important;
+    color: #4A2A3C !important;
+}
+body[data-theme="duna"] #proyListView .crm-list-row {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(166, 117, 47, 0.14) !important;
+}
+body[data-theme="duna"] #proyListView .crm-list-head { background: rgba(200, 152, 88, 0.10) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CALENDARIO — fuera el fondo negro: en modo página el card flota sobre
+   el fondo pétalo del tema; sombras suaves sepia (no negras).
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="duna"] .widget-overlay.is-page-mode { background: transparent !important; }
+body[data-theme="duna"] .cal-card,
+body[data-theme="duna"] .cal-card--page {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(166, 117, 47, 0.18) !important;
+}
+body[data-theme="duna"] .widget-overlay.is-page-mode .cal-card--page {
+    background: #FFFDF6 !important;
+    box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.9),
+        0 2px 6px rgba(74, 55, 36, 0.10),
+        0 14px 34px rgba(74, 55, 36, 0.16),
+        0 40px 80px rgba(74, 55, 36, 0.18) !important;
+}
