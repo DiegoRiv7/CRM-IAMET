@@ -1920,3 +1920,54 @@ def api_subir_factura_cliente(request, cliente_id):
             'oportunidad_id': oportunidad.id,
         },
     })
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_perfil_resumen_hoy(request):
+    """Resumen EN VIVO del día para el widget de perfil: efectividad
+    (misma fórmula de puntos que api_jornada_terminar, pero solo lectura),
+    tareas y actividades completadas hoy. No toca la jornada."""
+    hoy = timezone.localdate()
+    ahora = timezone.now()
+
+    tareas = Tarea.objects.filter(asignado_a=request.user).exclude(estado='cancelada')
+    tareas_totales = tareas.filter(Q(fecha_limite__date=hoy) | Q(estado='completada', fecha_completada__date=hoy)).count()
+    tareas_completadas_hoy = tareas.filter(estado='completada', fecha_completada__date=hoy).count()
+    tareas_vencidas = tareas.filter(fecha_limite__lt=ahora).exclude(estado='completada').count()
+
+    acts = TareaOportunidad.objects.filter(responsable=request.user)
+    act_totales = acts.filter(Q(fecha_limite__date=hoy) | Q(estado='completada', fecha_limite__date=hoy)).count()
+    act_completadas_hoy = acts.filter(estado='completada', fecha_limite__date=hoy).count()
+    act_vencidas = acts.filter(fecha_limite__lt=ahora, estado='pendiente').count()
+
+    opps_cobradas_hoy = TodoItem.objects.filter(usuario=request.user, estado_crm='pagada', fecha_actualizacion__date=hoy).count()
+
+    puntos_obtenidos = 0
+    puntos_posibles = 0
+    if tareas_totales > 0:
+        puntos_posibles += (tareas_totales * 10)
+        puntos_obtenidos += (tareas_completadas_hoy * 10)
+        puntos_obtenidos -= (tareas_vencidas * 5)
+    if act_totales > 0:
+        puntos_posibles += (act_totales * 6)
+        puntos_obtenidos += (act_completadas_hoy * 6)
+        puntos_obtenidos -= (act_vencidas * 3)
+    puntos_obtenidos += (opps_cobradas_hoy * 20)
+
+    eficiencia = 0
+    if puntos_posibles > 0:
+        eficiencia = (puntos_obtenidos / puntos_posibles) * 100
+    elif opps_cobradas_hoy > 0:
+        eficiencia = 100
+    eficiencia = max(0, min(100, eficiencia))
+
+    return JsonResponse({
+        'success': True,
+        'eficiencia': round(eficiencia),
+        'tareas_completadas': tareas_completadas_hoy,
+        'tareas_totales': tareas_totales,
+        'actividades_completadas': act_completadas_hoy,
+        'actividades_totales': act_totales,
+        'ventas_cobradas': opps_cobradas_hoy,
+    })

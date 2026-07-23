@@ -330,6 +330,7 @@ urlpatterns = [
     path('api/jornada/pausar/', views.api_jornada_pausar, name='api_jornada_pausar'),
     path('api/jornada/terminar/', views.api_jornada_terminar, name='api_jornada_terminar'),
     path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
+    path('api/perfil/resumen-hoy/', views.api_perfil_resumen_hoy, name='api_perfil_resumen_hoy'),
     path('api/empleados/jornadas/', views.api_empleados_jornadas, name='api_empleados_jornadas'),
     path('api/verificar-empleado-mes/', views.api_verificar_empleado_mes, name='api_verificar_empleado_mes'),
 
