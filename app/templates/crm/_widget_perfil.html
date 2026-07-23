@@ -125,20 +125,20 @@
                     <div style="font-size:0.7rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.1em; margin:0 0 10px 4px;">Jornada laboral</div>
                     <!-- Attendance Card (Super Compact) -->
             <div
-                style="background:#fff; width:100%; border-radius:20px; padding:22px; border: 1px solid rgba(0,0,0,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                style="background:#fff; width:100%; border-radius:22px; padding:30px 28px; border: 1px solid rgba(0,0,0,0.07); box-shadow: 0 6px 22px rgba(0,0,0,0.06);">
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <div id="attendanceStatus"
                         style="font-size:0.65rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.12em;">
                         Jornada no iniciada</div>
                     <div id="attendanceTimer"
-                        style="font-family: -apple-system, system-ui, sans-serif; font-size:2.5rem; font-weight:800; color:#1d1d1f; letter-spacing:-1.5px; font-variant-numeric: tabular-nums;">
+                        style="font-family: -apple-system, system-ui, sans-serif; font-size:3.4rem; font-weight:800; color:#1d1d1f; letter-spacing:-2px; font-variant-numeric: tabular-nums;">
                         00:00:00</div>
                 </div>
 
                 <div id="attendanceActions" style="width: 100%;">
                     <button id="btnInitJornada" onclick="attendanceStart()"
-                        style="width:100%; background:#007AFF; color:#fff; border:none; border-radius:14px; padding:14px; font-size:1rem; font-weight:700; cursor:pointer; box-shadow: 0 4px 15px rgba(0,122,255,0.2);">
+                        style="width:100%; background:#007AFF; color:#fff; border:none; border-radius:15px; padding:17px; font-size:1.08rem; font-weight:700; cursor:pointer; box-shadow: 0 4px 15px rgba(0,122,255,0.2);">
                         Iniciar Jornada
                     </button>
 
@@ -178,10 +178,7 @@
                 <div>
                     <div style="font-size:0.7rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.1em; margin:0 0 10px 4px;">Tu d&iacute;a</div>
                     <div style="background:#fff; border-radius:20px; padding:20px 22px; border:1px solid rgba(0,0,0,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                            <div style="font-size:0.82rem; font-weight:800; color:#1d1d1f;">Lo que sigue hoy</div>
-                            <div id="tuDiaVendidoMes" style="font-size:0.76rem; font-weight:800; color:#1E7E52; background:rgba(52,199,89,0.10); border:1px solid rgba(52,199,89,0.22); border-radius:999px; padding:5px 12px;">&#128176; Mes: $0</div>
-                        </div>
+                        <div style="font-size:0.82rem; font-weight:800; color:#1d1d1f; margin-bottom:6px;">Lo que sigue hoy</div>
                         <div id="tuDiaAgenda" style="display:flex; flex-direction:column;">
                             <div style="padding:16px 0; text-align:center; font-size:0.82rem; color:#86868b; font-weight:600;">Cargando agenda&hellip;</div>
                         </div>
@@ -654,23 +651,27 @@
                         v.textContent = d.ventas_cobradas;
                         vw.style.display = d.ventas_cobradas > 0 ? 'block' : 'none';
                     }
-                    // Card "Tu día": agenda de hoy + vendido del mes
-                    var vm = document.getElementById('tuDiaVendidoMes');
-                    if (vm) vm.innerHTML = '&#128176; Mes: $' + Number(d.vendido_mes || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 });
+                    // Card "Tu día": lo más crítico primero (vencidas arriba)
                     var ag = document.getElementById('tuDiaAgenda');
                     if (ag) {
-                        var items = d.agenda || [];
+                        var items = (d.agenda || []).slice().sort(function (a, b) {
+                            if (a.pasada !== b.pasada) return a.pasada ? -1 : 1;
+                            return a.hora < b.hora ? -1 : 1;
+                        });
                         if (!items.length) {
-                            ag.innerHTML = '<div style="padding:16px 0; text-align:center; font-size:0.82rem; color:#86868b; font-weight:600;">&#127796; Sin actividades programadas para hoy</div>';
+                            ag.innerHTML = '<div style="padding:16px 0; text-align:center; font-size:0.82rem; color:#86868b; font-weight:600;">Sin actividades programadas para hoy</div>';
                         } else {
                             ag.innerHTML = items.map(function (it) {
-                                var op = it.pasada ? '0.45' : '1';
-                                var ico = it.tipo === 'tarea' ? '&#9989;' : '&#128197;';
-                                return '<div style="display:flex; align-items:center; gap:12px; padding:9px 2px; border-bottom:1px solid rgba(0,0,0,0.05); opacity:' + op + ';">'
-                                    + '<span style="font-size:0.78rem; font-weight:800; color:#007AFF; font-variant-numeric:tabular-nums; min-width:44px;">' + it.hora + '</span>'
-                                    + '<span style="font-size:0.85rem;">' + ico + '</span>'
+                                var horaColor = it.pasada ? '#FF3B30' : '#007AFF';
+                                var dotColor = it.tipo === 'tarea' ? '#8E8E93' : '#007AFF';
+                                var tag = it.pasada
+                                    ? '<span style="font-size:0.62rem; font-weight:800; color:#FF3B30; background:rgba(255,59,48,0.08); border:1px solid rgba(255,59,48,0.18); border-radius:999px; padding:2px 8px; margin-left:auto; flex-shrink:0;">VENCIDA</span>'
+                                    : '';
+                                return '<div style="display:flex; align-items:center; gap:12px; padding:9px 2px; border-bottom:1px solid rgba(0,0,0,0.05);">'
+                                    + '<span style="font-size:0.78rem; font-weight:800; color:' + horaColor + '; font-variant-numeric:tabular-nums; min-width:44px;">' + it.hora + '</span>'
+                                    + '<span style="width:7px; height:7px; border-radius:50%; background:' + dotColor + '; flex-shrink:0;"></span>'
                                     + '<span style="font-size:0.85rem; font-weight:600; color:#1d1d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">'
-                                    + String(it.titulo).replace(/</g, '&lt;') + '</span></div>';
+                                    + String(it.titulo).replace(/</g, '&lt;') + '</span>' + tag + '</div>';
                             }).join('');
                         }
                     }
