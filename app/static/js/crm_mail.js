@@ -261,7 +261,7 @@
                 var dot = !c.leido ? '<span style="width:7px;height:7px;border-radius:50%;background:#007AFF;flex-shrink:0;margin-top:5px;"></span>' : '<span style="width:7px;height:7px;flex-shrink:0;"></span>';
                 var fecha = c.fecha_envio ? _formatFecha(c.fecha_envio) : '';
 
-                h += '<div class="mail-card-wb' + unreadCls + '" onclick="mailVerCorreo(' + c.id + ')" id="mailCard_' + c.id + '">';
+                h += '<div class="mail-card-wb' + unreadCls + '" onclick="mailVerCorreo(' + c.id + ')" ondblclick="mailAbrirVentana(' + c.id + ')" id="mailCard_' + c.id + '">';
                 h += dot;
                 h += '<div style="flex:1;min-width:0;">';
                 h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">';
@@ -384,6 +384,61 @@
                     })
                     .catch(function () { });
             }, 350);
+        };
+
+        /* ── Ventana flotante de lectura (doble clic) ──
+           Abre el correo como ventana del gestor ww: se puede mover,
+           redimensionar, minimizar al dock y leer desde otras secciones. */
+        window.mailAbrirVentana = function (id) {
+            var ov = document.getElementById('widgetMailVentana');
+            if (!ov) return;
+            ov.classList.add('active');
+            try {
+                if (window.crmWidgetWindow && !ov.classList.contains('ww-windowed')) {
+                    var W = Math.min(760, window.innerWidth - 90);
+                    var H = Math.min(640, window.innerHeight - 120);
+                    window.crmWidgetWindow.windowize(ov, {
+                        x: window.innerWidth - W - 46, y: 84, w: W, h: H
+                    });
+                }
+            } catch (e) { /* sin gestor ww: queda como modal */ }
+            var asuntoEl = document.getElementById('mvAsunto');
+            var metaEl = document.getElementById('mvMeta');
+            if (asuntoEl) asuntoEl.textContent = 'Cargando...';
+            if (metaEl) metaEl.textContent = '';
+            fetch('/app/api/mail/detalle/' + id + '/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (asuntoEl) asuntoEl.textContent = d.asunto || '(Sin asunto)';
+                    var fecha = d.fecha_envio ? new Date(d.fecha_envio).toLocaleString('es-MX') : '';
+                    if (metaEl) metaEl.textContent = 'De: ' + (d.remitente_nombre || d.remitente_email || '—') + (fecha ? '  ·  ' + fecha : '');
+                    var ifr = document.getElementById('mvIframe');
+                    var pl = document.getElementById('mvPlain');
+                    if (d.cuerpo_html) {
+                        var cspMeta = '<meta http-equiv="Content-Security-Policy" content="default-src * \'unsafe-inline\' \'unsafe-eval\' data: blob:;">';
+                        ifr.srcdoc = cspMeta + d.cuerpo_html;
+                        ifr.style.display = 'block';
+                        pl.style.display = 'none';
+                    } else {
+                        pl.textContent = d.cuerpo_texto || '(Sin contenido)';
+                        pl.style.display = 'block';
+                        ifr.style.display = 'none';
+                    }
+                    var cardL = document.getElementById('mailCard_' + id);
+                    if (cardL) cardL.classList.remove('unread');
+                })
+                .catch(function () {
+                    if (asuntoEl) asuntoEl.textContent = 'Error al cargar el correo';
+                });
+        };
+
+        window.mailVentanaCerrar = function () {
+            var ov = document.getElementById('widgetMailVentana');
+            if (!ov) return;
+            try {
+                if (window.crmWidgetWindow) window.crmWidgetWindow.unwindowize(ov);
+            } catch (e) { }
+            ov.classList.remove('active');
         };
 
         /* ── Tira de conversación (hilos) ───────────── */
