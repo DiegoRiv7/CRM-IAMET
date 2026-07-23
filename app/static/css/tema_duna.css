@@ -467,3 +467,43 @@ body[data-theme="duna"] .widget-overlay.is-page-mode .cal-card--page {
         0 14px 34px rgba(74, 55, 36, 0.16),
         0 40px 80px rgba(74, 55, 36, 0.18) !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECCIÓN TAREAS — "periódico viejo": ambas vistas (lista y calendario)
+   en papel café envejecido, con filos camello y hovers tibios.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-theme="duna"] .tcp-shell {
+    background: #FAF3E3 !important;
+    border: 1px solid rgba(166, 117, 47, 0.25) !important;
+}
+body[data-theme="duna"] .tcp-list { background: #FBF5E8 !important; }
+body[data-theme="duna"] .tcp-detail {
+    background: #F7EFDD !important;
+    border-left: 1px solid rgba(166, 117, 47, 0.20) !important;
+}
+body[data-theme="duna"] .tcp-row { border-bottom-color: rgba(166, 117, 47, 0.12) !important; }
+body[data-theme="duna"] .tcp-row:hover { background: rgba(200, 152, 88, 0.10) !important; }
+body[data-theme="duna"] .tcp-section-head { background: rgba(240, 223, 190, 0.55) !important; }
+body[data-theme="duna"] .tcp-summary-section,
+body[data-theme="duna"] .tcp-summary-empty { background: transparent !important; }
+body[data-theme="duna"] .tareas-empty-card,
+body[data-theme="duna"] .tcp-card {
+    background: #FDF8EE !important;
+    border-color: rgba(166, 117, 47, 0.20) !important;
+}
+
+/* Vista tabla clásica de tareas */
+body[data-theme="duna"] .tareas-table-wrap,
+body[data-theme="duna"] .tareas-table { background: #FBF5E8 !important; }
+body[data-theme="duna"] .tareas-table thead th { background: rgba(240, 223, 190, 0.60) !important; color: #7E5624 !important; }
+body[data-theme="duna"] .tareas-table tbody tr { border-bottom-color: rgba(166, 117, 47, 0.12) !important; }
+body[data-theme="duna"] .tareas-table tbody tr:hover { background: rgba(200, 152, 88, 0.10) !important; }
+
+/* Vista calendario de tareas: columnas papel viejo */
+body[data-theme="duna"] .tareas-cal-board { background: transparent !important; }
+body[data-theme="duna"] .tareas-cal-col {
+    background: rgba(251, 245, 232, 0.85) !important;
+    border: 1px solid rgba(166, 117, 47, 0.16) !important;
+}
+body[data-theme="duna"] .tareas-cal-col-head { background: rgba(240, 223, 190, 0.70) !important; color: #7E5624 !important; }
