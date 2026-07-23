@@ -18,7 +18,7 @@
 body[data-theme="duna"] {
     --bg-crm: #FAF3E4;
     --text-crm: #4A3826;
-    --card-bg: rgba(255, 253, 246, 0.96);
+    --card-bg: rgba(253, 248, 238, 0.97);
     --border-crm: rgba(166, 117, 47, 0.24);
     --table-header-bg: rgba(200, 152, 88, 0.14);
     --table-row-hover: rgba(200, 152, 88, 0.10);
@@ -90,7 +90,7 @@ body[data-theme="duna"] .crm-sb-btn.active {
     box-shadow: 0 4px 14px rgba(166, 117, 47, 0.35) !important;
 }
 body[data-theme="duna"] .crm-sb-btn.active::before {
-    background: #FFFDF6 !important;
+    background: #FDF8EE !important;
 }
 body[data-theme="duna"] .crm-sb-divider { background: rgba(245, 233, 210, 0.14) !important; }
 body[data-theme="duna"] .crm-sb-label { color: rgba(245, 233, 210, 0.60); }
@@ -268,14 +268,14 @@ body[data-theme="duna"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
 
 /* ═══ Cards de oportunidades (kanban): porcelana ═══ */
 body[data-theme="duna"] .crm-kanban-card.crm-postit {
-    background: rgba(255, 253, 246, 0.97) !important;
+    background: rgba(253, 248, 238, 0.98) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(166, 117, 47, 0.18) !important;
     box-shadow: 0 4px 18px rgba(62, 46, 30, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
 }
 body[data-theme="duna"] .crm-kanban-card.crm-postit:hover {
-    background: #FFFDF6 !important;
+    background: #FDF8EE !important;
     box-shadow: 0 12px 30px rgba(62, 46, 30, 0.16) !important;
     transform: translateY(-3px) !important;
 }
@@ -307,7 +307,7 @@ body[data-theme="duna"] .glass-card:hover {
 body[data-theme="duna"] .widget-card,
 body[data-theme="duna"] .widget-card-lg,
 body[data-theme="duna"] .wn-overlay .wn-card.wn-composer {
-    background: #FFFDF6 !important;
+    background: #FDF8EE !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(166, 117, 47, 0.22) !important;
@@ -365,7 +365,7 @@ body[data-theme="duna"] .ww-ctrls button:hover {
 /* Cuerpos y sub-tarjetas: blanco con filos rosa */
 body[data-theme="duna"] .wo-content { background: transparent !important; }
 body[data-theme="duna"] .wo-card {
-    background: #FFFDF6 !important;
+    background: #FDF8EE !important;
     border: 1px solid rgba(166, 117, 47, 0.16) !important;
 }
 body[data-theme="duna"] .wo-card-accent {
@@ -381,7 +381,7 @@ body[data-theme="duna"] .wn-ctw-toolbar {
 /* Muro / Ideas / Tareas-calendario: superficies hueso */
 body[data-theme="duna"] .muro-card,
 body[data-theme="duna"] .idea-card {
-    background: #FFFDF6 !important;
+    background: #FDF8EE !important;
     border: 1px solid rgba(166, 117, 47, 0.18) !important;
 }
 body[data-theme="duna"] .tareas-cal-col {
@@ -460,7 +460,7 @@ body[data-theme="duna"] .cal-card--page {
     border: 1px solid rgba(166, 117, 47, 0.18) !important;
 }
 body[data-theme="duna"] .widget-overlay.is-page-mode .cal-card--page {
-    background: #FFFDF6 !important;
+    background: #FDF8EE !important;
     box-shadow:
         inset 0 1.5px 0 rgba(255, 255, 255, 0.9),
         0 2px 6px rgba(74, 55, 36, 0.10),
