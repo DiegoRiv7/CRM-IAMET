@@ -173,6 +173,10 @@
             window.__tmpAplicarFase = aplicar;
             document.body.classList.remove('tmp-anim');
             aplicar();
+            // Sincronizar localStorage con el tema real del perfil (el
+            // script del <head> lo lee antes de conocer al usuario; un
+            // valor viejo ahi causaba brincos de tema entre paginas).
+            try { localStorage.setItem('theme', document.body.getAttribute('data-theme') || 'temporada'); } catch (e) { }
             setInterval(aplicar, 5 * 60 * 1000);
         })();
     </script>

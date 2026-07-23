@@ -132,7 +132,7 @@
                                 class="theme-swatch {% if request.user.userprofile.theme == 'temporada' or request.user.userprofile.theme == 'mundial' %}active{% endif %}"
                                 style="width:42px; height:42px; border-radius:50%; background: linear-gradient(180deg, #31497A 0%, #5E5E90 45%, #E8823F 75%, #B85A2A 100%); border:1px solid rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
                             </div>
-                            <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Temporada</span>
+                            <span style="font-size:0.75rem; font-weight:600; color:#1d1d1f;">Verano</span>
                         </div>
                     </div>
                     <input type="hidden" name="theme" id="themeInput"
@@ -593,6 +593,23 @@
 
             // Preview immediately
             applyThemeToBody(theme);
+
+            // PERSISTIR DE INMEDIATO: antes el click solo previsualizaba y si
+            // el usuario cerraba el panel sin presionar Guardar, el tema se
+            // perdia al recargar. El endpoint conserva los demas campos.
+            try { localStorage.setItem('theme', theme); } catch (e) { }
+            try {
+                const fd = new FormData();
+                fd.append('theme', theme);
+                const csrf = document.querySelector('#profileChangeForm [name=csrfmiddlewaretoken]')
+                    || document.querySelector('[name=csrfmiddlewaretoken]');
+                fetch('/app/api/perfil/solicitar-cambio/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf ? csrf.value : '' },
+                    body: fd,
+                    credentials: 'same-origin'
+                }).catch(function () { /* si falla, el Guardar del form sigue disponible */ });
+            } catch (e) { }
         };
 
         // Fondo del tema Mundial — administrado desde /app/config/fondo-mundial/
