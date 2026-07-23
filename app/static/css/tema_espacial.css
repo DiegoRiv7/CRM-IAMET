@@ -1141,7 +1141,9 @@ body[data-theme="espacial"] .ck-chart-card:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   FASE 2b — TAREAS (filas atrasadas) + CALENDARIO REAL (.cmd-*/.cwd-*).
+   FASE 2b — TAREAS (filas atrasadas) + CALENDARIO REAL (.cmd- y .cwd-).
+   OJO: nunca escribir asterisco+slash dentro de un comentario (cierra el
+   comentario antes de tiempo y el parser se traga la regla siguiente).
    El grid del Mes NO es FullCalendar (#fullCalendarRoot está oculto,
    display:none — solo motor de fechas): es el grid propio #calMonthDesign
    con clases .cmd-*, y Semana usa .cwd-*, definidos en el <style> inline
