@@ -1,6 +1,30 @@
 <!-- ═══ WIDGET: CORREO ═══ -->
-<div class="widget-overlay" id="widgetMail" style="z-index:var(--z-widget);"><!-- Nivel 1: abierto desde sidebar Mail -->
-    <div
+<div class="widget-overlay{% if tab_activo == 'correo' %} is-page-mode active{% endif %}" id="widgetMail" style="z-index:var(--z-widget);"><!-- Nivel 1: sección (?tab=correo) o modal legacy -->
+    {% if tab_activo == 'correo' %}
+    <style>
+        /* ── MODO PÁGINA: el correo como sección (card flotante, como Tareas) ──
+           crm.css pone .is-page-mode static/transparente; aquí lo volvemos
+           flex de viewport completo con el card llenando el área. */
+        #widgetMail.is-page-mode {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            overflow: hidden !important;
+        }
+        #widgetMail.is-page-mode > .mail-card-shell {
+            flex: 1 1 auto !important;
+            width: auto !important;
+            max-width: none !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        /* Sin × de cerrar: es una sección, no un modal */
+        #widgetMail.is-page-mode .mail-close-btn { display: none !important; }
+    </style>
+    {% endif %}
+    <div class="mail-card-shell"
         style="width:94vw;max-width:94vw;height:92vh;max-height:92vh;display:flex;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,30,0.18);">
         <!-- Header — same 3-col grid so island aligns with body column -->
         <div style="display:grid;grid-template-columns:220px 340px 1fr;align-items:center;border-bottom:1.5px solid #F0F2F5;flex-shrink:0;background:#fff;">
@@ -40,7 +64,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                     </button>
                 </div>
-                <button onclick="mailCerrar()"
+                <button onclick="mailCerrar()" class="mail-close-btn"
                     style="position:absolute;right:16px;border:none;background:none;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#9CA3AF;"
                     onmouseenter="this.style.background='#F3F4F8'" onmouseleave="this.style.background='none'">&times;</button>
             </div>

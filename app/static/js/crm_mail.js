@@ -77,6 +77,14 @@
         window.mailAbrir = function () {
             var w = document.getElementById('widgetMail');
             if (!w) return;
+            // Modo página (sección ?tab=correo): ya está abierto, sin scroll-lock
+            if (w.classList.contains('is-page-mode')) {
+                _mailWidgetInitOnce();
+                _mailPendingBadge = 0;
+                _mailUpdateNavBadge();
+                _mailInitState();
+                return;
+            }
             _mailWidgetInitOnce();
             w.classList.add('active');
             w.classList.remove('closing');
@@ -94,6 +102,7 @@
         window.mailCerrar = function () {
             var w = document.getElementById('widgetMail');
             if (!w) return;
+            if (w.classList.contains('is-page-mode')) return; // sección: no se cierra
             w.classList.add('closing');
             setTimeout(function () {
                 w.classList.remove('active', 'closing');
@@ -1788,6 +1797,14 @@
         // _mailStartPolling adentro maneja su propio interval (guard interno
         // también). Aquí solo necesitamos invocar UNA VEZ por sesión.
         window.crmReady(function () {
+            // Modo página: al entrar a ?tab=correo el widget ya viene abierto
+            // del servidor — inicializar la lista de inmediato. Corre en CADA
+            // crmReady (Turbo navega entre tabs sin recargar).
+            var w = document.getElementById('widgetMail');
+            if (w && w.classList.contains('is-page-mode')) {
+                _mailWidgetInitOnce();
+                _mailInitState();
+            }
             if (window._mailInitDone) return;
             window._mailInitDone = true;
             _mailWidgetInitOnce();
