@@ -248,13 +248,19 @@
 
     <!-- Bottom actions -->
     <div class="crm-sb-bottom">
-        <!-- Novedades -->
-        <a href="/app/novedades/" target="_blank" class="crm-sb-btn" data-tooltip="Novedades">
+        <!-- Resumen (centro de mando del vendedor; reemplaza a Novedades).
+             OCULTO salvo RESUMEN_HABILITADO=1 en el .env (feature flag) —
+             la funcionalidad queda desplegada, solo sin icono. -->
+        {% if resumen_habilitado %}
+        <button type="button" class="crm-sb-btn" id="btnPendientes"
+            onclick="if(window.pendAbrir){pendAbrir();}"
+            data-tooltip="Resumen">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h8"/>
+                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
-            <span class="crm-sb-label">Novedades</span>
-        </a>
+            <span class="crm-sb-label">Resumen</span>
+        </button>
+        {% endif %}
 
         {% if es_supervisor %}
         <!-- Admin (visible para supervisores incluso en modo ingeniero) -->

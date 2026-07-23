@@ -148,6 +148,10 @@ urlpatterns = [
 
     # ── APIs CRM ──────────────────────────────────────────────────────────────
     path('api/crm-table-data/', views.api_crm_table_data, name='api_crm_table_data'),
+    path('api/pendientes/', views.api_pendientes, name='api_pendientes'),
+    path('api/pendientes/estado/', views.api_pendientes_estado, name='api_pendientes_estado'),
+    path('api/pendientes/completar/', views.api_pendientes_completar, name='api_pendientes_completar'),
+    path('api/pendientes/replay/', views.api_pendientes_replay, name='api_pendientes_replay'),
     path('api/subir-facturacion/', views.api_subir_facturacion, name='api_subir_facturacion'),
     path('api/desglose-facturacion/', views.api_desglose_facturacion, name='api_desglose_facturacion'),
     path('api/subir-cobrado/', views.api_subir_cobrado, name='api_subir_cobrado'),
@@ -326,6 +330,7 @@ urlpatterns = [
     path('api/jornada/pausar/', views.api_jornada_pausar, name='api_jornada_pausar'),
     path('api/jornada/terminar/', views.api_jornada_terminar, name='api_jornada_terminar'),
     path('api/jornada/ayer/', views.api_jornada_ayer, name='api_jornada_ayer'),
+    path('api/perfil/resumen-hoy/', views.api_perfil_resumen_hoy, name='api_perfil_resumen_hoy'),
     path('api/empleados/jornadas/', views.api_empleados_jornadas, name='api_empleados_jornadas'),
     path('api/verificar-empleado-mes/', views.api_verificar_empleado_mes, name='api_verificar_empleado_mes'),
 
@@ -579,6 +584,8 @@ urlpatterns = [
     # Volumetrías (borradores múltiples por levantamiento) ──────
     path('api/iamet/levantamientos/<int:levantamiento_id>/volumetrias/', views_iamet.api_volumetrias_lista, name='api_iamet_volumetrias_lista'),
     path('api/iamet/levantamientos/<int:levantamiento_id>/volumetrias/crear/', views_iamet.api_volumetria_crear, name='api_iamet_volumetria_crear'),
+    path('api/iamet/levantamientos/<int:levantamiento_id>/volumetrias/generar-ai/', views_iamet.api_volumetria_generar_ai, name='api_iamet_volumetria_generar_ai'),
+    path('api/iamet/volumetrias/<int:volumetria_id>/generar-ai/estado/', views_iamet.api_volumetria_generar_ai_estado, name='api_iamet_volumetria_generar_ai_estado'),
     path('api/iamet/volumetrias/<int:volumetria_id>/', views_iamet.api_volumetria_detalle, name='api_iamet_volumetria_detalle'),
     path('api/iamet/volumetrias/<int:volumetria_id>/actualizar/', views_iamet.api_volumetria_actualizar, name='api_iamet_volumetria_actualizar'),
     path('api/iamet/volumetrias/<int:volumetria_id>/data/', views_iamet.api_volumetria_data, name='api_iamet_volumetria_data'),

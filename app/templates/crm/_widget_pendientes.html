@@ -1,0 +1,862 @@
+{% comment %}
+  WIDGET "PENDIENTES" — oportunidades por urgencia (Pendientes / Hoy / Próximamente)
+  Ventana reutilizando el sistema widget_window.js (data-windowable + .ww-card):
+  minimizar / maximizar / cerrar / arrastrar / redimensionar, igual que Notificaciones.
+  Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
+{% endcomment %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
+<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Resumen">
+  <div class="ww-card pend-card">
+    <!-- Topbar: pestañas (izquierda) + selector y controles de ventana (derecha) -->
+    <div class="pend-topbar">
+      <div class="pend-tabs">
+        <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
+        <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
+          Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
+        </button>
+        <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
+          Hoy <span class="pend-count" id="pendCount-hoy">0</span>
+        </button>
+        <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
+          Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
+        </button>
+        <span class="pend-replay-wrap">
+          <button type="button" class="pend-tab pend-tab-replay" data-tab="replay" id="pendTabReplay" onclick="pendSetTab('replay')">
+            <span id="pendReplayLabel">Replay</span>
+            <span class="pend-replay-caret" onclick="pendReplayPicker(event)"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </button>
+          <div id="pendReplayMenu" class="pend-replay-menu"></div>
+        </span>
+      </div>
+      <div class="pend-head-actions">
+        <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
+          <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
+            <span id="pendVendedorLabel">Mías</span>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="pendVendedorMenu" class="pend-vend-menu"></div>
+        </div>
+        <button type="button" class="widget-close pend-close" onclick="pendCerrar()" title="Cerrar">&times;</button>
+      </div>
+    </div>
+
+    <!-- Body: un solo scroll (resumen/lista arriba + conversación con el asistente debajo) -->
+    <div class="pend-body" id="pendBody">
+      <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
+      <div id="pendChatFlow" class="pend-chatflow"></div>
+    </div>
+
+    <!-- Barra de entrada del chat (solo en Resumen). Las respuestas salen en el body. -->
+    <div class="pend-chat" id="pendChat" style="display:none;">
+      <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
+        <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
+               placeholder="Pregúntale al asistente sobre tus oportunidades…">
+        <button type="submit" class="pend-chat-send" title="Enviar">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* La ventana: hereda .ww-card (posición/resize la maneja widget_window.css en modo ventana) */
+  #widgetPendientes .pend-card{width:min(1420px,96vw);height:min(90vh,880px);max-width:96vw;
+    background:#fafbfc;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 24px 70px rgba(0,0,0,.32);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;}
+  .pend-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;background:#fff;border-bottom:1px solid #f0f1f3;}
+  .pend-head-actions{display:flex;align-items:center;gap:10px;position:relative;flex:none;}
+  /* Combina con los [— □] que inyecta widget_window.js (.ww-btn: 30px, #F2F2F7) */
+  #widgetPendientes .pend-close{width:30px;height:30px;border:none;border-radius:50%;background:#F2F2F7;color:#86868B;
+    font-size:19px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;}
+  #widgetPendientes .pend-close:hover{background:#E8E8ED;color:#1D1D1F;}
+  /* Selector vendedor */
+  .pend-vend{position:relative;}
+  .pend-vend-btn{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e2e4e8;border-radius:20px;
+    padding:6px 12px;font-size:.85rem;font-weight:600;color:#33353b;cursor:pointer;}
+  .pend-vend-btn:hover{background:#f7f8fa;}
+  .pend-vend-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;min-width:220px;max-height:320px;overflow:auto;z-index:10;}
+  .pend-vend-menu.open{display:block;}
+  .pend-vend-head{font-size:.68rem;font-weight:700;color:#9a9ca3;text-transform:uppercase;letter-spacing:.04em;padding:6px 10px 4px;}
+  .pend-vend-item{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;border:none;background:none;
+    padding:8px 10px;border-radius:8px;font-size:.88rem;color:#2c2d33;cursor:pointer;}
+  .pend-vend-item:hover{background:#f2f3f6;}
+  .pend-vend-item.active{color:#0a84ff;font-weight:700;}
+  /* Tabs a la izquierda (en la topbar) */
+  .pend-tabs{display:flex;gap:6px;flex-wrap:wrap;min-width:0;}
+  .pend-tab{display:flex;align-items:center;gap:7px;border:none;background:transparent;border-radius:22px;padding:8px 16px;
+    font-size:.95rem;font-weight:600;color:#6b6d75;cursor:pointer;transition:all .15s;}
+  .pend-tab:hover{background:#e9ebef;}
+  .pend-tab.active{background:#1c1d22;color:#fff;}
+  .pend-count{font-size:.85rem;font-weight:600;color:#b3b5bb;}
+  .pend-tab.active .pend-count{color:rgba(255,255,255,.72);}
+  /* Body / tarjetas */
+  .pend-body{flex:1;overflow-y:auto;padding:4px 18px 18px;}
+  .pend-cardrow{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #dde0e6;border-radius:14px;padding:14px 18px;margin-bottom:12px;
+    cursor:pointer;transition:box-shadow .15s,border-color .15s,transform .05s;box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  .pend-cardrow:hover{border-color:#c3c7cf;box-shadow:0 5px 16px rgba(15,23,42,.1);}
+  .pend-cardrow:active{transform:scale(.996);}
+  .pend-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .pend-dot.rojo{background:#ff3b30;} .pend-dot.ambar{background:#ff9500;} .pend-dot.verde{background:#34c759;}
+  .pend-c-main{flex:1;min-width:0;}
+  .pend-c-nombre{font-size:.98rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-c-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px;}
+  .pend-chip{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:#5a5c63;
+    background:#f0f1f4;border-radius:6px;padding:2px 8px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pend-chip svg{flex:none;opacity:.6;}
+  .pend-c-right{text-align:right;flex:none;}
+  .pend-c-motivo{font-size:.82rem;font-weight:700;color:#ff3b30;white-space:nowrap;}
+  .pend-c-motivo.ambar{color:#c77700;} .pend-c-motivo.verde{color:#248a3d;}
+  .pend-c-vend{font-size:.72rem;color:#a2a4ab;margin-top:3px;white-space:nowrap;}
+  .pend-empty{text-align:center;color:#9a9ca3;padding:52px 20px;font-size:.95rem;}
+  /* Resumen — saludo */
+  .pend-res-hero{padding:4px 4px 16px;}
+  .pend-res-saludo{font-size:1.45rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-res-sub{font-size:.9rem;color:#8a8c93;margin-top:5px;}
+  .pend-res-empty2{text-align:center;color:#9a9ca3;padding:40px 20px;font-size:.95rem;}
+  /* Tarjeta dividida (una oportunidad a la vez) */
+  .pend-split{display:flex;flex-wrap:wrap;background:#fff;border:1px solid #ececf0;border-radius:18px;box-shadow:0 2px 12px rgba(15,23,42,.05);overflow:hidden;}
+  .pend-sc-left{flex:1 1 340px;min-width:290px;padding:20px 22px;display:flex;flex-direction:column;}
+  .pend-sc-right{flex:1 1 250px;min-width:230px;padding:20px 22px;border-left:1px solid #edeef1;background:#fbfbfc;display:flex;flex-direction:column;}
+  .pend-sc-agent{display:flex;align-items:center;gap:11px;margin-bottom:14px;}
+  .pend-sc-ia{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+    font-size:.78rem;font-weight:800;color:#0a6cff;background:#e7f0ff;}
+  .pend-sc-agent-name{font-size:.92rem;font-weight:800;color:#1c1d22;}
+  .pend-sc-agent-sub{font-size:.78rem;color:#9a9ca3;margin-top:1px;}
+  .pend-sc-msg{font-size:1.12rem;line-height:1.5;color:#1c1d22;font-weight:600;}
+  .pend-sc-play{margin-top:16px;background:#f5f6f8;border-radius:12px;padding:13px 15px;}
+  .pend-sc-play.done{background:#eef8f1;}
+  .pend-sc-play-lbl{font-size:.68rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .pend-sc-play-lbl.done{color:#2b8a3e;}
+  .pend-sc-hecha{margin-top:14px;align-self:flex-start;background:#fff;border:1.5px solid #2b8a3e;color:#2b8a3e;border-radius:10px;
+    padding:9px 16px;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;}
+  .pend-sc-hecha:hover{background:#2b8a3e;color:#fff;}
+  .pend-sc-undo{margin-top:12px;align-self:flex-start;background:none;border:none;color:#8a8c93;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:4px 0;}
+  .pend-sc-undo:hover{color:#5a5c63;}
+  .pend-sc-play-txt{font-size:.94rem;line-height:1.5;color:#33353b;}
+  /* Panel derecho */
+  .pend-sc-value{font-size:1.7rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;margin-top:2px;}
+  .pend-sc-flabel{font-size:.74rem;color:#9a9ca3;font-weight:600;}
+  .pend-sc-prob{margin-top:16px;}
+  .pend-sc-prob-top{display:flex;align-items:baseline;justify-content:space-between;}
+  .pend-sc-prob-pct{font-size:.92rem;font-weight:800;color:#1c1d22;}
+  .pend-sc-bar{height:6px;border-radius:3px;background:#e9ebef;margin-top:6px;overflow:hidden;}
+  .pend-sc-bar-fill{height:100%;border-radius:3px;background:#0a6cff;}
+  .pend-sc-block{margin-top:16px;}
+  .pend-sc-riesgo{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-size:.82rem;font-weight:700;padding:4px 11px;border-radius:20px;}
+  .pend-sc-riesgo::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .pend-sc-riesgo.alto{color:#d9480f;background:#fff0e6;} .pend-sc-riesgo.medio{color:#b9770a;background:#fff6e0;} .pend-sc-riesgo.bajo{color:#2b8a3e;background:#e9f9ee;}
+  .pend-sc-divider{height:1px;background:#edeef1;margin:16px 0;}
+  .pend-sc-kv{margin-bottom:11px;}
+  .pend-sc-kv-val{font-size:.95rem;font-weight:700;color:#1c1d22;margin-top:1px;}
+  .pend-sc-btn{margin-top:auto;width:100%;border:none;border-radius:11px;background:#111317;color:#fff;font-size:.95rem;font-weight:700;
+    padding:13px;cursor:pointer;transition:background .15s;}
+  .pend-sc-btn:hover{background:#000;}
+  /* Paginación */
+  .pend-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 0 4px;}
+  .pend-pager-btn{width:34px;height:34px;border-radius:50%;border:1px solid #e2e4e8;background:#fff;color:#5a5c63;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;line-height:1;transition:all .15s;}
+  .pend-pager-btn:hover:not(:disabled){background:#f2f3f6;color:#111317;}
+  .pend-pager-btn:disabled{opacity:.4;cursor:default;}
+  .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
+  /* "Mi día": mensaje arriba centrado, tarjeta centrada vertical, flechas abajo */
+  #pendResArea.pend-day{display:flex;flex-direction:column;min-height:100%;}
+  #pendResArea.pend-day .pend-res-hero{flex:none;text-align:center;}
+  #pendResArea.pend-day .pend-split{flex:none;margin:auto 0;}
+  #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
+  /* Replay mensual — estilo editorial "Wrapped" (fondo cálido, serif, formas) */
+  .pend-tab-replay{display:inline-flex;align-items:center;gap:2px;}
+  .pend-tab-replay.active{background:linear-gradient(135deg,#e07a3e,#c8551f) !important;color:#fff !important;}
+  /* Toda la ventana en tono cálido al estar en Replay (para que el diseño cuadre) */
+  #widgetPendientes .pend-card.replay-on{background:#faf3e8;}
+  #widgetPendientes .pend-card.replay-on .pend-topbar{background:#faf3e8;border-bottom-color:#efe1cc;}
+  #widgetPendientes .pend-card.replay-on .pend-tab{color:#8a7358;}
+  #widgetPendientes .pend-card.replay-on .pend-count{color:#b7a482;}
+  .pend-replay-wrap{position:relative;display:inline-flex;}
+  .pend-replay-caret{display:inline-flex;align-items:center;padding:2px;margin-left:2px;border-radius:5px;opacity:.75;}
+  .pend-replay-caret:hover{opacity:1;background:rgba(255,255,255,.22);}
+  .pend-replay-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#fff;border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;min-width:190px;max-height:320px;overflow:auto;z-index:20;}
+  .pend-replay-menu.open{display:block;}
+  #pendResArea.pend-day .rp{flex:1;margin:0;}
+  .rp{position:relative;overflow:hidden;border-radius:22px;background:#faf3e8;padding:34px 40px;
+    display:flex;flex-direction:column;justify-content:center;min-height:100%;}
+  .rp-inner{position:relative;z-index:2;max-width:82%;}
+  .rp-shape{position:absolute;border-radius:50%;z-index:1;}
+  .rp-s1{width:min(46%,420px);aspect-ratio:1;top:-12%;right:-6%;background:#ffd8c2;animation:rpFloat 8s ease-in-out infinite;}
+  .rp-s2{width:min(40%,360px);aspect-ratio:1;bottom:-26%;right:16%;background:#cfe8b8;animation:rpFloat 11s ease-in-out infinite reverse;}
+  @keyframes rpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+  .rp .pend-sc-ia{background:#efe0c9;color:#9a5a28;}
+  .rp .pend-sc-agent-name{color:#3a2a17;}
+  .rp .pend-sc-agent-sub{color:#a98c66;}
+  .rp-kicker{margin-top:20px;font-size:.8rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#b06a3a;}
+  .rp-headline{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:2.9rem;line-height:1.05;color:#2a1c10;margin-top:8px;letter-spacing:-.01em;}
+  .rp-badge{display:inline-block;margin-top:16px;background:#e9d9bf;color:#8a5a2b;padding:6px 15px;border-radius:20px;font-size:.82rem;font-weight:800;}
+  .rp-hero{margin-top:26px;}
+  .rp-hero-l{font-size:.9rem;color:#a98c66;font-weight:600;}
+  .rp-hero-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:2px;}
+  .rp-hero-stat{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:3.6rem;line-height:1;color:#2a1c10;letter-spacing:-.01em;word-break:break-word;}
+  .rp-trend{background:#cfe8b8;color:#3d6b2a;font-weight:800;font-size:.9rem;padding:6px 15px;border-radius:20px;white-space:nowrap;}
+  .rp-boxes{display:flex;gap:14px;flex-wrap:wrap;margin-top:24px;}
+  .rp-box{background:#f3e7d3;border-radius:16px;padding:16px 22px;min-width:120px;}
+  .rp-box-v{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.9rem;color:#2a1c10;line-height:1;word-break:break-word;}
+  .rp-box-l{font-size:.78rem;color:#a98c66;font-weight:600;margin-top:6px;}
+  .rp-dots{display:flex;gap:6px;align-items:center;}
+  .rp-dot{width:8px;height:8px;border-radius:50%;background:#dcd2c0;transition:all .2s;}
+  .rp-dot.on{width:22px;border-radius:5px;background:#c05a2a;}
+  .rp-pager .pend-pager-btn{border-color:#e6d8c2;color:#9a5a28;}
+  .rp-pager .pend-pager-btn:hover{background:#f3e7d3;color:#7a4418;}
+  /* Oportunidad ya trabajada (dentro de la tarjeta) */
+  .pend-sc-done{color:#2b8a3e;font-weight:700;}
+  .pend-split.done{opacity:.72;}
+  .pend-split.done .pend-sc-ia{background:#e6f6ec;color:#2b8a3e;}
+  /* Recap del cierre del día */
+  .pend-recap-msg{font-size:1.15rem;line-height:1.5;color:#1c1d22;font-weight:600;background:#fff;border:1px solid #ececf0;
+    border-radius:16px;padding:18px 20px;margin-bottom:14px;}
+  .pend-recap-stats{display:flex;gap:12px;margin-bottom:14px;}
+  .pend-recap-stat{flex:1;background:#fff;border:1px solid #ececf0;border-radius:14px;padding:14px;text-align:center;}
+  .pend-recap-stat .n{display:block;font-size:1.8rem;font-weight:800;color:#1c1d22;line-height:1.1;}
+  .pend-recap-stat .l{font-size:.74rem;font-weight:700;color:#8a8c93;text-transform:uppercase;letter-spacing:.03em;}
+  .pend-recap-stat.done .n{color:#2b8a3e;}
+  .pend-recap-sec{font-size:.72rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin:14px 2px 8px;}
+  .pend-recap-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #f0f1f3;border-radius:12px;padding:11px 14px;margin-bottom:7px;cursor:pointer;transition:box-shadow .15s;}
+  .pend-recap-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
+  .pend-recap-ic{flex:none;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;background:#f0f1f3;color:#9a9ca3;}
+  .pend-recap-row.done .pend-recap-ic{background:#e6f6ec;color:#2b8a3e;}
+  .pend-recap-nombre{flex:1;min-width:0;font-size:.95rem;font-weight:700;color:#1c1d22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pend-recap-cli{font-size:.82rem;color:#8a8c93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+  .pend-recap-val{flex:none;font-size:.92rem;font-weight:800;color:#1c1d22;}
+  /* Conversación con el asistente — fluye en el MISMO scroll del body, bajo la tarjeta */
+  #widgetPendientes #pendChatFlow{
+    --ai-blue:#0066FF; --ai-blue-dark:#0052D4; --ai-cyan:#00B5FF; --ai-violet:#6366F1;
+    --ai-magenta:#C026D3; --ai-pink:#EC4899; --ai-ink:#0F172A; --ai-muted:#64748B;
+    --ai-line:#E5E7EB; --ai-soft:#F8FAFF;
+    display:flex;flex-direction:column;gap:12px;padding:8px 4px 6px;}
+  #pendChatFlow:empty{display:none;}
+  /* Alineación garantizada (las clases .asist-msg-* traen el estilo de burbuja/texto) */
+  #pendChatFlow .asist-msg{display:flex;}
+  #pendChatFlow .asist-msg-user{justify-content:flex-end;}
+  #pendChatFlow .asist-msg-bot{justify-content:flex-start;}
+  #pendChatFlow .asist-msg-bot .asist-msg-bubble{max-width:92%;}
+  #pendChatFlow .asist-msg-user .asist-msg-bubble{max-width:80%;}
+  .pend-typing2{color:#8a8c93;font-style:italic;font-size:.92rem;}
+  /* Barra de entrada del chat (abajo) */
+  .pend-chat{flex:none;border-top:1px solid #e6e8ec;background:#fff;padding:12px 16px;}
+  .pend-chat-form{display:flex;gap:10px;align-items:center;}
+  .pend-chat-input{flex:1;border:1px solid #dfe1e6;border-radius:24px;padding:13px 18px;font-size:.98rem;outline:none;
+    background:#f7f8fa;color:#1c1d22;caret-color:#0a84ff;transition:border-color .15s,background .15s;}
+  .pend-chat-input::placeholder{color:#9a9ca3;}
+  .pend-chat-input:focus{border-color:#0a84ff;background:#fff;}
+  .pend-chat-send{flex:none;width:44px;height:44px;border:none;border-radius:50%;background:#0a84ff;color:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .15s;}
+  .pend-chat-send:hover{background:#0060df;}
+  .pend-chat-send:disabled{background:#c7c9ce;cursor:default;}
+</style>
+
+<script>
+(function () {
+  if (window.__pendInit) return;
+  window.__pendInit = true;
+
+  var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
+  var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
+  function el(id){ return document.getElementById(id); }
+
+  function _normalRect() {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var w = Math.min(Math.round(vw * 0.90), 1420);
+    var h = Math.min(Math.round(vh * 0.88), 860);
+    return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w: w, h: h };
+  }
+  function _setRect(ov, r) {
+    ov.style.setProperty('--ww-x', r.x + 'px');
+    ov.style.setProperty('--ww-y', r.y + 'px');
+    ov.style.setProperty('--ww-w', r.w + 'px');
+    ov.style.setProperty('--ww-h', r.h + 'px');
+  }
+  function _cardRect(ov) {
+    var card = ov.querySelector('.ww-card');
+    if (!card) return null;
+    var b = card.getBoundingClientRect();
+    return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) };
+  }
+  // Repurpose el botón □ que inyecta widget_window.js: en vez de windowize/unwindowize,
+  // alterna PANTALLA COMPLETA ↔ tamaño normal.
+  function _overrideMaxBtn(ov) {
+    var btn = ov._wwBtnWin;
+    if (!btn || btn._pendFS) return;
+    var clone = btn.cloneNode(true);        // clon sin el listener del sistema
+    clone._pendFS = true;
+    if (btn.parentNode) btn.parentNode.replaceChild(clone, btn);
+    ov._wwBtnWin = clone;
+    clone.title = 'Pantalla completa';
+    clone.addEventListener('click', function (e) { e.stopPropagation(); pendToggleFull(); });
+  }
+  window.pendToggleFull = function () {
+    var ov = el('widgetPendientes');
+    if (!ov) return;
+    var W = window.crmWidgetWindow;
+    if (W && W.windowize && !ov.classList.contains('ww-windowed')) {
+      try { W.windowize(ov, ov._pendNormalRect || _normalRect()); } catch (e) {}
+    }
+    if (!ov._pendFull) {
+      ov._pendNormalRect = _cardRect(ov) || ov._pendNormalRect || _normalRect();
+      _setRect(ov, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight });
+      ov._pendFull = true;
+    } else {
+      _setRect(ov, ov._pendNormalRect || _normalRect());
+      ov._pendFull = false;
+    }
+  };
+
+  function _ensureWindow(ov) {
+    var W = window.crmWidgetWindow;
+    if (!W || !W.windowize) return false;
+    if (!ov.classList.contains('ww-windowed')) {
+      if (W.enhance) { try { W.enhance(ov); } catch (e) {} }
+      ov._pendNormalRect = ov._pendNormalRect || _normalRect();
+      ov._pendFull = false;
+      try { W.windowize(ov, ov._pendNormalRect); } catch (e) {}
+    }
+    _overrideMaxBtn(ov);
+    return ov.classList.contains('ww-windowed');
+  }
+  window.pendAbrir = function () {
+    var ov = el('widgetPendientes');
+    if (!ov) return;
+    ov.style.zIndex = '';            // restaurar z normal al reabrir
+    ov.classList.add('active');
+    var chat = el('pendChat'); if (chat) chat.style.display = (_tab === 'resumen') ? '' : 'none';
+    pendCargar();
+    // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
+    // de ventanas aún no está listo en el auto-open del día.
+    if (!_ensureWindow(ov)) {
+      setTimeout(function () { _ensureWindow(ov); }, 350);
+    }
+    // Sondeo: detecta al instante cuando completas algo, sin recargar ni cerrar.
+    if (_pollTimer) clearInterval(_pollTimer);
+    _pollTimer = setInterval(function () { if (_tab === 'resumen') pendRefreshEstado(); }, 3000);
+  };
+  window.pendCerrar = function () {
+    var ov = el('widgetPendientes');
+    if (!ov) return;
+    var W = window.crmWidgetWindow;
+    if (W && W.unwindowize && ov.classList.contains('ww-windowed')) {
+      try { W.unwindowize(ov); } catch (e) {}
+    }
+    ov._pendFull = false;
+    ov.classList.remove('active');
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+    var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+  };
+
+  window.pendSetTab = function (tab) {
+    _tab = tab;
+    document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t){
+      t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+    });
+    var chat = el('pendChat'); if (chat) chat.style.display = (tab === 'resumen') ? '' : 'none';
+    _render();
+  };
+
+  // ── Chat con el asistente general (el "consultor") ──
+  function _getCsrf() {
+    var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function _scrollBody() {
+    var body = el('pendBody');
+    if (body) body.scrollTop = body.scrollHeight;
+  }
+  function _pushUserMsg(text) {
+    var flow = el('pendChatFlow'); if (!flow) return;
+    var row = document.createElement('div');
+    row.className = 'asist-msg asist-msg-user';   // mismas clases que el chat general
+    var b = document.createElement('div');
+    b.className = 'asist-msg-bubble';
+    b.textContent = text;
+    row.appendChild(b);
+    flow.appendChild(row);
+    _scrollBody();
+  }
+  function _pushAiMsg(markdown) {
+    var flow = el('pendChatFlow'); if (!flow) return;
+    var row = document.createElement('div');
+    row.className = 'asist-msg asist-msg-bot';     // burbuja blanca + texto oscuro del asistente
+    var bubble = document.createElement('div');
+    bubble.className = 'asist-msg-bubble';
+    if (typeof window.asistenteRenderMarkdown === 'function') {
+      bubble.innerHTML = window.asistenteRenderMarkdown(markdown);
+    } else {
+      bubble.textContent = markdown;
+    }
+    row.appendChild(bubble);
+    flow.appendChild(row);
+    _scrollBody();
+  }
+  window.pendChatSend = function (ev) {
+    if (ev) ev.preventDefault();
+    var input = el('pendChatInput');
+    var send = document.querySelector('#widgetPendientes .pend-chat-send');
+    if (!input) return false;
+    var texto = (input.value || '').trim();
+    if (!texto) return false;
+    input.value = '';
+    _pushUserMsg(texto);
+    if (send) send.disabled = true;
+    var flow = el('pendChatFlow');
+    var typing = document.createElement('div');
+    typing.className = 'asist-msg asist-msg-bot';
+    typing.innerHTML = '<div class="asist-msg-bubble"><span class="pend-typing2">Escribiendo…</span></div>';
+    if (flow) { flow.appendChild(typing); _scrollBody(); }
+    fetch('/app/api/asistente/mensaje/', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ texto: texto })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      _pushAiMsg((d && (d.respuesta || d.error)) || 'No pude responder ahora mismo.');
+    }).catch(function () {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      _pushAiMsg('Error de conexión con el asistente.');
+    }).then(function () {
+      if (send) send.disabled = false;
+      if (input) input.focus();
+    });
+    return false;
+  };
+
+  window.pendToggleVendedor = function (ev) {
+    if (ev) ev.stopPropagation();
+    var m = el('pendVendedorMenu'); if (m) m.classList.toggle('open');
+  };
+  window.pendSelVendedor = function (val, label) {
+    _sel = val;
+    var lbl = el('pendVendedorLabel'); if (lbl) lbl.textContent = label;
+    var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    pendCargar();
+  };
+
+  // Refresca SOLO el estado (trabajadas hoy) sin recargar todo ni re-ordenar:
+  // marca la actual como completada en su lugar; se ordena al final al reabrir.
+  function pendRefreshEstado() {
+    var r = _data && _data.resumen; if (!r || !r.items || !r.items.length) return;
+    var ids = r.items.map(function (it) { return it.opp_id; }).join(',');
+    fetch('/app/api/pendientes/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
+      .then(function (res) { return res.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var worked = {};
+        (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
+        var changed = false, comp = 0, pend = 0;
+        r.items.forEach(function (it) {
+          var now = !!worked[it.opp_id];
+          if (now !== !!it.completada) changed = true;
+          it.completada = now;
+          if (now) comp++; else pend++;
+        });
+        r.completadas = comp; r.pendientes = pend;
+        if (changed && _tab === 'resumen' && r.modo !== 'recap') _renderResumen();
+      }).catch(function () {});
+  }
+  window.pendRefreshEstado = pendRefreshEstado;
+
+  // Reintenta el refresco varias veces: al cerrar el detalle, el guardado de la
+  // completación puede seguir en curso (async), así que consultamos varias veces
+  // en los siguientes segundos hasta atraparlo.
+  function pendRefreshBurst() {
+    pendRefreshEstado();
+    [700, 1600, 3000, 5000].forEach(function (ms) { setTimeout(pendRefreshEstado, ms); });
+  }
+  window.pendRefreshBurst = pendRefreshBurst;
+
+  // Observa el cierre del detalle de oportunidad para refrescar al instante.
+  var _detObs = null, _detWasOpen = false;
+  function _watchDetalle() {
+    if (_detObs) return;
+    var det = el('widgetDetalle');
+    if (!det) return;
+    _detWasOpen = det.classList.contains('active');
+    _detObs = new MutationObserver(function () {
+      var open = det.classList.contains('active');
+      if (_detWasOpen && !open) {
+        var pov = el('widgetPendientes');
+        if (pov && pov.classList.contains('active')) pendRefreshBurst();
+      }
+      _detWasOpen = open;
+    });
+    _detObs.observe(det, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Clic en una oportunidad: NO cierra Pendientes; la deja de fondo y abre el detalle encima.
+  window.pendAbrirOpp = function (id) {
+    var ov = el('widgetPendientes');
+    if (ov) ov.style.zIndex = '998';   // debajo del detalle (--z-widget:1000)
+    _watchDetalle();
+    try {
+      if (typeof openDetalle === 'function') { openDetalle(id); return; }
+      if (window.openDetalle) { window.openDetalle(id); return; }
+    } catch (e) {}
+    window.location.href = '/app/home/?open_opp=' + id;
+  };
+
+  function pendCargar() {
+    var res = el('pendResArea');
+    if (res) res.innerHTML = '<div class="pend-empty">Cargando…</div>';
+    var cf = el('pendChatFlow'); if (cf) cf.innerHTML = '';   // nueva carga → limpia la conversación
+    fetch('/app/api/pendientes/?vendedor=' + encodeURIComponent(_sel), { credentials: 'same-origin' })
+      .then(function (r){ return r.json(); })
+      .then(function (d){
+        if (!d || !d.success) { if (res) res.innerHTML = '<div class="pend-empty">Error al cargar</div>'; return; }
+        _data = d;
+        _resIdx = 0;
+        _buildVendedores(d);
+        ['pendientes','hoy','proximamente'].forEach(function (k){
+          var c = el('pendCount-' + k); if (c) c.textContent = (d.counts && d.counts[k]) || 0;
+        });
+        _render();
+      })
+      .catch(function (){ if (res) res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  window.pendCargar = pendCargar;
+
+  function _buildVendedores(d) {
+    var wrap = el('pendVendedorWrap');
+    if (!wrap) return;
+    if (!d.puede_seleccionar) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    var yo = d.yo || {};
+    var html = '<div class="pend-vend-head">Vendedores</div>' + _vItem('mias', 'Mías') + _vItem('todos', 'Todos');
+    (d.vendedores || []).forEach(function (v){
+      if (yo.id && v.id === yo.id) return;
+      html += _vItem(String(v.id), _esc(v.nombre));
+    });
+    el('pendVendedorMenu').innerHTML = html;
+  }
+  function _vItem(val, label) {
+    var act = (String(_sel) === String(val)) ? ' active' : '';
+    return '<button type="button" class="pend-vend-item' + act + '" onclick="pendSelVendedor(\'' + val + '\',\'' + label.replace(/'/g,"\\'") + '\')">' + label + '</button>';
+  }
+
+  var _ICON_CLIENTE = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>';
+  var _ICON_PIPE = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg>';
+  var _ICON_ETAPA = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
+
+  function _asistenteEmoji(saludo) {
+    var s = (saludo || '').toLowerCase();
+    if (s.indexOf('noche') !== -1) return '🌙';
+    if (s.indexOf('tarde') !== -1) return '🌤️';
+    return '☀️';
+  }
+  function _renderResumen() {
+    var res = el('pendResArea');
+    var r = _data && _data.resumen;
+    if (!res) return;
+    res.classList.remove('pend-day');
+    if (!r) { res.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
+    if (r.modo === 'recap') { _renderRecap(res, r); return; }
+    var items = r.items || [];
+    var total = items.length;
+    var pendientes = (r.pendientes != null ? r.pendientes : total);
+    var completadas = r.completadas || 0;
+    var subtxt;
+    if (pendientes > 0) {
+      subtxt = 'Hoy trabajas <b>' + pendientes + '</b> oportunidad' + (pendientes === 1 ? '' : 'es') + ' · te las paso en orden de prioridad';
+      if (completadas > 0) subtxt += ' · <b>' + completadas + '</b> ✓';
+    } else if (completadas > 0) {
+      subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
+    } else {
+      subtxt = 'Vas al día — no hay nada urgente para hoy. 🎉';
+    }
+    var hero = '<div class="pend-res-hero">' +
+      '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
+      '<div class="pend-res-sub">' + subtxt + '</div>' +
+    '</div>';
+    if (!total) { res.innerHTML = hero; return; }
+    if (_resIdx >= total) _resIdx = total - 1;
+    if (_resIdx < 0) _resIdx = 0;
+    var it = items[_resIdx];
+    var rk = (it.riesgo || '').toLowerCase();
+    var prob = (it.probabilidad != null ? it.probabilidad : 0);
+    var pw = Math.max(0, Math.min(100, prob));
+    var contactoVal = (it.contacto || '');
+    if (it.hora) contactoVal += (contactoVal ? ' · ' : '') + 'hasta ' + it.hora;
+    var agentSub = it.completada
+      ? '<span class="pend-sc-done">✓ Completada hoy</span>'
+      : ('Prioridad ' + it.prioridad);
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Jugada completada</div><div class="pend-sc-play-txt">' + _esc(_completedMsg(it)) + '</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent">' +
+          '<div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div>' +
+        '</div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
+        playBlock +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">Valor</div>' +
+        '<div class="pend-sc-value">' + _esc(it.valor_fmt) + '</div>' +
+        '<div class="pend-sc-prob">' +
+          '<div class="pend-sc-prob-top"><span class="pend-sc-flabel">Probabilidad</span><span class="pend-sc-prob-pct">' + prob + '%</span></div>' +
+          '<div class="pend-sc-bar"><div class="pend-sc-bar-fill" style="width:' + pw + '%"></div></div>' +
+        '</div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Riesgo</div>' +
+          '<div><span class="pend-sc-riesgo ' + rk + '">Riesgo ' + rk + '</span></div>' +
+        '</div>' +
+        '<div class="pend-sc-divider"></div>' +
+        '<div class="pend-sc-kv"><div class="pend-sc-flabel">Cliente</div><div class="pend-sc-kv-val">' + _esc(it.cliente) + '</div></div>' +
+        '<div class="pend-sc-kv"><div class="pend-sc-flabel">Proyecto</div><div class="pend-sc-kv-val">' + _esc(it.proyecto) + '</div></div>' +
+        (contactoVal ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Contacto</div><div class="pend-sc-kv-val">' + _esc(contactoVal) + '</div></div>' : '') +
+        '<button type="button" class="pend-sc-btn" onclick="pendAbrirOpp(' + it.opp_id + ')">Ver oportunidad</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">Oportunidad ' + (_resIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.innerHTML = hero + card + pager;
+    res.classList.add('pend-day');   // layout centrado (mensaje arriba, tarjeta centro, flechas abajo)
+  }
+  window.pendResNav = function (delta) {
+    var r = _data && _data.resumen; if (!r) return;
+    var total = (r.items || []).length;
+    if (!total) return;
+    _resIdx = (_resIdx + delta + total) % total;   // circular: 1ª ↔ última
+    _renderResumen();
+  };
+  function _completedMsg(it) {
+    if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad. 💪';
+    return '¡Listo! Completaste la tarea de esta oportunidad. 💪';
+  }
+
+  // ── Replay mensual (Wrapped) ──
+  function _renderReplay() {
+    var res = el('pendResArea'); if (!res) return;
+    res.classList.remove('pend-day');
+    var _rcard = document.querySelector('#widgetPendientes .pend-card');
+    if (_rcard) _rcard.classList.add('replay-on');
+    if (!_replayData) {
+      res.innerHTML = '<div class="pend-empty">Preparando tu resumen del mes…</div>';
+      var url = '/app/api/pendientes/replay/';
+      if (_replayMes && _replayAnio) url += '?mes=' + _replayMes + '&anio=' + _replayAnio;
+      fetch(url, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo cargar el resumen del mes</div>'; return; }
+          _replayData = d; _replayIdx = 0;
+          var lbl = el('pendReplayLabel'); if (lbl && d.mes_nombre) lbl.textContent = 'Resumen ' + d.mes_nombre;
+          _renderReplay();
+        })
+        .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+      return;
+    }
+    var cards = _replayData.cards || [];
+    if (!cards.length) { res.innerHTML = '<div class="pend-empty">Sin datos del mes anterior</div>'; return; }
+    if (_replayIdx >= cards.length) _replayIdx = cards.length - 1;
+    if (_replayIdx < 0) _replayIdx = 0;
+    var c = cards[_replayIdx];
+    var boxes = (c.boxes || []).map(function (b) {
+      return '<div class="rp-box"><div class="rp-box-v">' + _esc(b.v) + '</div><div class="rp-box-l">' + _esc(b.l) + '</div></div>';
+    }).join('');
+    var hero = c.hero_stat ? ('<div class="rp-hero">' +
+        (c.hero_label ? '<div class="rp-hero-l">' + _esc(c.hero_label) + '</div>' : '') +
+        '<div class="rp-hero-row"><div class="rp-hero-stat">' + _esc(c.hero_stat) + '</div>' +
+        (c.hero_trend ? '<div class="rp-trend">' + _esc(c.hero_trend) + '</div>' : '') + '</div></div>') : '';
+    var mn = (_replayData && _replayData.mes_nombre) || '';
+    var wrap = '<div class="rp t' + (c.theme || 0) + '">' +
+      '<div class="rp-shape rp-s1"></div><div class="rp-shape rp-s2"></div>' +
+      '<div class="rp-inner">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">Tu ' + _esc(mn) + '</div></div></div>' +
+        (c.kicker ? '<div class="rp-kicker">' + _esc(c.kicker) + '</div>' : '') +
+        (c.headline ? '<div class="rp-headline">' + _esc(c.headline) + '</div>' : '') +
+        (c.badge ? '<div><span class="rp-badge">' + _esc(c.badge) + '</span></div>' : '') +
+        hero +
+        (boxes ? '<div class="rp-boxes">' + boxes + '</div>' : '') +
+      '</div>' +
+    '</div>';
+    var dots = '';
+    for (var i = 0; i < cards.length; i++) dots += '<span class="rp-dot' + (i === _replayIdx ? ' on' : '') + '"></span>';
+    var pager = '<div class="pend-pager rp-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendReplayNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="rp-dots">' + dots + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendReplayNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>';
+    res.innerHTML = wrap + pager;
+    res.classList.add('pend-day');
+  }
+  window.pendReplayNav = function (delta) {
+    if (!_replayData) return;
+    var n = (_replayData.cards || []).length; if (!n) return;
+    _replayIdx = (_replayIdx + delta + n) % n;
+    _renderReplay();
+  };
+  var _mesesFull = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  window.pendReplayPicker = function (ev) {
+    if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+    var menu = el('pendReplayMenu'); if (!menu) return;
+    if (menu.classList.contains('open')) { menu.classList.remove('open'); return; }
+    var now = new Date(), yy = now.getFullYear(), curMes = now.getMonth() + 1, html = '';
+    // Solo meses de ESTE año, desde el mes anterior hasta enero
+    for (var mm = curMes - 1; mm >= 1; mm--) {
+      var nom = _mesesFull[mm - 1];
+      var act = ((_replayMes === mm && _replayAnio === yy) || (_replayMes === null && mm === curMes - 1)) ? ' active' : '';
+      html += '<button type="button" class="pend-vend-item' + act + '" onclick="pendReplaySelMes(' + mm + ',' + yy + ',\'' + nom + '\')">' + nom + ' ' + yy + '</button>';
+    }
+    if (!html) html = '<div style="padding:10px 12px;color:#9a9ca3;font-size:.85rem;">Aún no hay meses anteriores este año.</div>';
+    menu.innerHTML = html;
+    menu.classList.add('open');
+  };
+  window.pendReplaySelMes = function (mes, anio, nombre) {
+    _replayMes = mes; _replayAnio = anio; _replayData = null; _replayIdx = 0;
+    var lbl = el('pendReplayLabel'); if (lbl) lbl.textContent = 'Resumen ' + nombre;
+    var menu = el('pendReplayMenu'); if (menu) menu.classList.remove('open');
+    _tab = 'replay';
+    document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'replay'); });
+    var chat = el('pendChat'); if (chat) chat.style.display = 'none';
+    _renderReplay();
+  };
+  // Marcar/desmarcar manualmente como trabajada (para cuando no hay tarea que cerrar).
+  window.pendMarcarHecha = function (oppId, done) {
+    fetch('/app/api/pendientes/completar/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf() },
+      body: JSON.stringify({ opp_id: oppId, done: done })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.success) return;
+      var r = _data && _data.resumen; if (!r || !r.items) return;
+      var comp = 0, pend = 0;
+      r.items.forEach(function (it) {
+        if (it.opp_id === oppId) it.completada = done;
+        if (it.completada) comp++; else pend++;
+      });
+      r.completadas = comp; r.pendientes = pend;
+      if (_tab === 'resumen' && r.modo !== 'recap') _renderResumen();
+    }).catch(function () {});
+  };
+
+  function _recapRow(it, done) {
+    return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
+      '<span class="pend-recap-ic">' + (done ? '✓' : '○') + '</span>' +
+      '<span class="pend-recap-nombre">' + _esc(it.proyecto) + '</span>' +
+      '<span class="pend-recap-cli">' + _esc(it.cliente) + '</span>' +
+      '<span class="pend-recap-val">' + _esc(it.valor_fmt) + '</span>' +
+    '</div>';
+  }
+  function _renderRecap(res, r) {
+    var items = r.items || [];
+    var done = items.filter(function (it) { return it.completada; });
+    var pend = items.filter(function (it) { return !it.completada; });
+    var html = '<div class="pend-res-hero">' +
+      '<div class="pend-res-saludo">Cierre del día 🌙</div>' +
+      '<div class="pend-res-sub">Así te fue hoy, ' + _esc(r.nombre) + '</div></div>';
+    html += '<div class="pend-recap-msg">' + _esc(r.recap_msg || '') + '</div>';
+    html += '<div class="pend-recap-stats">' +
+      '<div class="pend-recap-stat done"><span class="n">' + done.length + '</span><span class="l">Completadas</span></div>' +
+      '<div class="pend-recap-stat pend"><span class="n">' + pend.length + '</span><span class="l">Pendientes</span></div>' +
+    '</div>';
+    if (done.length) {
+      html += '<div class="pend-recap-sec">✓ Trabajadas hoy</div>';
+      done.forEach(function (it) { html += _recapRow(it, true); });
+    }
+    if (pend.length) {
+      html += '<div class="pend-recap-sec">○ Quedaron pendientes</div>';
+      pend.forEach(function (it) { html += _recapRow(it, false); });
+    }
+    res.innerHTML = html;
+  }
+
+  function _render() {
+    var res = el('pendResArea');
+    if (!res) return;
+    var _card = document.querySelector('#widgetPendientes .pend-card');
+    if (_card) _card.classList.toggle('replay-on', _tab === 'replay');
+    var chatFlow = el('pendChatFlow');
+    if (_tab === 'replay') { if (chatFlow) chatFlow.style.display = 'none'; _renderReplay(); return; }
+    if (!_data) return;
+    if (_tab === 'resumen') { if (chatFlow) chatFlow.style.display = ''; _renderResumen(); return; }
+    if (chatFlow) chatFlow.style.display = 'none';   // el chat solo vive en Resumen
+    res.classList.remove('pend-day');
+    var items = (_data.buckets && _data.buckets[_tab]) || [];
+    if (!items.length) {
+      var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      res.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
+      return;
+    }
+    var tone = _tab === 'pendientes' ? 'rojo' : (_tab === 'hoy' ? 'ambar' : 'verde');
+    var mostrarVend = (_sel !== 'mias');
+    var html = '';
+    items.forEach(function (it){
+      var chips = '';
+      if (it.cliente)  chips += '<span class="pend-chip" title="Cliente">' + _ICON_CLIENTE + _esc(it.cliente) + '</span>';
+      if (it.pipeline) chips += '<span class="pend-chip" title="Pipeline">' + _ICON_PIPE + _esc(it.pipeline) + '</span>';
+      if (it.etapa)    chips += '<span class="pend-chip" title="Etapa">' + _ICON_ETAPA + _esc(it.etapa) + '</span>';
+      html += '<div class="pend-cardrow" onclick="pendAbrirOpp(' + it.id + ')">' +
+        '<span class="pend-dot ' + tone + '"></span>' +
+        '<div class="pend-c-main">' +
+          '<div class="pend-c-nombre">' + _esc(it.nombre) + '</div>' +
+          '<div class="pend-c-meta">' + (chips || '<span class="pend-chip">Sin datos</span>') + '</div>' +
+        '</div>' +
+        '<div class="pend-c-right">' +
+          '<div class="pend-c-motivo ' + tone + '">' + _esc(it.motivo || '') + '</div>' +
+          (mostrarVend && it.vendedor ? '<div class="pend-c-vend">' + _esc(it.vendedor) + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    res.innerHTML = html;
+  }
+
+  function _esc(s) {
+    return (s == null ? '' : String(s)).replace(/[&<>"']/g, function (c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  // Cerrar el menú de vendedor al hacer clic fuera + abrir oportunidad desde las
+  // tarjetas que genera el asistente en el chat ([...](opp:ID)).
+  document.addEventListener('click', function (e) {
+    var wrap = el('pendVendedorWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
+    }
+    var rwrap = document.querySelector('#widgetPendientes .pend-replay-wrap');
+    if (rwrap && !rwrap.contains(e.target)) {
+      var rm = el('pendReplayMenu'); if (rm) rm.classList.remove('open');
+    }
+    var oppLink = e.target.closest && e.target.closest('#pendChatFlow a[data-asist-opp]');
+    if (oppLink) {
+      e.preventDefault();
+      var oppId = parseInt(oppLink.getAttribute('data-asist-opp'), 10);
+      if (oppId) {
+        var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+        if (typeof window.asistenteAbrirOportunidad === 'function') window.asistenteAbrirOportunidad(oppId);
+        else if (window.openDetalle) window.openDetalle(oppId);
+      }
+    }
+  });
+
+  // Etiqueta de la pestaña Replay con el nombre del mes anterior ("Resumen Junio")
+  try {
+    var _tabR = el('pendReplayLabel');
+    if (_tabR) _tabR.textContent = 'Resumen ' + _mesesFull[(new Date().getMonth() + 11) % 12];
+  } catch (e) {}
+
+  // Auto-mostrar el Resumen 1 vez al día (primera carga del día = "al iniciar sesión")
+  try {
+    var _hoy = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('pend_resumen_dia') !== _hoy) {
+      localStorage.setItem('pend_resumen_dia', _hoy);
+      setTimeout(function () { if (window.pendAbrir) window.pendAbrir(); }, 1400);
+    }
+  } catch (e) {}
+})();
+</script>

@@ -49,3 +49,6 @@ Thumbs.db
 
 # ═══ Worktrees de agentes Claude (ignore por defecto) ═══
 .claude/worktrees/
+
+# Dataset ejemplos AI volumetria (fotos de clientes - NO subir)
+ai_volumetria_ejemplos/

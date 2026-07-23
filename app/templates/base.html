@@ -60,7 +60,7 @@
     <script>
         (function () {
             try {
-                const theme = localStorage.getItem('theme') || 'mundial';
+                const theme = localStorage.getItem('theme') || 'temporada';
                 const html = document.documentElement;
 
                 html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
@@ -119,6 +119,17 @@
     borrar esta línea y el archivo.
     {% endcomment %}
     <link rel="stylesheet" href="{% static 'css/tema_mundial.css' %}?v=20260618-drive">
+    {% comment %}
+    Tema Temporada — slot estacional (piel actual: Verano "California
+    Sunset", reactiva por hora vía data-fase en el body). Igual que el
+    Mundial: autocontenido y scopeado a body[data-theme="temporada"].
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/tema_temporada.css' %}?v=20260722-fase4l">
+    {% comment %}
+    Tema Sakura — cherry blossoms. Autocontenido y scopeado a
+    body[data-theme="sakura"] (misma arquitectura que Temporada).
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/tema_sakura.css' %}?v=20260723-fase2b">
     {# Modo Ligero: overrides bajo body.ww-lite — debe ir DESPUÉS de todo para ganar #}
     <link rel="stylesheet" href="{% static 'css/perf_lite.css' %}?v=20260615-perf-v5">
 
@@ -132,8 +143,56 @@
 
 <body class="min-h-screen flex flex-col"
     {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}
-    data-theme="{{ request.user.userprofile.theme|default:'mundial' }}"
+    data-theme="{{ request.user.userprofile.theme|default:'temporada' }}"
     data-user-role="{% if user_profile and user_profile.rol %}{{ user_profile.rol }}{% else %}vendedor{% endif %}">
+    <script>
+        /* Motor del tema Temporada: pone data-fase según la hora local.
+           Solo el CSS de body[data-theme="temporada"] lo consume — para
+           cualquier otro tema el atributo es inerte. Re-checa cada 5 min
+           para que el cielo transicione solo en sesiones largas.
+           Tema aprobado: la fase es 100% automática por reloj. */
+        (function () {
+            function faseDelDia() {
+                var h = new Date().getHours();
+                if (h >= 8 && h < 12) return 'despertar';
+                if (h >= 12 && h < 16) return 'pleno';
+                if (h >= 16 && h < 17) return 'atardecer';
+                return 'crepusculo';
+            }
+            function aplicar() {
+                var f = window.__tmpFaseManual || faseDelDia();
+                var prev = document.body.getAttribute('data-fase');
+                if (prev === f) return;
+                // tmp-anim SOLO existe durante un cambio real de fase con
+                // la página ya pintada (one-shot de 1.6s). Cargas, reloads
+                // y restauraciones de Turbo pintan la fase en seco.
+                if (prev) {
+                    document.body.classList.add('tmp-anim');
+                    clearTimeout(window.__tmpAnimT);
+                    window.__tmpAnimT = setTimeout(function () {
+                        document.body.classList.remove('tmp-anim');
+                    }, 1600);
+                }
+                document.body.setAttribute('data-fase', f);
+            }
+            window.__tmpAplicarFase = aplicar;
+            document.body.classList.remove('tmp-anim');
+            aplicar();
+            // Sincronizar localStorage Y el atributo del <html> con el tema
+            // real del perfil (el script del <head> lee localStorage antes de
+            // conocer al usuario; un valor viejo dejaba al <html> con OTRO
+            // tema que el <body> y el CSS de ambos se mezclaba).
+            try {
+                var temaReal = document.body.getAttribute('data-theme') || 'temporada';
+                localStorage.setItem('theme', temaReal);
+                var htmlEl = document.documentElement;
+                htmlEl.setAttribute('data-theme', temaReal);
+                htmlEl.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
+                htmlEl.classList.add((temaReal === 'pink' || temaReal === 'white' || temaReal === 'coffee' || temaReal === 'perla') ? 'light-theme' : 'dark-theme');
+            } catch (e) { }
+            setInterval(aplicar, 5 * 60 * 1000);
+        })();
+    </script>
     <!-- Contenido Principal -->
     <div class="flex-grow container mx-auto px-4 py-8 main-content">
         {% block content %}

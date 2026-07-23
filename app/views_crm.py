@@ -6515,3 +6515,753 @@ def api_dashboard_prospectos_convertidos_detalle(request):
     return JsonResponse({'rows': rows, 'count': len(rows)})
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# WIDGET "PENDIENTES" — oportunidades por urgencia (Pendientes / Hoy / Próximamente)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Etapas terminales (cerradas) de etapa_corta — mismas que usa el reporte de
+# oportunidades abiertas. Una oportunidad es "abierta" si su etapa NO está aquí.
+_PEND_ETAPAS_TERMINALES = {
+    'ganada', 'ganado', 'pagada', 'pagado',
+    'perdida', 'perdido', 'cerrada', 'cerrado',
+}
+
+
+def _pend_briefing_ia(nombre, items):
+    """Redacta con el asistente embebido (LLM) una frase motivadora + una acción
+    por oportunidad, ANCLADA a los datos dados (no inventa). Devuelve
+    {'frase': str, 'acciones': {str(opp_id): str}} o None si no se pudo.
+    """
+    if not items:
+        return None
+    try:
+        from .asistente_provider import chat
+        from .models import AsistenteConfig
+    except Exception:
+        return None
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if cfg and not cfg.activo:
+            return None
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        modelo = None
+
+    import json as _json
+    top = items[:20]
+    facts = [{
+        'id': it['opp_id'], 'cliente': it['cliente'], 'proyecto': it['proyecto'],
+        'valor': it['valor_fmt'], 'probabilidad': it['probabilidad'], 'riesgo': it['riesgo'],
+        'etapa': it.get('etapa') or '', 'estado': it.get('tier') or '',
+        'contacto': it.get('contacto') or '', 'hora': it.get('hora') or '',
+        'accion_base': it['accion'],
+    } for it in top]
+
+    sys = (
+        "Eres el asistente de ventas del CRM: cálido, cercano y también ESTRATÉGICO. Le hablas "
+        f"de tú a {nombre} (vendedor). Con base EXCLUSIVAMENTE en los datos que te doy, para "
+        "CADA oportunidad (clave = su id) escribe DOS textos en español:\n"
+        "- 'mensaje': 1-2 frases cálidas y persuasivas que la vendan y den contexto (menciona "
+        "de forma natural el valor y la probabilidad, y por qué vale la pena hoy).\n"
+        "- 'accion': el siguiente paso MÁS ÚTIL para avanzar o cerrar HOY, en 1-2 frases, "
+        "natural y directo. Considera la ETAPA ('etapa') y el ESTADO ('estado': overdue=está "
+        "atrasada, today=vence hoy, sinagendar=no tiene actividad). Si hay tarea agendada úsala "
+        "('accion_base', 'contacto', 'hora'). Si NO, propón el paso lógico según la etapa "
+        "(ej.: Levantamiento → agenda el levantamiento; Cotización/Enviada → da seguimiento a la "
+        "propuesta y resuelve dudas; Negociación/Seguimiento → empuja el cierre y la orden de "
+        "compra). Sé concreto y accionable, no genérico.\n"
+        "NO inventes nombres, montos, fechas ni datos que no aparezcan. Devuelve SOLO JSON "
+        "válido: {\"items\": {\"<id>\": {\"mensaje\": \"...\", \"accion\": \"...\"}}}"
+    )
+    usr = "Vendedor: " + nombre + "\nOportunidades (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
+
+    try:
+        res = chat(
+            [{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
+            model=modelo, temperature=0.6, max_tokens=2400,
+        )
+        txt = ((res or {}).get('text') or '').strip()
+        a, b = txt.find('{'), txt.rfind('}')
+        if a == -1 or b == -1:
+            return None
+        parsed = _json.loads(txt[a:b + 1])
+        if not isinstance(parsed, dict):
+            return None
+        out = parsed.get('items') or {}
+        return {'items': {str(k): v for k, v in out.items() if isinstance(v, dict)}}
+    except Exception as exc:
+        logger.warning(f"[Pendientes] Briefing IA no disponible: {exc}")
+        return None
+
+
+def _pend_briefing_cacheado(user, today, sel, nombre, items):
+    """Briefing IA cacheado 1 vez al día por (usuario, fecha, selección). Lo genera
+    y guarda si no existe. Devuelve el dict {frase, acciones} o None."""
+    from .models import AsistenteResumenDiario
+    key_sel = (sel or 'mias')
+    try:
+        row = AsistenteResumenDiario.objects.filter(usuario=user, fecha=today, seleccion=key_sel).first()
+        if row and row.data:
+            return row.data
+    except Exception:
+        pass
+    data = _pend_briefing_ia(nombre, items)
+    if data:
+        try:
+            AsistenteResumenDiario.objects.update_or_create(
+                usuario=user, fecha=today, seleccion=key_sel, defaults={'data': data})
+        except Exception:
+            pass
+    return data
+
+
+def _pend_trabajadas_hoy(oportunidad_ids, today, user=None):
+    """Conjunto de opp_ids que se 'trabajaron' HOY: una tarea/actividad de la
+    oportunidad marcada COMPLETADA hoy, una tarea/actividad CREADA/agendada hoy, o
+    marcada MANUALMENTE como trabajada hoy por el usuario.
+    """
+    from .models import (TareaOportunidad, TareaOportunidadHistorial,
+                         Actividad, OportunidadActividad, PendienteCompletada)
+    if not oportunidad_ids:
+        return set()
+    worked = set()
+    # (C) Marcada manualmente como trabajada hoy por este usuario
+    if user is not None:
+        worked |= set(PendienteCompletada.objects.filter(
+            usuario=user, fecha=today, oportunidad_id__in=oportunidad_ids
+        ).values_list('oportunidad_id', flat=True))
+    # (A) Tareas de oportunidad marcadas como completadas hoy (log de eventos)
+    worked |= set(TareaOportunidadHistorial.objects.filter(
+        tipo='cerrada', tarea__oportunidad_id__in=oportunidad_ids, fecha__date=today
+    ).values_list('tarea__oportunidad_id', flat=True))
+    # (A) Actividades de calendario completadas hoy (proxy: fecha_inicio hoy)
+    worked |= set(Actividad.objects.filter(
+        oportunidad_id__in=oportunidad_ids, completada=True, fecha_inicio__date=today
+    ).values_list('oportunidad_id', flat=True))
+    # (B) Tareas de oportunidad creadas/agendadas hoy
+    worked |= set(TareaOportunidad.objects.filter(
+        oportunidad_id__in=oportunidad_ids, fecha_creacion__date=today
+    ).values_list('oportunidad_id', flat=True))
+    # (B) Actividad real registrada hoy en el timeline (agendó/hizo algo)
+    worked |= set(OportunidadActividad.objects.filter(
+        oportunidad_id__in=oportunidad_ids,
+        tipo__in=['tarea', 'seguimiento', 'llamada', 'reunion', 'email', 'propuesta'],
+        fecha_creacion__date=today,
+    ).values_list('oportunidad_id', flat=True))
+    worked.discard(None)
+    return worked
+
+
+def _pend_resumen_stats(user, today):
+    """(total, completadas) del RESUMEN del día del usuario (sus oportunidades):
+    cuántas oportunidades entraban al resumen (vencidas / de hoy / sin agendar) y
+    cuántas se trabajaron hoy. Sirve para el bono de eficiencia por seguir el resumen.
+    """
+    from django.utils import timezone
+    from .models import TodoItem, TareaOportunidad, Tarea
+    now = timezone.now()
+    term_q = Q()
+    for v in _PEND_ETAPAS_TERMINALES:
+        term_q |= Q(etapa_corta__iexact=v)
+    ids = list(TodoItem.objects.filter(usuario=user).exclude(term_q).values_list('id', flat=True))
+    if not ids:
+        return (0, 0)
+    _ACT = ('pendiente', 'iniciada', 'en_progreso')
+
+    def mm(model, estados, comp):
+        f = {'oportunidad_id__in': ids, 'estado__in': estados, 'fecha_limite__isnull': False}
+        f['fecha_limite__lte' if comp == 'lte' else 'fecha_limite__gt'] = now
+        return dict(model.objects.filter(**f).values_list('oportunidad_id')
+                    .annotate(m=Min('fecha_limite')).values_list('oportunidad_id', 'm'))
+
+    venc_o = mm(TareaOportunidad, ['pendiente', 'en_progreso'], 'lte')
+    venc_t = mm(Tarea, _ACT, 'lte')
+    prox_o = mm(TareaOportunidad, ['pendiente', 'en_progreso'], 'gt')
+    prox_t = mm(Tarea, _ACT, 'gt')
+
+    def m2(a, b, o):
+        va, vb = a.get(o), b.get(o)
+        return (min(va, vb) if (va and vb) else (va or vb))
+
+    candidatos = []
+    for oid in ids:
+        venc = m2(venc_o, venc_t, oid)
+        prox = m2(prox_o, prox_t, oid)
+        if venc:                       # vencida
+            candidatos.append(oid)
+        elif prox is None:             # sin nada agendado
+            candidatos.append(oid)
+        else:
+            if timezone.localtime(prox).date() == today:   # para hoy
+                candidatos.append(oid)
+            # a futuro → no entra al resumen
+    if not candidatos:
+        return (0, 0)
+    worked = _pend_trabajadas_hoy(candidatos, today, user)
+    return (len(candidatos), len(worked & set(candidatos)))
+
+
+def _pend_recap_msg(nombre, completadas, total):
+    """Mensaje del asistente para el cierre del día (18:00) según el rendimiento."""
+    if total <= 0:
+        return f'{nombre}, hoy no tenías oportunidades urgentes. ¡A descansar! 🎉'
+    if completadas <= 0:
+        return f'{nombre}, hoy no marcaste avances. Mañana es una nueva oportunidad — arranca temprano. 💪'
+    if completadas >= total:
+        return f'¡Día redondo, {nombre}! Trabajaste tus {total} oportunidades del día. 🔥'
+    if (completadas / total) >= 0.6:
+        return f'Buen día, {nombre}: avanzaste {completadas} de {total}. Vas con buen ritmo. 👏'
+    return f'{nombre}, trabajaste {completadas} de {total} hoy. Un empujón mañana y las sacas. 💪'
+
+
+@login_required
+def api_pendientes(request):
+    """
+    GET /app/api/pendientes/?vendedor=<id|todos|mias>
+
+    Clasifica las oportunidades ABIERTAS del usuario (o del vendedor elegido,
+    según permisos) en 3 grupos por urgencia. Cada oportunidad cae en UN solo
+    grupo (la urgencia manda: vencida > hoy > próxima):
+      - pendientes:   tiene tarea/actividad VENCIDA, o NO tiene nada agendado.
+      - hoy:          su próxima tarea/actividad agendada cae hoy.
+      - proximamente: su próxima tarea/actividad es a futuro.
+
+    Misma lógica de "vencida/próxima" que la tabla CRM: TareaOportunidad + Tarea
+    (la "Actividad Programada"); NO se usan las actividades de calendario porque
+    muchas nunca se cierran y generan falsos positivos.
+
+    Visibilidad idéntica al resto del CRM (get_usuarios_visibles_ids): un vendedor
+    normal solo ve las suyas; supervisor/miembro de grupo puede elegir vendedor
+    (limitado a su grupo). El default siempre es "las mías".
+    """
+    from datetime import timedelta
+    from django.contrib.auth.models import User
+    from django.utils import timezone
+    from .models import TodoItem, TareaOportunidad, Tarea
+
+    user = request.user
+    now = timezone.now()
+    today = timezone.localdate()
+
+    visibles = get_usuarios_visibles_ids(user)  # None = supervisor global (ve todo)
+
+    # ── Resolver selector de vendedor (con permisos) ──
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+    if sel.isdigit():
+        pedido = int(sel)
+        # Solo si tiene permiso de ver a ese vendedor; si no, cae a las suyas.
+        user_ids = [pedido] if (visibles is None or pedido in visibles) else [user.id]
+    elif sel == 'todos':
+        user_ids = None if visibles is None else list(visibles)
+    else:  # '' o 'mias' → default: las mías
+        user_ids = [user.id]
+
+    # ── Oportunidades ABIERTAS (excluir etapas terminales, case-insensitive) ──
+    term_q = Q()
+    for v in _PEND_ETAPAS_TERMINALES:
+        term_q |= Q(etapa_corta__iexact=v)
+    qs = TodoItem.objects.select_related('cliente', 'usuario', 'contacto').exclude(term_q)
+    if user_ids is not None:
+        qs = qs.filter(usuario_id__in=user_ids)
+
+    _ids = list(qs.values_list('id', flat=True))
+    _ACTIVOS = ('pendiente', 'iniciada', 'en_progreso')
+
+    def _min_map(model, estados, comp):
+        f = {'oportunidad_id__in': _ids, 'estado__in': estados,
+             'fecha_limite__isnull': False}
+        f['fecha_limite__lte' if comp == 'lte' else 'fecha_limite__gt'] = now
+        return dict(
+            model.objects.filter(**f).values_list('oportunidad_id')
+            .annotate(m=Min('fecha_limite')).values_list('oportunidad_id', 'm')
+        )
+
+    venc_opp = _min_map(TareaOportunidad, ['pendiente', 'en_progreso'], 'lte')
+    venc_tar = _min_map(Tarea, _ACTIVOS, 'lte')
+    prox_opp = _min_map(TareaOportunidad, ['pendiente', 'en_progreso'], 'gt')
+    prox_tar = _min_map(Tarea, _ACTIVOS, 'gt')
+
+    def _min2(a, b, oid):
+        va, vb = a.get(oid), b.get(oid)
+        if va and vb:
+            return min(va, vb)
+        return va or vb
+
+    buckets = {'pendientes': [], 'hoy': [], 'proximamente': []}
+    resumen_pool = []  # (opp, tier) para la pestaña Resumen: pendientes + hoy
+
+    for opp in qs:
+        oid = opp.id
+        venc = _min2(venc_opp, venc_tar, oid)
+        prox = _min2(prox_opp, prox_tar, oid)
+        item = {
+            'id': oid,
+            'nombre': opp.oportunidad or '(sin nombre)',
+            'cliente': (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else ''),
+            'pipeline': opp.get_tipo_negociacion_display() if opp.tipo_negociacion else '',
+            'etapa': opp.etapa_corta or '',
+            'vendedor': (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario_id else '',
+        }
+        if venc:
+            dias = (today - timezone.localtime(venc).date()).days
+            item['motivo'] = ('Vencida hoy' if dias <= 0 else f'Vencida hace {dias} día' + ('s' if dias != 1 else ''))
+            item['fecha'] = venc.isoformat()
+            buckets['pendientes'].append(item)
+            resumen_pool.append((opp, 'overdue'))
+        elif prox is None:
+            item['motivo'] = 'Sin nada agendado'
+            item['fecha'] = None
+            buckets['pendientes'].append(item)
+            resumen_pool.append((opp, 'sinagendar'))
+        else:
+            pl = timezone.localtime(prox)
+            if pl.date() == today:
+                item['motivo'] = 'Agendada hoy ' + pl.strftime('%H:%M')
+                item['fecha'] = prox.isoformat()
+                buckets['hoy'].append(item)
+                resumen_pool.append((opp, 'today'))
+            else:
+                item['motivo'] = 'Agendada ' + pl.strftime('%d/%m/%Y')
+                item['fecha'] = prox.isoformat()
+                buckets['proximamente'].append(item)
+
+    # Orden: pendientes → más vencida primero (fecha asc, sin-fecha al final);
+    # hoy/próx → por fecha ascendente.
+    buckets['pendientes'].sort(key=lambda x: (x['fecha'] is None, x['fecha'] or ''))
+    buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
+    buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
+
+    # ── Resumen del día: briefing priorizado (pendientes + hoy) ──
+    # Prioridad = urgencia + valor + probabilidad. Acción = de la tarea real.
+    _res_ids = [o.id for (o, _t) in resumen_pool]
+    _near = {}
+    for _t in TareaOportunidad.objects.filter(
+            oportunidad_id__in=_res_ids, estado__in=['pendiente', 'en_progreso']
+    ).exclude(fecha_limite=None).order_by('fecha_limite'):
+        _near.setdefault(_t.oportunidad_id, _t)
+    for _t in Tarea.objects.filter(
+            oportunidad_id__in=_res_ids, estado__in=_ACTIVOS
+    ).exclude(fecha_limite=None).order_by('fecha_limite'):
+        _cur = _near.get(_t.oportunidad_id)
+        if _cur is None or (_t.fecha_limite and _cur.fecha_limite and _t.fecha_limite < _cur.fecha_limite):
+            _near[_t.oportunidad_id] = _t
+
+    _TIER_PTS = {'overdue': 100, 'today': 70, 'sinagendar': 50}
+    _scored = []
+    for opp, tier in resumen_pool:
+        monto = float(opp.monto or 0)
+        prob = int(opp.probabilidad_cierre or 0)
+        score = _TIER_PTS.get(tier, 40) + min(monto / 5000.0, 120) + prob * 0.5
+        _scored.append((score, opp, tier))
+    _scored.sort(key=lambda x: x[0], reverse=True)
+
+    resumen_items = []
+    for idx, (score, opp, tier) in enumerate(_scored):
+        prob = int(opp.probabilidad_cierre or 0)
+        overdue = (tier == 'overdue')
+        if prob < 40 or (overdue and prob < 60):
+            riesgo = 'Alto'
+        elif prob < 70 or overdue:
+            riesgo = 'Medio'
+        else:
+            riesgo = 'Bajo'
+        contacto = str(opp.contacto).strip() if opp.contacto_id and opp.contacto else ''
+        cliente_nom = (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else '') or (opp.oportunidad or 'Esta oportunidad')
+        tsk = _near.get(opp.id)
+        hora = ''
+        if tsk and tsk.fecha_limite:
+            hora = timezone.localtime(tsk.fecha_limite).strftime('%H:%M')
+            titulo = (getattr(tsk, 'titulo', '') or '').strip() or 'Dar seguimiento'
+            accion = titulo
+            if contacto:
+                accion += f' con {contacto}'
+            accion += f' antes de las {hora}.'
+        elif tier == 'sinagendar':
+            accion = (f'Contacta a {contacto} y agenda el siguiente paso.'
+                      if contacto else 'Aún no tiene actividad agendada — agenda el siguiente paso.')
+        else:
+            accion = 'Dale seguimiento hoy.'
+        monto = float(opp.monto or 0)
+        val_fmt = '${:,.0f}'.format(monto)
+        # Mensaje-narrativa de respaldo (la IA lo reescribe si está disponible).
+        if prob >= 80:
+            mensaje = f"{cliente_nom} está muy cerca de firmar ({prob}%). Un empujón hoy y cierras {val_fmt}."
+        elif prob >= 50:
+            mensaje = f"{cliente_nom} avanza bien ({prob}%). Vale la pena moverla hoy: {val_fmt} en la mesa."
+        else:
+            mensaje = f"{cliente_nom} necesita atención hoy — {val_fmt} en juego."
+        resumen_items.append({
+            'prioridad': idx + 1,
+            'opp_id': opp.id,
+            'cliente': (opp.cliente.nombre_empresa if opp.cliente_id and opp.cliente else '—'),
+            'proyecto': opp.oportunidad or '(sin nombre)',
+            'valor': monto,
+            'valor_fmt': val_fmt,
+            'probabilidad': prob,
+            'riesgo': riesgo,
+            'etapa': opp.etapa_corta or '',
+            'tier': tier,
+            'contacto': contacto,
+            'hora': hora,
+            'mensaje': mensaje,
+            'accion': accion,
+        })
+
+    _hora = timezone.localtime(now).hour
+    saludo = 'Buenos días' if _hora < 12 else ('Buenas tardes' if _hora < 19 else 'Buenas noches')
+    nombre_corto = user.first_name or (user.get_full_name() or user.username).split(' ')[0]
+    resumen = {
+        'saludo': saludo,
+        'nombre': nombre_corto,
+        'total': len(resumen_items),
+        'items': resumen_items,
+    }
+    # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
+    # Los datos duros ya están calculados; la IA solo redacta mensaje + acción.
+    try:
+        _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
+    except Exception:
+        _ia = None
+    if _ia:
+        _items = _ia.get('items') or {}
+        for _it in resumen_items:
+            _e = _items.get(str(_it['opp_id']))
+            if isinstance(_e, dict):
+                if _e.get('mensaje'):
+                    _it['mensaje'] = _e['mensaje']
+                if _e.get('accion'):
+                    _it['accion'] = _e['accion']
+
+    # ── Marcar las trabajadas HOY → van al final como completadas ──
+    worked = _pend_trabajadas_hoy(_res_ids, today, user)
+    pend = [it for it in resumen_items if it['opp_id'] not in worked]
+    done = [it for it in resumen_items if it['opp_id'] in worked]
+    for i, it in enumerate(pend):
+        it['prioridad'] = i + 1
+        it['completada'] = False
+    for it in done:
+        it['completada'] = True
+    resumen_items = pend + done
+    resumen['items'] = resumen_items
+    resumen['pendientes'] = len(pend)         # lo que falta por trabajar (baja el contador)
+    resumen['completadas'] = len(done)
+    resumen['total'] = len(resumen_items)
+
+    # ── Modo cierre del día (recap) a partir de las 18:00 ──
+    if _hora >= 18:
+        resumen['modo'] = 'recap'
+        resumen['recap_msg'] = _pend_recap_msg(nombre_corto, len(done), len(resumen_items))
+    else:
+        resumen['modo'] = 'dia'
+
+    # ── Lista de vendedores para el selector (según rol) ──
+    # Solo se incluyen vendedores que TIENEN al menos una oportunidad abierta
+    # (no tiene sentido poder filtrar por alguien sin oportunidades).
+    puede_seleccionar = (visibles is None) or bool(visibles and len(visibles) > 1)
+    vendedores = []
+    if puede_seleccionar:
+        if visibles is None:
+            vqs = User.objects.filter(is_active=True).exclude(groups__name='Supervisores')
+        else:
+            vqs = User.objects.filter(is_active=True, id__in=visibles)
+        con_opp = set(
+            TodoItem.objects.exclude(term_q)
+            .filter(usuario_id__in=vqs.values_list('id', flat=True))
+            .values_list('usuario_id', flat=True)
+        )
+        vendedores = [
+            {'id': u.id, 'nombre': u.get_full_name() or u.username}
+            for u in vqs.order_by('first_name', 'last_name') if u.id in con_opp
+        ]
+
+    return JsonResponse({
+        'success': True,
+        'resumen': resumen,
+        'buckets': buckets,
+        'counts': {k: len(v) for k, v in buckets.items()},
+        'puede_seleccionar': puede_seleccionar,
+        'vendedores': vendedores,
+        'seleccion': sel or 'mias',
+        'yo': {'id': user.id, 'nombre': user.get_full_name() or user.username},
+    })
+
+
+@login_required
+def api_pendientes_estado(request):
+    """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
+    Sirve para refrescar el widget en el momento (sin recargar todo ni la IA)
+    cuando el usuario completa una oportunidad desde el detalle."""
+    from django.utils import timezone
+    ids = [int(x) for x in request.GET.get('ids', '').split(',') if x.strip().isdigit()]
+    worked = _pend_trabajadas_hoy(ids, timezone.localdate(), request.user) if ids else set()
+    return JsonResponse({'success': True, 'worked_ids': sorted(worked)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_pendientes_completar(request):
+    """Marca/desmarca manualmente una oportunidad como trabajada HOY (por usuario)."""
+    import json as _json
+    from django.utils import timezone
+    from .models import TodoItem, PendienteCompletada
+    try:
+        data = _json.loads(request.body or b'{}')
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    opp_id = data.get('opp_id')
+    done = bool(data.get('done', True))
+    if not opp_id or not TodoItem.objects.filter(id=opp_id).exists():
+        return JsonResponse({'success': False, 'error': 'Oportunidad no encontrada'}, status=404)
+    today = timezone.localdate()
+    if done:
+        PendienteCompletada.objects.get_or_create(usuario=request.user, oportunidad_id=opp_id, fecha=today)
+    else:
+        PendienteCompletada.objects.filter(usuario=request.user, oportunidad_id=opp_id, fecha=today).delete()
+    return JsonResponse({'success': True, 'opp_id': opp_id, 'done': done})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REPLAY MENSUAL (tipo Wrapped) — recap del mes anterior, 1 vez al mes
+# ═══════════════════════════════════════════════════════════════════════════
+
+_MESES_ES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+             'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+
+def _replay_money(v):
+    try:
+        return '${:,.0f}'.format(float(v or 0))
+    except (ValueError, TypeError):
+        return '$0'
+
+
+def _replay_stats(user, mes, anio):
+    """Todas las métricas del mes (usuario, mes, anio) para el Replay."""
+    from django.db.models import Count, Sum, Q, Value, DecimalField
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal
+    from .models import (TodoItem, Cotizacion, EficienciaMensual, AsistenciaJornada,
+                         TareaOportunidadHistorial, Tarea, Actividad)
+
+    def _sum(qs, field):
+        return qs.aggregate(s=Coalesce(Sum(field), Value(Decimal('0'), output_field=DecimalField())))['s']
+
+    em = EficienciaMensual.objects.filter(usuario=user, mes=mes, anio=anio).first()
+    ef = float(em.promedio_eficiencia) if em else 0.0
+    empleado_mes = bool(em.empleado_del_mes) if em else False
+    pmes, panio = (12, anio - 1) if mes == 1 else (mes - 1, anio)
+    em_prev = EficienciaMensual.objects.filter(usuario=user, mes=pmes, anio=panio).first()
+    ef_prev = float(em_prev.promedio_eficiencia) if em_prev else None
+
+    ventas = TodoItem.objects.filter(
+        usuario=user, fecha_actualizacion__month=mes, fecha_actualizacion__year=anio
+    ).filter(Q(etapa_corta__in=['Ganado', 'Pagado']) | Q(estado_crm='pagada'))
+    ventas_count = ventas.count()
+    monto_vendido = _sum(ventas, 'monto')
+
+    trabajadas = TodoItem.objects.filter(
+        usuario=user, fecha_actualizacion__month=mes, fecha_actualizacion__year=anio
+    ).count()
+
+    cot = Cotizacion.objects.filter(created_by=user, fecha_creacion__month=mes, fecha_creacion__year=anio)
+    cot_count = cot.count()
+    cot_monto = _sum(cot, 'total')
+
+    tareas_opp = TareaOportunidadHistorial.objects.filter(
+        autor=user, tipo='cerrada', fecha__month=mes, fecha__year=anio
+    ).values('tarea_id').distinct().count()
+    tareas_proy = Tarea.objects.filter(
+        asignado_a=user, estado='completada', fecha_completada__month=mes, fecha_completada__year=anio
+    ).count()
+    actividades = Actividad.objects.filter(
+        creado_por=user, completada=True, fecha_inicio__month=mes, fecha_inicio__year=anio
+    ).count()
+
+    jornadas = AsistenciaJornada.objects.filter(
+        usuario=user, fecha__month=mes, fecha__year=anio, hora_fin__isnull=False
+    )
+    dias_trabajados = jornadas.count()
+    mejor = jornadas.order_by('-eficiencia_dia').first()
+    mejor_dia = None
+    if mejor and mejor.eficiencia_dia:
+        mejor_dia = {'dia': mejor.fecha.day, 'eficiencia': float(mejor.eficiencia_dia)}
+    top = (ventas.values('cliente__nombre_empresa')
+           .annotate(t=Sum('monto'), c=Count('id')).order_by('-t').first())
+    top_cliente = None
+    if top and top.get('cliente__nombre_empresa'):
+        top_cliente = {'nombre': top['cliente__nombre_empresa'], 'total_fmt': _replay_money(top['t']), 'count': top['c']}
+
+    # Tendencias vs mes anterior (ventas y eficiencia)
+    mes_prev_nombre = _MESES_ES[pmes]
+    ventas_prev = TodoItem.objects.filter(
+        usuario=user, fecha_actualizacion__month=pmes, fecha_actualizacion__year=panio
+    ).filter(Q(etapa_corta__in=['Ganado', 'Pagado']) | Q(estado_crm='pagada'))
+    monto_prev = _sum(ventas_prev, 'monto')
+
+    def _trend(cur, prev):
+        try:
+            cur, prev = float(cur or 0), float(prev or 0)
+        except (ValueError, TypeError):
+            return ''
+        if prev <= 0:
+            return ''
+        pct = round((cur - prev) / prev * 100)
+        if pct == 0:
+            return ''
+        return ('▲ +' if pct > 0 else '▼ ') + str(pct) + '% vs ' + mes_prev_nombre.lower()
+
+    return {
+        'mes': mes, 'anio': anio, 'mes_nombre': _MESES_ES[mes], 'mes_prev_nombre': mes_prev_nombre,
+        'eficiencia': round(ef, 1), 'eficiencia_prev': (round(ef_prev, 1) if ef_prev is not None else None),
+        'eficiencia_trend': _trend(ef, ef_prev), 'ventas_trend': _trend(monto_vendido, monto_prev),
+        'empleado_mes': empleado_mes,
+        'ventas': ventas_count, 'monto_vendido_fmt': _replay_money(monto_vendido),
+        'trabajadas': trabajadas,
+        'cotizaciones': cot_count, 'cotizaciones_monto_fmt': _replay_money(cot_monto),
+        'tareas': tareas_opp + tareas_proy, 'actividades': actividades,
+        'dias_trabajados': dias_trabajados, 'mejor_dia': mejor_dia, 'top_cliente': top_cliente,
+    }
+
+
+def _replay_ia_msgs(nombre, stats):
+    """Mensajes personalizados por tarjeta (asistente). Devuelve dict {clave: texto}."""
+    try:
+        from .asistente_provider import chat
+        from .models import AsistenteConfig
+    except Exception:
+        return {}
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if cfg and not cfg.activo:
+            return {}
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        modelo = None
+    import json as _json
+    sys = (
+        "Eres el asistente del CRM. Redactas los TITULARES de un 'Replay mensual' estilo "
+        f"Spotify Wrapped para {nombre}, sobre su mes de {stats.get('mes_nombre')}. Con base "
+        "EXCLUSIVAMENTE en los datos, escribe TÍTULOS cortos y con gancho (estilo editorial de "
+        "revista, 3-8 palabras, sin comillas), en español, tuteando. Devuelve SOLO JSON con "
+        "estas claves (cada valor un string):\n"
+        "'intro' (titular del mes, ej. 'Un junio lleno de oportunidades'), 'eficiencia', "
+        "'ventas', 'cotizaciones', 'actividades', 'curioso' (usa mejor_dia/top_cliente/"
+        "dias_trabajados), 'cierre' (motivador para el mes que empieza). NO inventes números "
+        "ni nombres que no estén en los datos."
+    )
+    usr = "Datos del mes (JSON):\n" + _json.dumps(stats, ensure_ascii=False)
+    try:
+        res = chat([{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
+                   model=modelo, temperature=0.7, max_tokens=1000)
+        txt = ((res or {}).get('text') or '').strip()
+        a, b = txt.find('{'), txt.rfind('}')
+        if a == -1 or b == -1:
+            return {}
+        parsed = _json.loads(txt[a:b + 1])
+        return {k: v for k, v in parsed.items() if isinstance(v, str)}
+    except Exception as exc:
+        logger.warning(f"[Replay] IA no disponible: {exc}")
+        return {}
+
+
+def _replay_build_cards(s, m):
+    def hd(key, fb):
+        return (m.get(key) or fb).strip()
+    mesL = s['mes_nombre'].lower()
+    cards = []
+    # 1) Portada / resumen general
+    cards.append({
+        'theme': 0, 'kicker': 'Resumen del mes',
+        'headline': hd('intro', 'Un ' + mesL + ' lleno de oportunidades.'),
+        'badge': ('🏆 Empleado del mes' if s['empleado_mes'] else ''),
+        'hero_label': 'Vendido este mes', 'hero_stat': s['monto_vendido_fmt'], 'hero_trend': s.get('ventas_trend', ''),
+        'boxes': [
+            {'v': str(s['ventas']), 'l': 'Oportunidades ganadas'},
+            {'v': str(s['eficiencia']) + '%', 'l': 'Eficiencia'},
+            {'v': str(s['tareas']), 'l': 'Tareas completadas'},
+        ],
+    })
+    # 2) Eficiencia
+    cards.append({
+        'theme': 1, 'kicker': 'Tu eficiencia',
+        'headline': hd('eficiencia', 'Tu constancia, en un número.'),
+        'hero_label': 'Eficiencia del mes', 'hero_stat': str(s['eficiencia']) + '%', 'hero_trend': s.get('eficiencia_trend', ''),
+        'boxes': ([{'v': 'Día ' + str(s['mejor_dia']['dia']), 'l': 'Tu mejor día · ' + str(s['mejor_dia']['eficiencia']) + '%'}] if s['mejor_dia'] else []),
+    })
+    # 3) Ventas
+    v_boxes = [{'v': s['monto_vendido_fmt'], 'l': 'Monto vendido'}]
+    if s['top_cliente']:
+        v_boxes.append({'v': s['top_cliente']['nombre'], 'l': 'Cliente estrella · ' + s['top_cliente']['total_fmt']})
+    cards.append({
+        'theme': 2, 'kicker': 'Ventas', 'headline': hd('ventas', 'Cada cierre cuenta.'),
+        'hero_label': 'Oportunidades cerradas', 'hero_stat': str(s['ventas']), 'hero_trend': '',
+        'boxes': v_boxes,
+    })
+    # 4) Cotizaciones
+    cards.append({
+        'theme': 3, 'kicker': 'Cotizaciones', 'headline': hd('cotizaciones', 'Sembrando oportunidades.'),
+        'hero_label': 'Cotizaciones hechas', 'hero_stat': str(s['cotizaciones']), 'hero_trend': '',
+        'boxes': [{'v': s['cotizaciones_monto_fmt'], 'l': 'Monto cotizado'}],
+    })
+    # 5) Productividad
+    cards.append({
+        'theme': 4, 'kicker': 'Productividad', 'headline': hd('actividades', 'Constancia que se nota.'),
+        'hero_label': 'Tareas y actividades', 'hero_stat': str(s['tareas'] + s['actividades']), 'hero_trend': '',
+        'boxes': [
+            {'v': str(s['tareas']), 'l': 'Tareas'},
+            {'v': str(s['actividades']), 'l': 'Actividades'},
+            {'v': str(s['dias_trabajados']), 'l': 'Días activos'},
+        ],
+    })
+    # 6) Dato curioso
+    if s['top_cliente']:
+        cur_l, cur_v = 'Tu cliente estrella', s['top_cliente']['nombre']
+    elif s['mejor_dia']:
+        cur_l, cur_v = 'Tu mejor día', 'Día ' + str(s['mejor_dia']['dia'])
+    else:
+        cur_l, cur_v = 'Días activos', str(s['dias_trabajados'])
+    cards.append({
+        'theme': 5, 'kicker': 'Dato del mes', 'headline': hd('curioso', '¡Un logro para presumir!'),
+        'hero_label': cur_l, 'hero_stat': cur_v, 'hero_trend': '', 'boxes': [],
+    })
+    # 7) Cierre
+    cards.append({
+        'theme': 6, 'kicker': '¡A por más!',
+        'headline': hd('cierre', s['mes_nombre'] + ' quedó atrás. Este mes vas por más.'),
+        'hero_label': '', 'hero_stat': '', 'hero_trend': '', 'boxes': [],
+    })
+    return cards
+
+
+@login_required
+def api_pendientes_replay(request):
+    """Replay mensual (Wrapped) del MES ANTERIOR. Cacheado 1 vez por mes."""
+    from django.utils import timezone
+    from .models import ReplayMensual
+    _VER = 3   # subir si cambia la estructura de las tarjetas → regenera el caché
+    today = timezone.localdate()
+    # Por defecto el mes anterior; o el mes pedido (?mes=&anio=) si es ANTERIOR al actual.
+    mes, anio = (12, today.year - 1) if today.month == 1 else (today.month - 1, today.year)
+    try:
+        qmes, qanio = int(request.GET.get('mes', 0)), int(request.GET.get('anio', 0))
+        if 1 <= qmes <= 12 and qanio >= 2000 and (qanio, qmes) < (today.year, today.month):
+            mes, anio = qmes, qanio
+    except (ValueError, TypeError):
+        pass
+    row = ReplayMensual.objects.filter(usuario=request.user, mes=mes, anio=anio).first()
+    if row and row.data and row.data.get('_ver') == _VER:
+        return JsonResponse({'success': True, **row.data})
+    stats = _replay_stats(request.user, mes, anio)
+    nombre = request.user.first_name or (request.user.get_full_name() or request.user.username).split(' ')[0]
+    msgs = _replay_ia_msgs(nombre, stats)
+    data = {
+        '_ver': _VER, 'mes_nombre': stats['mes_nombre'], 'anio': anio, 'nombre': nombre,
+        'cards': _replay_build_cards(stats, msgs),
+    }
+    try:
+        ReplayMensual.objects.update_or_create(usuario=request.user, mes=mes, anio=anio, defaults={'data': data})
+    except Exception:
+        pass
+    return JsonResponse({'success': True, **data})
+
+

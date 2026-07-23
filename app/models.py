@@ -32,6 +32,9 @@ class UserProfile(models.Model):
     ]
     
     THEME_CHOICES = [
+        # 'temporada' es el slot estacional (piel actual: Verano). 'mundial'
+        # queda oculto del selector pero se conserva por si vuelve a usarse.
+        ('temporada', 'Temporada'),
         ('mundial', 'Mundial'),
         ('perla', 'Perla'),
         ('sakura', 'Sakura'),
@@ -45,7 +48,7 @@ class UserProfile(models.Model):
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
     avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
-    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='mundial', verbose_name="Tema de color")
+    theme = models.CharField(max_length=20, choices=THEME_CHOICES, default='temporada', verbose_name="Tema de color")
     meta_mensual = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('1500000'), verbose_name="Meta Facturado")
     meta_oportunidades = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Oportunidades")
     meta_cotizado = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'), verbose_name="Meta Cotizado")
@@ -765,6 +768,13 @@ class CatalogoCableado(models.Model):
         ('JACK', 'Jack'),
         ('PATCHCORD', 'Patchcord'),
         ('FACEPLATE', 'Faceplate'),
+        ('FIBRA', 'Fibra Óptica'),
+        ('CHAROLA', 'Charola/Escalerilla'),
+        ('TUBERIA', 'Tubería/Conduit'),
+        ('SOPORTERIA', 'Soportería/Fijación'),
+        ('EQUIPO', 'Equipo Activo'),
+        ('ACCESORIO', 'Accesorio'),
+        ('OTRO', 'Otro'),
     ]
     
     numero_parte = models.CharField(
@@ -6577,3 +6587,66 @@ class PerfEvent(models.Model):
 
     def __str__(self):
         return f'{self.modo}/{self.motivo} @ {self.ts:%Y-%m-%d %H:%M}'
+
+
+class AsistenteResumenDiario(models.Model):
+    """Caché del briefing diario del widget Pendientes (pestaña Resumen).
+
+    Se genera 1 vez al día por (usuario, fecha, seleccion) para no volver a
+    llamar al LLM en cada carga del widget. `data` guarda el texto redactado:
+    {"saludo": str, "acciones": {"<opp_id>": str}}.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='resumenes_diarios')
+    fecha = models.DateField()
+    seleccion = models.CharField(max_length=20, default='mias')
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'fecha', 'seleccion')]
+        indexes = [models.Index(fields=['usuario', 'fecha', 'seleccion'])]
+        verbose_name = 'Resumen diario del asistente'
+        verbose_name_plural = 'Resúmenes diarios del asistente'
+
+    def __str__(self):
+        return f'Resumen {self.usuario_id} {self.fecha} ({self.seleccion})'
+
+
+class PendienteCompletada(models.Model):
+    """Marca manual de "ya trabajé esta oportunidad hoy" desde el widget Pendientes.
+
+    Complementa la detección automática (tarea/actividad completada o agendada hoy):
+    cuando NO hay una tarea que cerrar, el usuario puede marcarla a mano. Es por
+    usuario y por día.
+    """
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pendientes_completadas')
+    oportunidad = models.ForeignKey(TodoItem, on_delete=models.CASCADE, related_name='+')
+    fecha = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'oportunidad', 'fecha')]
+        indexes = [models.Index(fields=['usuario', 'fecha'])]
+        verbose_name = 'Pendiente marcada trabajada'
+        verbose_name_plural = 'Pendientes marcadas trabajadas'
+
+    def __str__(self):
+        return f'{self.usuario_id} · opp {self.oportunidad_id} · {self.fecha}'
+
+
+class ReplayMensual(models.Model):
+    """Caché del 'Replay' mensual (Wrapped) del vendedor. Se genera 1 vez por
+    (usuario, mes, anio): el mes ya cerró, los datos son finales."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='replays_mensuales')
+    mes = models.PositiveSmallIntegerField()
+    anio = models.PositiveIntegerField()
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('usuario', 'mes', 'anio')]
+        verbose_name = 'Replay mensual'
+        verbose_name_plural = 'Replays mensuales'
+
+    def __str__(self):
+        return f'Replay {self.usuario_id} {self.mes}/{self.anio}'

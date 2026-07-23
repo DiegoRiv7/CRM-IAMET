@@ -2694,6 +2694,9 @@
         h += '<p class="lw-p3-panel-sub">Crea distintos escenarios de la volumetría. Sólo las marcadas como <b>completadas</b> son visibles para vendedores.</p>';
         h += '</div>';
         if (puedeEditar) {
+            // NOTA: el botón "Generar con AI" (lwP3GenerarAI) está pausado a
+            // pedido del usuario — el backend sigue vivo. Para reactivarlo,
+            // restaurar aquí el botón con onclick="lwP3GenerarAI()".
             h += '<button type="button" class="lw-p3-btn-primary" onclick="lwP3CrearVolumetria()">';
             h += '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
             h += 'Iniciar volumetría</button>';
@@ -3039,6 +3042,72 @@
             return d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear();
         } catch (e) { return iso; }
     }
+
+    // ── Generar volumetría con AI (borrador desde Fases 1-2 + fotos) ──
+    var _lwAIPollTimer = null;
+
+    function _lwAIBtnEstado(texto, disabled) {
+        var btn = $('lwP3BtnGenerarAI');
+        if (!btn) return;
+        btn.disabled = !!disabled;
+        btn.style.opacity = disabled ? '0.7' : '';
+        btn.innerHTML = texto;
+    }
+
+    window.lwP3GenerarAI = function () {
+        if (!state.lev || !state.lev.id) return;
+        if (_lwAIPollTimer) return; // ya hay una generación en curso
+        _lwAIBtnEstado('Generando… (1-2 min)', true);
+        if (typeof lwToast === 'function') lwToast('La AI está leyendo el levantamiento y las fotos…', 'info');
+        apiFetch('/app/api/iamet/levantamientos/' + state.lev.id + '/volumetrias/generar-ai/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+        }).then(function (r) {
+            if (!r || !r.success) {
+                var msg = (r && r.error) || 'No se pudo iniciar la generación';
+                if (typeof lwToast === 'function') lwToast(msg, 'error'); else alert(msg);
+                _lwAIBtnEstado('Generar con AI', false);
+                return;
+            }
+            var volId = r.volumetria_id;
+            var intentos = 0;
+            _lwAIPollTimer = setInterval(function () {
+                intentos++;
+                if (intentos > 75) { // ~5 min: algo se atoró
+                    clearInterval(_lwAIPollTimer); _lwAIPollTimer = null;
+                    _lwAIBtnEstado('Generar con AI', false);
+                    if (typeof lwToast === 'function') lwToast('La generación tardó demasiado. Revisa el borrador en la lista o reintenta.', 'error');
+                    _lwP3FetchVolumetrias();
+                    return;
+                }
+                apiFetch('/app/api/iamet/volumetrias/' + volId + '/generar-ai/estado/')
+                    .then(function (er) {
+                        var estado = (er && er.estado) || {};
+                        if (estado.status === 'listo') {
+                            clearInterval(_lwAIPollTimer); _lwAIPollTimer = null;
+                            _lwAIBtnEstado('Generar con AI', false);
+                            var s = estado.stats || {};
+                            var msg = 'Borrador AI listo: ' + (s.items || 0) + ' partidas';
+                            if (s.a_verificar) msg += ' (' + s.a_verificar + ' con precio a verificar)';
+                            if (typeof lwToast === 'function') lwToast(msg, 'ok');
+                            _lwP3FetchVolumetrias();
+                            lwP3OpenVolumetria(volId);
+                        } else if (estado.status === 'error') {
+                            clearInterval(_lwAIPollTimer); _lwAIPollTimer = null;
+                            _lwAIBtnEstado('Generar con AI', false);
+                            var emsg = 'Error generando: ' + (estado.error || 'desconocido');
+                            if (typeof lwToast === 'function') lwToast(emsg, 'error'); else alert(emsg);
+                            _lwP3FetchVolumetrias();
+                        }
+                        // 'generando' → seguir esperando
+                    });
+            }, 4000);
+        }).catch(function () {
+            _lwAIBtnEstado('Generar con AI', false);
+            if (typeof lwToast === 'function') lwToast('Error de red al iniciar la generación', 'error');
+        });
+    };
 
     window.lwP3CrearVolumetria = function () {
         if (!state.lev || !state.lev.id) return;

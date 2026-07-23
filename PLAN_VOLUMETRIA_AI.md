@@ -57,9 +57,46 @@ El usuario final **solo revisa**: ajusta 2-3 partidas, algunas cantidades, mano 
 
 ## Estado actual
 
-- **EN PAUSA** — priorizado trabajo real de Calendario (visibilidad de tareas/
-  instalaciones + fixes de la vista Mes). Retomar la Fase 1 al terminar eso.
-- **Fase en curso:** Fase 1 (Cimientos) — no iniciada.
+- **EN PAUSA (2026-07-22, decisión del usuario).** El motor completo quedó
+  construido, deployado en pruebas y FUNCIONANDO (una generación real exitosa:
+  "Borrador AI 1" del levantamiento AP AST2 — 13 partidas, formato correcto).
+  Solo se retiró el botón de la UI (`crm_levantamiento.js`, buscar
+  `lwP3GenerarAI` — el handler y el backend siguen vivos; reactivar = restaurar
+  el botón). Modelo: VOLUMETRIA_AI_MODEL=openrouter/anthropic/claude-sonnet-4.6
+  en `.env.pruebas` (solo volumetrías; el resto del sistema sigue en 4o-mini).
+- Pendientes al retomar: 1) comparar borrador AI vs volumetría real del AP
+  (el usuario la tiene en Excel) y la de Carl Zeiss → % de acierto; 2) revisar
+  `ai_volumetria_ejemplos/catalogo_candidato.csv` e importar catálogo a
+  PRODUCCIÓN; 3) afinar prompt/ejemplos con los errores; 4) restaurar botón.
+- En pruebas quedaron: catálogo semilla importado (114 SKUs), 3 levantamientos
+  de prueba "[AI TEST] …" (levs 56-58, proyecto 27) con fotos, y la key de
+  OpenRouter de prod copiada a `.env.pruebas`.
+
+### Avance previo (2026-07-21) — Fases 1-3 completas, Fase 4 construida
+- Hecho:
+  - Dataset de 5 pares reales entrada→salida extraído de producción a
+    `ai_volumetria_ejemplos/` (gitignored — fotos de clientes). Mejor ejemplo:
+    lev 36 "Reubicación IDF2" (22 fotos comentadas, 39 partidas).
+  - Verificado: Fase 2 del wizard SÍ captura comentario por foto
+    (`LevantamientoEvidencia.comentario`); notas del sitio en texto libre
+    (suficiente para el LLM, no se requieren campos estructurados).
+  - Shape real confirmado de `ProyectoVolumetria.data` (v4):
+    `{meta, version: 4, secciones: [{id, tipo: equipamiento|mano_obra|costo_mo,
+    titulo, expanded, items[]}]}`. Equipamiento lleva filas `row_type: header`
+    para agrupar zonas. (El shape `secciones[].items[]` que decía este doc era
+    correcto; el legado `materiales/manoObra/gastos` solo vive en vols 1-3.)
+  - **Catálogo en producción está VACÍO (0 filas ambas tablas).** Semilla
+    generada desde volumetrías reales + 2 Excels: 114 SKUs (101 con precio) en
+    `ai_volumetria_ejemplos/catalogo_candidato.csv` → revisar y correr
+    `manage.py importar_catalogo_csv <csv> --aplicar`.
+  - Código nuevo: `app/volumetria_ai.py` (tools buscar_catalogo/escribir
+    borrador + contexto multimodal con fotos + loop de generación),
+    `app/volumetria_ai_fewshot.json` (2 ejemplos reales destilados),
+    comandos `generar_volumetria_ai` (con --dry-run) e `importar_catalogo_csv`,
+    migración 0199 (tipos de producto ampliados en CatalogoCableado).
+- **Siguiente:** deploy a pruebas → revisar CSV del catálogo e importarlo →
+  `manage.py generar_volumetria_ai --vol <id> --dry-run` contra un ejemplo real
+  → medir % de acierto → Fase 4 (botón + vista de revisión en el wizard).
 
 ---
 
