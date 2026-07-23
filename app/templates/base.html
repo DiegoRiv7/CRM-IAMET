@@ -190,7 +190,45 @@
                 htmlEl.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
                 htmlEl.classList.add((temaReal === 'pink' || temaReal === 'white' || temaReal === 'coffee' || temaReal === 'perla') ? 'light-theme' : 'dark-theme');
             } catch (e) { }
-            setInterval(aplicar, 5 * 60 * 1000);
+            // ── Cambio de escena AUTOMÁTICO sin recargar ──
+            // Los navegadores congelan los timers en pestañas en segundo
+            // plano (y al dormir el equipo), así que además del intervalo:
+            //  1. setTimeout con CITA EXACTA en la próxima hora límite
+            //  2. corrección inmediata al volver a la pestaña (visibility/focus)
+            // La transición suave (1.4s) la da el gate tmp-anim de aplicar().
+            if (window.__tmpFaseInt) clearInterval(window.__tmpFaseInt);
+            window.__tmpFaseInt = setInterval(aplicar, 30000);
+            if (window.__tmpFaseTO) clearTimeout(window.__tmpFaseTO);
+            function programarLimite() {
+                var ahora = new Date();
+                var h = ahora.getHours();
+                var limites = [8, 12, 16, 17];
+                var prox = null;
+                for (var i = 0; i < limites.length; i++) {
+                    if (limites[i] > h) { prox = limites[i]; break; }
+                }
+                var objetivo = new Date(ahora);
+                if (prox === null) {
+                    objetivo.setDate(objetivo.getDate() + 1);
+                    objetivo.setHours(8, 0, 2, 0);
+                } else {
+                    objetivo.setHours(prox, 0, 2, 0);
+                }
+                window.__tmpFaseTO = setTimeout(function () {
+                    aplicar();
+                    programarLimite();
+                }, Math.max(1000, objetivo - ahora));
+            }
+            programarLimite();
+            if (!window.__tmpFaseVisListo) {
+                window.__tmpFaseVisListo = true;
+                document.addEventListener('visibilitychange', function () {
+                    if (!document.hidden && window.__tmpAplicarFase) window.__tmpAplicarFase();
+                });
+                window.addEventListener('focus', function () {
+                    if (window.__tmpAplicarFase) window.__tmpAplicarFase();
+                });
+            }
         })();
     </script>
     <!-- Contenido Principal -->
