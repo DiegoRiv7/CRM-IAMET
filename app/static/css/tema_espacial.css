@@ -337,10 +337,11 @@ body[data-theme="espacial"] .glass-card:hover {
 
 /* ═══════════════════════════════════════════════════════════════════════
    FASE 2 — WIDGETS. Espacial es OSCURO total (dark mode Apple): paneles
-   grafito, textos claros, y la FRANJA DE ESTRELLAS en los headers
-   especiales — campo de estrellas con deriva lentísima (viajando por el
-   espacio) + velo de nebulosa violeta. Port del mapa de selectores del
-   Mundial (el otro tema oscuro) con paleta grafito + azul-violeta.
+   grafito, textos claros, y la FRANJA ESPACIAL en los headers especiales
+   — degradado minimalista grafito→violeta profundo, sin figuras ni
+   animación (las estrellas se vetaron: poco profesional). Port del mapa
+   de selectores del Mundial (el otro tema oscuro) con paleta
+   grafito + azul-violeta.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ═══ INVERSIONES GLOBALES DE TEXTO INLINE ═══
@@ -411,10 +412,9 @@ body[data-theme="espacial"] .muro-card {
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75) !important;
 }
 
-/* ═══ FRANJA DE ESTRELLAS — el diseño especial de los headers ═══
-   Campo de estrellas (tile 200px) con 2 estrellas azul-hielo y 1 violeta,
-   velo de nebulosa violeta arriba-derecha y azul abajo-izquierda, sobre
-   grafito espacial. Deriva lentísima (120s) — viajar por el espacio. */
+/* ═══ FRANJA ESPACIAL — el diseño especial de los headers ═══
+   Minimalista, sin figuras ni animación: grafito que se funde en un
+   violeta profundo hacia la derecha, filo violeta abajo. */
 body[data-theme="espacial"] .wo-header,
 body[data-theme="espacial"] .wn-ctw-header,
 body[data-theme="espacial"] .muro-card-header,
@@ -431,41 +431,12 @@ body[data-theme="espacial"] .cal-card > div:first-child,
 body[data-theme="espacial"] #widgetOppVerActividad .widget-card > div:first-child {
     background-color: #0C0C12 !important;
     background-image:
-        url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22200%22%20height=%22200%22%20viewBox=%220%200%20200%20200%22%3E%3Cg%20fill=%22%23ffffff%22%3E%3Ccircle%20cx=%2212%22%20cy=%2218%22%20r=%221.1%22%20opacity=%220.7%22/%3E%3Ccircle%20cx=%2248%22%20cy=%2252%22%20r=%220.8%22%20opacity=%220.45%22/%3E%3Ccircle%20cx=%2286%22%20cy=%2214%22%20r=%221.3%22%20opacity=%220.85%22/%3E%3Ccircle%20cx=%22132%22%20cy=%2244%22%20r=%220.7%22%20opacity=%220.4%22/%3E%3Ccircle%20cx=%22170%22%20cy=%2224%22%20r=%221%22%20opacity=%220.6%22/%3E%3Ccircle%20cx=%2224%22%20cy=%2288%22%20r=%220.9%22%20opacity=%220.5%22/%3E%3Ccircle%20cx=%2264%22%20cy=%22118%22%20r=%221.2%22%20opacity=%220.75%22/%3E%3Ccircle%20cx=%22104%22%20cy=%2282%22%20r=%220.7%22%20opacity=%220.4%22/%3E%3Ccircle%20cx=%22148%22%20cy=%22108%22%20r=%221%22%20opacity=%220.65%22/%3E%3Ccircle%20cx=%22186%22%20cy=%2276%22%20r=%220.8%22%20opacity=%220.45%22/%3E%3Ccircle%20cx=%2216%22%20cy=%22152%22%20r=%221%22%20opacity=%220.6%22/%3E%3Ccircle%20cx=%2258%22%20cy=%22182%22%20r=%220.7%22%20opacity=%220.4%22/%3E%3Ccircle%20cx=%2298%22%20cy=%22146%22%20r=%221.2%22%20opacity=%220.8%22/%3E%3Ccircle%20cx=%22142%22%20cy=%22176%22%20r=%220.8%22%20opacity=%220.5%22/%3E%3Ccircle%20cx=%22178%22%20cy=%22142%22%20r=%221.1%22%20opacity=%220.7%22/%3E%3C/g%3E%3Cg%20fill=%22%23B9C8FF%22%3E%3Ccircle%20cx=%2236%22%20cy=%2234%22%20r=%221.4%22%20opacity=%220.9%22/%3E%3Ccircle%20cx=%22118%22%20cy=%22120%22%20r=%221.5%22%20opacity=%220.85%22/%3E%3C/g%3E%3Cg%20fill=%22%23C9A8FF%22%3E%3Ccircle%20cx=%22160%22%20cy=%2258%22%20r=%221.3%22%20opacity=%220.8%22/%3E%3C/g%3E%3C/svg%3E"),
-        radial-gradient(circle at 100% 0%, rgba(94, 92, 230, 0.30) 0%, transparent 58%),
-        radial-gradient(circle at 0% 100%, rgba(10, 132, 255, 0.14) 0%, transparent 55%),
-        linear-gradient(160deg, #16161E 0%, #0B0B11 55%, #08080C 100%) !important;
-    background-repeat: repeat, no-repeat, no-repeat, no-repeat !important;
-    background-size: 200px 200px, auto, auto, auto !important;
-    border-bottom: 2px solid rgba(94, 92, 230, 0.75) !important;
-    animation: espEstrellasDeriva 120s linear infinite;
+        linear-gradient(100deg, #131318 0%, #17162A 55%, #262048 100%) !important;
+    background-repeat: no-repeat !important;
+    border-bottom: 2px solid rgba(94, 92, 230, 0.65) !important;
 }
-@keyframes espEstrellasDeriva {
-    from { background-position: 0px 0px, 0 0, 0 0, 0 0; }
-    to   { background-position: -200px 60px, 0 0, 0 0, 0 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-body[data-theme="espacial"] .wo-header,
-body[data-theme="espacial"] .wn-ctw-header,
-body[data-theme="espacial"] .muro-card-header,
-body[data-theme="espacial"] .tcp-col-head,
-body[data-theme="espacial"] .ptk-cols-head,
-body[data-theme="espacial"] .pob-head,
-body[data-theme="espacial"] .crm-tw-header,
-body[data-theme="espacial"] .crm-ctw-header,
-body[data-theme="espacial"] .cal-page-bar,
-body[data-theme="espacial"] .proy-dialog-header,
-body[data-theme="espacial"] .proy-tab-header,
-body[data-theme="espacial"] .wact-header,
-body[data-theme="espacial"] .cal-card > div:first-child,
-body[data-theme="espacial"] #widgetOppVerActividad .widget-card > div:first-child { animation: none !important; }
-}
-body.ww-lite[data-theme="espacial"] .wo-header,
-body.ww-lite[data-theme="espacial"] .crm-tw-header,
-body.ww-lite[data-theme="espacial"] .cal-page-bar,
-body.ww-lite[data-theme="espacial"] .ptk-cols-head { animation: none !important; }
 
-/* ═══ Textos y controles sobre la franja de estrellas ═══ */
+/* ═══ Textos y controles sobre la franja espacial ═══ */
 body[data-theme="espacial"] .wo-title,
 body[data-theme="espacial"] .wn-ctw-breadcrumb,
 body[data-theme="espacial"] .wn-ctw-crumb-muted,
