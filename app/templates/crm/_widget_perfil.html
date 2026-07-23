@@ -127,7 +127,7 @@
             <div
                 style="background:#fff; width:100%; border-radius:22px; padding:30px 28px; border: 1px solid rgba(0,0,0,0.07); box-shadow: 0 6px 22px rgba(0,0,0,0.06);">
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; margin-top:-8px;">
                     <div id="attendanceStatus"
                         style="font-size:0.65rem; font-weight:800; color:#86868b; text-transform:uppercase; letter-spacing:0.12em;">
                         Jornada no iniciada</div>
@@ -673,7 +673,7 @@
                         var items = (d.agenda || []).slice().sort(function (a, b) {
                             if (a.pasada !== b.pasada) return a.pasada ? -1 : 1;
                             return a.hora < b.hora ? -1 : 1;
-                        });
+                        }).slice(0, 3); // solo las 3 más importantes; al completarse entran las siguientes
                         if (!items.length) {
                             ag.innerHTML = '<div style="padding:16px 0; text-align:center; font-size:0.82rem; color:#86868b; font-weight:600;">Sin actividades programadas para hoy</div>';
                         } else {
@@ -683,7 +683,10 @@
                                 var tag = it.pasada
                                     ? '<span style="font-size:0.62rem; font-weight:800; color:#FF3B30; background:rgba(255,59,48,0.08); border:1px solid rgba(255,59,48,0.18); border-radius:999px; padding:2px 8px; margin-left:auto; flex-shrink:0;">VENCIDA</span>'
                                     : '';
-                                return '<div style="display:flex; align-items:center; gap:12px; padding:9px 2px; border-bottom:1px solid rgba(0,0,0,0.05);">'
+                                var destino = it.tipo === 'tarea' ? '/app/home/?tab=tareas' : '/app/home/?tab=calendario';
+                                return '<div onclick="window.location.href=\'' + destino + '\'" '
+                                    + 'style="display:flex; align-items:center; gap:12px; padding:9px 2px; border-bottom:1px solid rgba(0,0,0,0.05); cursor:pointer;" '
+                                    + 'onmouseover="this.style.background=\'rgba(0,122,255,0.05)\'" onmouseout="this.style.background=\'\'">'
                                     + '<span style="font-size:0.78rem; font-weight:800; color:' + horaColor + '; font-variant-numeric:tabular-nums; min-width:44px;">' + it.hora + '</span>'
                                     + '<span style="width:7px; height:7px; border-radius:50%; background:' + dotColor + '; flex-shrink:0;"></span>'
                                     + '<span style="font-size:0.85rem; font-weight:600; color:#1d1d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">'
