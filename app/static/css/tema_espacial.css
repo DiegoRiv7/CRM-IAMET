@@ -1243,3 +1243,83 @@ body[data-theme="espacial"] .cal-sr-item:hover { background: rgba(255, 255, 255,
 body[data-theme="espacial"] .cal-sr-title { color: #F2F2F7 !important; }
 body[data-theme="espacial"] .cal-sr-sub,
 body[data-theme="espacial"] .cal-sr-empty { color: rgba(235, 235, 245, 0.55) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2c — MI CUENTA (widget perfil) + CORREO. Los selectores de
+   atributo son case-sensitive: las variantes en minúscula/mayúscula de
+   los colores inline cuentan como strings distintos.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Inversiones globales extra (variantes de casing + colores faltantes) */
+body[data-theme="espacial"] [style*="color:#1d1d1f"],
+body[data-theme="espacial"] [style*="color:#1A1A2E"] { color: #F2F2F7 !important; }
+body[data-theme="espacial"] [style*="color:#3c3c43"],
+body[data-theme="espacial"] [style*="color:#3C3C43"] { color: rgba(235, 235, 245, 0.70) !important; }
+body[data-theme="espacial"] [style*="background:#FAFAFC"],
+body[data-theme="espacial"] [style*="background:#FAFBFC"],
+body[data-theme="espacial"] [style*="background:#F2F2F7"] {
+    background-color: #232327 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ═══ Mi Cuenta: ventana grafito ═══ */
+body[data-theme="espacial"] #widgetPerfil > div {
+    background: #141418 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+/* Columna de identidad (izquierda) y barra superior */
+body[data-theme="espacial"] #widgetPerfil [style*="background:#FAFAFC"] {
+    background-color: #17171B !important;
+    border-right-color: rgba(255, 255, 255, 0.06) !important;
+}
+body[data-theme="espacial"] #widgetPerfil [style*="background:#fff"] {
+    background-color: #1C1C1E !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Modales internos (éxito / confirmar jornada): velo oscuro */
+body[data-theme="espacial"] #profileSuccessModal,
+body[data-theme="espacial"] #confirmStopModal {
+    background: rgba(14, 14, 18, 0.97) !important;
+}
+/* Tab activa (pill negro sobre barra negra → elevado legible) */
+body[data-theme="espacial"] #widgetPerfil [style*="background:#1d1d1f"] {
+    background-color: #3A3A3E !important;
+}
+
+/* ═══ Correo: carpetas, lista y acciones ═══ */
+body[data-theme="espacial"] .mail-folder-wb { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] .mail-folder-wb:hover { background: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .mail-folder-wb.active {
+    background: rgba(46, 99, 232, 0.24) !important;
+    color: #8AC2FF !important;
+}
+body[data-theme="espacial"] .mail-card-wb { border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .mail-card-wb:hover { background: rgba(255, 255, 255, 0.05) !important; }
+body[data-theme="espacial"] .mail-card-wb.selected { background: rgba(61, 123, 255, 0.16) !important; }
+body[data-theme="espacial"] .mw-from { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .mw-subject { color: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .mail-action-btn,
+body[data-theme="espacial"] .mail-island-btn { color: rgba(235, 235, 245, 0.65) !important; }
+body[data-theme="espacial"] .mail-action-btn:hover,
+body[data-theme="espacial"] .mail-island-btn:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .mail-action-btn.mail-action-danger:hover,
+body[data-theme="espacial"] .mail-island-btn.mail-island-danger:hover {
+    background: rgba(255, 123, 114, 0.20) !important;
+    color: #FF7B72 !important;
+}
+body[data-theme="espacial"] .mail-action-btn.active,
+body[data-theme="espacial"] .mail-island-btn.active { color: #FFD682 !important; }
+body[data-theme="espacial"] .mail-toolbar-btn { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] .mail-toolbar-btn:hover { background: rgba(255, 255, 255, 0.10) !important; }
+body[data-theme="espacial"] .mail-attach-chip {
+    background: #2C2C2E !important;
+    color: #EBEBF5 !important;
+}
+body[data-theme="espacial"] .mail-recip-dropdown {
+    background: #1C1C1E !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="espacial"] .mail-recip-dropdown-item:hover { background: rgba(255, 255, 255, 0.07) !important; }
