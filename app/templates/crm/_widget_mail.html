@@ -7,11 +7,17 @@
            flex de viewport completo con el card llenando el área. */
         #widgetMail.is-page-mode {
             height: 100vh !important;
+            min-height: 100vh !important;
             max-height: 100vh !important;
             padding: 20px !important;
             box-sizing: border-box !important;
             display: flex !important;
             overflow: hidden !important;
+            /* CLAVE: el overlay base centra (align-items:center) → el card
+               tomaba la altura de su CONTENIDO (crecía/encogía según correos).
+               stretch lo obliga a llenar el alto del viewport siempre. */
+            align-items: stretch !important;
+            justify-content: stretch !important;
         }
         #widgetMail.is-page-mode > .mail-card-shell {
             flex: 1 1 auto !important;
@@ -19,6 +25,7 @@
             max-width: none !important;
             height: auto !important;
             max-height: none !important;
+            min-height: 0 !important;
         }
         /* Sin × de cerrar: es una sección, no un modal */
         #widgetMail.is-page-mode .mail-close-btn { display: none !important; }
