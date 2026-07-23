@@ -15,7 +15,7 @@
 
 /* ═══ Variables del tema + color de respaldo ═══ */
 body[data-theme="sakura"] {
-    --bg-crm: #FDF4F7;
+    --bg-crm: #FEFBFC;
     --text-crm: #4A2A3C;
     --card-bg: rgba(255, 255, 255, 0.96);
     --border-crm: rgba(217, 87, 139, 0.22);
@@ -24,7 +24,7 @@ body[data-theme="sakura"] {
     --accent-crm: #D9578B;
     --island-bg: rgba(255, 255, 255, 0.72);
     --island-border: rgba(217, 87, 139, 0.25);
-    background-color: #FDF4F7;
+    background-color: #FEFBFC;
 
     /* Acentos sakura (mismo esquema de vars que temporada por consistencia) */
     --skr-acc: #D9578B;
@@ -32,8 +32,8 @@ body[data-theme="sakura"] {
     --skr-acc-light: #F08FB5;
     --skr-acc-deep: #A83562;
     --skr-acc-rgb: 217, 87, 139;
-    --skr-acc-grad: linear-gradient(135deg, #FFE9F1 0%, #F49FC0 45%, #DE649A 100%);
-    --skr-acc-grad-hover: linear-gradient(135deg, #FFF2F7 0%, #F8B3CD 45%, #E876A8 100%);
+    --skr-acc-grad: linear-gradient(135deg, #F287AE 0%, #E0629B 100%);
+    --skr-acc-grad-hover: linear-gradient(135deg, #F69BBC 0%, #E876A8 100%);
     /* REGLA DEL TEMA: Sakura no lleva negros ni oscuros. El realce se
        logra con degradados a BLANCO (como los azules del verano). El
        ciruela existe SOLO como color de texto legible, nunca de fondo. */
@@ -51,9 +51,8 @@ body[data-theme="sakura"]::before {
     z-index: -2;
     pointer-events: none;
     background-image:
-        radial-gradient(circle 620px at 86% 8%, rgba(240, 143, 181, 0.18) 0%, rgba(240, 143, 181, 0) 62%),
-        radial-gradient(circle 560px at 8% 92%, rgba(226, 105, 155, 0.12) 0%, rgba(226, 105, 155, 0) 60%),
-        linear-gradient(170deg, #FFFDFE 0%, #FEF5F8 40%, #FBEAF1 75%, #F7DDE8 100%);
+        radial-gradient(circle 620px at 86% 8%, rgba(240, 143, 181, 0.10) 0%, rgba(240, 143, 181, 0) 62%),
+        linear-gradient(170deg, #FFFFFF 0%, #FEFAFB 45%, #FBF1F5 100%);
     background-size: cover;
 }
 
@@ -67,7 +66,7 @@ body[data-theme="sakura"] .crm-content { background: transparent !important; }
 
 /* ═══ Sidebar: porcelana — blanco fundiéndose en pétalo ═══ */
 body[data-theme="sakura"] .crm-sidebar {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(253, 240, 246, 0.84) 55%, rgba(248, 220, 233, 0.80) 100%) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 252, 253, 0.92) 55%, rgba(253, 244, 248, 0.90) 100%) !important;
     backdrop-filter: blur(22px) saturate(150%);
     -webkit-backdrop-filter: blur(22px) saturate(150%);
     border-right: 1px solid rgba(217, 87, 139, 0.14) !important;
@@ -239,7 +238,7 @@ body[data-theme="sakura"] .crm-kanban-col.collapsed:hover {
 /* Encabezado de columna: blanco fundiendose en petalo (realce por
    degradado a blanco, nunca oscuro) con textos rosa profundo */
 body[data-theme="sakura"] .crm-kanban-head {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 205, 222, 0.90) 100%) !important;
+    background: rgba(255, 255, 255, 0.94) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border-bottom-color: rgba(217, 87, 139, 0.28) !important;
@@ -292,20 +291,3 @@ body[data-theme="sakura"] .glass-card:hover {
 }
 
 
-/* ═══ Realce por blanco: anillo interior en los elementos activos ═══ */
-body[data-theme="sakura"] .crm-sb-logo,
-body[data-theme="sakura"] .crm-sb-btn.active,
-body[data-theme="sakura"] .crm-page-sidebar .crm-tab.active,
-body[data-theme="sakura"] .crm-facet-new {
-    box-shadow: 0 4px 14px rgba(217, 87, 139, 0.30), inset 0 0 0 1.5px rgba(255, 255, 255, 0.65) !important;
-}
-/* Texto de los activos: rosa profundo (el blanco no lee sobre el
-   degradado claro) */
-body[data-theme="sakura"] .crm-sb-btn.active,
-body[data-theme="sakura"] .crm-page-sidebar .crm-tab.active,
-body[data-theme="sakura"] .crm-facet-new {
-    color: #A83562 !important;
-}
-body[data-theme="sakura"] .crm-sb-btn.active::before {
-    background: #A83562 !important;
-}
