@@ -1139,3 +1139,90 @@ body[data-theme="espacial"] .ck-chart-card {
 body[data-theme="espacial"] .ck-chart-card:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 16px 44px rgba(0, 0, 0, 0.45) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2b — TAREAS (filas atrasadas) + CALENDARIO REAL (.cmd-*/.cwd-*).
+   El grid del Mes NO es FullCalendar (#fullCalendarRoot está oculto,
+   display:none — solo motor de fechas): es el grid propio #calMonthDesign
+   con clases .cmd-*, y Semana usa .cwd-*, definidos en el <style> inline
+   de _widget_calendario.html. Ahí van los overrides de verdad.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Tareas: la banda rosa translúcida de atrasadas (tema claro) se veía
+   gris sucio sobre la lista oscura → tinte rojo oscuro */
+body[data-theme="espacial"] .tcp-row.atrasada { background: rgba(255, 123, 114, 0.09) !important; }
+body[data-theme="espacial"] .tcp-row.atrasada:hover { background: rgba(255, 123, 114, 0.15) !important; }
+body[data-theme="espacial"] .tcp-row.atrasada.active { background: rgba(255, 123, 114, 0.20) !important; }
+/* Cajitas de stats del panel "Tu día": eran blancas con número blanco */
+body[data-theme="espacial"] .tcp-summary-stat {
+    background: #26262A !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .tcp-summary-stat.vencidas.has-items .tcp-summary-stat-num { color: #FF7B72 !important; }
+body[data-theme="espacial"] .tcp-summary-stat.hoy.has-items .tcp-summary-stat-num { color: #FFB86C !important; }
+body[data-theme="espacial"] .tcp-summary-stat.done.has-items .tcp-summary-stat-num { color: #5BE8A0 !important; }
+/* Pills de estado: pasteles claros → tintes translúcidos brillantes */
+body[data-theme="espacial"] .tcp-row-estado.pendiente   { background: rgba(255, 184, 108, 0.18) !important; color: #FFC98A !important; }
+body[data-theme="espacial"] .tcp-row-estado.iniciada,
+body[data-theme="espacial"] .tcp-row-estado.en_progreso { background: rgba(61, 123, 255, 0.20) !important; color: #8AC2FF !important; }
+body[data-theme="espacial"] .tcp-row-estado.completada  { background: rgba(91, 232, 160, 0.16) !important; color: #7DEBB0 !important; }
+body[data-theme="espacial"] .tcp-row-estado.cancelada   { background: rgba(255, 123, 114, 0.18) !important; color: #FF9B94 !important; }
+body[data-theme="espacial"] .tcp-row-estado.cotizando   { background: rgba(255, 214, 130, 0.16) !important; color: #FFD682 !important; }
+body[data-theme="espacial"] .tcp-row-estado.facturado   { background: rgba(124, 58, 237, 0.24) !important; color: #C9A8FF !important; }
+body[data-theme="espacial"] .tcp-row-estado.enviada     { background: rgba(10, 132, 255, 0.20) !important; color: #7CC4FF !important; }
+
+/* ═══ MES (.cmd-*) — celdas grafito, hairlines tenues, hoy en azul ═══ */
+body[data-theme="espacial"] .cmd-cell {
+    background: #17171B !important;
+    border-right-color: rgba(255, 255, 255, 0.07) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+body[data-theme="espacial"] .cmd-cell:hover { background: rgba(61, 123, 255, 0.07) !important; }
+body[data-theme="espacial"] .cmd-cell.out { background: #101014 !important; }
+body[data-theme="espacial"] .cmd-cell.cmd-cell-drop {
+    background: rgba(124, 58, 237, 0.18) !important;
+    box-shadow: inset 0 0 0 2px #7C7AFF !important;
+}
+body[data-theme="espacial"] .cmd-head { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .cmd-head-cell { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .cmd-num { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .cmd-cell.out .cmd-num { color: rgba(235, 235, 245, 0.30) !important; }
+body[data-theme="espacial"] .cmd-num.on {
+    background: #2E63E8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(46, 99, 232, 0.50) !important;
+}
+body[data-theme="espacial"] .cmd-ev.tarea:hover { background: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .cmd-more { color: rgba(235, 235, 245, 0.55) !important; }
+body[data-theme="espacial"] .cmd-more:hover { color: #79B8FF !important; }
+
+/* ═══ SEMANA (.cwd-*) ═══ */
+body[data-theme="espacial"] .cwd-colhead { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .cwd-dh-name { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .cwd-dh-num { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .cwd-dh-num.on {
+    background: #2E63E8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(46, 99, 232, 0.50) !important;
+}
+body[data-theme="espacial"] .cwd-grid-line { background: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] .cwd-col { border-left-color: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] .cwd-gut-label { color: rgba(235, 235, 245, 0.40) !important; }
+
+/* ═══ Búsqueda del header del calendario ═══ */
+body[data-theme="espacial"] .cal-search-pill {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #EBEBF5 !important;
+}
+body[data-theme="espacial"] .cal-search-input { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-search-input::placeholder { color: rgba(235, 235, 245, 0.45) !important; }
+body[data-theme="espacial"] .cal-search-results {
+    background: #1C1C1E !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.60) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+body[data-theme="espacial"] .cal-sr-item:hover { background: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] .cal-sr-title { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-sr-sub,
+body[data-theme="espacial"] .cal-sr-empty { color: rgba(235, 235, 245, 0.55) !important; }
