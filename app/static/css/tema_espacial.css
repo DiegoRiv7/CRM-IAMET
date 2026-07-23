@@ -275,8 +275,15 @@ body[data-theme="espacial"] .crm-kanban-card.crm-postit:hover {
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.70), 0 0 0 1px rgba(94, 92, 230, 0.45) !important;
     transform: translateY(-3px) !important;
 }
-/* Título (azul inline → azul claro legible) */
-body[data-theme="espacial"] .crm-postit h3 { color: #79B8FF !important; }
+/* Título: el color real vive en el span .opp-name-link (crm.css #0052D4),
+   no en el h3 — hay que pisar el span directamente */
+body[data-theme="espacial"] .crm-postit h3,
+body[data-theme="espacial"] .crm-postit h3 .opp-name-link { color: #79B8FF !important; }
+body[data-theme="espacial"] .crm-postit h3 .opp-name-link:hover { color: #A8CFFF !important; }
+/* Vencidas: heat-5/max pintan el span #7F1D1D (granate ilegible en oscuro) → coral */
+body[data-theme="espacial"] .crm-postit.card-vencida h3 .opp-name-link { color: #FF7B72 !important; }
+/* Cliente bajo el título: hover inyecta color:#2563EB inline vía JS */
+body[data-theme="espacial"] .crm-postit [style*="color:#2563EB"] { color: #8AC2FF !important; }
 /* Textos oscuros inline → claros */
 body[data-theme="espacial"] .crm-postit [style*="color:#0F172A"] { color: #F2F2F7 !important; }
 body[data-theme="espacial"] .crm-postit [style*="color:#6B7280"] { color: rgba(235, 235, 245, 0.80) !important; }
