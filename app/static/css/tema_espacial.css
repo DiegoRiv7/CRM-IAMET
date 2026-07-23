@@ -1,0 +1,288 @@
+/* ════════════════════════════════════════════════════════════════════════
+   TEMA ESPACIAL — el vacío del espacio, modo oscuro clásico Apple.
+   ────────────────────────────────────────────────────────────────────────
+   ARCHIVO ÚNICO Y AUTOCONTENIDO (misma arquitectura que los demás temas).
+   Reglas:
+     · Cada selector empieza con body[data-theme="espacial"] — SOLO aplica
+       con este tema activo; los demás no se enteran.
+     · FASE 1: fondo principal + sidebar + acentos globales del CRM.
+       (FASE 2 pendiente: widgets.)
+   Paleta: negro espacial profundo con una nebulosa APENAS insinuada
+   (violeta/azul al 5-8%% — el vacío necesita profundidad, no decoración),
+   superficies elevadas grafito (#1C1C1E, lenguaje Apple dark), texto
+   blanco y acento azul sistema (#0A84FF).
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ Variables del tema + color de respaldo ═══ */
+body[data-theme="espacial"] {
+    --bg-crm: #050507;
+    --text-crm: #F2F2F7;
+    --card-bg: rgba(28, 28, 30, 0.92);
+    --border-crm: rgba(255, 255, 255, 0.10);
+    --table-header-bg: rgba(255, 255, 255, 0.06);
+    --table-row-hover: rgba(255, 255, 255, 0.05);
+    --accent-crm: #0A84FF;
+    --island-bg: rgba(28, 28, 30, 0.78);
+    --island-border: rgba(255, 255, 255, 0.12);
+    background-color: #050507;
+
+    /* Acentos (mismo esquema de vars que los demás temas) */
+    --esp-acc: #0A84FF;
+    --esp-acc-dark: #0060DF;
+    --esp-acc-light: #409CFF;
+    --esp-acc-deep: #0A84FF;
+    --esp-acc-rgb: 10, 132, 255;
+    --esp-acc-grad: linear-gradient(135deg, #409CFF 0%, #0A84FF 100%);
+    --esp-acc-grad-hover: linear-gradient(135deg, #5FADFF 0%, #2490FF 100%);
+    /* Superficie elevada (grafito Apple) */
+    --esp-panel: #1C1C1E;
+    --esp-panel-suave: rgba(28, 28, 30, 0.85);
+}
+
+/* ═══ Fondo: el vacío — negro profundo con nebulosa apenas insinuada ═══ */
+body[data-theme="espacial"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle 720px at 82% 12%, rgba(88, 86, 214, 0.09) 0%, rgba(88, 86, 214, 0) 60%),
+        radial-gradient(circle 640px at 10% 88%, rgba(10, 132, 255, 0.06) 0%, rgba(10, 132, 255, 0) 58%),
+        linear-gradient(180deg, #0A0A10 0%, #07070B 45%, #050507 100%);
+    background-size: cover;
+}
+
+/* ═══ Layout: transparente para dejar ver el vacío ═══ */
+body[data-theme="espacial"] .crm-page,
+body[data-theme="espacial"] .crm-page-sidebar {
+    background: transparent !important;
+}
+body[data-theme="espacial"] .crm-main,
+body[data-theme="espacial"] .crm-content { background: transparent !important; }
+
+/* ═══ Sidebar: grafito elevado sobre el vacío ═══ */
+body[data-theme="espacial"] .crm-sidebar {
+    background: linear-gradient(180deg, rgba(24, 24, 28, 0.96) 0%, rgba(18, 18, 22, 0.97) 60%, rgba(12, 12, 15, 0.98) 100%) !important;
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .crm-sb-logo {
+    background: var(--esp-acc-grad) !important;
+    box-shadow: 0 4px 16px rgba(10, 132, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="espacial"] .crm-sb-btn,
+body[data-theme="espacial"] .crm-sb-avatar { color: rgba(235, 235, 245, 0.62); }
+body[data-theme="espacial"] .crm-sb-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #FFFFFF;
+}
+body[data-theme="espacial"] .crm-sb-btn.active {
+    background: var(--esp-acc-grad) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35) !important;
+}
+body[data-theme="espacial"] .crm-sb-btn.active::before {
+    background: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-sb-divider { background: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .crm-sb-label { color: rgba(235, 235, 245, 0.45); }
+body[data-theme="espacial"] .crm-sb-dot { background: var(--esp-acc) !important; }
+
+/* ═══ Topbar / Dynamic Island: grafito flotante ═══ */
+body[data-theme="espacial"] .crm-unified-header { background: transparent !important; }
+body[data-theme="espacial"] .crm-island {
+    background: rgba(28, 28, 30, 0.78) !important;
+    backdrop-filter: blur(30px) saturate(160%);
+    -webkit-backdrop-filter: blur(30px) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .crm-island:hover,
+body[data-theme="espacial"] .crm-island.is-expanded {
+    background: rgba(38, 38, 42, 0.88) !important;
+}
+body[data-theme="espacial"] .island-sep { background: rgba(255, 255, 255, 0.14) !important; }
+body[data-theme="espacial"] .island-select,
+body[data-theme="espacial"] .island-nav-btn {
+    color: #F2F2F7 !important;
+}
+
+/* ═══ Workspace title ═══ */
+body[data-theme="espacial"] .crm-workspace-title-text {
+    color: #FFFFFF !important;
+    text-shadow: none;
+}
+body[data-theme="espacial"] .crm-workspace-count {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #F2F2F7 !important;
+}
+
+/* ═══ Barra superior: tabs + facets + periodo + CTA ═══ */
+body[data-theme="espacial"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+
+body[data-theme="espacial"] .crm-page-sidebar .crm-tabs {
+    background: rgba(28, 28, 30, 0.80) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+body[data-theme="espacial"] .crm-page-sidebar .crm-tab {
+    color: rgba(235, 235, 245, 0.60) !important;
+}
+body[data-theme="espacial"] .crm-page-sidebar .crm-tab:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-page-sidebar .crm-tab.active {
+    background: var(--esp-acc-grad) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 10px rgba(10, 132, 255, 0.35) !important;
+}
+
+/* Botones facet */
+body[data-theme="espacial"] .crm-facet-btn {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: rgba(235, 235, 245, 0.80) !important;
+}
+body[data-theme="espacial"] .crm-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.30) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-facet-sort,
+body[data-theme="espacial"] .crm-facet-export {
+    background: rgba(28, 28, 30, 0.75) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: rgba(235, 235, 245, 0.80) !important;
+}
+body[data-theme="espacial"] .crm-facet-export:hover {
+    background: rgba(10, 132, 255, 0.20) !important;
+    border-color: rgba(10, 132, 255, 0.55) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-facet-btn.active {
+    background: rgba(10, 132, 255, 0.22) !important;
+    border-color: rgba(10, 132, 255, 0.60) !important;
+    color: #79B8FF !important;
+}
+
+/* +Nuevo — CTA azul sistema */
+body[data-theme="espacial"] .crm-facet-new {
+    background: var(--esp-acc-grad) !important;
+    border-color: var(--esp-acc-dark) !important;
+    box-shadow: 0 2px 10px rgba(10, 132, 255, 0.35) !important;
+}
+body[data-theme="espacial"] .crm-facet-new:hover {
+    background: var(--esp-acc-grad-hover) !important;
+    border-color: var(--esp-acc) !important;
+    box-shadow: 0 4px 14px rgba(10, 132, 255, 0.45) !important;
+}
+
+/* Pills de periodo */
+body[data-theme="espacial"] .crm-period-pills {
+    background: rgba(28, 28, 30, 0.80) !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .crm-period-pill {
+    color: rgba(235, 235, 245, 0.80) !important;
+}
+body[data-theme="espacial"] .crm-period-pill.is-default { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-period-pill:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #FFFFFF !important;
+}
+
+/* Búsqueda */
+body[data-theme="espacial"] .crm-search-pill,
+body[data-theme="espacial"] #crmSearchInput,
+body[data-theme="espacial"] .crm-search-wrap {
+    background: rgba(28, 28, 30, 0.80) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #F2F2F7 !important;
+}
+body[data-theme="espacial"] .crm-search-pill::placeholder,
+body[data-theme="espacial"] #crmSearchInput::placeholder {
+    color: rgba(235, 235, 245, 0.40) !important;
+}
+
+/* ═══ Vendor hero card: grafito elevado con filo azul ═══ */
+body[data-theme="espacial"] .vendor-card {
+    background: linear-gradient(135deg, rgba(28, 28, 30, 0.96) 0%, rgba(44, 44, 48, 0.92) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(10, 132, 255, 0.28) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* ═══ Kanban: columnas del vacío — casi invisibles ═══ */
+body[data-theme="espacial"] .crm-kanban-col {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.015) 38%, rgba(0, 0, 0, 0.22) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: none !important;
+}
+body[data-theme="espacial"] .crm-kanban-col.collapsed {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .crm-kanban-col.collapsed:hover {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="espacial"] .crm-kanban-head {
+    background: rgba(22, 22, 26, 0.88) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .crm-kanban-stage-name {
+    color: #FFFFFF !important;
+    text-shadow: none;
+}
+body[data-theme="espacial"] .crm-kanban-total-label { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-kanban-total-value { color: #FFFFFF !important; font-weight: 800 !important; }
+body[data-theme="espacial"] .crm-kanban-count {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-kanban-vertical-name { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #FFFFFF !important; }
+body[data-theme="espacial"] .crm-kanban-col-btn { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-kanban-col-btn:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ═══ Cards de oportunidades: naves blancas flotando en el vacío ═══
+   (la información vive en superficies claras — regla de todos los temas
+   oscuros del sistema; el interior de las cards trae textos oscuros) */
+body[data-theme="espacial"] .crm-kanban-card.crm-postit {
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+body[data-theme="espacial"] .crm-kanban-card.crm-postit:hover {
+    background: #FFFFFF !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(10, 132, 255, 0.30) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* ═══ glass-card general ═══ */
+body[data-theme="espacial"] .glass-card {
+    background: rgba(28, 28, 30, 0.70) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #F2F2F7;
+}
+body[data-theme="espacial"] .glass-card:hover {
+    background: rgba(38, 38, 42, 0.80) !important;
+}
