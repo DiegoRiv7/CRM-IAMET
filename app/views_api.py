@@ -1962,6 +1962,33 @@ def api_perfil_resumen_hoy(request):
         eficiencia = 100
     eficiencia = max(0, min(100, eficiencia))
 
+    # ── Agenda de hoy: próximas actividades del calendario + tareas con
+    # límite hoy, mezcladas por hora (top 5) ──
+    agenda = []
+    for a in Actividad.objects.filter(creado_por=request.user, fecha_inicio__date=hoy).exclude(completada=True).order_by('fecha_inicio')[:6]:
+        agenda.append({
+            'hora': timezone.localtime(a.fecha_inicio).strftime('%H:%M'),
+            'titulo': a.titulo,
+            'tipo': 'actividad',
+            'pasada': a.fecha_inicio < ahora,
+        })
+    for t in Tarea.objects.filter(asignado_a=request.user, fecha_limite__date=hoy).exclude(estado__in=['completada', 'cancelada']).order_by('fecha_limite')[:4]:
+        agenda.append({
+            'hora': timezone.localtime(t.fecha_limite).strftime('%H:%M'),
+            'titulo': t.titulo,
+            'tipo': 'tarea',
+            'pasada': t.fecha_limite < ahora,
+        })
+    agenda.sort(key=lambda x: x['hora'])
+    agenda = agenda[:5]
+
+    # ── Vendido en el mes (oportunidades cobradas del usuario) ──
+    from django.db.models import Sum
+    vendido_mes = TodoItem.objects.filter(
+        usuario=request.user, estado_crm='pagada',
+        fecha_actualizacion__year=hoy.year, fecha_actualizacion__month=hoy.month,
+    ).aggregate(total=Sum('monto'))['total'] or 0
+
     return JsonResponse({
         'success': True,
         'eficiencia': round(eficiencia),
@@ -1970,4 +1997,6 @@ def api_perfil_resumen_hoy(request):
         'actividades_completadas': act_completadas_hoy,
         'actividades_totales': act_totales,
         'ventas_cobradas': opps_cobradas_hoy,
+        'agenda': agenda,
+        'vendido_mes': float(vendido_mes),
     })
