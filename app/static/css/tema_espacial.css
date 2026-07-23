@@ -1,0 +1,1325 @@
+/* ════════════════════════════════════════════════════════════════════════
+   TEMA ESPACIAL — el vacío del espacio, modo oscuro clásico Apple.
+   ────────────────────────────────────────────────────────────────────────
+   ARCHIVO ÚNICO Y AUTOCONTENIDO (misma arquitectura que los demás temas).
+   Reglas:
+     · Cada selector empieza con body[data-theme="espacial"] — SOLO aplica
+       con este tema activo; los demás no se enteran.
+     · FASE 1: fondo principal + sidebar + acentos globales del CRM.
+       (FASE 2 pendiente: widgets.)
+   Paleta: negro espacial profundo con una nebulosa APENAS insinuada
+   (violeta/azul al 5-8%% — el vacío necesita profundidad, no decoración),
+   superficies elevadas grafito (#1C1C1E, lenguaje Apple dark), texto
+   blanco y acento azul sistema (#0A84FF).
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ Variables del tema + color de respaldo ═══ */
+body[data-theme="espacial"] {
+    --bg-crm: #050507;
+    --text-crm: #F2F2F7;
+    --card-bg: rgba(28, 28, 30, 0.92);
+    --border-crm: rgba(255, 255, 255, 0.10);
+    --table-header-bg: rgba(255, 255, 255, 0.06);
+    --table-row-hover: rgba(255, 255, 255, 0.05);
+    --accent-crm: #0A84FF;
+    --island-bg: rgba(28, 28, 30, 0.78);
+    --island-border: rgba(255, 255, 255, 0.12);
+    background-color: #050507;
+
+    /* Acentos (mismo esquema de vars que los demás temas) */
+    --esp-acc: #2E63E8;
+    --esp-acc-dark: #1E3FBF;
+    --esp-acc-light: #6E9EFF;
+    --esp-acc-deep: #5E5CE6;
+    --esp-acc-rgb: 62, 92, 230;
+    --esp-acc-grad: linear-gradient(135deg, #3D7BFF 0%, #2450E0 55%, #5E5CE6 100%);
+    --esp-acc-grad-hover: linear-gradient(135deg, #5B92FF 0%, #3A64EE 55%, #7472F0 100%);
+    /* Superficie elevada (grafito Apple) */
+    --esp-panel: #1C1C1E;
+    --esp-panel-suave: rgba(28, 28, 30, 0.85);
+}
+
+/* ═══ Fondo: el vacío — negro profundo con nebulosa apenas insinuada ═══ */
+body[data-theme="espacial"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle 820px at 82% 10%, rgba(94, 92, 230, 0.17) 0%, rgba(94, 92, 230, 0) 62%),
+        radial-gradient(circle 720px at 8% 90%, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0) 60%),
+        radial-gradient(circle 560px at 45% 55%, rgba(120, 80, 220, 0.06) 0%, rgba(120, 80, 220, 0) 65%),
+        linear-gradient(180deg, #0A0A10 0%, #07070B 45%, #050507 100%);
+    background-size: cover;
+}
+
+/* ═══ Layout: transparente para dejar ver el vacío ═══ */
+body[data-theme="espacial"] .crm-page,
+body[data-theme="espacial"] .crm-page-sidebar {
+    background: transparent !important;
+}
+body[data-theme="espacial"] .crm-main,
+body[data-theme="espacial"] .crm-content { background: transparent !important; }
+
+/* ═══ Sidebar: grafito elevado sobre el vacío ═══ */
+body[data-theme="espacial"] .crm-sidebar {
+    background: linear-gradient(180deg, rgba(24, 24, 28, 0.96) 0%, rgba(18, 18, 22, 0.97) 60%, rgba(12, 12, 15, 0.98) 100%) !important;
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .crm-sb-logo {
+    background: var(--esp-acc-grad) !important;
+    box-shadow: 0 4px 16px rgba(62, 92, 230, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="espacial"] .crm-sb-btn,
+body[data-theme="espacial"] .crm-sb-avatar { color: rgba(235, 235, 245, 0.62); }
+body[data-theme="espacial"] .crm-sb-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #FFFFFF;
+}
+body[data-theme="espacial"] .crm-sb-btn.active {
+    background: var(--esp-acc-grad) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(62, 92, 230, 0.40) !important;
+}
+body[data-theme="espacial"] .crm-sb-btn.active::before {
+    background: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-sb-divider { background: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .crm-sb-label { color: rgba(235, 235, 245, 0.45); }
+body[data-theme="espacial"] .crm-sb-dot { background: var(--esp-acc) !important; }
+
+/* ═══ Topbar / Dynamic Island: grafito flotante ═══ */
+body[data-theme="espacial"] .crm-unified-header { background: transparent !important; }
+body[data-theme="espacial"] .crm-island {
+    background: rgba(28, 28, 30, 0.78) !important;
+    backdrop-filter: blur(30px) saturate(160%);
+    -webkit-backdrop-filter: blur(30px) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .crm-island:hover,
+body[data-theme="espacial"] .crm-island.is-expanded {
+    background: rgba(38, 38, 42, 0.88) !important;
+}
+body[data-theme="espacial"] .island-sep { background: rgba(255, 255, 255, 0.14) !important; }
+body[data-theme="espacial"] .island-select,
+body[data-theme="espacial"] .island-nav-btn {
+    color: #F2F2F7 !important;
+}
+
+/* ═══ Workspace title ═══ */
+body[data-theme="espacial"] .crm-workspace-title-text {
+    color: #FFFFFF !important;
+    text-shadow: none;
+}
+body[data-theme="espacial"] .crm-workspace-count {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #F2F2F7 !important;
+}
+
+/* ═══ Barra superior: tabs + facets + periodo + CTA ═══ */
+body[data-theme="espacial"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+
+body[data-theme="espacial"] .crm-page-sidebar .crm-tabs {
+    background: rgba(28, 28, 30, 0.80) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+body[data-theme="espacial"] .crm-page-sidebar .crm-tab {
+    color: rgba(235, 235, 245, 0.60) !important;
+}
+body[data-theme="espacial"] .crm-page-sidebar .crm-tab:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-page-sidebar .crm-tab.active {
+    background: var(--esp-acc-grad) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 10px rgba(62, 92, 230, 0.40) !important;
+}
+
+/* Botones facet */
+body[data-theme="espacial"] .crm-facet-btn {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: rgba(235, 235, 245, 0.80) !important;
+}
+body[data-theme="espacial"] .crm-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.30) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-facet-sort,
+body[data-theme="espacial"] .crm-facet-export {
+    background: rgba(28, 28, 30, 0.75) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: rgba(235, 235, 245, 0.80) !important;
+}
+body[data-theme="espacial"] .crm-facet-export:hover {
+    background: rgba(62, 92, 230, 0.22) !important;
+    border-color: rgba(94, 92, 230, 0.55) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-facet-btn.active {
+    background: rgba(62, 92, 230, 0.24) !important;
+    border-color: rgba(94, 92, 230, 0.60) !important;
+    color: #79B8FF !important;
+}
+
+/* +Nuevo — CTA azul sistema */
+body[data-theme="espacial"] .crm-facet-new {
+    background: var(--esp-acc-grad) !important;
+    border-color: var(--esp-acc-dark) !important;
+    box-shadow: 0 2px 10px rgba(62, 92, 230, 0.40) !important;
+}
+body[data-theme="espacial"] .crm-facet-new:hover {
+    background: var(--esp-acc-grad-hover) !important;
+    border-color: var(--esp-acc) !important;
+    box-shadow: 0 4px 14px rgba(80, 108, 240, 0.50) !important;
+}
+
+/* Pills de periodo */
+body[data-theme="espacial"] .crm-period-pills {
+    background: rgba(28, 28, 30, 0.80) !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .crm-period-pill {
+    color: rgba(235, 235, 245, 0.80) !important;
+}
+body[data-theme="espacial"] .crm-period-pill.is-default { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-period-pill:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #FFFFFF !important;
+}
+
+/* Búsqueda */
+body[data-theme="espacial"] .crm-search-pill,
+body[data-theme="espacial"] #crmSearchInput,
+body[data-theme="espacial"] .crm-search-wrap {
+    background: rgba(28, 28, 30, 0.80) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #F2F2F7 !important;
+}
+body[data-theme="espacial"] .crm-search-pill::placeholder,
+body[data-theme="espacial"] #crmSearchInput::placeholder {
+    color: rgba(235, 235, 245, 0.40) !important;
+}
+
+/* ═══ Vendor hero card: grafito elevado con filo azul ═══ */
+body[data-theme="espacial"] .vendor-card {
+    background: linear-gradient(135deg, rgba(28, 28, 30, 0.96) 0%, rgba(44, 44, 48, 0.92) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(94, 92, 230, 0.30) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* ═══ Kanban: columnas del vacío — casi invisibles ═══ */
+body[data-theme="espacial"] .crm-kanban-col {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.015) 38%, rgba(0, 0, 0, 0.22) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: none !important;
+}
+body[data-theme="espacial"] .crm-kanban-col.collapsed {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .crm-kanban-col.collapsed:hover {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body[data-theme="espacial"] .crm-kanban-head {
+    background: rgba(22, 22, 26, 0.88) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .crm-kanban-stage-name {
+    color: #FFFFFF !important;
+    text-shadow: none;
+}
+body[data-theme="espacial"] .crm-kanban-total-label { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-kanban-total-value { color: #FFFFFF !important; font-weight: 800 !important; }
+body[data-theme="espacial"] .crm-kanban-count {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-kanban-vertical-name { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: #FFFFFF !important; }
+body[data-theme="espacial"] .crm-kanban-col-btn { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .crm-kanban-col-btn:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #FFFFFF !important;
+}
+body[data-theme="espacial"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ═══ Cards de oportunidades: OSCURAS — módulos grafito en el vacío ═══
+   El interior del card usa estilos inline (colores claros de fábrica);
+   se invierten con !important sobre selectores de atributo. */
+body[data-theme="espacial"] .crm-kanban-card.crm-postit {
+    background: linear-gradient(180deg, #202024 0%, #18181B 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.60), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+body[data-theme="espacial"] .crm-kanban-card.crm-postit:hover {
+    background: linear-gradient(180deg, #26262B 0%, #1D1D21 100%) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.70), 0 0 0 1px rgba(94, 92, 230, 0.45) !important;
+    transform: translateY(-3px) !important;
+}
+/* Título: el color real vive en el span .opp-name-link (crm.css #0052D4),
+   no en el h3 — hay que pisar el span directamente */
+body[data-theme="espacial"] .crm-postit h3,
+body[data-theme="espacial"] .crm-postit h3 .opp-name-link { color: #79B8FF !important; }
+body[data-theme="espacial"] .crm-postit h3 .opp-name-link:hover { color: #A8CFFF !important; }
+/* Vencidas: heat-5/max pintan el span #7F1D1D (granate ilegible en oscuro) → coral */
+body[data-theme="espacial"] .crm-postit.card-vencida h3 .opp-name-link { color: #FF7B72 !important; }
+/* Cliente bajo el título: hover inyecta color:#2563EB inline vía JS */
+body[data-theme="espacial"] .crm-postit [style*="color:#2563EB"] { color: #8AC2FF !important; }
+/* Textos oscuros inline → claros */
+body[data-theme="espacial"] .crm-postit [style*="color:#0F172A"] { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .crm-postit [style*="color:#6B7280"] { color: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .crm-postit [style*="color:#9CA3AF"] { color: rgba(235, 235, 245, 0.50) !important; }
+/* Chips Valor/Marca (fondo claro inline → grafito elevado) */
+body[data-theme="espacial"] .crm-postit [style*="background:#F8FAFC"] {
+    background: #2C2C2E !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Labels grises (VALOR TOTAL / MARCA / ETAPA) más legibles */
+body[data-theme="espacial"] .crm-postit [style*="color:#94A3B8"] { color: rgba(235, 235, 245, 0.55) !important; }
+/* ROJOS semánticos (vencidas) → rojo brillante de dark mode */
+body[data-theme="espacial"] .crm-postit [style*="color:#DC2626"],
+body[data-theme="espacial"] .crm-postit [style*="color:#B91C1C"],
+body[data-theme="espacial"] .crm-postit [style*="color:#991B1B"],
+body[data-theme="espacial"] .crm-postit [style*="color:#EF4444"],
+body[data-theme="espacial"] .crm-postit [style*="color: #DC2626"],
+body[data-theme="espacial"] .crm-postit [style*="color: #EF4444"] { color: #FF7B72 !important; }
+/* Pill "Proyecto" (morado claro de fábrica) → morado brillante */
+body[data-theme="espacial"] .crm-postit [style*="background:#F5F3FF"] {
+    background: rgba(124, 58, 237, 0.22) !important;
+    color: #C9A8FF !important;
+    border-color: rgba(160, 120, 255, 0.55) !important;
+}
+/* Pill "Runrate" (azul claro de fábrica) → azul brillante */
+body[data-theme="espacial"] .crm-postit [style*="background:#EFF6FF"] {
+    background: rgba(59, 130, 246, 0.22) !important;
+    color: #8AC2FF !important;
+    border-color: rgba(96, 165, 250, 0.55) !important;
+}
+/* Aro de progreso: pista gris clara → gris oscuro */
+body[data-theme="espacial"] .crm-postit circle[stroke="#E5E7EB"] { stroke: rgba(255, 255, 255, 0.14) !important; }
+/* Barra de actividad programada */
+body[data-theme="espacial"] .crm-postit .card-act-bar {
+    background: #2C2C2E !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ═══ glass-card general ═══ */
+body[data-theme="espacial"] .glass-card {
+    background: rgba(28, 28, 30, 0.70) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #F2F2F7;
+}
+body[data-theme="espacial"] .glass-card:hover {
+    background: rgba(38, 38, 42, 0.80) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2 — WIDGETS. Espacial es OSCURO total (dark mode Apple): paneles
+   grafito, textos claros, y la FRANJA ESPACIAL en los headers especiales
+   — degradado minimalista grafito→violeta profundo, sin figuras ni
+   animación (las estrellas se vetaron: poco profesional). Port del mapa
+   de selectores del Mundial (el otro tema oscuro) con paleta
+   grafito + azul-violeta.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ═══ INVERSIONES GLOBALES DE TEXTO INLINE ═══
+   Todo el tema es oscuro: ningún texto inline oscuro debe quedarse.
+   Los fondos claros inline se invierten en el bloque siguiente para que
+   los pares (fondo claro + texto oscuro) sigan siendo consistentes. */
+body[data-theme="espacial"] [style*="color:#0F172A"],
+body[data-theme="espacial"] [style*="color:#1D1D1F"],
+body[data-theme="espacial"] [style*="color:#111827"],
+body[data-theme="espacial"] [style*="color:#1E293B"],
+body[data-theme="espacial"] [style*="color:#1a1a2e"],
+body[data-theme="espacial"] [style*="color:#334155"] { color: #F2F2F7 !important; }
+body[data-theme="espacial"] [style*="color:#6B7280"],
+body[data-theme="espacial"] [style*="color:#64748B"],
+body[data-theme="espacial"] [style*="color:#475569"],
+body[data-theme="espacial"] [style*="color:#374151"] { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] [style*="color:#9CA3AF"],
+body[data-theme="espacial"] [style*="color:#94A3B8"] { color: rgba(235, 235, 245, 0.55) !important; }
+/* Fondos claros inline → grafito elevado */
+body[data-theme="espacial"] [style*="background:#F8FAFC"],
+body[data-theme="espacial"] [style*="background:#F9FAFB"],
+body[data-theme="espacial"] [style*="background:#F3F4F6"],
+body[data-theme="espacial"] [style*="background:#F1F5F9"],
+body[data-theme="espacial"] [style*="background:#FAFAFA"],
+body[data-theme="espacial"] [style*="background:#fff"],
+body[data-theme="espacial"] [style*="background:#FFFFFF"],
+body[data-theme="espacial"] [style*="background:white"] {
+    background-color: #2C2C2E !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ═══ CAMPOS DE FORMULARIO — modo oscuro por defecto ═══
+   Sin !important y con especificidad mínima (patrón probado en Mundial):
+   los campos con estilo explícito propio no se tocan. */
+body[data-theme="espacial"] input,
+body[data-theme="espacial"] select,
+body[data-theme="espacial"] textarea {
+    background-color: #1F1F23;
+    color: #F2F2F7;
+    caret-color: #F2F2F7;
+    border-color: rgba(255, 255, 255, 0.14);
+}
+body[data-theme="espacial"] input::placeholder,
+body[data-theme="espacial"] textarea::placeholder {
+    color: rgba(235, 235, 245, 0.40);
+}
+body[data-theme="espacial"] select option {
+    color: #F2F2F7;
+    background: #1F1F23;
+}
+body[data-theme="espacial"] [contenteditable="true"] {
+    color: #F2F2F7;
+}
+
+/* ═══ Paneles de widgets: grafito profundo ═══ */
+body[data-theme="espacial"] .widget-card,
+body[data-theme="espacial"] .widget-card-lg,
+body[data-theme="espacial"] .wn-overlay .wn-card.wn-composer,
+body[data-theme="espacial"] .crm-task-modal,
+body[data-theme="espacial"] .crm-create-task-container,
+body[data-theme="espacial"] .wact-shell,
+body[data-theme="espacial"] .proy-dialog-card,
+body[data-theme="espacial"] .muro-card {
+    background: #1C1C1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* ═══ FRANJA ESPACIAL — el diseño especial de los headers ═══
+   Minimalista, sin figuras ni animación: grafito que se funde en un
+   violeta profundo hacia la derecha, filo violeta abajo. */
+body[data-theme="espacial"] .wo-header,
+body[data-theme="espacial"] .wn-ctw-header,
+body[data-theme="espacial"] .muro-card-header,
+body[data-theme="espacial"] .tcp-col-head,
+body[data-theme="espacial"] .ptk-cols-head,
+body[data-theme="espacial"] .pob-head,
+body[data-theme="espacial"] .crm-tw-header,
+body[data-theme="espacial"] .crm-ctw-header,
+body[data-theme="espacial"] .cal-page-bar,
+body[data-theme="espacial"] .proy-dialog-header,
+body[data-theme="espacial"] .proy-tab-header,
+body[data-theme="espacial"] .wact-header,
+body[data-theme="espacial"] .cal-card > div:first-child,
+body[data-theme="espacial"] #widgetOppVerActividad .widget-card > div:first-child {
+    background-color: #0C0C12 !important;
+    background-image:
+        linear-gradient(100deg, #131318 0%, #17162A 55%, #262048 100%) !important;
+    background-repeat: no-repeat !important;
+    border-bottom: 2px solid rgba(94, 92, 230, 0.65) !important;
+}
+
+/* ═══ Textos y controles sobre la franja espacial ═══ */
+body[data-theme="espacial"] .wo-title,
+body[data-theme="espacial"] .wn-ctw-breadcrumb,
+body[data-theme="espacial"] .wn-ctw-crumb-muted,
+body[data-theme="espacial"] .wn-ctw-crumb-current,
+body[data-theme="espacial"] .wact-breadcrumb,
+body[data-theme="espacial"] .wact-crumb-current,
+body[data-theme="espacial"] .pob-eyebrow,
+body[data-theme="espacial"] .proy-dialog-header h3,
+body[data-theme="espacial"] .proy-dialog-header .proy-dialog-title { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .wn-ctw-breadcrumb svg,
+body[data-theme="espacial"] .wact-breadcrumb svg,
+body[data-theme="espacial"] .pob-eyebrow svg { color: rgba(235, 235, 245, 0.65) !important; }
+body[data-theme="espacial"] .wo-type-badge {
+    background: var(--esp-acc-grad) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .wo-asist-btn-title,
+body[data-theme="espacial"] .ww-btn-win,
+body[data-theme="espacial"] .wn-ctw-close,
+body[data-theme="espacial"] .wact-close,
+body[data-theme="espacial"] .muro-close-btn,
+body[data-theme="espacial"] .proy-btn-close { color: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .ww-btn-win:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .wn-ctw-close:hover,
+body[data-theme="espacial"] .wact-close:hover,
+body[data-theme="espacial"] .muro-close-btn:hover,
+body[data-theme="espacial"] .proy-btn-close:hover {
+    background: rgba(255, 123, 114, 0.30) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .tcp-col-head,
+body[data-theme="espacial"] .tcp-col-head > span { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .muro-card-header > div > span { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .pob-head .widget-close { color: #fff !important; background: rgba(255, 255, 255, 0.14) !important; }
+body[data-theme="espacial"] .pob-head .widget-close:hover { background: rgba(255, 123, 114, 0.35) !important; }
+
+/* Controles de ventana (— □ ×): círculos grafito, glifo claro */
+body[data-theme="espacial"] .ww-ctrls button,
+body[data-theme="espacial"] .ww-btn,
+body[data-theme="espacial"] .widget-overlay.ww-windowed .ww-btn-win {
+    background: #2C2C2E !important;
+    color: #EBEBF5 !important;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.50) !important;
+}
+body[data-theme="espacial"] .ww-ctrls button:hover,
+body[data-theme="espacial"] .ww-btn:hover {
+    background: #3A3A3E !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .ww-ctrls button:last-child:hover {
+    background: #FF453A !important;
+    color: #ffffff !important;
+}
+
+/* ═══ Detalle de oportunidad: cuerpo oscuro ═══ */
+body[data-theme="espacial"] .wo-content { background: transparent !important; }
+body[data-theme="espacial"] .wo-card {
+    background: #202024 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .wo-card-accent {
+    background: linear-gradient(135deg, #23232B, #1C1C24) !important;
+    border: 1px solid rgba(94, 92, 230, 0.35) !important;
+}
+body[data-theme="espacial"] .wn-ctw-canvas { background: transparent !important; }
+body[data-theme="espacial"] .wn-ctw-toolbar,
+body[data-theme="espacial"] .crm-ctw-toolbar,
+body[data-theme="espacial"] .wact-toolbar,
+body[data-theme="espacial"] .proy-dialog-footer {
+    background: #16161A !important;
+    border-top: 2px solid rgba(94, 92, 230, 0.55) !important;
+}
+body[data-theme="espacial"] .crm-ctw-project { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .crm-ctw-project:hover { background: rgba(255, 255, 255, 0.12) !important; color: #ffffff !important; }
+body[data-theme="espacial"] .crm-ctw-project-ico { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .crm-ctw-chev { color: rgba(235, 235, 245, 0.60) !important; }
+body[data-theme="espacial"] .crm-ctw-close { color: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .crm-ctw-close:hover { background: rgba(255, 123, 114, 0.30) !important; color: #ffffff !important; }
+
+/* ═══ Widget detalle de tarea ═══ */
+body[data-theme="espacial"] .crm-tw-header,
+body[data-theme="espacial"] .crm-tw-header a,
+body[data-theme="espacial"] .crm-tw-header button,
+body[data-theme="espacial"] .crm-tw-header svg { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .crm-tw-header button:hover { background: rgba(255, 255, 255, 0.12) !important; }
+body[data-theme="espacial"] .crm-tw-header-divider { background: rgba(255, 255, 255, 0.20) !important; }
+body[data-theme="espacial"] .crm-tw-main { background: transparent !important; }
+body[data-theme="espacial"] .crm-tw-header .ww-ctrls .crm-tw-icon-btn {
+    background: #2C2C2E !important;
+    border-radius: 50% !important;
+}
+body[data-theme="espacial"] .crm-tw-header .ww-ctrls button,
+body[data-theme="espacial"] .crm-tw-header .ww-ctrls button svg { color: #EBEBF5 !important; }
+body[data-theme="espacial"] .crm-tw-header .ww-ctrls button:hover { background: #3A3A3E !important; }
+body[data-theme="espacial"] .crm-tw-menu {
+    background: #1F1F23 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="espacial"] .crm-tw-menu,
+body[data-theme="espacial"] .crm-tw-menu button,
+body[data-theme="espacial"] .crm-tw-menu button svg,
+body[data-theme="espacial"] .crm-tw-menu span { color: #EBEBF5 !important; }
+body[data-theme="espacial"] .crm-tw-menu .crm-tw-menu-item.danger,
+body[data-theme="espacial"] .crm-tw-menu .crm-tw-menu-item.danger svg,
+body[data-theme="espacial"] .crm-tw-menu .crm-tw-menu-item.danger span { color: #FF7B72 !important; }
+body[data-theme="espacial"] .crm-tw-menu button:hover { background: rgba(255, 255, 255, 0.08) !important; }
+
+/* ═══ SECCIÓN TAREAS — grafito profundo ═══ */
+body[data-theme="espacial"] .tcp-shell {
+    background: rgba(20, 20, 24, 0.88) !important;
+    backdrop-filter: blur(24px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.60) !important;
+}
+body[data-theme="espacial"] .tcp-list { background: #17171B !important; }
+body[data-theme="espacial"] .tcp-detail {
+    background: #1C1C1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-left-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .tcp-row { border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .tcp-row:hover { background: rgba(255, 255, 255, 0.05) !important; }
+body[data-theme="espacial"] .tcp-row.active { background: rgba(46, 99, 232, 0.22) !important; }
+body[data-theme="espacial"] .tcp-section-head { background: rgba(255, 255, 255, 0.05) !important; }
+body[data-theme="espacial"] .tcp-summary-section,
+body[data-theme="espacial"] .tcp-summary-empty { background: transparent !important; }
+body[data-theme="espacial"] .tcp-row-title { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .tcp-empty-title,
+body[data-theme="espacial"] .tcp-summary-greeting,
+body[data-theme="espacial"] .tcp-detail-title,
+body[data-theme="espacial"] .tcp-summary-stat-num { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .tcp-empty-hint,
+body[data-theme="espacial"] .tcp-summary-sub,
+body[data-theme="espacial"] .tcp-summary-up-when,
+body[data-theme="espacial"] .tcp-summary-stat-lbl,
+body[data-theme="espacial"] .tcp-summary-sec-label { color: rgba(235, 235, 245, 0.55) !important; }
+body[data-theme="espacial"] .tcp-summary-up-title { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .tcp-detail-desc { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] .tareas-empty-card,
+body[data-theme="espacial"] .tcp-card {
+    background: #202024 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Vista tabla clásica de tareas */
+body[data-theme="espacial"] .tareas-table-wrap,
+body[data-theme="espacial"] .tareas-table { background: #17171B !important; }
+body[data-theme="espacial"] .tareas-table thead th { background: rgba(255, 255, 255, 0.06) !important; color: rgba(235, 235, 245, 0.70) !important; }
+body[data-theme="espacial"] .tareas-table tbody tr { border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .tareas-table tbody tr:hover { background: rgba(255, 255, 255, 0.05) !important; }
+
+/* Vista calendario de tareas: columnas del vacío */
+body[data-theme="espacial"] .tareas-cal-board { background: transparent !important; }
+body[data-theme="espacial"] .tareas-cal-col {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.015) 38%, rgba(0, 0, 0, 0.22) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .tareas-cal-col.col-atrasadas {
+    background: linear-gradient(180deg, rgba(255, 123, 114, 0.10) 0%, rgba(120, 20, 16, 0.16) 100%) !important;
+    border-color: rgba(255, 123, 114, 0.40) !important;
+}
+body[data-theme="espacial"] .tareas-cal-col.col-hoy {
+    background: linear-gradient(180deg, rgba(61, 123, 255, 0.12) 0%, rgba(36, 80, 224, 0.14) 100%) !important;
+    border-color: rgba(61, 123, 255, 0.45) !important;
+}
+body[data-theme="espacial"] .tareas-cal-col-head {
+    background: rgba(14, 14, 18, 0.72) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .tareas-cal-day-name,
+body[data-theme="espacial"] .tareas-cal-day-num,
+body[data-theme="espacial"] .tareas-cal-count { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .tareas-card {
+    background: #202024 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ═══ IDEAS / MURO ═══ */
+body[data-theme="espacial"] .idea-card {
+    background: #202024 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.45) !important;
+}
+body[data-theme="espacial"] .idea-card:hover {
+    background: #26262B !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55) !important;
+}
+body[data-theme="espacial"] .muro-filter-btn {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: rgba(235, 235, 245, 0.85) !important;
+}
+body[data-theme="espacial"] .muro-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .muro-filter-btn.active {
+    background: var(--esp-acc-grad) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+
+/* ═══ PROYECTOS ═══ */
+body[data-theme="espacial"] #proyectosSection { background: transparent !important; }
+body[data-theme="espacial"] .proy-tabs-wrap { background: transparent !important; }
+body[data-theme="espacial"] .proy-tabs,
+body[data-theme="espacial"] .proy-v3-topbar-tabs {
+    background: rgba(0, 0, 0, 0.40) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+}
+body[data-theme="espacial"] .proy-tab,
+body[data-theme="espacial"] .proy-v3-topbar-tab,
+body[data-theme="espacial"] .proy-v3-topbar-tabs .proy-tab-btn { color: rgba(235, 235, 245, 0.70) !important; }
+body[data-theme="espacial"] .proy-tab:hover,
+body[data-theme="espacial"] .proy-v3-topbar-tab:hover,
+body[data-theme="espacial"] .proy-v3-topbar-tabs .proy-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-tab.active,
+body[data-theme="espacial"] .proy-v3-topbar-tab.active,
+body[data-theme="espacial"] .proy-v3-topbar-tabs .proy-tab-btn.active {
+    background: var(--esp-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(46, 99, 232, 0.45) !important;
+}
+body[data-theme="espacial"] .proy-v3-topbar-tabs svg { color: inherit !important; }
+body[data-theme="espacial"] .proy-facet-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    color: rgba(235, 235, 245, 0.85) !important;
+}
+body[data-theme="espacial"] .proy-facet-btn:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-facet-btn.active {
+    background: rgba(46, 99, 232, 0.35) !important;
+    border-color: rgba(61, 123, 255, 0.65) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-facet-menu {
+    background: rgba(28, 28, 32, 0.96) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.60) !important;
+}
+body[data-theme="espacial"] .proy-facet-item { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .proy-facet-item:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-search-wrap .proy-search-icon {
+    color: rgba(235, 235, 245, 0.50) !important;
+    stroke: rgba(235, 235, 245, 0.50) !important;
+}
+body[data-theme="espacial"] .proy-search {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #F2F2F7 !important;
+}
+body[data-theme="espacial"] .proy-search::placeholder { color: rgba(235, 235, 245, 0.45) !important; }
+body[data-theme="espacial"] .proy-search:focus {
+    border-color: rgba(61, 123, 255, 0.60) !important;
+    box-shadow: 0 0 0 3px rgba(61, 123, 255, 0.22) !important;
+}
+body[data-theme="espacial"] .proy-btn-new,
+body[data-theme="espacial"] .proy-btn-primary,
+body[data-theme="espacial"] .proy-dialog-footer .proy-btn-primary {
+    background: var(--esp-acc-grad) !important;
+    border-color: transparent !important;
+    box-shadow: 0 2px 10px rgba(46, 99, 232, 0.40) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] #proyListView .crm-list-head,
+body[data-theme="espacial"] #proyListView .crm-list-hcell { color: rgba(235, 235, 245, 0.60) !important; }
+body[data-theme="espacial"] #proyListView .crm-list-row {
+    background: #1C1C1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.40) !important;
+}
+body[data-theme="espacial"] #proyListView .crm-list-row:hover {
+    background: #232327 !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(94, 92, 230, 0.35) !important;
+    transform: translateY(-2px) !important;
+}
+body[data-theme="espacial"] .proy-empty,
+body[data-theme="espacial"] .proy-empty p { color: rgba(235, 235, 245, 0.65) !important; }
+body[data-theme="espacial"] .proy-empty svg { stroke: rgba(235, 235, 245, 0.35) !important; }
+body[data-theme="espacial"] .proy-detail-page,
+body[data-theme="espacial"] .proy-detail-card,
+body[data-theme="espacial"] .proy-v3-topbar { background: transparent !important; }
+body[data-theme="espacial"] .proy-v3-back { color: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .proy-v3-back:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+}
+body[data-theme="espacial"] .proy-v3-crumb-name { color: rgba(255, 255, 255, 0.92) !important; }
+body[data-theme="espacial"] .proy-v3-topbar-sep { color: rgba(235, 235, 245, 0.35) !important; }
+body[data-theme="espacial"] .proy-v3-opp-link { color: rgba(235, 235, 245, 0.70) !important; }
+body[data-theme="espacial"] .proy-v3-opp-link:hover { color: #ffffff !important; }
+body[data-theme="espacial"] .proy-v3-add-member {
+    color: rgba(235, 235, 245, 0.65) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="espacial"] .proy-v3-add-member:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-v3-opp-pill {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    color: rgba(255, 255, 255, 0.90) !important;
+}
+body[data-theme="espacial"] .proy-v3-opp-pill:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-v3-opp-pill svg { color: rgba(255, 255, 255, 0.90) !important; }
+body[data-theme="espacial"] .proy-v3-header.proy-v3-header--minimal { background: #1C1C1E !important; }
+body[data-theme="espacial"] .proy-v3-name { color: #F2F2F7 !important; text-shadow: none !important; }
+body[data-theme="espacial"] .proy-v3-meta-line { color: rgba(235, 235, 245, 0.55) !important; }
+body[data-theme="espacial"] .proy-v3-meta-sep { color: rgba(235, 235, 245, 0.30) !important; }
+body[data-theme="espacial"] .proy-v3-meta-cliente,
+body[data-theme="espacial"] .proy-v3-meta-fechas { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .proy-v3-rag-text { color: inherit !important; }
+body[data-theme="espacial"] .proy-tcp-search {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    backdrop-filter: blur(14px) !important;
+}
+body[data-theme="espacial"] .proy-tcp-search input { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .proy-tcp-search input::placeholder { color: rgba(235, 235, 245, 0.55) !important; }
+body[data-theme="espacial"] .proy-tcp-search svg { stroke: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .proy-v3-kpi-strip {
+    background: #1C1C1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.50) !important;
+    color: #F2F2F7 !important;
+}
+body[data-theme="espacial"] .proy-v3-kpi-cell + .proy-v3-kpi-cell { border-left-color: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .proy-v3-dash-card {
+    background: #1C1C1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+    color: #EBEBF5 !important;
+}
+body[data-theme="espacial"] .proy-v3-dash-card-head { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .proy-tab-pane {
+    background: #17171B !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.50) !important;
+}
+body[data-theme="espacial"] .proy-tab-header { border-radius: 14px 14px 0 0 !important; }
+body[data-theme="espacial"] .proy-tab-header * { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .proy-tab-header button {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .proy-tab-header button:hover { background: rgba(255, 255, 255, 0.18) !important; }
+body[data-theme="espacial"] .proy-tab-header .wop-btn-primary,
+body[data-theme="espacial"] .proy-tab-header .proy-btn-primary {
+    background: var(--esp-acc-grad) !important;
+    border: none !important;
+}
+/* Programa de Obra / Partidas / Drive: panes transparentes sobre el vacío */
+body[data-theme="espacial"] #proyPane_programa-obra.proy-tab-pane,
+body[data-theme="espacial"] #proyPane_partidasv4.proy-tab-pane,
+body[data-theme="espacial"] #proyPane_partidas.proy-tab-pane,
+body[data-theme="espacial"] #proyPane_drive.proy-tab-pane {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+body[data-theme="espacial"] #proyPane_programa-obra .proy-tab-header,
+body[data-theme="espacial"] #proyPane_partidasv4 .proy-tab-header,
+body[data-theme="espacial"] #proyPane_partidas .proy-tab-header,
+body[data-theme="espacial"] #proyPane_drive .proy-tab-header {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+    animation: none !important;
+}
+body[data-theme="espacial"] #proyPane_programa-obra .proy-tab-header h3,
+body[data-theme="espacial"] #proyPane_partidasv4 .proy-tab-header h3,
+body[data-theme="espacial"] #proyPane_partidas .proy-tab-header h3,
+body[data-theme="espacial"] #proyPane_drive .proy-tab-header h3 { color: #F2F2F7 !important; }
+body[data-theme="espacial"] #proyPane_partidasv4 #proyPartidasOrigen { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] #proyPane_programa-obra .pob-empty-title { color: #F2F2F7 !important; }
+body[data-theme="espacial"] #proyPane_programa-obra .pob-empty-sub { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] #proyPane_programa-obra .pob-empty-ic { stroke: rgba(235, 235, 245, 0.65) !important; opacity: 0.8 !important; }
+body[data-theme="espacial"] .proy-dialog-overlay { background: rgba(0, 0, 0, 0.78) !important; }
+body[data-theme="espacial"] .proy-table th,
+body[data-theme="espacial"] .proy-fin-table th,
+body[data-theme="espacial"] .lev-list-table thead th,
+body[data-theme="espacial"] .proy-partidas-table thead th {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #EBEBF5 !important;
+}
+body[data-theme="espacial"] .proy-table td,
+body[data-theme="espacial"] .proy-fin-table td {
+    color: rgba(235, 235, 245, 0.82);
+}
+body[data-theme="espacial"] .proy-fin-subtab { color: rgba(235, 235, 245, 0.60) !important; }
+body[data-theme="espacial"] .proy-fin-subtab.is-active {
+    color: #79B8FF !important;
+    border-bottom-color: #3D7BFF !important;
+}
+body[data-theme="espacial"] .proy-fin-head {
+    background: linear-gradient(135deg, rgba(46, 99, 232, 0.12), rgba(94, 92, 230, 0.08)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 14px !important;
+}
+
+/* ═══ CALENDARIO — grafito flotando en el vacío ═══ */
+body[data-theme="espacial"] .cal-card,
+body[data-theme="espacial"] .cal-card--page {
+    background: rgba(24, 24, 28, 0.94) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode { background: transparent !important; }
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-card--page {
+    background: #141418 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow:
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.06),
+        0 2px 5px rgba(0, 0, 0, 0.35),
+        0 12px 28px rgba(0, 0, 0, 0.45),
+        0 36px 70px rgba(0, 0, 0, 0.55) !important;
+}
+body[data-theme="espacial"] .cal-card > div:first-child { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-card > div:first-child * { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-card > div:first-child button {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .cal-card > div:first-child button:hover { background: rgba(255, 255, 255, 0.18) !important; }
+body[data-theme="espacial"] .cal-card > div:first-child .cal-userpick-btn {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+}
+body[data-theme="espacial"] .cal-card > div:first-child button[onclick*="CrearActividad"] { background: var(--esp-acc-grad) !important; }
+body[data-theme="espacial"] .cal-card > div:first-child button[onclick*="Cerrar"] { background: transparent !important; }
+body[data-theme="espacial"] .cal-card > div:first-child button[onclick*="Cerrar"]:hover { background: rgba(255, 123, 114, 0.30) !important; }
+body[data-theme="espacial"] .cal-subnav-default {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .cal-subnav-default button[onclick*="Nav"] { background: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .cal-subnav-default button[onclick*="Nav"]:hover { background: rgba(255, 255, 255, 0.14) !important; }
+body[data-theme="espacial"] .cal-subnav-default span[id="calNavTitle"] { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-subnav-default > div:last-child { background: rgba(255, 255, 255, 0.05) !important; }
+/* Topbar del calendario (la franja de estrellas ya la pinta la regla compartida) */
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-add,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-pill {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.30) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn:not(.crm-facet-new):hover,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-btn svg,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill svg,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ic svg,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-clear svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-hdrsearch.open .cal-search-pill {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ic,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-input,
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-clear { color: #ffffff !important; }
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-input::placeholder { color: rgba(255, 255, 255, 0.60) !important; }
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai {
+    color: #FFE08A !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .cal-search-ai svg {
+    color: #FFE08A !important;
+    stroke: #FFE08A !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-period-pill.has-value {
+    background: rgba(46, 99, 232, 0.40) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tabs--dashboard {
+    background: rgba(0, 0, 0, 0.35) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab { color: rgba(255, 255, 255, 0.75) !important; }
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-tab.active {
+    background: var(--esp-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(46, 99, 232, 0.45) !important;
+}
+body[data-theme="espacial"] .widget-overlay.is-page-mode .cal-page-bar .crm-facet-new {
+    background: var(--esp-acc-grad) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(46, 99, 232, 0.40) !important;
+}
+body[data-theme="espacial"] .cal-topnav-arrow,
+body[data-theme="espacial"] .cal-topnav-today {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .cal-topnav-arrow:hover,
+body[data-theme="espacial"] .cal-topnav-today:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+body[data-theme="espacial"] .cal-topnav-title { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-source-toggle { background: rgba(0, 0, 0, 0.30) !important; }
+body[data-theme="espacial"] .cal-source-btn { color: rgba(255, 255, 255, 0.60) !important; }
+body[data-theme="espacial"] .cal-source-btn:hover { color: #ffffff !important; }
+body[data-theme="espacial"] .cal-source-btn-active {
+    background: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .cal-userpick-btn {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .cal-userpick-btn.has-value {
+    background: rgba(46, 99, 232, 0.35) !important;
+    border-color: rgba(61, 123, 255, 0.55) !important;
+}
+body[data-theme="espacial"] .cal-filter-pop {
+    background: rgba(26, 26, 32, 0.96) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(22px) !important;
+    -webkit-backdrop-filter: blur(22px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.60) !important;
+    color: #F2F2F7 !important;
+}
+body[data-theme="espacial"] .cal-filter-pop-lbl { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .cal-filter-pop-item { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .cal-filter-pop-item:hover { background: rgba(255, 255, 255, 0.08) !important; }
+/* Grid del mes: celdas grafito, hairlines blancas tenues, hoy en azul */
+body[data-theme="espacial"] #fullCalendarRoot {
+    --fc-border-color: rgba(255, 255, 255, 0.07) !important;
+    --fc-page-bg-color: #17171B !important;
+    --fc-neutral-bg-color: #17171B !important;
+    --fc-today-bg-color: rgba(46, 99, 232, 0.10) !important;
+}
+body[data-theme="espacial"] #fullCalendarRoot .fc-scrollgrid { border: none !important; }
+body[data-theme="espacial"] #fullCalendarRoot td,
+body[data-theme="espacial"] #fullCalendarRoot th { border-color: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-col-header-cell {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] #fullCalendarRoot .fc-col-header-cell-cushion { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-daygrid-day {
+    background: #17171B !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+body[data-theme="espacial"] #fullCalendarRoot .fc-daygrid-day:hover { background: rgba(61, 123, 255, 0.06) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-day-other { background: rgba(255, 255, 255, 0.015) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-day-other .fc-daygrid-day-number { color: rgba(235, 235, 245, 0.30) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-daygrid-day-number { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-day-today { background: rgba(46, 99, 232, 0.10) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-day-today .fc-daygrid-day-number {
+    background: #2E63E8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(46, 99, 232, 0.50) !important;
+}
+body[data-theme="espacial"] #fullCalendarRoot .fc-daygrid-more-link { color: rgba(235, 235, 245, 0.55) !important; }
+body[data-theme="espacial"] #fullCalendarRoot .fc-popover {
+    background: #1C1C1E !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.60) !important;
+}
+body[data-theme="espacial"] #fullCalendarRoot .fc-popover-header {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #F2F2F7 !important;
+}
+body[data-theme="espacial"] .cal-hour-row { border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .cal-hour-label { color: rgba(235, 235, 245, 0.45) !important; }
+body[data-theme="espacial"] .cal-day-agenda-card {
+    background: #202024 !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+body[data-theme="espacial"] .cal-day-agenda-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(94, 92, 230, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+body[data-theme="espacial"] .cal-day-list-empty-t { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-day-list-empty-s { color: rgba(235, 235, 245, 0.60) !important; }
+body[data-theme="espacial"] .cal-day-list-empty-ic {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: rgba(235, 235, 245, 0.60) !important;
+}
+body[data-theme="espacial"] .cal-day-list-empty-btn {
+    background: var(--esp-acc-grad) !important;
+    box-shadow: 0 2px 10px rgba(46, 99, 232, 0.40) !important;
+}
+body[data-theme="espacial"] .cal-hover-popover {
+    background: #1C1C1E !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.60) !important;
+}
+body[data-theme="espacial"] .cal-view-btn { color: rgba(235, 235, 245, 0.60) !important; }
+body[data-theme="espacial"] .cal-view-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .cal-view-btn.active {
+    background: var(--esp-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(46, 99, 232, 0.40) !important;
+}
+
+/* ═══ Detalle de actividad ═══ */
+body[data-theme="espacial"] #widgetOppVerActividad .widget-card {
+    background: #1C1C1E !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75) !important;
+}
+body[data-theme="espacial"] #widgetOppVerActividad .widget-card > div:first-child > div:last-child { color: #79B8FF !important; }
+
+/* ═══ Nueva actividad: botón guardar ═══ */
+body[data-theme="espacial"] .wact-submit.is-ready {
+    background: var(--esp-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(46, 99, 232, 0.40) !important;
+}
+
+/* ═══ Cotizador (crear_cotizacion.html): sin flash, fondo del vacío ═══ */
+body[data-theme="espacial"].dashboard-container::before,
+body[data-theme="espacial"]:has(.dashboard-container)::before { display: none !important; }
+body[data-theme="espacial"].dashboard-container,
+body[data-theme="espacial"]:has(.dashboard-container) {
+    background: linear-gradient(180deg, #0A0A10 0%, #07070B 45%, #050507 100%) !important;
+}
+body[data-theme="espacial"] .oppv2-cot [data-cot-title] { color: #F2F2F7 !important; }
+
+/* ═══ Reportes: chart-cards grafito ═══ */
+body[data-theme="espacial"] .ck-chart-card {
+    background: #1C1C1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+}
+body[data-theme="espacial"] .ck-chart-card:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 16px 44px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2b — TAREAS (filas atrasadas) + CALENDARIO REAL (.cmd- y .cwd-).
+   OJO: nunca escribir asterisco+slash dentro de un comentario (cierra el
+   comentario antes de tiempo y el parser se traga la regla siguiente).
+   El grid del Mes NO es FullCalendar (#fullCalendarRoot está oculto,
+   display:none — solo motor de fechas): es el grid propio #calMonthDesign
+   con clases .cmd-*, y Semana usa .cwd-*, definidos en el <style> inline
+   de _widget_calendario.html. Ahí van los overrides de verdad.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Tareas: las filas atrasadas van NEGRO SÓLIDO (el tinte rojo se veía
+   lavado). La identidad de vencida queda en el icono, la barra roja
+   izquierda y la pill de fecha. */
+body[data-theme="espacial"] .tcp-row,
+body[data-theme="espacial"] .tcp-row.atrasada { background: #17171B !important; }
+body[data-theme="espacial"] .tcp-row:hover,
+body[data-theme="espacial"] .tcp-row.atrasada:hover { background: #1F1F24 !important; }
+body[data-theme="espacial"] .tcp-row.active,
+body[data-theme="espacial"] .tcp-row.atrasada.active { background: rgba(46, 99, 232, 0.22) !important; }
+/* Pills de fecha: claras de fábrica → grafito / tinte rojo oscuro */
+body[data-theme="espacial"] .tcp-row-fecha {
+    background: #26262A !important;
+    color: rgba(235, 235, 245, 0.75) !important;
+}
+body[data-theme="espacial"] .tcp-row-fecha svg { color: rgba(235, 235, 245, 0.45) !important; }
+body[data-theme="espacial"] .tcp-row-fecha.atrasada {
+    background: rgba(255, 123, 114, 0.16) !important;
+    color: #FF9B94 !important;
+}
+body[data-theme="espacial"] .tcp-row-fecha.atrasada svg { color: #FF7B72 !important; }
+/* Cajitas de stats del panel "Tu día": eran blancas con número blanco */
+body[data-theme="espacial"] .tcp-summary-stat {
+    background: #26262A !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="espacial"] .tcp-summary-stat.vencidas.has-items .tcp-summary-stat-num { color: #FF7B72 !important; }
+body[data-theme="espacial"] .tcp-summary-stat.hoy.has-items .tcp-summary-stat-num { color: #FFB86C !important; }
+body[data-theme="espacial"] .tcp-summary-stat.done.has-items .tcp-summary-stat-num { color: #5BE8A0 !important; }
+/* Pills de estado: pasteles claros → tintes translúcidos brillantes */
+body[data-theme="espacial"] .tcp-row-estado.pendiente   { background: rgba(255, 184, 108, 0.18) !important; color: #FFC98A !important; }
+body[data-theme="espacial"] .tcp-row-estado.iniciada,
+body[data-theme="espacial"] .tcp-row-estado.en_progreso { background: rgba(61, 123, 255, 0.20) !important; color: #8AC2FF !important; }
+body[data-theme="espacial"] .tcp-row-estado.completada  { background: rgba(91, 232, 160, 0.16) !important; color: #7DEBB0 !important; }
+body[data-theme="espacial"] .tcp-row-estado.cancelada   { background: rgba(255, 123, 114, 0.18) !important; color: #FF9B94 !important; }
+body[data-theme="espacial"] .tcp-row-estado.cotizando   { background: rgba(255, 214, 130, 0.16) !important; color: #FFD682 !important; }
+body[data-theme="espacial"] .tcp-row-estado.facturado   { background: rgba(124, 58, 237, 0.24) !important; color: #C9A8FF !important; }
+body[data-theme="espacial"] .tcp-row-estado.enviada     { background: rgba(10, 132, 255, 0.20) !important; color: #7CC4FF !important; }
+
+/* ═══ MES (.cmd-*) — celdas grafito, hairlines tenues, hoy en azul ═══ */
+body[data-theme="espacial"] .cmd-cell {
+    background: #17171B !important;
+    border-right-color: rgba(255, 255, 255, 0.07) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+body[data-theme="espacial"] .cmd-cell:hover { background: rgba(61, 123, 255, 0.07) !important; }
+body[data-theme="espacial"] .cmd-cell.out { background: #101014 !important; }
+body[data-theme="espacial"] .cmd-cell.cmd-cell-drop {
+    background: rgba(124, 58, 237, 0.18) !important;
+    box-shadow: inset 0 0 0 2px #7C7AFF !important;
+}
+body[data-theme="espacial"] .cmd-head { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .cmd-head-cell { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .cmd-num { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .cmd-cell.out .cmd-num { color: rgba(235, 235, 245, 0.30) !important; }
+body[data-theme="espacial"] .cmd-num.on {
+    background: #2E63E8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(46, 99, 232, 0.50) !important;
+}
+body[data-theme="espacial"] .cmd-ev.tarea:hover { background: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .cmd-more { color: rgba(235, 235, 245, 0.55) !important; }
+body[data-theme="espacial"] .cmd-more:hover { color: #79B8FF !important; }
+
+/* ═══ SEMANA (.cwd-*) ═══ */
+body[data-theme="espacial"] .cwd-colhead { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .cwd-dh-name { color: rgba(235, 235, 245, 0.50) !important; }
+body[data-theme="espacial"] .cwd-dh-num { color: rgba(235, 235, 245, 0.85) !important; }
+body[data-theme="espacial"] .cwd-dh-num.on {
+    background: #2E63E8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(46, 99, 232, 0.50) !important;
+}
+body[data-theme="espacial"] .cwd-grid-line { background: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] .cwd-col { border-left-color: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] .cwd-gut-label { color: rgba(235, 235, 245, 0.40) !important; }
+
+/* ═══ Búsqueda del header del calendario ═══ */
+body[data-theme="espacial"] .cal-search-pill {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #EBEBF5 !important;
+}
+body[data-theme="espacial"] .cal-search-input { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-search-input::placeholder { color: rgba(235, 235, 245, 0.45) !important; }
+body[data-theme="espacial"] .cal-search-results {
+    background: #1C1C1E !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.60) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+body[data-theme="espacial"] .cal-sr-item:hover { background: rgba(255, 255, 255, 0.07) !important; }
+body[data-theme="espacial"] .cal-sr-title { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .cal-sr-sub,
+body[data-theme="espacial"] .cal-sr-empty { color: rgba(235, 235, 245, 0.55) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FASE 2c — MI CUENTA (widget perfil) + CORREO. Los selectores de
+   atributo son case-sensitive: las variantes en minúscula/mayúscula de
+   los colores inline cuentan como strings distintos.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Inversiones globales extra (variantes de casing + colores faltantes) */
+body[data-theme="espacial"] [style*="color:#1d1d1f"],
+body[data-theme="espacial"] [style*="color:#1A1A2E"] { color: #F2F2F7 !important; }
+body[data-theme="espacial"] [style*="color:#3c3c43"],
+body[data-theme="espacial"] [style*="color:#3C3C43"] { color: rgba(235, 235, 245, 0.70) !important; }
+body[data-theme="espacial"] [style*="background:#FAFAFC"],
+body[data-theme="espacial"] [style*="background:#FAFBFC"],
+body[data-theme="espacial"] [style*="background:#F2F2F7"] {
+    background-color: #232327 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ═══ Mi Cuenta: ventana grafito ═══ */
+body[data-theme="espacial"] #widgetPerfil > div {
+    background: #141418 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+/* Columna de identidad (izquierda) y barra superior */
+body[data-theme="espacial"] #widgetPerfil [style*="background:#FAFAFC"] {
+    background-color: #17171B !important;
+    border-right-color: rgba(255, 255, 255, 0.06) !important;
+}
+body[data-theme="espacial"] #widgetPerfil [style*="background:#fff"] {
+    background-color: #1C1C1E !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Modales internos (éxito / confirmar jornada): velo oscuro */
+body[data-theme="espacial"] #profileSuccessModal,
+body[data-theme="espacial"] #confirmStopModal {
+    background: rgba(14, 14, 18, 0.97) !important;
+}
+/* Tab activa (pill negro sobre barra negra → elevado legible) */
+body[data-theme="espacial"] #widgetPerfil [style*="background:#1d1d1f"] {
+    background-color: #3A3A3E !important;
+}
+
+/* ═══ Correo: carpetas, lista y acciones ═══ */
+body[data-theme="espacial"] .mail-folder-wb { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] .mail-folder-wb:hover { background: rgba(255, 255, 255, 0.08) !important; }
+body[data-theme="espacial"] .mail-folder-wb.active {
+    background: rgba(46, 99, 232, 0.24) !important;
+    color: #8AC2FF !important;
+}
+body[data-theme="espacial"] .mail-card-wb { border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="espacial"] .mail-card-wb:hover { background: rgba(255, 255, 255, 0.05) !important; }
+body[data-theme="espacial"] .mail-card-wb.selected { background: rgba(61, 123, 255, 0.16) !important; }
+body[data-theme="espacial"] .mw-from { color: #F2F2F7 !important; }
+body[data-theme="espacial"] .mw-subject { color: rgba(235, 235, 245, 0.80) !important; }
+body[data-theme="espacial"] .mail-action-btn,
+body[data-theme="espacial"] .mail-island-btn { color: rgba(235, 235, 245, 0.65) !important; }
+body[data-theme="espacial"] .mail-action-btn:hover,
+body[data-theme="espacial"] .mail-island-btn:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff !important;
+}
+body[data-theme="espacial"] .mail-action-btn.mail-action-danger:hover,
+body[data-theme="espacial"] .mail-island-btn.mail-island-danger:hover {
+    background: rgba(255, 123, 114, 0.20) !important;
+    color: #FF7B72 !important;
+}
+body[data-theme="espacial"] .mail-action-btn.active,
+body[data-theme="espacial"] .mail-island-btn.active { color: #FFD682 !important; }
+body[data-theme="espacial"] .mail-toolbar-btn { color: rgba(235, 235, 245, 0.75) !important; }
+body[data-theme="espacial"] .mail-toolbar-btn:hover { background: rgba(255, 255, 255, 0.10) !important; }
+body[data-theme="espacial"] .mail-attach-chip {
+    background: #2C2C2E !important;
+    color: #EBEBF5 !important;
+}
+body[data-theme="espacial"] .mail-recip-dropdown {
+    background: #1C1C1E !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body[data-theme="espacial"] .mail-recip-dropdown-item:hover { background: rgba(255, 255, 255, 0.07) !important; }
