@@ -16,16 +16,16 @@
 
 /* ═══ Variables del tema + color de respaldo ═══ */
 body[data-theme="duna"] {
-    --bg-crm: #FAF3E4;
+    --bg-crm: #F3E7CE;
     --text-crm: #4A3826;
     --card-bg: rgba(253, 248, 238, 0.97);
     --border-crm: rgba(166, 117, 47, 0.24);
     --table-header-bg: rgba(200, 152, 88, 0.14);
     --table-row-hover: rgba(200, 152, 88, 0.10);
     --accent-crm: #B0803F;
-    --island-bg: rgba(255, 251, 240, 0.75);
+    --island-bg: rgba(247, 238, 218, 0.82);
     --island-border: rgba(166, 117, 47, 0.28);
-    background-color: #FAF3E4;
+    background-color: #F3E7CE;
 
     /* Acentos duna (mismo esquema de vars que los demás temas) */
     --dna-acc: #B0803F;
@@ -55,7 +55,7 @@ body[data-theme="duna"]::before {
     background-image:
         radial-gradient(circle 640px at 84% 6%, rgba(224, 164, 80, 0.20) 0%, rgba(224, 164, 80, 0) 62%),
         radial-gradient(circle 560px at 6% 94%, rgba(150, 100, 45, 0.12) 0%, rgba(150, 100, 45, 0) 60%),
-        linear-gradient(170deg, #FCF7EC 0%, #F7ECD6 38%, #F0DFBE 70%, #E7CFA2 100%);
+        linear-gradient(170deg, #F3E7CE 0%, #EEDCB8 38%, #E7D0A2 70%, #DEC28C 100%);
     background-size: cover;
 }
 
@@ -99,7 +99,7 @@ body[data-theme="duna"] .crm-sb-dot { background: var(--dna-acc-light) !importan
 /* ═══ Topbar / Dynamic Island: porcelana con filo rosa ═══ */
 body[data-theme="duna"] .crm-unified-header { background: transparent !important; }
 body[data-theme="duna"] .crm-island {
-    background: rgba(255, 255, 255, 0.78) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
     backdrop-filter: blur(28px) saturate(160%);
     -webkit-backdrop-filter: blur(28px) saturate(160%);
     border-color: rgba(166, 117, 47, 0.22) !important;
@@ -107,7 +107,7 @@ body[data-theme="duna"] .crm-island {
 }
 body[data-theme="duna"] .crm-island:hover,
 body[data-theme="duna"] .crm-island.is-expanded {
-    background: rgba(255, 255, 255, 0.90) !important;
+    background: rgba(250, 243, 227, 0.95) !important;
 }
 body[data-theme="duna"] .island-sep { background: rgba(166, 117, 47, 0.20) !important; }
 body[data-theme="duna"] .island-select,
@@ -129,7 +129,7 @@ body[data-theme="duna"] .crm-workspace-count {
 body[data-theme="duna"] .crm-bar { background: transparent !important; border-color: transparent !important; }
 
 body[data-theme="duna"] .crm-page-sidebar .crm-tabs {
-    background: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
     border: 1px solid rgba(166, 117, 47, 0.18) !important;
     box-shadow: 0 4px 16px rgba(62, 46, 30, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
@@ -158,7 +158,7 @@ body[data-theme="duna"] .crm-facet-btn:hover {
 }
 body[data-theme="duna"] .crm-facet-sort,
 body[data-theme="duna"] .crm-facet-export {
-    background: rgba(255, 255, 255, 0.65) !important;
+    background: rgba(247, 238, 218, 0.75) !important;
     border-color: rgba(166, 117, 47, 0.26) !important;
     color: rgba(62, 46, 30, 0.85) !important;
 }
@@ -187,7 +187,7 @@ body[data-theme="duna"] .crm-facet-new:hover {
 
 /* Pills de periodo / vendedores (der) */
 body[data-theme="duna"] .crm-period-pills {
-    background: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
     border-color: rgba(166, 117, 47, 0.18) !important;
 }
 body[data-theme="duna"] .crm-period-pill {
@@ -204,7 +204,7 @@ body[data-theme="duna"] .crm-period-pill:hover {
 body[data-theme="duna"] .crm-search-pill,
 body[data-theme="duna"] #crmSearchInput,
 body[data-theme="duna"] .crm-search-wrap {
-    background: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
     border-color: rgba(166, 117, 47, 0.24) !important;
     color: var(--dna-cuero) !important;
 }
@@ -231,11 +231,11 @@ body[data-theme="duna"] .crm-kanban-col {
     box-shadow: none !important;
 }
 body[data-theme="duna"] .crm-kanban-col.collapsed {
-    background: rgba(255, 255, 255, 0.40) !important;
+    background: rgba(247, 238, 218, 0.55) !important;
     border-color: rgba(166, 117, 47, 0.14) !important;
 }
 body[data-theme="duna"] .crm-kanban-col.collapsed:hover {
-    background: rgba(255, 255, 255, 0.60) !important;
+    background: rgba(250, 243, 227, 0.70) !important;
     border-color: rgba(166, 117, 47, 0.30) !important;
 }
 /* Encabezado de columna: cuero viejo con textos crema — el ancla */
@@ -282,14 +282,14 @@ body[data-theme="duna"] .crm-kanban-card.crm-postit:hover {
 
 /* ═══ glass-card general ═══ */
 body[data-theme="duna"] .glass-card {
-    background: rgba(255, 255, 255, 0.62) !important;
+    background: rgba(247, 238, 218, 0.72) !important;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-color: rgba(166, 117, 47, 0.20) !important;
     color: var(--dna-cuero);
 }
 body[data-theme="duna"] .glass-card:hover {
-    background: rgba(255, 255, 255, 0.80) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
 }
 
 
@@ -396,7 +396,7 @@ body[data-theme="duna"] .tareas-cal-col {
    ═══════════════════════════════════════════════════════════════════════ */
 body[data-theme="duna"] #proyectosSection { background: transparent !important; }
 body[data-theme="duna"] #proyectosSection .crm-kanban-col {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.40) 38%, rgba(200, 152, 88, 0.10) 100%) !important;
+    background: linear-gradient(180deg, rgba(247, 238, 218, 0.55) 0%, rgba(243, 231, 206, 0.45) 38%, rgba(200, 152, 88, 0.14) 100%) !important;
     border: 1px solid rgba(166, 117, 47, 0.16) !important;
     box-shadow: none !important;
 }
@@ -408,7 +408,7 @@ body[data-theme="duna"] #proyectosSection .crm-kanban-head-title,
 body[data-theme="duna"] #proyectosSection .crm-kanban-stage-name { color: #7E5624 !important; }
 body[data-theme="duna"] .proy-tabs,
 body[data-theme="duna"] .proy-tab-bar {
-    background: rgba(255, 255, 255, 0.80) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
     border: 1px solid rgba(166, 117, 47, 0.18) !important;
 }
 body[data-theme="duna"] .proy-tab,
@@ -430,7 +430,7 @@ body[data-theme="duna"] .proy-btn-primary:hover { background: var(--dna-acc-grad
 body[data-theme="duna"] .proy-facet-btn {
     border-color: rgba(166, 117, 47, 0.28) !important;
     color: rgba(74, 55, 36, 0.85) !important;
-    background: rgba(255, 255, 255, 0.70) !important;
+    background: rgba(247, 238, 218, 0.78) !important;
 }
 body[data-theme="duna"] .proy-facet-btn:hover,
 body[data-theme="duna"] .proy-facet-btn.active {
@@ -439,7 +439,7 @@ body[data-theme="duna"] .proy-facet-btn.active {
     color: #7E5624 !important;
 }
 body[data-theme="duna"] .proy-search {
-    background: rgba(255, 255, 255, 0.80) !important;
+    background: rgba(247, 238, 218, 0.85) !important;
     border-color: rgba(166, 117, 47, 0.24) !important;
     color: #4A2A3C !important;
 }
