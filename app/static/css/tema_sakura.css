@@ -16,7 +16,7 @@
 /* ═══ Variables del tema + color de respaldo ═══ */
 body[data-theme="sakura"] {
     --bg-crm: #FDF4F7;
-    --text-crm: #3A2230;
+    --text-crm: #241018;
     --card-bg: rgba(255, 255, 255, 0.96);
     --border-crm: rgba(217, 87, 139, 0.22);
     --table-header-bg: rgba(240, 143, 181, 0.12);
@@ -34,9 +34,11 @@ body[data-theme="sakura"] {
     --skr-acc-rgb: 217, 87, 139;
     --skr-acc-grad: linear-gradient(135deg, #F08FB5 0%, #D9578B 100%);
     --skr-acc-grad-hover: linear-gradient(135deg, #F6A5C4 0%, #E2699B 100%);
-    /* Ciruela laqueado: el ancla oscura del tema */
-    --skr-ciruela: #3A2230;
-    --skr-ciruela-suave: rgba(58, 34, 48, 0.85);
+    /* Negro ciruela: lee como negro (contraste chic rosa/negro) pero
+       con un atomo de calidez rosa que lo mantiene en familia Sakura y
+       lejos del negro industrial de Espacial */
+    --skr-ciruela: #241018;
+    --skr-ciruela-suave: rgba(30, 13, 20, 0.92);
 }
 
 /* ═══ Fondo: amanecer entre cerezos — puro degradado, sin figuras ═══
@@ -212,7 +214,7 @@ body[data-theme="sakura"] #crmSearchInput::placeholder {
 
 /* ═══ Vendor hero card — ciruela laqueado con filo rosa ═══ */
 body[data-theme="sakura"] .vendor-card {
-    background: linear-gradient(135deg, rgba(58, 34, 48, 0.94) 0%, rgba(88, 46, 66, 0.88) 100%) !important;
+    background: linear-gradient(135deg, rgba(30, 13, 20, 0.96) 0%, rgba(58, 26, 40, 0.92) 100%) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(240, 143, 181, 0.30) !important;
