@@ -401,11 +401,17 @@ body[data-theme="duna"] #proyectosSection .crm-kanban-col {
     box-shadow: none !important;
 }
 body[data-theme="duna"] #proyectosSection .crm-kanban-head {
-    background: rgba(255, 255, 255, 0.94) !important;
-    border-bottom: 2px solid rgba(166, 117, 47, 0.45) !important;
+    background: var(--dna-cuero-suave) !important;
+    border-bottom: 2px solid rgba(200, 152, 88, 0.40) !important;
 }
 body[data-theme="duna"] #proyectosSection .crm-kanban-head-title,
-body[data-theme="duna"] #proyectosSection .crm-kanban-stage-name { color: #7E5624 !important; }
+body[data-theme="duna"] #proyectosSection .crm-kanban-stage-name { color: #F7ECD6 !important; }
+body[data-theme="duna"] #proyectosSection .crm-kanban-total-label { color: rgba(245, 233, 210, 0.62) !important; }
+body[data-theme="duna"] #proyectosSection .crm-kanban-total-value { color: #F7ECD6 !important; }
+body[data-theme="duna"] #proyectosSection .crm-kanban-count {
+    background: rgba(200, 152, 88, 0.30) !important;
+    color: #F7ECD6 !important;
+}
 body[data-theme="duna"] .proy-tabs,
 body[data-theme="duna"] .proy-tab-bar {
     background: rgba(247, 238, 218, 0.85) !important;
