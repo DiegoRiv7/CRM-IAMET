@@ -15,7 +15,7 @@
 
 /* ═══ Variables del tema + color de respaldo ═══ */
 body[data-theme="sakura"] {
-    --bg-crm: #FBEAF1;
+    --bg-crm: #FDF4F7;
     --text-crm: #3A2230;
     --card-bg: rgba(255, 255, 255, 0.96);
     --border-crm: rgba(217, 87, 139, 0.22);
@@ -24,7 +24,7 @@ body[data-theme="sakura"] {
     --accent-crm: #D9578B;
     --island-bg: rgba(255, 255, 255, 0.72);
     --island-border: rgba(217, 87, 139, 0.25);
-    background-color: #FBEAF1;
+    background-color: #FDF4F7;
 
     /* Acentos sakura (mismo esquema de vars que temporada por consistencia) */
     --skr-acc: #D9578B;
@@ -50,9 +50,9 @@ body[data-theme="sakura"]::before {
     z-index: -2;
     pointer-events: none;
     background-image:
-        radial-gradient(circle 620px at 86% 8%, rgba(240, 143, 181, 0.32) 0%, rgba(240, 143, 181, 0) 62%),
-        radial-gradient(circle 560px at 8% 92%, rgba(226, 105, 155, 0.20) 0%, rgba(226, 105, 155, 0) 60%),
-        linear-gradient(170deg, #FFF6F9 0%, #FCE9F0 34%, #F8DCE8 66%, #F3CFDF 100%);
+        radial-gradient(circle 620px at 86% 8%, rgba(240, 143, 181, 0.18) 0%, rgba(240, 143, 181, 0) 62%),
+        radial-gradient(circle 560px at 8% 92%, rgba(226, 105, 155, 0.12) 0%, rgba(226, 105, 155, 0) 60%),
+        linear-gradient(170deg, #FFFDFE 0%, #FEF5F8 40%, #FBEAF1 75%, #F7DDE8 100%);
     background-size: cover;
 }
 
@@ -64,22 +64,22 @@ body[data-theme="sakura"] .crm-page-sidebar {
 body[data-theme="sakura"] .crm-main,
 body[data-theme="sakura"] .crm-content { background: transparent !important; }
 
-/* ═══ Sidebar: ciruela laqueado (la madera oscura del cerezo) ═══ */
+/* ═══ Sidebar: porcelana — blanco fundiéndose en pétalo ═══ */
 body[data-theme="sakura"] .crm-sidebar {
-    background: linear-gradient(180deg, rgba(58, 34, 48, 0.94) 0%, rgba(46, 26, 38, 0.96) 60%, rgba(36, 20, 30, 0.97) 100%) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(253, 240, 246, 0.84) 55%, rgba(248, 220, 233, 0.80) 100%) !important;
     backdrop-filter: blur(22px) saturate(150%);
     -webkit-backdrop-filter: blur(22px) saturate(150%);
-    border-right: 1px solid rgba(240, 143, 181, 0.16) !important;
+    border-right: 1px solid rgba(217, 87, 139, 0.14) !important;
 }
 body[data-theme="sakura"] .crm-sb-logo {
     background: var(--skr-acc-grad) !important;
     box-shadow: 0 4px 16px rgba(217, 87, 139, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 body[data-theme="sakura"] .crm-sb-btn,
-body[data-theme="sakura"] .crm-sb-avatar { color: rgba(255, 240, 246, 0.80); }
+body[data-theme="sakura"] .crm-sb-avatar { color: rgba(58, 34, 48, 0.78); }
 body[data-theme="sakura"] .crm-sb-btn:hover {
-    background: rgba(240, 143, 181, 0.14) !important;
-    color: #ffffff;
+    background: rgba(240, 143, 181, 0.16) !important;
+    color: #3A2230;
 }
 body[data-theme="sakura"] .crm-sb-btn.active {
     background: var(--skr-acc-grad) !important;
@@ -89,8 +89,8 @@ body[data-theme="sakura"] .crm-sb-btn.active {
 body[data-theme="sakura"] .crm-sb-btn.active::before {
     background: #ffffff !important;
 }
-body[data-theme="sakura"] .crm-sb-divider { background: rgba(240, 143, 181, 0.14) !important; }
-body[data-theme="sakura"] .crm-sb-label { color: rgba(255, 240, 246, 0.65); }
+body[data-theme="sakura"] .crm-sb-divider { background: rgba(58, 34, 48, 0.12) !important; }
+body[data-theme="sakura"] .crm-sb-label { color: rgba(58, 34, 48, 0.55); }
 body[data-theme="sakura"] .crm-sb-dot { background: var(--skr-acc-light) !important; }
 
 /* ═══ Topbar / Dynamic Island: porcelana con filo rosa ═══ */
