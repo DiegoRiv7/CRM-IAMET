@@ -1,0 +1,290 @@
+/* ════════════════════════════════════════════════════════════════════════
+   TEMA SAKURA — cherry blossoms de Japón.
+   ────────────────────────────────────────────────────────────────────────
+   ARCHIVO ÚNICO Y AUTOCONTENIDO (misma arquitectura que tema_temporada).
+   Reglas:
+     · Cada selector empieza con body[data-theme="sakura"] — SOLO aplica
+       con este tema activo; los demás no se enteran.
+     · FASE 1: fondo principal + sidebar + acentos globales del CRM.
+       (FASE 2 pendiente: widgets. Sin figuras ni animaciones — el tema
+       vive de color y luz.)
+   Paleta: rosas de flor de cerezo sobre blancos cálidos, con anclas
+   oscuras en ciruela laqueado (sidebar, encabezados) — la sensación de
+   un jardín de cerezos: pétalos claros, madera oscura.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ Variables del tema + color de respaldo ═══ */
+body[data-theme="sakura"] {
+    --bg-crm: #FBEAF1;
+    --text-crm: #3A2230;
+    --card-bg: rgba(255, 255, 255, 0.96);
+    --border-crm: rgba(217, 87, 139, 0.22);
+    --table-header-bg: rgba(240, 143, 181, 0.12);
+    --table-row-hover: rgba(240, 143, 181, 0.10);
+    --accent-crm: #D9578B;
+    --island-bg: rgba(255, 255, 255, 0.72);
+    --island-border: rgba(217, 87, 139, 0.25);
+    background-color: #FBEAF1;
+
+    /* Acentos sakura (mismo esquema de vars que temporada por consistencia) */
+    --skr-acc: #D9578B;
+    --skr-acc-dark: #C24373;
+    --skr-acc-light: #F08FB5;
+    --skr-acc-deep: #A83562;
+    --skr-acc-rgb: 217, 87, 139;
+    --skr-acc-grad: linear-gradient(135deg, #F08FB5 0%, #D9578B 100%);
+    --skr-acc-grad-hover: linear-gradient(135deg, #F6A5C4 0%, #E2699B 100%);
+    /* Ciruela laqueado: el ancla oscura del tema */
+    --skr-ciruela: #3A2230;
+    --skr-ciruela-suave: rgba(58, 34, 48, 0.85);
+}
+
+/* ═══ Fondo: amanecer entre cerezos — puro degradado, sin figuras ═══
+   Blancos cálidos arriba fundiéndose en rosas de pétalo, con dos rubores
+   radiales (uno rosa arriba-derecha, uno más cálido abajo-izquierda) que
+   dan la profundidad que en verano ponía el sol. */
+body[data-theme="sakura"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle 620px at 86% 8%, rgba(240, 143, 181, 0.32) 0%, rgba(240, 143, 181, 0) 62%),
+        radial-gradient(circle 560px at 8% 92%, rgba(226, 105, 155, 0.20) 0%, rgba(226, 105, 155, 0) 60%),
+        linear-gradient(170deg, #FFF6F9 0%, #FCE9F0 34%, #F8DCE8 66%, #F3CFDF 100%);
+    background-size: cover;
+}
+
+/* ═══ Layout: transparente para dejar ver el degradado ═══ */
+body[data-theme="sakura"] .crm-page,
+body[data-theme="sakura"] .crm-page-sidebar {
+    background: transparent !important;
+}
+body[data-theme="sakura"] .crm-main,
+body[data-theme="sakura"] .crm-content { background: transparent !important; }
+
+/* ═══ Sidebar: ciruela laqueado (la madera oscura del cerezo) ═══ */
+body[data-theme="sakura"] .crm-sidebar {
+    background: linear-gradient(180deg, rgba(58, 34, 48, 0.94) 0%, rgba(46, 26, 38, 0.96) 60%, rgba(36, 20, 30, 0.97) 100%) !important;
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border-right: 1px solid rgba(240, 143, 181, 0.16) !important;
+}
+body[data-theme="sakura"] .crm-sb-logo {
+    background: var(--skr-acc-grad) !important;
+    box-shadow: 0 4px 16px rgba(217, 87, 139, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+body[data-theme="sakura"] .crm-sb-btn,
+body[data-theme="sakura"] .crm-sb-avatar { color: rgba(255, 240, 246, 0.80); }
+body[data-theme="sakura"] .crm-sb-btn:hover {
+    background: rgba(240, 143, 181, 0.14) !important;
+    color: #ffffff;
+}
+body[data-theme="sakura"] .crm-sb-btn.active {
+    background: var(--skr-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(217, 87, 139, 0.35) !important;
+}
+body[data-theme="sakura"] .crm-sb-btn.active::before {
+    background: #ffffff !important;
+}
+body[data-theme="sakura"] .crm-sb-divider { background: rgba(240, 143, 181, 0.14) !important; }
+body[data-theme="sakura"] .crm-sb-label { color: rgba(255, 240, 246, 0.65); }
+body[data-theme="sakura"] .crm-sb-dot { background: var(--skr-acc-light) !important; }
+
+/* ═══ Topbar / Dynamic Island: porcelana con filo rosa ═══ */
+body[data-theme="sakura"] .crm-unified-header { background: transparent !important; }
+body[data-theme="sakura"] .crm-island {
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border-color: rgba(217, 87, 139, 0.22) !important;
+    box-shadow: 0 8px 26px rgba(58, 34, 48, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+body[data-theme="sakura"] .crm-island:hover,
+body[data-theme="sakura"] .crm-island.is-expanded {
+    background: rgba(255, 255, 255, 0.90) !important;
+}
+body[data-theme="sakura"] .island-sep { background: rgba(217, 87, 139, 0.20) !important; }
+body[data-theme="sakura"] .island-select,
+body[data-theme="sakura"] .island-nav-btn {
+    color: var(--skr-ciruela) !important;
+}
+
+/* ═══ Workspace title: texto ciruela sobre el fondo claro ═══ */
+body[data-theme="sakura"] .crm-workspace-title-text {
+    color: var(--skr-ciruela) !important;
+    text-shadow: none;
+}
+body[data-theme="sakura"] .crm-workspace-count {
+    background: rgba(217, 87, 139, 0.14) !important;
+    color: var(--skr-acc-deep) !important;
+}
+
+/* ═══ Barra superior: tabs + facets + periodo + CTA ═══ */
+body[data-theme="sakura"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+
+body[data-theme="sakura"] .crm-page-sidebar .crm-tabs {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border: 1px solid rgba(217, 87, 139, 0.18) !important;
+    box-shadow: 0 4px 16px rgba(58, 34, 48, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+body[data-theme="sakura"] .crm-page-sidebar .crm-tab {
+    color: rgba(58, 34, 48, 0.72) !important;
+}
+body[data-theme="sakura"] .crm-page-sidebar .crm-tab:hover {
+    background: rgba(240, 143, 181, 0.14) !important;
+    color: var(--skr-ciruela) !important;
+}
+body[data-theme="sakura"] .crm-page-sidebar .crm-tab.active {
+    background: var(--skr-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(217, 87, 139, 0.35) !important;
+}
+
+/* Botones facet (Filtro, Ordenar, Excel, vista, Cotizar) */
+body[data-theme="sakura"] .crm-facet-btn {
+    border-color: rgba(217, 87, 139, 0.30) !important;
+    color: rgba(58, 34, 48, 0.85) !important;
+}
+body[data-theme="sakura"] .crm-facet-btn:hover {
+    background: rgba(240, 143, 181, 0.14) !important;
+    border-color: rgba(217, 87, 139, 0.50) !important;
+    color: var(--skr-ciruela) !important;
+}
+body[data-theme="sakura"] .crm-facet-sort,
+body[data-theme="sakura"] .crm-facet-export {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-color: rgba(217, 87, 139, 0.26) !important;
+    color: rgba(58, 34, 48, 0.85) !important;
+}
+body[data-theme="sakura"] .crm-facet-export:hover {
+    background: rgba(217, 87, 139, 0.16) !important;
+    border-color: rgba(217, 87, 139, 0.55) !important;
+    color: var(--skr-ciruela) !important;
+}
+body[data-theme="sakura"] .crm-facet-btn.active {
+    background: rgba(217, 87, 139, 0.18) !important;
+    border-color: rgba(217, 87, 139, 0.60) !important;
+    color: var(--skr-acc-deep) !important;
+}
+
+/* +Nuevo — CTA en rosa sakura */
+body[data-theme="sakura"] .crm-facet-new {
+    background: var(--skr-acc-grad) !important;
+    border-color: var(--skr-acc-dark) !important;
+    box-shadow: 0 2px 10px rgba(217, 87, 139, 0.35) !important;
+}
+body[data-theme="sakura"] .crm-facet-new:hover {
+    background: var(--skr-acc-grad-hover) !important;
+    border-color: var(--skr-acc) !important;
+    box-shadow: 0 4px 14px rgba(217, 87, 139, 0.45) !important;
+}
+
+/* Pills de periodo / vendedores (der) */
+body[data-theme="sakura"] .crm-period-pills {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(217, 87, 139, 0.18) !important;
+}
+body[data-theme="sakura"] .crm-period-pill {
+    color: rgba(58, 34, 48, 0.85) !important;
+}
+body[data-theme="sakura"] .crm-period-pill.is-default { color: rgba(58, 34, 48, 0.55) !important; }
+body[data-theme="sakura"] .crm-period-pill:hover {
+    background: rgba(240, 143, 181, 0.14) !important;
+    border-color: rgba(217, 87, 139, 0.35) !important;
+    color: var(--skr-ciruela) !important;
+}
+
+/* Barra de búsqueda / spotlight pill en el header */
+body[data-theme="sakura"] .crm-search-pill,
+body[data-theme="sakura"] #crmSearchInput,
+body[data-theme="sakura"] .crm-search-wrap {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(217, 87, 139, 0.24) !important;
+    color: var(--skr-ciruela) !important;
+}
+body[data-theme="sakura"] .crm-search-pill::placeholder,
+body[data-theme="sakura"] #crmSearchInput::placeholder {
+    color: rgba(58, 34, 48, 0.45) !important;
+}
+
+/* ═══ Vendor hero card — ciruela laqueado con filo rosa ═══ */
+body[data-theme="sakura"] .vendor-card {
+    background: linear-gradient(135deg, rgba(58, 34, 48, 0.94) 0%, rgba(88, 46, 66, 0.88) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(240, 143, 181, 0.30) !important;
+    box-shadow: 0 8px 30px rgba(58, 34, 48, 0.25) !important;
+}
+
+/* ═══ Kanban: columnas de pétalo translúcido, encabezado ciruela ═══ */
+body[data-theme="sakura"] .crm-kanban-col {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.22) 38%, rgba(240, 143, 181, 0.10) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(217, 87, 139, 0.16) !important;
+    box-shadow: none !important;
+}
+body[data-theme="sakura"] .crm-kanban-col.collapsed {
+    background: rgba(255, 255, 255, 0.40) !important;
+    border-color: rgba(217, 87, 139, 0.14) !important;
+}
+body[data-theme="sakura"] .crm-kanban-col.collapsed:hover {
+    background: rgba(255, 255, 255, 0.60) !important;
+    border-color: rgba(217, 87, 139, 0.30) !important;
+}
+/* Encabezado de columna: ciruela oscuro — el ancla que pide el tema */
+body[data-theme="sakura"] .crm-kanban-head {
+    background: var(--skr-ciruela-suave) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: rgba(240, 143, 181, 0.25) !important;
+}
+body[data-theme="sakura"] .crm-kanban-stage-name {
+    color: #ffffff !important;
+    text-shadow: none;
+}
+body[data-theme="sakura"] .crm-kanban-total-label { color: rgba(255, 240, 246, 0.60) !important; }
+body[data-theme="sakura"] .crm-kanban-total-value { color: #ffffff !important; font-weight: 800 !important; }
+body[data-theme="sakura"] .crm-kanban-count {
+    background: rgba(240, 143, 181, 0.30) !important;
+    color: #ffffff !important;
+}
+body[data-theme="sakura"] .crm-kanban-vertical-name { color: rgba(58, 34, 48, 0.60) !important; }
+body[data-theme="sakura"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: var(--skr-ciruela) !important; }
+body[data-theme="sakura"] .crm-kanban-col-btn { color: rgba(255, 240, 246, 0.65) !important; }
+body[data-theme="sakura"] .crm-kanban-col-btn:hover {
+    background: rgba(240, 143, 181, 0.22) !important;
+    color: #ffffff !important;
+}
+body[data-theme="sakura"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(217, 87, 139, 0.30) !important;
+}
+
+/* ═══ Cards de oportunidades (kanban): porcelana ═══ */
+body[data-theme="sakura"] .crm-kanban-card.crm-postit {
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(217, 87, 139, 0.18) !important;
+    box-shadow: 0 4px 18px rgba(58, 34, 48, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+body[data-theme="sakura"] .crm-kanban-card.crm-postit:hover {
+    background: #ffffff !important;
+    box-shadow: 0 12px 30px rgba(58, 34, 48, 0.16) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* ═══ glass-card general ═══ */
+body[data-theme="sakura"] .glass-card {
+    background: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(217, 87, 139, 0.20) !important;
+    color: var(--skr-ciruela);
+}
+body[data-theme="sakura"] .glass-card:hover {
+    background: rgba(255, 255, 255, 0.80) !important;
+}
