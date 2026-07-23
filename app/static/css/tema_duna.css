@@ -1,0 +1,297 @@
+/* ════════════════════════════════════════════════════════════════════════
+   TEMA DUNA — el desierto viejo y cálido.
+   ────────────────────────────────────────────────────────────────────────
+   ARCHIVO ÚNICO Y AUTOCONTENIDO (misma arquitectura que tema_temporada).
+   Reglas:
+     · Cada selector empieza con body[data-theme="duna"] — SOLO aplica
+       con este tema activo; los demás no se enteran.
+     · FASE 1: fondo principal + sidebar + acentos globales del CRM.
+       (FASE 2 pendiente: widgets. Sin figuras ni animaciones — el tema
+       vive de color y luz.)
+   Paleta: arenas horneadas por el sol sobre cremas envejecidas, texto
+   sepia, acentos camello/terracota y ancla de CUERO VIEJO (sidebar,
+   encabezados) — la sensación de un desierto antiguo: adobe, piel
+   curtida y luz de tarde eterna.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ Variables del tema + color de respaldo ═══ */
+body[data-theme="duna"] {
+    --bg-crm: #FAF3E4;
+    --text-crm: #4A3826;
+    --card-bg: rgba(255, 253, 246, 0.96);
+    --border-crm: rgba(166, 117, 47, 0.24);
+    --table-header-bg: rgba(200, 152, 88, 0.14);
+    --table-row-hover: rgba(200, 152, 88, 0.10);
+    --accent-crm: #B0803F;
+    --island-bg: rgba(255, 251, 240, 0.75);
+    --island-border: rgba(166, 117, 47, 0.28);
+    background-color: #FAF3E4;
+
+    /* Acentos duna (mismo esquema de vars que los demás temas) */
+    --dna-acc: #B0803F;
+    --dna-acc-dark: #9A6C30;
+    --dna-acc-light: #C89858;
+    --dna-acc-deep: #7E5624;
+    --dna-acc-rgb: 176, 128, 63;
+    --dna-acc-grad: linear-gradient(135deg, #C89858 0%, #A6752F 100%);
+    --dna-acc-grad-hover: linear-gradient(135deg, #D4A868 0%, #B68540 100%);
+    /* Cuero viejo: el ancla oscura y cálida del desierto (sidebar,
+       encabezados) — Duna SÍ lleva oscuros, pero siempre tibios (sepia,
+       nunca grises fríos ni negros). */
+    --dna-cuero: #3E2E1E;
+    --dna-cuero-suave: rgba(62, 46, 30, 0.88);
+}
+
+/* ═══ Fondo: amanecer entre cerezos — puro degradado, sin figuras ═══
+   Blancos cálidos arriba fundiéndose en rosas de pétalo, con dos rubores
+   radiales (uno rosa arriba-derecha, uno más cálido abajo-izquierda) que
+   dan la profundidad que en verano ponía el sol. */
+body[data-theme="duna"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle 640px at 84% 6%, rgba(224, 164, 80, 0.20) 0%, rgba(224, 164, 80, 0) 62%),
+        radial-gradient(circle 560px at 6% 94%, rgba(150, 100, 45, 0.12) 0%, rgba(150, 100, 45, 0) 60%),
+        linear-gradient(170deg, #FCF7EC 0%, #F7ECD6 38%, #F0DFBE 70%, #E7CFA2 100%);
+    background-size: cover;
+}
+
+/* ═══ Layout: transparente para dejar ver el degradado ═══ */
+body[data-theme="duna"] .crm-page,
+body[data-theme="duna"] .crm-page-sidebar {
+    background: transparent !important;
+}
+body[data-theme="duna"] .crm-main,
+body[data-theme="duna"] .crm-content { background: transparent !important; }
+
+/* ═══ Sidebar: cuero viejo — el ancla cálida del desierto ═══ */
+body[data-theme="duna"] .crm-sidebar {
+    background: linear-gradient(180deg, rgba(62, 46, 30, 0.94) 0%, rgba(50, 37, 24, 0.96) 55%, rgba(40, 29, 18, 0.97) 100%) !important;
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border-right: 1px solid rgba(166, 117, 47, 0.14) !important;
+}
+body[data-theme="duna"] .crm-sb-logo {
+    background: var(--dna-acc-grad) !important;
+    box-shadow: 0 4px 16px rgba(166, 117, 47, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+body[data-theme="duna"] .crm-sb-btn,
+body[data-theme="duna"] .crm-sb-avatar { color: rgba(245, 233, 210, 0.82); }
+body[data-theme="duna"] .crm-sb-btn:hover {
+    background: rgba(200, 152, 88, 0.18) !important;
+    color: #F7ECD6;
+}
+body[data-theme="duna"] .crm-sb-btn.active {
+    background: var(--dna-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(166, 117, 47, 0.35) !important;
+}
+body[data-theme="duna"] .crm-sb-btn.active::before {
+    background: #FFFDF6 !important;
+}
+body[data-theme="duna"] .crm-sb-divider { background: rgba(245, 233, 210, 0.14) !important; }
+body[data-theme="duna"] .crm-sb-label { color: rgba(245, 233, 210, 0.60); }
+body[data-theme="duna"] .crm-sb-dot { background: var(--dna-acc-light) !important; }
+
+/* ═══ Topbar / Dynamic Island: porcelana con filo rosa ═══ */
+body[data-theme="duna"] .crm-unified-header { background: transparent !important; }
+body[data-theme="duna"] .crm-island {
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border-color: rgba(166, 117, 47, 0.22) !important;
+    box-shadow: 0 8px 26px rgba(62, 46, 30, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+body[data-theme="duna"] .crm-island:hover,
+body[data-theme="duna"] .crm-island.is-expanded {
+    background: rgba(255, 255, 255, 0.90) !important;
+}
+body[data-theme="duna"] .island-sep { background: rgba(166, 117, 47, 0.20) !important; }
+body[data-theme="duna"] .island-select,
+body[data-theme="duna"] .island-nav-btn {
+    color: var(--dna-cuero) !important;
+}
+
+/* ═══ Workspace title: texto ciruela sobre el fondo claro ═══ */
+body[data-theme="duna"] .crm-workspace-title-text {
+    color: var(--dna-cuero) !important;
+    text-shadow: none;
+}
+body[data-theme="duna"] .crm-workspace-count {
+    background: rgba(166, 117, 47, 0.14) !important;
+    color: var(--dna-acc-deep) !important;
+}
+
+/* ═══ Barra superior: tabs + facets + periodo + CTA ═══ */
+body[data-theme="duna"] .crm-bar { background: transparent !important; border-color: transparent !important; }
+
+body[data-theme="duna"] .crm-page-sidebar .crm-tabs {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border: 1px solid rgba(166, 117, 47, 0.18) !important;
+    box-shadow: 0 4px 16px rgba(62, 46, 30, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+body[data-theme="duna"] .crm-page-sidebar .crm-tab {
+    color: rgba(62, 46, 30, 0.72) !important;
+}
+body[data-theme="duna"] .crm-page-sidebar .crm-tab:hover {
+    background: rgba(200, 152, 88, 0.14) !important;
+    color: var(--dna-cuero) !important;
+}
+body[data-theme="duna"] .crm-page-sidebar .crm-tab.active {
+    background: var(--dna-acc-grad) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(166, 117, 47, 0.35) !important;
+}
+
+/* Botones facet (Filtro, Ordenar, Excel, vista, Cotizar) */
+body[data-theme="duna"] .crm-facet-btn {
+    border-color: rgba(166, 117, 47, 0.30) !important;
+    color: rgba(62, 46, 30, 0.85) !important;
+}
+body[data-theme="duna"] .crm-facet-btn:hover {
+    background: rgba(200, 152, 88, 0.14) !important;
+    border-color: rgba(166, 117, 47, 0.50) !important;
+    color: var(--dna-cuero) !important;
+}
+body[data-theme="duna"] .crm-facet-sort,
+body[data-theme="duna"] .crm-facet-export {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-color: rgba(166, 117, 47, 0.26) !important;
+    color: rgba(62, 46, 30, 0.85) !important;
+}
+body[data-theme="duna"] .crm-facet-export:hover {
+    background: rgba(166, 117, 47, 0.16) !important;
+    border-color: rgba(166, 117, 47, 0.55) !important;
+    color: var(--dna-cuero) !important;
+}
+body[data-theme="duna"] .crm-facet-btn.active {
+    background: rgba(166, 117, 47, 0.18) !important;
+    border-color: rgba(166, 117, 47, 0.60) !important;
+    color: var(--dna-acc-deep) !important;
+}
+
+/* +Nuevo — CTA en camello del desierto */
+body[data-theme="duna"] .crm-facet-new {
+    background: var(--dna-acc-grad) !important;
+    border-color: var(--dna-acc-dark) !important;
+    box-shadow: 0 2px 10px rgba(166, 117, 47, 0.35) !important;
+}
+body[data-theme="duna"] .crm-facet-new:hover {
+    background: var(--dna-acc-grad-hover) !important;
+    border-color: var(--dna-acc) !important;
+    box-shadow: 0 4px 14px rgba(166, 117, 47, 0.45) !important;
+}
+
+/* Pills de periodo / vendedores (der) */
+body[data-theme="duna"] .crm-period-pills {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(166, 117, 47, 0.18) !important;
+}
+body[data-theme="duna"] .crm-period-pill {
+    color: rgba(62, 46, 30, 0.85) !important;
+}
+body[data-theme="duna"] .crm-period-pill.is-default { color: rgba(62, 46, 30, 0.55) !important; }
+body[data-theme="duna"] .crm-period-pill:hover {
+    background: rgba(200, 152, 88, 0.14) !important;
+    border-color: rgba(166, 117, 47, 0.35) !important;
+    color: var(--dna-cuero) !important;
+}
+
+/* Barra de búsqueda / spotlight pill en el header */
+body[data-theme="duna"] .crm-search-pill,
+body[data-theme="duna"] #crmSearchInput,
+body[data-theme="duna"] .crm-search-wrap {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(166, 117, 47, 0.24) !important;
+    color: var(--dna-cuero) !important;
+}
+body[data-theme="duna"] .crm-search-pill::placeholder,
+body[data-theme="duna"] #crmSearchInput::placeholder {
+    color: rgba(62, 46, 30, 0.45) !important;
+}
+
+/* ═══ Vendor hero card — ciruela laqueado con filo rosa ═══ */
+body[data-theme="duna"] .vendor-card {
+    background: linear-gradient(135deg, rgba(74, 55, 36, 0.95) 0%, rgba(104, 76, 46, 0.90) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow: 0 8px 28px rgba(166, 117, 47, 0.30) !important;
+}
+
+/* ═══ Kanban: columnas de pétalo translúcido, encabezado ciruela ═══ */
+body[data-theme="duna"] .crm-kanban-col {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.22) 38%, rgba(200, 152, 88, 0.10) 100%) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(166, 117, 47, 0.16) !important;
+    box-shadow: none !important;
+}
+body[data-theme="duna"] .crm-kanban-col.collapsed {
+    background: rgba(255, 255, 255, 0.40) !important;
+    border-color: rgba(166, 117, 47, 0.14) !important;
+}
+body[data-theme="duna"] .crm-kanban-col.collapsed:hover {
+    background: rgba(255, 255, 255, 0.60) !important;
+    border-color: rgba(166, 117, 47, 0.30) !important;
+}
+/* Encabezado de columna: cuero viejo con textos crema — el ancla */
+body[data-theme="duna"] .crm-kanban-head {
+    background: var(--dna-cuero-suave) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-color: rgba(200, 152, 88, 0.35) !important;
+}
+body[data-theme="duna"] .crm-kanban-stage-name {
+    color: #F7ECD6 !important;
+    text-shadow: none;
+}
+body[data-theme="duna"] .crm-kanban-total-label { color: rgba(245, 233, 210, 0.62) !important; }
+body[data-theme="duna"] .crm-kanban-total-value { color: #F7ECD6 !important; font-weight: 800 !important; }
+body[data-theme="duna"] .crm-kanban-count {
+    background: rgba(200, 152, 88, 0.30) !important;
+    color: #F7ECD6 !important;
+}
+body[data-theme="duna"] .crm-kanban-vertical-name { color: rgba(62, 46, 30, 0.60) !important; }
+body[data-theme="duna"] .crm-kanban-col.collapsed:hover .crm-kanban-vertical-name { color: var(--dna-cuero) !important; }
+body[data-theme="duna"] .crm-kanban-col-btn { color: rgba(245, 233, 210, 0.65) !important; }
+body[data-theme="duna"] .crm-kanban-col-btn:hover {
+    background: rgba(200, 152, 88, 0.28) !important;
+    color: #F7ECD6 !important;
+}
+body[data-theme="duna"] .crm-kanban-col-body::-webkit-scrollbar-thumb {
+    background: rgba(166, 117, 47, 0.30) !important;
+}
+
+/* ═══ Cards de oportunidades (kanban): porcelana ═══ */
+body[data-theme="duna"] .crm-kanban-card.crm-postit {
+    background: rgba(255, 253, 246, 0.97) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(166, 117, 47, 0.18) !important;
+    box-shadow: 0 4px 18px rgba(62, 46, 30, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+body[data-theme="duna"] .crm-kanban-card.crm-postit:hover {
+    background: #FFFDF6 !important;
+    box-shadow: 0 12px 30px rgba(62, 46, 30, 0.16) !important;
+    transform: translateY(-3px) !important;
+}
+
+/* ═══ glass-card general ═══ */
+body[data-theme="duna"] .glass-card {
+    background: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(166, 117, 47, 0.20) !important;
+    color: var(--dna-cuero);
+}
+body[data-theme="duna"] .glass-card:hover {
+    background: rgba(255, 255, 255, 0.80) !important;
+}
+
+
+
+
