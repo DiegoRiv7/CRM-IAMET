@@ -333,10 +333,11 @@ body[data-theme="duna"] .cal-card > div:first-child,
 body[data-theme="duna"] #widgetOppVerActividad .widget-card > div:first-child {
     background-color: #F7ECD6 !important;
     background-image:
-        url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201200%20140%22%20preserveAspectRatio=%22none%22%3E%20%3Ccircle%20cx=%221020%22%20cy=%2238%22%20r=%2230%22%20fill=%22%23E8B460%22%20opacity=%220.50%22/%3E%20%3Ccircle%20cx=%221020%22%20cy=%2238%22%20r=%2246%22%20fill=%22%23E8B460%22%20opacity=%220.18%22/%3E%20%3Cpath%20fill=%22%23C89858%22%20opacity=%220.32%22%20d=%22M0%2088%20C%20200%2040,%20380%20112,%20600%2078%20C%20820%2046,%201000%20108,%201200%2068%20L1200%20140%20L0%20140%20Z%22/%3E%20%3Cpath%20fill=%22%23A6752F%22%20opacity=%220.26%22%20d=%22M0%20110%20C%20240%2072,%20460%20128,%20700%2096%20C%20900%2072,%201060%20120,%201200%20100%20L1200%20140%20L0%20140%20Z%22/%3E%20%3Cpath%20fill=%22%237E5624%22%20opacity=%220.20%22%20d=%22M0%20126%20C%20300%20102,%20560%20138,%20840%20116%20C%201020%20102,%201120%20130,%201200%20118%20L1200%20140%20L0%20140%20Z%22/%3E%20%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201200%2044%22%20preserveAspectRatio=%22none%22%3E%20%3Cpath%20fill=%22%23C89858%22%20opacity=%220.35%22%20d=%22M0%2022%20C%20200%208,%20380%2032,%20600%2020%20C%20820%208,%201000%2030,%201200%2016%20L1200%2044%20L0%2044%20Z%22/%3E%20%3Cpath%20fill=%22%23A6752F%22%20opacity=%220.28%22%20d=%22M0%2032%20C%20240%2020,%20460%2040,%20700%2028%20C%20900%2020,%201060%2036,%201200%2030%20L1200%2044%20L0%2044%20Z%22/%3E%20%3Cpath%20fill=%22%237E5624%22%20opacity=%220.20%22%20d=%22M0%2039%20C%20300%2032,%20560%2044,%20840%2036%20C%201020%2031,%201120%2041,%201200%2037%20L1200%2044%20L0%2044%20Z%22/%3E%20%3C/svg%3E"),
         linear-gradient(180deg, rgba(252, 247, 236, 0.97) 0%, rgba(240, 223, 190, 0.94) 100%) !important;
     background-repeat: no-repeat, no-repeat !important;
-    background-size: 100% 100%, auto !important;
+    background-size: 100% 30px, auto !important;
+    background-position: bottom, center !important;
     border-bottom: 2px solid #A6752F !important;
 }
 
@@ -344,8 +345,7 @@ body[data-theme="duna"] #widgetOppVerActividad .widget-card > div:first-child {
 body[data-theme="duna"] .wo-title,
 body[data-theme="duna"] .wn-ctw-breadcrumb,
 body[data-theme="duna"] .wn-ctw-crumb-muted,
-body[data-theme="duna"] .wn-ctw-crumb-current,
-body[data-theme="duna"] .crm-kanban-stage-name { color: #7E5624 !important; }
+body[data-theme="duna"] .wn-ctw-crumb-current { color: #7E5624 !important; }
 body[data-theme="duna"] .wn-ctw-breadcrumb svg { color: rgba(126, 86, 36, 0.65) !important; }
 body[data-theme="duna"] .wo-type-badge {
     background: var(--dna-acc-grad) !important;
