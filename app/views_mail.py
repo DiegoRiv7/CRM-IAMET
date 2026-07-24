@@ -343,7 +343,8 @@ def api_mail_sincronizar(request):
 
                 # Detect attachments from raw response string
                 raw_str = str(fetch_data)
-                has_adj = 'attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+                has_adj = ('attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+                           or 'multipart/mixed' in raw_str.lower())
 
                 # Auto-thread-linking
                 opp_id = None
@@ -739,7 +740,8 @@ def sincronizar_nuevos_conexion(conexion, imap):
         msg = email_lib.message_from_bytes(raw_headers)
         parsed = _parse_message_headers(msg)
         raw_str = str(fetch_data)
-        has_adj = 'attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+        has_adj = ('attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+                           or 'multipart/mixed' in raw_str.lower())
         opp_id = None
         irt = parsed['in_reply_to']
         if irt and irt in linked_message_ids:
@@ -871,7 +873,8 @@ def api_mail_antiguos(request):
                 msg = email_lib.message_from_bytes(raw_headers)
                 parsed = _parse_message_headers(msg)
                 raw_str = str(fetch_data)
-                has_adj = 'attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+                has_adj = ('attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+                           or 'multipart/mixed' in raw_str.lower())
                 opp_id = None
                 irt = parsed['in_reply_to']
                 if irt and irt in linked_message_ids:
@@ -978,9 +981,24 @@ def api_mail_detalle(request, correo_id):
                         if payload:
                             b64 = base64.b64encode(payload).decode()
                             cid_map[content_id] = f'data:{ct};base64,{b64}'
+                            # Fotos "inline" reales (iPhone/Outlook mandan las fotos
+                            # así): listarlas TAMBIÉN como adjunto descargable. Se
+                            # filtra el ruido de logos/firmas (<20 KB y sin nombre).
+                            if fname or len(payload) > 20480:
+                                ext = mimetypes.guess_extension(ct) or '.img'
+                                adjuntos_nuevos.append(MailAdjunto(
+                                    correo=correo,
+                                    nombre_archivo=(fname or f'imagen-{len(adjuntos_nuevos) + 1}{ext}')[:300],
+                                    content_type=ct[:100],
+                                    tamanio_bytes=len(payload),
+                                    parte_num='',
+                                    datos_b64=b64,
+                                ))
 
-                    # Real attachments: explicit attachment disposition OR inline+filename
-                    elif fname and ('attachment' in disposition or 'inline' in disposition):
+                    # Real attachments: CUALQUIER parte con nombre de archivo.
+                    # (Antes se exigía Content-Disposition attachment/inline y los
+                    # clientes que mandan solo Content-Type con name= se perdían.)
+                    elif fname:
                         payload_bytes = part.get_payload(decode=True) or b''
                         adjuntos_nuevos.append(MailAdjunto(
                             correo=correo,
@@ -1899,6 +1917,29 @@ def api_mail_reenviar(request, correo_id):
     msg['From'] = conexion.correo_electronico
     msg['To'] = para
 
+    # Adjuntos ORIGINALES del correo reenviado (estilo Gmail): van incluidos
+    # siempre. Están cacheados en base64 desde la primera apertura.
+    adjuntos_orig = list(original.adjuntos.all())
+    total_orig = 0
+    for adj in adjuntos_orig:
+        if not adj.datos_b64:
+            continue
+        try:
+            contenido = base64.b64decode(adj.datos_b64)
+            total_orig += len(contenido)
+            if total_orig > MAX_ADJUNTOS_TOTAL_SIZE:
+                logger.warning("Reenviar %s: adjuntos originales exceden el total, se omite %s",
+                               correo_id, adj.nombre_archivo)
+                break
+            parte = MIMEApplication(contenido)
+            parte.add_header('Content-Disposition', 'attachment',
+                             filename=adj.nombre_archivo or 'adjunto')
+            if adj.content_type:
+                parte.set_type(adj.content_type)
+            msg.attach(parte)
+        except Exception as e:
+            logger.warning("Reenviar %s: no se pudo adjuntar %s: %s", correo_id, adj.nombre_archivo, e)
+
     try:
         smtp = _get_smtp(conexion)
         smtp.sendmail(conexion.correo_electronico, [a.strip() for a in para.split(',')], msg.as_bytes())
@@ -1917,7 +1958,7 @@ def api_mail_reenviar(request, correo_id):
         destinatarios_json=json.dumps([{'nombre': '', 'email': e.strip()} for e in para.split(',')], ensure_ascii=False),
         cuerpo_html=full_html, cuerpo_texto=full_texto,
         fecha_envio=django_tz.now(), leido=True, cuerpo_cargado=True,
-        tiene_adjuntos=bool(archivos),
+        tiene_adjuntos=bool(archivos) or bool(adjuntos_orig),
     )
 
     for f in archivos:
