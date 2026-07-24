@@ -441,6 +441,141 @@
             ov.classList.remove('active');
         };
 
+        /* ── Panel de contexto CRM (Fase 3, paso 1) ──
+           Dos estados: vinculado (ficha + oportunidad + acciones rápidas +
+           tareas + actividad) o sin vincular (Vincular / Crear oportunidad,
+           reusando las funciones existentes de la isla). */
+        function _mailCtxSet(id, txt) {
+            var e = document.getElementById(id);
+            if (e) e.textContent = txt || '';
+        }
+        function _mailCtxSetOpt(id, txt) {
+            var e = document.getElementById(id);
+            if (!e) return;
+            if (txt) { e.textContent = txt; e.style.display = 'block'; }
+            else { e.style.display = 'none'; }
+        }
+        function _mailCtxOcultar() {
+            var p = document.getElementById('mailCtxPanel');
+            var g = document.getElementById('mailBodyGrid');
+            if (p) p.style.display = 'none';
+            if (g) g.style.gridTemplateColumns = '';
+            window._mailCtxOppId = null;
+        }
+        function _mailRenderContexto(correoId) {
+            var p = document.getElementById('mailCtxPanel');
+            var g = document.getElementById('mailBodyGrid');
+            if (!p || !g) return;
+            fetch('/app/api/mail/contexto/' + correoId + '/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _mailCtxOcultar(); return; }
+                    var vin = document.getElementById('mailCtxVinculado');
+                    var suelto = document.getElementById('mailCtxSuelto');
+                    p.style.display = 'flex';
+                    g.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                    if (!d.vinculado) {
+                        if (vin) vin.style.display = 'none';
+                        if (suelto) suelto.style.display = 'flex';
+                        window._mailCtxOppId = null;
+                        return;
+                    }
+                    if (suelto) suelto.style.display = 'none';
+                    if (vin) vin.style.display = 'flex';
+                    window._mailCtxOppId = d.oportunidad.id;
+                    _mailCtxSet('mailCtxEmpresa', d.cliente.empresa || d.oportunidad.nombre);
+                    _mailCtxSet('mailCtxContacto', d.cliente.contacto);
+                    _mailCtxSetOpt('mailCtxTel', d.cliente.telefono);
+                    _mailCtxSetOpt('mailCtxEmail', d.cliente.email);
+                    _mailCtxSet('mailCtxOppNombre', d.oportunidad.nombre);
+                    _mailCtxSet('mailCtxOppMonto', '$' + Number(d.oportunidad.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }));
+                    var barra = document.getElementById('mailCtxOppBarra');
+                    if (barra) {
+                        barra.style.width = (d.oportunidad.probabilidad || 0) + '%';
+                        barra.style.background = d.oportunidad.etapa_color || '#007AFF';
+                    }
+                    _mailCtxSet('mailCtxOppEtapa', d.oportunidad.etapa || '—');
+                    _mailCtxSet('mailCtxOppResp', d.oportunidad.responsable ? 'Resp: ' + d.oportunidad.responsable : '');
+                    var tw = document.getElementById('mailCtxTareasWrap');
+                    var tl = document.getElementById('mailCtxTareas');
+                    if (tw && tl && d.tareas && d.tareas.length) {
+                        tw.style.display = 'block';
+                        tl.innerHTML = d.tareas.map(function (t) {
+                            var f = t.fecha_limite ? _formatFecha(t.fecha_limite) : '';
+                            return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #EEF1F5;border-radius:9px;padding:7px 10px;">' +
+                                '<span style="font-size:0.75rem;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">' + _esc(t.titulo) + '</span>' +
+                                (f ? '<span style="font-size:0.66rem;color:#B45309;background:#FEF3C7;border-radius:99px;padding:2px 7px;flex-shrink:0;font-weight:700;">' + f + '</span>' : '') +
+                                '</div>';
+                        }).join('');
+                    } else if (tw) { tw.style.display = 'none'; }
+                    var aw = document.getElementById('mailCtxActsWrap');
+                    var al = document.getElementById('mailCtxActs');
+                    if (aw && al && d.actividades && d.actividades.length) {
+                        aw.style.display = 'block';
+                        al.innerHTML = d.actividades.map(function (a) {
+                            var f = a.fecha ? _formatFecha(a.fecha) : '';
+                            return '<div style="display:flex;flex-direction:column;gap:1px;border-left:2px solid #D0E1FF;padding-left:8px;">' +
+                                '<span style="font-size:0.74rem;font-weight:600;color:#374151;">' + _esc(a.titulo) + '</span>' +
+                                '<span style="font-size:0.65rem;color:#9CA3AF;">' + f + '</span></div>';
+                        }).join('');
+                    } else if (aw) { aw.style.display = 'none'; }
+                    var cc = document.getElementById('mailCtxCorreosCount');
+                    if (cc) cc.textContent = d.correos_count > 1 ? d.correos_count + ' correos en esta oportunidad' : '';
+                })
+                .catch(function () { _mailCtxOcultar(); });
+        }
+
+        window.mailCtxCrearTarea = function () {
+            if (window._mailCtxOppId && typeof window.crmTaskAbrirCrear === 'function') {
+                window.crmTaskAbrirCrear(window._mailCtxOppId);
+            } else {
+                _showToastMail('La creación de tareas no está disponible aquí', false);
+            }
+        };
+        window.mailCtxAgendar = function () {
+            if (typeof window.calGlobalAbrirCrearActividad === 'function') {
+                window.calGlobalAbrirCrearActividad();
+            } else {
+                _showToastMail('El calendario no está disponible aquí', false);
+            }
+        };
+        window.mailCtxToggleNota = function () {
+            var f = document.getElementById('mailCtxNotaForm');
+            if (!f) return;
+            var abierto = f.style.display === 'flex';
+            f.style.display = abierto ? 'none' : 'flex';
+            if (!abierto) {
+                var t = document.getElementById('mailCtxNotaTexto');
+                if (t) { t.value = ''; t.focus(); }
+            }
+        };
+        window.mailCtxGuardarNota = function () {
+            var t = document.getElementById('mailCtxNotaTexto');
+            var texto = t ? t.value.trim() : '';
+            if (!texto || !window._mailCtxOppId) return;
+            var fd = new FormData();
+            fd.append('texto', texto);
+            fetch('/app/api/oportunidad/' + window._mailCtxOppId + '/chat/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d && d.success) {
+                        _showToastMail('Nota agregada a la conversación', true);
+                        mailCtxToggleNota();
+                        if (_mailCorreoActual) _mailRenderContexto(_mailCorreoActual.id);
+                    } else {
+                        _showToastMail((d && d.error) || 'Error al guardar la nota', false);
+                    }
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+        window.mailCtxAbrirOportunidad = function () {
+            if (window._mailCtxOppId && typeof window.openDetalle === 'function') {
+                window.openDetalle(window._mailCtxOppId);
+            }
+        };
+
         /* ── Tira de conversación (hilos) ───────────── */
         function _mailRenderHiloStrip(key, activeId) {
             var strip = document.getElementById('mailHiloStrip');
@@ -508,6 +643,9 @@
             var island = document.getElementById('mailHeaderIsland');
             if (island) island.style.display = 'inline-flex';
 
+
+            // Panel de contexto CRM (independiente del detalle)
+            _mailRenderContexto(id);
 
             fetch('/app/api/mail/detalle/' + id + '/')
                 .then(function (r) { return r.json(); })
@@ -1131,6 +1269,8 @@
                         if (panel) panel.style.display = 'none';
                         if (_mailCorreoActual) _mailCorreoActual.oportunidad_nombre = oppNombre;
                         _showToastMail('Vinculado a ' + oppNombre, true);
+                        // Refrescar el panel de contexto con la nueva vinculación
+                        if (_mailCorreoActual) _mailRenderContexto(_mailCorreoActual.id);
                     } else {
                         _showToastMail(data.error || 'Error al vincular', false);
                     }
@@ -1207,6 +1347,7 @@
                     _mailCorreoActual = null;
                     var island = document.getElementById('mailHeaderIsland');
                     if (island) island.style.display = 'none';
+                    _mailCtxOcultar();
                     _showToastMail(d.archivado ? 'Correo archivado' : 'Devuelto a Bandeja de entrada', true);
                 });
         };
@@ -1228,6 +1369,7 @@
                     _mailCorreoActual = null;
                     var island = document.getElementById('mailHeaderIsland');
                     if (island) island.style.display = 'none';
+                    _mailCtxOcultar();
                     _showToastMail('Movido a Papelera', true);
                 });
         };

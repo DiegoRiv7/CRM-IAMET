@@ -34,7 +34,7 @@ from django.utils import timezone as django_tz
 
 from .models import (
     MailConexion, MailCorreo, MailAdjunto, MailAccionPendiente,
-    TodoItem, OportunidadActividad, MensajeOportunidad,
+    TodoItem, OportunidadActividad, MensajeOportunidad, TareaOportunidad,
 )
 
 logger = logging.getLogger(__name__)
@@ -910,6 +910,73 @@ def api_mail_antiguos(request):
             pass
 
     return JsonResponse({'ok': True, 'nuevos': nuevos, 'quedan_en_servidor': max(0, quedan)})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_mail_contexto(request, correo_id):
+    """Panel de contexto CRM del correo (Fase 3, paso 1). Dos estados:
+    vinculado (ficha + oportunidad + tareas + actividad) o sin vincular."""
+    try:
+        correo = MailCorreo.objects.select_related('oportunidad__cliente', 'oportunidad__usuario').get(
+            id=correo_id, usuario=request.user
+        )
+    except MailCorreo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
+
+    if not correo.oportunidad_id:
+        return JsonResponse({'ok': True, 'vinculado': False})
+
+    opp = correo.oportunidad
+    cliente = opp.cliente
+
+    tareas = list(
+        TareaOportunidad.objects.filter(oportunidad=opp, estado='pendiente')
+        .order_by('fecha_limite')[:3]
+    )
+    actividades = list(
+        OportunidadActividad.objects.filter(oportunidad=opp)
+        .order_by('-fecha_creacion')[:3]
+    )
+    correos_count = MailCorreo.objects.filter(usuario=request.user, oportunidad=opp).count()
+    responsable = (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario else ''
+
+    return JsonResponse({
+        'ok': True,
+        'vinculado': True,
+        'oportunidad': {
+            'id': opp.id,
+            'nombre': opp.oportunidad,
+            'monto': float(opp.monto or 0),
+            'probabilidad': opp.probabilidad_cierre or 0,
+            'etapa': opp.etapa_corta or '',
+            'etapa_color': opp.etapa_color or '#3B82F6',
+            'responsable': responsable,
+        },
+        'cliente': {
+            'empresa': cliente.nombre_empresa if cliente else '',
+            'contacto': (cliente.contacto_principal if cliente else '') or opp.contacto or '',
+            'telefono': (cliente.telefono if cliente else '') or '',
+            'email': (cliente.email if cliente else '') or '',
+        },
+        'tareas': [
+            {
+                'id': t.id,
+                'titulo': t.titulo,
+                'fecha_limite': t.fecha_limite.isoformat() if t.fecha_limite else None,
+            }
+            for t in tareas
+        ],
+        'actividades': [
+            {
+                'titulo': a.titulo,
+                'tipo': a.tipo,
+                'fecha': a.fecha_creacion.isoformat() if a.fecha_creacion else None,
+            }
+            for a in actividades
+        ],
+        'correos_count': correos_count,
+    })
 
 
 @login_required

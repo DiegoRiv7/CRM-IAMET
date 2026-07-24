@@ -480,6 +480,7 @@ urlpatterns = [
     path('api/mail/destacar/<int:correo_id>/', views_mail.api_mail_destacar, name='api_mail_destacar'),
     path('api/mail/archivar/<int:correo_id>/', views_mail.api_mail_archivar, name='api_mail_archivar'),
     path('api/mail/hilo/', views_mail.api_mail_hilo, name='api_mail_hilo'),
+    path('api/mail/contexto/<int:correo_id>/', views_mail.api_mail_contexto, name='api_mail_contexto'),
     path('api/mail/antiguos/', views_mail.api_mail_antiguos, name='api_mail_antiguos'),
     path('api/mail/eliminar/<int:correo_id>/', views_mail.api_mail_eliminar, name='api_mail_eliminar'),
     path('api/mail/reenviar/<int:correo_id>/', views_mail.api_mail_reenviar, name='api_mail_reenviar'),
