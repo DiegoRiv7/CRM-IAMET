@@ -441,6 +441,107 @@
             ov.classList.remove('active');
         };
 
+        /* ── Firma (Fase 4): se inserta al abrir redactar/responder/reenviar ── */
+        function _mailFirmaHtml() {
+            var cx = (_mailConexiones || []).find(function (c) { return c.id == _mailConexionId; }) || (_mailConexiones || [])[0];
+            return (cx && cx.firma_html) ? cx.firma_html : '';
+        }
+        function _mailInsertarFirma(editorId) {
+            var f = _mailFirmaHtml();
+            if (!f) return;
+            var ed = document.getElementById(editorId);
+            if (ed && !ed.innerHTML.trim()) {
+                ed.innerHTML = '<br><br><div style="color:#6B7280;">--</div>' + f;
+            }
+        }
+        window.mailGuardarFirma = function () {
+            var ed = document.getElementById('mailCfgFirma');
+            if (!ed) return;
+            fetch('/app/api/mail/firma/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ conexion_id: _mailConexionId, firma_html: ed.innerHTML })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al guardar la firma', false); return; }
+                    _showToastMail('Firma guardada', true);
+                    // refrescar cache local de conexiones
+                    var cx = (_mailConexiones || []).find(function (c) { return c.id == _mailConexionId; });
+                    if (cx) cx.firma_html = ed.innerHTML;
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+
+        /* ── Plantillas (Fase 4) ── */
+        window.mailTogglePlantillas = function () {
+            var pnl = document.getElementById('mailPlantillasPanel');
+            if (!pnl) return;
+            var abierto = pnl.style.display === 'block';
+            pnl.style.display = abierto ? 'none' : 'block';
+            if (!abierto) _mailCargarPlantillas();
+        };
+        function _mailCargarPlantillas() {
+            var lista = document.getElementById('mailPlantillasLista');
+            if (!lista) return;
+            lista.innerHTML = '<div style="padding:12px;font-size:0.76rem;color:#9CA3AF;">Cargando...</div>';
+            fetch('/app/api/mail/plantillas/')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    window._mailPlantillas = d.plantillas || [];
+                    if (!window._mailPlantillas.length) {
+                        lista.innerHTML = '<div style="padding:12px;font-size:0.76rem;color:#9CA3AF;">Sin plantillas todavía.</div>';
+                        return;
+                    }
+                    lista.innerHTML = window._mailPlantillas.map(function (t) {
+                        return '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid #F6F7F9;">' +
+                            '<span onclick="mailAplicarPlantilla(' + t.id + ')" style="flex:1;font-size:0.8rem;font-weight:600;color:#1A1A2E;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(t.nombre) + '</span>' +
+                            '<button onclick="mailEliminarPlantilla(' + t.id + ')" title="Eliminar" style="border:none;background:none;color:#D1D5DB;cursor:pointer;font-size:0.85rem;padding:2px;">&times;</button>' +
+                            '</div>';
+                    }).join('');
+                })
+                .catch(function () { lista.innerHTML = '<div style="padding:12px;font-size:0.76rem;color:#DC2626;">Error al cargar.</div>'; });
+        }
+        window.mailAplicarPlantilla = function (id) {
+            var t = (window._mailPlantillas || []).find(function (x) { return x.id === id; });
+            if (!t) return;
+            var asunto = document.getElementById('mailCompAsunto');
+            var editor = document.getElementById('mailCompEditor');
+            if (asunto && !asunto.value.trim() && t.asunto) asunto.value = t.asunto;
+            if (editor) {
+                var firma = _mailFirmaHtml();
+                editor.innerHTML = t.cuerpo_html + (firma ? '<br><br><div style="color:#6B7280;">--</div>' + firma : '');
+            }
+            mailTogglePlantillas();
+        };
+        window.mailGuardarPlantilla = function () {
+            var nombre = prompt('Nombre de la plantilla:');
+            if (!nombre || !nombre.trim()) return;
+            var asunto = document.getElementById('mailCompAsunto');
+            var editor = document.getElementById('mailCompEditor');
+            fetch('/app/api/mail/plantillas/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({
+                    nombre: nombre.trim(),
+                    asunto: asunto ? asunto.value : '',
+                    cuerpo_html: editor ? editor.innerHTML : ''
+                })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al guardar', false); return; }
+                    _showToastMail('Plantilla guardada', true);
+                    _mailCargarPlantillas();
+                });
+        };
+        window.mailEliminarPlantilla = function (id) {
+            if (!confirm('¿Eliminar esta plantilla?')) return;
+            fetch('/app/api/mail/plantillas/' + id + '/eliminar/', {
+                method: 'POST', headers: { 'X-CSRFToken': csrf() }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function () { _mailCargarPlantillas(); });
+        };
+
         /* ── Modal de vincular (barra de búsqueda centrada) ── */
         window.mailAbrirVincular = function () {
             var m = document.getElementById('mailVincularModal');
@@ -889,6 +990,8 @@
             if (titleEl) titleEl.textContent = 'Agregar cuenta de correo';
             m.style.display = 'flex';
             mailSetConfigTpl('iamet', true);
+            var cfgFirma = document.getElementById('mailCfgFirma');
+            if (cfgFirma) cfgFirma.innerHTML = _mailFirmaHtml();
             if (cfgEmail) cfgEmail.focus();
         };
 
@@ -996,6 +1099,7 @@
             if (editor) editor.innerHTML = '';
             if (para) para.value = '';
             if (cc) cc.value = '';
+            _mailInsertarFirma('mailCompEditor');
             if (asunto) asunto.value = '';
             _mailRecips.para = [];
             _mailRecips.cc = [];
@@ -1193,6 +1297,7 @@
             var remit = _mailCorreoActual.remitente_nombre || _mailCorreoActual.remitente_email;
             if (paraLabel) paraLabel.textContent = 'Re: ' + (_mailCorreoActual.asunto || '');
             if (editor) editor.innerHTML = '';
+            _mailInsertarFirma('mailRespEditor');
             if (ccRow) ccRow.style.display = 'none';
             if (bccRow) bccRow.style.display = 'none';
             if (ccIn) ccIn.value = '';
@@ -1509,6 +1614,7 @@
             if (!p) return;
             if (para) para.value = '';
             if (ed) ed.innerHTML = '';
+            _mailInsertarFirma('mailFwdEditor');
             p.style.display = 'flex';
             var backBtn = document.getElementById('mailBodyBackBtn');
             if (backBtn) backBtn.style.display = 'flex';

@@ -3678,6 +3678,8 @@ class MailConexion(models.Model):
     smtp_puerto = models.IntegerField(default=465)
     smtp_usar_ssl = models.BooleanField(default=True)
     password_encriptado = models.TextField(blank=True)  # Fernet-encrypted at rest
+    # Firma HTML que se inserta al redactar/responder/reenviar (Fase 4)
+    firma_html = models.TextField(blank=True, default='')
     activo = models.BooleanField(default=True)
     ultima_sincronizacion = models.DateTimeField(null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -3799,6 +3801,23 @@ class MailAccionPendiente(models.Model):
 
     def __str__(self):
         return f"{self.accion} correo={self.correo_id} ({'ok' if self.resuelta else 'pendiente'})"
+
+
+class MailPlantilla(models.Model):
+    """Plantilla de correo reutilizable (Fase 4): asunto + cuerpo HTML."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mail_plantillas')
+    nombre = models.CharField(max_length=120)
+    asunto = models.CharField(max_length=500, blank=True, default='')
+    cuerpo_html = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = "Plantilla de Correo"
+        verbose_name_plural = "Plantillas de Correo"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.nombre}"
 
 
 class MailAdjunto(models.Model):

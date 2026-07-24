@@ -270,6 +270,20 @@
                         <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline')" class="mail-toolbar-btn" style="text-decoration:underline;font-family:serif;" title="Subrayado">U</button>
                         <div style="width:1px;height:16px;background:#EBEBED;margin:0 3px;flex-shrink:0;"></div>
                         <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" class="mail-toolbar-btn" title="Lista">&#8801;</button>
+                        <div style="width:1px;height:16px;background:#E5E7EB;margin:0 4px;"></div>
+                        <div style="position:relative;">
+                            <button onclick="mailTogglePlantillas()" class="mail-toolbar-btn" title="Plantillas" style="width:auto;padding:0 8px;font-size:0.74rem;font-weight:700;gap:4px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                Plantillas
+                            </button>
+                            <div id="mailPlantillasPanel"
+                                style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;width:280px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,30,0.16);z-index:60;overflow:hidden;">
+                                <div style="padding:9px 12px;border-bottom:1px solid #F0F2F5;font-size:0.72rem;font-weight:800;color:#9CA3AF;letter-spacing:0.05em;">PLANTILLAS</div>
+                                <div id="mailPlantillasLista" style="max-height:200px;overflow-y:auto;"></div>
+                                <button onclick="mailGuardarPlantilla()"
+                                    style="width:100%;border:none;border-top:1px solid #F0F2F5;background:#F8FAFF;color:#0052D4;padding:9px;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:inherit;">+ Guardar mensaje actual como plantilla</button>
+                            </div>
+                        </div>
                     </div>
                     <!-- Rich editor + drop overlay -->
                     <div style="flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;">
@@ -722,6 +736,14 @@
                     <div>
                         <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Puerto</div>
                         <input type="number" class="wf-input" id="mailCfgSmtpPort" value="465" style="width:100%;box-sizing:border-box;">
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:0.7rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Firma (se agrega al final de tus correos)</div>
+                    <div id="mailCfgFirma" contenteditable="true"
+                        style="min-height:70px;max-height:140px;overflow-y:auto;border:1px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:0.83rem;color:#1A1A2E;background:#fff;line-height:1.45;outline:none;"></div>
+                    <div style="display:flex;justify-content:flex-end;margin-top:5px;">
+                        <button onclick="mailGuardarFirma()" style="background:#EFF6FF;color:#0052D4;border:1px solid #D0E1FF;border-radius:8px;padding:5px 12px;font-size:0.74rem;font-weight:700;cursor:pointer;font-family:inherit;">Guardar firma</button>
                     </div>
                 </div>
                 <div id="mailCfgErr" style="display:none;font-size:0.76rem;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:8px 12px;"></div>

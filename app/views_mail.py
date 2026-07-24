@@ -35,7 +35,7 @@ from django.utils import timezone as django_tz
 from .models import (
     MailConexion, MailCorreo, MailAdjunto, MailAccionPendiente,
     TodoItem, OportunidadActividad, MensajeOportunidad, TareaOportunidad,
-    Actividad, mail_hilo_key,
+    Actividad, MailPlantilla, mail_hilo_key,
 )
 
 logger = logging.getLogger(__name__)
@@ -218,6 +218,7 @@ def api_mail_conexion(request):
                 'smtp_puerto': c.smtp_puerto,
                 'smtp_usar_ssl': c.smtp_usar_ssl,
                 'activo': c.activo,
+                'firma_html': c.firma_html or '',
                 'ultima_sincronizacion': c.ultima_sincronizacion.isoformat() if c.ultima_sincronizacion else None,
             })
         return JsonResponse({'ok': True, 'tiene_conexion': True, 'conexiones': lista})
@@ -938,6 +939,60 @@ def api_mail_antiguos(request):
             pass
 
     return JsonResponse({'ok': True, 'nuevos': nuevos, 'quedan_en_servidor': max(0, quedan)})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_firma(request):
+    """Guarda la firma HTML de una conexión (Fase 4)."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    conexion_id = data.get('conexion_id')
+    qs = MailConexion.objects.filter(usuario=request.user, activo=True)
+    conexion = qs.filter(id=conexion_id).first() if conexion_id else qs.first()
+    if not conexion:
+        return JsonResponse({'ok': False, 'error': 'Conexión no encontrada'}, status=404)
+    conexion.firma_html = (data.get('firma_html') or '')[:20000]
+    conexion.save(update_fields=['firma_html'])
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['GET', 'POST'])
+def api_mail_plantillas(request):
+    """Plantillas de correo del usuario: GET lista, POST crea."""
+    if request.method == 'GET':
+        plantillas = [
+            {'id': t.id, 'nombre': t.nombre, 'asunto': t.asunto, 'cuerpo_html': t.cuerpo_html}
+            for t in MailPlantilla.objects.filter(usuario=request.user)
+        ]
+        return JsonResponse({'ok': True, 'plantillas': plantillas})
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        return JsonResponse({'ok': False, 'error': 'Nombre requerido'}, status=400)
+    t = MailPlantilla.objects.create(
+        usuario=request.user,
+        nombre=nombre[:120],
+        asunto=(data.get('asunto') or '')[:500],
+        cuerpo_html=(data.get('cuerpo_html') or '')[:100000],
+    )
+    return JsonResponse({'ok': True, 'id': t.id})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_plantilla_eliminar(request, plantilla_id):
+    MailPlantilla.objects.filter(usuario=request.user, id=plantilla_id).delete()
+    return JsonResponse({'ok': True})
 
 
 @login_required
