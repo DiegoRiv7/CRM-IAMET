@@ -6714,6 +6714,54 @@ def _pend_recap_msg(nombre, completadas, total):
     return f'{nombre}, trabajaste {completadas} de {total} hoy. Un empujón mañana y las sacas. 💪'
 
 
+def _pend_recap_msg_tarea(nombre, completadas, total):
+    """Mensaje de cierre del día para roles sin oportunidades (por tareas)."""
+    if total <= 0:
+        return f'{nombre}, hoy no tenías tareas asignadas. ¡A descansar! 🎉'
+    if completadas <= 0:
+        return f'{nombre}, hoy no cerraste tareas. Mañana es una nueva oportunidad — arranca temprano. 💪'
+    if completadas >= total:
+        return f'¡Día redondo, {nombre}! Completaste tus {total} tarea{"s" if total != 1 else ""}. 🔥'
+    if (completadas / total) >= 0.6:
+        return f'Buen día, {nombre}: cerraste {completadas} de {total} tareas. Vas con buen ritmo. 👏'
+    return f'{nombre}, completaste {completadas} de {total} tareas hoy. Un empujón mañana. 💪'
+
+
+def _pend_recap_tareas(user, today):
+    """Recap del día basado en TAREAS (ingenieros/administrativos sin oportunidades).
+
+    Devuelve (items, completadas_hoy, total). Cada item usa las MISMAS llaves que el
+    recap de oportunidades para reutilizar el render (proyecto=título, cliente=contexto).
+    """
+    from .models import Tarea
+
+    def _ctx(t):
+        if t.proyecto_id and t.proyecto:
+            return getattr(t.proyecto, 'nombre', '') or getattr(t.proyecto, 'titulo', '') or ''
+        if t.cliente_id and t.cliente:
+            return getattr(t.cliente, 'nombre_empresa', '') or ''
+        return ''
+
+    base = Tarea.objects.filter(asignado_a=user).exclude(estado='cancelada').select_related('proyecto', 'cliente')
+    done_qs = base.filter(estado='completada', fecha_completada__date=today).order_by('-fecha_completada')
+    pend_qs = base.exclude(estado='completada').order_by('fecha_limite', '-fecha_creacion')
+    done_list = list(done_qs[:40])
+    pend_list = list(pend_qs[:40])
+
+    def _mk(t, completada):
+        return {
+            'tipo': 'tarea', 'tarea_id': t.id, 'opp_id': None,
+            'proyecto': t.titulo or '(sin título)',
+            'cliente': _ctx(t),
+            'valor_fmt': '',
+            'completada': completada,
+        }
+
+    items = [_mk(t, True) for t in done_list] + [_mk(t, False) for t in pend_list]
+    total = len(done_list) + len(pend_list)
+    return items, len(done_list), total
+
+
 @login_required
 def api_pendientes(request):
     """
@@ -6950,7 +6998,18 @@ def api_pendientes(request):
     # ── Modo cierre del día (recap) a partir de las 18:00 ──
     if _hora >= 18:
         resumen['modo'] = 'recap'
-        resumen['recap_msg'] = _pend_recap_msg(nombre_corto, len(done), len(resumen_items))
+        if resumen_items:
+            resumen['recap_tipo'] = 'oportunidad'
+            resumen['recap_msg'] = _pend_recap_msg(nombre_corto, len(done), len(resumen_items))
+        else:
+            # Sin oportunidades (ingenieros/administrativos): cierre por TAREAS del día.
+            t_items, t_done, t_total = _pend_recap_tareas(user, today)
+            resumen['recap_tipo'] = 'tarea'
+            resumen['items'] = t_items
+            resumen['completadas'] = t_done
+            resumen['pendientes'] = t_total - t_done
+            resumen['total'] = t_total
+            resumen['recap_msg'] = _pend_recap_msg_tarea(nombre_corto, t_done, t_total)
     else:
         resumen['modo'] = 'dia'
 

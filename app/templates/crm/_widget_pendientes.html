@@ -212,14 +212,22 @@
   .pend-sc-done{color:#2b8a3e;font-weight:700;}
   .pend-split.done{opacity:.72;}
   .pend-split.done .pend-sc-ia{background:#e6f6ec;color:#2b8a3e;}
-  /* Recap del cierre del día */
-  .pend-recap-msg{font-size:1.15rem;line-height:1.5;color:#1c1d22;font-weight:600;background:#fff;border:1px solid #ececf0;
-    border-radius:16px;padding:18px 20px;margin-bottom:14px;}
-  .pend-recap-stats{display:flex;gap:12px;margin-bottom:14px;}
-  .pend-recap-stat{flex:1;background:#fff;border:1px solid #ececf0;border-radius:14px;padding:14px;text-align:center;}
-  .pend-recap-stat .n{display:block;font-size:1.8rem;font-weight:800;color:#1c1d22;line-height:1.1;}
-  .pend-recap-stat .l{font-size:.74rem;font-weight:700;color:#8a8c93;text-transform:uppercase;letter-spacing:.03em;}
-  .pend-recap-stat.done .n{color:#2b8a3e;}
+  /* Recap del cierre del día — editorial en BLANCO (mismo espíritu que el Replay) */
+  .rpd{position:relative;overflow:hidden;border-radius:22px;background:#fff;border:1px solid #ececf0;
+    box-shadow:0 6px 24px rgba(15,23,42,.06);padding:30px 34px;margin-bottom:20px;}
+  .rpd-shape{position:absolute;border-radius:50%;z-index:1;}
+  .rpd-s1{width:min(44%,380px);aspect-ratio:1;top:-16%;right:-8%;background:radial-gradient(circle at 30% 30%,#e9f0ff,rgba(233,240,255,0));animation:rpFloat 9s ease-in-out infinite;}
+  .rpd-s2{width:min(36%,320px);aspect-ratio:1;bottom:-26%;right:12%;background:radial-gradient(circle at 30% 30%,#e7f8ee,rgba(231,248,238,0));animation:rpFloat 12s ease-in-out infinite reverse;}
+  .rpd-inner{position:relative;z-index:2;}
+  .rpd-headline{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.95rem;line-height:1.15;
+    color:#1c1d22;margin-top:14px;letter-spacing:-.01em;max-width:88%;}
+  .rpd-hero{margin-top:26px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;}
+  .rpd-hero-main{display:flex;flex-direction:column;padding-right:22px;margin-right:6px;border-right:1px solid #eef0f3;}
+  .rpd-hero-n{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:3.5rem;line-height:.85;color:#2b8a3e;}
+  .rpd-hero-l{font-size:.72rem;font-weight:800;color:#8a8c93;text-transform:uppercase;letter-spacing:.06em;margin-top:10px;}
+  .rpd-box{background:#f7f8fa;border-radius:16px;padding:14px 20px;min-width:104px;}
+  .rpd-box-v{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.9rem;color:#1c1d22;line-height:1;}
+  .rpd-box-l{font-size:.72rem;color:#8a8c93;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:.04em;}
   .pend-recap-sec{font-size:.72rem;font-weight:800;color:#9a9ca3;text-transform:uppercase;letter-spacing:.05em;margin:14px 2px 8px;}
   .pend-recap-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #f0f1f3;border-radius:12px;padding:11px 14px;margin-bottom:7px;cursor:pointer;transition:box-shadow .15s;}
   .pend-recap-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
@@ -744,33 +752,50 @@
     }).catch(function () {});
   };
 
+  window.pendAbrirTarea = function (id) { if (id) window.location = '/app/?tarea=' + id; };
   function _recapRow(it, done) {
-    return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="pendAbrirOpp(' + it.opp_id + ')">' +
+    var isTarea = it.tipo === 'tarea';
+    var click = isTarea ? ('pendAbrirTarea(' + it.tarea_id + ')') : ('pendAbrirOpp(' + it.opp_id + ')');
+    return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="' + click + '">' +
       '<span class="pend-recap-ic">' + (done ? '✓' : '○') + '</span>' +
       '<span class="pend-recap-nombre">' + _esc(it.proyecto) + '</span>' +
-      '<span class="pend-recap-cli">' + _esc(it.cliente) + '</span>' +
-      '<span class="pend-recap-val">' + _esc(it.valor_fmt) + '</span>' +
+      (it.cliente ? '<span class="pend-recap-cli">' + _esc(it.cliente) + '</span>' : '') +
+      (it.valor_fmt ? '<span class="pend-recap-val">' + _esc(it.valor_fmt) + '</span>' : '') +
     '</div>';
   }
   function _renderRecap(res, r) {
+    res.classList.remove('pend-day');
     var items = r.items || [];
     var done = items.filter(function (it) { return it.completada; });
     var pend = items.filter(function (it) { return !it.completada; });
-    var html = '<div class="pend-res-hero">' +
-      '<div class="pend-res-saludo">Cierre del día 🌙</div>' +
-      '<div class="pend-res-sub">Así te fue hoy, ' + _esc(r.nombre) + '</div></div>';
-    html += '<div class="pend-recap-msg">' + _esc(r.recap_msg || '') + '</div>';
-    html += '<div class="pend-recap-stats">' +
-      '<div class="pend-recap-stat done"><span class="n">' + done.length + '</span><span class="l">Completadas</span></div>' +
-      '<div class="pend-recap-stat pend"><span class="n">' + pend.length + '</span><span class="l">Pendientes</span></div>' +
+    var esTarea = r.recap_tipo === 'tarea';
+    var unidadTot = esTarea ? 'Tareas del día' : 'Del día';
+    // Tarjeta editorial en blanco (mismo lenguaje visual que el Replay)
+    var html = '<div class="rpd">' +
+      '<div class="rpd-shape rpd-s1"></div><div class="rpd-shape rpd-s2"></div>' +
+      '<div class="rpd-inner">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">Cierre del día 🌙</div></div></div>' +
+        '<div class="rpd-headline">' + _esc(r.recap_msg || '') + '</div>' +
+        '<div class="rpd-hero">' +
+          '<div class="rpd-hero-main"><div class="rpd-hero-n">' + done.length + '</div>' +
+            '<div class="rpd-hero-l">Completada' + (done.length === 1 ? '' : 's') + '</div></div>' +
+          '<div class="rpd-box"><div class="rpd-box-v">' + pend.length + '</div><div class="rpd-box-l">Pendientes</div></div>' +
+          '<div class="rpd-box"><div class="rpd-box-v">' + items.length + '</div><div class="rpd-box-l">' + unidadTot + '</div></div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
     if (done.length) {
-      html += '<div class="pend-recap-sec">✓ Trabajadas hoy</div>';
+      html += '<div class="pend-recap-sec">✓ ' + (esTarea ? 'Tareas cerradas hoy' : 'Trabajadas hoy') + '</div>';
       done.forEach(function (it) { html += _recapRow(it, true); });
     }
     if (pend.length) {
-      html += '<div class="pend-recap-sec">○ Quedaron pendientes</div>';
+      html += '<div class="pend-recap-sec">○ ' + (esTarea ? 'Tareas pendientes' : 'Quedaron pendientes') + '</div>';
       pend.forEach(function (it) { html += _recapRow(it, false); });
+    }
+    if (!items.length) {
+      html += '<div class="pend-empty">Sin actividad registrada hoy 🌙</div>';
     }
     res.innerHTML = html;
   }
