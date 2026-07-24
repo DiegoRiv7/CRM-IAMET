@@ -6727,39 +6727,112 @@ def _pend_recap_msg_tarea(nombre, completadas, total):
     return f'{nombre}, completaste {completadas} de {total} tareas hoy. Un empujón mañana. 💪'
 
 
-def _pend_recap_tareas(user, today):
-    """Recap del día basado en TAREAS (ingenieros/administrativos sin oportunidades).
-
-    Devuelve (items, completadas_hoy, total). Cada item usa las MISMAS llaves que el
-    recap de oportunidades para reutilizar el render (proyecto=título, cliente=contexto).
+def _pend_tareas_actividades(user, today):
+    """Items de trabajo (Tareas asignadas + Actividades propias) para 'Mi día' y el
+    cierre del día de roles SIN oportunidades. Devuelve (pendientes, completadas_hoy),
+    con una forma común, ordenados por urgencia (atrasado → hoy → después).
     """
-    from .models import Tarea
+    from datetime import timedelta
+    from django.db.models import Q
+    from .models import Tarea, Actividad
 
-    def _ctx(t):
+    prio_lbl = {'urgente': 'Urgente', 'alta': 'Alta', 'media': 'Media', 'baja': 'Baja'}
+    prio_riesgo = {'urgente': 'alto', 'alta': 'alto', 'media': 'medio', 'baja': 'bajo'}
+    piso = today - timedelta(days=30)   # no arrastrar actividades muy viejas sin cerrar
+
+    def _urg(fd):
+        if fd is None:
+            return 2, 'Sin fecha'
+        if fd < today:
+            return 0, 'Atrasada'
+        if fd == today:
+            return 1, 'Vence hoy'
+        return 2, 'Programada'
+
+    def _msg(kind, titulo, ctx, urg):
+        c = f' para {ctx}' if ctx else ''
+        if urg == 0:
+            return (f'«{titulo}»{c} quedó atrasada. Retómala hoy para no acumular. 💪',
+                    'Está atrasada — ciérrala hoy.')
+        if urg == 1:
+            verbo = 'toca' if kind == 'tarea' else 'tienes agendada'
+            return (f'Hoy {verbo} «{titulo}»{c}. Buen momento para sacarla.',
+                    'Es para hoy — dale prioridad.')
+        base = 'Tienes pendiente' if kind == 'tarea' else 'Tienes agendada'
+        return (f'{base} «{titulo}»{c}.', 'Avánzala hoy si te queda tiempo.')
+
+    def _tctx(t):
+        if t.oportunidad_id and t.oportunidad:
+            return getattr(t.oportunidad, 'oportunidad', '') or ''
         if t.proyecto_id and t.proyecto:
             return getattr(t.proyecto, 'nombre', '') or getattr(t.proyecto, 'titulo', '') or ''
         if t.cliente_id and t.cliente:
             return getattr(t.cliente, 'nombre_empresa', '') or ''
         return ''
 
-    base = Tarea.objects.filter(asignado_a=user).exclude(estado='cancelada').select_related('proyecto', 'cliente')
-    done_qs = base.filter(estado='completada', fecha_completada__date=today).order_by('-fecha_completada')
-    pend_qs = base.exclude(estado='completada').order_by('fecha_limite', '-fecha_creacion')
-    done_list = list(done_qs[:40])
-    pend_list = list(pend_qs[:40])
+    def _adisplay(a):
+        try:
+            return a.get_tipo_actividad_display() or 'Actividad'
+        except Exception:
+            return 'Actividad'
 
-    def _mk(t, completada):
-        return {
-            'tipo': 'tarea', 'tarea_id': t.id, 'opp_id': None,
-            'proyecto': t.titulo or '(sin título)',
-            'cliente': _ctx(t),
-            'valor_fmt': '',
-            'completada': completada,
-        }
+    def _actx(a):
+        if a.oportunidad_id and a.oportunidad:
+            return getattr(a.oportunidad, 'oportunidad', '') or ''
+        return ''
 
-    items = [_mk(t, True) for t in done_list] + [_mk(t, False) for t in pend_list]
-    total = len(done_list) + len(pend_list)
-    return items, len(done_list), total
+    pend, done = [], []
+
+    # ── TAREAS asignadas ──
+    tbase = (Tarea.objects.filter(asignado_a=user).exclude(estado='cancelada')
+             .select_related('proyecto', 'cliente', 'oportunidad'))
+    for t in tbase.exclude(estado='completada').order_by('fecha_limite', '-fecha_creacion')[:60]:
+        fd = timezone.localtime(t.fecha_limite).date() if t.fecha_limite else None
+        urg, estado_lbl = _urg(fd)
+        pr = t.prioridad or 'media'
+        mensaje, accion = _msg('tarea', t.titulo or 'Tarea', _tctx(t), urg)
+        pend.append({
+            'tipo': 'tarea', 'ref_id': t.id, 'url': '/app/?tarea=%d' % t.id, 'opp_id': None,
+            'proyecto': t.titulo or '(sin título)', 'cliente': _tctx(t), 'valor_fmt': '',
+            'prioridad_lbl': prio_lbl.get(pr, 'Media'), 'riesgo': prio_riesgo.get(pr, 'medio'),
+            'vence': (timezone.localtime(t.fecha_limite).strftime('%d/%m %H:%M') if t.fecha_limite else ''),
+            'estado_lbl': estado_lbl, 'mensaje': mensaje, 'accion': accion, '_ord': urg,
+        })
+    for t in tbase.filter(estado='completada', fecha_completada__date=today).order_by('-fecha_completada')[:60]:
+        done.append({
+            'tipo': 'tarea', 'ref_id': t.id, 'url': '/app/?tarea=%d' % t.id, 'opp_id': None,
+            'proyecto': t.titulo or '(sin título)', 'cliente': _tctx(t), 'valor_fmt': '',
+            'prioridad_lbl': '', 'riesgo': 'bajo', 'vence': '', 'estado_lbl': 'Completada',
+            'mensaje': '', 'accion': '',
+        })
+
+    # ── ACTIVIDADES propias o donde participo ──
+    abase = (Actividad.objects.filter(Q(creado_por=user) | Q(participantes=user))
+             .distinct().select_related('oportunidad'))
+    for a in abase.filter(completada=False, fecha_inicio__date__lte=today,
+                          fecha_inicio__date__gte=piso).order_by('fecha_inicio')[:40]:
+        fd = timezone.localtime(a.fecha_inicio).date()
+        urg, estado_lbl = _urg(fd)
+        mensaje, accion = _msg('actividad', a.titulo or 'Actividad', _actx(a), urg)
+        pend.append({
+            'tipo': 'actividad', 'ref_id': a.id, 'url': '/app/?tab=calendario', 'opp_id': None,
+            'proyecto': a.titulo or '(sin título)', 'cliente': _actx(a), 'valor_fmt': '',
+            'prioridad_lbl': _adisplay(a), 'riesgo': 'medio',
+            'vence': timezone.localtime(a.fecha_inicio).strftime('%d/%m %H:%M'),
+            'estado_lbl': estado_lbl, 'mensaje': mensaje, 'accion': accion, '_ord': urg,
+        })
+    for a in abase.filter(completada=True, fecha_inicio__date=today).order_by('-fecha_inicio')[:40]:
+        done.append({
+            'tipo': 'actividad', 'ref_id': a.id, 'url': '/app/?tab=calendario', 'opp_id': None,
+            'proyecto': a.titulo or '(sin título)', 'cliente': _actx(a), 'valor_fmt': '',
+            'prioridad_lbl': '', 'riesgo': 'bajo', 'vence': '', 'estado_lbl': 'Completada',
+            'mensaje': '', 'accion': '',
+        })
+
+    pend.sort(key=lambda x: x.get('_ord', 2))
+    for it in pend:
+        it.pop('_ord', None)
+    return pend, done
 
 
 @login_required
@@ -6964,52 +7037,62 @@ def api_pendientes(request):
         'total': len(resumen_items),
         'items': resumen_items,
     }
-    # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
-    # Los datos duros ya están calculados; la IA solo redacta mensaje + acción.
-    try:
-        _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
-    except Exception:
-        _ia = None
-    if _ia:
-        _items = _ia.get('items') or {}
-        for _it in resumen_items:
-            _e = _items.get(str(_it['opp_id']))
-            if isinstance(_e, dict):
-                if _e.get('mensaje'):
-                    _it['mensaje'] = _e['mensaje']
-                if _e.get('accion'):
-                    _it['accion'] = _e['accion']
-
-    # ── Marcar las trabajadas HOY → van al final como completadas ──
-    worked = _pend_trabajadas_hoy(_res_ids, today, user)
-    pend = [it for it in resumen_items if it['opp_id'] not in worked]
-    done = [it for it in resumen_items if it['opp_id'] in worked]
-    for i, it in enumerate(pend):
-        it['prioridad'] = i + 1
-        it['completada'] = False
-    for it in done:
-        it['completada'] = True
-    resumen_items = pend + done
-    resumen['items'] = resumen_items
-    resumen['pendientes'] = len(pend)         # lo que falta por trabajar (baja el contador)
-    resumen['completadas'] = len(done)
-    resumen['total'] = len(resumen_items)
+    if resumen_items:
+        # ── Rol con OPORTUNIDADES (vendedores) ──
+        resumen['tipo'] = 'oportunidad'
+        # Enriquecer con el asistente (redacción cálida), cacheado 1 vez al día.
+        # Los datos duros ya están calculados; la IA solo redacta mensaje + acción.
+        try:
+            _ia = _pend_briefing_cacheado(user, today, sel, nombre_corto, resumen_items)
+        except Exception:
+            _ia = None
+        if _ia:
+            _items = _ia.get('items') or {}
+            for _it in resumen_items:
+                _e = _items.get(str(_it['opp_id']))
+                if isinstance(_e, dict):
+                    if _e.get('mensaje'):
+                        _it['mensaje'] = _e['mensaje']
+                    if _e.get('accion'):
+                        _it['accion'] = _e['accion']
+        # ── Marcar las trabajadas HOY → van al final como completadas ──
+        worked = _pend_trabajadas_hoy(_res_ids, today, user)
+        pend = [it for it in resumen_items if it['opp_id'] not in worked]
+        done = [it for it in resumen_items if it['opp_id'] in worked]
+        for i, it in enumerate(pend):
+            it['prioridad'] = i + 1
+            it['completada'] = False
+        for it in done:
+            it['completada'] = True
+        resumen_items = pend + done
+        resumen['items'] = resumen_items
+        resumen['pendientes'] = len(pend)     # lo que falta por trabajar (baja el contador)
+        resumen['completadas'] = len(done)
+        resumen['total'] = len(resumen_items)
+    else:
+        # ── Rol SIN oportunidades (ingenieros/administrativos): TAREAS + ACTIVIDADES ──
+        resumen['tipo'] = 'tarea'
+        pend_ta, done_ta = _pend_tareas_actividades(user, today)
+        for i, it in enumerate(pend_ta):
+            it['prioridad'] = i + 1
+            it['completada'] = False
+        for it in done_ta:
+            it['completada'] = True
+        resumen['items'] = pend_ta + done_ta
+        resumen['pendientes'] = len(pend_ta)
+        resumen['completadas'] = len(done_ta)
+        resumen['total'] = len(pend_ta) + len(done_ta)
 
     # ── Modo cierre del día (recap) a partir de las 18:00 ──
     if _hora >= 18:
         resumen['modo'] = 'recap'
-        if resumen_items:
-            resumen['recap_tipo'] = 'oportunidad'
-            resumen['recap_msg'] = _pend_recap_msg(nombre_corto, len(done), len(resumen_items))
+        resumen['recap_tipo'] = resumen['tipo']
+        if resumen['tipo'] == 'tarea':
+            resumen['recap_msg'] = _pend_recap_msg_tarea(
+                nombre_corto, resumen['completadas'], resumen['total'])
         else:
-            # Sin oportunidades (ingenieros/administrativos): cierre por TAREAS del día.
-            t_items, t_done, t_total = _pend_recap_tareas(user, today)
-            resumen['recap_tipo'] = 'tarea'
-            resumen['items'] = t_items
-            resumen['completadas'] = t_done
-            resumen['pendientes'] = t_total - t_done
-            resumen['total'] = t_total
-            resumen['recap_msg'] = _pend_recap_msg_tarea(nombre_corto, t_done, t_total)
+            resumen['recap_msg'] = _pend_recap_msg(
+                nombre_corto, resumen['completadas'], resumen['total'])
     else:
         resumen['modo'] = 'dia'
 

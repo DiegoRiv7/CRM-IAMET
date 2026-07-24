@@ -452,6 +452,7 @@
   // marca la actual como completada en su lugar; se ordena al final al reabrir.
   function pendRefreshEstado() {
     var r = _data && _data.resumen; if (!r || !r.items || !r.items.length) return;
+    if (r.tipo === 'tarea') return;   // el sondeo es por oportunidad; en modo tarea no aplica
     var ids = r.items.map(function (it) { return it.opp_id; }).join(',');
     fetch('/app/api/pendientes/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
       .then(function (res) { return res.json(); })
@@ -566,6 +567,7 @@
     res.classList.remove('pend-day');
     if (!r) { res.innerHTML = '<div class="pend-empty">Sin resumen disponible</div>'; return; }
     if (r.modo === 'recap') { _renderRecap(res, r); return; }
+    if (r.tipo === 'tarea') { _renderResumenTareas(res, r); return; }
     var items = r.items || [];
     var total = items.length;
     var pendientes = (r.pendientes != null ? r.pendientes : total);
@@ -643,6 +645,71 @@
   function _completedMsg(it) {
     if (it && it.tier === 'sinagendar') return '¡Bien! Agendaste el siguiente paso en esta oportunidad. 💪';
     return '¡Listo! Completaste la tarea de esta oportunidad. 💪';
+  }
+  window.pendIrUrl = function (u) { if (u) window.location = u; };
+  function _completedMsgTA(it) {
+    return '¡Listo! Cerraste esta ' + (it && it.tipo === 'actividad' ? 'actividad' : 'tarea') + '. 💪';
+  }
+  // "Mi día" para roles SIN oportunidades: sus TAREAS y ACTIVIDADES pendientes/hechas.
+  function _renderResumenTareas(res, r) {
+    var items = r.items || [];
+    var total = items.length;
+    var pendientes = (r.pendientes != null ? r.pendientes : total);
+    var completadas = r.completadas || 0;
+    var subtxt;
+    if (pendientes > 0) {
+      subtxt = 'Hoy tienes <b>' + pendientes + '</b> pendiente' + (pendientes === 1 ? '' : 's') + ' · tareas y actividades en orden de prioridad';
+      if (completadas > 0) subtxt += ' · <b>' + completadas + '</b> ✓';
+    } else if (completadas > 0) {
+      subtxt = '¡Terminaste todo por hoy! <b>' + completadas + '</b> completada' + (completadas === 1 ? '' : 's') + ' ✓';
+    } else {
+      subtxt = 'Vas al día — no hay tareas ni actividades pendientes. 🎉';
+    }
+    var hero = '<div class="pend-res-hero">' +
+      '<div class="pend-res-saludo">' + _esc(r.saludo) + ', ' + _esc(r.nombre) + '</div>' +
+      '<div class="pend-res-sub">' + subtxt + '</div></div>';
+    if (!total) { res.innerHTML = hero; res.classList.add('pend-day'); return; }
+    if (_resIdx >= total) _resIdx = total - 1;
+    if (_resIdx < 0) _resIdx = 0;
+    var it = items[_resIdx];
+    var rk = (it.riesgo || 'medio').toLowerCase();
+    var esAct = it.tipo === 'actividad';
+    var tipoLbl = esAct ? 'Actividad' : 'Tarea';
+    var agentSub = it.completada
+      ? '<span class="pend-sc-done">✓ Completada hoy</span>'
+      : ('Prioridad ' + it.prioridad + ' · ' + tipoLbl);
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">' + _esc(_completedMsgTA(it)) + '</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent">' +
+          '<div class="pend-sc-ia">IA</div>' +
+          '<div><div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div>' +
+        '</div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || it.proyecto || '') + '</div>' +
+        playBlock +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">' + (esAct ? 'Tipo de actividad' : 'Prioridad') + '</div>' +
+        '<div><span class="pend-sc-riesgo ' + rk + '">' + _esc(it.prioridad_lbl || tipoLbl) + '</span></div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Vence</div>' +
+          '<div class="pend-sc-kv-val">' + _esc(it.vence || 'Sin fecha') + '</div></div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Estado</div>' +
+          '<div class="pend-sc-kv-val">' + _esc(it.estado_lbl || '') + '</div></div>' +
+        (it.cliente ? '<div class="pend-sc-divider"></div>' +
+          '<div class="pend-sc-kv"><div class="pend-sc-flabel">' + (esAct ? 'Relacionada con' : 'Proyecto / Cliente') + '</div><div class="pend-sc-kv-val">' + _esc(it.cliente) + '</div></div>' : '') +
+        '<button type="button" class="pend-sc-btn" onclick="pendIrUrl(\'' + _esc(it.url || '') + '\')">' + (esAct ? 'Ver en calendario' : 'Ver tarea') + '</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">' + (_resIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendResNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.innerHTML = hero + card + pager;
+    res.classList.add('pend-day');
   }
 
   // ── Replay mensual (Wrapped) ──
@@ -752,10 +819,8 @@
     }).catch(function () {});
   };
 
-  window.pendAbrirTarea = function (id) { if (id) window.location = '/app/?tarea=' + id; };
   function _recapRow(it, done) {
-    var isTarea = it.tipo === 'tarea';
-    var click = isTarea ? ('pendAbrirTarea(' + it.tarea_id + ')') : ('pendAbrirOpp(' + it.opp_id + ')');
+    var click = it.opp_id ? ('pendAbrirOpp(' + it.opp_id + ')') : ("pendIrUrl('" + _esc(it.url || '') + "')");
     return '<div class="pend-recap-row' + (done ? ' done' : '') + '" onclick="' + click + '">' +
       '<span class="pend-recap-ic">' + (done ? '✓' : '○') + '</span>' +
       '<span class="pend-recap-nombre">' + _esc(it.proyecto) + '</span>' +
