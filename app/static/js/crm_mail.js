@@ -880,7 +880,7 @@
                         tw.style.display = 'block';
                         tl.innerHTML = d.tareas.map(function (t) {
                             var f = t.fecha_limite ? _formatFecha(t.fecha_limite) : '';
-                            return '<div onclick="if(typeof crmTaskVerDetalle===&quot;function&quot;)crmTaskVerDetalle(' + t.id + ')" ' +
+                            return '<div onclick="mailCtxAbrirTarea(' + t.id + ')" ' +
                                 'style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #EEF1F5;border-radius:10px;padding:8px 11px;cursor:pointer;transition:border-color 0.12s;" ' +
                                 'onmouseenter="this.style.borderColor=&quot;#BFDBFE&quot;" onmouseleave="this.style.borderColor=&quot;#EEF1F5&quot;">' +
                                 '<span style="width:15px;height:15px;border:1.5px solid #C9CFD8;border-radius:50%;flex-shrink:0;"></span>' +
@@ -958,6 +958,14 @@
                     }
                 })
                 .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+        window.mailCtxAbrirTarea = function (tareaId) {
+            // Las tareas del panel son TareaOportunidad (cockpit de Tareas),
+            // NO el modal de Tarea de proyectos — abrir la sección Tareas con
+            // la tarea ya seleccionada (deep-link vía sessionStorage).
+            try { sessionStorage.setItem('tcpAbrirTarea', String(tareaId)); } catch (e) { }
+            try { localStorage.setItem('crmView', 'tareas'); } catch (e) { }
+            window.location.href = '/app/home/?tab=tareas';
         };
         window.mailCtxAbrirActividad = function () {
             if (!window._mailCtxOppId || typeof window.openDetalle !== 'function') return;

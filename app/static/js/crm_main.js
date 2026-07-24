@@ -7262,6 +7262,18 @@
             // Render cockpit si visible
             if (typeof renderTareasCockpit === 'function') renderTareasCockpit(tareas, now);
 
+            // Deep-link desde el panel de contexto del Correo: seleccionar la
+            // tarea pedida en cuanto la lista queda renderizada.
+            try {
+                var _pendTarea = sessionStorage.getItem('tcpAbrirTarea');
+                if (_pendTarea) {
+                    sessionStorage.removeItem('tcpAbrirTarea');
+                    if (typeof window.tcpSelectTask === 'function') {
+                        setTimeout(function () { window.tcpSelectTask(parseInt(_pendTarea, 10)); }, 150);
+                    }
+                }
+            } catch (e) { }
+
             // Clear button visibility
             var clrBtn = document.getElementById('btnTareasFacetClear');
             if (clrBtn) {

@@ -1235,11 +1235,17 @@ def api_mail_contexto(request, correo_id):
         if n.strip().lower() not in _terminales and not n.strip().lower().startswith('prueba')
     ]
     etapa_idx = None
-    if opp.etapa_corta and etapas:
+    etapa_nombre = opp.etapa_corta or ''
+    if etapa_nombre and etapas:
         for _i, _n in enumerate(etapas):
-            if _n.strip().lower() == opp.etapa_corta.strip().lower():
+            if _n.strip().lower() == etapa_nombre.strip().lower():
                 etapa_idx = _i
                 break
+    # Sin etapa en BD: el widget de oportunidad la muestra en la PRIMERA
+    # etapa del pipeline — reflejar lo mismo aquí (no decir "Sin etapa").
+    if not etapa_nombre and etapas:
+        etapa_idx = 0
+        etapa_nombre = etapas[0]
 
     # Próxima actividad de calendario de la oportunidad (si existe)
     prox_act = (
@@ -1256,7 +1262,7 @@ def api_mail_contexto(request, correo_id):
             'nombre': opp.oportunidad,
             'monto': float(opp.monto or 0),
             'probabilidad': opp.probabilidad_cierre or 0,
-            'etapa': opp.etapa_corta or '',
+            'etapa': etapa_nombre,
             'etapa_color': opp.etapa_color or '#3B82F6',
             'etapa_idx': etapa_idx,
             'etapa_total': len(etapas),
