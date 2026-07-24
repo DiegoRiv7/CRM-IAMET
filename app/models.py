@@ -3764,6 +3764,43 @@ class MailCorreo(models.Model):
         return f"[{self.carpeta_display}] {self.asunto[:60]} — {self.remitente_email}"
 
 
+class MailAccionPendiente(models.Model):
+    """Cola de acciones CRM→IMAP (Fase 2, sync de dos vías).
+
+    Cada acción local (destacar, eliminar, archivar, leer) se encola aquí y
+    un worker la ejecuta contra el servidor IMAP real — primero un intento
+    inmediato en hilo daemon y, si falla (servidor caído, timeout), la
+    recoge el comando sincronizar_correo en su siguiente pasada. La UI
+    nunca espera al IMAP."""
+    ACCION_CHOICES = [
+        ('leido', 'Marcar leído'),
+        ('destacar', 'Destacar'),
+        ('no_destacar', 'Quitar destacado'),
+        ('eliminar', 'Mover a papelera'),
+        ('archivar', 'Archivar'),
+    ]
+    conexion = models.ForeignKey(
+        MailConexion, on_delete=models.CASCADE, related_name='acciones_pendientes'
+    )
+    correo = models.ForeignKey(
+        MailCorreo, on_delete=models.CASCADE, related_name='acciones_pendientes'
+    )
+    accion = models.CharField(max_length=20, choices=ACCION_CHOICES)
+    resuelta = models.BooleanField(default=False, db_index=True)
+    intentos = models.IntegerField(default=0)
+    ultimo_error = models.TextField(blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_resuelta = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['fecha_creacion']
+        verbose_name = "Acción de Correo Pendiente"
+        verbose_name_plural = "Acciones de Correo Pendientes"
+
+    def __str__(self):
+        return f"{self.accion} correo={self.correo_id} ({'ok' if self.resuelta else 'pendiente'})"
+
+
 class MailAdjunto(models.Model):
     """Attachment metadata + cached binary content (base64)."""
     correo = models.ForeignKey(MailCorreo, on_delete=models.CASCADE, related_name='adjuntos')

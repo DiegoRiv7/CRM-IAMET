@@ -18,11 +18,13 @@ from email.mime.image import MIMEImage
 from email.mime.application import MIMEApplication
 from email.mime.audio import MIMEAudio
 import logging
+import threading
 from email.encoders import encode_base64
 from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db import connections
 from django.db.models import Count, Max, Q
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -31,7 +33,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone as django_tz
 
 from .models import (
-    MailConexion, MailCorreo, MailAdjunto,
+    MailConexion, MailCorreo, MailAdjunto, MailAccionPendiente,
     TodoItem, OportunidadActividad, MensajeOportunidad,
 )
 
@@ -531,6 +533,282 @@ def api_mail_lista(request):
     })
 
 
+# ═════════════════════════════════════════════════════════════════════════
+# FASE 2 — SYNC DE DOS VÍAS (CRM ⇄ IMAP)
+# Las acciones locales se encolan (MailAccionPendiente) y se aplican contra
+# el servidor: intento inmediato en hilo daemon + reintentos del comando
+# sincronizar_correo. El worker además baja nuevos y refresca flags.
+# ═════════════════════════════════════════════════════════════════════════
+
+_TRASH_CANDIDATAS = ['Trash', 'Deleted Items', 'Deleted Messages', 'Papelera', 'INBOX.Trash']
+_ARCHIVE_CANDIDATAS = ['Archive', 'Archivo', 'Archived', 'INBOX.Archive']
+
+
+def _detectar_carpeta(imap, candidatas, crear=None):
+    """Busca una carpeta del servidor por nombre (case-insensitive, tolera
+    prefijos INBOX. o /). Si no existe y `crear` viene, intenta crearla."""
+    nombres = []
+    try:
+        typ, folders = imap.list()
+        for f in (folders or []):
+            try:
+                s = f.decode(errors='ignore') if isinstance(f, bytes) else str(f)
+                m = re.search(r'"([^"]+)"\s*$', s)
+                nombres.append(m.group(1) if m else s.split()[-1].strip('"'))
+            except Exception:
+                continue
+        for cand in candidatas:
+            cl = cand.lower()
+            for n in nombres:
+                nl = n.lower()
+                if nl == cl or nl.endswith('.' + cl) or nl.endswith('/' + cl):
+                    return n
+    except Exception as e:
+        logger.warning("No se pudieron listar carpetas IMAP: %s", e)
+    if crear:
+        try:
+            imap.create(crear)
+            return crear
+        except Exception:
+            pass
+    return None
+
+
+def encolar_accion_mail(correo, accion):
+    """Encola una acción CRM→IMAP y dispara un intento inmediato en un hilo
+    daemon (la UI nunca espera al servidor de correo). Si el intento falla,
+    la acción queda pendiente y la recoge el worker en su siguiente pasada."""
+    if not correo.conexion_id:
+        return
+    MailAccionPendiente.objects.create(
+        conexion_id=correo.conexion_id, correo=correo, accion=accion
+    )
+
+    def _bg(conexion_id):
+        try:
+            conexion = MailConexion.objects.get(id=conexion_id, activo=True)
+            aplicar_acciones_pendientes(conexion)
+        except Exception as e:
+            logger.warning("Flush inmediato de acciones falló (reintenta el worker): %s", e)
+        finally:
+            connections.close_all()  # conexión BD del hilo
+
+    threading.Thread(target=_bg, args=(correo.conexion_id,), daemon=True).start()
+
+
+def aplicar_acciones_pendientes(conexion, imap=None):
+    """Aplica la cola de acciones contra el servidor IMAP. Devuelve cuántas
+    se resolvieron. Se rinde tras 10 intentos por acción (correo borrado en
+    el servidor, carpeta inexistente, etc.)."""
+    pendientes = list(
+        MailAccionPendiente.objects.filter(conexion=conexion, resuelta=False, intentos__lt=10)
+        .select_related('correo')
+        .order_by('fecha_creacion')[:100]
+    )
+    if not pendientes:
+        return 0
+
+    cerrar = False
+    if imap is None:
+        imap = _get_imap(conexion)
+        cerrar = True
+
+    aplicadas = 0
+    destinos = {}  # cache de carpetas detectadas en esta pasada
+    try:
+        for acc in pendientes:
+            c = acc.correo
+            try:
+                if not c or not c.uid_imap or not c.uid_imap.isdigit():
+                    # Sin UID utilizable (ya movido/borrado): nada que hacer
+                    acc.resuelta = True
+                    acc.ultimo_error = 'sin uid imap utilizable'
+                    acc.fecha_resuelta = django_tz.now()
+                    acc.save(update_fields=['resuelta', 'ultimo_error', 'fecha_resuelta'])
+                    continue
+
+                imap.select(c.carpeta_imap)  # readwrite
+                uid = c.uid_imap.encode()
+
+                if acc.accion == 'leido':
+                    imap.uid('STORE', uid, '+FLAGS', '(\\Seen)')
+                elif acc.accion == 'destacar':
+                    imap.uid('STORE', uid, '+FLAGS', '(\\Flagged)')
+                elif acc.accion == 'no_destacar':
+                    imap.uid('STORE', uid, '-FLAGS', '(\\Flagged)')
+                elif acc.accion in ('eliminar', 'archivar'):
+                    clave = 'trash' if acc.accion == 'eliminar' else 'archive'
+                    if clave not in destinos:
+                        if clave == 'trash':
+                            destinos[clave] = _detectar_carpeta(imap, _TRASH_CANDIDATAS)
+                        else:
+                            destinos[clave] = _detectar_carpeta(imap, _ARCHIVE_CANDIDATAS, crear='Archive')
+                        # select() de la detección pudo cambiar el buzón activo
+                        imap.select(c.carpeta_imap)
+                    destino = destinos[clave]
+                    if destino:
+                        imap.uid('COPY', uid, f'"{destino}"' if ' ' in destino else destino)
+                    imap.uid('STORE', uid, '+FLAGS', '(\\Deleted)')
+                    imap.expunge()
+                    # El UID viejo dejó de existir y el nuevo (en destino) no se
+                    # conoce sin UIDPLUS → invalidar para futuras acciones
+                    c.uid_imap = f'movido-{c.id}'
+                    c.save(update_fields=['uid_imap'])
+
+                acc.resuelta = True
+                acc.fecha_resuelta = django_tz.now()
+                acc.save(update_fields=['resuelta', 'fecha_resuelta'])
+                aplicadas += 1
+            except Exception as e:
+                acc.intentos += 1
+                acc.ultimo_error = str(e)[:500]
+                acc.save(update_fields=['intentos', 'ultimo_error'])
+                logger.warning("Acción mail %s (correo %s) falló: %s", acc.accion, acc.correo_id, e)
+    finally:
+        if cerrar:
+            try:
+                imap.logout()
+            except Exception:
+                pass
+    return aplicadas
+
+
+def refrescar_flags_inbox(conexion, imap, max_correos=200):
+    """IMAP→CRM: refleja \\Seen y \\Flagged del servidor en la caché local
+    (lo que leíste/destacaste desde el celular aparece igual en el CRM)."""
+    usuario = conexion.usuario
+    correos = list(
+        MailCorreo.objects.filter(usuario=usuario, carpeta_imap='INBOX', eliminado=False)
+        .order_by('-fecha_envio')[:max_correos]
+    )
+    por_uid = {c.uid_imap: c for c in correos if c.uid_imap.isdigit()}
+    if not por_uid:
+        return 0
+    imap.select('INBOX', readonly=True)
+    typ, data = imap.uid('FETCH', ','.join(sorted(por_uid, key=int)).encode(), '(FLAGS)')
+    # No pisar cambios locales que aún no llegan al servidor
+    con_pendientes = set(
+        MailAccionPendiente.objects.filter(conexion=conexion, resuelta=False)
+        .values_list('correo_id', flat=True)
+    )
+    cambios = 0
+    for linea in (data or []):
+        if isinstance(linea, tuple):
+            linea = linea[0]
+        if not linea:
+            continue
+        s = linea.decode(errors='ignore') if isinstance(linea, bytes) else str(linea)
+        m = re.search(r'UID (\d+)', s)
+        if not m:
+            continue
+        c = por_uid.get(m.group(1))
+        if not c or c.id in con_pendientes:
+            continue
+        flags = s.upper()
+        leido = '\\SEEN' in flags
+        destacado = '\\FLAGGED' in flags
+        upd = []
+        if c.leido != leido:
+            c.leido = leido
+            upd.append('leido')
+        if c.destacado != destacado:
+            c.destacado = destacado
+            upd.append('destacado')
+        if upd:
+            c.save(update_fields=upd)
+            cambios += 1
+    return cambios
+
+
+def sincronizar_nuevos_conexion(conexion, imap):
+    """Núcleo de sync para el worker en segundo plano: baja encabezados
+    nuevos de INBOX (últimos 50) y SENT (últimos 30). Espejo compacto de
+    api_mail_sincronizar sin depender del request."""
+    usuario = conexion.usuario
+    nuevos_total = 0
+
+    linked_message_ids = {
+        c.message_id: c.oportunidad_id
+        for c in MailCorreo.objects.filter(usuario=usuario, oportunidad__isnull=False).exclude(message_id='')
+    }
+
+    def _crear(uid, fetch_data, carpeta_imap, carpeta_display, leido):
+        raw_headers = fetch_data[0][1] if isinstance(fetch_data[0], tuple) else b''
+        if not raw_headers:
+            return 0
+        msg = email_lib.message_from_bytes(raw_headers)
+        parsed = _parse_message_headers(msg)
+        raw_str = str(fetch_data)
+        has_adj = 'attachment' in raw_str.lower() or '"application/' in raw_str.lower()
+        opp_id = None
+        irt = parsed['in_reply_to']
+        if irt and irt in linked_message_ids:
+            opp_id = linked_message_ids[irt]
+        MailCorreo.objects.create(
+            usuario=usuario,
+            conexion=conexion,
+            uid_imap=uid,
+            carpeta_imap=carpeta_imap,
+            carpeta_display=carpeta_display,
+            message_id=parsed['message_id'],
+            in_reply_to=parsed['in_reply_to'],
+            asunto=parsed['asunto'],
+            remitente_nombre=parsed['remitente_nombre'],
+            remitente_email=parsed['remitente_email'],
+            destinatarios_json=json.dumps(parsed['destinatarios'], ensure_ascii=False),
+            fecha_envio=parsed['fecha'],
+            leido=leido,
+            tiene_adjuntos=has_adj if carpeta_display == 'INBOX' else False,
+            oportunidad_id=opp_id,
+        )
+        return 1
+
+    campos = '(FLAGS BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID IN-REPLY-TO CONTENT-TYPE)])'
+
+    # INBOX
+    try:
+        imap.select('INBOX', readonly=True)
+        typ, data = imap.uid('SEARCH', None, 'ALL')
+        all_uids = [u.decode() for u in (data[0].split() if data[0] else [])]
+        existing = set(
+            MailCorreo.objects.filter(usuario=usuario, carpeta_imap='INBOX')
+            .values_list('uid_imap', flat=True)
+        )
+        for uid in [u for u in all_uids[-50:] if u not in existing]:
+            try:
+                typ, fetch_data = imap.uid('FETCH', uid.encode(), campos)
+                if fetch_data and fetch_data[0] is not None:
+                    nuevos_total += _crear(uid, fetch_data, 'INBOX', 'INBOX', leido=False)
+            except Exception as exc:
+                logger.warning("Worker: error INBOX uid %s: %s", uid, exc)
+    except Exception as e:
+        logger.warning("Worker: error sync INBOX %s: %s", conexion.correo_electronico, e)
+
+    # SENT
+    try:
+        sent_folder = _detect_sent_folder(imap)
+        imap.select(sent_folder, readonly=True)
+        typ, data = imap.uid('SEARCH', None, 'ALL')
+        all_uids = [u.decode() for u in (data[0].split() if data[0] else [])]
+        existing = set(
+            MailCorreo.objects.filter(usuario=usuario, carpeta_imap=sent_folder)
+            .values_list('uid_imap', flat=True)
+        )
+        for uid in [u for u in all_uids[-30:] if u not in existing]:
+            try:
+                typ, fetch_data = imap.uid('FETCH', uid.encode(), campos)
+                if fetch_data and fetch_data[0] is not None:
+                    nuevos_total += _crear(uid, fetch_data, sent_folder, 'SENT', leido=True)
+            except Exception as exc:
+                logger.warning("Worker: error SENT uid %s: %s", uid, exc)
+    except Exception as e:
+        logger.warning("Worker: error sync SENT %s: %s", conexion.correo_electronico, e)
+
+    conexion.ultima_sincronizacion = django_tz.now()
+    conexion.save(update_fields=['ultima_sincronizacion'])
+    return nuevos_total
+
+
 @login_required
 @csrf_exempt
 @require_http_methods(['POST'])
@@ -747,6 +1025,13 @@ def api_mail_detalle(request, correo_id):
             imap.logout()
         except Exception as exc:
             logger.error("Error fetching body for correo %s: %s", correo_id, exc)
+
+    # Cuerpo ya en caché pero sin leer (p.ej. quedó no-leído tras un refresh
+    # de flags): marcar leído local y propagar \Seen al servidor vía cola.
+    if correo.cuerpo_cargado and not correo.leido:
+        correo.leido = True
+        correo.save(update_fields=['leido'])
+        encolar_accion_mail(correo, 'leido')
 
     adjuntos = [
         {'id': a.id, 'nombre': a.nombre_archivo, 'content_type': a.content_type, 'tamanio': a.tamanio_bytes}
@@ -1504,6 +1789,7 @@ def api_mail_destacar(request, correo_id):
         return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
     correo.destacado = not correo.destacado
     correo.save(update_fields=['destacado'])
+    encolar_accion_mail(correo, 'destacar' if correo.destacado else 'no_destacar')
     return JsonResponse({'ok': True, 'destacado': correo.destacado})
 
 
@@ -1511,14 +1797,17 @@ def api_mail_destacar(request, correo_id):
 @csrf_exempt
 @require_http_methods(['POST'])
 def api_mail_archivar(request, correo_id):
-    """Toggle de archivo local (Fase 1). El correo sale del INBOX y vive en
-    la carpeta Archivo; el movimiento en el servidor IMAP llega en Fase 2."""
+    """Toggle de archivo. Local de inmediato; al archivar se encola el
+    movimiento a la carpeta Archive REAL del servidor (Fase 2)."""
     try:
         correo = MailCorreo.objects.get(id=correo_id, usuario=request.user)
     except MailCorreo.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Correo no encontrado'}, status=404)
     correo.archivado = not correo.archivado
     correo.save(update_fields=['archivado'])
+    if correo.archivado:
+        encolar_accion_mail(correo, 'archivar')  # mover a Archive REAL del servidor
+    # Des-archivar es solo local (el UID nuevo en Archive no se conoce sin UIDPLUS)
     return JsonResponse({'ok': True, 'archivado': correo.archivado})
 
 
@@ -1535,10 +1824,14 @@ def api_mail_eliminar(request, correo_id):
     except Exception:
         data = {}
     if data.get('restaurar'):
+        # Restaurar es solo local: el UID en el servidor ya cambió al moverse
+        # a la papelera real (sin UIDPLUS no lo conocemos).
         correo.eliminado = False
     else:
         correo.eliminado = True
     correo.save(update_fields=['eliminado'])
+    if correo.eliminado:
+        encolar_accion_mail(correo, 'eliminar')  # mover a papelera REAL del servidor
     return JsonResponse({'ok': True, 'eliminado': correo.eliminado})
 
 

@@ -23,4 +23,4 @@ jobs:
             # `up -d --force-recreate` arranca el contenedor con docker-entrypoint.sh,
             # que ya corre migrate + collectstatic --clear al iniciar. No se duplica
             # aquí porque la segunda pasada agotaba memoria y mataba el deploy (137).
-            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml up -d --force-recreate web
+            sudo docker compose --env-file .env.pruebas -f docker-compose.pruebas.yml up -d --force-recreate web mailsync

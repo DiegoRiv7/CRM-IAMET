@@ -29,6 +29,33 @@ services:
     networks:
       - pruebas_net
 
+  # Worker de correo (Fase 2): sync de dos vías CRM⇄IMAP cada 3 minutos.
+  # entrypoint directo (sin docker-entrypoint.sh) para NO repetir
+  # migrate/collectstatic — de eso ya se encarga el contenedor web.
+  mailsync:
+    build: .
+    restart: unless-stopped
+    container_name: crm-pruebas-mailsync
+    volumes:
+      - .:/app
+      - media_pruebas:/app/media
+    env_file:
+      - .env.pruebas
+    depends_on:
+      - db
+      - web
+    environment:
+      DB_HOST: db
+    entrypoint: python manage.py sincronizar_correo --loop 180
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+    networks:
+      - pruebas_net
+
   db:
     image: mysql:8.0
     restart: unless-stopped
