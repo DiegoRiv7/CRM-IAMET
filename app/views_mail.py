@@ -35,7 +35,7 @@ from django.utils import timezone as django_tz
 from .models import (
     MailConexion, MailCorreo, MailAdjunto, MailAccionPendiente,
     TodoItem, OportunidadActividad, MensajeOportunidad, TareaOportunidad,
-    mail_hilo_key,
+    Actividad, mail_hilo_key,
 )
 
 logger = logging.getLogger(__name__)
@@ -972,16 +972,25 @@ def api_mail_contexto(request, correo_id):
     # Barra de ETAPA: posición de la etapa actual dentro de su pipeline
     from .models import EtapaPipeline
     pipeline = 'proyecto' if (opp.tipo_negociacion or '') in ('proyecto', 'bitrix_proyecto') else 'runrate'
-    etapas = list(
-        EtapaPipeline.objects.filter(pipeline=pipeline, activo=True)
+    _terminales = {'ganado', 'perdido', 'pagado', 'sin respuesta'}
+    etapas = [
+        n for n in EtapaPipeline.objects.filter(pipeline=pipeline, activo=True)
         .order_by('orden').values_list('nombre', flat=True)
-    )
+        if n.strip().lower() not in _terminales and not n.strip().lower().startswith('prueba')
+    ]
     etapa_idx = None
     if opp.etapa_corta and etapas:
         for _i, _n in enumerate(etapas):
             if _n.strip().lower() == opp.etapa_corta.strip().lower():
                 etapa_idx = _i
                 break
+
+    # Próxima actividad de calendario de la oportunidad (si existe)
+    prox_act = (
+        Actividad.objects.filter(
+            oportunidad=opp, completada=False, fecha_fin__gte=django_tz.now()
+        ).order_by('fecha_inicio').first()
+    )
 
     return JsonResponse({
         'ok': True,
@@ -1019,6 +1028,10 @@ def api_mail_contexto(request, correo_id):
             }
             for a in actividades
         ],
+        'proxima_actividad': {
+            'titulo': prox_act.titulo,
+            'fecha': prox_act.fecha_inicio.isoformat() if prox_act.fecha_inicio else None,
+        } if prox_act else None,
         'correos_count': correos_count,
     })
 

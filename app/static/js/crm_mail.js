@@ -555,29 +555,49 @@
                     _mailCtxSet('mailCtxOppMonto', '$' + Number(d.oportunidad.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }));
                     var segs = document.getElementById('mailCtxOppSegs');
                     if (segs) {
-                        // Barra de ETAPA: un segmento por etapa del pipeline,
-                        // llenos hasta la etapa actual de la oportunidad.
+                        // Barra de ETAPA: segmentos si el pipeline es corto,
+                        // barra continua si tiene muchas etapas.
                         var total = d.oportunidad.etapa_total || 0;
+                        var idx = d.oportunidad.etapa_idx;
                         var llenos, color = d.oportunidad.etapa_color || '#007AFF';
-                        if (total > 0 && d.oportunidad.etapa_idx !== null && d.oportunidad.etapa_idx !== undefined) {
-                            llenos = d.oportunidad.etapa_idx + 1;
+                        if (total > 0 && idx !== null && idx !== undefined) {
+                            llenos = idx + 1;
                         } else if (total > 0) {
                             llenos = 0;
                         } else {
                             total = 5;
                             llenos = Math.max(0, Math.min(5, Math.round((d.oportunidad.probabilidad || 0) / 20)));
                         }
-                        var hs = '';
-                        for (var si = 0; si < total; si++) {
-                            hs += '<span style="flex:1;height:5px;border-radius:99px;background:' +
-                                (si < llenos ? color : '#EEF1F5') + ';"></span>';
+                        if (total > 10) {
+                            var pct = Math.round((llenos / total) * 100);
+                            segs.innerHTML = '<span style="flex:1;height:6px;border-radius:99px;background:#EEF1F5;overflow:hidden;display:block;">' +
+                                '<span style="display:block;height:100%;width:' + pct + '%;background:' + color + ';border-radius:99px;transition:width 0.4s;"></span></span>';
+                        } else {
+                            var hs = '';
+                            for (var si = 0; si < total; si++) {
+                                hs += '<span style="flex:1;height:6px;border-radius:99px;background:' +
+                                    (si < llenos ? color : '#EEF1F5') + ';"></span>';
+                            }
+                            segs.innerHTML = hs;
                         }
-                        segs.innerHTML = hs;
+                        var posEl = document.getElementById('mailCtxOppEtapaPos');
+                        if (posEl) posEl.textContent = (llenos > 0 && d.oportunidad.etapa_total > 0) ? ('Etapa ' + llenos + ' de ' + total) : '';
+                    }
+                    // Próxima actividad de calendario (clic -> abre la opp con la actividad)
+                    var apw = document.getElementById('mailCtxActProxWrap');
+                    if (apw) {
+                        if (d.proxima_actividad) {
+                            apw.style.display = 'block';
+                            _mailCtxSet('mailCtxActProxTitulo', d.proxima_actividad.titulo);
+                            _mailCtxSet('mailCtxActProxFecha', d.proxima_actividad.fecha ? _formatFecha(d.proxima_actividad.fecha) : '');
+                        } else {
+                            apw.style.display = 'none';
+                        }
                     }
                     var etapaEl = document.getElementById('mailCtxOppEtapa');
                     if (etapaEl) {
-                        etapaEl.textContent = d.oportunidad.etapa || '—';
-                        etapaEl.style.color = d.oportunidad.etapa_color || '#0052D4';
+                        etapaEl.textContent = d.oportunidad.etapa || 'Sin etapa';
+                        etapaEl.style.color = d.oportunidad.etapa ? (d.oportunidad.etapa_color || '#0052D4') : '#9CA3AF';
                     }
                     _mailCtxSet('mailCtxOppResp', d.oportunidad.responsable ? 'Responsable: ' + d.oportunidad.responsable : '');
                     // Tareas pendientes (con círculo tipo checkbox)
@@ -587,7 +607,9 @@
                         tw.style.display = 'block';
                         tl.innerHTML = d.tareas.map(function (t) {
                             var f = t.fecha_limite ? _formatFecha(t.fecha_limite) : '';
-                            return '<div style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #EEF1F5;border-radius:10px;padding:8px 11px;">' +
+                            return '<div onclick="if(typeof crmTaskVerDetalle===&quot;function&quot;)crmTaskVerDetalle(' + t.id + ')" ' +
+                                'style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #EEF1F5;border-radius:10px;padding:8px 11px;cursor:pointer;transition:border-color 0.12s;" ' +
+                                'onmouseenter="this.style.borderColor=&quot;#BFDBFE&quot;" onmouseleave="this.style.borderColor=&quot;#EEF1F5&quot;">' +
                                 '<span style="width:15px;height:15px;border:1.5px solid #C9CFD8;border-radius:50%;flex-shrink:0;"></span>' +
                                 '<span style="flex:1;font-size:0.76rem;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">' + _esc(t.titulo) + '</span>' +
                                 (f ? '<span style="font-size:0.64rem;color:#B45309;background:#FEF3C7;border-radius:99px;padding:2px 8px;flex-shrink:0;font-weight:700;">' + f + '</span>' : '') +
@@ -663,6 +685,13 @@
                     }
                 })
                 .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+        window.mailCtxAbrirActividad = function () {
+            if (!window._mailCtxOppId || typeof window.openDetalle !== 'function') return;
+            window.openDetalle(window._mailCtxOppId);
+            setTimeout(function () {
+                if (typeof window.woAbrirActividadReciente === 'function') window.woAbrirActividadReciente();
+            }, 400);
         };
         window.mailCtxAbrirOportunidad = function () {
             if (window._mailCtxOppId && typeof window.openDetalle === 'function') {
