@@ -441,6 +441,23 @@
             ov.classList.remove('active');
         };
 
+        /* ── Modal de vincular (barra de búsqueda centrada) ── */
+        window.mailAbrirVincular = function () {
+            var m = document.getElementById('mailVincularModal');
+            if (!m) return;
+            m.style.display = 'flex';
+            var inp = document.getElementById('mailVincularSearch');
+            var res = document.getElementById('mailOppResults');
+            var hint = document.getElementById('mailVincularHint');
+            if (inp) { inp.value = ''; setTimeout(function () { inp.focus(); }, 60); }
+            if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+            if (hint) hint.style.display = 'block';
+        };
+        window.mailCerrarVincular = function () {
+            var m = document.getElementById('mailVincularModal');
+            if (m) m.style.display = 'none';
+        };
+
         /* ── Panel de contexto CRM (Fase 3, paso 1) ──
            Dos estados: vinculado (ficha + oportunidad + acciones rápidas +
            tareas + actividad) o sin vincular (Vincular / Crear oportunidad,
@@ -449,11 +466,23 @@
             var e = document.getElementById(id);
             if (e) e.textContent = txt || '';
         }
-        function _mailCtxSetOpt(id, txt) {
-            var e = document.getElementById(id);
-            if (!e) return;
-            if (txt) { e.textContent = txt; e.style.display = 'block'; }
-            else { e.style.display = 'none'; }
+        function _mailCtxSetRow(rowId, spanId, txt) {
+            var row = document.getElementById(rowId);
+            var span = document.getElementById(spanId);
+            if (!row || !span) return;
+            if (txt) { span.textContent = txt; row.style.display = 'flex'; }
+            else { row.style.display = 'none'; }
+        }
+        var _MAIL_CTX_ICONOS = {
+            email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+            llamada: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+            reunion: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+            tarea: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+            cotizacion: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+            comentario: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
+        };
+        function _mailCtxIcono(tipo) {
+            return _MAIL_CTX_ICONOS[tipo] || '<circle cx="12" cy="12" r="3"/>';
         }
         function _mailCtxOcultar() {
             var p = document.getElementById('mailCtxPanel');
@@ -483,40 +512,68 @@
                     if (suelto) suelto.style.display = 'none';
                     if (vin) vin.style.display = 'flex';
                     window._mailCtxOppId = d.oportunidad.id;
-                    _mailCtxSet('mailCtxEmpresa', d.cliente.empresa || d.oportunidad.nombre);
-                    _mailCtxSet('mailCtxContacto', d.cliente.contacto);
-                    _mailCtxSetOpt('mailCtxTel', d.cliente.telefono);
-                    _mailCtxSetOpt('mailCtxEmail', d.cliente.email);
+                    // Identidad: contacto protagonista + avatar de iniciales
+                    var contacto = d.cliente.contacto || d.cliente.empresa || d.oportunidad.nombre;
+                    _mailCtxSet('mailCtxContacto', contacto);
+                    var av = document.getElementById('mailCtxAvatar');
+                    if (av) {
+                        av.textContent = (contacto || '?').split(/\s+/).slice(0, 2)
+                            .map(function (p) { return (p[0] || '').toUpperCase(); }).join('');
+                    }
+                    _mailCtxSetRow('mailCtxEmpresaRow', 'mailCtxEmpresa', d.cliente.empresa);
+                    _mailCtxSetRow('mailCtxTelRow', 'mailCtxTel', d.cliente.telefono);
+                    _mailCtxSetRow('mailCtxEmailRow', 'mailCtxEmail', d.cliente.email);
+                    // Tarjeta de oportunidad
                     _mailCtxSet('mailCtxOppNombre', d.oportunidad.nombre);
                     _mailCtxSet('mailCtxOppMonto', '$' + Number(d.oportunidad.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }));
-                    var barra = document.getElementById('mailCtxOppBarra');
-                    if (barra) {
-                        barra.style.width = (d.oportunidad.probabilidad || 0) + '%';
-                        barra.style.background = d.oportunidad.etapa_color || '#007AFF';
+                    var segs = document.getElementById('mailCtxOppSegs');
+                    if (segs) {
+                        var llenos = Math.max(0, Math.min(5, Math.round((d.oportunidad.probabilidad || 0) / 20)));
+                        var color = d.oportunidad.etapa_color || '#007AFF';
+                        var hs = '';
+                        for (var si = 0; si < 5; si++) {
+                            hs += '<span style="flex:1;height:5px;border-radius:99px;background:' +
+                                (si < llenos ? color : '#EEF1F5') + ';"></span>';
+                        }
+                        segs.innerHTML = hs;
                     }
-                    _mailCtxSet('mailCtxOppEtapa', d.oportunidad.etapa || '—');
-                    _mailCtxSet('mailCtxOppResp', d.oportunidad.responsable ? 'Resp: ' + d.oportunidad.responsable : '');
+                    var etapaEl = document.getElementById('mailCtxOppEtapa');
+                    if (etapaEl) {
+                        etapaEl.textContent = d.oportunidad.etapa || '—';
+                        etapaEl.style.color = d.oportunidad.etapa_color || '#0052D4';
+                    }
+                    _mailCtxSet('mailCtxOppResp', d.oportunidad.responsable ? 'Responsable: ' + d.oportunidad.responsable : '');
+                    // Tareas pendientes (con círculo tipo checkbox)
                     var tw = document.getElementById('mailCtxTareasWrap');
                     var tl = document.getElementById('mailCtxTareas');
                     if (tw && tl && d.tareas && d.tareas.length) {
                         tw.style.display = 'block';
                         tl.innerHTML = d.tareas.map(function (t) {
                             var f = t.fecha_limite ? _formatFecha(t.fecha_limite) : '';
-                            return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #EEF1F5;border-radius:9px;padding:7px 10px;">' +
-                                '<span style="font-size:0.75rem;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">' + _esc(t.titulo) + '</span>' +
-                                (f ? '<span style="font-size:0.66rem;color:#B45309;background:#FEF3C7;border-radius:99px;padding:2px 7px;flex-shrink:0;font-weight:700;">' + f + '</span>' : '') +
+                            return '<div style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #EEF1F5;border-radius:10px;padding:8px 11px;">' +
+                                '<span style="width:15px;height:15px;border:1.5px solid #C9CFD8;border-radius:50%;flex-shrink:0;"></span>' +
+                                '<span style="flex:1;font-size:0.76rem;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">' + _esc(t.titulo) + '</span>' +
+                                (f ? '<span style="font-size:0.64rem;color:#B45309;background:#FEF3C7;border-radius:99px;padding:2px 8px;flex-shrink:0;font-weight:700;">' + f + '</span>' : '') +
                                 '</div>';
                         }).join('');
                     } else if (tw) { tw.style.display = 'none'; }
+                    // Actividad reciente (icono por tipo + línea conectora)
                     var aw = document.getElementById('mailCtxActsWrap');
                     var al = document.getElementById('mailCtxActs');
                     if (aw && al && d.actividades && d.actividades.length) {
                         aw.style.display = 'block';
-                        al.innerHTML = d.actividades.map(function (a) {
+                        al.innerHTML = d.actividades.map(function (a, ai) {
                             var f = a.fecha ? _formatFecha(a.fecha) : '';
-                            return '<div style="display:flex;flex-direction:column;gap:1px;border-left:2px solid #D0E1FF;padding-left:8px;">' +
-                                '<span style="font-size:0.74rem;font-weight:600;color:#374151;">' + _esc(a.titulo) + '</span>' +
-                                '<span style="font-size:0.65rem;color:#9CA3AF;">' + f + '</span></div>';
+                            var ultimo = ai === d.actividades.length - 1;
+                            return '<div style="display:flex;gap:9px;">' +
+                                '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">' +
+                                    '<span style="width:24px;height:24px;border-radius:50%;background:#EFF6FF;color:#0052D4;display:flex;align-items:center;justify-content:center;">' +
+                                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + _mailCtxIcono(a.tipo) + '</svg></span>' +
+                                    (ultimo ? '' : '<span style="width:1.5px;flex:1;background:#E5E9F0;margin-top:2px;min-height:8px;"></span>') +
+                                '</div>' +
+                                '<div style="min-width:0;padding-bottom:' + (ultimo ? '0' : '8px') + ';">' +
+                                '<span style="display:block;font-size:0.75rem;font-weight:600;color:#374151;line-height:1.3;">' + _esc(a.titulo) + '</span>' +
+                                '<span style="display:block;font-size:0.65rem;color:#9CA3AF;margin-top:1px;">' + f + '</span></div></div>';
                         }).join('');
                     } else if (aw) { aw.style.display = 'none'; }
                     var cc = document.getElementById('mailCtxCorreosCount');
@@ -1217,6 +1274,8 @@
         window.mailBuscarOpps = function (q) {
             clearTimeout(_mailBusqTimeout);
             var resultsEl = document.getElementById('mailOppResults');
+            var hintEl = document.getElementById('mailVincularHint');
+            if (hintEl) hintEl.style.display = (!q || q.trim().length < 2) ? 'block' : 'none';
             if (!q || q.trim().length < 2) {
                 if (resultsEl) resultsEl.style.display = 'none';
                 return;
@@ -1267,6 +1326,7 @@
                         if (name) name.textContent = oppNombre;
                         if (bar) bar.style.display = 'flex';
                         if (panel) panel.style.display = 'none';
+                        mailCerrarVincular();
                         if (_mailCorreoActual) _mailCorreoActual.oportunidad_nombre = oppNombre;
                         _showToastMail('Vinculado a ' + oppNombre, true);
                         // Refrescar el panel de contexto con la nueva vinculación

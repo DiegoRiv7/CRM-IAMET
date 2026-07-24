@@ -35,6 +35,7 @@ from django.utils import timezone as django_tz
 from .models import (
     MailConexion, MailCorreo, MailAdjunto, MailAccionPendiente,
     TodoItem, OportunidadActividad, MensajeOportunidad, TareaOportunidad,
+    mail_hilo_key,
 )
 
 logger = logging.getLogger(__name__)
@@ -324,6 +325,12 @@ def api_mail_sincronizar(request):
                 usuario=request.user, oportunidad__isnull=False
             ).exclude(message_id='')
         }
+        linked_hilos = {
+            c.hilo_key: c.oportunidad_id
+            for c in MailCorreo.objects.filter(
+                usuario=request.user, oportunidad__isnull=False
+            ).exclude(hilo_key='').exclude(hilo_key__startswith='solo-')
+        }
 
         for uid in new_uids:
             try:
@@ -351,6 +358,10 @@ def api_mail_sincronizar(request):
                 irt = parsed['in_reply_to']
                 if irt and irt in linked_message_ids:
                     opp_id = linked_message_ids[irt]
+                if not opp_id:
+                    # Respuestas del mismo hilo (asunto normalizado) se van
+                    # solas a la oportunidad ya vinculada
+                    opp_id = linked_hilos.get(mail_hilo_key(parsed['asunto']))
 
                 MailCorreo.objects.create(
                     usuario=request.user,
@@ -732,6 +743,11 @@ def sincronizar_nuevos_conexion(conexion, imap):
         c.message_id: c.oportunidad_id
         for c in MailCorreo.objects.filter(usuario=usuario, oportunidad__isnull=False).exclude(message_id='')
     }
+    linked_hilos = {
+        c.hilo_key: c.oportunidad_id
+        for c in MailCorreo.objects.filter(usuario=usuario, oportunidad__isnull=False)
+        .exclude(hilo_key='').exclude(hilo_key__startswith='solo-')
+    }
 
     def _crear(uid, fetch_data, carpeta_imap, carpeta_display, leido):
         raw_headers = fetch_data[0][1] if isinstance(fetch_data[0], tuple) else b''
@@ -746,6 +762,8 @@ def sincronizar_nuevos_conexion(conexion, imap):
         irt = parsed['in_reply_to']
         if irt and irt in linked_message_ids:
             opp_id = linked_message_ids[irt]
+        if not opp_id:
+            opp_id = linked_hilos.get(mail_hilo_key(parsed['asunto']))
         MailCorreo.objects.create(
             usuario=usuario,
             conexion=conexion,
@@ -858,6 +876,12 @@ def api_mail_antiguos(request):
                 usuario=request.user, oportunidad__isnull=False
             ).exclude(message_id='')
         }
+        linked_hilos = {
+            c.hilo_key: c.oportunidad_id
+            for c in MailCorreo.objects.filter(
+                usuario=request.user, oportunidad__isnull=False
+            ).exclude(hilo_key='').exclude(hilo_key__startswith='solo-')
+        }
 
         for uid in lote:
             try:
@@ -879,6 +903,10 @@ def api_mail_antiguos(request):
                 irt = parsed['in_reply_to']
                 if irt and irt in linked_message_ids:
                     opp_id = linked_message_ids[irt]
+                if not opp_id:
+                    # Respuestas del mismo hilo (asunto normalizado) se van
+                    # solas a la oportunidad ya vinculada
+                    opp_id = linked_hilos.get(mail_hilo_key(parsed['asunto']))
                 MailCorreo.objects.create(
                     usuario=request.user,
                     conexion=conexion,
@@ -1558,10 +1586,15 @@ def api_mail_responder(request, correo_id):
 
 
 def _agregar_correo_a_conversacion(correo, opp, usuario):
-    """
-    Crea un MensajeOportunidad con el contenido del correo.
-    Usa el marcador [mail:{id}] para evitar duplicados.
-    """
+    """DEPRECADO (Fase 3): la conversación de la oportunidad ya pinta los
+    correos vinculados como TARJETAS clicables directamente desde MailCorreo
+    (api_chat_oportunidad los inyecta al feed). Este mensaje de texto los
+    duplicaba con el cuerpo crudo pegado — se dejó de generar; los viejos
+    se filtran del feed con texto__startswith='[mail:'."""
+    return
+
+
+def _agregar_correo_a_conversacion_legacy(correo, opp, usuario):
     marker = f'[mail:{correo.id}]'
     if MensajeOportunidad.objects.filter(oportunidad=opp, texto__startswith=marker).exists():
         return  # Ya fue agregado

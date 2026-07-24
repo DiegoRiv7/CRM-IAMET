@@ -601,7 +601,7 @@ def api_chat_oportunidad(request, opp_id):
             'imagen_nombre': m.imagen.name.split('/')[-1] if m.imagen else None,
             'editado': m.editado,
             'reply_to': reply,
-            'fecha': m.fecha.strftime('%d/%m/%Y %H:%M'),
+            'fecha': timezone.localtime(m.fecha).strftime('%d/%m/%Y %H:%M'),
             'usuario_id': u.id if u else None,
             'nombre': nombre,
             'iniciales': iniciales,
@@ -611,7 +611,7 @@ def api_chat_oportunidad(request, opp_id):
         }
 
     if request.method == 'GET':
-        msgs = list(MensajeOportunidad.objects.filter(oportunidad=opp).select_related('usuario', 'reply_to', 'reply_to__usuario'))
+        msgs = list(MensajeOportunidad.objects.filter(oportunidad=opp).exclude(texto__startswith='[mail:').select_related('usuario', 'reply_to', 'reply_to__usuario'))
         items = [{'__tipo': 'chat', '__fecha': m.fecha, 'data': serializar(m)} for m in msgs]
 
         # Incluir también los correos enviados/recibidos vinculados a la
@@ -633,7 +633,7 @@ def api_chat_oportunidad(request, opp_id):
                         'remitente_email': c.remitente_email,
                         'destinatarios': c.destinatarios_json or '[]',
                         'tiene_adjuntos': c.tiene_adjuntos,
-                        'fecha': fecha_correo.strftime('%d/%m/%Y %H:%M') if fecha_correo else '',
+                        'fecha': timezone.localtime(fecha_correo).strftime('%d/%m/%Y %H:%M') if fecha_correo else '',
                         'es_mio': (c.usuario_id == request.user.id),
                     },
                 })
