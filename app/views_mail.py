@@ -35,7 +35,7 @@ from django.utils import timezone as django_tz
 from .models import (
     MailConexion, MailCorreo, MailAdjunto, MailAccionPendiente,
     TodoItem, OportunidadActividad, MensajeOportunidad, TareaOportunidad,
-    Actividad, MailPlantilla, mail_hilo_key,
+    Actividad, MailPlantilla, MailBorrador, MailProgramado, mail_hilo_key,
 )
 
 logger = logging.getLogger(__name__)
@@ -993,6 +993,207 @@ def api_mail_plantillas(request):
 def api_mail_plantilla_eliminar(request, plantilla_id):
     MailPlantilla.objects.filter(usuario=request.user, id=plantilla_id).delete()
     return JsonResponse({'ok': True})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_mail_borradores(request):
+    """Lista de borradores + envíos programados pendientes (carpeta Borradores)."""
+    borradores = [
+        {
+            'id': b.id,
+            'para': b.para,
+            'asunto': b.asunto or '(Sin asunto)',
+            'fecha': b.fecha_actualizacion.isoformat() if b.fecha_actualizacion else None,
+        }
+        for b in MailBorrador.objects.filter(usuario=request.user)[:100]
+    ]
+    programados = [
+        {
+            'id': pr.id,
+            'para': pr.para,
+            'asunto': pr.asunto or '(Sin asunto)',
+            'fecha_programada': pr.fecha_programada.isoformat(),
+            'error': pr.error,
+        }
+        for pr in MailProgramado.objects.filter(usuario=request.user, enviado=False)[:50]
+    ]
+    return JsonResponse({'ok': True, 'borradores': borradores, 'programados': programados})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_borrador_guardar(request):
+    """Upsert de borrador (autoguardado del compose)."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    bid = data.get('id')
+    campos = {
+        'para': (data.get('para') or '')[:2000],
+        'cc': (data.get('cc') or '')[:2000],
+        'asunto': (data.get('asunto') or '')[:500],
+        'cuerpo_html': (data.get('cuerpo_html') or '')[:200000],
+    }
+    if bid:
+        actualizados = MailBorrador.objects.filter(usuario=request.user, id=bid).update(**campos)
+        if actualizados:
+            return JsonResponse({'ok': True, 'id': bid})
+    conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+    b = MailBorrador.objects.create(usuario=request.user, conexion=conexion, **campos)
+    return JsonResponse({'ok': True, 'id': b.id})
+
+
+@login_required
+@require_http_methods(['GET'])
+def api_mail_borrador_detalle(request, borrador_id):
+    try:
+        b = MailBorrador.objects.get(usuario=request.user, id=borrador_id)
+    except MailBorrador.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Borrador no encontrado'}, status=404)
+    return JsonResponse({
+        'ok': True, 'id': b.id, 'para': b.para, 'cc': b.cc,
+        'asunto': b.asunto, 'cuerpo_html': b.cuerpo_html,
+    })
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_borrador_eliminar(request, borrador_id):
+    MailBorrador.objects.filter(usuario=request.user, id=borrador_id).delete()
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_programar(request):
+    """Agenda un envío para después: mismo payload multipart que enviar +
+    fecha_programada (YYYY-MM-DDTHH:MM, hora local). Lo despacha el worker."""
+    data, archivos = _parse_mail_request(request)
+
+    para = (data.get('para') or '').strip()
+    asunto = (data.get('asunto') or '').strip()
+    fecha_raw = (data.get('fecha_programada') or '').strip()
+    if not para or not asunto:
+        return JsonResponse({'ok': False, 'error': 'Faltan destinatario o asunto'}, status=400)
+    if not fecha_raw:
+        return JsonResponse({'ok': False, 'error': 'Falta la fecha programada'}, status=400)
+    try:
+        fecha_naive = datetime.fromisoformat(fecha_raw)
+        fecha_prog = django_tz.make_aware(fecha_naive) if django_tz.is_naive(fecha_naive) else fecha_naive
+    except ValueError:
+        return JsonResponse({'ok': False, 'error': 'Fecha inválida'}, status=400)
+    if fecha_prog <= django_tz.now():
+        return JsonResponse({'ok': False, 'error': 'La fecha debe ser en el futuro'}, status=400)
+
+    err_size = _validar_tamanios_adjuntos(archivos)
+    if err_size:
+        return JsonResponse({'ok': False, 'error': err_size}, status=400)
+
+    adjuntos = []
+    for f in archivos:
+        f.seek(0)
+        adjuntos.append({
+            'nombre': f.name[:300],
+            'content_type': (f.content_type or 'application/octet-stream')[:100],
+            'b64': base64.b64encode(f.read()).decode(),
+        })
+
+    conexion = MailConexion.objects.filter(usuario=request.user, activo=True).first()
+    if not conexion:
+        return JsonResponse({'ok': False, 'error': 'Sin conexión de correo'}, status=400)
+
+    pr = MailProgramado.objects.create(
+        usuario=request.user,
+        conexion=conexion,
+        para=para,
+        cc=(data.get('cc') or ''),
+        bcc=(data.get('bcc') or ''),
+        asunto=asunto,
+        cuerpo_html=data.get('cuerpo_html') or '',
+        cuerpo_texto=data.get('cuerpo_texto') or '',
+        adjuntos_json=json.dumps(adjuntos),
+        fecha_programada=fecha_prog,
+    )
+    return JsonResponse({
+        'ok': True, 'id': pr.id,
+        'fecha_programada': django_tz.localtime(fecha_prog).strftime('%d/%m/%Y %H:%M'),
+    })
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(['POST'])
+def api_mail_programado_cancelar(request, programado_id):
+    MailProgramado.objects.filter(usuario=request.user, id=programado_id, enviado=False).delete()
+    return JsonResponse({'ok': True})
+
+
+def procesar_envios_programados():
+    """Despacha por SMTP los envíos programados vencidos. Lo llama el worker
+    sincronizar_correo en cada pasada. Devuelve cuántos envió."""
+    pendientes = MailProgramado.objects.filter(
+        enviado=False, intentos__lt=5, fecha_programada__lte=django_tz.now()
+    ).select_related('conexion', 'usuario')[:20]
+    enviados = 0
+    for pr in pendientes:
+        conexion = pr.conexion or MailConexion.objects.filter(usuario=pr.usuario, activo=True).first()
+        if not conexion:
+            pr.intentos += 1
+            pr.error = 'Sin conexión de correo activa'
+            pr.save(update_fields=['intentos', 'error'])
+            continue
+        try:
+            msg = _build_msg_with_attachments(pr.cuerpo_html, pr.cuerpo_texto, [])
+            msg['Subject'] = pr.asunto
+            msg['From'] = conexion.correo_electronico
+            msg['To'] = pr.para
+            if pr.cc:
+                msg['Cc'] = pr.cc
+            try:
+                for adj in json.loads(pr.adjuntos_json or '[]'):
+                    parte = MIMEApplication(base64.b64decode(adj['b64']))
+                    parte.add_header('Content-Disposition', 'attachment', filename=adj.get('nombre') or 'adjunto')
+                    if adj.get('content_type'):
+                        parte.set_type(adj['content_type'])
+                    msg.attach(parte)
+            except Exception as e_adj:
+                logger.warning("Programado %s: adjunto omitido: %s", pr.id, e_adj)
+
+            destinos = [a.strip() for a in (pr.para + ',' + pr.cc + ',' + pr.bcc).split(',') if a.strip()]
+            smtp = _get_smtp(conexion)
+            smtp.sendmail(conexion.correo_electronico, destinos, msg.as_bytes())
+            smtp.quit()
+
+            correo_sent = MailCorreo.objects.create(
+                usuario=pr.usuario, conexion=conexion,
+                uid_imap=f'prog_{pr.id}_{django_tz.now().timestamp()}',
+                carpeta_imap='SENT', carpeta_display='SENT',
+                asunto=pr.asunto,
+                remitente_nombre=pr.usuario.get_full_name() or pr.usuario.username,
+                remitente_email=conexion.correo_electronico,
+                destinatarios_json=json.dumps(
+                    [{'nombre': '', 'email': e} for e in destinos], ensure_ascii=False
+                ),
+                cuerpo_html=pr.cuerpo_html, cuerpo_texto=pr.cuerpo_texto,
+                fecha_envio=django_tz.now(), leido=True, cuerpo_cargado=True,
+                tiene_adjuntos=bool(pr.adjuntos_json and pr.adjuntos_json != '[]'),
+            )
+            pr.enviado = True
+            pr.fecha_enviado = django_tz.now()
+            pr.error = ''
+            pr.save(update_fields=['enviado', 'fecha_enviado', 'error'])
+            enviados += 1
+        except Exception as e:
+            pr.intentos += 1
+            pr.error = str(e)[:500]
+            pr.save(update_fields=['intentos', 'error'])
+            logger.warning("Envío programado %s falló (intento %s): %s", pr.id, pr.intentos, e)
+    return enviados
 
 
 @login_required

@@ -16,6 +16,7 @@ from app.models import MailConexion
 from app.views_mail import (
     _get_imap,
     aplicar_acciones_pendientes,
+    procesar_envios_programados,
     refrescar_flags_inbox,
     sincronizar_nuevos_conexion,
 )
@@ -33,6 +34,14 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         loop = opts['loop']
         while True:
+            # Envíos programados vencidos (independiente del loop por conexión)
+            try:
+                n_prog = procesar_envios_programados()
+                if n_prog:
+                    self.stdout.write(f'{n_prog} envíos programados despachados')
+            except Exception as e:
+                self.stderr.write(f'Error en envíos programados: {e}')
+
             qs = MailConexion.objects.filter(activo=True).select_related('usuario')
             if opts['usuario']:
                 qs = qs.filter(usuario__username=opts['usuario'])

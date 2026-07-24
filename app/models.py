@@ -3820,6 +3820,54 @@ class MailPlantilla(models.Model):
         return f"{self.usuario.username} — {self.nombre}"
 
 
+class MailBorrador(models.Model):
+    """Borrador de correo con autoguardado (Fase 4)."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mail_borradores')
+    conexion = models.ForeignKey(MailConexion, on_delete=models.SET_NULL, null=True, blank=True)
+    para = models.TextField(blank=True, default='')
+    cc = models.TextField(blank=True, default='')
+    asunto = models.CharField(max_length=500, blank=True, default='')
+    cuerpo_html = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_actualizacion']
+        verbose_name = "Borrador de Correo"
+        verbose_name_plural = "Borradores de Correo"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.asunto or '(sin asunto)'}"
+
+
+class MailProgramado(models.Model):
+    """Envío programado (Fase 4): el worker sincronizar_correo lo despacha
+    por SMTP cuando llega su hora."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mail_programados')
+    conexion = models.ForeignKey(MailConexion, on_delete=models.SET_NULL, null=True, blank=True)
+    para = models.TextField()
+    cc = models.TextField(blank=True, default='')
+    bcc = models.TextField(blank=True, default='')
+    asunto = models.CharField(max_length=500, blank=True, default='')
+    cuerpo_html = models.TextField(blank=True, default='')
+    cuerpo_texto = models.TextField(blank=True, default='')
+    adjuntos_json = models.TextField(blank=True, default='[]')  # [{nombre, content_type, b64}]
+    fecha_programada = models.DateTimeField(db_index=True)
+    enviado = models.BooleanField(default=False, db_index=True)
+    fecha_enviado = models.DateTimeField(null=True, blank=True)
+    intentos = models.IntegerField(default=0)
+    error = models.TextField(blank=True, default='')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['fecha_programada']
+        verbose_name = "Correo Programado"
+        verbose_name_plural = "Correos Programados"
+
+    def __str__(self):
+        return f"{self.usuario.username} — {self.asunto or '(sin asunto)'} @ {self.fecha_programada}"
+
+
 class MailAdjunto(models.Model):
     """Attachment metadata + cached binary content (base64)."""
     correo = models.ForeignKey(MailCorreo, on_delete=models.CASCADE, related_name='adjuntos')
