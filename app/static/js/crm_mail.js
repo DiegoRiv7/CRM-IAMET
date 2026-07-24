@@ -458,6 +458,29 @@
             if (m) m.style.display = 'none';
         };
 
+        /* ── Desvincular (clic en el chip Vinculado del panel) ── */
+        window.mailDesvincular = function () {
+            if (!_mailCorreoActual) return;
+            if (!confirm('¿Desvincular este correo de la oportunidad?')) return;
+            fetch('/app/api/mail/vincular/' + _mailCorreoActual.id + '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                body: JSON.stringify({ desvincular: true })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.ok) { _showToastMail(d.error || 'Error al desvincular', false); return; }
+                    _showToastMail('Correo desvinculado', true);
+                    var bar = document.getElementById('mailDetailOppBar');
+                    if (bar) bar.style.display = 'none';
+                    if (_mailCorreoActual) {
+                        _mailCorreoActual.oportunidad_nombre = null;
+                        _mailRenderContexto(_mailCorreoActual.id);
+                    }
+                })
+                .catch(function () { _showToastMail('Error de conexión', false); });
+        };
+
         /* ── Panel de contexto CRM (Fase 3, paso 1) ──
            Dos estados: vinculado (ficha + oportunidad + acciones rápidas +
            tareas + actividad) o sin vincular (Vincular / Crear oportunidad,
@@ -487,8 +510,10 @@
         function _mailCtxOcultar() {
             var p = document.getElementById('mailCtxPanel');
             var g = document.getElementById('mailBodyGrid');
+            var hg = document.getElementById('mailHeaderGrid');
             if (p) p.style.display = 'none';
             if (g) g.style.gridTemplateColumns = '';
+            if (hg) hg.style.gridTemplateColumns = '';
             window._mailCtxOppId = null;
         }
         function _mailRenderContexto(correoId) {
@@ -503,6 +528,8 @@
                     var suelto = document.getElementById('mailCtxSuelto');
                     p.style.display = 'flex';
                     g.style.gridTemplateColumns = '220px 340px 1fr 290px';
+                    var hg = document.getElementById('mailHeaderGrid');
+                    if (hg) hg.style.gridTemplateColumns = '220px 340px 1fr 290px';
                     if (!d.vinculado) {
                         if (vin) vin.style.display = 'none';
                         if (suelto) suelto.style.display = 'flex';
@@ -528,10 +555,20 @@
                     _mailCtxSet('mailCtxOppMonto', '$' + Number(d.oportunidad.monto || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 }));
                     var segs = document.getElementById('mailCtxOppSegs');
                     if (segs) {
-                        var llenos = Math.max(0, Math.min(5, Math.round((d.oportunidad.probabilidad || 0) / 20)));
-                        var color = d.oportunidad.etapa_color || '#007AFF';
+                        // Barra de ETAPA: un segmento por etapa del pipeline,
+                        // llenos hasta la etapa actual de la oportunidad.
+                        var total = d.oportunidad.etapa_total || 0;
+                        var llenos, color = d.oportunidad.etapa_color || '#007AFF';
+                        if (total > 0 && d.oportunidad.etapa_idx !== null && d.oportunidad.etapa_idx !== undefined) {
+                            llenos = d.oportunidad.etapa_idx + 1;
+                        } else if (total > 0) {
+                            llenos = 0;
+                        } else {
+                            total = 5;
+                            llenos = Math.max(0, Math.min(5, Math.round((d.oportunidad.probabilidad || 0) / 20)));
+                        }
                         var hs = '';
-                        for (var si = 0; si < 5; si++) {
+                        for (var si = 0; si < total; si++) {
                             hs += '<span style="flex:1;height:5px;border-radius:99px;background:' +
                                 (si < llenos ? color : '#EEF1F5') + ';"></span>';
                         }

@@ -969,6 +969,20 @@ def api_mail_contexto(request, correo_id):
     correos_count = MailCorreo.objects.filter(usuario=request.user, oportunidad=opp).count()
     responsable = (opp.usuario.get_full_name() or opp.usuario.username) if opp.usuario else ''
 
+    # Barra de ETAPA: posición de la etapa actual dentro de su pipeline
+    from .models import EtapaPipeline
+    pipeline = 'proyecto' if (opp.tipo_negociacion or '') in ('proyecto', 'bitrix_proyecto') else 'runrate'
+    etapas = list(
+        EtapaPipeline.objects.filter(pipeline=pipeline, activo=True)
+        .order_by('orden').values_list('nombre', flat=True)
+    )
+    etapa_idx = None
+    if opp.etapa_corta and etapas:
+        for _i, _n in enumerate(etapas):
+            if _n.strip().lower() == opp.etapa_corta.strip().lower():
+                etapa_idx = _i
+                break
+
     return JsonResponse({
         'ok': True,
         'vinculado': True,
@@ -979,6 +993,8 @@ def api_mail_contexto(request, correo_id):
             'probabilidad': opp.probabilidad_cierre or 0,
             'etapa': opp.etapa_corta or '',
             'etapa_color': opp.etapa_color or '#3B82F6',
+            'etapa_idx': etapa_idx,
+            'etapa_total': len(etapas),
             'responsable': responsable,
         },
         'cliente': {
@@ -1656,6 +1672,21 @@ def api_mail_vincular_oportunidad(request, correo_id):
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+
+    # Desvincular: clic en el chip "Vinculado" del panel de contexto
+    if data.get('desvincular'):
+        opp_ant = correo.oportunidad
+        correo.oportunidad = None
+        correo.save(update_fields=['oportunidad'])
+        if opp_ant:
+            OportunidadActividad.objects.create(
+                oportunidad=opp_ant,
+                tipo='email',
+                titulo=f'Correo desvinculado: {correo.asunto[:100]}',
+                descripcion=f'De: {correo.remitente_nombre} <{correo.remitente_email}>',
+                usuario=request.user,
+            )
+        return JsonResponse({'ok': True, 'desvinculado': True})
 
     opp_id = data.get('oportunidad_id')
     if not opp_id:
