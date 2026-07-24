@@ -784,10 +784,18 @@ def sincronizar_nuevos_conexion(conexion, imap):
     except Exception as e:
         logger.warning("Worker: error sync INBOX %s: %s", conexion.correo_electronico, e)
 
-    # SENT
+    # SENT — detectar contra los nombres REALES del LIST (el heurístico viejo
+    # devolvía 'Sent' aunque la carpeta real fuera INBOX.Sent y el select
+    # fallaba dejando la sesión en AUTH).
     try:
-        sent_folder = _detect_sent_folder(imap)
-        imap.select(sent_folder, readonly=True)
+        sent_folder = _detectar_carpeta(
+            imap, ['Sent', 'Sent Items', 'Sent Messages', 'Enviados']
+        ) or _detect_sent_folder(imap)
+        typ, _sel = imap.select(
+            f'"{sent_folder}"' if ' ' in sent_folder else sent_folder, readonly=True
+        )
+        if typ != 'OK':
+            raise RuntimeError(f'no se pudo abrir la carpeta {sent_folder!r}')
         typ, data = imap.uid('SEARCH', None, 'ALL')
         all_uids = [u.decode() for u in (data[0].split() if data[0] else [])]
         existing = set(
