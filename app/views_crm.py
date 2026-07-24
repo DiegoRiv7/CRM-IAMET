@@ -6835,6 +6835,89 @@ def _pend_tareas_actividades(user, today):
     return pend, done
 
 
+def _pend_buckets_tareas(user, today):
+    """Buckets Pendientes/Hoy/Próximamente para roles SIN oportunidades, a partir de
+    TAREAS asignadas + ACTIVIDADES propias PENDIENTES. Misma clasificación por
+    urgencia que las oportunidades (atrasada/sin fecha → pendientes; hoy → hoy;
+    futuro → próximamente). Los items traen 'url' para abrir la tarea/calendario.
+    """
+    from datetime import timedelta
+    from django.db.models import Q
+    from .models import Tarea, Actividad
+
+    buckets = {'pendientes': [], 'hoy': [], 'proximamente': []}
+    piso = today - timedelta(days=30)
+
+    def _tctx(t):
+        if t.oportunidad_id and t.oportunidad:
+            return getattr(t.oportunidad, 'oportunidad', '') or ''
+        if t.proyecto_id and t.proyecto:
+            return getattr(t.proyecto, 'nombre', '') or getattr(t.proyecto, 'titulo', '') or ''
+        if t.cliente_id and t.cliente:
+            return getattr(t.cliente, 'nombre_empresa', '') or ''
+        return ''
+
+    def _actx(a):
+        if a.oportunidad_id and a.oportunidad:
+            return getattr(a.oportunidad, 'oportunidad', '') or ''
+        return ''
+
+    def _adisplay(a):
+        try:
+            return a.get_tipo_actividad_display() or 'Actividad'
+        except Exception:
+            return 'Actividad'
+
+    def _place(item, dt):
+        fd = dt.date() if dt else None
+        if fd is None:
+            item['motivo'] = 'Sin fecha'
+            item['fecha'] = None
+            buckets['pendientes'].append(item)
+        elif fd < today:
+            dias = (today - fd).days
+            item['motivo'] = ('Vencida hoy' if dias <= 0
+                              else 'Atrasada hace %d día%s' % (dias, 's' if dias != 1 else ''))
+            item['fecha'] = dt.isoformat()
+            buckets['pendientes'].append(item)
+        elif fd == today:
+            item['motivo'] = 'Para hoy ' + dt.strftime('%H:%M')
+            item['fecha'] = dt.isoformat()
+            buckets['hoy'].append(item)
+        else:
+            item['motivo'] = 'Programada ' + dt.strftime('%d/%m/%Y')
+            item['fecha'] = dt.isoformat()
+            buckets['proximamente'].append(item)
+
+    # ── TAREAS asignadas y no cerradas ──
+    tbase = (Tarea.objects.filter(asignado_a=user).exclude(estado__in=['cancelada', 'completada'])
+             .select_related('proyecto', 'cliente', 'oportunidad'))
+    for t in tbase[:120]:
+        dt = timezone.localtime(t.fecha_limite) if t.fecha_limite else None
+        _place({
+            'id': t.id, 'tipo': 'tarea', 'url': '/app/?tarea=%d' % t.id,
+            'nombre': t.titulo or '(sin título)', 'cliente': _tctx(t),
+            'pipeline': '', 'etapa': 'Tarea', 'vendedor': '',
+        }, dt)
+
+    # ── ACTIVIDADES propias o donde participo, no completadas (últimos 30 días en adelante) ──
+    abase = (Actividad.objects.filter(Q(creado_por=user) | Q(participantes=user))
+             .distinct().filter(completada=False, fecha_inicio__date__gte=piso)
+             .select_related('oportunidad'))
+    for a in abase[:120]:
+        dt = timezone.localtime(a.fecha_inicio)
+        _place({
+            'id': a.id, 'tipo': 'actividad', 'url': '/app/?tab=calendario',
+            'nombre': a.titulo or '(sin título)', 'cliente': _actx(a),
+            'pipeline': '', 'etapa': _adisplay(a), 'vendedor': '',
+        }, dt)
+
+    buckets['pendientes'].sort(key=lambda x: (x['fecha'] is None, x['fecha'] or ''))
+    buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
+    buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
+    return buckets
+
+
 @login_required
 def api_pendientes(request):
     """
@@ -6951,6 +7034,14 @@ def api_pendientes(request):
     buckets['pendientes'].sort(key=lambda x: (x['fecha'] is None, x['fecha'] or ''))
     buckets['hoy'].sort(key=lambda x: x['fecha'] or '')
     buckets['proximamente'].sort(key=lambda x: x['fecha'] or '')
+
+    # ── Fallback por rol: si esta vista PROPIA no tiene ninguna oportunidad, las
+    # pestañas Pendientes/Hoy/Próximamente muestran sus TAREAS + ACTIVIDADES. ──
+    _vista_propia = (not sel) or sel in ('mias', str(user.id))
+    buckets_tipo = 'oportunidad'
+    if _vista_propia and not (buckets['pendientes'] or buckets['hoy'] or buckets['proximamente']):
+        buckets = _pend_buckets_tareas(user, today)
+        buckets_tipo = 'tarea'
 
     # ── Resumen del día: briefing priorizado (pendientes + hoy) ──
     # Prioridad = urgencia + valor + probabilidad. Acción = de la tarea real.
@@ -7120,6 +7211,7 @@ def api_pendientes(request):
         'success': True,
         'resumen': resumen,
         'buckets': buckets,
+        'buckets_tipo': buckets_tipo,
         'counts': {k: len(v) for k, v in buckets.items()},
         'puede_seleccionar': puede_seleccionar,
         'vendedores': vendedores,

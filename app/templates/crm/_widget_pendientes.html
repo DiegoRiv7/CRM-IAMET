@@ -877,20 +877,24 @@
     if (chatFlow) chatFlow.style.display = 'none';   // el chat solo vive en Resumen
     res.classList.remove('pend-day');
     var items = (_data.buckets && _data.buckets[_tab]) || [];
+    var esTareaB = (_data.buckets_tipo === 'tarea');
     if (!items.length) {
-      var vacio = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      var vacioOpp = { pendientes:'No hay oportunidades atrasadas ni sin agendar 🎉', hoy:'Nada agendado para hoy', proximamente:'Nada agendado a futuro' };
+      var vacioTar = { pendientes:'No tienes tareas ni actividades atrasadas 🎉', hoy:'Nada para hoy', proximamente:'Nada programado a futuro' };
+      var vacio = esTareaB ? vacioTar : vacioOpp;
       res.innerHTML = '<div class="pend-empty">' + (vacio[_tab] || 'Sin resultados') + '</div>';
       return;
     }
     var tone = _tab === 'pendientes' ? 'rojo' : (_tab === 'hoy' ? 'ambar' : 'verde');
-    var mostrarVend = (_sel !== 'mias');
+    var mostrarVend = (_sel !== 'mias') && !esTareaB;
     var html = '';
     items.forEach(function (it){
       var chips = '';
       if (it.cliente)  chips += '<span class="pend-chip" title="Cliente">' + _ICON_CLIENTE + _esc(it.cliente) + '</span>';
       if (it.pipeline) chips += '<span class="pend-chip" title="Pipeline">' + _ICON_PIPE + _esc(it.pipeline) + '</span>';
       if (it.etapa)    chips += '<span class="pend-chip" title="Etapa">' + _ICON_ETAPA + _esc(it.etapa) + '</span>';
-      html += '<div class="pend-cardrow" onclick="pendAbrirOpp(' + it.id + ')">' +
+      var clickB = it.url ? ("pendIrUrl('" + _esc(it.url) + "')") : ('pendAbrirOpp(' + it.id + ')');
+      html += '<div class="pend-cardrow" onclick="' + clickB + '">' +
         '<span class="pend-dot ' + tone + '"></span>' +
         '<div class="pend-c-main">' +
           '<div class="pend-c-nombre">' + _esc(it.nombre) + '</div>' +
