@@ -46,6 +46,7 @@ services:
       - web
     environment:
       DB_HOST: db
+      PYTHONUNBUFFERED: "1"
     entrypoint: python manage.py sincronizar_correo --loop 180
     deploy:
       resources:
