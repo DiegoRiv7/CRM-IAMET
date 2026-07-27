@@ -2565,6 +2565,13 @@
             // del servidor — inicializar la lista de inmediato. Corre en CADA
             // crmReady (Turbo navega entre tabs sin recargar).
             var w = document.getElementById('widgetMail');
+            var _tabActual = null;
+            try { _tabActual = new URL(window.location.href).searchParams.get('tab'); } catch (e) { }
+            if (w && w.classList.contains('is-page-mode') && _tabActual !== 'correo') {
+                // Residuo del snapshot de Turbo al navegar a otra sección:
+                // el correo quedaba montado EN FLUJO arriba de la nueva página.
+                w.classList.remove('is-page-mode', 'active');
+            }
             if (w && w.classList.contains('is-page-mode')) {
                 _mailWidgetInitOnce();
                 _mailInitState();
