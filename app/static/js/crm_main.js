@@ -6932,7 +6932,21 @@
                       || _path === '/app';
         if (!_isCrmHome) {
             // No-op: no restaurar nada del CRM en páginas externas.
-        } else if (_urlTab !== 'calendario' && _savedView === 'tareas') {
+        }
+        // Vista objetivo: un tab EXPLÍCITO de tareas/proyectos en la URL manda
+        // (deep-links del perfil y del panel del Correo); los tabs neutros
+        // (crm/todos/sin tab) restauran el crmView guardado; cualquier OTRO tab
+        // (correo, calendario, clientes...) no restaura nada — su página la
+        // pinta el server y antes Tareas se encimaba (bug del Correo).
+        var _vistaObjetivo = null;
+        if (_urlTab === 'tareas' || _urlTab === 'proyectos') {
+            _vistaObjetivo = _urlTab;
+        } else if (!_urlTab || _urlTab === 'crm' || _urlTab === 'todos') {
+            _vistaObjetivo = _savedView;
+        }
+        if (!_isCrmHome) {
+            // (ya manejado arriba)
+        } else if (_vistaObjetivo === 'tareas') {
             window._crmTareasMode = true;
             // ACTIVAR la sección igual que el clic en el botón Tareas
             // (switchCrmView oculta el CRM y marca tareasSection .active). Antes
@@ -6947,7 +6961,7 @@
             // resultado del fetch ya completado → fetch extra. El guard
             // _crmTareasFetching de cargarTareasCRM evita los duplicados.
             cargarTareasCRM();
-        } else if (_urlTab !== 'calendario' && _savedView === 'proyectos') {
+        } else if (_vistaObjetivo === 'proyectos') {
             if (typeof switchCrmView === 'function') switchCrmView('proyectos');
             var btnProyInit = document.getElementById('btnProyectos');
             if (btnProyInit) btnProyInit.classList.add('active');
