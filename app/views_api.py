@@ -1962,6 +1962,14 @@ def api_perfil_resumen_hoy(request):
         eficiencia = 100
     eficiencia = max(0, min(100, eficiencia))
 
+    # ── Contador de ACTIVIDADES del cuadro: actividades de CALENDARIO de
+    # hoy (las mismas que lista "Tu día") — no las TareaOportunidad de la
+    # fórmula de eficiencia, que son otro modelo y confundían el conteo
+    # (la agenda enseñaba una actividad y el cuadro decía 0/0). ──
+    acts_cal = Actividad.objects.filter(creado_por=request.user, fecha_inicio__date=hoy)
+    acts_cal_totales = acts_cal.count()
+    acts_cal_completadas = acts_cal.filter(completada=True).count()
+
     # ── Agenda de hoy: próximas actividades del calendario + tareas con
     # límite hoy, mezcladas por hora (top 5) ──
     agenda = []
@@ -1994,8 +2002,8 @@ def api_perfil_resumen_hoy(request):
         'eficiencia': round(eficiencia),
         'tareas_completadas': tareas_completadas_hoy,
         'tareas_totales': tareas_totales,
-        'actividades_completadas': act_completadas_hoy,
-        'actividades_totales': act_totales,
+        'actividades_completadas': acts_cal_completadas,
+        'actividades_totales': acts_cal_totales,
         'ventas_cobradas': opps_cobradas_hoy,
         'agenda': agenda,
         'vendido_mes': float(vendido_mes),
