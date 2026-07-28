@@ -16,7 +16,7 @@
       <!-- Mini-sidebar -->
       <nav class="pend-side">
         <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi Asistente</div>
-        <button type="button" class="pend-side-item active" data-nav="dia" onclick="pendNav('dia')">Mi día</button>
+        <button type="button" class="pend-side-item active" data-nav="dia" onclick="pendNav('dia')">Resumen</button>
         <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes</button>
         <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correo</button>
         <button type="button" class="pend-side-item" data-nav="reportes" onclick="pendNav('reportes')">Reportes</button>
@@ -33,6 +33,7 @@
       <div class="pend-main">
         <div class="pend-maintop">
           <div class="pend-tabs" id="pendSubtabs">
+            <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
             <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">Pendientes <span class="pend-count" id="pendCount-pendientes">0</span></button>
             <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">Hoy <span class="pend-count" id="pendCount-hoy">0</span></button>
             <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">Próximamente <span class="pend-count" id="pendCount-proximamente">0</span></button>
@@ -181,10 +182,10 @@
   .pend-pager-btn:disabled{opacity:.4;cursor:default;}
   .pend-pager-lbl{font-size:.86rem;color:#8a8c93;font-weight:600;}
   /* "Mi día": mensaje arriba centrado, tarjeta centrada vertical, flechas abajo */
-  #pendResArea.pend-day{display:flex;flex-direction:column;justify-content:center;min-height:100%;padding-bottom:54px;}
+  #pendResArea.pend-day{display:flex;flex-direction:column;min-height:100%;padding-top:6px;}
   #pendResArea.pend-day .pend-res-hero{flex:none;text-align:center;}
-  #pendResArea.pend-day .pend-split{flex:none;margin:18px 0 0;}
-  #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:14px 0 2px;}
+  #pendResArea.pend-day .pend-split{flex:1;margin:18px 0 0;min-height:440px;max-height:660px;}
+  #pendResArea.pend-day .pend-pager{flex:none;margin:0;padding:16px 0 6px;}
   /* Replay mensual — estilo editorial "Wrapped" (fondo cálido, serif, formas) */
   .pend-tab-replay{display:inline-flex;align-items:center;gap:2px;}
   .pend-tab-replay.active{background:linear-gradient(135deg,#e07a3e,#c8551f) !important;color:#fff !important;}
