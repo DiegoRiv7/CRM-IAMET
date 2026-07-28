@@ -153,6 +153,7 @@ urlpatterns = [
     path('api/pendientes/completar/', views.api_pendientes_completar, name='api_pendientes_completar'),
     path('api/pendientes/replay/', views.api_pendientes_replay, name='api_pendientes_replay'),
     path('api/asistente/clientes/', views.api_asistente_clientes, name='api_asistente_clientes'),
+    path('api/asistente/clientes/estado/', views.api_asistente_clientes_estado, name='api_asistente_clientes_estado'),
     path('api/subir-facturacion/', views.api_subir_facturacion, name='api_subir_facturacion'),
     path('api/desglose-facturacion/', views.api_desglose_facturacion, name='api_desglose_facturacion'),
     path('api/subir-cobrado/', views.api_subir_cobrado, name='api_subir_cobrado'),

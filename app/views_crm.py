@@ -7274,7 +7274,7 @@ def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
     """Clientes asignados (al usuario o al vendedor elegido) que llevan >= `umbral`
     días sin una oportunidad NUEVA. Ordenados del más olvidado al menos.
     """
-    from django.db.models import Max, Count
+    from django.db.models import Max, Count, Q
     from django.contrib.auth.models import User as _User
     from .models import Cliente, TodoItem
 
@@ -7294,24 +7294,28 @@ def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
     if targets is not None:
         qs = qs.filter(asignado_a_id__in=targets)
     qs = qs.select_related('asignado_a').annotate(
-        _ultc=Max('oportunidades__fecha_creacion'),
+        _ultc_prev=Max('oportunidades__fecha_creacion', filter=Q(oportunidades__fecha_creacion__date__lt=today)),
         _ultu=Max('oportunidades__fecha_actualizacion'),
         _nopp=Count('oportunidades', distinct=True),
+        _hoy=Count('oportunidades', filter=Q(oportunidades__fecha_creacion__date=today), distinct=True),
     )
 
     seleccionados = []
     for c in qs:
-        ref = c._ultc or c.fecha_creacion
+        # "en pausa" se mide con la última oportunidad ANTES de hoy (para que crear
+        # una hoy NO lo saque, sino que lo marque como trabajado).
+        ref = c._ultc_prev or c.fecha_creacion
         dias = (today - timezone.localtime(ref).date()).days if ref else 9999
         if dias < umbral:
             continue
         ref_u = c._ultu or c.fecha_creacion
         dias_atencion = (today - timezone.localtime(ref_u).date()).days if ref_u else 9999
-        seleccionados.append((c, dias, dias_atencion))
+        seleccionados.append((c, dias, dias_atencion, c._hoy > 0))
 
-    seleccionados.sort(key=lambda t: -t[1])
+    # pendientes primero (más olvidado arriba); las trabajadas hoy van al final
+    seleccionados.sort(key=lambda t: (t[3], -t[1]))
     seleccionados = seleccionados[:limite]
-    fids = [c.id for c, _, _ in seleccionados]
+    fids = [c.id for c, _, _, _ in seleccionados]
 
     by_cli = {}
     if fids:
@@ -7326,7 +7330,7 @@ def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
                 d['ult_etapa'] = r['etapa_corta']
 
     items = []
-    for c, dias, dias_atencion in seleccionados:
+    for c, dias, dias_atencion, completada in seleccionados:
         info = by_cli.get(c.id, {'abiertas': 0, 'ult_etapa': ''})
         n_abiertas = info['abiertas']
         mensaje, accion = _cli_msg(c.nombre_empresa, c.contacto_principal, dias, c._nopp, n_abiertas)
@@ -7344,6 +7348,7 @@ def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
             'vendedor': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '',
             'mensaje': mensaje,
             'accion': accion,
+            'completada': completada,
         })
     return items
 
@@ -7434,7 +7439,24 @@ def api_asistente_clientes(request):
     except Exception:
         pass
 
-    return JsonResponse({'success': True, 'items': items, 'total': len(items)})
+    pend = sum(1 for it in items if not it.get('completada'))
+    return JsonResponse({'success': True, 'items': items, 'total': len(items),
+                         'pendientes': pend, 'completadas': len(items) - pend})
+
+
+@login_required
+def api_asistente_clientes_estado(request):
+    """Ligero: dado ?ids=1,2,3 devuelve qué clientes se 'trabajaron' HOY (se les creó
+    una oportunidad nueva hoy). Para el sondeo del panel, igual que en Mi día."""
+    from django.utils import timezone
+    from .models import TodoItem
+    ids = [int(x) for x in (request.GET.get('ids', '') or '').split(',') if x.strip().isdigit()]
+    today = timezone.localdate()
+    worked = []
+    if ids:
+        worked = list(TodoItem.objects.filter(cliente_id__in=ids, fecha_creacion__date=today)
+                      .values_list('cliente_id', flat=True).distinct())
+    return JsonResponse({'success': True, 'worked_ids': worked})
 
 
 @login_required

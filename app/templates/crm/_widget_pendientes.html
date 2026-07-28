@@ -401,7 +401,10 @@
     }
     // Sondeo: detecta al instante cuando completas algo, sin recargar ni cerrar.
     if (_pollTimer) clearInterval(_pollTimer);
-    _pollTimer = setInterval(function () { if (_section === 'dia' && _tab === 'resumen') pendRefreshEstado(); }, 3000);
+    _pollTimer = setInterval(function () {
+      if (_section === 'dia' && _tab === 'resumen') pendRefreshEstado();
+      else if (_section === 'clientes') pendRefreshClientes();
+    }, 3000);
   };
   window.pendCerrar = function () {
     var ov = el('widgetPendientes');
@@ -465,24 +468,31 @@
   function _drawClientes(res) {
     var items = (_cliData && _cliData.items) || [];
     var total = items.length;
+    var pend = (_cliData.pendientes != null ? _cliData.pendientes : items.filter(function (x) { return !x.completada; }).length);
+    var comp = (_cliData.completadas != null ? _cliData.completadas : total - pend);
+    var sub;
+    if (pend > 0) { sub = '<b>' + pend + '</b> cliente' + (pend === 1 ? '' : 's') + ' que llevan tiempo sin una oportunidad nueva'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
+    else if (comp > 0) { sub = '¡Reactivaste a todos por hoy! <b>' + comp + '</b> ✓'; }
+    else { sub = '¡Vas al día! Ningún cliente olvidado 🎉'; }
     var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Clientes en pausa</div>' +
-      '<div class="pend-res-sub">' + (total
-        ? '<b>' + total + '</b> cliente' + (total === 1 ? '' : 's') + ' que llevan tiempo sin una oportunidad nueva'
-        : '¡Vas al día! Ningún cliente olvidado 🎉') + '</div></div>';
+      '<div class="pend-res-sub">' + sub + '</div></div>';
     if (!total) { res.className = ''; res.innerHTML = hero; return; }
     if (_cliIdx >= total) _cliIdx = total - 1;
     if (_cliIdx < 0) _cliIdx = 0;
     var it = items[_cliIdx];
     var mostrarVend = (_sel !== 'mias');
     var abLbl = it.n_abiertas + ' abierta' + (it.n_abiertas === 1 ? '' : 's');
-    var card = '<div class="pend-split">' +
+    var agentSub = it.completada ? '<span class="pend-sc-done">✓ Reactivado hoy</span>' : ('Cliente en pausa · ' + it.dias + ' días');
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Le creaste una oportunidad nueva a este cliente. 💪</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
       '<div class="pend-sc-left">' +
         '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
           '<div class="pend-sc-agent-name">Asistente</div>' +
-          '<div class="pend-sc-agent-sub">Cliente en pausa · ' + it.dias + ' días</div></div></div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div></div>' +
         '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
-        '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div>' +
-          '<div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>' +
+        playBlock +
       '</div>' +
       '<div class="pend-sc-right">' +
         '<div class="pend-sc-flabel">Cliente</div>' +
@@ -518,6 +528,31 @@
     if (typeof window.openClienteModal === 'function') window.openClienteModal(id, nombre || '', 'info');
     else window.location = '/app/?open_cliente=' + id;
   };
+  // Sondeo de Clientes: detecta al instante cuando le creas una oportunidad nueva a uno.
+  function pendRefreshClientes() {
+    if (!_cliData || !_cliData.items || !_cliData.items.length) return;
+    var ids = _cliData.items.map(function (it) { return it.cliente_id; }).join(',');
+    fetch('/app/api/asistente/clientes/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var worked = {}; (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
+        var changed = false;
+        _cliData.items.forEach(function (it) {
+          var now = !!worked[it.cliente_id];
+          if (now !== !!it.completada) changed = true;
+          it.completada = now;
+        });
+        if (changed) {
+          var p = _cliData.items.filter(function (x) { return !x.completada; });
+          var q = _cliData.items.filter(function (x) { return x.completada; });
+          _cliData.items = p.concat(q);
+          _cliData.pendientes = p.length; _cliData.completadas = q.length;
+          if (_section === 'clientes') _drawClientes(el('pendResArea'));
+        }
+      }).catch(function () {});
+  }
+  window.pendRefreshClientes = pendRefreshClientes;
 
   // ── Chat con el asistente general (el "consultor") ──
   function _getCsrf() {
