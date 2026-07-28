@@ -5,56 +5,75 @@
   Datos: GET /app/api/pendientes/?vendedor=<id|todos|mias>. Abre con pendAbrir().
 {% endcomment %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
-<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Resumen">
+<div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi Asistente">
   <div class="ww-card pend-card">
-    <!-- Topbar: pestañas (izquierda) + selector y controles de ventana (derecha) -->
-    <div class="pend-topbar">
-      <div class="pend-tabs">
-        <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
-        <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">
-          Pendientes <span class="pend-count" id="pendCount-pendientes">0</span>
-        </button>
-        <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">
-          Hoy <span class="pend-count" id="pendCount-hoy">0</span>
-        </button>
-        <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">
-          Próximamente <span class="pend-count" id="pendCount-proximamente">0</span>
-        </button>
-        <span class="pend-replay-wrap">
-          <button type="button" class="pend-tab pend-tab-replay" data-tab="replay" id="pendTabReplay" onclick="pendSetTab('replay')">
-            <span id="pendReplayLabel">Replay</span>
+    <div class="pend-shell">
+
+      <!-- Mini-sidebar -->
+      <nav class="pend-side">
+        <div class="pend-side-brand"><span class="pend-side-dot"></span> Mi Asistente</div>
+        <button type="button" class="pend-side-item active" data-nav="dia" onclick="pendNav('dia')">Mi día</button>
+        <button type="button" class="pend-side-item" data-nav="clientes" onclick="pendNav('clientes')">Clientes</button>
+        <button type="button" class="pend-side-item" data-nav="correo" onclick="pendNav('correo')">Correo</button>
+        <button type="button" class="pend-side-item" data-nav="reportes" onclick="pendNav('reportes')">Reportes</button>
+        <span class="pend-replay-wrap pend-side-bottom">
+          <button type="button" class="pend-side-item" id="pendTabReplay" data-nav="mes" onclick="pendNav('mes')">
+            <span id="pendReplayLabel">Resumen</span>
             <span class="pend-replay-caret" onclick="pendReplayPicker(event)"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
           </button>
           <div id="pendReplayMenu" class="pend-replay-menu"></div>
         </span>
-      </div>
-      <div class="pend-head-actions">
-        <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
-          <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
-            <span id="pendVendedorLabel">Mías</span>
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div id="pendVendedorMenu" class="pend-vend-menu"></div>
+      </nav>
+
+      <!-- Centro: Mi día / secciones -->
+      <div class="pend-main">
+        <div class="pend-maintop">
+          <div class="pend-tabs" id="pendSubtabs">
+            <button type="button" class="pend-tab active" data-tab="resumen" onclick="pendSetTab('resumen')">Mi día</button>
+            <button type="button" class="pend-tab" data-tab="pendientes" onclick="pendSetTab('pendientes')">Pendientes <span class="pend-count" id="pendCount-pendientes">0</span></button>
+            <button type="button" class="pend-tab" data-tab="hoy" onclick="pendSetTab('hoy')">Hoy <span class="pend-count" id="pendCount-hoy">0</span></button>
+            <button type="button" class="pend-tab" data-tab="proximamente" onclick="pendSetTab('proximamente')">Próximamente <span class="pend-count" id="pendCount-proximamente">0</span></button>
+          </div>
+          <div class="pend-head-actions">
+            <div id="pendVendedorWrap" class="pend-vend" style="display:none;">
+              <button type="button" id="pendVendedorBtn" class="pend-vend-btn" onclick="pendToggleVendedor(event)">
+                <span id="pendVendedorLabel">Mías</span>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="pendVendedorMenu" class="pend-vend-menu"></div>
+            </div>
+            <button type="button" class="widget-close pend-close" onclick="pendCerrar()" title="Cerrar">&times;</button>
+          </div>
         </div>
-        <button type="button" class="widget-close pend-close" onclick="pendCerrar()" title="Cerrar">&times;</button>
+        <div class="pend-body" id="pendBody">
+          <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Body: un solo scroll (resumen/lista arriba + conversación con el asistente debajo) -->
-    <div class="pend-body" id="pendBody">
-      <div id="pendResArea"><div class="pend-empty">Cargando…</div></div>
-      <div id="pendChatFlow" class="pend-chatflow"></div>
-    </div>
+      <!-- Panel del asistente (derecha) -->
+      <aside class="pend-asis">
+        <div class="pend-asis-head">
+          <div class="pend-asis-h1"><span class="pend-asis-dot"></span> Asistente</div>
+          <div class="pend-asis-sub">Lo importante que necesita tu atención</div>
+        </div>
+        <div class="pend-asis-body">
+          <div class="pend-asis-soon">
+            <div class="pend-asis-soon-t">Tus sugerencias, en camino</div>
+            <div class="pend-asis-soon-d">Pronto verás aquí tus correos importantes sin responder y las oportunidades que requieren atención — con acciones directas.</div>
+          </div>
+          <div id="pendChatFlow" class="pend-chatflow"></div>
+        </div>
+        <div class="pend-chat" id="pendChat">
+          <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
+            <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
+                   placeholder="Pídele algo al asistente…">
+            <button type="submit" class="pend-chat-send" title="Enviar">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </form>
+        </div>
+      </aside>
 
-    <!-- Barra de entrada del chat (solo en Resumen). Las respuestas salen en el body. -->
-    <div class="pend-chat" id="pendChat" style="display:none;">
-      <form class="pend-chat-form" onsubmit="return pendChatSend(event)">
-        <input type="text" id="pendChatInput" class="pend-chat-input" autocomplete="off"
-               placeholder="Pregúntale al asistente sobre tus oportunidades…">
-        <button type="submit" class="pend-chat-send" title="Enviar">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
-      </form>
     </div>
   </div>
 </div>
@@ -261,6 +280,27 @@
     display:flex;align-items:center;justify-content:center;transition:background .15s;}
   .pend-chat-send:hover{background:#0060df;}
   .pend-chat-send:disabled{background:#c7c9ce;cursor:default;}
+  /* ===== Layout "Mi Asistente": mini-sidebar + centro + panel ===== */
+  .pend-shell{display:flex;flex:1;min-height:0;}
+  .pend-side{width:196px;flex:none;background:#fff;border-right:1px solid #f0f1f3;display:flex;flex-direction:column;padding:16px 12px;}
+  .pend-side-brand{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:800;color:#1c1d22;padding:4px 10px 16px;}
+  .pend-side-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;flex:none;}
+  .pend-side-item{display:flex;align-items:center;justify-content:space-between;text-align:left;width:100%;border:none;background:none;border-radius:9px;
+    padding:9px 12px;margin-bottom:2px;font-size:.92rem;font-weight:500;color:#6b6d75;cursor:pointer;font-family:inherit;}
+  .pend-side-item:hover{background:#f4f5f7;}
+  .pend-side-item.active{background:#f2f3f6;color:#1c1d22;font-weight:600;}
+  .pend-side-bottom{margin-top:auto;position:relative;}
+  .pend-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#fafbfc;}
+  .pend-maintop{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex:none;border-bottom:1px solid #f0f1f3;background:#fff;}
+  .pend-asis{width:392px;flex:none;background:#fff;border-left:1px solid #f0f1f3;display:flex;flex-direction:column;min-width:0;}
+  .pend-asis-head{padding:16px 18px 12px;border-bottom:1px solid #f0f1f3;flex:none;}
+  .pend-asis-h1{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:800;color:#1c1d22;}
+  .pend-asis-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;}
+  .pend-asis-sub{font-size:.78rem;color:#9a9ca3;margin-top:3px;}
+  .pend-asis-body{flex:1;overflow-y:auto;padding:16px 18px;}
+  .pend-asis-soon{border:1px dashed #e2e5ea;border-radius:14px;padding:18px;background:#fafbfc;}
+  .pend-asis-soon-t{font-size:.95rem;font-weight:700;color:#1c1d22;margin-bottom:6px;}
+  .pend-asis-soon-d{font-size:.85rem;color:#8a8c93;line-height:1.5;}
 </style>
 
 <script>
@@ -336,7 +376,7 @@
     if (!ov) return;
     ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
-    var chat = el('pendChat'); if (chat) chat.style.display = (_tab === 'resumen') ? '' : 'none';
+    var chat = el('pendChat'); if (chat) chat.style.display = '';   // el chat vive en el panel del asistente
     pendCargar();
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
@@ -365,8 +405,28 @@
     document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t){
       t.classList.toggle('active', t.getAttribute('data-tab') === tab);
     });
-    var chat = el('pendChat'); if (chat) chat.style.display = (tab === 'resumen') ? '' : 'none';
     _render();
+  };
+
+  // Mini-sidebar: cambia la sección del CENTRO (Mi día / Resumen del mes / próximamente)
+  window.pendNav = function (section) {
+    document.querySelectorAll('#widgetPendientes .pend-side-item').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-nav') === section);
+    });
+    var subtabs = el('pendSubtabs');
+    var card = document.querySelector('#widgetPendientes .pend-card');
+    if (section === 'dia') {
+      if (subtabs) subtabs.style.display = '';
+      pendSetTab('resumen');
+    } else if (section === 'mes') {
+      if (subtabs) subtabs.style.display = 'none';
+      pendSetTab('replay');
+    } else {
+      if (subtabs) subtabs.style.display = 'none';
+      if (card) card.classList.remove('replay-on');
+      var res = el('pendResArea');
+      if (res) { res.className = ''; res.innerHTML = '<div class="pend-empty">Esta sección estará disponible pronto.</div>'; }
+    }
   };
 
   // ── Chat con el asistente general (el "consultor") ──
@@ -870,11 +930,9 @@
     if (!res) return;
     var _card = document.querySelector('#widgetPendientes .pend-card');
     if (_card) _card.classList.toggle('replay-on', _tab === 'replay');
-    var chatFlow = el('pendChatFlow');
-    if (_tab === 'replay') { if (chatFlow) chatFlow.style.display = 'none'; _renderReplay(); return; }
+    if (_tab === 'replay') { _renderReplay(); return; }
     if (!_data) return;
-    if (_tab === 'resumen') { if (chatFlow) chatFlow.style.display = ''; _renderResumen(); return; }
-    if (chatFlow) chatFlow.style.display = 'none';   // el chat solo vive en Resumen
+    if (_tab === 'resumen') { _renderResumen(); return; }
     res.classList.remove('pend-day');
     var items = (_data.buckets && _data.buckets[_tab]) || [];
     var esTareaB = (_data.buckets_tipo === 'tarea');
