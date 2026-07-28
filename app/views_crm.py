@@ -5262,9 +5262,32 @@ def api_buscar_clientes(request):
             'nombre': cliente.nombre_empresa,
             'contacto_principal': cliente.contacto_principal or '',
             'email': cliente.email or '',
-            'telefono': cliente.telefono or ''
+            'telefono': cliente.telefono or '',
+            'tipo': 'cliente',
         })
-    
+
+    # ?potenciales=1 (modo prospecto del composer de prospección): incluir
+    # también los ClientePotencial visibles — los creados desde el panel
+    # admin o el mini-form, que antes NUNCA aparecían en la búsqueda.
+    if request.GET.get('potenciales') == '1':
+        from .models import ClientePotencial
+        from .views_grupos import get_usuarios_visibles_ids
+        pot_qs = ClientePotencial.objects.filter(nombre__icontains=query)
+        visibles = get_usuarios_visibles_ids(request.user)
+        if visibles is not None:
+            pot_qs = pot_qs.filter(
+                Q(asignado_a=request.user) | Q(asignado_a_id__in=visibles)
+            )
+        for pot in pot_qs.order_by('nombre')[:10]:
+            clientes_data.append({
+                'id': pot.id,
+                'nombre': pot.nombre,
+                'contacto_principal': '',
+                'email': '',
+                'telefono': '',
+                'tipo': 'potencial',
+            })
+
     return JsonResponse({'clientes': clientes_data})
 
 

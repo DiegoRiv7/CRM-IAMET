@@ -299,6 +299,24 @@ def api_crear_prospecto(request):
 
     if not nombre:
         return JsonResponse({'success': False, 'error': 'Nombre requerido'}, status=400)
+    # Modo prospecto: se seleccionó un ClientePotencial (panel admin /
+    # mini-form). El modelo Prospecto exige un Cliente real → se reutiliza
+    # uno con el mismo nombre o se crea al vuelo a partir del potencial.
+    potencial_id = data.get('cliente_potencial_id')
+    if not cliente_id and potencial_id:
+        from .models import ClientePotencial
+        try:
+            pot = ClientePotencial.objects.get(id=potencial_id)
+        except ClientePotencial.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Prospecto no encontrado'}, status=404)
+        cliente_obj = Cliente.objects.filter(nombre_empresa__iexact=pot.nombre.strip()).first()
+        if not cliente_obj:
+            cliente_obj = Cliente.objects.create(
+                nombre_empresa=pot.nombre.strip(),
+                asignado_a=pot.asignado_a or request.user,
+            )
+        cliente_id = cliente_obj.id
+
     if not cliente_id:
         return JsonResponse({'success': False, 'error': 'Cliente requerido'}, status=400)
 
