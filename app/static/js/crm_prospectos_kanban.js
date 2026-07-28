@@ -365,11 +365,29 @@
     // SPA está disponible (trae el board fresco del server y lo trasplanta
     // sin recargar la página); fallback al reload clásico.
     window.recargarProspectosKanban = function() {
-        try {
-            if (window.crmApplyPeriod &&
-                window.crmApplyPeriod(new URLSearchParams(window.location.search))) return;
-        } catch (e) { }
-        window.location.reload();
+        // Refresh DIRECTO del board (fetch de la página actual + trasplante
+        // de #pkKanbanBoard + rehidratar filtros/binds). Antes se delegaba a
+        // crmApplyPeriod, que tiene precondiciones (busy, _crmSetPeriodo,
+        // config del tab) y podía devolver true SIN refrescar — la tarjeta
+        // recién creada no aparecía hasta recargar la página a mano.
+        var board = document.getElementById('pkKanbanBoard');
+        if (!board) return;  // no estamos en la vista de prospección
+        var url = window.location.pathname + window.location.search;
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'pk-refresh' } })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                var nue = doc.getElementById('pkKanbanBoard');
+                if (!nue) throw new Error('fragmento sin board');
+                board.innerHTML = nue.innerHTML;
+                if (typeof window.pkKanbanRehydrate === 'function') {
+                    try { window.pkKanbanRehydrate(); } catch (e) { }
+                }
+            })
+            .catch(function () { window.location.reload(); });
     };
 
     // ── Live update: mover card sin reload ────────────────────────────
