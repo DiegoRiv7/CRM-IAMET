@@ -318,6 +318,7 @@
   window.__pendInit = true;
 
   var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
+  var _section = 'dia', _cliData = null, _cliIdx = 0;
   var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
   function el(id){ return document.getElementById(id); }
 
@@ -386,6 +387,12 @@
     ov.style.zIndex = '';            // restaurar z normal al reabrir
     ov.classList.add('active');
     var chat = el('pendChat'); if (chat) chat.style.display = '';   // el chat vive en el panel del asistente
+    // Abrir siempre en "Mi día" (por si se cerró en otra sección). Conserva el recap 18:00.
+    _section = 'dia'; _tab = 'resumen';
+    document.querySelectorAll('#widgetPendientes .pend-side-item').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-nav') === 'dia'); });
+    document.querySelectorAll('#widgetPendientes .pend-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'resumen'); });
+    var _st = el('pendSubtabs'); if (_st) _st.style.display = '';
+    var _cd = document.querySelector('#widgetPendientes .pend-card'); if (_cd) _cd.classList.remove('replay-on');
     pendCargar();
     // Ventana flotante arrastrable DESDE EL INICIO. Reintento por si el sistema
     // de ventanas aún no está listo en el auto-open del día.
@@ -394,7 +401,7 @@
     }
     // Sondeo: detecta al instante cuando completas algo, sin recargar ni cerrar.
     if (_pollTimer) clearInterval(_pollTimer);
-    _pollTimer = setInterval(function () { if (_tab === 'resumen') pendRefreshEstado(); }, 3000);
+    _pollTimer = setInterval(function () { if (_section === 'dia' && _tab === 'resumen') pendRefreshEstado(); }, 3000);
   };
   window.pendCerrar = function () {
     var ov = el('widgetPendientes');
@@ -419,23 +426,97 @@
 
   // Mini-sidebar: cambia la sección del CENTRO (Mi día / Resumen del mes / próximamente)
   window.pendNav = function (section) {
+    _section = section;
     document.querySelectorAll('#widgetPendientes .pend-side-item').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-nav') === section);
     });
     var subtabs = el('pendSubtabs');
     var card = document.querySelector('#widgetPendientes .pend-card');
+    if (card) card.classList.remove('replay-on');
     if (section === 'dia') {
       if (subtabs) subtabs.style.display = '';
       pendSetTab('resumen');
     } else if (section === 'mes') {
       if (subtabs) subtabs.style.display = 'none';
       pendSetTab('replay');
+    } else if (section === 'clientes') {
+      if (subtabs) subtabs.style.display = 'none';
+      _renderClientes();
     } else {
       if (subtabs) subtabs.style.display = 'none';
-      if (card) card.classList.remove('replay-on');
       var res = el('pendResArea');
       if (res) { res.className = ''; res.innerHTML = '<div class="pend-empty">Esta sección estará disponible pronto.</div>'; }
     }
+  };
+
+  // ── Sección Clientes: clientes "en pausa" (sin oportunidad nueva hace tiempo) ──
+  function _renderClientes() {
+    var res = el('pendResArea'); if (!res) return;
+    if (_cliData) { _drawClientes(res); return; }
+    res.className = ''; res.innerHTML = '<div class="pend-empty">Revisando tus clientes…</div>';
+    fetch('/app/api/asistente/clientes/?vendedor=' + encodeURIComponent(_sel), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudieron cargar los clientes</div>'; return; }
+        _cliData = d; _cliIdx = 0; _drawClientes(res);
+      })
+      .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  function _drawClientes(res) {
+    var items = (_cliData && _cliData.items) || [];
+    var total = items.length;
+    var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Clientes en pausa</div>' +
+      '<div class="pend-res-sub">' + (total
+        ? '<b>' + total + '</b> cliente' + (total === 1 ? '' : 's') + ' que llevan tiempo sin una oportunidad nueva'
+        : '¡Vas al día! Ningún cliente olvidado 🎉') + '</div></div>';
+    if (!total) { res.className = ''; res.innerHTML = hero; return; }
+    if (_cliIdx >= total) _cliIdx = total - 1;
+    if (_cliIdx < 0) _cliIdx = 0;
+    var it = items[_cliIdx];
+    var mostrarVend = (_sel !== 'mias');
+    var abLbl = it.n_abiertas + ' abierta' + (it.n_abiertas === 1 ? '' : 's');
+    var card = '<div class="pend-split">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+          '<div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">Cliente en pausa · ' + it.dias + ' días</div></div></div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
+        '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div>' +
+          '<div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>' +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">Cliente</div>' +
+        '<div class="pend-sc-value" style="font-size:1.35rem;line-height:1.2;">' + _esc(it.nombre) + '</div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Sin oportunidad nueva</div>' +
+          '<div class="pend-sc-kv-val">' + it.dias + ' días</div></div>' +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Oportunidades</div>' +
+          '<div class="pend-sc-kv-val">' + it.n_opp + ' en total · ' + abLbl + '</div></div>' +
+        (it.ult_etapa ? '<div class="pend-sc-block"><div class="pend-sc-flabel">Última etapa</div><div class="pend-sc-kv-val">' + _esc(it.ult_etapa) + '</div></div>' : '') +
+        '<div class="pend-sc-divider"></div>' +
+        (it.contacto ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Contacto</div><div class="pend-sc-kv-val">' + _esc(it.contacto) + '</div></div>' : '') +
+        (it.telefono ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Teléfono</div><div class="pend-sc-kv-val">' + _esc(it.telefono) + '</div></div>' : '') +
+        (mostrarVend && it.vendedor ? '<div class="pend-sc-kv"><div class="pend-sc-flabel">Vendedor</div><div class="pend-sc-kv-val">' + _esc(it.vendedor) + '</div></div>' : '') +
+        '<button type="button" class="pend-sc-btn" onclick="pendVerCliente(' + it.cliente_id + ',\'' + _esc(it.nombre).replace(/'/g, "\\'") + '\')">Ver cliente</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCliNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">Cliente ' + (_cliIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCliNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.className = 'pend-day';
+    res.innerHTML = hero + card + pager;
+  }
+  window.pendCliNav = function (delta) {
+    if (!_cliData) return;
+    var n = (_cliData.items || []).length; if (!n) return;
+    _cliIdx = (_cliIdx + delta + n) % n;
+    _drawClientes(el('pendResArea'));
+  };
+  window.pendVerCliente = function (id, nombre) {
+    var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    if (typeof window.openClienteModal === 'function') window.openClienteModal(id, nombre || '', 'info');
+    else window.location = '/app/?open_cliente=' + id;
   };
 
   // ── Chat con el asistente general (el "consultor") ──
@@ -514,7 +595,8 @@
     _sel = val;
     var lbl = el('pendVendedorLabel'); if (lbl) lbl.textContent = label;
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
-    pendCargar();
+    if (_section === 'clientes') { _cliData = null; _renderClientes(); }
+    else pendCargar();
   };
 
   // Refresca SOLO el estado (trabajadas hoy) sin recargar todo ni re-ordenar:

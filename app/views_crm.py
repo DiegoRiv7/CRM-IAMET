@@ -7220,6 +7220,200 @@ def api_pendientes(request):
     })
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ASISTENTE · CLIENTES — clientes "en pausa" (sin oportunidad nueva hace tiempo)
+# ─────────────────────────────────────────────────────────────────────────────
+_CLI_TERM = {'ganada', 'ganado', 'pagada', 'pagado', 'perdida', 'perdido', 'cerrada', 'cerrado'}
+
+
+def _cli_abierta(etapa, estado):
+    e = (etapa or '').strip().lower()
+    if e in _CLI_TERM:
+        return False
+    if (estado or '').strip().lower() == 'pagada':
+        return False
+    return True
+
+
+def _cli_msg(nombre_emp, contacto, dias, n_opp, n_abiertas):
+    quien = contacto or 'el cliente'
+    if n_opp == 0:
+        return (f'{nombre_emp} es cliente tuyo pero aún no le has creado ninguna oportunidad. Vale la pena explorar qué necesita.',
+                f'Contacta a {quien} y detecta una oportunidad para crear.')
+    if n_abiertas == 0:
+        return (f'{nombre_emp} lleva {dias} días sin una oportunidad nueva y no tiene ninguna abierta. Buen momento para reactivarlo.',
+                f'Llama a {quien} y propón una nueva cotización o proyecto.')
+    return (f'{nombre_emp} lleva {dias} días sin moverse, aunque tiene {n_abiertas} oportunidad{"es" if n_abiertas != 1 else ""} abierta{"s" if n_abiertas != 1 else ""}. No lo dejes enfriar.',
+            f'Da seguimiento con {quien} a sus oportunidades abiertas.')
+
+
+def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
+    """Clientes asignados (al usuario o al vendedor elegido) que llevan >= `umbral`
+    días sin una oportunidad NUEVA. Ordenados del más olvidado al menos.
+    """
+    from django.db.models import Max, Count
+    from django.contrib.auth.models import User as _User
+    from .models import Cliente, TodoItem
+
+    visibles = get_usuarios_visibles_ids(user)   # None = ve todo
+    sel = (sel or '').strip().lower()
+    if not sel or sel == 'mias':
+        targets = [user.id]
+    elif sel == 'todos':
+        targets = None if visibles is None else list(visibles)
+    elif sel.isdigit():
+        tid = int(sel)
+        targets = [tid] if (visibles is None or tid in visibles) else [user.id]
+    else:
+        targets = [user.id]
+
+    qs = Cliente.objects.all()
+    if targets is not None:
+        qs = qs.filter(asignado_a_id__in=targets)
+    qs = qs.select_related('asignado_a').annotate(
+        _ultc=Max('oportunidades__fecha_creacion'),
+        _ultu=Max('oportunidades__fecha_actualizacion'),
+        _nopp=Count('oportunidades', distinct=True),
+    )
+
+    seleccionados = []
+    for c in qs:
+        ref = c._ultc or c.fecha_creacion
+        dias = (today - timezone.localtime(ref).date()).days if ref else 9999
+        if dias < umbral:
+            continue
+        ref_u = c._ultu or c.fecha_creacion
+        dias_atencion = (today - timezone.localtime(ref_u).date()).days if ref_u else 9999
+        seleccionados.append((c, dias, dias_atencion))
+
+    seleccionados.sort(key=lambda t: -t[1])
+    seleccionados = seleccionados[:limite]
+    fids = [c.id for c, _, _ in seleccionados]
+
+    by_cli = {}
+    if fids:
+        rows = (TodoItem.objects.filter(cliente_id__in=fids)
+                .values('cliente_id', 'etapa_corta', 'estado_crm')
+                .order_by('cliente_id', '-fecha_actualizacion'))
+        for r in rows:
+            d = by_cli.setdefault(r['cliente_id'], {'abiertas': 0, 'ult_etapa': ''})
+            if _cli_abierta(r['etapa_corta'], r['estado_crm']):
+                d['abiertas'] += 1
+            if not d['ult_etapa'] and r['etapa_corta']:
+                d['ult_etapa'] = r['etapa_corta']
+
+    items = []
+    for c, dias, dias_atencion in seleccionados:
+        info = by_cli.get(c.id, {'abiertas': 0, 'ult_etapa': ''})
+        n_abiertas = info['abiertas']
+        mensaje, accion = _cli_msg(c.nombre_empresa, c.contacto_principal, dias, c._nopp, n_abiertas)
+        items.append({
+            'cliente_id': c.id,
+            'nombre': c.nombre_empresa or '(sin nombre)',
+            'contacto': c.contacto_principal or '',
+            'telefono': c.telefono or '',
+            'email': c.email or '',
+            'dias': dias,
+            'dias_atencion': dias_atencion,
+            'n_opp': c._nopp,
+            'n_abiertas': n_abiertas,
+            'ult_etapa': info['ult_etapa'],
+            'vendedor': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '',
+            'mensaje': mensaje,
+            'accion': accion,
+        })
+    return items
+
+
+def _clientes_ia(nombre, items):
+    """Reescribe con la IA embebida (cálida y estratégica) mensaje + acción por cliente,
+    ANCLADO a los datos. Devuelve {'items': {str(cliente_id): {mensaje, accion}}} o None.
+    """
+    if not items:
+        return None
+    try:
+        from .asistente_provider import chat
+        from .models import AsistenteConfig
+    except Exception:
+        return None
+    try:
+        cfg = AsistenteConfig.get_singleton()
+        if cfg and not cfg.activo:
+            return None
+        modelo = cfg.modelo if cfg else None
+    except Exception:
+        modelo = None
+
+    import json as _json
+    facts = [{
+        'id': it['cliente_id'], 'cliente': it['nombre'], 'contacto': it['contacto'],
+        'dias_sin_oportunidad': it['dias'], 'oportunidades': it['n_opp'],
+        'abiertas': it['n_abiertas'], 'ultima_etapa': it['ult_etapa'],
+    } for it in items[:20]]
+
+    sys = (
+        "Eres el asistente comercial del CRM: cálido, cercano y estratégico. Le hablas de tú a "
+        f"{nombre}. Con base EXCLUSIVAMENTE en los datos, para CADA cliente (clave = su id) escribe:\n"
+        "- 'mensaje': 1-2 frases que expliquen por qué conviene reactivar a ESTE cliente hoy "
+        "(menciona de forma natural los días sin oportunidad y si tiene o no oportunidades abiertas).\n"
+        "- 'accion': el siguiente paso más útil y concreto (llamar, agendar visita, proponer "
+        "cotización, detectar necesidad), en 1 frase, natural y directo.\n"
+        "NO inventes datos que no aparezcan. Devuelve SOLO JSON válido: "
+        "{\"items\": {\"<id>\": {\"mensaje\": \"...\", \"accion\": \"...\"}}}"
+    )
+    usr = "Vendedor: " + nombre + "\nClientes (JSON):\n" + _json.dumps(facts, ensure_ascii=False)
+    try:
+        res = chat([{'role': 'system', 'content': sys}, {'role': 'user', 'content': usr}],
+                   model=modelo, temperature=0.6, max_tokens=1800)
+        txt = ((res or {}).get('text') or '').strip()
+        a, b = txt.find('{'), txt.rfind('}')
+        if a == -1 or b == -1:
+            return None
+        parsed = _json.loads(txt[a:b + 1])
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+@login_required
+def api_asistente_clientes(request):
+    """GET /app/api/asistente/clientes/?vendedor=<id|todos|mias>
+    Clientes 'en pausa' (sin oportunidad nueva hace tiempo) para el panel del asistente.
+    """
+    from django.utils import timezone
+    user = request.user
+    today = timezone.localdate()
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+
+    items = _asistente_clientes_items(user, sel, today)
+
+    # Enriquecer con IA (cacheado 1 vez al día por usuario + selección).
+    try:
+        from .models import AsistenteResumenDiario
+        key = 'cli:' + (sel or 'mias')
+        row = AsistenteResumenDiario.objects.filter(usuario=user, fecha=today, seleccion=key).first()
+        ia = row.data if (row and row.data) else None
+        if ia is None:
+            nombre = user.first_name or (user.get_full_name() or user.username).split(' ')[0]
+            ia = _clientes_ia(nombre, items)
+            if ia:
+                AsistenteResumenDiario.objects.update_or_create(
+                    usuario=user, fecha=today, seleccion=key, defaults={'data': ia})
+        if ia:
+            m = ia.get('items') or {}
+            for it in items:
+                e = m.get(str(it['cliente_id']))
+                if isinstance(e, dict):
+                    if e.get('mensaje'):
+                        it['mensaje'] = e['mensaje']
+                    if e.get('accion'):
+                        it['accion'] = e['accion']
+    except Exception:
+        pass
+
+    return JsonResponse({'success': True, 'items': items, 'total': len(items)})
+
+
 @login_required
 def api_pendientes_estado(request):
     """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
