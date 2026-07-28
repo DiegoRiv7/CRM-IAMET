@@ -250,17 +250,17 @@
 
     <!-- Bottom actions -->
     <div class="crm-sb-bottom">
-        <!-- Resumen (centro de mando del vendedor; reemplaza a Novedades).
+        <!-- Mi Asistente (centro de mando del vendedor; reemplaza a Novedades/Resumen).
              OCULTO salvo RESUMEN_HABILITADO=1 en el .env (feature flag) —
              la funcionalidad queda desplegada, solo sin icono. -->
         {% if resumen_habilitado %}
         <button type="button" class="crm-sb-btn" id="btnPendientes"
             onclick="if(window.pendAbrir){pendAbrir();}"
-            data-tooltip="Resumen">
+            data-tooltip="Mi Asistente">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span class="crm-sb-label">Resumen</span>
+            <span class="crm-sb-label">Mi Asistente</span>
         </button>
         {% endif %}
 
