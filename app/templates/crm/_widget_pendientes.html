@@ -465,16 +465,36 @@
       })
       .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
   }
+  var _CLI_TIER = {
+    1: { t: 'Clientes en pausa', s: 'que llevan más de un mes sin oportunidad ni contacto', e: 'Cliente en pausa' },
+    2: { t: 'Contacto sin concretar', s: 'con seguimiento reciente pero sin oportunidad nueva · prioridad baja', e: 'Contacto sin concretar' },
+    3: { t: 'Próximos a enfriarse', s: 'por cumplir un mes sin una oportunidad nueva', e: 'Próximo a cumplir un mes' }
+  };
   function _drawClientes(res) {
-    var items = (_cliData && _cliData.items) || [];
+    if (!_cliData) return;
+    // "Todo bien": sin clientes en pausa → tarjeta de felicitación
+    if (_cliData.modo === 'todobien') {
+      res.className = '';
+      res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;">' +
+        '<div class="pend-res-saludo" style="text-align:center;">Clientes al día 🎉</div>' +
+        '<div class="pend-split" style="margin-top:20px;"><div class="pend-sc-left">' +
+          '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+            '<div class="pend-sc-agent-name">Asistente</div>' +
+            '<div class="pend-sc-agent-sub">Todo en orden</div></div></div>' +
+          '<div class="pend-sc-msg">' + _esc(_cliData.mensaje_ok || 'No tienes clientes en pausa. 👏') + '</div>' +
+        '</div></div></div>';
+      return;
+    }
+    var items = _cliData.items || [];
     var total = items.length;
+    var cfg = _CLI_TIER[_cliData.tier] || _CLI_TIER[1];
     var pend = (_cliData.pendientes != null ? _cliData.pendientes : items.filter(function (x) { return !x.completada; }).length);
     var comp = (_cliData.completadas != null ? _cliData.completadas : total - pend);
     var sub;
-    if (pend > 0) { sub = '<b>' + pend + '</b> cliente' + (pend === 1 ? '' : 's') + ' que llevan tiempo sin una oportunidad nueva'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
+    if (pend > 0) { sub = '<b>' + pend + '</b> cliente' + (pend === 1 ? '' : 's') + ' ' + cfg.s; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
     else if (comp > 0) { sub = '¡Reactivaste a todos por hoy! <b>' + comp + '</b> ✓'; }
-    else { sub = '¡Vas al día! Ningún cliente olvidado 🎉'; }
-    var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Clientes en pausa</div>' +
+    else { sub = 'Sin pendientes 🎉'; }
+    var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">' + cfg.t + '</div>' +
       '<div class="pend-res-sub">' + sub + '</div></div>';
     if (!total) { res.className = ''; res.innerHTML = hero; return; }
     if (_cliIdx >= total) _cliIdx = total - 1;
@@ -482,7 +502,8 @@
     var it = items[_cliIdx];
     var mostrarVend = (_sel !== 'mias');
     var abLbl = it.n_abiertas + ' abierta' + (it.n_abiertas === 1 ? '' : 's');
-    var agentSub = it.completada ? '<span class="pend-sc-done">✓ Reactivado hoy</span>' : ('Cliente en pausa · ' + it.dias + ' días');
+    var estadoLbl = (_CLI_TIER[it.tier] || cfg).e;
+    var agentSub = it.completada ? '<span class="pend-sc-done">✓ Reactivado hoy</span>' : (estadoLbl + ' · ' + it.dias + ' días');
     var playBlock = it.completada
       ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Le creaste una oportunidad nueva a este cliente. 💪</div></div>'
       : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';

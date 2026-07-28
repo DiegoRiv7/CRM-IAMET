@@ -7258,25 +7258,34 @@ def _cli_abierta(etapa, estado):
     return True
 
 
-def _cli_msg(nombre_emp, contacto, dias, n_opp, n_abiertas):
+def _cli_msg(tier, nombre_emp, contacto, dias, dias_contacto, n_opp, n_abiertas):
     quien = contacto or 'el cliente'
+    if tier == 3:
+        return (f'{nombre_emp} está por cumplir un mes sin una oportunidad nueva ({dias} días). Adelántate antes de que se enfríe.',
+                f'Agenda un contacto con {quien} esta semana para no perder el ritmo.')
+    if tier == 2:
+        return (f'Le has dado seguimiento a {nombre_emp} hace poco (tarea o actividad), pero lleva {dias} días sin una oportunidad nueva. El contacto está — falta concretarlo.',
+                f'Convierte ese contacto en una oportunidad concreta: propón una cotización a {quien}.')
+    # tier 1 (crítico): sin oportunidad Y sin contacto reciente
     if n_opp == 0:
-        return (f'{nombre_emp} es cliente tuyo pero aún no le has creado ninguna oportunidad. Vale la pena explorar qué necesita.',
+        return (f'{nombre_emp} es cliente tuyo pero aún no le has creado ninguna oportunidad ni le has dado seguimiento. Vale la pena explorar qué necesita.',
                 f'Contacta a {quien} y detecta una oportunidad para crear.')
-    if n_abiertas == 0:
-        return (f'{nombre_emp} lleva {dias} días sin una oportunidad nueva y no tiene ninguna abierta. Buen momento para reactivarlo.',
-                f'Llama a {quien} y propón una nueva cotización o proyecto.')
-    return (f'{nombre_emp} lleva {dias} días sin moverse, aunque tiene {n_abiertas} oportunidad{"es" if n_abiertas != 1 else ""} abierta{"s" if n_abiertas != 1 else ""}. No lo dejes enfriar.',
-            f'Da seguimiento con {quien} a sus oportunidades abiertas.')
+    return (f'{nombre_emp} lleva {dias} días sin una oportunidad nueva y sin contacto reciente. Se está enfriando — reactívalo hoy.',
+            f'Llama a {quien} y propón una nueva cotización o proyecto.')
 
 
-def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
-    """Clientes asignados (al usuario o al vendedor elegido) que llevan >= `umbral`
-    días sin una oportunidad NUEVA. Ordenados del más olvidado al menos.
+def _asistente_clientes_items(user, sel, today, umbral=30, prox_min=23, contacto_dias=30, limite=40):
+    """Clientes 'en pausa' priorizados por niveles (cascada: se muestra el nivel más
+    urgente que tenga pendientes):
+      tier 1 (crítico): >= umbral días sin oportunidad nueva Y sin tarea/actividad reciente.
+      tier 2 (baja): >= umbral días sin oportunidad pero CON contacto reciente (tarea/actividad)
+                     — hubo contacto, falta concretar.
+      tier 3 (próximo): entre prox_min y umbral días sin oportunidad nueva (por vencer).
+    Crear una oportunidad hoy marca al cliente como trabajado (no lo saca). Devuelve
+    dict {modo, tier, items, pendientes, completadas}; modo='todobien' si no hay nada.
     """
     from django.db.models import Max, Count, Q
-    from django.contrib.auth.models import User as _User
-    from .models import Cliente, TodoItem
+    from .models import Cliente, TodoItem, Tarea, Actividad
 
     visibles = get_usuarios_visibles_ids(user)   # None = ve todo
     sel = (sel or '').strip().lower()
@@ -7295,62 +7304,95 @@ def _asistente_clientes_items(user, sel, today, umbral=30, limite=40):
         qs = qs.filter(asignado_a_id__in=targets)
     qs = qs.select_related('asignado_a').annotate(
         _ultc_prev=Max('oportunidades__fecha_creacion', filter=Q(oportunidades__fecha_creacion__date__lt=today)),
-        _ultu=Max('oportunidades__fecha_actualizacion'),
         _nopp=Count('oportunidades', distinct=True),
         _hoy=Count('oportunidades', filter=Q(oportunidades__fecha_creacion__date=today), distinct=True),
     )
 
-    seleccionados = []
+    cands = []   # (cliente, dias_sin_oportunidad, trabajado_hoy)
     for c in qs:
-        # "en pausa" se mide con la última oportunidad ANTES de hoy (para que crear
-        # una hoy NO lo saque, sino que lo marque como trabajado).
         ref = c._ultc_prev or c.fecha_creacion
         dias = (today - timezone.localtime(ref).date()).days if ref else 9999
-        if dias < umbral:
+        if dias < prox_min:
             continue
-        ref_u = c._ultu or c.fecha_creacion
-        dias_atencion = (today - timezone.localtime(ref_u).date()).days if ref_u else 9999
-        seleccionados.append((c, dias, dias_atencion, c._hoy > 0))
+        cands.append((c, dias, c._hoy > 0))
 
-    # pendientes primero (más olvidado arriba); las trabajadas hoy van al final
-    seleccionados.sort(key=lambda t: (t[3], -t[1]))
-    seleccionados = seleccionados[:limite]
-    fids = [c.id for c, _, _, _ in seleccionados]
+    if not cands:
+        return {'modo': 'todobien', 'tier': 0, 'items': [], 'pendientes': 0, 'completadas': 0}
 
+    cids = [c.id for c, _, _ in cands]
+
+    # Último contacto = tarea creada (Tarea.cliente) o actividad agendada (vía oportunidad).
+    contacto_map = {}
+    for r in Tarea.objects.filter(cliente_id__in=cids).values('cliente_id').annotate(m=Max('fecha_creacion')):
+        if r['m']:
+            contacto_map[r['cliente_id']] = r['m']
+    for r in Actividad.objects.filter(oportunidad__cliente_id__in=cids).values('oportunidad__cliente_id').annotate(m=Max('fecha_inicio')):
+        cid, mm = r['oportunidad__cliente_id'], r['m']
+        if mm and (cid not in contacto_map or mm > contacto_map[cid]):
+            contacto_map[cid] = mm
+
+    # Oportunidades abiertas + última etapa por cliente.
     by_cli = {}
-    if fids:
-        rows = (TodoItem.objects.filter(cliente_id__in=fids)
-                .values('cliente_id', 'etapa_corta', 'estado_crm')
-                .order_by('cliente_id', '-fecha_actualizacion'))
-        for r in rows:
-            d = by_cli.setdefault(r['cliente_id'], {'abiertas': 0, 'ult_etapa': ''})
-            if _cli_abierta(r['etapa_corta'], r['estado_crm']):
-                d['abiertas'] += 1
-            if not d['ult_etapa'] and r['etapa_corta']:
-                d['ult_etapa'] = r['etapa_corta']
+    rows = (TodoItem.objects.filter(cliente_id__in=cids)
+            .values('cliente_id', 'etapa_corta', 'estado_crm')
+            .order_by('cliente_id', '-fecha_actualizacion'))
+    for r in rows:
+        d = by_cli.setdefault(r['cliente_id'], {'abiertas': 0, 'ult_etapa': ''})
+        if _cli_abierta(r['etapa_corta'], r['estado_crm']):
+            d['abiertas'] += 1
+        if not d['ult_etapa'] and r['etapa_corta']:
+            d['ult_etapa'] = r['etapa_corta']
 
-    items = []
-    for c, dias, dias_atencion, completada in seleccionados:
+    def _build(c, dias, tier, completada, dias_contacto):
         info = by_cli.get(c.id, {'abiertas': 0, 'ult_etapa': ''})
-        n_abiertas = info['abiertas']
-        mensaje, accion = _cli_msg(c.nombre_empresa, c.contacto_principal, dias, c._nopp, n_abiertas)
-        items.append({
-            'cliente_id': c.id,
-            'nombre': c.nombre_empresa or '(sin nombre)',
-            'contacto': c.contacto_principal or '',
-            'telefono': c.telefono or '',
-            'email': c.email or '',
-            'dias': dias,
-            'dias_atencion': dias_atencion,
-            'n_opp': c._nopp,
-            'n_abiertas': n_abiertas,
+        mensaje, accion = _cli_msg(tier, c.nombre_empresa, c.contacto_principal, dias, dias_contacto, c._nopp, info['abiertas'])
+        return {
+            'cliente_id': c.id, 'nombre': c.nombre_empresa or '(sin nombre)',
+            'contacto': c.contacto_principal or '', 'telefono': c.telefono or '', 'email': c.email or '',
+            'dias': dias, 'tier': tier, 'n_opp': c._nopp, 'n_abiertas': info['abiertas'],
             'ult_etapa': info['ult_etapa'],
             'vendedor': (c.asignado_a.get_full_name() or c.asignado_a.username) if c.asignado_a_id else '',
-            'mensaje': mensaje,
-            'accion': accion,
-            'completada': completada,
-        })
-    return items
+            'mensaje': mensaje, 'accion': accion, 'completada': completada,
+            'dias_contacto': (9999 if dias_contacto >= 9999 else dias_contacto),
+        }
+
+    grupos = {1: [], 2: [], 3: []}
+    for c, dias, worked in cands:
+        ct = contacto_map.get(c.id)
+        dias_contacto = (today - timezone.localtime(ct).date()).days if ct else 9999
+        if dias >= umbral:
+            tier = 2 if dias_contacto < contacto_dias else 1
+        else:
+            tier = 3
+        grupos[tier].append(_build(c, dias, tier, worked, dias_contacto))
+
+    def _pend(lst):
+        return [x for x in lst if not x['completada']]
+
+    active = 0
+    for t in (1, 2, 3):
+        if _pend(grupos[t]):
+            active = t
+            break
+
+    if active == 0:
+        completadas_all = [x for t in (1, 2, 3) for x in grupos[t] if x['completada']]
+        if completadas_all:
+            completadas_all.sort(key=lambda x: -x['dias'])
+            completadas_all = completadas_all[:limite]
+            return {'modo': 'lista', 'tier': completadas_all[0]['tier'], 'items': completadas_all,
+                    'pendientes': 0, 'completadas': len(completadas_all)}
+        return {'modo': 'todobien', 'tier': 0, 'items': [], 'pendientes': 0, 'completadas': 0}
+
+    lst = grupos[active]
+    pend = [x for x in lst if not x['completada']]
+    done = [x for x in lst if x['completada']]
+    pend.sort(key=lambda x: -x['dias'])
+    done.sort(key=lambda x: -x['dias'])
+    items = (pend + done)[:limite]
+    return {'modo': 'lista', 'tier': active, 'items': items,
+            'pendientes': sum(1 for x in items if not x['completada']),
+            'completadas': sum(1 for x in items if x['completada'])}
 
 
 def _clientes_ia(nombre, items):
@@ -7377,13 +7419,17 @@ def _clientes_ia(nombre, items):
         'id': it['cliente_id'], 'cliente': it['nombre'], 'contacto': it['contacto'],
         'dias_sin_oportunidad': it['dias'], 'oportunidades': it['n_opp'],
         'abiertas': it['n_abiertas'], 'ultima_etapa': it['ult_etapa'],
+        'nivel': it.get('tier', 1), 'dias_sin_contacto': it.get('dias_contacto', 9999),
     } for it in items[:20]]
 
     sys = (
         "Eres el asistente comercial del CRM: cálido, cercano y estratégico. Le hablas de tú a "
         f"{nombre}. Con base EXCLUSIVAMENTE en los datos, para CADA cliente (clave = su id) escribe:\n"
-        "- 'mensaje': 1-2 frases que expliquen por qué conviene reactivar a ESTE cliente hoy "
-        "(menciona de forma natural los días sin oportunidad y si tiene o no oportunidades abiertas).\n"
+        "Cada cliente trae 'nivel': 1 = sin oportunidad NI contacto reciente (crítico, reactivar ya); "
+        "2 = sin oportunidad pero CON contacto reciente (tarea/actividad) — el contacto existe, falta "
+        "concretarlo en una oportunidad; 3 = por cumplir un mes sin oportunidad (adelántate). Adapta el tono al nivel.\n"
+        "- 'mensaje': 1-2 frases que expliquen por qué conviene actuar con ESTE cliente hoy, según su nivel "
+        "(menciona de forma natural los días sin oportunidad y si hubo o no contacto reciente).\n"
         "- 'accion': el siguiente paso más útil y concreto (llamar, agendar visita, proponer "
         "cotización, detectar necesidad), en 1 frase, natural y directo.\n"
         "NO inventes datos que no aparezcan. Devuelve SOLO JSON válido: "
@@ -7413,35 +7459,43 @@ def api_asistente_clientes(request):
     today = timezone.localdate()
     sel = (request.GET.get('vendedor', '') or '').strip().lower()
 
-    items = _asistente_clientes_items(user, sel, today)
+    data = _asistente_clientes_items(user, sel, today)
+    items = data['items']
 
-    # Enriquecer con IA (cacheado 1 vez al día por usuario + selección).
-    try:
-        from .models import AsistenteResumenDiario
-        key = 'cli:' + (sel or 'mias')
-        row = AsistenteResumenDiario.objects.filter(usuario=user, fecha=today, seleccion=key).first()
-        ia = row.data if (row and row.data) else None
-        if ia is None:
-            nombre = user.first_name or (user.get_full_name() or user.username).split(' ')[0]
-            ia = _clientes_ia(nombre, items)
+    # Enriquecer con IA (cacheado 1 vez al día por usuario + selección). Solo si hay lista.
+    if items:
+        try:
+            from .models import AsistenteResumenDiario
+            key = 'cli:' + (sel or 'mias')
+            row = AsistenteResumenDiario.objects.filter(usuario=user, fecha=today, seleccion=key).first()
+            ia = row.data if (row and row.data) else None
+            if ia is None:
+                nombre = user.first_name or (user.get_full_name() or user.username).split(' ')[0]
+                ia = _clientes_ia(nombre, items)
+                if ia:
+                    AsistenteResumenDiario.objects.update_or_create(
+                        usuario=user, fecha=today, seleccion=key, defaults={'data': ia})
             if ia:
-                AsistenteResumenDiario.objects.update_or_create(
-                    usuario=user, fecha=today, seleccion=key, defaults={'data': ia})
-        if ia:
-            m = ia.get('items') or {}
-            for it in items:
-                e = m.get(str(it['cliente_id']))
-                if isinstance(e, dict):
-                    if e.get('mensaje'):
-                        it['mensaje'] = e['mensaje']
-                    if e.get('accion'):
-                        it['accion'] = e['accion']
-    except Exception:
-        pass
+                m = ia.get('items') or {}
+                for it in items:
+                    e = m.get(str(it['cliente_id']))
+                    if isinstance(e, dict):
+                        if e.get('mensaje'):
+                            it['mensaje'] = e['mensaje']
+                        if e.get('accion'):
+                            it['accion'] = e['accion']
+        except Exception:
+            pass
 
-    pend = sum(1 for it in items if not it.get('completada'))
-    return JsonResponse({'success': True, 'items': items, 'total': len(items),
-                         'pendientes': pend, 'completadas': len(items) - pend})
+    mensaje_ok = None
+    if data['modo'] == 'todobien':
+        mensaje_ok = ('¡Vas al día! No tienes clientes en pausa — mantienes tu cartera con buen '
+                      'seguimiento. Sigue así. 👏')
+
+    return JsonResponse({'success': True, 'modo': data['modo'], 'tier': data['tier'],
+                         'items': items, 'total': len(items),
+                         'pendientes': data['pendientes'], 'completadas': data['completadas'],
+                         'mensaje_ok': mensaje_ok})
 
 
 @login_required
