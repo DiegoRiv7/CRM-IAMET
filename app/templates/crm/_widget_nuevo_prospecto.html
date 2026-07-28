@@ -40,6 +40,7 @@
                                 <div class="wn-ctw-pop-title">Cliente</div>
                                 <input type="text" class="wn-ctw-pop-input wf-input" id="wpfCliente" placeholder="Buscar o escribir cliente…">
                                 <input type="hidden" id="wpfClienteId" value="">
+                                <input type="hidden" id="wpfClientePotencialId" value="">
                                 <div class="wf-autocomplete" id="wpfClienteAC"></div>
                                 <button type="button" class="wn-ctw-pop-add" id="wpnAddClienteBtn">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -356,20 +357,27 @@
         }
         function _updateClienteLabel() {
             var txt = (clienteInput && clienteInput.value.trim()) || '';
-            var empty = !clienteIdField.value;
+            var potField = document.getElementById('wpfClientePotencialId');
+            var empty = !clienteIdField.value && !(potField && potField.value);
             _setLabel('wpClienteBtn', 'wpClienteLabel', txt && !empty ? txt : _wpEmptyClienteLabel(), empty);
         }
 
         if (clienteInput) {
             clienteInput.addEventListener('input', function() {
                 clienteIdField.value = ''; // invalidar selección al tipear
+                var potField0 = document.getElementById('wpfClientePotencialId');
+                if (potField0) potField0.value = '';
                 _wpSelectedClienteId = null;
                 _updateClienteLabel();
                 clearTimeout(_wpClienteTimer);
                 var q = this.value.trim();
                 if (q.length < 2) { clienteAC.innerHTML = ''; clienteAC.style.display = 'none'; return; }
                 _wpClienteTimer = setTimeout(function() {
-                    fetch('/app/api/buscar-clientes/?q=' + encodeURIComponent(q))
+                    var urlBusqueda = '/app/api/buscar-clientes/?q=' + encodeURIComponent(q);
+                    // Modo prospecto: incluir los ClientePotencial (panel admin
+                    // y mini-form) que antes nunca aparecían en la búsqueda.
+                    if (_wpCurrentMode === 'prospecto') urlBusqueda += '&potenciales=1';
+                    fetch(urlBusqueda)
                         .then(function(r) { return r.json(); })
                         .then(function(data) {
                             var items = data.clientes || data.results || [];
@@ -378,11 +386,26 @@
                             items.forEach(function(c) {
                                 var div = document.createElement('div');
                                 div.className = 'wf-ac-item';
+                                var esPot = c.tipo === 'potencial';
                                 div.textContent = c.nombre_empresa || c.nombre || c.text;
+                                if (esPot) {
+                                    var badge = document.createElement('span');
+                                    badge.textContent = 'Prospecto';
+                                    badge.style.cssText = 'margin-left:8px;background:#EEF3FF;color:#0052D4;border-radius:999px;font-size:0.62rem;font-weight:700;padding:1px 7px;vertical-align:middle;';
+                                    div.appendChild(badge);
+                                }
                                 div.addEventListener('click', function() {
                                     clienteInput.value = c.nombre_empresa || c.nombre || c.text;
-                                    clienteIdField.value = c.id;
-                                    _wpSelectedClienteId = c.id;
+                                    var potField = document.getElementById('wpfClientePotencialId');
+                                    if (esPot) {
+                                        clienteIdField.value = '';
+                                        if (potField) potField.value = c.id;
+                                        _wpSelectedClienteId = null;
+                                    } else {
+                                        clienteIdField.value = c.id;
+                                        if (potField) potField.value = '';
+                                        _wpSelectedClienteId = c.id;
+                                    }
                                     clienteAC.innerHTML = '';
                                     clienteAC.style.display = 'none';
                                     _updateClienteLabel();
@@ -487,10 +510,19 @@
                     })
                 }).then(function(r){ return r.json(); }).then(function(res) {
                     if (res && res.success) {
-                        // Cerrar todo el composer y notificar
-                        var w = document.getElementById('widgetNuevoProspecto');
-                        if (w) { w.classList.add('closing'); setTimeout(function(){ w.classList.remove('active','closing'); }, 220); }
-                        _wpToast('Prospecto "' + nombre + '" creado correctamente', true);
+                        // Dejar el prospecto recién creado SELECCIONADO en el
+                        // picker y seguir con la creación de la prospección
+                        // (antes cerraba todo el composer y se perdía el flujo).
+                        var potField = document.getElementById('wpfClientePotencialId');
+                        if (potField) potField.value = res.id || '';
+                        clienteIdField.value = '';
+                        if (clienteInput) clienteInput.value = nombre;
+                        document.getElementById('wpnMiniCliente').style.display = 'none';
+                        document.getElementById('wpfNuevoClienteNombre').value = '';
+                        _updateClienteLabel();
+                        _wpRefreshReadyState();
+                        _wpCloseAllPops();
+                        _wpToast('Prospecto "' + nombre + '" creado y seleccionado', true);
                         // Refrescar listado del panel admin si está visible
                         if (typeof window.loadProspectos === 'function') {
                             try { window.loadProspectos(); } catch(_){}
@@ -573,7 +605,8 @@
         // Pipeline es OPCIONAL — si no se selecciona, el backend usa default 'runrate'.
         function _wpRefreshReadyState() {
             var titulo    = (document.getElementById('wpfNombre') || {}).value || '';
-            var clienteId = (document.getElementById('wpfClienteId') || {}).value || '';
+            var clienteId = (document.getElementById('wpfClienteId') || {}).value ||
+                            (document.getElementById('wpfClientePotencialId') || {}).value || '';
             var allReady  = titulo.trim().length > 0 && !!clienteId;
             var submitBtn = document.getElementById('wpfSubmit');
             if (submitBtn) submitBtn.classList.toggle('is-ready', allReady);
@@ -583,7 +616,8 @@
         // Solo título + cliente son requeridos. Pipeline es opcional.
         function _wpValidateRequired() {
             var titulo    = (document.getElementById('wpfNombre') || {}).value || '';
-            var clienteId = (document.getElementById('wpfClienteId') || {}).value || '';
+            var clienteId = (document.getElementById('wpfClienteId') || {}).value ||
+                            (document.getElementById('wpfClientePotencialId') || {}).value || '';
             var missing = [];
 
             var tituloEl = document.getElementById('wpfNombre');
@@ -626,6 +660,7 @@
             setEmpty('wpfNombre');
             setEmpty('wpfCliente');
             setEmpty('wpfClienteId');
+            setEmpty('wpfClientePotencialId');
             setEmpty('wpfContacto');
             setEmpty('wpfContactoId');
             setEmpty('wpfTipoPipeline');
@@ -692,6 +727,7 @@
 
             var nombre     = document.getElementById('wpfNombre').value.trim();
             var clienteId  = document.getElementById('wpfClienteId').value;
+            var potencialId = (document.getElementById('wpfClientePotencialId') || {}).value || '';
             var contactoId = document.getElementById('wpfContactoId').value;
             var pipeline   = document.getElementById('wpfTipoPipeline').value;
 
@@ -715,10 +751,11 @@
 
             var payload = {
                 nombre: nombre,
-                cliente_id: parseInt(clienteId),
                 contacto_id: contactoId ? parseInt(contactoId) : null,
                 comentarios: document.getElementById('wpfComentarios').value.trim()
             };
+            if (clienteId) payload.cliente_id = parseInt(clienteId);
+            else if (potencialId) payload.cliente_potencial_id = parseInt(potencialId);
             // tipo_pipeline es opcional — solo enviar si el creador eligió uno;
             // el backend usa el default 'runrate' del modelo en caso contrario.
             if (pipeline) payload.tipo_pipeline = pipeline;
@@ -751,6 +788,8 @@
                     // Reset form
                     document.getElementById('formNuevoProspecto').reset();
                     document.getElementById('wpfClienteId').value = '';
+                    var potReset = document.getElementById('wpfClientePotencialId');
+                    if (potReset) potReset.value = '';
                     document.getElementById('wpfContactoId').value = '';
                     _wpSelectedClienteId = null;
                     _updateClienteLabel();
