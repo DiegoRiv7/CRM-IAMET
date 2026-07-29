@@ -177,6 +177,23 @@
   .pend-sc-btn.blue{background:#0a84ff;}
   .pend-sc-btn.blue:hover{background:#0060df;}
   .pend-sc-btn:disabled{opacity:.55;cursor:default;}
+  /* ── Sección Reportes · Mi desempeño (mosaico de KPIs) ── */
+  .pend-des{max-width:720px;margin:2% auto 0;padding:0 6px;}
+  .pend-des-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .pend-des-title{font-size:1.5rem;font-weight:800;color:#1c1d22;letter-spacing:-.01em;}
+  .pend-des-seg{display:inline-flex;background:#f0f1f3;border-radius:10px;padding:3px;gap:2px;}
+  .pend-des-seg button{border:none;background:none;font-size:.82rem;font-weight:600;color:#6b6d76;padding:6px 13px;border-radius:8px;cursor:pointer;transition:all .12s;}
+  .pend-des-seg button.on{background:#fff;color:#1c1d22;box-shadow:0 1px 3px rgba(15,23,42,.1);}
+  .pend-des-hero{background:linear-gradient(135deg,#0a84ff,#0060df);border-radius:16px;padding:20px 24px;color:#fff;margin-bottom:16px;}
+  .pend-des-hero-row{display:flex;gap:36px;flex-wrap:wrap;}
+  .pend-des-hero-lbl{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:3px;}
+  .pend-des-hero-val{font-size:1.85rem;font-weight:800;letter-spacing:-.01em;line-height:1.1;}
+  .pend-des-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .pend-des-tile{background:#fff;border:1px solid #edeef1;border-radius:14px;padding:18px 16px;text-align:left;}
+  .pend-des-tile-val{font-size:2.1rem;font-weight:800;color:#1c1d22;line-height:1;letter-spacing:-.02em;}
+  .pend-des-tile-lbl{font-size:.82rem;color:#6b6d76;font-weight:600;margin-top:7px;line-height:1.3;}
+  .pend-des-foot{font-size:.78rem;color:#9a9ca3;text-align:center;margin-top:16px;}
+  @media (max-width:620px){ .pend-des-grid{grid-template-columns:repeat(2,1fr);} }
   /* Botonera de la tarjeta de correo */
   .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
   .pend-cor-btns .pend-sc-btn{margin-top:0;}
@@ -342,6 +359,7 @@
 
   var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
   var _section = 'dia', _cliData = null, _cliIdx = 0, _corData = null, _corIdx = 0;
+  var _desData = null, _desPeriodo = 'mes';
   var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
   function el(id){ return document.getElementById(id); }
 
@@ -462,7 +480,7 @@
     if (card) card.classList.remove('replay-on');
     // El selector de vendedor solo aplica a secciones por-vendedor (Mi día / Clientes).
     var vw = el('pendVendedorWrap');
-    if (vw) { var canSel = _data && _data.puede_seleccionar; vw.style.display = ((section === 'dia' || section === 'clientes') && canSel) ? '' : 'none'; }
+    if (vw) { var canSel = _data && _data.puede_seleccionar; vw.style.display = ((section === 'dia' || section === 'clientes' || section === 'reportes') && canSel) ? '' : 'none'; }
     if (section === 'dia') {
       if (subtabs) subtabs.style.display = '';
       pendSetTab('resumen');
@@ -475,6 +493,9 @@
     } else if (section === 'correo') {
       if (subtabs) subtabs.style.display = 'none';
       _renderCorreos();
+    } else if (section === 'reportes') {
+      if (subtabs) subtabs.style.display = 'none';
+      _renderDesempeno();
     } else {
       if (subtabs) subtabs.style.display = 'none';
       var res = el('pendResArea');
@@ -886,6 +907,54 @@
   }
   window.pendRefreshCorreos = pendRefreshCorreos;
 
+  // ── Sección Reportes · "Mi desempeño" (mosaico de KPIs) ──
+  function _renderDesempeno() {
+    var res = el('pendResArea'); if (!res) return;
+    if (_desData) { _drawDesempeno(res); return; }
+    res.className = ''; res.innerHTML = '<div class="pend-empty">Calculando tu desempeño…</div>';
+    fetch('/app/api/asistente/desempeno/?vendedor=' + encodeURIComponent(_sel) + '&periodo=' + encodeURIComponent(_desPeriodo), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo calcular el desempeño</div>'; return; }
+        _desData = d; _drawDesempeno(res);
+      })
+      .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  function _drawDesempeno(res) {
+    if (!_desData) return;
+    var d = _desData;
+    var seg = ['dia', 'semana', 'mes'].map(function (p) {
+      var lbl = p === 'dia' ? 'Día' : (p === 'semana' ? 'Semana' : 'Mes');
+      return '<button type="button" class="' + (_desPeriodo === p ? 'on' : '') + '" onclick="pendDesPeriodo(\'' + p + '\')">' + lbl + '</button>';
+    }).join('');
+    var hero = '';
+    if (d.dinero && d.dinero.mostrar) {
+      hero = '<div class="pend-des-hero"><div class="pend-des-hero-row">' +
+        '<div><div class="pend-des-hero-lbl">Facturado · ' + _esc(d.dinero.mes_label) + '</div>' +
+          '<div class="pend-des-hero-val">' + _esc(d.dinero.facturado_fmt) + '</div></div>' +
+        '<div><div class="pend-des-hero-lbl">Cobrado · ' + _esc(d.dinero.mes_label) + '</div>' +
+          '<div class="pend-des-hero-val">' + _esc(d.dinero.cobrado_fmt) + '</div></div>' +
+        '</div></div>';
+    }
+    var tiles = (d.tiles || []).map(function (t) {
+      return '<div class="pend-des-tile"><div class="pend-des-tile-val">' + t.valor + '</div>' +
+        '<div class="pend-des-tile-lbl">' + _esc(t.label) + '</div></div>';
+    }).join('');
+    res.className = '';
+    res.innerHTML = '<div class="pend-des">' +
+      '<div class="pend-des-top"><div class="pend-des-title">' + _esc(d.titulo || 'Tu desempeño') + '</div>' +
+        '<div class="pend-des-seg">' + seg + '</div></div>' +
+      hero +
+      '<div class="pend-des-grid">' + tiles + '</div>' +
+      '<div class="pend-des-foot">Actividad de ' + (_desPeriodo === 'dia' ? 'hoy' : (_desPeriodo === 'semana' ? 'esta semana' : 'este mes')) +
+        (d.dinero && d.dinero.mostrar ? ' · la facturación y cobranza son del mes en curso' : '') + '</div>' +
+    '</div>';
+  }
+  window.pendDesPeriodo = function (p) {
+    if (_desPeriodo === p) return;
+    _desPeriodo = p; _desData = null; _renderDesempeno();
+  };
+
   // ── Chat con el asistente general (el "consultor") ──
   function _getCsrf() {
     var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
@@ -963,6 +1032,7 @@
     var lbl = el('pendVendedorLabel'); if (lbl) lbl.textContent = label;
     var m = el('pendVendedorMenu'); if (m) m.classList.remove('open');
     if (_section === 'clientes') { _cliData = null; _renderClientes(); }
+    else if (_section === 'reportes') { _desData = null; _renderDesempeno(); }
     else pendCargar();
   };
 

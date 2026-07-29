@@ -8006,6 +8006,185 @@ def api_asistente_correo_cuerpo(request, correo_id):
     return JsonResponse({'ok': True, 'cuerpo_texto': texto, 'cuerpo_html': html})
 
 
+# ══════════════════════ Sección Reportes · "Mi desempeño" ══════════════════════
+
+def _desempeno_rango(periodo, today):
+    """(inicio, fin, etiqueta) del período seleccionado."""
+    from datetime import timedelta
+    if periodo == 'dia':
+        return today, today, 'Hoy'
+    if periodo == 'semana':
+        return today - timedelta(days=today.weekday()), today, 'Esta semana'
+    return today.replace(day=1), today, 'Este mes'
+
+
+def _desempeno_dinero(user_ids, today):
+    """(facturado, cobrado) del MES en curso. Son datos mensuales (archivos admin):
+    para un vendedor se suman sus clientes (match difuso por nombre); user_ids None
+    (toda la empresa) usa el total del archivo directo."""
+    from decimal import Decimal
+    from .models import ArchivoFacturacion, ArchivoCobrado, Cliente
+    mes = '%02d' % today.month
+    anio = today.year
+    af = ArchivoFacturacion.objects.filter(mes=mes, anio=anio).first()
+    ac = ArchivoCobrado.objects.filter(mes=mes, anio=anio).first()
+    if user_ids is None:
+        return (af.total_facturado if af else Decimal('0')), (ac.total_cobrado if ac else Decimal('0'))
+    objetivo = [(nm or '').upper().strip() for _cid, nm in
+                Cliente.objects.filter(asignado_a_id__in=user_ids).values_list('id', 'nombre_empresa')]
+    objetivo = [n for n in objetivo if n]
+    if not objetivo:
+        return Decimal('0'), Decimal('0')
+
+    def _match_sum(datos):
+        total = Decimal('0')
+        if not datos:
+            return total
+        for cname, monto in datos.items():
+            cu = (cname or '').upper().strip()
+            if not cu:
+                continue
+            for nm in objetivo:
+                if nm == cu or (len(nm) >= 4 and (nm in cu or cu in nm)):
+                    try:
+                        total += Decimal(str(monto))
+                    except Exception:
+                        pass
+                    break
+        return total
+
+    return _match_sum(af.datos_json if af else None), _match_sum(ac.datos_json if ac else None)
+
+
+def _desempeno_metricas(user_ids, start, end):
+    """Conteos de actividad en el rango [start, end] para los vendedores dados
+    (user_ids None = toda la empresa)."""
+    from django.db.models import Q
+    from .models import (TodoItem, Cliente, Tarea, Actividad, MailCorreo,
+                         PendienteCompletada, TareaOportunidadHistorial,
+                         TareaOportunidad, OportunidadActividad)
+
+    opps = TodoItem.objects.all()
+    if user_ids is not None:
+        opps = opps.filter(usuario_id__in=user_ids)
+    opp_ids = list(opps.values_list('id', flat=True))
+
+    # Oportunidades trabajadas (distintas) — mismas señales que _pend_trabajadas_hoy.
+    worked = set()
+    if opp_ids:
+        pc = PendienteCompletada.objects.filter(oportunidad_id__in=opp_ids, fecha__gte=start, fecha__lte=end)
+        if user_ids is not None:
+            pc = pc.filter(usuario_id__in=user_ids)
+        worked |= set(pc.values_list('oportunidad_id', flat=True))
+        worked |= set(TareaOportunidadHistorial.objects.filter(
+            tipo='cerrada', tarea__oportunidad_id__in=opp_ids,
+            fecha__date__gte=start, fecha__date__lte=end).values_list('tarea__oportunidad_id', flat=True))
+        worked |= set(Actividad.objects.filter(
+            oportunidad_id__in=opp_ids, completada=True,
+            fecha_inicio__date__gte=start, fecha_inicio__date__lte=end).values_list('oportunidad_id', flat=True))
+        worked |= set(TareaOportunidad.objects.filter(
+            oportunidad_id__in=opp_ids,
+            fecha_creacion__date__gte=start, fecha_creacion__date__lte=end).values_list('oportunidad_id', flat=True))
+        worked |= set(OportunidadActividad.objects.filter(
+            oportunidad_id__in=opp_ids,
+            fecha_creacion__date__gte=start, fecha_creacion__date__lte=end).values_list('oportunidad_id', flat=True))
+
+    correos_qs = MailCorreo.objects.filter(
+        carpeta_display='SENT', eliminado=False,
+        fecha_envio__date__gte=start, fecha_envio__date__lte=end)
+    if user_ids is not None:
+        correos_qs = correos_qs.filter(usuario_id__in=user_ids)
+
+    nuevas = TodoItem.objects.filter(fecha_creacion__date__gte=start, fecha_creacion__date__lte=end)
+    if user_ids is not None:
+        nuevas = nuevas.filter(usuario_id__in=user_ids)
+
+    tareas_qs = Tarea.objects.filter(
+        estado='completada', fecha_completada__date__gte=start, fecha_completada__date__lte=end)
+    if user_ids is not None:
+        tareas_qs = tareas_qs.filter(asignado_a_id__in=user_ids)
+
+    act_qs = Actividad.objects.filter(
+        completada=True, fecha_inicio__date__gte=start, fecha_inicio__date__lte=end)
+    if user_ids is not None:
+        act_qs = act_qs.filter(Q(creado_por_id__in=user_ids) | Q(participantes__id__in=user_ids)).distinct()
+
+    return {
+        'opps_trabajadas': len(worked),
+        'correos': correos_qs.count(),
+        'clientes': nuevas.values('cliente').distinct().count(),
+        'tareas': tareas_qs.count(),
+        'actividades': act_qs.count(),
+        'tiene_opps': bool(opp_ids),
+        'tiene_clientes': (Cliente.objects.filter(asignado_a_id__in=user_ids).exists()
+                           if user_ids is not None else True),
+    }
+
+
+@login_required
+def api_asistente_desempeno(request):
+    """GET /app/api/asistente/desempeno/?vendedor=<id|todos|mias>&periodo=<dia|semana|mes>
+    Mosaico de KPIs de desempeño personal (o de toda la empresa si jefe elige 'todos').
+    El hero facturado/cobrado es del MES en curso (dato mensual); los tiles de actividad
+    responden al período elegido. Oculta métricas que no aplican al rol."""
+    from django.utils import timezone
+    user = request.user
+    today = timezone.localdate()
+    sel = (request.GET.get('vendedor', '') or '').strip().lower()
+    periodo = (request.GET.get('periodo', 'mes') or 'mes').strip().lower()
+    if periodo not in ('dia', 'semana', 'mes'):
+        periodo = 'mes'
+
+    visibles = get_usuarios_visibles_ids(user)   # None = supervisor global (ve todo)
+    if sel == 'todos':
+        user_ids = None if visibles is None else list(visibles)
+        es_global = True
+    elif sel.isdigit():
+        tid = int(sel)
+        user_ids = [tid] if (visibles is None or tid in visibles) else [user.id]
+        es_global = False
+    else:   # '' o 'mias'
+        user_ids = [user.id]
+        es_global = False
+
+    start, end, plabel = _desempeno_rango(periodo, today)
+    met = _desempeno_metricas(user_ids, start, end)
+    facturado, cobrado = _desempeno_dinero(user_ids, today)
+
+    MESES = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+             'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+    def fmt(v):
+        try:
+            return '${:,.0f}'.format(float(v))
+        except Exception:
+            return '$0'
+
+    hay_negocio = met['tiene_opps'] or met['tiene_clientes'] or es_global
+    tiles = []
+    if met['tiene_opps'] or es_global:
+        tiles.append({'key': 'opps', 'valor': met['opps_trabajadas'], 'label': 'Oportunidades trabajadas'})
+    tiles.append({'key': 'correos', 'valor': met['correos'], 'label': 'Correos enviados'})
+    if met['tiene_clientes'] or es_global:
+        tiles.append({'key': 'clientes', 'valor': met['clientes'], 'label': 'Clientes con oportunidad nueva'})
+    tiles.append({'key': 'tareas', 'valor': met['tareas'], 'label': 'Tareas cerradas'})
+    tiles.append({'key': 'actividades', 'valor': met['actividades'], 'label': 'Actividades completadas'})
+
+    return JsonResponse({
+        'success': True,
+        'periodo': periodo,
+        'periodo_label': plabel,
+        'titulo': ('Desempeño del equipo' if es_global else 'Tu desempeño'),
+        'dinero': {
+            'mostrar': bool(hay_negocio),
+            'facturado_fmt': fmt(facturado),
+            'cobrado_fmt': fmt(cobrado),
+            'mes_label': MESES[today.month],
+        },
+        'tiles': tiles,
+    })
+
+
 @login_required
 def api_pendientes_estado(request):
     """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.
