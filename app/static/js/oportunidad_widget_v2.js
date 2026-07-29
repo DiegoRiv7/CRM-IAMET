@@ -237,6 +237,13 @@
             });
             renderConvFeed(inst);
         });
+        var convFileEl = q(inst, 'convFile');
+        if (convFileEl) {
+            convFileEl.addEventListener('change', function () {
+                subirAdjuntosConv(inst, this.files);
+                this.value = '';   // permite re-elegir el mismo archivo
+            });
+        }
         var convSearchEl = q(inst, 'convSearch');
         if (convSearchEl) {
             convSearchEl.addEventListener('input', function () {
@@ -317,7 +324,10 @@
             case 'nueva-actividad':
                 ev.stopPropagation();
                 setFocus(inst);
-                if (typeof window.woAbrirWidgetCrearActividad === 'function') window.woAbrirWidgetCrearActividad();
+                if (typeof window.woAbrirWidgetCrearActividad === 'function') {
+                    window.woAbrirWidgetCrearActividad();
+                    openSubWindowed(inst, 'widgetOppCrearActividad');
+                }
                 break;
             case 'abrir-actividad':
                 setFocus(inst);
@@ -364,6 +374,19 @@
                 break;
             case 'conv-enviar':
                 enviarNotaConv(inst);
+                break;
+            case 'conv-adjuntar':
+                setFocus(inst);
+                var fileEl = q(inst, 'convFile');
+                if (fileEl) fileEl.click();
+                break;
+            case 'conv-correo':
+                setFocus(inst);
+                if (typeof window.woConvAbrirCorreoComposer === 'function') {
+                    window.woConvAbrirCorreoComposer();
+                } else {
+                    notify('El composer de correo no está disponible', 'warning');
+                }
                 break;
             case 'save-confirm':
                 saveEdits(inst);
@@ -587,7 +610,10 @@
         var stagesContainer = q(inst, 'pipelineStages');
         stagesContainer.innerHTML = '';
         var pipelineWrap = q(inst, 'pipelineWrap');
-        pipelineWrap.style.display = (tipo === 'bitrix_proyecto') ? 'none' : '';
+        var sinPipeline = (tipo === 'bitrix_proyecto');
+        pipelineWrap.style.display = sinPipeline ? 'none' : '';
+        // Sin pestañas de etapa, la línea bajo el header la pone el header.
+        inst.root.classList.toggle('wo-no-pipeline', sinPipeline);
 
         var etapas = getEtapasForTipo(tipo);
         var currentEtapa = d.etapa_corta || etapas[0];
@@ -1141,7 +1167,8 @@
                     return aT - bT;
                 });
                 container.innerHTML = '';
-                tareas.slice(0, 5).forEach(function (t) {
+                var TOPE = 8;   // la card creció: caben más filas antes de "Ver todas"
+                tareas.slice(0, TOPE).forEach(function (t) {
                     var done = t.estado === 'completada';
                     var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < now;
                     var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
@@ -1162,7 +1189,7 @@
                     });
                     container.appendChild(row);
                 });
-                if (tareas.length > 5) {
+                if (tareas.length > TOPE) {
                     var more = document.createElement('div');
                     more.style.cssText = 'text-align:center;padding:0.4rem;';
                     var btn = document.createElement('button');
@@ -1190,10 +1217,8 @@
 
     function renderActividad(inst) {
         var body = q(inst, 'actividadBody');
-        var btnNueva = q(inst, 'btnNuevaActividad');
         var oppId = inst.oppId;
         inst.actividadId = null;
-        btnNueva.style.display = 'none';
         body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>';
 
         fetch('/app/api/oportunidad/' + oppId + '/tareas/')
@@ -1225,7 +1250,6 @@
                     '<div style="font-size:0.82rem;font-weight:600;color:' + color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.titulo || 'Sin título') + '</div>' +
                     '<div style="font-size:0.72rem;color:' + (venc ? '#FF3B30' : '#86868B') + ';">' + fechaStr + (venc ? ' · Vencida' : '') + '</div>' +
                     '</div>';
-                btnNueva.style.display = 'inline-flex';
             })
             .catch(function () {
                 if (!alive(inst)) return;
@@ -1243,7 +1267,9 @@
     function _convClasificar(m) {
         if (m.tipo === 'correo') return 'correo';
         var t = m.texto || '';
-        if (m.es_bitrix || t.indexOf('[ACT') === 0 || m.bitrix_tipo) return 'evento';
+        // Las actividades de la oportunidad se quedan en la conversación cuando
+        // se completan: son su propio filtro (antes rotulado "eventos").
+        if (m.es_bitrix || t.indexOf('[ACT') === 0 || m.bitrix_tipo) return 'actividad';
         return 'nota';
     }
 
@@ -1324,7 +1350,7 @@
                     '</div></div>';
                 return;
             }
-            if (cls === 'evento') {
+            if (cls === 'actividad') {
                 h += '<div style="display:flex;align-items:center;gap:7px;padding:2px 4px;">' +
                     '<span style="width:6px;height:6px;border-radius:50%;background:#C7C7CC;flex-shrink:0;"></span>' +
                     '<span style="font-size:0.72rem;color:#86868B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + esc((m.texto || '').replace(/^\[[^\]]*\]\s*/, '').split('|')[0]) + '</span>' +
@@ -1363,6 +1389,41 @@
         };
         wire(feed);
         wire(pinned);
+    }
+
+    /* Adjuntos del composer embebido: un mensaje por archivo, en serie para
+       no disparar N peticiones a la vez. El texto que haya escrito el usuario
+       viaja con el primero (mismo criterio que woConvSendMessage del overlay). */
+    function subirAdjuntosConv(inst, fileList) {
+        var files = fileList && fileList.length ? Array.prototype.slice.call(fileList) : [];
+        if (!files.length) return;
+        var input = q(inst, 'convInput');
+        var texto = input ? input.value.trim() : '';
+        if (input) input.value = '';
+        var oppId = inst.oppId;
+
+        function enviarUno(archivo, txt) {
+            var fd = new FormData();
+            if (txt) fd.append('texto', txt);
+            fd.append('imagen', archivo);
+            return fetch('/app/api/oportunidad/' + oppId + '/chat/', {
+                method: 'POST', body: fd,
+                headers: { 'X-CSRFToken': csrf() },
+            });
+        }
+
+        var chain = enviarUno(files[0], texto);
+        for (var i = 1; i < files.length; i++) {
+            (function (f) {
+                chain = chain.then(function () { return enviarUno(f, ''); });
+            })(files[i]);
+        }
+        chain.then(function () {
+            if (alive(inst) && inst.oppId === oppId) loadConversacion(inst);
+        }).catch(function () {
+            notify('No se pudo adjuntar el archivo', 'error');
+            if (input && texto) input.value = texto;
+        });
     }
 
     function enviarNotaConv(inst) {

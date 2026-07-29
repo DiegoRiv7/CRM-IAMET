@@ -57,8 +57,8 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                 </div>
             </div>
 
-            <div class="wo-tab-panel active" style="padding-top:1rem;">
-                <!-- Pipeline -->
+            <div class="wo-tab-panel active">
+                <!-- Pipeline (etapas como pestañas colgadas de la barra del header) -->
                 <div class="wo-pipeline" data-wo="pipelineWrap">
                     <div class="wo-pipeline-container">
                         <div class="wo-scroll-btn" data-action="pipeline-izq">
@@ -79,15 +79,15 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                     </div>
                 </div>
 
-                <!-- Content Grid -->
+                <!-- Content Grid
+                     Rejilla 2×3 explícita (no dos columnas anidadas) para que las
+                     filas se alineen entre sí: Info ↔ Tareas quedan del mismo alto,
+                     y Cotizaciones ↔ Conversación arrancan a la misma altura. -->
                 <div class="wo-content">
-                    <div class="wo-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
-
-                        <!-- ═══ COLUMNA IZQUIERDA: info + cotizaciones + drive + proyecto ═══ -->
-                        <div style="display:flex;flex-direction:column;gap:1.25rem;min-width:0;">
+                    <div class="wo-grid">
 
                             <!-- Info card compacta (con Vendedor y Cliente integrados) -->
-                            <div class="wo-card" style="display:flex;flex-direction:column;">
+                            <div class="wo-card wo-g-info" style="display:flex;flex-direction:column;">
                                 <div class="wo-info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:0.65rem 1.25rem;">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Monto de Oportunidad</span>
@@ -157,7 +157,7 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                             </div>
 
                             <!-- Cotizaciones (compacta, con scroll interno) -->
-                            <div class="wo-card">
+                            <div class="wo-card wo-g-cot">
                                 <div class="wo-section-header">
                                     <h3 class="wo-section-title">Cotizaciones</h3>
                                     <button class="wo-btn-new" data-wo="btnNuevaCot" data-action="nueva-cot" type="button">
@@ -173,42 +173,42 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                 </div>
                             </div>
 
-                            <!-- Drive (acceso rápido) -->
-                            <div class="wo-card wo-quick-card" data-action="abrir-drive" style="cursor:pointer;">
-                                <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                            <!-- Drive + Proyecto: media card cada uno, en una sola línea.
+                                 Si la opp no es de tipo proyecto, la card de Proyecto se
+                                 oculta y Drive toma el ancho completo (flex:1). -->
+                            <div class="wo-g-quick">
+                                <div class="wo-card wo-quick-card" data-action="abrir-drive" style="cursor:pointer;">
+                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                                        </svg>
+                                    </div>
+                                    <span class="wo-quick-label">Drive</span>
+                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;">
+                                        <path d="M9 18l6-6-6-6" />
                                     </svg>
                                 </div>
-                                <span class="wo-quick-label">Drive</span>
-                                <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;">
-                                    <path d="M9 18l6-6-6-6" />
-                                </svg>
-                            </div>
 
-                            <!-- Proyecto vinculado (solo tipo proyecto/bitrix_proyecto) -->
-                            <div class="wo-card" data-wo="proyectoCard" style="display:none;">
-                                <div class="wo-section-header">
-                                    <h3 class="wo-section-title">Proyecto</h3>
-                                    <button class="wo-btn-new" data-action="vincular-proyecto" type="button">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                        </svg>
-                                        Vincular
-                                    </button>
-                                </div>
-                                <div data-wo="proyectoList">
-                                    <div class="wo-empty">Sin proyecto vinculado aún</div>
+                                <!-- Proyecto vinculado (solo tipo proyecto/bitrix_proyecto) -->
+                                <div class="wo-card wo-proy-card" data-wo="proyectoCard" style="display:none;">
+                                    <div class="wo-section-header" style="margin-bottom:0.5rem;">
+                                        <h3 class="wo-section-title">Proyecto</h3>
+                                        <button class="wo-btn-new" data-action="vincular-proyecto" type="button">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                            </svg>
+                                            Vincular
+                                        </button>
+                                    </div>
+                                    <div data-wo="proyectoList">
+                                        <div class="wo-empty">Sin proyecto vinculado aún</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- ═══ COLUMNA DERECHA: tareas+agenda + conversación viva ═══ -->
-                        <div style="display:flex;flex-direction:column;gap:1.25rem;min-width:0;">
 
                             <!-- Tareas y actividades (unificadas) -->
-                            <div class="wo-card" style="display:flex;flex-direction:column;">
+                            <div class="wo-card wo-g-tareas" style="display:flex;flex-direction:column;">
                                 <div class="wo-section-header">
                                     <h3 class="wo-section-title">Tareas y actividades</h3>
                                     <button class="wo-btn-new" data-action="nueva-tarea" type="button">
@@ -219,15 +219,22 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         Nueva
                                     </button>
                                 </div>
-                                <div class="wo-tareas-inline-list" data-wo="tareasList" style="max-height:170px;overflow-y:auto;"></div>
+                                <div class="wo-tareas-inline-list" data-wo="tareasList" style="flex:1;min-height:150px;overflow-y:auto;"></div>
                                 <div class="wo-divider" style="margin:0.75rem 0 0.6rem;"></div>
                                 <div data-wo="actividadCard">
                                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.45rem;">
                                         <span style="font-size:0.72rem;font-weight:700;color:#86868B;letter-spacing:0.04em;">ACTIVIDAD PROGRAMADA</span>
-                                        <div style="display:flex;align-items:center;gap:6px;">
-                                            <button data-wo="btnNuevaActividad" data-action="nueva-actividad" type="button"
-                                                style="display:none;width:20px;height:20px;border-radius:50%;background:#0052D4;border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;"
-                                                title="Nueva actividad">+</button>
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <!-- Las actividades NO comparten formulario con las tareas:
+                                                 botón propio, siempre visible (no solo cuando ya hay una). -->
+                                            <button class="wo-btn-new" data-wo="btnNuevaActividad" data-action="nueva-actividad"
+                                                type="button" title="Nueva actividad">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                                </svg>
+                                                Nueva
+                                            </button>
                                             <div data-action="abrir-actividad" style="cursor:pointer;">
                                                 <svg width="14" height="14" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;display:block;"><path d="M9 18l6-6-6-6"/></svg>
                                             </div>
@@ -241,7 +248,7 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                             </div>
 
                             <!-- Conversación embebida (expediente vivo) -->
-                            <div class="wo-card" style="display:flex;flex-direction:column;flex:1;min-height:340px;padding-bottom:0.75rem;">
+                            <div class="wo-card wo-g-conv" style="display:flex;flex-direction:column;min-height:340px;padding-bottom:0.75rem;">
                                 <div class="wo-section-header" style="margin-bottom:0.5rem;">
                                     <h3 class="wo-section-title" style="display:flex;align-items:center;gap:6px;">
                                         <svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -262,14 +269,33 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <button type="button" class="wo-conv-chip is-active" data-conv-filtro="todo">Todo</button>
                                         <button type="button" class="wo-conv-chip" data-conv-filtro="nota">Notas</button>
                                         <button type="button" class="wo-conv-chip" data-conv-filtro="correo">Correos</button>
-                                        <button type="button" class="wo-conv-chip" data-conv-filtro="evento">Eventos</button>
+                                        <button type="button" class="wo-conv-chip" data-conv-filtro="actividad">Actividades</button>
                                     </div>
                                 </div>
                                 <div data-wo="convPinned" style="display:none;"></div>
                                 <div data-wo="convFeed" style="flex:1;min-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 2px 6px;">
                                     <div class="wo-empty" style="font-size:0.78rem;">Cargando conversación…</div>
                                 </div>
-                                <div style="display:flex;align-items:center;gap:7px;margin-top:0.55rem;flex-shrink:0;">
+                                <!-- Composer: agendar actividad · adjuntar archivo · enviar correo
+                                     (mismas acciones que la barra del overlay completo). -->
+                                <div style="display:flex;align-items:center;gap:6px;margin-top:0.55rem;flex-shrink:0;">
+                                    <button type="button" class="wo-conv-act" data-action="nueva-actividad" title="Agendar actividad">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                    <input type="file" data-wo="convFile" multiple accept="*/*" style="display:none;">
+                                    <button type="button" class="wo-conv-act" data-action="conv-adjuntar" title="Adjuntar archivo">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="wo-conv-act is-mail" data-action="conv-correo" title="Enviar correo">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <polyline points="3 7 12 13 21 7" />
+                                        </svg>
+                                    </button>
                                     <input type="text" data-wo="convInput" placeholder="Escribe una nota…"
                                         onkeydown="if(event.key==='Enter'){var b=this.parentNode.querySelector('[data-action=conv-enviar]');if(b)b.click();}"
                                         style="flex:1;min-width:0;border:1px solid #E5E5EA;border-radius:999px;padding:8px 14px;font-size:0.8rem;font-family:inherit;outline:none;background:#fff;color:#1D1D1F;">
@@ -279,7 +305,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                     </button>
                                 </div>
                             </div>
-                        </div>
                     </div>
                 </div>
             </div>
