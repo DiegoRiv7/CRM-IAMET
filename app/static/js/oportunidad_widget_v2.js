@@ -276,14 +276,12 @@
 
     function wireDocInput(inst, name, field) {
         var input = q(inst, name);
-        input.addEventListener('focus', function () {
-            input.style.borderBottomColor = '#0052D4';
-        });
+        // El subrayado (reposo / hover / foco) lo lleva el CSS de .wo-doc-input:
+        // pintarlo inline aquí ganaba a la hoja de estilos y lo dejaba invisible.
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') input.blur();
         });
         input.addEventListener('blur', function () {
-            input.style.borderBottomColor = 'transparent';
             var val = input.value.trim();
             if (!inst.data || val === (inst.data[field] || '')) return;
             var fd = new FormData();
@@ -1136,7 +1134,68 @@
         });
     }
 
-    /* ── Sección: Tareas inline (port de woCargarTareasInline) ────── */
+    /* ── Mitades Tareas | Actividades ──────────────────────────────
+       Las dos listas se pintan igual (misma fila compacta y mismo orden:
+       vencidas primero, completadas al final), pero vienen de endpoints
+       distintos: /api/tareas/ son tareas y /api/oportunidad/<id>/tareas/
+       son las actividades agendadas (las que van al calendario). */
+
+    var TOPE_LISTA = 8;   // filas visibles antes de "Ver todas"
+
+    function ordenarPendientes(lista, now) {
+        lista.sort(function (a, b) {
+            var aDone = a.estado === 'completada', bDone = b.estado === 'completada';
+            var aV = !aDone && a.fecha_limite && new Date(a.fecha_limite) < now;
+            var bV = !bDone && b.fecha_limite && new Date(b.fecha_limite) < now;
+            if (aV && !bV) return -1; if (!aV && bV) return 1;
+            if (aDone && !bDone) return 1; if (!aDone && bDone) return -1;
+            var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
+            var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
+            return aT - bT;
+        });
+    }
+
+    function filaPendiente(t, now) {
+        var done = t.estado === 'completada';
+        var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < now;
+        var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
+        var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
+        var row = document.createElement('div');
+        row.className = 'wo-tarea-inline-item';
+        if (done) row.style.background = 'rgba(52,199,89,0.06)';
+        else if (venc) row.style.background = 'rgba(255,59,48,0.07)';
+        row.innerHTML =
+            '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
+            '<span style="flex:1;font-size:0.78rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.titulo || 'Sin título') + '</span>' +
+            '<span style="font-size:0.7rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' +
+            (t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '') +
+            '</span>';
+        return row;
+    }
+
+    function vacio(msg, iconPath) {
+        return '<div class="wo-empty" style="padding:1rem;font-size:0.78rem;">' +
+            '<svg width="20" height="20" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 0.4rem;">' +
+            iconPath + '</svg>' + msg + '</div>';
+    }
+
+    function verTodasBtn(inst, total) {
+        var more = document.createElement('div');
+        more.style.cssText = 'text-align:center;padding:0.4rem;';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.cssText = 'background:none;border:none;color:#0052D4;font-size:0.75rem;font-weight:600;cursor:pointer;';
+        btn.textContent = 'Ver todas (' + total + ')';
+        btn.addEventListener('click', function () {
+            setFocus(inst);
+            if (typeof window.woAbrirTodasTareas === 'function') {
+                window.woAbrirTodasTareas(inst.oppId);
+                openSubWindowed(inst, 'widgetTodasTareas');
+            }
+        });
+        more.appendChild(btn);
+        return more;
+    }
 
     function renderTareas(inst) {
         var container = q(inst, 'tareasList');
@@ -1149,63 +1208,22 @@
                 if (!alive(inst) || inst.oppId !== oppId) return;
                 var tareas = data.tareas || data.results || [];
                 if (!tareas.length) {
-                    container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">' +
-                        '<svg width="20" height="20" fill="none" stroke="#C7C7CC" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 0.4rem;">' +
-                        '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' +
-                        '</svg>Sin tareas aún</div>';
+                    container.innerHTML = vacio('Sin tareas aún',
+                        '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>');
                     return;
                 }
                 var now = new Date();
-                tareas.sort(function (a, b) {
-                    var aDone = a.estado === 'completada', bDone = b.estado === 'completada';
-                    var aV = !aDone && a.fecha_limite && new Date(a.fecha_limite) < now;
-                    var bV = !bDone && b.fecha_limite && new Date(b.fecha_limite) < now;
-                    if (aV && !bV) return -1; if (!aV && bV) return 1;
-                    if (aDone && !bDone) return 1; if (!aDone && bDone) return -1;
-                    var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
-                    var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
-                    return aT - bT;
-                });
+                ordenarPendientes(tareas, now);
                 container.innerHTML = '';
-                var TOPE = 8;   // la card creció: caben más filas antes de "Ver todas"
-                tareas.slice(0, TOPE).forEach(function (t) {
-                    var done = t.estado === 'completada';
-                    var venc = !done && t.fecha_limite && new Date(t.fecha_limite) < now;
-                    var dot = done ? '#34C759' : (venc ? '#FF3B30' : '#FF9500');
-                    var titleColor = done ? '#9CA3AF' : (venc ? '#FF3B30' : '#1D1D1F');
-                    var row = document.createElement('div');
-                    row.className = 'wo-tarea-inline-item';
-                    if (done) row.style.background = 'rgba(52,199,89,0.06)';
-                    else if (venc) row.style.background = 'rgba(255,59,48,0.07)';
-                    row.innerHTML =
-                        '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';flex-shrink:0;"></span>' +
-                        '<span style="flex:1;font-size:0.78rem;color:' + titleColor + ';' + (done ? 'text-decoration:line-through;' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.titulo || 'Sin título') + '</span>' +
-                        '<span style="font-size:0.7rem;color:' + (venc ? '#FF3B30' : '#9CA3AF') + ';flex-shrink:0;">' +
-                        (t.fecha_limite ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '') +
-                        '</span>';
+                tareas.slice(0, TOPE_LISTA).forEach(function (t) {
+                    var row = filaPendiente(t, now);
                     row.addEventListener('click', function () {
                         setFocus(inst);
                         if (typeof window.crmTaskVerDetalle === 'function') window.crmTaskVerDetalle(t.id);
                     });
                     container.appendChild(row);
                 });
-                if (tareas.length > TOPE) {
-                    var more = document.createElement('div');
-                    more.style.cssText = 'text-align:center;padding:0.4rem;';
-                    var btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.style.cssText = 'background:none;border:none;color:#0052D4;font-size:0.75rem;font-weight:600;cursor:pointer;';
-                    btn.textContent = 'Ver todas (' + tareas.length + ')';
-                    btn.addEventListener('click', function () {
-                        setFocus(inst);
-                        if (typeof window.woAbrirTodasTareas === 'function') {
-                            window.woAbrirTodasTareas(oppId);
-                            openSubWindowed(inst, 'widgetTodasTareas');
-                        }
-                    });
-                    more.appendChild(btn);
-                    container.appendChild(more);
-                }
+                if (tareas.length > TOPE_LISTA) container.appendChild(verTodasBtn(inst, tareas.length));
             })
             .catch(function () {
                 if (!alive(inst)) return;
@@ -1213,47 +1231,45 @@
             });
     }
 
-    /* ── Sección: Actividad programada (port woCargarActividadReciente) ── */
+    /* Actividades agendadas de la oportunidad (mitad derecha de la card). */
 
     function renderActividad(inst) {
-        var body = q(inst, 'actividadBody');
+        var container = q(inst, 'actividadList');
         var oppId = inst.oppId;
         inst.actividadId = null;
-        body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>';
+        container.innerHTML = '<div style="text-align:center;padding:1rem;color:#9CA3AF;font-size:0.8rem;">Cargando...</div>';
 
         fetch('/app/api/oportunidad/' + oppId + '/tareas/')
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;
-                var tareas = data.tareas || data.results || [];
-                var pendientes = tareas.filter(function (t) { return t.estado !== 'completada'; });
-                if (!pendientes.length) {
-                    body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic;">Sin actividad programada</div>';
+                var acts = data.tareas || data.results || [];
+                if (!acts.length) {
+                    container.innerHTML = vacio('Sin actividades agendadas',
+                        '<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>');
                     return;
                 }
-                pendientes.sort(function (a, b) {
-                    var aT = a.fecha_limite ? new Date(a.fecha_limite).getTime() : Infinity;
-                    var bT = b.fecha_limite ? new Date(b.fecha_limite).getTime() : Infinity;
-                    return aT - bT;
-                });
-                var t = pendientes[0];
-                inst.actividadId = t.id;
                 var now = new Date();
-                var venc = t.fecha_limite && new Date(t.fecha_limite) < now;
-                var color = venc ? '#FF3B30' : '#1D1D1F';
-                var fechaStr = t.fecha_limite
-                    ? new Date(t.fecha_limite).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-                    : 'Sin fecha';
-                body.innerHTML =
-                    '<span style="width:8px;height:8px;border-radius:50%;background:' + (venc ? '#FF3B30' : '#FF9500') + ';flex-shrink:0;display:inline-block;"></span>' +
-                    '<div style="flex:1;min-width:0;">' +
-                    '<div style="font-size:0.82rem;font-weight:600;color:' + color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.titulo || 'Sin título') + '</div>' +
-                    '<div style="font-size:0.72rem;color:' + (venc ? '#FF3B30' : '#86868B') + ';">' + fechaStr + (venc ? ' · Vencida' : '') + '</div>' +
-                    '</div>';
+                ordenarPendientes(acts, now);
+                // La próxima pendiente sigue siendo la que abre el atajo de agenda.
+                var prox = acts.filter(function (t) { return t.estado !== 'completada'; })[0];
+                inst.actividadId = prox ? prox.id : null;
+                container.innerHTML = '';
+                acts.slice(0, TOPE_LISTA).forEach(function (t) {
+                    var row = filaPendiente(t, now);
+                    row.addEventListener('click', function () {
+                        setFocus(inst);
+                        if (typeof window.woVerActividad === 'function') {
+                            window.woVerActividad(t.id);
+                            openSubWindowed(inst, 'widgetOppVerActividad');
+                        }
+                    });
+                    container.appendChild(row);
+                });
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                body.innerHTML = '<div style="font-size:0.82rem;color:#9CA3AF;">-</div>';
+                container.innerHTML = '<div class="wo-empty" style="padding:1rem;font-size:0.8rem;">Error al cargar</div>';
             });
     }
 

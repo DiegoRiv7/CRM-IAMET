@@ -191,7 +191,7 @@ body {
 .opp-v2 .wo-tab-panel { padding-top: 0; }
 
 .opp-v2 .wo-pipeline {
-    padding: 0 2rem;
+    padding: 0.5rem 2rem 0.6rem;
     border-bottom: 1px solid #E5E5EA;
 }
 /* Sin pipeline (proyectos Bitrix24) la línea la pone el header. */
@@ -204,37 +204,132 @@ body {
     padding: 0;
     gap: 0.4rem;
 }
-.opp-v2 .wo-pipeline-stages { gap: 3px; padding: 0; }
+.opp-v2 .wo-pipeline-stages { gap: 6px; padding: 0; }
 .opp-v2 .wo-stage-connector { display: none; }
 
+/* Cápsulas: más grandes y con aire, cada etapa se lee sola. */
 .opp-v2 .wo-stage-btn {
-    border-radius: 9px 9px 0 0;
-    border-bottom: none;
-    margin-bottom: -1px;
-    padding: 7px 13px 9px;
-    background: transparent;
-    border-color: transparent;
+    border-radius: 999px;
+    padding: 9px 18px;
+    font-size: 0.71rem;
+    letter-spacing: 0.02em;
+    background: #fff;
+    border: 1.5px solid #E7EAEF;
     color: #6B7280;
     box-shadow: none;
 }
 .opp-v2 .wo-stage-btn:hover {
     transform: none;
-    background: #F0F2F5;
-    border-color: transparent;
+    background: #F5F8FE;
+    border-color: #BFD9FF;
     color: #1D1D1F;
 }
 .opp-v2 .wo-stage-btn.completed {
-    background: rgba(0, 82, 212, 0.08);
-    border-color: transparent;
+    background: #EBF4FF;
+    border-color: #BFD9FF;
     color: #0052D4;
 }
 .opp-v2 .wo-stage-btn.active {
     background: #0052D4;
     border-color: #0052D4;
     color: #fff;
-    box-shadow: 0 -2px 10px rgba(0, 82, 212, 0.22);
+    box-shadow: 0 3px 12px rgba(0, 82, 212, 0.3);
 }
-.opp-v2 .wo-scroll-btn { width: 26px; height: 26px; box-shadow: none; }
+.opp-v2 .wo-scroll-btn { width: 28px; height: 28px; box-shadow: none; }
+
+/* ═══ Botón "Nueva" discreto (mitades de Tareas / Actividades) ═══ */
+.opp-v2 .wo-btn-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: transparent;
+    color: #0052D4;
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    opacity: 0.7;
+    flex-shrink: 0;
+    transition: background 0.12s, opacity 0.12s;
+}
+.opp-v2 .wo-btn-mini:hover { background: rgba(0, 82, 212, 0.09); opacity: 1; }
+.opp-v2 .wo-btn-mini svg { width: 10px; height: 10px; }
+
+/* ═══ Card partida: Tareas | Actividades ═══ */
+.opp-v2 .wo-g-tareas { display: flex; flex-direction: column; }
+.opp-v2 .wo-ta-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    min-height: 0;
+}
+.opp-v2 .wo-ta-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-right: 1.1rem;
+}
+.opp-v2 .wo-ta-col + .wo-ta-col {
+    border-left: 1px solid #E2E8F0;
+    padding-right: 0;
+    padding-left: 1.1rem;
+}
+.opp-v2 .wo-ta-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 0.5rem;
+}
+.opp-v2 .wo-ta-head h3 {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #86868B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.opp-v2 .wo-ta-col .wo-tareas-inline-list {
+    flex: 1;
+    min-height: 140px;
+    max-height: none;   /* la lista la limita la card, no un tope fijo */
+    overflow-y: auto;
+}
+
+/* ═══ Card de metadatos: datos grandes arriba, personas ancladas abajo ═══ */
+.opp-v2 .wo-g-info .wo-info-grid { gap: 0.55rem 1.5rem; }
+.opp-v2 .wo-info-row-big { grid-template-columns: 1fr 1fr 1fr; }
+.opp-v2 .wo-info-row-pair,
+.opp-v2 .wo-info-row-docs { grid-template-columns: 1fr 1fr; margin-top: 1.15rem; }
+
+.opp-v2 .wo-g-info .wo-info-label { font-size: 0.68rem; }
+.opp-v2 .wo-g-info .wo-info-value { font-size: 1.85rem; }
+.opp-v2 .wo-g-info .wo-info-value.medium { font-size: 1.25rem; }
+.opp-v2 .wo-g-info .wo-prob-value { font-size: 1.25rem; margin: 0; }
+
+/* PO / Factura: campo ancho, con línea de captura visible al pasar. */
+.opp-v2 .wo-doc-input {
+    background: none;
+    border: none;
+    border-bottom: 1px solid #E2E8F0;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1C1C1E;
+    width: 100%;
+    padding: 0.15rem 0;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.12s;
+}
+.opp-v2 .wo-doc-input:hover { border-bottom-color: #BFD9FF; }
+.opp-v2 .wo-doc-input:focus { border-bottom-color: #0052D4; cursor: text; }
+
+/* El separador se come el sobrante: vendedor y cliente quedan al fondo. */
+.opp-v2 .wo-info-sep { margin: auto 0 0.9rem; }
 
 /* ═══ Rejilla del contenido (widget v3) ═══
    2 columnas × 3 filas explícitas en vez de dos columnas anidadas, para que

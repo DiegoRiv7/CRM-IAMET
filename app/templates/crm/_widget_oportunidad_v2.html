@@ -88,7 +88,8 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
 
                             <!-- Info card compacta (con Vendedor y Cliente integrados) -->
                             <div class="wo-card wo-g-info" style="display:flex;flex-direction:column;">
-                                <div class="wo-info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:0.65rem 1.25rem;">
+                                <!-- Fila grande: los números que se leen de un vistazo -->
+                                <div class="wo-info-grid wo-info-row-big">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Monto de Oportunidad</span>
                                         <span class="wo-info-value" data-wo="monto">$0</span>
@@ -100,12 +101,15 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Probabilidad de Cierre</span>
                                         <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
-                                            <span class="wo-prob-value" data-wo="probValue" style="font-size:1.1rem;margin:0;">0%</span>
+                                            <span class="wo-prob-value" data-wo="probValue">0%</span>
                                             <div class="wo-prob-bar" data-wo="probBar" style="flex:1;margin:0;">
                                                 <div class="wo-prob-fill" data-wo="probFill" style="width:0%"></div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <!-- Clasificación -->
+                                <div class="wo-info-grid wo-info-row-pair">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Producto</span>
                                         <span class="wo-info-value medium" data-wo="producto">-</span>
@@ -114,25 +118,20 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-label">Area</span>
                                         <span class="wo-info-value medium" data-wo="area">-</span>
                                     </div>
-                                    <div style="display:flex;gap:0;">
-                                        <div class="wo-info-item" style="flex:1;min-width:0;">
-                                            <span class="wo-info-label">PO</span>
-                                            <input type="text" data-wo="poNumber" maxlength="15" placeholder="—"
-                                                style="background:none;border:none;border-bottom:1px solid transparent;
-                                                       font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
-                                                       width:100%;padding:0.1rem 0;cursor:pointer;outline:none;" />
-                                        </div>
-                                        <div class="wo-info-item" style="flex:1;min-width:0;border-left:1px solid #E5E5EA;padding-left:12px;">
-                                            <span class="wo-info-label">Factura</span>
-                                            <input type="text" data-wo="facturaNumero" maxlength="7" placeholder="—"
-                                                style="background:none;border:none;border-bottom:1px solid transparent;
-                                                       font-size:0.95rem;font-weight:600;color:var(--wo-text,#1C1C1E);
-                                                       width:100%;padding:0.1rem 0;cursor:pointer;outline:none;" />
-                                        </div>
+                                </div>
+                                <!-- PO y Factura: fila propia, campo ancho para capturar cómodo -->
+                                <div class="wo-info-grid wo-info-row-docs">
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">PO</span>
+                                        <input type="text" class="wo-doc-input" data-wo="poNumber" maxlength="15" placeholder="—" />
+                                    </div>
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">Factura</span>
+                                        <input type="text" class="wo-doc-input" data-wo="facturaNumero" maxlength="7" placeholder="—" />
                                     </div>
                                 </div>
-                                <div class="wo-divider" style="margin:0.85rem 0 0.75rem;"></div>
-                                <!-- Vendedor + Cliente compactos -->
+                                <!-- Vendedor + Cliente: anclados al fondo de la card -->
+                                <div class="wo-divider wo-info-sep"></div>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
                                     <div class="wo-stakeholder">
                                         <div class="wo-stakeholder-label">Vendedor</div>
@@ -207,43 +206,39 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                 </div>
                             </div>
 
-                            <!-- Tareas y actividades (unificadas) -->
-                            <div class="wo-card wo-g-tareas" style="display:flex;flex-direction:column;">
-                                <div class="wo-section-header">
-                                    <h3 class="wo-section-title">Tareas y actividades</h3>
-                                    <button class="wo-btn-new" data-action="nueva-tarea" type="button">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg>
-                                        Nueva
-                                    </button>
-                                </div>
-                                <div class="wo-tareas-inline-list" data-wo="tareasList" style="flex:1;min-height:150px;overflow-y:auto;"></div>
-                                <div class="wo-divider" style="margin:0.75rem 0 0.6rem;"></div>
-                                <div data-wo="actividadCard">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.45rem;">
-                                        <span style="font-size:0.72rem;font-weight:700;color:#86868B;letter-spacing:0.04em;">ACTIVIDAD PROGRAMADA</span>
-                                        <div style="display:flex;align-items:center;gap:8px;">
-                                            <!-- Las actividades NO comparten formulario con las tareas:
-                                                 botón propio, siempre visible (no solo cuando ya hay una). -->
-                                            <button class="wo-btn-new" data-wo="btnNuevaActividad" data-action="nueva-actividad"
-                                                type="button" title="Nueva actividad">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <!-- Tareas | Actividades: la card partida a la mitad, lado a lado.
+                                 Son cosas distintas (las actividades llevan su propio
+                                 formulario y van al calendario), así que cada mitad
+                                 tiene su lista y su botón. -->
+                            <div class="wo-card wo-g-tareas">
+                                <div class="wo-ta-split">
+                                    <section class="wo-ta-col">
+                                        <div class="wo-ta-head">
+                                            <h3>Tareas</h3>
+                                            <button class="wo-btn-mini" data-action="nueva-tarea" type="button" title="Nueva tarea">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
                                                     <line x1="12" y1="5" x2="12" y2="19" />
                                                     <line x1="5" y1="12" x2="19" y2="12" />
                                                 </svg>
                                                 Nueva
                                             </button>
-                                            <div data-action="abrir-actividad" style="cursor:pointer;">
-                                                <svg width="14" height="14" fill="none" stroke="#86868B" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;display:block;"><path d="M9 18l6-6-6-6"/></svg>
-                                            </div>
                                         </div>
-                                    </div>
-                                    <div data-wo="actividadBody" data-action="abrir-actividad"
-                                        style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                        <div style="font-size:0.82rem;color:#9CA3AF;">Cargando...</div>
-                                    </div>
+                                        <div class="wo-tareas-inline-list" data-wo="tareasList"></div>
+                                    </section>
+                                    <section class="wo-ta-col">
+                                        <div class="wo-ta-head">
+                                            <h3>Actividades</h3>
+                                            <button class="wo-btn-mini" data-wo="btnNuevaActividad" data-action="nueva-actividad"
+                                                type="button" title="Nueva actividad">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                                </svg>
+                                                Nueva
+                                            </button>
+                                        </div>
+                                        <div class="wo-tareas-inline-list" data-wo="actividadList"></div>
+                                    </section>
                                 </div>
                             </div>
 
