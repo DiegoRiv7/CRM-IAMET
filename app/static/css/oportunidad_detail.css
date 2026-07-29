@@ -251,34 +251,58 @@ body {
     overflow-y: auto;
 }
 
-/* ═══ Card de metadatos: datos grandes arriba, personas ancladas abajo ═══ */
-.opp-v2 .wo-g-info .wo-info-grid { gap: 0.55rem 1.5rem; }
-.opp-v2 .wo-info-row-big { grid-template-columns: 1fr 1fr 1fr; }
-.opp-v2 .wo-info-row-pair,
-.opp-v2 .wo-info-row-docs { grid-template-columns: 1fr 1fr; margin-top: 1.15rem; }
+/* ═══ Card de metadatos ═══
+   Todo sobre una misma retícula de 3 columnas para que las etiquetas
+   queden alineadas entre filas. El tamaño lo da la jerarquía (monto >
+   resto), no una tipografía enorme. */
+.opp-v2 .wo-g-info .wo-info-grid { gap: 0.3rem 1.4rem; }
+.opp-v2 .wo-info-row-big,
+.opp-v2 .wo-info-row-mid { grid-template-columns: 1fr 1fr 1fr; }
+.opp-v2 .wo-info-row-mid { margin-top: 0.95rem; }
 
-.opp-v2 .wo-g-info .wo-info-label { font-size: 0.68rem; }
-.opp-v2 .wo-g-info .wo-info-value { font-size: 1.85rem; }
-.opp-v2 .wo-g-info .wo-info-value.medium { font-size: 1.25rem; }
-.opp-v2 .wo-g-info .wo-prob-value { font-size: 1.25rem; margin: 0; }
+.opp-v2 .wo-g-info .wo-info-label { font-size: 0.63rem; }
+.opp-v2 .wo-g-info .wo-info-value { font-size: 1.45rem; }
+.opp-v2 .wo-g-info .wo-info-value.medium { font-size: 1rem; }
+.opp-v2 .wo-g-info .wo-prob-value { font-size: 1rem; margin: 0; }
 
-/* PO / Factura: campo ancho, con línea de captura visible al pasar. */
+/* Facturas: campos cortos en línea que envuelven — caben varias sin
+   rehacer el bloque, y el subrayado no cruza toda la card. */
+.opp-v2 .wo-info-facturas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.95rem;
+}
+.opp-v2 .wo-fact-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 1.4rem;
+}
+.opp-v2 .wo-fact-row .wo-doc-input { flex: 0 1 140px; }
+
+/* PO / Factura: subrayado visible en reposo, se marca al pasar y al escribir. */
 .opp-v2 .wo-doc-input {
     background: none;
     border: none;
     border-bottom: 1px solid #E2E8F0;
     font-family: inherit;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #1C1C1E;
     width: 100%;
-    padding: 0.15rem 0;
+    max-width: 100%;
+    padding: 0.1rem 0;
     cursor: pointer;
     outline: none;
     transition: border-color 0.12s;
 }
 .opp-v2 .wo-doc-input:hover { border-bottom-color: #BFD9FF; }
 .opp-v2 .wo-doc-input:focus { border-bottom-color: #0052D4; cursor: text; }
+
+/* Vendedor / cliente: van uno al lado del otro, así que el margen inferior
+   que traen de serie solo abría un hueco muerto. */
+.opp-v2 .wo-g-info .wo-stakeholder { margin-bottom: 0; }
+.opp-v2 .wo-g-info .wo-stakeholder-label { margin-bottom: 0.45rem; font-size: 0.63rem; }
 
 /* El separador se come el sobrante: vendedor y cliente quedan al fondo. */
 .opp-v2 .wo-info-sep { margin: auto 0 0.9rem; }

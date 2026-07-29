@@ -108,8 +108,8 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Clasificación -->
-                                <div class="wo-info-grid wo-info-row-pair">
+                                <!-- Clasificación + PO, en la misma retícula de 3 -->
+                                <div class="wo-info-grid wo-info-row-mid">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Producto</span>
                                         <span class="wo-info-value medium" data-wo="producto">-</span>
@@ -118,15 +118,16 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-label">Area</span>
                                         <span class="wo-info-value medium" data-wo="area">-</span>
                                     </div>
-                                </div>
-                                <!-- PO y Factura: fila propia, campo ancho para capturar cómodo -->
-                                <div class="wo-info-grid wo-info-row-docs">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">PO</span>
                                         <input type="text" class="wo-doc-input" data-wo="poNumber" maxlength="15" placeholder="—" />
                                     </div>
-                                    <div class="wo-info-item">
-                                        <span class="wo-info-label">Factura</span>
+                                </div>
+                                <!-- Facturas: fila propia con campos cortos en línea, para que
+                                     quepa más de una sin rehacer el bloque. -->
+                                <div class="wo-info-facturas">
+                                    <span class="wo-info-label">Facturas</span>
+                                    <div class="wo-fact-row">
                                         <input type="text" class="wo-doc-input" data-wo="facturaNumero" maxlength="7" placeholder="—" />
                                     </div>
                                 </div>
