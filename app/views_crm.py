@@ -7513,6 +7513,207 @@ def api_asistente_clientes_estado(request):
     return JsonResponse({'success': True, 'worked_ids': worked})
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ASISTENTE · CORREO — correos importantes de las últimas 24h SIN responder.
+# Detección 100% por código (puntaje), sin IA en la lista → créditos ~0.
+# ─────────────────────────────────────────────────────────────────────────────
+def _cor_norm(s):
+    import unicodedata
+    s = (s or '').lower()
+    return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+
+
+_COR_KW = ['requerimiento', 'levantamiento', 'cotizacion', 'cotizar', 'propuesta', 'orden de compra',
+           ' oc ', 'rfq', 'licitacion', 'presupuesto', 'factura', 'proyecto', 'reunion', 'visita',
+           'disponibilidad', 'tiempo de entrega', 'precio', 'seguimiento', 'urgente', 'pendiente',
+           'pedido', 'compra', 'instalacion', 'soporte', 'garantia', 'servicio']
+_COR_ESPERA = ['quedo a la espera', 'en espera de su respuesta', 'en espera de tu respuesta', 'favor de',
+               'me confirmas', 'quedo atento', 'quedamos atentos', 'esperamos su respuesta',
+               'agradezco su pronta', 'me puedes', 'nos pueden', 'podrias', 'me apoyas']
+_COR_SPAM_SENDER = ['noreply', 'no-reply', 'no_reply', 'no.reply', 'notifica', 'notification', 'mailer',
+                    'newsletter', 'marketing@', 'automat', 'mailchimp', 'sendgrid', 'bounce', 'postmaster']
+_COR_SPAM_BODY = ['unsubscribe', 'darse de baja', 'cancelar suscripcion', 'cancelar tu suscripcion',
+                  'no deseas recibir', 'da clic para dejar de']
+_COR_PROMO = ['oferta', 'descuento', 'promocion', 'gratis', 'sorteo', 'black friday', 'cyber', '2x1', 'envio gratis']
+_COR_PUBLIC_DOM = {'gmail.com', 'hotmail.com', 'hotmail.es', 'outlook.com', 'outlook.es', 'yahoo.com',
+                   'yahoo.com.mx', 'live.com', 'live.com.mx', 'icloud.com', 'me.com', 'aol.com'}
+
+
+def _cor_conocidos():
+    """Set de emails y dominios de clientes/contactos registrados (para 'remitente conocido')."""
+    from .models import Cliente, Contacto
+    emails, nombres = set(), []
+    for em, nom in Cliente.objects.values_list('email', 'nombre_empresa'):
+        if em:
+            emails.add(_cor_norm(em).strip())
+        if nom and len(nom.strip()) >= 5:
+            nombres.append(_cor_norm(nom).strip())
+    for em in Contacto.objects.exclude(email='').values_list('email', flat=True):
+        if em:
+            emails.add(_cor_norm(em).strip())
+    doms = set(e.split('@')[-1] for e in emails if '@' in e) - _COR_PUBLIC_DOM
+    return emails, doms, nombres
+
+
+def _cor_score(rem_email, asunto, cuerpo, known_emails, known_domains, cliente_nombres):
+    """Devuelve (score, motivos:set, kw:str). score<=0 => descartar."""
+    rem = _cor_norm(rem_email).strip()
+    for bad in _COR_SPAM_SENDER:
+        if bad in rem:
+            return 0, set(), ''
+    asu = _cor_norm(asunto)
+    cue = _cor_norm(cuerpo)[:4000]
+    for bad in _COR_SPAM_BODY:
+        if bad in cue:
+            return 0, set(), ''
+    score = 0
+    motivos = set()
+    dom = rem.split('@')[-1] if '@' in rem else ''
+    if rem and rem in known_emails:
+        score += 3; motivos.add('cliente')
+    elif dom and dom in known_domains:
+        score += 2; motivos.add('cliente')
+    for nom in cliente_nombres:
+        if nom and nom in asu:
+            score += 2; motivos.add('cliente'); break
+        if nom and cue and nom in cue:
+            score += 1; motivos.add('cliente'); break
+    kw_hits, kw_score = [], 0
+    for kw in _COR_KW:
+        if kw in asu:
+            kw_score += 2; kw_hits.append(kw.strip())
+        elif cue and kw in cue:
+            kw_score += 1; kw_hits.append(kw.strip())
+    if kw_hits:
+        score += min(kw_score, 4)
+        motivos.add('negocio')
+    if any(e in cue for e in _COR_ESPERA):
+        score += 2; motivos.add('espera')
+    if '?' in (asunto or '') or '?' in (cuerpo or '')[:1500]:
+        score += 1
+    if any(p in asu for p in _COR_PROMO):
+        score -= 2
+    kw = kw_hits[0] if kw_hits else ''
+    return score, motivos, kw
+
+
+def _cor_msg(remitente, motivos, kw):
+    if 'cliente' in motivos and ('negocio' in motivos):
+        return (f'Correo de {remitente} (cliente) sobre "{kw}". Podría ser una venta — no lo dejes esperando.',
+                'Responde hoy y, si aplica, crea la oportunidad.')
+    if 'cliente' in motivos:
+        return (f'Te escribió {remitente} (cliente) y sigue sin respuesta.',
+                'Responde antes de que se enfríe.')
+    if 'espera' in motivos:
+        return (f'{remitente} está esperando tu respuesta.', 'Contesta hoy, aunque sea para dar tiempos.')
+    if 'negocio' in motivos:
+        return (f'Correo con un tema de negocio ("{kw}") sin responder.', 'Revísalo y responde hoy.')
+    return ('Correo importante sin responder.', 'Revísalo y responde.')
+
+
+def _cor_hace(dt, now):
+    if not dt:
+        return ''
+    secs = (now - dt).total_seconds()
+    if secs < 3600:
+        m = max(1, int(secs // 60)); return 'hace %d min' % m
+    if secs < 86400:
+        h = int(secs // 3600); return 'hace %d h' % h
+    d = int(secs // 86400); return 'hace %d día%s' % (d, 's' if d != 1 else '')
+
+
+@login_required
+def api_asistente_correos(request):
+    """GET /app/api/asistente/correos/ — correos importantes de las últimas 24h SIN responder."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import MailConexion, MailCorreo
+
+    user = request.user
+    now = timezone.now()
+    today = timezone.localdate()
+
+    if not MailConexion.objects.filter(usuario=user, activo=True).exists():
+        return JsonResponse({'success': True, 'conectado': False, 'items': [], 'total': 0,
+                             'pendientes': 0, 'completadas': 0})
+
+    cutoff = now - timedelta(hours=24)
+    inbox = list(MailCorreo.objects.filter(
+        usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
+        fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
+
+    # Respuestas por hilo (SENT): antes de hoy = ya resuelto; hoy = "respondido hoy".
+    hks = set(m.hilo_key for m in inbox if m.hilo_key)
+    sent_before, sent_today = set(), set()
+    if hks:
+        for s in MailCorreo.objects.filter(usuario=user, carpeta_display='SENT', hilo_key__in=hks).values('hilo_key', 'fecha_envio'):
+            if not s['fecha_envio']:
+                continue
+            d = timezone.localtime(s['fecha_envio']).date()
+            if d < today:
+                sent_before.add(s['hilo_key'])
+            elif d == today:
+                sent_today.add(s['hilo_key'])
+
+    known_emails, known_domains, cliente_nombres = _cor_conocidos()
+
+    pend, done = [], []
+    for m in inbox:
+        hk = m.hilo_key
+        if hk and hk in sent_before:
+            continue   # ya respondido antes de hoy → resuelto
+        score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                        known_emails, known_domains, cliente_nombres)
+        if score < 3:
+            continue
+        remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
+        mensaje, accion = _cor_msg(remitente, motivos, kw)
+        completada = bool(hk and hk in sent_today)
+        snippet = (m.cuerpo_texto or '').strip().replace('\n', ' ')[:200]
+        item = {
+            'mail_id': m.id,
+            'remitente': remitente,
+            'remitente_email': m.remitente_email or '',
+            'asunto': m.asunto or '(sin asunto)',
+            'snippet': snippet,
+            'hace': _cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else '',
+            'adjuntos': bool(m.tiene_adjuntos),
+            'score': score,
+            'motivos': sorted(motivos),
+            'kw': kw,
+            'mensaje': mensaje,
+            'accion': accion,
+            'completada': completada,
+        }
+        (done if completada else pend).append(item)
+
+    pend.sort(key=lambda x: -x['score'])
+    items = pend + done
+    return JsonResponse({'success': True, 'conectado': True, 'items': items, 'total': len(items),
+                         'pendientes': len(pend), 'completadas': len(done)})
+
+
+@login_required
+def api_asistente_correos_estado(request):
+    """Ligero: dado ?ids=1,2,3 (mail ids) devuelve cuáles ya se respondieron HOY (SENT en su hilo)."""
+    from django.utils import timezone
+    from .models import MailCorreo
+    ids = [int(x) for x in (request.GET.get('ids', '') or '').split(',') if x.strip().isdigit()]
+    today = timezone.localdate()
+    worked = []
+    if ids:
+        rows = MailCorreo.objects.filter(usuario=request.user, id__in=ids).values('id', 'hilo_key')
+        hk_by_id = {r['id']: r['hilo_key'] for r in rows}
+        hk_set = set(v for v in hk_by_id.values() if v)
+        sent_hks = set()
+        if hk_set:
+            for s in MailCorreo.objects.filter(usuario=request.user, carpeta_display='SENT', hilo_key__in=hk_set).values('hilo_key', 'fecha_envio'):
+                if s['fecha_envio'] and timezone.localtime(s['fecha_envio']).date() == today:
+                    sent_hks.add(s['hilo_key'])
+        worked = [mid for mid, hk in hk_by_id.items() if hk and hk in sent_hks]
+    return JsonResponse({'success': True, 'worked_ids': worked})
+
+
 @login_required
 def api_pendientes_estado(request):
     """Ligero: dado ?ids=1,2,3 devuelve qué oportunidades se trabajaron HOY.

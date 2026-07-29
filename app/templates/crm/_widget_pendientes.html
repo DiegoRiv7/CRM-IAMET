@@ -319,7 +319,7 @@
   window.__pendInit = true;
 
   var _data = null, _tab = 'resumen', _sel = 'mias', _resIdx = 0, _pollTimer = null;
-  var _section = 'dia', _cliData = null, _cliIdx = 0;
+  var _section = 'dia', _cliData = null, _cliIdx = 0, _corData = null, _corIdx = 0;
   var _replayData = null, _replayIdx = 0, _replayMes = null, _replayAnio = null;
   function el(id){ return document.getElementById(id); }
 
@@ -405,6 +405,7 @@
     _pollTimer = setInterval(function () {
       if (_section === 'dia' && _tab === 'resumen') pendRefreshEstado();
       else if (_section === 'clientes') pendRefreshClientes();
+      else if (_section === 'correo') pendRefreshCorreos();
     }, 3000);
   };
   window.pendCerrar = function () {
@@ -437,6 +438,9 @@
     var subtabs = el('pendSubtabs');
     var card = document.querySelector('#widgetPendientes .pend-card');
     if (card) card.classList.remove('replay-on');
+    // El selector de vendedor solo aplica a secciones por-vendedor (Mi día / Clientes).
+    var vw = el('pendVendedorWrap');
+    if (vw) { var canSel = _data && _data.puede_seleccionar; vw.style.display = ((section === 'dia' || section === 'clientes') && canSel) ? '' : 'none'; }
     if (section === 'dia') {
       if (subtabs) subtabs.style.display = '';
       pendSetTab('resumen');
@@ -446,6 +450,9 @@
     } else if (section === 'clientes') {
       if (subtabs) subtabs.style.display = 'none';
       _renderClientes();
+    } else if (section === 'correo') {
+      if (subtabs) subtabs.style.display = 'none';
+      _renderCorreos();
     } else {
       if (subtabs) subtabs.style.display = 'none';
       var res = el('pendResArea');
@@ -575,6 +582,107 @@
       }).catch(function () {});
   }
   window.pendRefreshClientes = pendRefreshClientes;
+
+  // ── Sección Correo: correos importantes de las últimas 24h sin responder ──
+  function _renderCorreos() {
+    var res = el('pendResArea'); if (!res) return;
+    if (_corData) { _drawCorreos(res); return; }
+    res.className = ''; res.innerHTML = '<div class="pend-empty">Revisando tu correo…</div>';
+    fetch('/app/api/asistente/correos/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { res.innerHTML = '<div class="pend-empty">No se pudo cargar el correo</div>'; return; }
+        _corData = d; _corIdx = 0; _drawCorreos(res);
+      })
+      .catch(function () { res.innerHTML = '<div class="pend-empty">Error de conexión</div>'; });
+  }
+  function _drawCorreos(res) {
+    if (!_corData) return;
+    if (!_corData.conectado) {
+      res.className = '';
+      res.innerHTML = '<div style="max-width:640px;margin:7% auto 0;text-align:center;">' +
+        '<div class="pend-res-saludo">Conecta tu correo</div>' +
+        '<div class="pend-res-sub" style="margin-top:8px;">Cuando conectes tu buzón en la sección <b>Correo</b>, el asistente te avisará aquí de los correos importantes sin responder de las últimas 24 horas.</div></div>';
+      return;
+    }
+    var items = _corData.items || [];
+    var total = items.length;
+    var pend = (_corData.pendientes != null ? _corData.pendientes : items.filter(function (x) { return !x.completada; }).length);
+    var comp = (_corData.completadas != null ? _corData.completadas : total - pend);
+    var sub;
+    if (pend > 0) { sub = '<b>' + pend + '</b> correo' + (pend === 1 ? '' : 's') + ' importante' + (pend === 1 ? '' : 's') + ' sin responder · últimas 24 h'; if (comp > 0) sub += ' · <b>' + comp + '</b> ✓'; }
+    else if (comp > 0) { sub = '¡Respondiste todo por hoy! <b>' + comp + '</b> ✓'; }
+    else { sub = 'Sin correos importantes pendientes 🎉'; }
+    var hero = '<div class="pend-res-hero"><div class="pend-res-saludo">Correo</div><div class="pend-res-sub">' + sub + '</div></div>';
+    if (!total) { res.className = ''; res.innerHTML = hero; return; }
+    if (_corIdx >= total) _corIdx = total - 1;
+    if (_corIdx < 0) _corIdx = 0;
+    var it = items[_corIdx];
+    var agentSub = it.completada ? '<span class="pend-sc-done">✓ Respondido hoy</span>' : ('Sin responder · ' + _esc(it.hace));
+    var playBlock = it.completada
+      ? '<div class="pend-sc-play done"><div class="pend-sc-play-lbl done">✓ Hecho</div><div class="pend-sc-play-txt">¡Listo! Respondiste este correo. 💪</div></div>'
+      : '<div class="pend-sc-play"><div class="pend-sc-play-lbl">Tu jugada de hoy</div><div class="pend-sc-play-txt">' + _esc(it.accion || '') + '</div></div>';
+    var card = '<div class="pend-split' + (it.completada ? ' done' : '') + '">' +
+      '<div class="pend-sc-left">' +
+        '<div class="pend-sc-agent"><div class="pend-sc-ia">IA</div><div>' +
+          '<div class="pend-sc-agent-name">Asistente</div>' +
+          '<div class="pend-sc-agent-sub">' + agentSub + '</div></div></div>' +
+        '<div class="pend-sc-msg">' + _esc(it.mensaje || '') + '</div>' +
+        playBlock +
+      '</div>' +
+      '<div class="pend-sc-right">' +
+        '<div class="pend-sc-flabel">De</div>' +
+        '<div class="pend-sc-kv-val">' + _esc(it.remitente) + '</div>' +
+        (it.remitente_email ? '<div style="font-size:.8rem;color:#9a9ca3;margin-top:1px;">' + _esc(it.remitente_email) + '</div>' : '') +
+        '<div class="pend-sc-block"><div class="pend-sc-flabel">Asunto</div><div class="pend-sc-kv-val">' + _esc(it.asunto) + '</div></div>' +
+        (it.snippet ? '<div class="pend-sc-block"><div class="pend-sc-play-txt" style="color:#5a5c63;">' + _esc(it.snippet) + '…</div></div>' : '') +
+        (it.adjuntos ? '<div class="pend-sc-block"><div class="pend-sc-flabel">📎 Con adjuntos</div></div>' : '') +
+        '<button type="button" class="pend-sc-btn" onclick="pendVerCorreo(' + it.mail_id + ')">Responder</button>' +
+      '</div>' +
+    '</div>';
+    var pager = total > 1 ? ('<div class="pend-pager">' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCorNav(-1)" aria-label="Anterior">‹</button>' +
+      '<span class="pend-pager-lbl">Correo ' + (_corIdx + 1) + ' de ' + total + '</span>' +
+      '<button type="button" class="pend-pager-btn" onclick="pendCorNav(1)" aria-label="Siguiente">›</button>' +
+    '</div>') : '';
+    res.className = 'pend-day';
+    res.innerHTML = hero + card + pager;
+  }
+  window.pendCorNav = function (delta) {
+    if (!_corData) return;
+    var n = (_corData.items || []).length; if (!n) return;
+    _corIdx = (_corIdx + delta + n) % n;
+    _drawCorreos(el('pendResArea'));
+  };
+  window.pendVerCorreo = function (id) {
+    var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
+    if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); return; } catch (e) {} }
+    window.location = '/app/?tab=correo';
+  };
+  function pendRefreshCorreos() {
+    if (!_corData || !_corData.items || !_corData.items.length) return;
+    var ids = _corData.items.map(function (it) { return it.mail_id; }).join(',');
+    fetch('/app/api/asistente/correos/estado/?ids=' + encodeURIComponent(ids), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var worked = {}; (d.worked_ids || []).forEach(function (id) { worked[id] = true; });
+        var changed = false;
+        _corData.items.forEach(function (it) {
+          var now = !!worked[it.mail_id];
+          if (now !== !!it.completada) changed = true;
+          it.completada = now;
+        });
+        if (changed) {
+          var p = _corData.items.filter(function (x) { return !x.completada; });
+          var q = _corData.items.filter(function (x) { return x.completada; });
+          _corData.items = p.concat(q);
+          _corData.pendientes = p.length; _corData.completadas = q.length;
+          if (_section === 'correo') _drawCorreos(el('pendResArea'));
+        }
+      }).catch(function () {});
+  }
+  window.pendRefreshCorreos = pendRefreshCorreos;
 
   // ── Chat con el asistente general (el "consultor") ──
   function _getCsrf() {
