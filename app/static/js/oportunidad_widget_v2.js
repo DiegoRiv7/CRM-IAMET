@@ -147,6 +147,8 @@
                 widgetOppCrearActividad: { w: 620, h: 560 },
                 widgetOppVerActividad: { w: 640, h: 600 },
                 widgetTodasTareas: { w: 780, h: 680 },
+                // La conversación expandida trae búsqueda y filtros: apaisada.
+                widgetOppConversacion: { w: 1100, h: Math.round(vh * 0.84) },
             }[overlayId] || null;
             var w = Math.min(pref ? pref.w : Math.min(Math.round(vw * 0.46), 880), vw - 24);
             var h = Math.min(pref ? pref.h : Math.min(Math.round(vh * 0.74), 740), vh - 24);
@@ -1504,19 +1506,19 @@
             .catch(function () { input.value = texto; });
     }
 
-    /* Proyecto: ya no tiene card propia — ocupa una celda de la retícula de
-       metadatos. Muestra el nombre (clic → abre el proyecto) o el atajo para
-       vincular cuando todavía no hay ninguno. */
+    /* Proyecto: vive en el header, junto al título — ahí tiene el ancho para
+       mostrar el nombre completo. Clic → abre el proyecto; si no hay ninguno
+       vinculado, el atajo para vincularlo. */
     function renderProyecto(inst, d) {
-        var item = q(inst, 'proyectoItem');
+        var head = q(inst, 'proyectoHeader');
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
-        item.style.display = esProyecto ? '' : 'none';
+        head.style.display = esProyecto ? 'flex' : 'none';
         if (esProyecto) cargarProyectos(inst);
     }
 
     function cargarProyectos(inst) {
-        var slot = q(inst, 'proyectoSlot');
+        var slot = q(inst, 'proyectoHeader');
         var oppId = inst.oppId;
         slot.innerHTML = '<span class="wo-proy-vacio">Cargando…</span>';
 
@@ -1533,38 +1535,40 @@
             slot.appendChild(b);
         }
 
+        function pintarLink(p) {
+            slot.innerHTML = '';
+            var link = document.createElement('button');
+            link.type = 'button';
+            link.className = 'wo-proy-link';
+            link.title = 'Abrir proyecto: ' + (p.nombre || '');
+            link.innerHTML =
+                '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
+                '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
+                '<span>' + esc(p.nombre || 'Proyecto') + '</span>';
+            link.addEventListener('click', function () {
+                if (typeof window.proyectosVerDetalle === 'function') {
+                    // El widget de proyecto necesita el foco: si esta instancia
+                    // está en modo modal, se cierra; en ventana ambos conviven.
+                    if (!isWindowed(inst)) doClose(inst);
+                    window.proyectosVerDetalle(p.id);
+                } else {
+                    window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + p.id;
+                }
+            });
+            slot.appendChild(link);
+        }
+
         fetch('/app/api/oportunidad/' + oppId + '/proyectos-ligados/', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;
                 var proys = (data && data.success && data.proyectos) || [];
-                if (!proys.length) { pintarVincular('Vincular'); return; }
-
-                slot.innerHTML = '';
-                var p = proys[0];
-                var link = document.createElement('button');
-                link.type = 'button';
-                link.className = 'wo-proy-link';
-                link.title = 'Abrir proyecto: ' + (p.nombre || '');
-                link.innerHTML =
-                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
-                    '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
-                    '<span>' + esc(p.nombre || 'Proyecto') + '</span>';
-                link.addEventListener('click', function () {
-                    if (typeof window.proyectosVerDetalle === 'function') {
-                        // El widget de proyecto necesita el foco: si esta instancia
-                        // está en modo modal, se cierra; en ventana ambos conviven.
-                        if (!isWindowed(inst)) doClose(inst);
-                        window.proyectosVerDetalle(p.id);
-                    } else {
-                        window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + p.id;
-                    }
-                });
-                slot.appendChild(link);
+                if (proys.length) pintarLink(proys[0]);
+                else pintarVincular('Vincular proyecto');
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                pintarVincular('Vincular');
+                pintarVincular('Vincular proyecto');
             });
     }
 
@@ -1853,8 +1857,10 @@
     // frente si ya existe — un drive POR oportunidad, simultáneos.
     function openDriveWindow(inst) {
         var titulo = 'Drive — ' + ((inst.data && inst.data.oportunidad) || ('Oportunidad #' + inst.oppId));
+        // Ventana ancha y apaisada, como el resto de los widgets: el drive es
+        // una tabla de archivos y con media pantalla se leía angosto.
         openCotWindow('drive:' + inst.oppId, '/app/widget/drive/' + inst.oppId + '/', titulo, inst,
-            { wf: 0.5, maxw: 980, hf: 0.8 });
+            { wf: 0.74, maxw: 1400, hf: 0.82 });
     }
 
     // El iframe del cotizador postea 'cotizacion-created' al guardar:

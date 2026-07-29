@@ -33,13 +33,10 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
             <div class="wo-header">
                 <div class="wo-header-top">
                     <div style="flex:1;min-width:0;">
-                        <div class="wo-type-badge runrate" data-wo="typeBadge">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path
-                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                            </svg>
-                            <span>VENTA RUNRATE</span>
-                        </div>
+                        <!-- Proyecto vinculado: aquí arriba tiene el ancho para mostrar
+                             el nombre completo (suelen ser largos). El tipo de venta
+                             que vivía en este hueco se fue a los metadatos. -->
+                        <div class="wo-proy-head" data-wo="proyectoHeader" style="display:none;"></div>
                         <div style="display:flex;align-items:center;gap:14px;min-width:0;">
                             <h1 class="wo-title" data-wo="title" style="margin:0;min-width:0;"></h1>
                             <button type="button" data-wo="btnAsistente" data-action="abrir-asistente" class="wo-asist-btn-title"
@@ -118,11 +115,20 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-label">Area</span>
                                         <span class="wo-info-value medium" data-wo="area">-</span>
                                     </div>
-                                    <!-- Proyecto: sin card propia. Muestra el nombre (clicable,
-                                         lleva al proyecto) o el atajo para vincular. -->
-                                    <div class="wo-info-item" data-wo="proyectoItem" style="display:none;">
-                                        <span class="wo-info-label">Proyecto</span>
-                                        <div data-wo="proyectoSlot"></div>
+                                    <!-- Pipeline (tipo de venta): valor corto y categórico,
+                                         igual que Producto y Área, así que vive aquí. El
+                                         clic sigue abriendo el modal de confirmación. -->
+                                    <div class="wo-info-item">
+                                        <span class="wo-info-label">Pipeline</span>
+                                        <div>
+                                            <div class="wo-type-badge runrate" data-wo="typeBadge">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path
+                                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                                </svg>
+                                                <span>VENTA RUNRATE</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- PO y facturas en la misma fila: campos cortos en línea, para
@@ -185,8 +191,10 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
 
                                 <div class="wo-drive-block">
                                     <div class="wo-drive-head">
-                                        <h4>
-                                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <!-- El título entero es el disparador de expandir:
+                                             ícono o palabra, sin botón aparte. -->
+                                        <h4 class="wo-head-expand" data-action="abrir-drive" title="Abrir la carpeta completa">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
                                             </svg>
                                             Archivos en Drive
@@ -199,10 +207,6 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                                     <line x1="5" y1="12" x2="19" y2="12" />
                                                 </svg>
                                                 Subir
-                                            </button>
-                                            <button data-action="abrir-drive" type="button" title="Abrir la carpeta completa"
-                                                style="border:none;background:#F2F2F7;border-radius:8px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3C3C43;flex-shrink:0;">
-                                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
                                             </button>
                                         </div>
                                     </div>
@@ -249,14 +253,12 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                             <!-- Conversación embebida (expediente vivo) -->
                             <div class="wo-card wo-g-conv" style="display:flex;flex-direction:column;min-height:340px;padding-bottom:0.75rem;">
                                 <div class="wo-section-header" style="margin-bottom:0.5rem;">
-                                    <h3 class="wo-section-title" style="display:flex;align-items:center;gap:6px;">
-                                        <svg width="14" height="14" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                                    <!-- Igual que el Drive: el título expande, sin botón aparte. -->
+                                    <h3 class="wo-section-title wo-head-expand" data-action="abrir-conversacion"
+                                        title="Abrir conversación completa">
+                                        <svg width="16" height="16" fill="none" stroke="#0052D4" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                                         Conversación
                                     </h3>
-                                    <button data-action="abrir-conversacion" type="button" title="Abrir conversación completa"
-                                        style="border:none;background:#F2F2F7;border-radius:8px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3C3C43;">
-                                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
-                                    </button>
                                 </div>
                                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.55rem;flex-wrap:wrap;">
                                     <div style="flex:1;min-width:130px;display:flex;align-items:center;gap:6px;background:#F2F2F7;border-radius:9px;padding:5px 9px;">

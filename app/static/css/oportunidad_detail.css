@@ -265,7 +265,30 @@ body {
 .opp-v2 .wo-g-info .wo-info-value.medium { font-size: 1rem; }
 .opp-v2 .wo-g-info .wo-prob-value { font-size: 1rem; margin: 0; }
 
-/* Proyecto: ocupa una celda más de la retícula, sin card propia. */
+/* Encabezados que expanden: el título completo (ícono + palabra) es el
+   disparador, ya no hay botón aparte. */
+.opp-v2 .wo-head-expand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    border-radius: 7px;
+    margin-left: -5px;
+    padding: 2px 5px;
+    transition: background 0.12s, color 0.12s;
+}
+.opp-v2 .wo-head-expand:hover { background: rgba(0, 82, 212, 0.07); color: #0052D4; }
+
+/* "Archivos en Drive" al mismo tamaño que Cotizaciones y Conversación. */
+.opp-v2 .wo-drive-head h4 { font-size: 0.9rem; font-weight: 700; }
+
+/* Proyecto vinculado, arriba junto al título. */
+.opp-v2 .wo-proy-head {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin-bottom: 0.35rem;
+}
 .opp-v2 .wo-proy-link {
     display: inline-flex;
     align-items: center;
@@ -291,6 +314,9 @@ body {
 .opp-v2 .wo-proy-link.is-vincular { font-size: 0.85rem; font-weight: 600; opacity: 0.8; }
 .opp-v2 .wo-proy-link.is-vincular:hover { opacity: 1; }
 .opp-v2 .wo-proy-vacio { font-size: 0.85rem; color: #9CA3AF; }
+
+/* El badge de pipeline ya no va sobre el título: sin el margen que traía. */
+.opp-v2 .wo-g-info .wo-type-badge { margin: 3px 0 0; }
 
 /* PO + facturas comparten fila, sobre la misma retícula de 3: PO en la
    primera columna y las facturas ocupando las otras dos, con campos
