@@ -108,7 +108,7 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Clasificación + PO, en la misma retícula de 3 -->
+                                <!-- Clasificación + proyecto vinculado, en la misma retícula de 3 -->
                                 <div class="wo-info-grid wo-info-row-mid">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">Producto</span>
@@ -118,17 +118,25 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         <span class="wo-info-label">Area</span>
                                         <span class="wo-info-value medium" data-wo="area">-</span>
                                     </div>
+                                    <!-- Proyecto: sin card propia. Muestra el nombre (clicable,
+                                         lleva al proyecto) o el atajo para vincular. -->
+                                    <div class="wo-info-item" data-wo="proyectoItem" style="display:none;">
+                                        <span class="wo-info-label">Proyecto</span>
+                                        <div data-wo="proyectoSlot"></div>
+                                    </div>
+                                </div>
+                                <!-- PO y facturas en la misma fila: campos cortos en línea, para
+                                     que quepa más de una factura sin rehacer el bloque. -->
+                                <div class="wo-info-docs">
                                     <div class="wo-info-item">
                                         <span class="wo-info-label">PO</span>
                                         <input type="text" class="wo-doc-input" data-wo="poNumber" maxlength="15" placeholder="—" />
                                     </div>
-                                </div>
-                                <!-- Facturas: fila propia con campos cortos en línea, para que
-                                     quepa más de una sin rehacer el bloque. -->
-                                <div class="wo-info-facturas">
-                                    <span class="wo-info-label">Facturas</span>
-                                    <div class="wo-fact-row">
-                                        <input type="text" class="wo-doc-input" data-wo="facturaNumero" maxlength="7" placeholder="—" />
+                                    <div class="wo-info-item wo-doc-fact">
+                                        <span class="wo-info-label">Facturas</span>
+                                        <div class="wo-fact-row">
+                                            <input type="text" class="wo-doc-input" data-wo="facturaNumero" maxlength="7" placeholder="—" />
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- Vendedor + Cliente: anclados al fondo de la card -->
@@ -156,7 +164,10 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                 </div>
                             </div>
 
-                            <!-- Cotizaciones (compacta, con scroll interno) -->
+                            <!-- Cotizaciones + Drive: los dos son "los papeles" de la
+                                 oportunidad, así que viven en la misma card. El Drive va
+                                 abierto (primeros archivos a la vista) con atajo para
+                                 subir y para abrir la carpeta completa. -->
                             <div class="wo-card wo-g-cot">
                                 <div class="wo-section-header">
                                     <h3 class="wo-section-title">Cotizaciones</h3>
@@ -168,42 +179,34 @@ archivos actuales — el v2 los abre tras fijar el foco (_woCurrentOppId).
                                         Nueva
                                     </button>
                                 </div>
-                                <div class="wo-quote-list" data-wo="quoteList" style="max-height:220px;overflow-y:auto;">
+                                <div class="wo-quote-list" data-wo="quoteList">
                                     <div class="wo-empty">Sin cotizaciones aun</div>
                                 </div>
-                            </div>
 
-                            <!-- Drive + Proyecto: media card cada uno, en una sola línea.
-                                 Si la opp no es de tipo proyecto, la card de Proyecto se
-                                 oculta y Drive toma el ancho completo (flex:1). -->
-                            <div class="wo-g-quick">
-                                <div class="wo-card wo-quick-card" data-action="abrir-drive" style="cursor:pointer;">
-                                    <div class="wo-quick-icon" style="background:rgba(0,82,212,0.1);color:#0052D4;">
-                                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-                                        </svg>
-                                    </div>
-                                    <span class="wo-quick-label">Drive</span>
-                                    <svg width="12" height="12" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;">
-                                        <path d="M9 18l6-6-6-6" />
-                                    </svg>
-                                </div>
-
-                                <!-- Proyecto vinculado (solo tipo proyecto/bitrix_proyecto) -->
-                                <div class="wo-card wo-proy-card" data-wo="proyectoCard" style="display:none;">
-                                    <div class="wo-section-header" style="margin-bottom:0.5rem;">
-                                        <h3 class="wo-section-title">Proyecto</h3>
-                                        <button class="wo-btn-new" data-action="vincular-proyecto" type="button">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                <div class="wo-drive-block">
+                                    <div class="wo-drive-head">
+                                        <h4>
+                                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
                                             </svg>
-                                            Vincular
-                                        </button>
+                                            Archivos en Drive
+                                        </h4>
+                                        <div style="display:flex;align-items:center;gap:6px;">
+                                            <input type="file" data-wo="driveFile" multiple style="display:none;">
+                                            <button class="wo-btn-mini" data-action="drive-subir" type="button" title="Subir archivo">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                                </svg>
+                                                Subir
+                                            </button>
+                                            <button data-action="abrir-drive" type="button" title="Abrir la carpeta completa"
+                                                style="border:none;background:#F2F2F7;border-radius:8px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3C3C43;flex-shrink:0;">
+                                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div data-wo="proyectoList">
-                                        <div class="wo-empty">Sin proyecto vinculado aún</div>
-                                    </div>
+                                    <div class="wo-drive-list" data-wo="driveList"></div>
                                 </div>
                             </div>
 

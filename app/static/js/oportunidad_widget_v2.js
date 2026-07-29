@@ -237,6 +237,13 @@
             });
             renderConvFeed(inst);
         });
+        var driveFileEl = q(inst, 'driveFile');
+        if (driveFileEl) {
+            driveFileEl.addEventListener('change', function () {
+                subirADrive(inst, this.files);
+                this.value = '';
+            });
+        }
         var convFileEl = q(inst, 'convFile');
         if (convFileEl) {
             convFileEl.addEventListener('change', function () {
@@ -372,6 +379,11 @@
                 break;
             case 'conv-enviar':
                 enviarNotaConv(inst);
+                break;
+            case 'drive-subir':
+                setFocus(inst);
+                var driveEl = q(inst, 'driveFile');
+                if (driveEl) driveEl.click();
                 break;
             case 'conv-adjuntar':
                 setFocus(inst);
@@ -689,6 +701,7 @@
         try { renderTareas(inst); } catch (e) { console.error('[oppV2] tareas:', e); }
         try { renderActividad(inst); } catch (e) { console.error('[oppV2] actividad:', e); }
         try { renderProyecto(inst, d); } catch (e) { console.error('[oppV2] proyecto:', e); }
+        try { renderDrive(inst); } catch (e) { console.error('[oppV2] drive:', e); }
     }
 
     function renderCotizaciones(inst, d) {
@@ -1459,83 +1472,151 @@
             .catch(function () { input.value = texto; });
     }
 
+    /* Proyecto: ya no tiene card propia — ocupa una celda de la retícula de
+       metadatos. Muestra el nombre (clic → abre el proyecto) o el atajo para
+       vincular cuando todavía no hay ninguno. */
     function renderProyecto(inst, d) {
-        var card = q(inst, 'proyectoCard');
+        var item = q(inst, 'proyectoItem');
         var tipo = d && d.tipo_negociacion;
         var esProyecto = (tipo === 'proyecto' || tipo === 'bitrix_proyecto');
-        if (!esProyecto) {
-            card.style.display = 'none';
-            return;
-        }
-        card.style.display = '';
-        cargarProyectos(inst);
+        item.style.display = esProyecto ? '' : 'none';
+        if (esProyecto) cargarProyectos(inst);
     }
 
     function cargarProyectos(inst) {
-        var listEl = q(inst, 'proyectoList');
+        var slot = q(inst, 'proyectoSlot');
         var oppId = inst.oppId;
-        listEl.innerHTML = '<div class="wo-empty" style="font-size:0.78rem;">Cargando…</div>';
+        slot.innerHTML = '<span class="wo-proy-vacio">Cargando…</span>';
+
+        function pintarVincular(txt) {
+            slot.innerHTML = '';
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'wo-proy-link is-vincular';
+            b.setAttribute('data-action', 'vincular-proyecto');
+            b.innerHTML =
+                '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
+                '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>' +
+                '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' + txt;
+            slot.appendChild(b);
+        }
+
         fetch('/app/api/oportunidad/' + oppId + '/proyectos-ligados/', { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!alive(inst) || inst.oppId !== oppId) return;
-                if (!data || !data.success) {
-                    listEl.innerHTML = '<div class="wo-empty">No se pudo cargar.</div>';
-                    return;
-                }
-                var proys = data.proyectos || [];
-                if (!proys.length) {
-                    listEl.innerHTML = '<div class="wo-empty">Sin proyecto vinculado aún</div>';
-                    return;
-                }
-                listEl.innerHTML = '';
-                proys.forEach(function (p) {
-                    var row = document.createElement('div');
-                    row.className = 'wop-proy-card';
-                    row.title = 'Abrir proyecto';
-                    row.innerHTML =
-                        '<div style="width:30px;height:30px;border-radius:7px;background:#0052D4;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                        '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
-                        '</div>' +
-                        '<div style="flex:1; min-width:0;">' +
-                        '<div style="font-size:0.86rem;font-weight:600;color:#1D1D1F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(p.nombre) + '</div>' +
-                        '<div style="font-size:0.7rem;color:#86868B;">' + esc(p.tipo_label) + '</div>' +
-                        '</div>' +
-                        '<button type="button" class="wop-icon-btn" data-proy-unlink title="Desvincular">' +
-                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-                        '</button>' +
-                        '<svg width="14" height="14" fill="none" stroke="#C7C7CC" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
-                    row.addEventListener('click', function () {
-                        if (typeof window.proyectosVerDetalle === 'function') {
-                            // El widget de proyecto necesita el foco: si esta
-                            // instancia está en modo modal, se cierra; en modo
-                            // ventana ambos pueden convivir.
-                            if (!isWindowed(inst)) doClose(inst);
-                            window.proyectosVerDetalle(p.id);
-                        } else {
-                            window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + p.id;
-                        }
-                    });
-                    row.querySelector('[data-proy-unlink]').addEventListener('click', function (ev) {
-                        ev.stopPropagation();
-                        if (!window.confirm('¿Desvincular este proyecto de la oportunidad?')) return;
-                        fetch('/app/api/oportunidad/' + oppId + '/proyectos-ligados/', {
-                            method: 'DELETE',
-                            credentials: 'same-origin',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-                            body: JSON.stringify({ proyecto_id: p.id }),
-                        }).then(function (r) { return r.json(); }).then(function (resp) {
-                            if (resp && resp.success) cargarProyectos(inst);
-                            else notify('No se pudo desvincular.', 'error');
-                        });
-                    });
-                    listEl.appendChild(row);
+                var proys = (data && data.success && data.proyectos) || [];
+                if (!proys.length) { pintarVincular('Vincular'); return; }
+
+                slot.innerHTML = '';
+                var p = proys[0];
+                var link = document.createElement('button');
+                link.type = 'button';
+                link.className = 'wo-proy-link';
+                link.title = 'Abrir proyecto: ' + (p.nombre || '');
+                link.innerHTML =
+                    '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">' +
+                    '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
+                    '<span>' + esc(p.nombre || 'Proyecto') + '</span>';
+                link.addEventListener('click', function () {
+                    if (typeof window.proyectosVerDetalle === 'function') {
+                        // El widget de proyecto necesita el foco: si esta instancia
+                        // está en modo modal, se cierra; en ventana ambos conviven.
+                        if (!isWindowed(inst)) doClose(inst);
+                        window.proyectosVerDetalle(p.id);
+                    } else {
+                        window.location.href = '/app/home/?tab=proyectos&proyecto_id=' + p.id;
+                    }
                 });
+                slot.appendChild(link);
             })
             .catch(function () {
                 if (!alive(inst)) return;
-                listEl.innerHTML = '<div class="wo-empty">Error de red.</div>';
+                pintarVincular('Vincular');
             });
+    }
+
+    /* ── Drive embebido bajo Cotizaciones ─────────────────────────────
+       Los primeros archivos a la vista, con atajo para subir y para abrir
+       la carpeta completa (el gestor singleton sigue siendo el que manda). */
+
+    var TOPE_DRIVE = 3;
+
+    function renderDrive(inst) {
+        var cont = q(inst, 'driveList');
+        var oppId = inst.oppId;
+        cont.innerHTML = '<div class="wo-drive-vacio">Cargando…</div>';
+
+        fetch('/app/api/oportunidad/' + oppId + '/drive/', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!alive(inst) || inst.oppId !== oppId) return;
+                var archivos = (data && data.archivos) || [];
+                var carpetas = (data && data.carpetas) || [];
+                if (!archivos.length && !carpetas.length) {
+                    cont.innerHTML = '<div class="wo-drive-vacio">Sin archivos</div>';
+                    return;
+                }
+                cont.innerHTML = '';
+                archivos.slice(0, TOPE_DRIVE).forEach(function (a) {
+                    var row = document.createElement('a');
+                    row.className = 'wo-drive-item';
+                    row.href = a.url;
+                    row.target = '_blank';
+                    row.rel = 'noopener';
+                    row.title = a.nombre || '';
+                    row.innerHTML =
+                        '<svg width="13" height="13" fill="none" stroke="#86868B" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;">' +
+                        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                        '<span class="wo-drive-nombre">' + esc(a.nombre || 'Archivo') + '</span>' +
+                        '<span class="wo-drive-ext">' + esc((a.extension || '').toUpperCase()) + '</span>';
+                    cont.appendChild(row);
+                });
+                var resto = (archivos.length - TOPE_DRIVE) + carpetas.length;
+                if (resto > 0) {
+                    var mas = document.createElement('button');
+                    mas.type = 'button';
+                    mas.className = 'wo-drive-mas';
+                    mas.setAttribute('data-action', 'abrir-drive');
+                    mas.textContent = 'Ver ' + resto + ' más';
+                    cont.appendChild(mas);
+                }
+            })
+            .catch(function () {
+                if (!alive(inst)) return;
+                cont.innerHTML = '<div class="wo-drive-vacio">No se pudo cargar</div>';
+            });
+    }
+
+    function subirADrive(inst, fileList) {
+        var files = fileList && fileList.length ? Array.prototype.slice.call(fileList) : [];
+        if (!files.length) return;
+        var oppId = inst.oppId;
+        var cont = q(inst, 'driveList');
+        cont.innerHTML = '<div class="wo-drive-vacio">Subiendo…</div>';
+
+        function subirUno(f) {
+            var fd = new FormData();
+            fd.append('archivo', f);
+            return fetch('/app/api/oportunidad/' + oppId + '/drive/archivos/', {
+                method: 'POST', body: fd,
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': csrf() },
+            });
+        }
+
+        var chain = subirUno(files[0]);
+        for (var i = 1; i < files.length; i++) {
+            (function (f) { chain = chain.then(function () { return subirUno(f); }); })(files[i]);
+        }
+        chain.then(function () {
+            if (!alive(inst) || inst.oppId !== oppId) return;
+            notify(files.length > 1 ? files.length + ' archivos subidos' : 'Archivo subido', 'success');
+            renderDrive(inst);
+        }).catch(function () {
+            notify('No se pudo subir el archivo', 'error');
+            if (alive(inst)) renderDrive(inst);
+        });
     }
 
     // Modal de vincular: reusa el DOM singleton #wopVincularModal pero con

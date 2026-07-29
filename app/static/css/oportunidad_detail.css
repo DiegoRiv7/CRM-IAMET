@@ -265,14 +265,43 @@ body {
 .opp-v2 .wo-g-info .wo-info-value.medium { font-size: 1rem; }
 .opp-v2 .wo-g-info .wo-prob-value { font-size: 1rem; margin: 0; }
 
-/* Facturas: campos cortos en línea que envuelven — caben varias sin
-   rehacer el bloque, y el subrayado no cruza toda la card. */
-.opp-v2 .wo-info-facturas {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
+/* Proyecto: ocupa una celda más de la retícula, sin card propia. */
+.opp-v2 .wo-proy-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    border: none;
+    background: none;
+    padding: 0;
+    margin-top: 2px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0052D4;
+    cursor: pointer;
+    text-align: left;
+}
+.opp-v2 .wo-proy-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.opp-v2 .wo-proy-link:hover { text-decoration: underline; }
+.opp-v2 .wo-proy-link.is-vincular { font-size: 0.85rem; font-weight: 600; opacity: 0.8; }
+.opp-v2 .wo-proy-link.is-vincular:hover { opacity: 1; }
+.opp-v2 .wo-proy-vacio { font-size: 0.85rem; color: #9CA3AF; }
+
+/* PO + facturas comparten fila, sobre la misma retícula de 3: PO en la
+   primera columna y las facturas ocupando las otras dos, con campos
+   cortos en línea que envuelven — así cabe más de una. */
+.opp-v2 .wo-info-docs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.3rem 1.4rem;
     margin-top: 0.95rem;
 }
+.opp-v2 .wo-doc-fact { grid-column: 2 / span 2; }
 .opp-v2 .wo-fact-row {
     display: flex;
     flex-wrap: wrap;
@@ -307,10 +336,75 @@ body {
 /* El separador se come el sobrante: vendedor y cliente quedan al fondo. */
 .opp-v2 .wo-info-sep { margin: auto 0 0.9rem; }
 
+/* ═══ Drive embebido bajo Cotizaciones ═══
+   Van juntos en la misma card: cotizaciones arriba, archivos abajo, con
+   atajo para subir y para abrir la carpeta completa. */
+.opp-v2 .wo-g-cot { display: flex; flex-direction: column; }
+.opp-v2 .wo-g-cot .wo-quote-list { flex: 1; min-height: 0; overflow-y: auto; }
+
+.opp-v2 .wo-drive-block {
+    margin: 0.9rem -1.5rem -1.5rem;   /* sangra hasta el borde de la card */
+    padding: 0.8rem 1.5rem 1rem;
+    border-top: 1px solid #E2E8F0;
+    background: rgba(0, 0, 0, 0.015);
+    border-radius: 0 0 18px 18px;
+    flex-shrink: 0;
+}
+.opp-v2 .wo-drive-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 0.5rem;
+}
+.opp-v2 .wo-drive-head h4 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #86868B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.opp-v2 .wo-drive-list { display: flex; flex-direction: column; gap: 2px; }
+.opp-v2 .wo-drive-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 7px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.12s;
+}
+.opp-v2 .wo-drive-item:hover { background: rgba(0, 82, 212, 0.06); }
+.opp-v2 .wo-drive-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.78rem;
+    color: #1D1D1F;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.opp-v2 .wo-drive-ext { font-size: 0.64rem; font-weight: 700; color: #9CA3AF; flex-shrink: 0; }
+.opp-v2 .wo-drive-vacio { font-size: 0.78rem; color: #9CA3AF; padding: 4px 7px; }
+.opp-v2 .wo-drive-mas {
+    align-self: flex-start;
+    border: none;
+    background: none;
+    padding: 4px 7px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0052D4;
+    cursor: pointer;
+}
+
 /* ═══ Rejilla del contenido (widget v3) ═══
-   2 columnas × 3 filas explícitas en vez de dos columnas anidadas, para que
-   las filas se alineen: Info ↔ Tareas comparten alto (align-self:stretch) y
-   Cotizaciones ↔ Conversación arrancan a la misma altura. */
+   2×2 explícitas en vez de dos columnas anidadas, para que las filas se
+   alineen: Info ↔ Tareas y Cotizaciones ↔ Conversación comparten alto. */
 .opp-v2 .wo-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -319,26 +413,13 @@ body {
 }
 .opp-v2 .wo-g-info { grid-column: 1; grid-row: 1; align-self: stretch; }
 .opp-v2 .wo-g-tareas { grid-column: 2; grid-row: 1; align-self: stretch; }
-.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; }
-.opp-v2 .wo-g-quick { grid-column: 1; grid-row: 3; }
-.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2 / span 2; align-self: stretch; }
-
-/* Drive + Proyecto: media card cada uno en la misma línea. Con Proyecto
-   oculto (display:none inline), Drive se queda con el ancho completo. */
-.opp-v2 .wo-g-quick {
-    display: flex;
-    gap: 1.25rem;
-    align-items: stretch;
-}
-.opp-v2 .wo-g-quick > .wo-card { flex: 1; min-width: 0; }
-.opp-v2 .wo-proy-card { padding: 1.1rem 1.2rem; }
+.opp-v2 .wo-g-cot { grid-column: 1; grid-row: 2; align-self: stretch; }
+.opp-v2 .wo-g-conv { grid-column: 2; grid-row: 2; align-self: stretch; }
 
 @media (max-width: 900px) {
     .opp-v2 .wo-grid { grid-template-columns: 1fr; }
     .opp-v2 .wo-g-info,
     .opp-v2 .wo-g-tareas,
     .opp-v2 .wo-g-cot,
-    .opp-v2 .wo-g-quick,
     .opp-v2 .wo-g-conv { grid-column: 1; grid-row: auto; }
-    .opp-v2 .wo-g-quick { flex-wrap: wrap; }
 }
