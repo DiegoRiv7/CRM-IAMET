@@ -6,10 +6,26 @@
 {% endcomment %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap">
 <!-- Launcher del asistente: versión reducida, siempre visible abajo-derecha cuando el panel grande está cerrado -->
-<div class="pend-launcher" id="pendLauncher" onclick="pendAbrir()" style="display:none;">
+<div class="pend-launcher" id="pendLauncher" onclick="pendMiniAbrir()" style="display:none;">
   <div class="pend-lc-head"><span class="pend-lc-dot"></span> Mi Asistente <span class="pend-lc-badge" id="pendLcBadge" style="display:none;">0</span></div>
   <div class="pend-lc-msg" id="pendLcMsg">Revisando lo importante…</div>
   <div class="pend-lc-cta">Ver sugerencias ›</div>
+</div>
+<!-- Mini panel del asistente: se abre al dar clic al launcher; brief + tarjetas con acciones rápidas -->
+<div class="pend-mini" id="pendMini" style="display:none;">
+  <div class="pend-mini-head">
+    <div class="pend-mini-h1"><span class="pend-lc-dot"></span> Mi Asistente <span class="pend-mini-badge" id="pendMiniBadge">0</span></div>
+    <div class="pend-mini-tools">
+      <button type="button" class="pend-mini-expand" onclick="pendMiniExpandir()" title="Abrir panel completo">&#10530;</button>
+      <button type="button" class="pend-mini-x" onclick="pendMiniCerrar()" title="Cerrar">&times;</button>
+    </div>
+    <div class="pend-mini-sub" id="pendMiniSub">Tu asistente</div>
+  </div>
+  <div class="pend-mini-body" id="pendMiniBody"></div>
+  <div class="pend-mini-foot">
+    <input type="text" class="pend-mini-in" placeholder="Pídeme algo…" id="pendMiniIn" onkeydown="if(event.key==='Enter')pendMiniAsk()">
+    <button type="button" class="pend-mini-go" onclick="pendMiniAsk()" aria-label="Enviar">&#8593;</button>
+  </div>
 </div>
 <div class="widget-overlay" id="widgetPendientes" data-windowable="1" data-widget-title="Mi Asistente">
   <div class="ww-card pend-card">
@@ -218,6 +234,37 @@
   .pend-lc-cta{font-size:.78rem;color:#0a84ff;font-weight:700;margin-top:11px;}
   .pend-launcher.pulse{animation:pendLpulse 1.6s ease;}
   @keyframes pendLpulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,.34)}70%{box-shadow:0 0 0 16px rgba(10,132,255,0)}100%{box-shadow:0 16px 40px rgba(15,23,42,.16)}}
+  /* ── Mini panel del asistente (reducido) ── */
+  .pend-mini{position:fixed;right:22px;bottom:22px;width:440px;max-width:calc(100vw - 44px);max-height:82vh;background:#fff;
+    border:1px solid #e9eaee;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);z-index:901;display:flex;flex-direction:column;overflow:hidden;}
+  .pend-mini-head{padding:15px 17px 12px;border-bottom:1px solid #f0f1f3;position:relative;}
+  .pend-mini-h1{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:800;color:#16181d;}
+  .pend-mini-badge{background:#eef1f6;color:#6b7280;font-size:.7rem;font-weight:800;border-radius:10px;padding:1px 7px;}
+  .pend-mini-tools{position:absolute;top:12px;right:13px;display:flex;align-items:center;gap:2px;}
+  .pend-mini-expand,.pend-mini-x{border:none;background:none;color:#c2c6cd;cursor:pointer;line-height:1;padding:4px 6px;border-radius:6px;}
+  .pend-mini-x{font-size:1.15rem;} .pend-mini-expand{font-size:.9rem;}
+  .pend-mini-expand:hover,.pend-mini-x:hover{background:#f2f3f6;color:#6b7280;}
+  .pend-mini-sub{font-size:.76rem;color:#9a9ca3;margin-top:3px;}
+  .pend-mini-body{flex:1;overflow-y:auto;padding:15px 17px;}
+  .pend-mini-brief{font-size:.9rem;line-height:1.55;color:#374151;}
+  .pend-mini-brief b{color:#16181d;font-weight:700;}
+  .pend-mini-tabs{display:flex;gap:7px;margin:16px 0 2px;flex-wrap:wrap;}
+  .pend-mini-tab{border:none;background:#f2f3f6;color:#6b7280;border-radius:18px;padding:6px 13px;font-size:.76rem;font-weight:700;cursor:pointer;}
+  .pend-mini-tab.on{background:#16181d;color:#fff;}
+  .pend-mini-card{padding:15px 2px;border-bottom:1px solid #f0f1f3;}
+  .pend-mini-card:last-child{border-bottom:none;}
+  .pend-mini-clbl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:#9a9ca3;font-weight:800;margin-bottom:5px;}
+  .pend-mini-ch{font-size:.92rem;font-weight:700;color:#16181d;margin-bottom:3px;letter-spacing:-.01em;}
+  .pend-mini-cd{font-size:.83rem;color:#4b5563;line-height:1.5;}
+  .pend-mini-acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .pend-mini-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.79rem;font-weight:700;cursor:pointer;font-family:inherit;}
+  .pend-mini-btn.pri{background:#0a84ff;color:#fff;} .pend-mini-btn.pri:hover{background:#0060df;}
+  .pend-mini-btn.sec{background:#f2f3f6;color:#374151;} .pend-mini-btn.sec:hover{background:#e9eaee;}
+  .pend-mini-btn.txt{background:none;color:#9a9ca3;padding:8px 4px;} .pend-mini-btn.txt:hover{color:#6b7280;}
+  .pend-mini-empty{font-size:.86rem;color:#9a9ca3;padding:18px 2px;text-align:center;}
+  .pend-mini-foot{border-top:1px solid #f0f1f3;padding:11px 14px;display:flex;align-items:center;gap:9px;}
+  .pend-mini-in{flex:1;border:1px solid #e9eaee;background:#f7f8fa;border-radius:22px;padding:10px 15px;font-size:.85rem;color:#374151;outline:none;font-family:inherit;}
+  .pend-mini-go{width:34px;height:34px;border-radius:50%;background:#16181d;color:#fff;border:none;font-size:.95rem;cursor:pointer;flex:none;}
   /* Botonera de la tarjeta de correo */
   .pend-cor-btns{margin-top:auto;display:flex;flex-direction:column;gap:8px;}
   .pend-cor-btns .pend-sc-btn{margin-top:0;}
@@ -815,9 +862,9 @@
     window.location = '/app/?tab=correo';
   };
   // Abre el correo en el módulo Correo y despliega Responder con el borrador ya redactado.
-  window.pendCorAbrirConRespuesta = function (id) {
-    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
-    var draft = (it && it._draft) ? it._draft : '';
+  // Abre el correo en el módulo Correo y despliega Responder con un borrador inyectado.
+  // Reutilizable desde la tarjeta de Correo y desde el mini-panel del asistente.
+  function _abrirMailConBorrador(id, draft) {
     var ov = el('widgetPendientes'); if (ov) ov.style.zIndex = '998';
     var mw = document.getElementById('widgetMail');
     if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
@@ -836,8 +883,7 @@
     var iv = setInterval(function () {
       tries++;
       var s = document.getElementById('mailDetailSubject');
-      var cargado = s && (s.textContent || '').trim().length > 0;   // el detalle ya cargó
-      if (cargado) {
+      if (s && (s.textContent || '').trim().length > 0) {   // el detalle ya cargó
         try { if (typeof window.mailResponder === 'function') window.mailResponder(false); } catch (e) {}
         var panel = document.getElementById('mailReplyPanel');
         if (panel && window.getComputedStyle(panel).display !== 'none') {
@@ -849,6 +895,10 @@
       }
       if (tries > 80) clearInterval(iv);   // ~12s de tope (IMAP lento)
     }, 150);
+  }
+  window.pendCorAbrirConRespuesta = function (id) {
+    var it = ((_corData && _corData.items) || []).filter(function (x) { return x.mail_id === id; })[0];
+    _abrirMailConBorrador(id, (it && it._draft) ? it._draft : '');
   };
   // Genera un borrador de respuesta con la IA (mismo proveedor del asistente).
   window.pendCorGenerar = function (id) {
@@ -1050,6 +1100,140 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
   })();
+
+  // ── Mini panel del asistente (nivel intermedio: launcher → mini → panel grande) ──
+  var _miniData = null, _miniTab = 'todo';
+  window.pendMiniAbrir = function () {
+    var lc = el('pendLauncher'); if (lc) lc.style.display = 'none';
+    var mini = el('pendMini'); if (!mini) return;
+    mini.style.display = 'flex';
+    if (_miniData) { _miniDraw(); }
+    else {
+      var body = el('pendMiniBody'); if (body) body.innerHTML = '<div class="pend-mini-empty">Revisando lo importante…</div>';
+    }
+    _miniLoad();   // siempre refresca al abrir (feed barato)
+  };
+  window.pendMiniCerrar = function () {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    pendLauncherShow(); pendFeedRefresh();
+  };
+  window.pendMiniExpandir = function () {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    pendAbrir();
+  };
+  window.pendMiniTab = function (t) { _miniTab = t; _miniDraw(); };
+  function _miniLoad() {
+    fetch('/app/api/asistente/feed/', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d || !d.success) return; _miniData = d; _lcTotal = d.total; _miniDraw(); })
+      .catch(function () { var b = el('pendMiniBody'); if (b) b.innerHTML = '<div class="pend-mini-empty">Error de conexión</div>'; });
+  }
+  window.pendMiniRecargar = function () { _miniData = null; _miniLoad(); };
+  function _miniTabBtn(k, lbl, n) {
+    return '<button type="button" class="pend-mini-tab' + (_miniTab === k ? ' on' : '') + '" onclick="pendMiniTab(\'' + k + '\')">' + lbl + ' ' + (n || 0) + '</button>';
+  }
+  var _MINI_ACTS = {
+    ver_borrador: ['Ver borrador de respuesta', 'pri', 'pendMiniResponder'],
+    crear_oportunidad: ['Crear oportunidad', 'pri', 'pendMiniCrearOpp'],
+    abrir_correo: ['Abrir correo', 'sec', 'pendVerCorreo'],
+    cambiar_etapa: ['Cambiar etapa', 'pri', 'pendMiniAbrirOpp'],
+    agendar: ['Agendar', 'sec', 'pendMiniAbrirOpp'],
+    no_importa: ['No importa', 'txt', '_NO']
+  };
+  function _miniCard(it) {
+    var id = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+    var acts = (it.acciones || []).map(function (a) {
+      var c = _MINI_ACTS[a]; if (!c) return '';
+      var call = c[2] === '_NO'
+        ? ('pendMiniDescartar(\'' + it.tipo + '\',' + id + ')')
+        : (c[2] + '(' + id + ')');
+      return '<button type="button" class="pend-mini-btn ' + c[1] + '" onclick="' + call + '">' + c[0] + '</button>';
+    }).join('');
+    return '<div class="pend-mini-card">' +
+      '<div class="pend-mini-clbl"><span>' + _esc(it.categoria || '') + '</span><span>' + _esc((it.hace || '').toUpperCase()) + '</span></div>' +
+      '<div class="pend-mini-ch">' + _esc(it.titulo || '') + '</div>' +
+      '<div class="pend-mini-cd">' + _esc(it.desc || '') + '</div>' +
+      '<div class="pend-mini-acts">' + acts + '</div>' +
+    '</div>';
+  }
+  function _miniDraw() {
+    var d = _miniData; if (!d) return;
+    var badge = el('pendMiniBadge'); if (badge) badge.textContent = d.total || 0;
+    var sub = el('pendMiniSub'); if (sub) sub.textContent = 'Revisé tu correo y tu pipeline';
+    var body = el('pendMiniBody'); if (!body) return;
+    var items = (d.items || []).filter(function (it) { return _miniTab === 'todo' || it.grupo === _miniTab; });
+    var tabs = '<div class="pend-mini-tabs">' +
+      _miniTabBtn('todo', 'Todo', d.total) +
+      _miniTabBtn('correo', 'Correo', d.correos) +
+      _miniTabBtn('pipeline', 'Pipeline', d.pipeline) + '</div>';
+    var cards = items.length
+      ? items.map(_miniCard).join('')
+      : '<div class="pend-mini-empty">Nada por aquí. Te aviso si llega algo.</div>';
+    body.innerHTML = '<div class="pend-mini-brief">' + _esc(d.brief || '') + '</div>' + tabs + cards;
+  }
+  // Acciones rápidas del mini
+  window.pendMiniResponder = function (id) {
+    fetch('/app/api/asistente/correo/' + id + '/respuesta/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' }, body: '{}'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!(d && d.success)) { alert((d && d.error) || 'No se pudo generar la respuesta.'); return; }
+        _abrirMailConBorrador(id, d.borrador || '');
+      })
+      .catch(function () { alert('No se pudo generar la respuesta.'); });
+  };
+  window.pendMiniCrearOpp = function (id) {
+    var mw = document.getElementById('widgetMail');
+    if (typeof window.mailAbrir === 'function') { try { window.mailAbrir(); } catch (e) {} }
+    if (mw) mw.style.zIndex = '11000';
+    var subEl = document.getElementById('mailDetailSubject'); if (subEl) subEl.textContent = '';
+    if (typeof window.mailVerCorreo === 'function') { try { window.mailVerCorreo(id); } catch (e) {} }
+    else { window.location = '/app/?tab=correo'; return; }
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var s = document.getElementById('mailDetailSubject');
+      if (s && (s.textContent || '').trim().length > 0) {
+        clearInterval(iv);
+        if (typeof window.mailAbrirFormNuevaOpp === 'function') { try { window.mailAbrirFormNuevaOpp(); } catch (e) {} }
+        return;
+      }
+      if (tries > 80) clearInterval(iv);
+    }, 150);
+  };
+  window.pendMiniAbrirOpp = function (id) {
+    var mini = el('pendMini'); if (mini) mini.style.display = 'none';
+    if (typeof window.pendAbrirOpp === 'function') { try { window.pendAbrirOpp(id); return; } catch (e) {} }
+    pendAbrir();
+  };
+  window.pendMiniDescartar = function (tipo, id) {
+    if (tipo === 'correo') {
+      fetch('/app/api/asistente/correo/' + id + '/listo/', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'X-CSRFToken': _getCsrf(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marcar: true })
+      }).catch(function () {});
+    }
+    if (_miniData && _miniData.items) {
+      _miniData.items = _miniData.items.filter(function (it) {
+        var iid = it.tipo === 'correo' ? it.mail_id : it.opp_id;
+        return !(it.tipo === tipo && iid === id);
+      });
+      _miniData.correos = _miniData.items.filter(function (x) { return x.grupo === 'correo'; }).length;
+      _miniData.pipeline = _miniData.items.filter(function (x) { return x.grupo === 'pipeline'; }).length;
+      _miniData.total = _miniData.items.length;
+      _miniDraw();
+    }
+  };
+  window.pendMiniAsk = function () {
+    var inp = el('pendMiniIn'); if (!inp) return;
+    var q = (inp.value || '').trim(); if (!q) return;
+    inp.value = '';
+    // Fase 3: el chat vive en el panel grande. Por ahora expandimos ahí.
+    pendMiniExpandir();
+  };
 
   // ── Chat con el asistente general (el "consultor") ──
   function _getCsrf() {

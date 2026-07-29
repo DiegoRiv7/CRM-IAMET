@@ -8350,19 +8350,22 @@ def api_asistente_desempeno_export(request):
 
 # ══════════════ Asistente proactivo · feed liviano para el launcher ══════════════
 
-def _feed_correos_importantes(user):
-    """Conteo BARATO de correos importantes sin responder (asunto/remitente, sin IMAP)."""
+def _feed_correos_items(user, limite=6):
+    """Correos importantes sin responder (BARATO: asunto/remitente, sin IMAP) como
+    ítems para el mini-panel, con categoría y acciones por tipo."""
     from datetime import timedelta
     from django.utils import timezone
     from .models import MailConexion, MailCorreo
+    out = []
     if not MailConexion.objects.filter(usuario=user, activo=True).exists():
-        return 0
-    cutoff = timezone.now() - timedelta(hours=24)
+        return out
+    now = timezone.now()
+    cutoff = now - timedelta(hours=24)
     inbox = list(MailCorreo.objects.filter(
         usuario=user, carpeta_display='INBOX', eliminado=False, archivado=False,
         fecha_envio__gte=cutoff).order_by('-fecha_envio')[:200])
     if not inbox:
-        return 0
+        return out
     hks = set(m.hilo_key for m in inbox if m.hilo_key)
     sent = set()
     if hks:
@@ -8372,57 +8375,109 @@ def _feed_correos_importantes(user):
     atendidos = set(CorreoAtendido.objects.filter(
         usuario=user, mail__in=[m.id for m in inbox]).values_list('mail_id', flat=True))
     known_emails, known_domains, cliente_nombres = _cor_conocidos()
-    n = 0
+    scored = []
     for m in inbox:
         if (m.hilo_key and m.hilo_key in sent) or m.id in atendidos:
             continue
-        score, _mot, _kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
-                                      known_emails, known_domains, cliente_nombres)
+        score, motivos, kw = _cor_score(m.remitente_email, m.asunto, m.cuerpo_texto,
+                                        known_emails, known_domains, cliente_nombres)
         if score >= 3:
-            n += 1
-    return n
+            scored.append((score, m, motivos))
+    scored.sort(key=lambda t: -t[0])
+    for score, m, motivos in scored[:limite]:
+        remitente = (m.remitente_nombre or '').strip() or (m.remitente_email or '').split('@')[0]
+        venta = ('negocio' in motivos)
+        asunto = (m.asunto or '').strip()
+        out.append({
+            'tipo': 'correo', 'grupo': 'correo',
+            'categoria': 'Posible venta nueva' if venta else 'Correo sin responder',
+            'mail_id': m.id, 'titulo': remitente, 'desc': (asunto[:140] if asunto else 'Sin asunto'),
+            'hace': (_cor_hace(timezone.localtime(m.fecha_envio), timezone.localtime(now)) if m.fecha_envio else ''),
+            'acciones': (['crear_oportunidad', 'abrir_correo', 'no_importa'] if venta
+                         else ['ver_borrador', 'abrir_correo', 'no_importa']),
+        })
+    return out
+
+
+def _feed_opps_estancadas(user, today, dias_min=7, limite=6):
+    """Oportunidades ABIERTAS del usuario sin movimiento en >= dias_min (usa
+    fecha_actualizacion como 'última vez que se tocó')."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import TodoItem
+    corte = timezone.now() - timedelta(days=dias_min)
+    qs = (TodoItem.objects.filter(usuario=user, fecha_actualizacion__lt=corte)
+          .select_related('cliente').order_by('fecha_actualizacion'))
+    out = []
+    for o in qs[:80]:
+        if not _cli_abierta(o.etapa_corta, o.estado_crm):
+            continue
+        dias = (today - timezone.localtime(o.fecha_actualizacion).date()).days
+        cliente = (o.cliente.nombre_empresa if o.cliente else '') or ''
+        etapa = (o.etapa_corta or 'Sin etapa')
+        monto = o.monto or 0
+        piezas = [cliente, etapa]
+        if monto:
+            piezas.append('${:,.0f}'.format(float(monto)))
+        piezas.append('sin avance %d días' % dias)
+        out.append({
+            'tipo': 'oportunidad', 'grupo': 'pipeline', 'categoria': 'Sin moverse',
+            'opp_id': o.id, 'titulo': o.oportunidad or 'Oportunidad',
+            'desc': ' · '.join([p for p in piezas if p]),
+            'hace': '%d días' % dias, 'dias': dias,
+            'acciones': ['cambiar_etapa', 'agendar', 'no_importa'],
+        })
+        if len(out) >= limite:
+            break
+    return out
 
 
 @login_required
 def api_asistente_feed(request):
-    """GET /app/api/asistente/feed/ — resumen liviano para el launcher (siempre visible):
-    lo importante que necesita atención AHORA. Solo cuenta señales que ya validamos
-    (correos importantes + clientes en pausa), 100% código, apto para sondeo."""
+    """GET /app/api/asistente/feed/ — feed proactivo del asistente reducido: lo importante
+    que necesita atención AHORA (correos importantes sin responder + oportunidades sin
+    avance). 100% código, apto para sondeo. Devuelve resumen corto (launcher), brief
+    (saludo del mini-panel), conteos por grupo e ítems con acciones."""
     from django.utils import timezone
     user = request.user
     today = timezone.localdate()
 
-    correos = _feed_correos_importantes(user)
-    try:
-        cli = _asistente_clientes_items(user, 'mias', today)
-        clientes = cli.get('pendientes', 0) if cli.get('modo') != 'todobien' else 0
-    except Exception:
-        clientes = 0
+    correos_items = _feed_correos_items(user)
+    opps_items = _feed_opps_estancadas(user, today)
+    n_cor, n_opp = len(correos_items), len(opps_items)
+    total = n_cor + n_opp
 
-    total = correos + clientes
     nombre = (user.first_name or '').strip() or (user.get_full_name() or user.username or '').split(' ')[0]
+    hora = timezone.localtime().hour
+    saludo = 'Buenos días' if hora < 12 else ('Buenas tardes' if hora < 19 else 'Buenas noches')
 
     partes = []
-    if correos:
+    if n_cor:
         partes.append('%d correo%s importante%s sin responder' % (
-            correos, '' if correos == 1 else 's', '' if correos == 1 else 's'))
-    if clientes:
-        partes.append('%d cliente%s sin atender' % (clientes, '' if clientes == 1 else 's'))
+            n_cor, '' if n_cor == 1 else 's', '' if n_cor == 1 else 's'))
+    if n_opp:
+        partes.append('%d oportunidad%s sin avance' % (n_opp, '' if n_opp == 1 else 'es'))
 
     if partes:
         cuerpo = ' y '.join(partes)
         resumen = (('%s, ' % nombre) if nombre else '') + cuerpo + '.'
         resumen = resumen[0].upper() + resumen[1:]
+        brief = '%s%s. Revisé tu correo y tu pipeline: %s. Lo demás puede esperar.' % (
+            saludo, (', ' + nombre) if nombre else '', cuerpo)
     else:
         resumen = 'Todo bajo control%s. Te aviso si algo necesita tu atención.' % (
             (', ' + nombre) if nombre else '')
+        brief = '%s%s. Revisé tu correo y tu pipeline y no hay nada urgente por ahora. Sigue así.' % (
+            saludo, (', ' + nombre) if nombre else '')
 
     return JsonResponse({
         'success': True,
         'total': total,
-        'correos': correos,
-        'clientes': clientes,
+        'correos': n_cor,
+        'pipeline': n_opp,
         'resumen': resumen,
+        'brief': brief,
+        'items': correos_items + opps_items,
     })
 
 
